@@ -32,6 +32,7 @@
 | [protocol-v1.md](protocol-v1.md) | **当前唯一接口协议基线**：上层↔中层、中层↔daemon.py、daemon.py↔SKILL 的格式 |
 | [v1-interface-contracts.md](v1-interface-contracts.md) | 旧文件名兼容入口；正文已收敛到 `protocol-v1.md` |
 | [design-concepts/底层与中层/多用户设计.md](design-concepts/底层与中层/多用户设计.md) | Token 寻址与路由：用户注册、注册表、中层按 token 投送、上层无感 |
+| [design-concepts/底层与中层/并发处理设计.md](design-concepts/底层与中层/并发处理设计.md) | 并发模型详解：进程隔离、GIL 与 I/O 等待、单通道串行机制、并发安全纪律 |
 | [research/README.md](research/README.md) | Virtuoso 数据模型、TB、日志和重构技术调研 |
 
 ## 本版已经决定的事项
