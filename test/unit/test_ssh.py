@@ -447,5 +447,29 @@ class TestEnsurePersistentShell(unittest.TestCase):
                 r.ensure_persistent_shell(timeout=5)
 
 
+class TestCloseTearsDownControlMaster(unittest.TestCase):
+    def setUp(self):
+        self.wd = Path(tempfile.mkdtemp())
+        from transport.runtime_paths import set_working_dir
+        set_working_dir(self.wd)
+
+    def test_openssh_close_stops_master(self):
+        r = SSHRunner("server", user="u", control_master="force")
+        with mock.patch.object(ssh_mod.subprocess, "run") as run:
+            r.close()
+        self.assertTrue(run.called)
+        cmd = run.call_args[0][0]
+        self.assertIn("-O", cmd)
+        self.assertIn("exit", cmd)
+        self.assertIn(f"ControlPath={r._control_path}", cmd)
+        self.assertTrue(cmd[-1].endswith("@server"))
+
+    def test_cm_disabled_skips_master_stop(self):
+        r = SSHRunner("server", user="u", control_master="disable")
+        with mock.patch.object(ssh_mod.subprocess, "run") as run:
+            r.close()
+        run.assert_not_called()
+
+
 if __name__ == "__main__":
     unittest.main()

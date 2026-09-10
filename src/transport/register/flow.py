@@ -144,6 +144,19 @@ def _probe_remote(
         jump_host=request.jump_host,
         jump_user=request.jump_user,
     )
+    try:
+        return _probe_remote_with_runner(request, token, reserved_ports, runner, host)
+    finally:
+        runner.close()  # registration must leave no SSH master/socket behind
+
+
+def _probe_remote_with_runner(
+    request: RegistrationRequest,
+    token: str,
+    reserved_ports: set[int] | None,
+    runner,
+    host: str,
+) -> ProbeResult:
     if not runner.test_connection():
         raise RegistrationProbeError(f"ssh unreachable: {host}")
 

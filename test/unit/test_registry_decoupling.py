@@ -35,6 +35,9 @@ class _FakeProbeRunner:
     def test_connection(self) -> bool:
         return True
 
+    def close(self):
+        pass
+
     def run_command(self, cmd: str, timeout=None) -> CommandResult:
         return CommandResult(0, "/home/alice", "")
 

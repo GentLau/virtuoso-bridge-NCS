@@ -1265,12 +1265,37 @@ class SSHRunner:
                     f"Persistent SSH shell probe failed: {details}"
                 )
 
+    def _stop_control_master(self) -> None:
+        """Tear down the ControlMaster started by this runner (best effort).
+
+        A master with ``ControlPersist`` would otherwise survive the process
+        and outlive a short registration flow; ``close()`` must leave no
+        lingering ssh process or control socket behind.
+        """
+        if not self._use_control_master or self._backend != "openssh":
+            return
+        cmd: list[str] = [self._ssh_cmd, "-o", f"ControlPath={self._control_path}", "-O", "exit"]
+        if self._user:
+            cmd.append(f"{self._user}@{self._host}")
+        else:
+            cmd.append(self._host)
+        try:
+            subprocess.run(
+                cmd,
+                capture_output=True,
+                timeout=5,
+                **_windows_no_window_kwargs(),
+            )
+        except (OSError, subprocess.TimeoutExpired):
+            pass
+
     def close(self) -> None:
         """Release any persistent SSH resources held by this runner."""
         if self._paramiko_backend is not None:
             self._paramiko_backend.close()
         with self._shell_lock:
             self._close_persistent_shell_locked()
+        self._stop_control_master()
 
     def __del__(self) -> None:
         try:
