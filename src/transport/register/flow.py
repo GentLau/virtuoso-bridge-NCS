@@ -141,8 +141,6 @@ def _probe_local(request: RegistrationRequest, token: str) -> ProbeResult:
 def _probe_remote(
     request: RegistrationRequest, token: str, reserved_ports: set[int] | None = None
 ) -> ProbeResult:
-    from transport.ssh import SSHRunner
-
     host = request.resolved_host
     runner = SSHRunner(
         host,

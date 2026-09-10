@@ -1,11 +1,10 @@
 """Per-token remote side: deploy bottom files, tunnel, command and file ports.
 
 Uses the full SSHRunner (OpenSSH + Paramiko, persistent shell, ControlMaster,
-staging/atomic install) restored from the legacy implementation.  The registry
-supplies every transport knob.
+staging/atomic install); the registry supplies every transport knob.
 
-Role runners follow the legacy pattern: one ``SSHRunner`` per distinct target
-host, shared across roles that resolve to the same host.  This keeps the
+Role runners: one ``SSHRunner`` per distinct ``(host, account)``, shared
+across roles that resolve to the same target.  This keeps the
 daemon/deploy, command and file roles independent when the registry pins them
 to different hosts, while avoiding duplicate persistent shells on one host.
 """
@@ -22,7 +21,6 @@ from pyapi.models import CommandResult
 from transport.deploy import deploy_files
 from transport.registry import UserEntry
 from transport.remote_roles import ResolvedTargets
-from transport.setup import generate_setup_il
 from transport.ssh import SSHRunner
 
 logger = logging.getLogger(__name__)

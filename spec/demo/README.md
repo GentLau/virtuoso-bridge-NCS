@@ -46,7 +46,9 @@ python spec/demo/full_demo.py
 python -m unittest spec.demo.test_full_demo -v
 ```
 
-### 四步接入
+### 四步接入（demo 简化分组）
+
+> demo 的“四步”只是[多用户设计 §3.2 六步注册](../design-concepts/底层与中层/多用户设计.md)的**分组演示**，不是正式流程口径；正式注册=①申请→②本地校验→③探测→④部署→⑤连通性测试→⑥写入注册表。
 
 | 步骤 | 行为 | demo 实现 |
 |---|---|---|

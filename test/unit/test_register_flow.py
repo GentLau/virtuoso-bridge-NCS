@@ -153,7 +153,7 @@ class TestProbeFailureBranches(unittest.TestCase):
     def _remote(self, **patches):
         from transport.register import probe_user
         from unittest import mock
-        with mock.patch("transport.ssh.SSHRunner") as runner, \
+        with mock.patch("transport.register.flow.SSHRunner") as runner, \
              mock.patch("transport.register.probe.host_key_fingerprint", return_value="SHA256:fp"), \
              mock.patch("transport.register.probe.remote_hostname", return_value="host-a"), \
              mock.patch("transport.register.probe.remote_user", return_value="alice"), \
@@ -190,7 +190,7 @@ class TestProbeFailureBranches(unittest.TestCase):
     def test_remote_fingerprint_missing(self):
         from transport.register import probe_user
         from unittest import mock
-        with mock.patch("transport.ssh.SSHRunner") as runner, \
+        with mock.patch("transport.register.flow.SSHRunner") as runner, \
              mock.patch("transport.register.probe.host_key_fingerprint", return_value=None):
             runner.return_value.test_connection.return_value = True
             runner.return_value.run_command.return_value = CommandResult(0, "/home/alice", "")
@@ -200,7 +200,7 @@ class TestProbeFailureBranches(unittest.TestCase):
     def test_remote_scratch_not_writable(self):
         from transport.register import probe_user
         from unittest import mock
-        with mock.patch("transport.ssh.SSHRunner") as runner, \
+        with mock.patch("transport.register.flow.SSHRunner") as runner, \
              mock.patch("transport.register.probe.host_key_fingerprint", return_value="SHA256:fp"), \
              mock.patch("transport.register.probe.remote_hostname", return_value="host-a"), \
              mock.patch("transport.register.probe.remote_user", return_value="alice"), \
@@ -216,7 +216,7 @@ class TestProbeFailureBranches(unittest.TestCase):
     def test_remote_daemon_user_missing(self):
         from transport.register import probe_user
         from unittest import mock
-        with mock.patch("transport.ssh.SSHRunner") as runner, \
+        with mock.patch("transport.register.flow.SSHRunner") as runner, \
              mock.patch("transport.register.probe.host_key_fingerprint", return_value="SHA256:fp"), \
              mock.patch("transport.register.probe.remote_hostname", return_value="host-a"), \
              mock.patch("transport.register.probe.remote_user", return_value="alice"), \
@@ -279,7 +279,7 @@ class TestFlowMoreBranches(unittest.TestCase):
     def test_remote_probe_unreachable_host(self):
         from unittest import mock
         from transport.register import probe_user
-        with mock.patch("transport.ssh.SSHRunner") as runner:
+        with mock.patch("transport.register.flow.SSHRunner") as runner:
             runner.return_value.test_connection.return_value = False
             with self.assertRaises(RegistrationProbeError):
                 probe_user(RegistrationRequest(user="u", host="h", ssh_user="a"), token="t")
@@ -287,7 +287,7 @@ class TestFlowMoreBranches(unittest.TestCase):
     def test_remote_probe_missing_hostname(self):
         from unittest import mock
         from transport.register import probe_user
-        with mock.patch("transport.ssh.SSHRunner") as runner, \
+        with mock.patch("transport.register.flow.SSHRunner") as runner, \
              mock.patch("transport.register.probe.host_key_fingerprint", return_value="fp"), \
              mock.patch("transport.register.probe.remote_hostname", return_value=""):
             runner.return_value.test_connection.return_value = True
@@ -298,7 +298,7 @@ class TestFlowMoreBranches(unittest.TestCase):
     def test_remote_probe_no_python(self):
         from unittest import mock
         from transport.register import probe_user
-        with mock.patch("transport.ssh.SSHRunner") as runner, \
+        with mock.patch("transport.register.flow.SSHRunner") as runner, \
              mock.patch("transport.register.probe.host_key_fingerprint", return_value="fp"), \
              mock.patch("transport.register.probe.remote_hostname", return_value="host-a"), \
              mock.patch("transport.register.probe.remote_user", return_value="alice"), \
@@ -312,7 +312,7 @@ class TestFlowMoreBranches(unittest.TestCase):
     def test_remote_probe_explicit_port_busy(self):
         from unittest import mock
         from transport.register import probe_user
-        with mock.patch("transport.ssh.SSHRunner") as runner, \
+        with mock.patch("transport.register.flow.SSHRunner") as runner, \
              mock.patch("transport.register.probe.host_key_fingerprint", return_value="fp"), \
              mock.patch("transport.register.probe.remote_hostname", return_value="host-a"), \
              mock.patch("transport.register.probe.remote_user", return_value="alice"), \
@@ -327,7 +327,7 @@ class TestFlowMoreBranches(unittest.TestCase):
     def test_remote_probe_no_free_port(self):
         from unittest import mock
         from transport.register import probe_user
-        with mock.patch("transport.ssh.SSHRunner") as runner, \
+        with mock.patch("transport.register.flow.SSHRunner") as runner, \
              mock.patch("transport.register.probe.host_key_fingerprint", return_value="fp"), \
              mock.patch("transport.register.probe.remote_hostname", return_value="host-a"), \
              mock.patch("transport.register.probe.remote_user", return_value="alice"), \
@@ -417,7 +417,7 @@ class TestPolicyFieldsApplied(unittest.TestCase):
             connect_timeout=9.5, log_level="error", log_max_bytes=4096,
             spectre_host="spec-host", spectre_bin="/opt/spectre/bin/spectre",
         )
-        with mock.patch("transport.ssh.SSHRunner") as runner, \
+        with mock.patch("transport.register.flow.SSHRunner") as runner, \
              mock.patch("transport.register.probe.host_key_fingerprint", return_value="fp"), \
              mock.patch("transport.register.probe.remote_hostname", return_value="host-a"), \
              mock.patch("transport.register.probe.remote_user", return_value="alice"), \

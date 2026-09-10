@@ -93,7 +93,7 @@ class TestProbeNeverPersists(unittest.TestCase):
         self.assertFalse(registry_path().exists())
 
     def test_remote_probe_returns_candidate_without_commit(self) -> None:
-        with mock.patch("transport.ssh.SSHRunner", _FakeProbeRunner), \
+        with mock.patch("transport.register.flow.SSHRunner", _FakeProbeRunner), \
              mock.patch("transport.register.probe.detect_remote_python", return_value=("python3", 3)), \
              mock.patch("transport.register.probe.allocate_remote_port", return_value=65081), \
              mock.patch("transport.register.probe.remote_hostname", return_value="compute-a"), \
