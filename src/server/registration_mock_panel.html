@@ -1,0 +1,349 @@
+<style>
+.mock-tb {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 9999;
+  width: min(340px, calc(100vw - 28px));
+  overflow: hidden;
+  border: 1px solid rgba(91, 76, 230, .32);
+  border-radius: 16px;
+  color: #eef0ff;
+  background: rgba(27, 30, 51, .97);
+  box-shadow: 0 20px 55px rgba(12, 16, 32, .32);
+  backdrop-filter: blur(18px);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+}
+.mock-tb summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 15px;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+.mock-tb summary::-webkit-details-marker { display: none; }
+.mock-tb summary::after {
+  content: "+";
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 7px;
+  color: #cbc6ff;
+  background: rgba(255,255,255,.06);
+  font-weight: 800;
+}
+.mock-tb[open] summary::after { content: "−"; }
+.mock-tb-title { min-width: 0; }
+.mock-tb-title strong {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #fff;
+  font-size: 12px;
+}
+.mock-tb-title i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #8d80ff;
+  box-shadow: 0 0 0 4px rgba(141,128,255,.15);
+}
+.mock-tb-title small {
+  display: block;
+  margin-top: 3px;
+  color: #9fa6c7;
+  font-size: 9px;
+  font-weight: 500;
+}
+.mock-tb-body {
+  padding: 2px 15px 15px;
+  border-top: 1px solid rgba(255,255,255,.09);
+}
+.mock-tb-safe {
+  display: flex;
+  gap: 9px;
+  margin: 12px 0;
+  padding: 10px;
+  border: 1px solid rgba(83, 207, 155, .22);
+  border-radius: 10px;
+  color: #b9ead5;
+  background: rgba(35, 137, 97, .12);
+  font-size: 9px;
+  line-height: 1.5;
+}
+.mock-tb-safe b {
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 6px;
+  color: #75d6ad;
+  background: rgba(83,207,155,.14);
+}
+.mock-tb-grid { display: grid; grid-template-columns: 1fr 104px; gap: 10px; }
+.mock-tb-field { min-width: 0; }
+.mock-tb-field.full { grid-column: 1 / -1; }
+.mock-tb-field label {
+  display: block;
+  margin: 0 0 5px;
+  color: #aeb4d0;
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+}
+.mock-tb select {
+  width: 100%;
+  height: 34px;
+  padding: 0 9px;
+  border: 1px solid rgba(255,255,255,.15);
+  border-radius: 8px;
+  outline: none;
+  color: #f3f4ff;
+  background: #151827;
+  font-size: 10px;
+}
+.mock-tb select:focus { border-color: #8d80ff; box-shadow: 0 0 0 3px rgba(141,128,255,.14); }
+.mock-tb select option { color: #eef0ff; background: #20243a; }
+.mock-tb-actions { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-top: 10px; }
+.mock-tb button {
+  min-height: 34px;
+  padding: 7px 10px;
+  border: 1px solid rgba(255,255,255,.15);
+  border-radius: 8px;
+  cursor: pointer;
+  color: #f4f3ff;
+  background: rgba(255,255,255,.07);
+  font-size: 10px;
+  font-weight: 750;
+}
+.mock-tb button:hover:not(:disabled) { border-color: #978cff; background: rgba(141,128,255,.14); }
+.mock-tb button:disabled { cursor: wait; opacity: .55; }
+.mock-tb button.primary { border-color: #7869ef; background: #6556dc; }
+.mock-tb button.primary:hover:not(:disabled) { background: #7466e8; }
+.mock-tb-divider { height: 1px; margin: 13px 0; background: rgba(255,255,255,.09); }
+.mock-tb-status { min-height: 15px; margin: 9px 1px 0; color: #969dbd; font-size: 9px; }
+.mock-tb-status.error { color: #ff9cad; }
+.mock-tb-badge {
+  position: fixed;
+  left: 18px;
+  bottom: 18px;
+  z-index: 9998;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 11px;
+  border: 1px solid #d9d5ff;
+  border-radius: 999px;
+  color: #5545c8;
+  background: rgba(255,255,255,.9);
+  box-shadow: 0 8px 24px rgba(27,35,61,.1);
+  font-size: 10px;
+  font-weight: 800;
+  backdrop-filter: blur(10px);
+}
+.mock-tb-badge::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #6657df;
+  box-shadow: 0 0 0 4px #efedff;
+}
+@media (max-width: 680px) {
+  .mock-tb { right: 12px; bottom: 12px; }
+  .mock-tb-badge { left: 12px; bottom: 12px; }
+  .mock-tb[open] + .mock-tb-badge { display: none; }
+}
+</style>
+<!-- MOCK_BODY -->
+<details id="mockTb" class="mock-tb" open>
+  <summary>
+    <span class="mock-tb-title">
+      <strong><i aria-hidden="true"></i>Front-end Mock TB</strong>
+      <small>场景切换仅作用于内存中的模拟接口</small>
+    </span>
+  </summary>
+  <div class="mock-tb-body">
+    <div class="mock-tb-safe"><b aria-hidden="true">✓</b><span>安全模式：不会连接 SSH / Virtuoso，不会部署文件，也不会创建或修改 registry.json。</span></div>
+    <div class="mock-tb-grid">
+      <div class="mock-tb-field full">
+        <label for="mockScenario">接口场景</label>
+        <select id="mockScenario">
+          <option value="happy">全流程成功</option>
+          <option value="warning_success">成功，但返回主机告警</option>
+          <option value="validate_fail">第 2 步本地校验失败</option>
+          <option value="probe_fail">第 3 步环境探测失败</option>
+          <option value="deploy_fail">第 4 步部署失败</option>
+          <option value="verify_fail_once">第 5 步首次失败，重试成功</option>
+          <option value="commit_fail">第 6 步注册表写入失败</option>
+          <option value="session_lost">第 2 步会话失效（404）</option>
+          <option value="transient_500">第 3 步临时错误（500）</option>
+        </select>
+      </div>
+      <div class="mock-tb-field">
+        <label for="mockPreview">直接预览状态</label>
+        <select id="mockPreview">
+          <option value="form">初始表单</option>
+          <option value="applied">第 1 步完成</option>
+          <option value="validated">第 2 步完成</option>
+          <option value="probed">第 3 步完成</option>
+          <option value="deployed">第 4 步 / CIW 指引</option>
+          <option value="committed">注册成功</option>
+          <option value="failed_validate">第 2 步失败</option>
+          <option value="failed_probe">第 3 步失败</option>
+          <option value="failed_deploy">第 4 步失败</option>
+          <option value="failed_verify">第 5 步失败</option>
+          <option value="failed_commit">第 6 步失败</option>
+        </select>
+      </div>
+      <div class="mock-tb-field">
+        <label for="mockDelay">接口延迟</label>
+        <select id="mockDelay">
+          <option value="0">无延迟</option>
+          <option value="200">200 ms</option>
+          <option value="600">600 ms</option>
+          <option value="1200">1.2 s</option>
+        </select>
+      </div>
+    </div>
+    <div class="mock-tb-actions">
+      <button id="mockApply" class="primary" type="button">应用场景并重置</button>
+      <button id="mockReset" type="button">清空</button>
+    </div>
+    <div class="mock-tb-divider"></div>
+    <button id="mockJump" class="primary" type="button" style="width:100%">直接打开所选 UI 状态</button>
+    <p id="mockTbStatus" class="mock-tb-status" role="status" aria-live="polite">正在读取 Mock 配置…</p>
+  </div>
+</details>
+<div class="mock-tb-badge">MOCK TB · 无真实副作用</div>
+<script>
+(function() {
+  const ACTIVE_KEY = 'vb.registration.activeUser';
+  const DRAFT_KEY = 'vb.registration.draft';
+  const scenario = document.getElementById('mockScenario');
+  const preview = document.getElementById('mockPreview');
+  const delay = document.getElementById('mockDelay');
+  const apply = document.getElementById('mockApply');
+  const reset = document.getElementById('mockReset');
+  const jump = document.getElementById('mockJump');
+  const status = document.getElementById('mockTbStatus');
+  const buttons = [apply, reset, jump];
+
+  function setStatus(text, isError) {
+    status.textContent = text;
+    status.className = 'mock-tb-status' + (isError ? ' error' : '');
+  }
+
+  function setBusy(value) {
+    buttons.forEach(function(button) { button.disabled = value; });
+  }
+
+  function clearFrontendSession() {
+    try {
+      sessionStorage.removeItem(ACTIVE_KEY);
+      sessionStorage.removeItem(DRAFT_KEY);
+    } catch (error) {}
+  }
+
+  function setActiveUser(user) {
+    clearFrontendSession();
+    if (!user) return;
+    try { sessionStorage.setItem(ACTIVE_KEY, user); } catch (error) {}
+  }
+
+  async function call(path, body) {
+    const response = await fetch(path, {
+      method: body === undefined ? 'GET' : 'POST',
+      headers: body === undefined ? {Accept: 'application/json'} : {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: body === undefined ? undefined : JSON.stringify(body)
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Mock request failed');
+    return data;
+  }
+
+  async function loadConfig() {
+    try {
+      const data = await call('/__mock__/config');
+      scenario.value = data.scenario;
+      const availableDelay = Array.from(delay.options).some(function(option) {
+        return Number(option.value) === Number(data.delay_ms);
+      });
+      if (!availableDelay) {
+        const option = document.createElement('option');
+        option.value = String(data.delay_ms);
+        option.textContent = data.delay_ms + ' ms';
+        delay.appendChild(option);
+      }
+      delay.value = String(data.delay_ms);
+      setStatus('当前：' + data.scenario_label + ' · ' + data.delay_ms + ' ms · ' + data.active_sessions + ' 个会话');
+    } catch (error) {
+      setStatus(error.message, true);
+    }
+  }
+
+  async function applyConfig() {
+    setBusy(true);
+    setStatus('正在切换场景…');
+    try {
+      await call('/__mock__/config', {
+        scenario: scenario.value,
+        delay_ms: Number(delay.value),
+        reset: true
+      });
+      clearFrontendSession();
+      location.reload();
+    } catch (error) {
+      setBusy(false);
+      setStatus(error.message, true);
+    }
+  }
+
+  async function resetAll() {
+    setBusy(true);
+    setStatus('正在清空 Mock 会话…');
+    try {
+      await call('/__mock__/reset', {});
+      clearFrontendSession();
+      location.reload();
+    } catch (error) {
+      setBusy(false);
+      setStatus(error.message, true);
+    }
+  }
+
+  async function jumpToState() {
+    setBusy(true);
+    setStatus('正在生成预览状态…');
+    try {
+      await call('/__mock__/config', {
+        scenario: scenario.value,
+        delay_ms: Number(delay.value),
+        reset: true
+      });
+      const data = await call('/__mock__/seed', {state: preview.value});
+      setActiveUser(data.user);
+      location.reload();
+    } catch (error) {
+      setBusy(false);
+      setStatus(error.message, true);
+    }
+  }
+
+  apply.addEventListener('click', applyConfig);
+  reset.addEventListener('click', resetAll);
+  jump.addEventListener('click', jumpToState);
+  loadConfig();
+})();
+</script>
