@@ -86,6 +86,38 @@ class TestRegistrationServer(unittest.TestCase):
         self.assertEqual(data["stage"], "failed")
         self.assertTrue(any("already registered" in e for e in data["errors"]))
 
+    def test_granular_six_steps(self):
+        port = _free_port()
+        status, raw = self.srv.request("POST", "/api/register/apply", {"user": "bob", "local": True, "daemon_port": port})
+        self.assertEqual(status, 200)
+        data = json.loads(raw)
+        self.assertEqual((data["stage"], data["step"]), ("applied", 1))
+        self.assertTrue(data["token"])
+
+        status, raw = self.srv.request("POST", "/api/register/bob/validate", None)
+        data = json.loads(raw)
+        self.assertEqual((data["stage"], data["step"]), ("validated", 2))
+
+        status, raw = self.srv.request("POST", "/api/register/bob/probe", None)
+        data = json.loads(raw)
+        self.assertEqual((data["stage"], data["step"]), ("probed", 3))
+
+        status, raw = self.srv.request("POST", "/api/register/bob/deploy", None)
+        data = json.loads(raw)
+        self.assertEqual((data["stage"], data["step"]), ("deployed", 4))
+        self.assertTrue(data["setup_path"].endswith("virtuoso_setup.il"))
+
+        # no daemon running: step 5 must fail and must NOT commit
+        status, raw = self.srv.request("POST", "/api/register/bob/verify", None)
+        data = json.loads(raw)
+        self.assertEqual(data["stage"], "failed")
+        self.assertEqual(data["step"], 5)
+        self.assertIsNone(self.registry.get("bob"))
+
+    def test_step_endpoint_unknown_user(self):
+        status, raw = self.srv.request("POST", "/api/register/ghost/validate", None)
+        self.assertEqual(status, 404)
+
     def test_state_endpoint_unknown_user(self):
         status, raw = self.srv.request("GET", "/api/register/ghost")
         self.assertEqual(status, 404)

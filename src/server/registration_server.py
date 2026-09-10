@@ -1,15 +1,17 @@
-"""Registration HTTP server (the future registration page).
+"""Registration HTTP server (the registration page).
 
-Stdlib-only ``ThreadingHTTPServer`` guiding a user through the six-step manual
-registration flow:
+Stdlib-only ``ThreadingHTTPServer`` guiding a user step by step through the
+six-step manual registration flow:
 
-  POST /api/register             submit the application -> steps 2/3/4
-  POST /api/register/<user>/verify   user has load()ed -> steps 5/6
-  GET  /api/register/<user>           current in-progress state
-  GET  /                                registration form page
+  1 申请        POST /api/register/apply
+  2 本地校验    POST /api/register/<user>/validate
+  3 探测        POST /api/register/<user>/probe
+  4 部署        POST /api/register/<user>/deploy
+  5 连通性      POST /api/register/<user>/verify   (also performs step 6)
+  6 写注册表    (inside verify; the only durable write)
 
-Registration state is kept in memory only; the single durable write is the
-step-6 registry commit performed by ``RegistrationFlow.verify()``.
+``POST /api/register`` remains as a one-shot steps 1-4 convenience.
+State is kept in memory only; the single durable write is the step-6 commit.
 """
 
 from __future__ import annotations
@@ -38,14 +40,17 @@ label{display:block;margin:12px 0 4px;font-size:14px}
 input,select{width:100%;box-sizing:border-box;padding:8px;font-size:14px}
 .row{display:flex;gap:12px}
 .row>div{flex:1}
-button{margin:16px 0;padding:10px 18px;font-size:15px}
+button{margin:8px 0;padding:10px 18px;font-size:15px;cursor:pointer}
+#steps{margin:16px 0;font-size:13px;color:#555}
+#steps b{color:#000}
 #out{white-space:pre-wrap;background:#f5f5f5;border:1px solid #ddd;padding:12px;margin-top:12px;font-size:13px}
 pre{white-space:pre-wrap}
 </style>
 </head>
 <body>
 <h1>Virtuoso Bridge 用户注册</h1>
-<p>六步流程：申请 → 本地校验 → 探测 → 部署 → 连通性测试 → 写入注册表。前五步任何一步失败都不会写入注册表。</p>
+<p>六步：①申请 → ②本地校验 → ③探测 → ④部署 → ⑤连通性测试 → ⑥写入注册表。前五步任何一步失败都不会写入注册表。</p>
+<div id="steps"></div>
 <form id="f">
 <div class="row">
   <div><label>用户名（必填）</label><input name="user" required></div>
@@ -75,49 +80,123 @@ pre{white-space:pre-wrap}
   <div><label>跳板主机</label><input name="jump_host"></div>
   <div><label>跳板用户</label><input name="jump_user"></div>
 </div>
-<button type="submit">第一步：提交申请（含 2 本地校验 / 3 探测 / 4 部署）</button>
+<details>
+<summary>高级策略配置（可选，缺省用注册表默认）</summary>
+<div class="row">
+  <div><label>SSH 后端</label>
+    <select name="ssh_backend"><option value="">默认 openssh</option><option value="openssh">openssh</option><option value="paramiko">paramiko</option></select></div>
+  <div><label>SSH 并发会话上限</label><input name="ssh_max_sessions" type="number" min="1"></div>
+</div>
+<label>SOCKS5 代理（如 socks5://127.0.0.1:1080，可选）</label>
+<input name="ssh_proxy">
+<div class="row">
+  <div><label>ControlMaster 策略</label>
+    <select name="ssh_control_master"><option value="">默认 auto</option><option value="auto">auto</option><option value="force">force</option><option value="disable">disable</option></select></div>
+  <div><label>连接建立超时（秒）</label><input name="connect_timeout" type="number" min="0.1" step="0.1"></div>
+</div>
+<div class="row">
+  <div><label>线程池大小</label><input name="thread_pool_size" type="number" min="1"></div>
+  <div><label>channel 预算</label><input name="channel_budget" type="number" min="1"></div>
+</div>
+<div class="row">
+  <div><label>CDS.log 返回级别</label>
+    <select name="log_level"><option value="">默认 all</option><option value="off">off</option><option value="all">all</option><option value="warn">warn</option><option value="error">error</option></select></div>
+  <div><label>CDS.log 单次上限（字节）</label><input name="log_max_bytes" type="number" min="1"></div>
+</div>
+<div class="row">
+  <div><label>Spectre 主机（缺省同 command 主机）</label><input name="spectre_host"></div>
+  <div><label>Spectre 可执行文件路径（可选固化）</label><input name="spectre_bin"></div>
+</div>
+</details>
+<button type="button" id="applyBtn">第 1 步：提交申请</button>
 </form>
 <div id="out"></div>
 <script>
-const out = document.getElementById('out');
-document.getElementById('f').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const fd = new FormData(e.target);
-  const payload = {};
-  for (const [k, v] of fd.entries()) if (v !== '') payload[k] = v;
-  for (const k of ['daemon_port','local_port']) if (payload[k] !== undefined) payload[k] = Number(payload[k]);
+var STEPS = ['申请','本地校验','探测','部署','连通性测试','写入注册表'];
+var CURRENT_USER = null;
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function collectPayload() {
+  var fd = new FormData(document.getElementById('f'));
+  var payload = {};
+  fd.forEach(function (v, k) { if (v !== '') payload[k] = v; });
+  var nums = ['daemon_port','local_port','ssh_max_sessions','connect_timeout','thread_pool_size','channel_budget','log_max_bytes'];
+  for (var i = 0; i < nums.length; i++) {
+    var k = nums[i];
+    if (payload[k] !== undefined && payload[k] !== '') payload[k] = Number(payload[k]);
+  }
   payload.local = payload.mode === 'local';
   delete payload.mode;
-  out.textContent = '正在处理……';
-  try {
-    const res = await fetch('/api/register', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
-    const data = await res.json();
-    render(data);
-  } catch (err) { out.textContent = '请求失败: ' + err; }
-});
-async function verify(user) {
-  out.textContent = '正在做第五步连通性测试……';
-  try {
-    const res = await fetch('/api/register/' + encodeURIComponent(user) + '/verify', {method:'POST'});
-    render(await res.json());
-  } catch (err) { out.textContent = '请求失败: ' + err; }
+  return payload;
+}
+function show(text, html) {
+  var el = document.getElementById('out');
+  if (html) el.innerHTML = text; else el.textContent = text;
+}
+function showSteps(step, stage) {
+  var okStep = (stage === 'committed') ? 6 : step;
+  var html = '';
+  for (var i = 0; i < 6; i++) {
+    var cls = i < okStep ? '✔' : (i + 1 === okStep ? '▶' : '○');
+    html += cls + ' ' + (i + 1) + '.' + STEPS[i] + (i < 5 ? ' → ' : '');
+  }
+  document.getElementById('steps').innerHTML = '<b>当前进度：</b>' + html;
+}
+function post(path, body, ok) {
+  show('正在处理……');
+  fetch(path, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: body === undefined ? '' : JSON.stringify(body)
+  }).then(function (r) { return r.json(); })
+    .then(ok)
+    .catch(function (err) { show('请求失败: ' + err); });
+}
+function applyStep() {
+  post('/api/register/apply', collectPayload(), render);
+}
+function step(user, action, label) {
+  show(label);
+  post('/api/register/' + encodeURIComponent(user) + '/' + action, undefined, render);
 }
 function render(data) {
-  if (data.stage === 'deployed') {
-    out.innerHTML = '<b>第四步完成，请在 CIW 中执行（每次 load 都会打印 token，请目视确认与下面一致）：</b><br>' +
-      '<pre>' + html_escape('load("' + data.setup_path + '")') + '</pre>' +
-      '<b>token：</b>' + html_escape(data.token || '') + '<br><br>' +
-      '<button onclick="verify(' + JSON.stringify(data.user) + ')">我已 load，开始第五步连通性测试</button>';
+  CURRENT_USER = data.user;
+  showSteps(data.step || 0, data.stage);
+  var errors = (data.errors && data.errors.length) ? data.errors.join('\\n') : '';
+  if (data.stage === 'applied') {
+    show('第 1 步完成，token=' + (data.token || '') + '\\n\\n下一步：本地校验（user/端口查重，纯本地）。');
+    outButtons('<button onclick="step(\\'' + esc(data.user) + '\\',\\'validate\\',\\'第 2 步：本地校验\\')">第 2 步：本地校验</button>');
+  } else if (data.stage === 'validated') {
+    show('第 2 步通过（user/端口与注册表无冲突）。\\n\\n下一步：探测远端环境。');
+    outButtons('<button onclick="step(\\'' + esc(data.user) + '\\',\\'probe\\',\\'第 3 步：探测\\')">第 3 步：探测</button>');
+  } else if (data.stage === 'probed') {
+    show('第 3 步通过（SSH/指纹/python/端口/部署根）。\\n\\n下一步：上传 daemon/il/setup 到远端。');
+    outButtons('<button onclick="step(\\'' + esc(data.user) + '\\',\\'deploy\\',\\'第 4 步：部署\\')">第 4 步：部署</button>');
+  } else if (data.stage === 'deployed') {
+    show('<b>第 4 步完成。请在 CIW 中执行（每次 load 都会打印 token，请目视确认与下面一致）：</b><br>' +
+      '<pre>' + esc('load("' + data.setup_path + '")') + '</pre>' +
+      '<b>token：</b>' + esc(data.token || ''), true);
+    outButtons('<button onclick="step(\\'' + esc(data.user) + '\\',\\'verify\\',\\'第 5 步：连通性测试\\')">我已 load，开始第 5 步连通性测试</button>');
   } else if (data.stage === 'committed') {
-    out.innerHTML = '<b>注册完成。</b> 配置已写入 registry.json，此后按 token 路由使用。';
+    show('注册完成。配置已写入 registry.json，此后按 token 路由使用。', false);
+    outButtons('');
   } else {
-    let text = (data.stage || 'failed') + '\n';
-    if (data.errors && data.errors.length) text += data.errors.join('\n');
-    else text += data.detail || '';
-    out.textContent = text;
+    show('失败于第 ' + (data.step || 0) + ' 步：\\n' + errors + '\\n\\n可修改参数后重新提交，或对同一用户重试当前步骤。');
+    var stepNo = data.step || 0;
+    var action = stepNo === 2 ? 'validate' : stepNo === 3 ? 'probe' : stepNo === 4 ? 'deploy' : stepNo === 5 ? 'verify' : null;
+    var html = '<button onclick="location.reload()">返回修改</button>';
+    if (action) html += '<button onclick="step(\\'' + esc(data.user) + '\\',\\'' + action + '\\',\\'重试第 ' + stepNo + ' 步\\')">重试第 ' + stepNo + ' 步</button>';
+    outButtons(html);
   }
 }
-function html_escape(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function outButtons(html) {
+  var extra = document.getElementById('action');
+  if (!extra) { extra = document.createElement('div'); extra.id = 'action'; document.getElementById('out').appendChild(extra); }
+  extra.innerHTML = html;
+}
+document.getElementById('applyBtn').addEventListener('click', applyStep);
 </script>
 </body>
 </html>
@@ -125,9 +204,7 @@ function html_escape(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&
 
 
 class RegistrationHandler(BaseHTTPRequestHandler):
-    server_version = "vb-registration/0.1"
-
-    # -- helpers -------------------------------------------------------------
+    server_version = "vb-registration/0.2"
 
     def _send_json(self, status: int, payload: dict) -> None:
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
@@ -154,10 +231,15 @@ class RegistrationHandler(BaseHTTPRequestHandler):
         with self.server.flow_lock:  # type: ignore[attr-defined]
             return self.server.flows.get(user)  # type: ignore[attr-defined]
 
+    def _store(self, flow: RegistrationFlow, user: str) -> None:
+        with self.server.flow_lock:  # type: ignore[attr-defined]
+            self.server.flows[user] = flow  # type: ignore[attr-defined]
+
     def _state_payload(self, state) -> dict:
         payload = {
             "user": state.user,
             "stage": state.stage,
+            "step": state.step,
             "token": state.token,
             "errors": state.errors,
             "warnings": state.warnings,
@@ -176,7 +258,7 @@ class RegistrationHandler(BaseHTTPRequestHandler):
             }
         return payload
 
-    # -- routing ---------------------------------------------------------------
+    # -- routing --------------------------------------------------------------
 
     def do_GET(self) -> None:  # noqa: N802
         path = urlparse(self.path).path
@@ -184,7 +266,7 @@ class RegistrationHandler(BaseHTTPRequestHandler):
             self._send_html(200, _PAGE)
             return
         if path.startswith("/api/register/"):
-            user = path[len("/api/register/"):].rstrip("/")
+            user = unquote(path[len("/api/register/"):].rstrip("/"))
             flow = self._flow(user)
             if flow is None or flow.state is None:
                 self._send_json(404, {"error": "no registration in progress", "user": user})
@@ -195,41 +277,49 @@ class RegistrationHandler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:  # noqa: N802
         path = urlparse(self.path).path
-        if path == "/api/register":
+        if path == "/api/register/apply":
             self._handle_apply()
             return
-        if path.startswith("/api/register/") and path.endswith("/verify"):
-            user = path[len("/api/register/"):-len("/verify")]
-            self._handle_verify(user)
+        if path == "/api/register":
+            self._handle_apply(granular=False)
             return
+        if path.startswith("/api/register/"):
+            rest = path[len("/api/register/"):].rstrip("/")
+            for action in ("validate", "probe", "deploy", "verify"):
+                if rest.endswith("/" + action):
+                    user = unquote(rest[: -(len(action) + 1)])
+                    self._handle_step(user, action)
+                    return
         self._send_json(404, {"error": "not found"})
 
-    def _handle_apply(self) -> None:
+    def _parse_request(self):
         try:
             raw = self._read_json()
         except (json.JSONDecodeError, UnicodeDecodeError):
             self._send_json(400, {"error": "invalid JSON body"})
-            return
+            return None
         try:
-            request = RegistrationRequest(**raw)
+            return RegistrationRequest(**raw)
         except ValidationError as exc:
             detail = [str(e) for e in exc.errors()]
             self._send_json(400, {"error": "invalid request", "detail": detail})
-            return
+            return None
 
+    def _handle_apply(self, granular: bool = True) -> None:
+        request = self._parse_request()
+        if request is None:
+            return
         flow = RegistrationFlow(self.server.registry)  # type: ignore[attr-defined]
-        state = flow.apply(request)
-        with self.server.flow_lock:  # type: ignore[attr-defined]
-            self.server.flows[request.user] = flow  # type: ignore[attr-defined]
+        state = flow.start(request) if granular else flow.apply(request)
+        self._store(flow, request.user)
         self._send_json(200, self._state_payload(state))
 
-    def _handle_verify(self, user: str) -> None:
-        user = unquote(user)
+    def _handle_step(self, user: str, action: str) -> None:
         flow = self._flow(user)
         if flow is None:
             self._send_json(404, {"error": "no registration in progress", "user": user})
             return
-        state = flow.verify()
+        state = getattr(flow, action)()
         self._send_json(200, self._state_payload(state))
 
     def log_message(self, format: str, *args) -> None:  # noqa: A002

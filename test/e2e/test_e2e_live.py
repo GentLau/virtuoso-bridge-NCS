@@ -143,7 +143,7 @@ class TestLiveE2E(unittest.TestCase):
         # 7. upload/download roundtrip with digest verify
         local = Path(wd) / "payload.bin"
         local.write_bytes(b"hello-vb-" * 2000)
-        remote = f"{SCRATCH}/{token}/status/payload.bin"
+        remote = f"{SCRATCH}/e2e/status/payload.bin"  # paths use the username, not token
         u = server.upload_file(local, remote, token=token)
         self.assertEqual(u.returncode, 0, str(u))
         back = Path(wd) / "back.bin"

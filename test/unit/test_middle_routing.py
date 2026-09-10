@@ -29,9 +29,10 @@ def make_remote_entry(token="tok-1"):
 class FakeRemoteClient:
     instances = {}
 
-    def __init__(self, entry, targets):
+    def __init__(self, entry, targets, user="alice"):
         self.entry = entry
         self.targets = targets
+        self.user = user
         FakeRemoteClient.instances[entry.token] = self
 
     def ensure_tunnel(self):

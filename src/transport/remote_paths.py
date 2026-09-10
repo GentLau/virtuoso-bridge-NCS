@@ -13,37 +13,42 @@ def scratch_root(root: str | None = None) -> str:
     return value.rstrip("/")
 
 
-def token_dir(token: str, root: str | None = None) -> str:
-    return posixpath.join(scratch_root(root), token)
+def user_dir(user: str, root: str | None = None) -> str:
+    """User-visible remote directory keyed by the (unique) username.
+
+    Tokens are only used for routing/verification, never in user-visible
+    paths (see the multi-user design).
+    """
+    return posixpath.join(scratch_root(root), user)
 
 
-def ramic_dir(token: str, root: str | None = None) -> str:
-    return posixpath.join(token_dir(token, root), "ramic")
+def ramic_dir(user: str, root: str | None = None) -> str:
+    return posixpath.join(user_dir(user, root), "ramic")
 
 
-def setup_dir(token: str, root: str | None = None) -> str:
-    return posixpath.join(token_dir(token, root), "setup")
+def setup_dir(user: str, root: str | None = None) -> str:
+    return posixpath.join(user_dir(user, root), "setup")
 
 
-def status_dir(token: str, root: str | None = None) -> str:
-    return posixpath.join(token_dir(token, root), "status")
+def status_dir(user: str, root: str | None = None) -> str:
+    return posixpath.join(user_dir(user, root), "status")
 
 
-def daemon_path(token: str, python_major: int, root: str | None = None) -> str:
+def daemon_path(user: str, python_major: int, root: str | None = None) -> str:
     name = "ramic_bridge_daemon_27.py" if python_major == 2 else "ramic_bridge_daemon_3.py"
-    return posixpath.join(ramic_dir(token, root), name)
+    return posixpath.join(ramic_dir(user, root), name)
 
 
-def il_path(token: str, root: str | None = None) -> str:
-    return posixpath.join(ramic_dir(token, root), "ramic_bridge.il")
+def il_path(user: str, root: str | None = None) -> str:
+    return posixpath.join(ramic_dir(user, root), "ramic_bridge.il")
 
 
-def setup_il_path(token: str, root: str | None = None) -> str:
-    return posixpath.join(setup_dir(token, root), "virtuoso_setup.il")
+def setup_il_path(user: str, root: str | None = None) -> str:
+    return posixpath.join(setup_dir(user, root), "virtuoso_setup.il")
 
 
-def identity_path(token: str, root: str | None = None) -> str:
-    return posixpath.join(status_dir(token, root), "daemon_identity.txt")
+def identity_path(user: str, root: str | None = None) -> str:
+    return posixpath.join(status_dir(user, root), "daemon_identity.txt")
 
 
 __all__ = [
@@ -56,5 +61,5 @@ __all__ = [
     "setup_dir",
     "setup_il_path",
     "status_dir",
-    "token_dir",
+    "user_dir",
 ]

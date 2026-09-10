@@ -78,6 +78,34 @@ def _resolve_remote_scratch(runner, scratch_root: str) -> str:
     raise RegistrationProbeError("cannot resolve remote $HOME for scratch root")
 
 
+def _apply_policies(request: RegistrationRequest, entry: UserEntry) -> None:
+    """Copy the optional per-user policy fields from the catalog into the entry."""
+    if request.ssh_backend:
+        entry.ssh.backend = request.ssh_backend
+    if request.ssh_max_sessions is not None:
+        entry.ssh.max_sessions = request.ssh_max_sessions
+    if request.ssh_proxy is not None:
+        entry.ssh.proxy = request.ssh_proxy
+    if request.ssh_control_master:
+        entry.ssh.control_master = request.ssh_control_master
+    if request.ssh_tool_override:
+        entry.ssh.tool_override = dict(request.ssh_tool_override)
+    if request.thread_pool_size is not None:
+        entry.runtime.thread_pool_size = request.thread_pool_size
+    if request.channel_budget is not None:
+        entry.runtime.channel_budget = request.channel_budget
+    if request.connect_timeout is not None:
+        entry.runtime.connect_timeout = request.connect_timeout
+    if request.log_level:
+        entry.cdslog.log_level = request.log_level
+    if request.log_max_bytes is not None:
+        entry.cdslog.log_max_bytes = request.log_max_bytes
+    if request.spectre_host:
+        entry.route.spectre.host = request.spectre_host
+    if request.spectre_bin:
+        entry.route.spectre.bin = request.spectre_bin
+
+
 def _probe_local(request: RegistrationRequest, token: str) -> ProbeResult:
     hostname = probes.local_hostname()
     python_cmd, python_major = probes.local_python()
@@ -99,11 +127,14 @@ def _probe_local(request: RegistrationRequest, token: str) -> ProbeResult:
     entry.expected.daemon_user = probes.local_user()
     entry.expected.remote_python = python_cmd
     entry.deploy.scratch_root = scratch
-    entry.route.file.root = f"{scratch}/{token}"
+    entry.route.file.root = f"{scratch}/{request.user}"
+    _apply_policies(request, entry)
     return ProbeResult(entry=entry, python_major=python_major)
 
 
-def _probe_remote(request: RegistrationRequest, token: str) -> ProbeResult:
+def _probe_remote(
+    request: RegistrationRequest, token: str, reserved_ports: set[int] | None = None
+) -> ProbeResult:
     from transport.ssh import SSHRunner
 
     host = request.resolved_host
@@ -141,7 +172,9 @@ def _probe_remote(request: RegistrationRequest, token: str) -> ProbeResult:
             raise RegistrationProbeError(f"daemon port {request.daemon_port} already in use on {host}")
         daemon_port = request.daemon_port
     else:
-        daemon_port = probes.allocate_remote_port(runner, python_cmd)
+        daemon_port = probes.allocate_remote_port(
+            runner, python_cmd, reserved=reserved_ports
+        )
         if daemon_port is None:
             raise RegistrationProbeError(f"no free remote daemon port found on {host}")
 
@@ -149,7 +182,20 @@ def _probe_remote(request: RegistrationRequest, token: str) -> ProbeResult:
     if not probes.remote_path_writable(runner, scratch):
         raise RegistrationProbeError(f"deploy root not writable on {host}: {scratch}")
 
-    local_port = request.local_port or daemon_port
+    # explicit tool paths are validated here while the daemon is still down
+    if request.spectre_bin and not probes.remote_executable_exists(runner, request.spectre_bin):
+        raise RegistrationProbeError(f"spectre executable not usable on {host}: {request.spectre_bin}")
+
+    local_port = request.local_port
+    if local_port is not None:
+        if not probes.local_port_free(local_port):
+            raise RegistrationProbeError(
+                f"local port {local_port} is not usable on the caller"
+            )
+    else:
+        local_port = probes.allocate_local_port()
+        if local_port is None:
+            raise RegistrationProbeError("no free local tunnel port found")
     entry = UserEntry(token=token, mode="remote")
     entry.route.skill.daemon_host = request.resolved_daemon_host
     entry.route.skill.daemon_port = daemon_port
@@ -157,7 +203,7 @@ def _probe_remote(request: RegistrationRequest, token: str) -> ProbeResult:
     entry.route.command.host = host
     entry.route.command.user = login_user
     entry.route.file.host = host
-    entry.route.file.root = f"{scratch}/{token}"
+    entry.route.file.root = f"{scratch}/{request.user}"
     entry.route.jump.host = request.jump_host
     entry.route.jump.user = request.jump_user
     entry.expected.ssh_host_key_fingerprint = fingerprint
@@ -165,21 +211,27 @@ def _probe_remote(request: RegistrationRequest, token: str) -> ProbeResult:
     entry.expected.daemon_user = daemon_user
     entry.expected.remote_python = python_cmd
     entry.deploy.scratch_root = scratch
+    _apply_policies(request, entry)
     return ProbeResult(entry=entry, python_major=python_major)
 
 
-def probe_user(request: RegistrationRequest, *, token: str) -> ProbeResult:
+def probe_user(
+    request: RegistrationRequest,
+    *,
+    token: str,
+    reserved_ports: set[int] | None = None,
+) -> ProbeResult:
     """Step 3: probe and build a candidate entry.  Never touches the registry."""
     if request.mode == "local":
         return _probe_local(request, token)
-    return _probe_remote(request, token)
+    return _probe_remote(request, token, reserved_ports)
 
 
 # -- step 4: deploy ------------------------------------------------------------
 
-def deploy_user(entry: UserEntry, python_major: int) -> str:
+def deploy_user(entry: UserEntry, python_major: int, user: str) -> str:
     """Deploy daemon/il/setup for a candidate entry; return the setup path."""
-    remote = RemoteClient(entry, resolve(entry))
+    remote = RemoteClient(entry, resolve(entry), user)
     try:
         return remote.deploy(python_major=python_major)
     finally:
@@ -195,13 +247,13 @@ def _short_host_match(a: str | None, b: str | None) -> bool:
     return a.strip().split(".")[0].lower() == b.strip().split(".")[0].lower()
 
 
-def _banner_hostname(entry: UserEntry) -> str | None:
-    path = identity_path(entry.token, entry.deploy.scratch_root)
+def _banner_hostname(entry: UserEntry, user: str) -> str | None:
+    path = identity_path(user, entry.deploy.scratch_root)
     try:
         if entry.mode == "local":
             text = Path(path).read_text(encoding="utf-8", errors="replace")
         else:
-            remote = RemoteClient(entry, resolve(entry))
+            remote = RemoteClient(entry, resolve(entry), user)
             try:
                 # the identity file is written by the il on the daemon host
                 result = remote.skill_runner.run_command(f"cat {shlex.quote(path)}", timeout=10)
@@ -216,8 +268,11 @@ def _banner_hostname(entry: UserEntry) -> str | None:
     return None
 
 
-def test_connectivity(entry: UserEntry) -> ConnectivityReport:
-    """Step 5: daemon reachable + token match + command/skill smoke."""
+def test_connectivity(entry: UserEntry, user: str) -> ConnectivityReport:
+    """Step 5: daemon reachable + token match + host-key + dual smoke.
+
+    Everything that required a live daemon in step 3 is completed here.
+    """
     token = entry.token
     warnings: list[str] = []
     detail: list[str] = []
@@ -231,6 +286,7 @@ def test_connectivity(entry: UserEntry) -> ConnectivityReport:
         log_max_bytes=entry.cdslog.log_max_bytes,
     )
 
+    fingerprint_ok = True
     if entry.mode == "local":
         cmd = subprocess.run("echo vb-ok", shell=True, capture_output=True, text=True, timeout=15)
         command_ok = cmd.returncode == 0 and cmd.stdout.strip() == "vb-ok"
@@ -238,7 +294,14 @@ def test_connectivity(entry: UserEntry) -> ConnectivityReport:
             detail.append(f"command={cmd.returncode}:{cmd.stderr.strip()}")
         skill = skill_client.execute_skill("1+1")
     else:
-        remote = RemoteClient(entry, resolve(entry))
+        expected_fp = entry.expected.ssh_host_key_fingerprint
+        current_fp = probes.host_key_fingerprint(entry.route.skill.daemon_host)
+        fingerprint_ok = (not expected_fp) or (current_fp == expected_fp)
+        if expected_fp and not fingerprint_ok:
+            detail.append(
+                f"host key fingerprint mismatch: current={current_fp} expected={expected_fp}"
+            )
+        remote = RemoteClient(entry, resolve(entry), user)
         try:
             remote.ensure_tunnel()
             result = remote.run_command("echo vb-ok")
@@ -254,7 +317,7 @@ def test_connectivity(entry: UserEntry) -> ConnectivityReport:
     if not skill_ok:
         detail.append(f"skill={skill.status}:{skill.errors}")
 
-    banner = _banner_hostname(entry)
+    banner = _banner_hostname(entry, user)
     expected = entry.expected.daemon_endpoint_hostname
     if banner and expected and not _short_host_match(banner, expected):
         warnings.append(f"daemon banner host {banner!r} differs from expected {expected!r}")
@@ -264,6 +327,7 @@ def test_connectivity(entry: UserEntry) -> ConnectivityReport:
         command_ok=command_ok,
         skill_ok=skill_ok,
         token_ok=token_ok,
+        fingerprint_ok=fingerprint_ok,
         banner_hostname=banner,
         expected_hostname=expected,
         detail="; ".join(detail),
@@ -280,40 +344,91 @@ class RegistrationFlow:
         self.registry = registry
         self.state: RegistrationState | None = None
 
-    def apply(self, request: RegistrationRequest) -> RegistrationState:
-        state = RegistrationState(user=request.user, request=request)
+    # step 1: submit the application (no side effects beyond the in-memory state)
+    def start(self, request: RegistrationRequest) -> RegistrationState:
+        state = RegistrationState(user=request.user, request=request, step=1)
         state.token = request.token or uuid.uuid4().hex
+        state.stage = "applied"
+        self.state = state
+        return state
 
-        errors = validate_local(self.registry, request)
+    def _ensure(self, expected_stage: str, step: int):
+        if self.state is None or self.state.request is None:
+            state = RegistrationState(
+                user=self.state.user if self.state else "",
+                stage="failed",
+                errors=["no registration in progress"],
+            )
+            self.state = state
+            return None
+        if self.state.stage == "failed":
+            return None
+        state = self.state
+        state.step = step
+        return state
+
+    # step 2: local registry checks (pure local, no network)
+    def validate(self) -> RegistrationState:
+        state = self._ensure("applied", 2)
+        if state is None:
+            return self.state
+        errors = validate_local(self.registry, state.request)
         if errors:
             state.stage = "failed"
             state.errors = errors
-            self.state = state
-            return state
+        else:
+            state.stage = "validated"
+        self.state = state
+        return state
 
+    # step 3: remote/local environment probes
+    def probe(self) -> RegistrationState:
+        state = self._ensure("validated", 3)
+        if state is None:
+            return self.state
+        reserved = {
+            e.route.skill.daemon_port
+            for _, e in self.registry.entries()
+            if e.route.skill.daemon_port is not None
+        }
         try:
-            probe = probe_user(request, token=state.token)
+            result = probe_user(state.request, token=state.token, reserved_ports=reserved)
         except RegistrationProbeError as exc:
             state.stage = "failed"
             state.errors = [str(exc)]
             self.state = state
             return state
-
-        state.entry = probe.entry
-        state.python_major = probe.python_major
+        state.entry = result.entry
+        state.python_major = result.python_major
         state.stage = "probed"
+        self.state = state
+        return state
 
+    # step 4: upload daemon/il/setup; returns load instructions
+    def deploy(self) -> RegistrationState:
+        state = self._ensure("probed", 4)
+        if state is None:
+            return self.state
         try:
-            state.setup_path = deploy_user(probe.entry, probe.python_major)
+            state.setup_path = deploy_user(state.entry, state.python_major, state.user)
         except Exception as exc:  # noqa: BLE001
             state.stage = "failed"
             state.errors = [f"deploy failed: {exc}"]
             self.state = state
             return state
-
         state.stage = "deployed"
         self.state = state
         return state
+
+    # steps 1-4 in one shot (used by the CLI and API compatibility endpoint)
+    def apply(self, request: RegistrationRequest) -> RegistrationState:
+        self.start(request)
+        self.validate()
+        if self.state.stage == "validated":
+            self.probe()
+        if self.state.stage == "probed":
+            self.deploy()
+        return self.state
 
     def verify(self) -> RegistrationState:
         if self.state is not None and self.state.stage == "committed":
@@ -328,8 +443,9 @@ class RegistrationFlow:
             return state
 
         state = self.state
+        state.step = 5
         try:
-            report = test_connectivity(state.entry)
+            report = test_connectivity(state.entry, state.user)
         except Exception as exc:  # noqa: BLE001
             state.stage = "failed"
             state.errors = [f"connectivity test failed: {exc}"]
@@ -355,6 +471,7 @@ class RegistrationFlow:
             return state
 
         state.stage = "committed"
+        state.step = 6
         self.state = state
         return state
 

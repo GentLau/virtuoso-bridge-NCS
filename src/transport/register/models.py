@@ -10,6 +10,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from typing import Literal
+
 from pydantic import BaseModel, Field, model_validator
 
 from transport.registry import UserEntry
@@ -33,6 +35,20 @@ class RegistrationRequest(BaseModel):
     jump_host: str | None = None
     jump_user: str | None = None
     local: bool = False                   # explicit local mode
+
+    # runtime / transport / log policies (optional; defaults live in UserEntry)
+    ssh_backend: Literal["openssh", "paramiko"] | None = None
+    ssh_max_sessions: int | None = Field(default=None, ge=1)
+    ssh_proxy: str | None = None
+    ssh_control_master: Literal["auto", "force", "disable"] | None = None
+    ssh_tool_override: dict[str, str] | None = None
+    thread_pool_size: int | None = Field(default=None, ge=1)
+    channel_budget: int | None = Field(default=None, ge=1)
+    connect_timeout: float | None = Field(default=None, gt=0)
+    log_level: Literal["off", "all", "warn", "error"] | None = None
+    log_max_bytes: int | None = Field(default=None, ge=1)
+    spectre_host: str | None = None
+    spectre_bin: str | None = None
 
     @property
     def mode(self) -> str:
@@ -80,6 +96,7 @@ class ConnectivityReport:
     command_ok: bool
     skill_ok: bool
     token_ok: bool
+    fingerprint_ok: bool = True
     banner_hostname: str | None = None
     expected_hostname: str | None = None
     detail: str = ""
@@ -87,7 +104,7 @@ class ConnectivityReport:
 
     @property
     def ok(self) -> bool:
-        return self.command_ok and self.skill_ok
+        return self.command_ok and self.skill_ok and self.fingerprint_ok
 
 
 @dataclass
@@ -96,6 +113,7 @@ class RegistrationState:
 
     user: str
     stage: str = "applied"                # validated/probed/deployed/verified/committed/failed
+    step: int = 0                         # current six-step position (1..6)
     request: RegistrationRequest | None = None
     entry: UserEntry | None = None
     python_major: int | None = None

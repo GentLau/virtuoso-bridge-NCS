@@ -208,12 +208,8 @@ procedure(RBStart()
         RBStatErrors = 0
         RBStatUptime = 0
         prog((host logpath)
-            ; Determine host binding based on RBLocal setting
-            if(RBLocal then
-                host = "127.0.0.1"  ; Local-only connections
-            else
-                host = "0.0.0.0"   ; Accept connections from any IP
-            )
+            ; Daemon binds loopback only by default (config catalog §2.3).
+            host = "127.0.0.1"
             ; Set log path if logging is enabled
             if(RBDLog then
                 logpath = "/tmp/RB.log"
@@ -226,9 +222,8 @@ procedure(RBStart()
             ; bundled (and often incompatible) copies.
             RBIpc = ipcBeginProcess(sprintf(nil "/usr/bin/env -u LD_LIBRARY_PATH -u LD_PRELOAD stdbuf -oL %s -u %L %L %L %L" RBPython RBDPath host RBPort if(boundp('RBDToken) && RBDToken RBDToken "")) "" 'RBIpcDataHandler 'RBIpcErrHandler 'RBIpcFinishHandler logpath)
         )
-        printf("[RAMIC Bridge ipc=%L] launching daemon (bind=%s:%d) at (%s)\n"
+        printf("[RAMIC Bridge ipc=%L] launching daemon (bind=127.0.0.1:%d) at (%s)\n"
             RBIpc
-            if(RBLocal "127.0.0.1" "0.0.0.0")
             RBPort
             getCurrentTime())
     )

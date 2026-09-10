@@ -230,6 +230,10 @@ class Registry:
         name = self._token_index.get(token)
         return self._entries.get(name) if name is not None else None
 
+    def user_of(self, token: str) -> str | None:
+        """Human-readable username owning a token (for user-visible paths)."""
+        return self._token_index.get(token)
+
     def users(self) -> list[str]:
         return list(self._entries.keys())
 

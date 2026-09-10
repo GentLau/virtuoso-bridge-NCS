@@ -7,7 +7,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from transport.middle import BusinessServer
 from transport.registry import UserEntry, load_registry
-from transport.remote_paths import daemon_path, identity_path, il_path, setup_il_path, token_dir
+from transport.remote_paths import daemon_path, identity_path, il_path, setup_il_path, user_dir
 from transport.remote_roles import resolve
 from transport.runtime_paths import registry_path, set_working_dir
 from transport.setup import generate_setup_il
@@ -18,12 +18,12 @@ class TestNewMiddle(unittest.TestCase):
         self.wd = set_working_dir(Path(tempfile.mkdtemp()))
 
     def test_remote_paths_structure(self):
-        p = token_dir("tok-1", "/tmp/root")
-        self.assertEqual(str(p).replace("\\", "/"), "/tmp/root/tok-1")
-        self.assertIn("ramic", str(il_path("tok-1", "/tmp/root")))
-        self.assertIn("setup", str(setup_il_path("tok-1", "/tmp/root")))
-        self.assertIn("status", str(identity_path("tok-1", "/tmp/root")))
-        self.assertIn("ramic_bridge_daemon_3.py", str(daemon_path("tok-1", 3, "/tmp/root")))
+        p = user_dir("alice", "/tmp/root")
+        self.assertEqual(str(p).replace("\\", "/"), "/tmp/root/alice")
+        self.assertIn("ramic", str(il_path("alice", "/tmp/root")))
+        self.assertIn("setup", str(setup_il_path("alice", "/tmp/root")))
+        self.assertIn("status", str(identity_path("alice", "/tmp/root")))
+        self.assertIn("ramic_bridge_daemon_3.py", str(daemon_path("alice", 3, "/tmp/root")))
 
     def test_setup_il_globals(self):
         text = generate_setup_il("/r/ramic_daemon.py", "/r/ramic_bridge.il", "python3", 65081, "tok-1", "/s/id.txt")

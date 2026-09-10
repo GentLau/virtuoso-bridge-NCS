@@ -37,9 +37,10 @@ def _norm_host(host: str | None) -> str:
 class RemoteClient:
     """One instance per token; owns that token's SSH connections and locks."""
 
-    def __init__(self, entry: UserEntry, targets: ResolvedTargets) -> None:
+    def __init__(self, entry: UserEntry, targets: ResolvedTargets, user: str) -> None:
         self.entry = entry
         self.targets = targets
+        self.user = user  # user-visible path identity (username is unique)
         self._is_local = entry.mode == "local"
 
         self._runner_kwargs: dict = {
@@ -113,23 +114,25 @@ class RemoteClient:
     # -- deployment ---------------------------------------------------------
 
     def deploy(self, python_major: int = 3) -> str:
-        token = self.entry.token
+        user = self.user
+        token = self.entry.token  # verification token only; never a path segment
         root = self.targets.scratch_root
-        ramic = remote_paths.ramic_dir(token, root)
-        setup_dir = remote_paths.setup_dir(token, root)
-        status = remote_paths.status_dir(token, root)
+        ramic = remote_paths.ramic_dir(user, root)
+        setup_dir = remote_paths.setup_dir(user, root)
+        status = remote_paths.status_dir(user, root)
 
-        daemon_src = importlib.resources.files("bridge.resources") / (
-            f"ramic_bridge_daemon_{'27' if python_major == 2 else '3'}.py"
-        )
+        daemon_variants = [
+            ("ramic_bridge_daemon_3.py", remote_paths.daemon_path(user, 3, root)),
+            ("ramic_bridge_daemon_27.py", remote_paths.daemon_path(user, 2, root)),
+        ]
         il_src = importlib.resources.files("bridge.resources") / "ramic_bridge.il"
-        daemon_dst = remote_paths.daemon_path(token, python_major, root)
-        il_dst = remote_paths.il_path(token, root)
-        setup_dst = remote_paths.setup_il_path(token, root)
-        identity_dst = remote_paths.identity_path(token, root)
+        selected_daemon = remote_paths.daemon_path(user, python_major, root)
+        il_dst = remote_paths.il_path(user, root)
+        setup_dst = remote_paths.setup_il_path(user, root)
+        identity_dst = remote_paths.identity_path(user, root)
 
         setup = generate_setup_il(
-            daemon=str(daemon_dst),
+            daemon=str(selected_daemon),
             il=str(il_dst),
             python_cmd=self.entry.expected.remote_python or "python3",
             port=self.targets.skill_port,
@@ -144,7 +147,9 @@ class RemoteClient:
                     os.chmod(d, 0o700)
                 except OSError:
                     pass
-            Path(daemon_dst).write_bytes(daemon_src.read_bytes())
+            for src_name, dst in daemon_variants:
+                src = importlib.resources.files("bridge.resources") / src_name
+                Path(dst).write_bytes(src.read_bytes())
             Path(il_dst).write_bytes(il_src.read_bytes())
             Path(setup_dst).write_text(setup, encoding="utf-8")
             return str(setup_dst)
@@ -158,11 +163,16 @@ class RemoteClient:
         if result.returncode != 0:
             raise RuntimeError(f"deploy mkdir failed: {result.stderr.strip()}")
 
-        for src, dst in ((daemon_src, daemon_dst), (il_src, il_dst)):
+        for src_name, dst in daemon_variants:
+            src = importlib.resources.files("bridge.resources") / src_name
             text = src.read_text(encoding="utf-8")
             result = runner.upload_text(text, str(dst))
             if result.returncode != 0:
                 raise RuntimeError(f"deploy failed for {dst}: {result.stderr.strip()}")
+        il_text = il_src.read_text(encoding="utf-8")
+        result = runner.upload_text(il_text, str(il_dst))
+        if result.returncode != 0:
+            raise RuntimeError(f"deploy failed for {il_dst}: {result.stderr.strip()}")
 
         result = runner.upload_text(setup, str(setup_dst))
         if result.returncode != 0:

@@ -79,11 +79,11 @@ class TestRemotePaths(unittest.TestCase):
         self.assertEqual(remote_paths.scratch_root("/tmp/x/"), "/tmp/x")
 
     def test_path_tree(self):
-        self.assertEqual(remote_paths.token_dir("tok", "/root"), "/root/tok")
+        self.assertEqual(remote_paths.user_dir("alice", "/root"), "/root/alice")
         self.assertIn("/tok/ramic", remote_paths.ramic_dir("tok", "/root"))
         self.assertIn("ramic_bridge_daemon_27.py", remote_paths.daemon_path("tok", 2, "/root"))
         self.assertIn("virtuoso_setup.il", remote_paths.setup_il_path("tok", "/root"))
-        self.assertIn("daemon_identity.txt", remote_paths.identity_path("tok", "/root"))
+        self.assertIn("daemon_identity.txt", remote_paths.identity_path("alice", "/root"))
 
 
 class TestLegacyAdapters(unittest.TestCase):

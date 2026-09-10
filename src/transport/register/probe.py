@@ -128,6 +128,14 @@ def remote_path_writable(runner: SSHRunner, path: str) -> bool:
     return r.returncode == 0
 
 
+def remote_executable_exists(runner: SSHRunner, path: str) -> bool:
+    """Validate an explicitly supplied remote tool path (daemon-independent)."""
+    r = runner.run_command(
+        f"test -x {shlex.quote(path)}", timeout=15
+    )
+    return r.returncode == 0
+
+
 def detect_remote_python(runner: SSHRunner) -> tuple[str, int] | None:
     """Find a usable remote interpreter and pin its absolute path.
 
@@ -184,12 +192,20 @@ def allocate_remote_port(
     python_cmd: str,
     start: int = 65081,
     tries: int = 50,
+    reserved: set[int] | None = None,
 ) -> int | None:
-    """Find the first free port in one remote Python probe (one SSH trip)."""
+    """Find the first free port in one remote Python probe (one SSH trip).
+
+    ``reserved`` ports (already pinned in the registry) are never returned.
+    """
+    reserved = reserved or set()
     prog = (
         "import socket\n"
         "start = %d\n"
+        "reserved = %r\n"
         "for port in range(start, start + %d):\n"
+        "    if port in reserved:\n"
+        "        continue\n"
         "    s = socket.socket()\n"
         "    try:\n"
         "        s.bind(('0.0.0.0', port))\n"
@@ -198,7 +214,7 @@ def allocate_remote_port(
         "        raise SystemExit(0)\n"
         "    except OSError:\n"
         "        s.close()\n"
-        "raise SystemExit(1)\n" % (start, tries)
+        "raise SystemExit(1)\n" % (start, sorted(reserved), tries)
     )
     cmd = "%s - <<'PY'\n%sPY\n" % (python_cmd, prog)
     r = runner.run_command(cmd, timeout=20)
@@ -207,7 +223,17 @@ def allocate_remote_port(
         return int(out)
     # Fallback: single-port checks for hosts without a Bourne-style shell.
     for port in range(start, start + tries):
+        if port in reserved:
+            continue
         if port_free_on_remote(runner, port, python_cmd):
+            return port
+    return None
+
+
+def allocate_local_port(start: int = 65081, tries: int = 50) -> int | None:
+    """Find a free local loopback port (remote-mode tunnel endpoint)."""
+    for port in range(start, start + tries):
+        if local_port_free(port):
             return port
     return None
 
@@ -254,8 +280,10 @@ def local_path_writable(path: str | Path) -> bool:
 
 
 __all__ = [
+    "allocate_local_port",
     "allocate_remote_port",
     "detect_remote_python",
+    "remote_executable_exists",
     "host_key_fingerprint",
     "local_hostname",
     "local_path_writable",

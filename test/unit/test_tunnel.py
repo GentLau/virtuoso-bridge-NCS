@@ -81,7 +81,7 @@ class TestRemoteClientTunnel(unittest.TestCase):
     def test_ensure_tunnel_passes_remote_port_kwarg(self) -> None:
         with mock.patch("transport.tunnel.SSHRunner", FakeRunner):
             entry = make_entry()
-            rc = RemoteClient(entry, resolve(entry))
+            rc = RemoteClient(entry, resolve(entry), "alice")
             rc.ensure_tunnel()
         skill = FakeRunner.instances[0]
         self.assertEqual(skill.host, "daemon-a")
@@ -94,7 +94,7 @@ class TestRemoteClientTunnel(unittest.TestCase):
     def test_single_host_reuses_one_runner(self) -> None:
         with mock.patch("transport.tunnel.SSHRunner", FakeRunner):
             entry = make_entry()
-            rc = RemoteClient(entry, resolve(entry))
+            rc = RemoteClient(entry, resolve(entry), "alice")
             a, b, c = rc.skill_runner, rc.command_runner, rc.file_runner
         self.assertIs(a, b)
         self.assertIs(a, c)
@@ -103,7 +103,7 @@ class TestRemoteClientTunnel(unittest.TestCase):
     def test_split_host_gets_separate_runners(self) -> None:
         with mock.patch("transport.tunnel.SSHRunner", FakeRunner):
             entry = make_entry(skill_host="d", command_host="c", file_host="f")
-            rc = RemoteClient(entry, resolve(entry))
+            rc = RemoteClient(entry, resolve(entry), "alice")
             s, cmd, f = rc.skill_runner, rc.command_runner, rc.file_runner
         self.assertIsNot(s, cmd)
         self.assertIsNot(cmd, f)
@@ -113,7 +113,7 @@ class TestRemoteClientTunnel(unittest.TestCase):
     def test_parallel_openssh_uses_fresh_nonpersistent_runner(self) -> None:
         with mock.patch("transport.tunnel.SSHRunner", FakeRunner):
             entry = make_entry()
-            rc = RemoteClient(entry, resolve(entry))
+            rc = RemoteClient(entry, resolve(entry), "alice")
             serial = rc.command_runner
             parallel = rc._parallel_command_runner()
         self.assertIsNot(serial, parallel)
@@ -124,7 +124,7 @@ class TestRemoteClientTunnel(unittest.TestCase):
         with mock.patch("transport.tunnel.SSHRunner", FakeRunner):
             entry = make_entry()
             entry.ssh.backend = "paramiko"
-            rc = RemoteClient(entry, resolve(entry))
+            rc = RemoteClient(entry, resolve(entry), "alice")
             serial = rc.command_runner
             parallel = rc._parallel_command_runner()
         self.assertIs(serial, parallel)
@@ -137,12 +137,13 @@ class TestRemoteClientTunnel(unittest.TestCase):
         root = Path(tempfile.mkdtemp())
         entry.deploy.scratch_root = str(root)
         with mock.patch("transport.tunnel.SSHRunner", FakeRunner):
-            rc = RemoteClient(entry, resolve(entry))
+            rc = RemoteClient(entry, resolve(entry), "alice")
             setup = rc.deploy(python_major=3)
         self.assertEqual(FakeRunner.instances, [])
         self.assertTrue(Path(setup).is_file())
-        self.assertTrue((root / "tok-1" / "ramic" / "ramic_bridge_daemon_3.py").is_file())
-        self.assertTrue((root / "tok-1" / "ramic" / "ramic_bridge.il").is_file())
+        self.assertTrue((root / "alice" / "ramic" / "ramic_bridge_daemon_3.py").is_file())
+        self.assertTrue((root / "alice" / "ramic" / "ramic_bridge_daemon_27.py").is_file())
+        self.assertTrue((root / "alice" / "ramic" / "ramic_bridge.il").is_file())
 
 
 class TestSSHRunnerParamikoBackend(unittest.TestCase):

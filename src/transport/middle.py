@@ -46,7 +46,8 @@ class BusinessServer(Middle):
             client = self._clients.get(token)
             if client is None:
                 entry = self._entry(token)
-                client = RemoteClient(entry, self._targets(entry))
+                user = self.registry.user_of(token) or token
+                client = RemoteClient(entry, self._targets(entry), user)
                 self._clients[token] = client
                 # Never replace a semaphore that _acquire() may already hold.
                 self._capacity.setdefault(

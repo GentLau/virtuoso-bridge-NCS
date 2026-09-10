@@ -10,7 +10,7 @@ from unittest import mock
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from pyapi.models import CommandResult
-from transport.register.probe import allocate_remote_port, detect_remote_python, port_free_on_remote
+from transport.register.probe import allocate_local_port, allocate_remote_port, detect_remote_python, port_free_on_remote
 from transport.runtime_paths import set_working_dir
 
 
@@ -100,6 +100,17 @@ class TestProbeHelpers(unittest.TestCase):
             CommandResult(0, "", ""),           # first single check succeeds
         ])
         self.assertEqual(allocate_remote_port(runner, "python3"), 65081)
+
+
+    def test_allocate_local_port(self) -> None:
+        port = allocate_local_port(start=65081)
+        self.assertIsNotNone(port)
+        self.assertTrue(65081 <= port < 65131)
+
+    def test_allocate_remote_port_respects_reserved(self) -> None:
+        runner = FakeRunner([CommandResult(0, "65082\n", "")])
+        self.assertEqual(allocate_remote_port(runner, "python3", reserved={65081}), 65082)
+        self.assertIn("65081", runner.commands[0])  # reserved set baked into probe
 
 
 if __name__ == "__main__":

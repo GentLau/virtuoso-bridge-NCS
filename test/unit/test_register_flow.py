@@ -352,10 +352,10 @@ class TestFlowMoreBranches(unittest.TestCase):
         root = Path(tempfile.mkdtemp())
         entry.deploy.scratch_root = str(root)
         from transport.remote_paths import identity_path
-        p = Path(identity_path("t", str(root)))
+        p = Path(identity_path("alice", str(root)))
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text("host=my-host\nip=1.2.3.4\n", encoding="utf-8")
-        self.assertEqual(_banner_hostname(entry), "my-host")
+        self.assertEqual(_banner_hostname(entry, "alice"), "my-host")
 
     def test_connectivity_warning_on_banner_drift(self):
         from unittest import mock
@@ -367,7 +367,7 @@ class TestFlowMoreBranches(unittest.TestCase):
             skill_cls.return_value.execute_skill.return_value = VirtuosoResult(
                 status=ExecutionStatus.SUCCESS, output="2"
             )
-            report = test_connectivity(entry)
+            report = test_connectivity(entry, "alice")
         self.assertTrue(report.ok)
         self.assertTrue(any("differs from expected" in w for w in report.warnings))
 
@@ -404,6 +404,70 @@ class TestRequestAndIdempotence(unittest.TestCase):
             state = flow.verify()
         self.assertEqual(state.stage, "committed")
         tc.assert_not_called()
+
+
+class TestPolicyFieldsApplied(unittest.TestCase):
+    def test_policy_fields_are_written_into_entry(self):
+        from unittest import mock
+        from transport.register import probe_user
+        request = RegistrationRequest(
+            user="u", host="h", ssh_user="a", token="tok",
+            ssh_backend="paramiko", ssh_max_sessions=5, ssh_proxy="socks5://127.0.0.1:1080",
+            ssh_control_master="disable", thread_pool_size=8, channel_budget=3,
+            connect_timeout=9.5, log_level="error", log_max_bytes=4096,
+            spectre_host="spec-host", spectre_bin="/opt/spectre/bin/spectre",
+        )
+        with mock.patch("transport.ssh.SSHRunner") as runner, \
+             mock.patch("transport.register.probe.host_key_fingerprint", return_value="fp"), \
+             mock.patch("transport.register.probe.remote_hostname", return_value="host-a"), \
+             mock.patch("transport.register.probe.remote_user", return_value="alice"), \
+             mock.patch("transport.register.probe.remote_user_exists", return_value=True), \
+             mock.patch("transport.register.probe.detect_remote_python", return_value=("python3", 3)), \
+             mock.patch("transport.register.probe.allocate_remote_port", return_value=65081), \
+             mock.patch("transport.register.probe.remote_path_writable", return_value=True), \
+             mock.patch("transport.register.probe.allocate_local_port", return_value=65082):
+            runner.return_value.test_connection.return_value = True
+            runner.return_value.run_command.return_value = CommandResult(0, "/home/alice", "")
+            result = probe_user(request, token="tok")
+        entry = result.entry
+        self.assertEqual(entry.ssh.backend, "paramiko")
+        self.assertEqual(entry.ssh.max_sessions, 5)
+        self.assertEqual(entry.ssh.proxy, "socks5://127.0.0.1:1080")
+        self.assertEqual(entry.ssh.control_master, "disable")
+        self.assertEqual(entry.runtime.thread_pool_size, 8)
+        self.assertEqual(entry.runtime.channel_budget, 3)
+        self.assertEqual(entry.runtime.connect_timeout, 9.5)
+        self.assertEqual(entry.cdslog.log_level, "error")
+        self.assertEqual(entry.cdslog.log_max_bytes, 4096)
+        self.assertEqual(entry.route.spectre.host, "spec-host")
+        self.assertEqual(entry.route.spectre.bin, "/opt/spectre/bin/spectre")
+        self.assertEqual(entry.route.skill.local_port, 65082)
+
+
+class TestConnectivityFingerprint(unittest.TestCase):
+    def test_host_key_mismatch_blocks_commit(self):
+        from unittest import mock
+        from transport.register.flow import test_connectivity
+        entry = UserEntry(token="tok", mode="remote")
+        entry.route.skill.daemon_host = "server-a"
+        entry.route.skill.daemon_port = 65081
+        entry.route.skill.local_port = 65082
+        entry.expected.ssh_host_key_fingerprint = "SHA256:expected"
+        entry.expected.daemon_endpoint_hostname = "server-a"
+        entry.deploy.scratch_root = "/home/alice/.virtuoso-bridge"
+        fake_remote = mock.Mock()
+        fake_remote.run_command.return_value = CommandResult(0, "vb-ok", "")
+        with mock.patch("transport.register.flow.probes.host_key_fingerprint", return_value="SHA256:other"), \
+             mock.patch("transport.register.flow.RemoteClient", return_value=fake_remote), \
+             mock.patch("transport.register.flow.SkillClient") as skill_cls, \
+             mock.patch("transport.register.flow._banner_hostname", return_value=None):
+            skill_cls.return_value.execute_skill.return_value = VirtuosoResult(
+                status=ExecutionStatus.SUCCESS, output="2"
+            )
+            report = test_connectivity(entry, "alice")
+        self.assertFalse(report.fingerprint_ok)
+        self.assertFalse(report.ok)
+        self.assertIn("host key fingerprint mismatch", report.detail)
 
 
 if __name__ == "__main__":
