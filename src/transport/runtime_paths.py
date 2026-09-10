@@ -23,7 +23,7 @@ _work_dir: Path | None = None
 
 
 def default_working_dir() -> Path:
-    """Platform config directory, matching the legacy ``config_dir()`` default."""
+    """Platform config directory for the local working directory."""
     if os.name == "nt":
         base = Path(os.environ.get("APPDATA") or (Path.home() / "AppData" / "Roaming"))
     elif sys.platform == "darwin":

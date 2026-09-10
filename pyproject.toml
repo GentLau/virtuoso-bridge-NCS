@@ -34,6 +34,7 @@ virtuoso-bridge = "virtuoso_bridge.cli:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
+"server" = ["registration_page.html"]
 "virtuoso_bridge.resources" = [".env_template"]
 "virtuoso_bridge.virtuoso.basic.resources" = ["*.il", "*.py"]
 "virtuoso_bridge.virtuoso.maestro" = ["*.yaml"]

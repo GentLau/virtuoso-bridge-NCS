@@ -196,7 +196,7 @@ procedure(RBStart()
             RBIpc RBLastPid
             if(RBLastBind && strlen(RBLastBind) > 0 RBLastBind "unknown")
             RBPort)
-        printf("[RAMIC Bridge] To switch profile/port: run RBStop() or RBStopAll(), then load setup again.\n")
+        printf("[RAMIC Bridge] To switch user/port: run RBStop() or RBStopAll(), then load setup again.\n")
     else
         ; Clear leftover banner state so the new daemon's banner is
         ; recognised as the first-of-its-lifetime by RBIpcErrHandler.

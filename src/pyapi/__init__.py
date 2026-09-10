@@ -5,7 +5,6 @@ from pyapi.models import (
     ExecutionStatus,
     Middle,
     SimulationResult,
-    SkillResult,
     VirtuosoInterface,
     VirtuosoResult,
 )
@@ -15,7 +14,6 @@ __all__ = [
     "ExecutionStatus",
     "Middle",
     "SimulationResult",
-    "SkillResult",
     "VirtuosoInterface",
     "VirtuosoResult",
 ]

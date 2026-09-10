@@ -50,10 +50,6 @@ class VirtuosoResult(BaseModel):
         path.write_text(self.model_dump_json(indent=indent), encoding=encoding)
 
 
-# Compatibility alias
-SkillResult = VirtuosoResult
-
-
 class CommandResult(NamedTuple):
     """Result of a remote command / file transfer."""
 
@@ -123,7 +119,6 @@ __all__ = [
     "ExecutionStatus",
     "Middle",
     "SimulationResult",
-    "SkillResult",
     "VirtuosoInterface",
     "VirtuosoResult",
 ]

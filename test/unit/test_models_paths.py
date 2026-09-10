@@ -1,4 +1,4 @@
-"""Small-module unit coverage: models, paths, legacy adapters, SkillClient."""
+"""Small-module unit coverage: models, paths, SkillClient."""
 
 import json
 import socket
@@ -12,7 +12,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from pyapi.models import CommandResult, ExecutionStatus, SimulationResult, VirtuosoResult
 from transport import remote_paths, runtime_paths
-from transport.legacy_env import import_user, load_legacy_env
 from transport.registry import load_registry
 from transport.runtime_paths import registry_path, set_working_dir
 from transport.skill_client import STX, NAK, RS, SkillClient
@@ -86,36 +85,6 @@ class TestRemotePaths(unittest.TestCase):
         self.assertIn("daemon_identity.txt", remote_paths.identity_path("alice", "/root"))
 
 
-class TestLegacyAdapters(unittest.TestCase):
-    def setUp(self):
-        import transport.legacy_env as le
-        le._cache = None
-
-    def test_load_env_cache_and_ignore_comments(self):
-        p = Path(tempfile.mkdtemp()) / ".env"
-        p.write_text("# c\nVB_REMOTE_HOST=server\nVB_X = bad", encoding="utf-8")
-        env = load_legacy_env(p)
-        self.assertEqual(env["VB_REMOTE_HOST"], "server")
-        self.assertIs(load_legacy_env(p), env)  # cached
-
-    def test_import_requires_host(self):
-        wd = set_working_dir(Path(tempfile.mkdtemp()))
-        reg = load_registry(registry_path())
-        p = Path(tempfile.mkdtemp()) / ".env"
-        p.write_text("VB_REMOTE_USER=alice\n", encoding="utf-8")
-        with self.assertRaises(ValueError):
-            import_user(reg, user="alice", token="t", env_path=p)
-
-    def test_import_profile_suffix(self):
-        wd = set_working_dir(Path(tempfile.mkdtemp()))
-        reg = load_registry(registry_path())
-        p = Path(tempfile.mkdtemp()) / ".env"
-        p.write_text("VB_REMOTE_HOST_gpu1=server-b\nVB_REMOTE_USER_gpu1=bob\n", encoding="utf-8")
-        entry = import_user(reg, user="bob", token="t", env_path=p, profile="gpu1")
-        self.assertEqual(entry.route.skill.daemon_host, "server-b")
-        self.assertEqual(entry.expected.daemon_user, "bob")
-
-
 class TestSkillClientSocketPaths(unittest.TestCase):
     def test_connection_refused_error(self):
         s = socket.socket()
@@ -166,20 +135,6 @@ class TestSkillClientSocketPaths(unittest.TestCase):
 
 
 class TestSmallEdgeCoverage(unittest.TestCase):
-    def test_legacy_profile_from_env(self):
-        import os
-        from transport.legacy_profile import resolve_legacy_profile
-        old = os.environ.get("VB_PROFILE")
-        os.environ["VB_PROFILE"] = "gpu1"
-        try:
-            self.assertEqual(resolve_legacy_profile(None), "gpu1")
-            self.assertEqual(resolve_legacy_profile("explicit"), "explicit")
-        finally:
-            if old is None:
-                os.environ.pop("VB_PROFILE", None)
-            else:
-                os.environ["VB_PROFILE"] = old
-
     def test_server_lazy_main_and_unknown_attr(self):
         import server
         self.assertTrue(callable(server.main))

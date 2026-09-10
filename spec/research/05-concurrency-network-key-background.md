@@ -3,7 +3,7 @@
 > 版本：v1
 > 日期：2026-09-07
 > 状态：调查记录（面向重构的入门级技术背景整理），源自一次围绕「多线程 / 多用户 / SSH / 端口转发」的逐问逐答。
-> 关联：[多用户设计](../design-concepts/底层与中层/多用户设计.md)、[并发处理设计](../design-concepts/底层与中层/并发处理设计.md)、[三层整体架构设计](../design-concepts/总览/三层整体架构设计.md)、[跨层接口协议](../protocol-v1.md)
+> 关联：[多用户设计](../design-concepts/底层与中层/多用户设计.md)、[并发处理设计](../design-concepts/底层与中层/并发处理设计.md)、[三层整体架构设计](../design-concepts/总览/三层整体架构设计.md)
 
 > 读者对象：有编程基础（尤其嵌入式/单片机背景）但未系统学过 Python 网络编程的工程师。本文不假设任何 Python 语法知识，但假设读者理解进程、文件、管道等 OS 基础概念。
 
@@ -193,10 +193,10 @@ select 醒来？否：recv() 一直阻塞；内核唤醒 ◄── 解密写回 
 
 | 通道 | 用途 | 路径 | 协议 |
 |---|---|---|---|
-| Skill 通道 | 执行 SKILL | 上层 → TCP 连本地 65082 → 隧道 → daemon → **IPC 管道** → CIW | JSON+EOF（见 protocol-v1） |
+| Skill 通道 | 执行 SKILL | 上层 → TCP 连本地 65082 → 隧道 → daemon → **IPC 管道** → CIW | JSON+EOF（见三层整体架构设计 §4.2） |
 | 命令/文件通道 | 敲命令、传文件 | 上层 → SSH exec channel / SFTP → 远端 shell/tar | 不经 daemon、不经隧道端口 |
 
-- daemon 通道**不执行命令行，不处理文件**（protocol-v1 明文）。
+- daemon 通道**不执行命令行，不处理文件**（三层整体架构设计 §4 明文）。
 - 两条通道共享同一条 SSH 连接（OpenSSH 后端用 **ControlMaster**：同 host 所有 ssh 调用共享一条 TCP，"N 次冷握手 → 1 次"；paramiko 后端共享一条 transport），但语义完全独立——daemon 死了不影响命令通道。
 
 ### 5.1 Skill 通道为什么"每次请求都新建 TCP 连接"？
@@ -214,7 +214,7 @@ select 醒来？否：recv() 一直阻塞；内核唤醒 ◄── 解密写回 
 | Skill 通道 | SSH 握手（秒级） | 隧道常驻 | 本地 TCP 握手（微秒） |
 | 命令通道 | SSH 握手（秒级） | transport/ControlMaster 常驻 | 开一个 channel（微秒） |
 
-> 何时才需要 keep-alive 复用同一条 TCP？每请求耗时极短且频率极高（每秒数百次）时。协议已预留 `request_id`，但 v1 不做。
+> 何时才需要 keep-alive 复用同一条 TCP？每请求耗时极短且频率极高（每秒数百次）时。接口基线当前不要求 `request_id`；如未来一条长连接承载多个请求，再在对应版本中定义。
 
 ### 5.2 常驻 vs 临时完整清单
 
@@ -320,5 +320,5 @@ channel     ← 每并发命令一个（受 MaxSessions / BoundedSemaphore 限�
 ### 遗留问题（供后续调查）
 
 1. 当前 daemon `listen(1)` backlog 过小——重构时应评估调大或上层限流（见并发处理设计.md §5.3）。
-2. Skill 通道是否需要 keep-alive 长连接（高频短请求场景），`request_id` 已预留但 v1 不做。
+2. Skill 通道是否需要 keep-alive 长连接（高频短请求场景），接口基线当前不要求 `request_id`；如未来引入长连接多请求，再在对应版本中定义。
 3. 注册表分配端口 vs 统一接入代理（共享端口 + 路由进程）的取舍——v1 倾向前者，后者引入新常驻组件。

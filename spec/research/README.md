@@ -2,7 +2,7 @@
 
 > 调研日期：2026-09-04（Asia/Shanghai）  
 > 项目：`virtuoso-bridge-NCS`  
-> 关联规范：[spec/design-concepts/总览/三层整体架构设计.md](../design-concepts/总览/三层整体架构设计.md)、[spec/protocol-v1.md](../protocol-v1.md)
+> 关联规范：[spec/design-concepts/总览/三层整体架构设计.md](../design-concepts/总览/三层整体架构设计.md)
 > 范围：Virtuoso/DFII/OpenAccess 数据模型、原理图与 testbench 编辑、Maestro/ADE/Spectre 日志，以及本项目重构的关键技术点。
 
 ## 结论先行
@@ -23,6 +23,7 @@
 | [05-cdslog-incremental-read-options.md](05-cdslog-incremental-read-options.md) | CDS.log 增量：API 调研结论与三个简单实时跟随方案 | 任务 2 |
 | [04-log-return-system-proposal.md](04-log-return-system-proposal.md) | 日志返回体系：同步 SKILL 捕获、异步 run observer、事件/工件协议 | 任务 2 + 重构落地 |
 | [03-rebuild-key-technical-points.md](03-rebuild-key-technical-points.md) | 重构架构、关键风险、接口草案、测试与实施路线 | 任务 3 |
+| [06-crypto-sign-encrypt-basics.md](06-crypto-sign-encrypt-basics.md) | 密码学地基：签名/加密分工、混合加密性能、先验签后解密原则 | 未来安全加固 |
 | [three-interface-report.md](three-interface-report.md) | 已存在的 CLI/MCP/Harness 单注册表研究，不属于本次改写范围 | 相关基础设施 |
 
 ## 证据等级与来源

@@ -1,4 +1,4 @@
-"""User registry (profile → registry replacement).
+"""User registry (single source of per-user configuration).
 
 The registry is the single source of truth for every runtime configuration
 item: one verified ``registry.json`` under the local working directory.
