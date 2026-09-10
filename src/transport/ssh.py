@@ -370,6 +370,15 @@ class SSHRunner:
                 deadline=deadline,
             )
 
+    @staticmethod
+    def _transient_tunnel_error(stderr_tail: str) -> bool:
+        """Cold sshd drops worth retrying: banner/connection closed/unknown."""
+        low = stderr_tail.lower()
+        return any(
+            fragment in low
+            for fragment in ("banner", "connection closed", "unknown port", "reset")
+        )
+
     def _start_port_forward_locked(
         self,
         port: int,
@@ -424,67 +433,77 @@ class SSHRunner:
             print(f"[cmd] {' '.join(cmd)}", flush=True)
 
         if os.name == "nt":
-            # Capture stderr so we can surface "banner exchange timeout"
-            # / "permission denied" etc. to the user.  Previously this
-            # was DEVNULL and any failure became an opaque "rc=1".
-            tunnel_stderr_file = tempfile.NamedTemporaryFile(
-                prefix="vb_tunnel_stderr_", suffix=".log", delete=False
-            )
-            tunnel_stderr_path = tunnel_stderr_file.name
-            tunnel_stderr_file.close()
-            stderr_stream = open(tunnel_stderr_path, "wb")
-            proc = subprocess.Popen(
-                cmd,
-                stdin=subprocess.DEVNULL,
-                stdout=subprocess.DEVNULL,
-                stderr=stderr_stream,
-                **_windows_no_window_kwargs(detached=True, new_process_group=True),
-            )
-            stderr_stream.close()  # the child holds its own handle
-            # Jump-host cold handshakes can exceed 10 s (slow PAM,
-            # flaky banner exchange).  The previous 3 s budget was
-            # below the P50 of observed cold handshakes and made the
-            # tunnel start appear to fail when it was merely still
-            # handshaking.  Align with the probe ConnectTimeout.
-            jh_settle = max(settle, 30.0) if self._jump_host else max(settle, 10.0)
-            deadline = time.monotonic() + jh_settle
-            while time.monotonic() < deadline:
+            # Retry handshakes the remote sshd dropped mid-banner under a
+            # burst of per-user tunnel starts (MaxStartups).  The gate in
+            # start_port_forward already spreads them out; a small number of
+            # cold drops can still happen and are safe to retry because a
+            # failure before the forward is established sent nothing.
+            attempts = 3
+            for attempt in range(attempts):
+                # Capture stderr so we can surface "banner exchange timeout"
+                # / "permission denied" etc. to the user.  Previously this
+                # was DEVNULL and any failure became an opaque "rc=1".
+                tunnel_stderr_file = tempfile.NamedTemporaryFile(
+                    prefix="vb_tunnel_stderr_", suffix=".log", delete=False
+                )
+                tunnel_stderr_path = tunnel_stderr_file.name
+                tunnel_stderr_file.close()
+                stderr_stream = open(tunnel_stderr_path, "wb")
+                proc = subprocess.Popen(
+                    cmd,
+                    stdin=subprocess.DEVNULL,
+                    stdout=subprocess.DEVNULL,
+                    stderr=stderr_stream,
+                    **_windows_no_window_kwargs(detached=True, new_process_group=True),
+                )
+                stderr_stream.close()  # the child holds its own handle
+                # Jump-host cold handshakes can exceed 10 s (slow PAM,
+                # flaky banner exchange).  The previous 3 s budget was
+                # below the P50 of observed cold handshakes and made the
+                # tunnel start appear to fail when it was merely still
+                # handshaking.  Align with the probe ConnectTimeout.
+                jh_settle = max(settle, 30.0) if self._jump_host else max(settle, 10.0)
+                deadline = time.monotonic() + jh_settle
+                while time.monotonic() < deadline:
+                    if self.can_reach_port(port):
+                        self._tunnel_proc = proc
+                        self._tunnel_pid = proc.pid
+                        self._tunnel_using_external = False
+                        return proc
+                    if proc.poll() is not None:
+                        break
+                    time.sleep(0.1)
                 if self.can_reach_port(port):
-                    self._tunnel_proc = proc
-                    self._tunnel_pid = proc.pid
-                    self._tunnel_using_external = False
-                    return proc
-                if proc.poll() is not None:
-                    break
-                time.sleep(0.1)
-            if self.can_reach_port(port):
-                logger.info("Reusing existing tunnel at localhost:%d", port)
-                self._tunnel_using_external = True
-                return None
-            try:
-                proc.terminate()
-                proc.wait(timeout=2)
-            except OSError:
-                pass
-            except subprocess.TimeoutExpired:
-                proc.kill()
-            rc = proc.poll()
-            stderr_tail = ""
-            try:
-                with open(tunnel_stderr_path, "rb") as f:
-                    raw = f.read().decode("utf-8", errors="replace").strip()
-                if raw:
-                    stderr_tail = " | " + raw.splitlines()[-1]
-            except OSError:
-                pass
-            try:
-                os.unlink(tunnel_stderr_path)
-            except OSError:
-                pass
-            detail = f" (rc={rc})" if rc is not None else ""
-            raise RuntimeError(
-                f"SSH tunnel failed to start on Windows{detail}{stderr_tail}"
-            )
+                    logger.info("Reusing existing tunnel at localhost:%d", port)
+                    self._tunnel_using_external = True
+                    return None
+                try:
+                    proc.terminate()
+                    proc.wait(timeout=2)
+                except OSError:
+                    pass
+                except subprocess.TimeoutExpired:
+                    proc.kill()
+                rc = proc.poll()
+                stderr_tail = ""
+                try:
+                    with open(tunnel_stderr_path, "rb") as f:
+                        raw = f.read().decode("utf-8", errors="replace").strip()
+                    if raw:
+                        stderr_tail = " | " + raw.splitlines()[-1]
+                except OSError:
+                    pass
+                try:
+                    os.unlink(tunnel_stderr_path)
+                except OSError:
+                    pass
+                if attempt + 1 < attempts and self._transient_tunnel_error(stderr_tail):
+                    time.sleep(0.3 * (attempt + 1))
+                    continue
+                detail = f" (rc={rc})" if rc is not None else ""
+                raise RuntimeError(
+                    f"SSH tunnel failed to start on Windows{detail}{stderr_tail}"
+                )
 
         popen_kwargs: dict[str, Any] = {
             "stdin": subprocess.DEVNULL,

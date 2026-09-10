@@ -105,6 +105,10 @@ class BusinessServer(Middle):
             return self._skill(token).execute_skill(skill_code, timeout=remaining)
         except LookupError as exc:
             return VirtuosoResult(status=ExecutionStatus.ERROR, errors=[str(exc)])
+        except RuntimeError as exc:
+            # transient transport setup failure (e.g. a cold sshd handshake
+            # drop); surface as an error result so callers can retry
+            return VirtuosoResult(status=ExecutionStatus.ERROR, errors=[str(exc)])
         finally:
             if acquired:
                 self._release(token)
