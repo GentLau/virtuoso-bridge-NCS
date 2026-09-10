@@ -75,6 +75,8 @@ class RegistrationHandler(BaseHTTPRequestHandler):
         }
         if state.setup_path:
             payload["setup_path"] = state.setup_path
+        if state.entry is not None:
+            payload["entry"] = state.entry.model_dump()
         if state.report is not None:
             payload["report"] = {
                 "command_ok": state.report.command_ok,
@@ -104,8 +106,20 @@ class RegistrationHandler(BaseHTTPRequestHandler):
             return
         self._send_json(404, {"error": "not found"})
 
+    def do_DELETE(self) -> None:  # noqa: N802
+        path = urlparse(self.path).path
+        if path.startswith("/api/user/"):
+            user = unquote(path[len("/api/user/"):].rstrip("/"))
+            self._handle_delete(user)
+            return
+        self._send_json(404, {"error": "not found"})
+
     def do_POST(self) -> None:  # noqa: N802
         path = urlparse(self.path).path
+        if path.startswith("/api/user/") and path.endswith("/update"):
+            user = unquote(path[len("/api/user/"):-len("/update")])
+            self._handle_update(user)
+            return
         if path == "/api/register/apply":
             self._handle_apply()
             return
@@ -143,6 +157,52 @@ class RegistrationHandler(BaseHTTPRequestHandler):
         self._store(flow, request.user)
         self._send_json(200, self._state_payload(state))
 
+    def _handle_delete(self, user: str) -> None:
+        if self.server.registry.get(user) is None:
+            self._send_json(404, {"error": "unknown user", "user": user})
+            return
+        self.server.registry.remove(user)
+        with self.server.flow_lock:
+            self.server.flows.pop(user, None)
+        self._send_json(200, {"user": user, "removed": True})
+
+    def _handle_update(self, user: str) -> None:
+        entry = self.server.registry.get(user)
+        if entry is None:
+            self._send_json(404, {"error": "unknown user", "user": user})
+            return
+        try:
+            fields = self._read_json()
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            self._send_json(400, {"error": "invalid JSON body"})
+            return
+        direct = {
+            "ssh_backend": "ssh.backend",
+            "ssh_max_sessions": "ssh.max_sessions",
+            "ssh_proxy": "ssh.proxy",
+            "ssh_control_master": "ssh.control_master",
+            "thread_pool_size": "runtime.thread_pool_size",
+            "channel_budget": "runtime.channel_budget",
+            "connect_timeout": "runtime.connect_timeout",
+            "log_level": "cdslog.log_level",
+            "log_max_bytes": "cdslog.log_max_bytes",
+            "spectre_host": "route.spectre.host",
+            "spectre_bin": "route.spectre.bin",
+            "file_root": "route.file.root",
+        }
+        for key, target in direct.items():
+            if key not in fields:
+                continue
+            obj, attr = target.split(".")
+            getattr(getattr(entry, obj), attr)
+            setattr(getattr(entry, obj), attr, fields[key])
+        try:
+            self.server.registry.register(user, entry, overwrite=True)
+        except Exception as exc:  # noqa: BLE001
+            self._send_json(400, {"error": "invalid update", "detail": str(exc)})
+            return
+        self._send_json(200, {"user": user, "entry": entry.model_dump()})
+
     def _handle_step(self, user: str, action: str) -> None:
         flow = self._flow(user)
         if flow is None:
@@ -157,6 +217,7 @@ class RegistrationHandler(BaseHTTPRequestHandler):
 
 class RegistrationServer(ThreadingHTTPServer):
     daemon_threads = True
+    request_queue_size = 64
 
     def __init__(self, server_address, registry: Registry) -> None:
         super().__init__(server_address, RegistrationHandler)

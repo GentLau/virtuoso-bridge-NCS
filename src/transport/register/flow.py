@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import logging
 import shlex
+import socket
 import subprocess
 import time
 import uuid
@@ -23,6 +24,7 @@ from pathlib import Path
 
 from transport.registry import Registry, RegistryError, UserEntry
 from transport.register import probe as probes
+from pyapi.models import ExecutionStatus, VirtuosoResult
 from transport.register.models import (
     ConnectivityReport,
     ProbeResult,
@@ -134,6 +136,11 @@ def _probe_local(request: RegistrationRequest, token: str) -> ProbeResult:
     entry.expected.remote_python = python_cmd
     entry.deploy.scratch_root = scratch
     entry.route.file.root = f"{scratch}/{request.user}"
+    if request.spectre_bin:
+        entry.route.spectre.bin = request.spectre_bin
+    else:
+        entry.route.spectre.bin = probes.detect_local_spectre()
+    entry.route.spectre.host = request.spectre_host or "127.0.0.1"
     _apply_policies(request, entry)
     return ProbeResult(entry=entry, python_major=python_major)
 
@@ -200,9 +207,14 @@ def _probe_remote_with_runner(
     if not probes.remote_path_writable(runner, scratch):
         raise RegistrationProbeError(f"deploy root not writable on {host}: {scratch}")
 
-    # explicit tool paths are validated here while the daemon is still down
-    if request.spectre_bin and not probes.remote_executable_exists(runner, request.spectre_bin):
-        raise RegistrationProbeError(f"spectre executable not usable on {host}: {request.spectre_bin}")
+    # explicit tool paths are validated here while the daemon is still down;
+    # when the user did not supply one, auto-detect (same as the legacy CLI)
+    if request.spectre_bin:
+        if not probes.remote_executable_exists(runner, request.spectre_bin):
+            raise RegistrationProbeError(f"spectre executable not usable on {host}: {request.spectre_bin}")
+        spectre_bin = request.spectre_bin
+    else:
+        spectre_bin = probes.detect_remote_spectre(runner)
 
     local_port = request.local_port
     if local_port is not None:
@@ -229,6 +241,8 @@ def _probe_remote_with_runner(
     entry.expected.daemon_user = daemon_user
     entry.expected.remote_python = python_cmd
     entry.deploy.scratch_root = scratch
+    entry.route.spectre.bin = spectre_bin
+    entry.route.spectre.host = request.spectre_host or host
     _apply_policies(request, entry)
     return ProbeResult(entry=entry, python_major=python_major)
 
@@ -373,7 +387,22 @@ def test_connectivity(entry: UserEntry, user: str) -> ConnectivityReport:
             if not command_ok:
                 detail.append(f"command={result.returncode}:{result.stderr.strip()}")
             tunnel_runner.start_port_forward(local_port, remote_port=skill_port)
-            skill = skill_client.execute_skill("1+1")
+            ready_deadline = time.monotonic() + 30.0
+            port_ready = False
+            while time.monotonic() < ready_deadline:
+                try:
+                    socket.create_connection(("127.0.0.1", local_port), timeout=0.5).close()
+                    port_ready = True
+                    break
+                except OSError:
+                    time.sleep(0.1)
+            if not port_ready:
+                skill = VirtuosoResult(
+                    status=ExecutionStatus.ERROR,
+                    errors=["daemon port did not become ready after load"],
+                )
+            else:
+                skill = skill_client.execute_skill("1+1")
         finally:
             tunnel_runner.stop_port_forward()
             command_runner.close()

@@ -66,11 +66,12 @@ class SkillClient:
                 raw = self._execute_once(skill_code, effective, deadline)
                 elapsed = time.monotonic() - start
                 return self._parse_response(raw, elapsed)
-            except ConnectionRefusedError:
+            except (ConnectionRefusedError, ConnectionResetError):
+                # daemon may still be binding right after load; retry briefly
                 if time.monotonic() >= start + _CONNECT_GRACE_SECONDS:
                     return VirtuosoResult(
                         status=ExecutionStatus.ERROR,
-                        errors=["Connection refused by daemon"],
+                        errors=["Daemon connection failed (refused/reset)"],
                         execution_time=time.monotonic() - start,
                     )
                 time.sleep(min(_CONNECT_RETRY_DELAY, deadline - time.monotonic()))

@@ -136,6 +136,21 @@ def remote_executable_exists(runner: SSHRunner, path: str) -> bool:
     return r.returncode == 0
 
 
+def detect_remote_spectre(runner: SSHRunner) -> str | None:
+    """Auto-detect spectre on the command host (same strategy as the old CLI)."""
+    r = runner.run_command(
+        "command -v spectre 2>/dev/null || which spectre 2>/dev/null || true",
+        timeout=15,
+    )
+    out = (r.stdout or "").strip().splitlines()
+    return out[-1].strip() or None if out else None
+
+
+def detect_local_spectre() -> str | None:
+    import shutil
+    return shutil.which("spectre")
+
+
 def detect_remote_python(runner: SSHRunner) -> tuple[str, int] | None:
     """Find a usable remote interpreter and pin its absolute path.
 
@@ -282,7 +297,9 @@ def local_path_writable(path: str | Path) -> bool:
 __all__ = [
     "allocate_local_port",
     "allocate_remote_port",
+    "detect_local_spectre",
     "detect_remote_python",
+    "detect_remote_spectre",
     "remote_executable_exists",
     "host_key_fingerprint",
     "local_hostname",

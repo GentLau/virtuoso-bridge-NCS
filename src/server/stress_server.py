@@ -7,8 +7,12 @@ the middle layer's per-token thread pool / channel budget / parallel path.
 from __future__ import annotations
 
 import argparse
+import base64
+import hashlib
 import json
+import tempfile
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 from urllib.parse import urlparse
 
 from transport.middle import BusinessServer
@@ -47,6 +51,24 @@ class Handler(BaseHTTPRequestHandler):
                 )
                 self._send(200, {"ok": r.ok, "output": r.output, "log": r.log, "errors": r.errors})
                 return
+            if path == "/api/upload":
+                raw = base64.b64decode(body.get("content_b64", ""))
+                tmp = Path(tempfile.mkdtemp()) / "payload.bin"
+                tmp.write_bytes(raw)
+                c = middle.upload_file(tmp, body.get("remote_path", ""), timeout=body.get("timeout"), token=body["token"])
+                self._send(200, {"returncode": c.returncode, "stderr": c.stderr})
+                return
+            if path == "/api/download":
+                tmp = Path(tempfile.mkdtemp()) / "out.bin"
+                c = middle.download_file(body.get("remote_path", ""), tmp, timeout=body.get("timeout"), token=body["token"])
+                data = tmp.read_bytes() if tmp.exists() else b""
+                self._send(200, {
+                    "returncode": c.returncode,
+                    "stderr": c.stderr,
+                    "sha256": hashlib.sha256(data).hexdigest(),
+                    "size": len(data),
+                })
+                return
             if path == "/api/command":
                 c = middle.run_command(
                     body.get("cmd", ""),
@@ -68,6 +90,7 @@ class Handler(BaseHTTPRequestHandler):
 
 class StressServer(ThreadingHTTPServer):
     daemon_threads = True
+    request_queue_size = 1024
 
     def __init__(self, address, middle: BusinessServer):
         super().__init__(address, Handler)

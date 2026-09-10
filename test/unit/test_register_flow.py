@@ -473,5 +473,46 @@ class TestConnectivityFingerprint(unittest.TestCase):
         self.assertIn("host key fingerprint mismatch", report.detail)
 
 
+class TestSpectreAutoProbe(unittest.TestCase):
+    def test_auto_detect_fills_route(self):
+        from unittest import mock
+        from transport.register import probe_user
+        request = RegistrationRequest(user="u", host="h", ssh_user="a", token="tok")
+        with mock.patch("transport.register.flow.SSHRunner") as runner, \
+             mock.patch("transport.register.probe.host_key_fingerprint", return_value="fp"), \
+             mock.patch("transport.register.probe.remote_hostname", return_value="host-a"), \
+             mock.patch("transport.register.probe.remote_user", return_value="alice"), \
+             mock.patch("transport.register.probe.remote_user_exists", return_value=True), \
+             mock.patch("transport.register.probe.detect_remote_python", return_value=("python3", 3)), \
+             mock.patch("transport.register.probe.allocate_remote_port", return_value=65081), \
+             mock.patch("transport.register.probe.remote_path_writable", return_value=True), \
+             mock.patch("transport.register.probe.allocate_local_port", return_value=65082), \
+             mock.patch("transport.register.probe.detect_remote_spectre", return_value="/opt/cad/bin/spectre"):
+            runner.return_value.test_connection.return_value = True
+            runner.return_value.run_command.return_value = CommandResult(0, "/home/alice", "")
+            result = probe_user(request, token="tok")
+        self.assertEqual(result.entry.route.spectre.bin, "/opt/cad/bin/spectre")
+        self.assertEqual(result.entry.route.spectre.host, "h")
+
+    def test_explicit_bad_spectre_rejected(self):
+        from unittest import mock
+        from transport.register import probe_user
+        request = RegistrationRequest(user="u", host="h", ssh_user="a", token="tok", spectre_bin="/bad/spectre")
+        with mock.patch("transport.register.flow.SSHRunner") as runner, \
+             mock.patch("transport.register.probe.host_key_fingerprint", return_value="fp"), \
+             mock.patch("transport.register.probe.remote_hostname", return_value="host-a"), \
+             mock.patch("transport.register.probe.remote_user", return_value="alice"), \
+             mock.patch("transport.register.probe.remote_user_exists", return_value=True), \
+             mock.patch("transport.register.probe.detect_remote_python", return_value=("python3", 3)), \
+             mock.patch("transport.register.probe.allocate_remote_port", return_value=65081), \
+             mock.patch("transport.register.probe.remote_path_writable", return_value=True), \
+             mock.patch("transport.register.probe.allocate_local_port", return_value=65082), \
+             mock.patch("transport.register.probe.remote_executable_exists", return_value=False):
+            runner.return_value.test_connection.return_value = True
+            runner.return_value.run_command.return_value = CommandResult(0, "/home/alice", "")
+            with self.assertRaises(RegistrationProbeError):
+                probe_user(request, token="tok")
+
+
 if __name__ == "__main__":
     unittest.main()

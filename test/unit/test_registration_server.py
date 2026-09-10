@@ -159,5 +159,34 @@ class TestRegistrationServer(unittest.TestCase):
         self.assertFalse(self.registry.get("alice"))
 
 
+    def test_entry_payload_in_state(self):
+        port = _free_port()
+        status, raw = self.srv.request("POST", "/api/register", {"user": "carol", "local": True, "daemon_port": port})
+        data = json.loads(raw)
+        self.assertEqual(data["stage"], "deployed")
+        self.assertIn("entry", data)
+        self.assertEqual(data["entry"]["token"], data["token"])
+        self.assertEqual(data["entry"]["mode"], "local")
+
+    def test_delete_user(self):
+        self.registry.register("carol", UserEntry(token="tok-del", mode="local"))
+        status, raw = self.srv.request("DELETE", "/api/user/carol", None)
+        self.assertEqual(status, 200)
+        self.assertTrue(json.loads(raw)["removed"])
+        self.assertIsNone(self.registry.get("carol"))
+
+    def test_update_user(self):
+        self.registry.register("carol", UserEntry(token="tok-upd", mode="local"))
+        status, raw = self.srv.request("POST", "/api/user/carol/update", {"log_level": "error", "thread_pool_size": 16})
+        self.assertEqual(status, 200)
+        entry = self.registry.get("carol")
+        self.assertEqual(entry.cdslog.log_level, "error")
+        self.assertEqual(entry.runtime.thread_pool_size, 16)
+
+    def test_delete_unknown_user(self):
+        status, raw = self.srv.request("DELETE", "/api/user/ghost", None)
+        self.assertEqual(status, 404)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -113,5 +113,17 @@ class TestProbeHelpers(unittest.TestCase):
         self.assertIn("65081", runner.commands[0])  # reserved set baked into probe
 
 
+    def test_detect_remote_spectre(self) -> None:
+        from transport.register import probe as probes
+        runner = FakeRunner([CommandResult(0, "/opt/cad/bin/spectre\n", "")])
+        self.assertEqual(probes.detect_remote_spectre(runner), "/opt/cad/bin/spectre")
+        runner2 = FakeRunner([CommandResult(0, "", "")])
+        self.assertIsNone(probes.detect_remote_spectre(runner2))
+
+    def test_detect_local_spectre_returns_path_or_none(self) -> None:
+        from transport.register import probe as probes
+        self.assertTrue(probes.detect_local_spectre() is None or isinstance(probes.detect_local_spectre(), str))
+
+
 if __name__ == "__main__":
     unittest.main()
