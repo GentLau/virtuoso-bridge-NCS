@@ -281,18 +281,25 @@ def local_python() -> tuple[str, int]:
 
 
 def local_port_free(port: int) -> bool:
-    # A wildcard bind() is not reliable on Windows: a specific-address
-    # listener (e.g. an existing ``ssh -L 127.0.0.1:port`` tunnel) does not
-    # block binding 0.0.0.0:port, so bind() alone can report "free" while
-    # something is already accepting connections.  Probe the real listener.
+    # Two checks are needed.  (1) bind: a socket already owns the port (or an
+    # exclusive listener blocks it).  (2) connect: on Windows a wildcard
+    # bind() does NOT collide with a specific-address listener such as an
+    # existing ``ssh -L 127.0.0.1:port`` tunnel, so bind alone can report
+    # "free" while something is already accepting on the loopback port.
     probe = socket.socket()
-    probe.settimeout(0.2)
     try:
-        if probe.connect_ex(("127.0.0.1", port)) == 0:
-            return False  # something already accepts on the loopback port
-        return True
+        try:
+            probe.bind(("0.0.0.0", port))
+        except OSError:
+            return False
     finally:
         probe.close()
+    check = socket.socket()
+    check.settimeout(0.2)
+    try:
+        return check.connect_ex(("127.0.0.1", port)) != 0
+    finally:
+        check.close()
 
 
 def local_path_writable(path: str | Path) -> bool:
