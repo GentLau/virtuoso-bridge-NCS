@@ -16,7 +16,6 @@ from __future__ import annotations
 
 import logging
 import shlex
-import socket
 import subprocess
 import time
 import uuid
@@ -24,7 +23,6 @@ from pathlib import Path
 
 from transport.registry import Registry, RegistryError, UserEntry
 from transport.register import probe as probes
-from pyapi.models import ExecutionStatus, VirtuosoResult
 from transport.register.models import (
     ConnectivityReport,
     ProbeResult,
@@ -146,7 +144,10 @@ def _probe_local(request: RegistrationRequest, token: str) -> ProbeResult:
 
 
 def _probe_remote(
-    request: RegistrationRequest, token: str, reserved_ports: set[int] | None = None
+    request: RegistrationRequest,
+    token: str,
+    reserved_ports: set[int] | None = None,
+    reserved_local_ports: set[int] | None = None,
 ) -> ProbeResult:
     host = request.resolved_host
     runner = SSHRunner(
@@ -157,7 +158,9 @@ def _probe_remote(
         control_identity=token,
     )
     try:
-        return _probe_remote_with_runner(request, token, reserved_ports, runner, host)
+        return _probe_remote_with_runner(
+            request, token, reserved_ports, reserved_local_ports, runner, host
+        )
     finally:
         runner.close()  # registration must leave no SSH master/socket behind
 
@@ -166,6 +169,7 @@ def _probe_remote_with_runner(
     request: RegistrationRequest,
     token: str,
     reserved_ports: set[int] | None,
+    reserved_local_ports: set[int] | None,
     runner,
     host: str,
 ) -> ProbeResult:
@@ -223,7 +227,7 @@ def _probe_remote_with_runner(
                 f"local port {local_port} is not usable on the caller"
             )
     else:
-        local_port = probes.allocate_local_port()
+        local_port = probes.allocate_local_port(reserved=reserved_local_ports)
         if local_port is None:
             raise RegistrationProbeError("no free local tunnel port found")
     entry = UserEntry(token=token, mode="remote")
@@ -252,11 +256,12 @@ def probe_user(
     *,
     token: str,
     reserved_ports: set[int] | None = None,
+    reserved_local_ports: set[int] | None = None,
 ) -> ProbeResult:
     """Step 3: probe and build a candidate entry.  Never touches the registry."""
     if request.mode == "local":
         return _probe_local(request, token)
-    return _probe_remote(request, token, reserved_ports)
+    return _probe_remote(request, token, reserved_ports, reserved_local_ports)
 
 
 # -- step 4: deploy ------------------------------------------------------------
@@ -387,21 +392,18 @@ def test_connectivity(entry: UserEntry, user: str) -> ConnectivityReport:
             if not command_ok:
                 detail.append(f"command={result.returncode}:{result.stderr.strip()}")
             tunnel_runner.start_port_forward(local_port, remote_port=skill_port)
-            ready_deadline = time.monotonic() + 30.0
-            port_ready = False
-            while time.monotonic() < ready_deadline:
-                try:
-                    socket.create_connection(("127.0.0.1", local_port), timeout=0.5).close()
-                    port_ready = True
+            # A reachable local tunnel listener only proves ssh bound its
+            # side of the forward; the daemon on the far end may still be
+            # binding.  Retry the real round trip until the daemon answers.
+            ready_deadline = time.monotonic() + 60.0
+            skill = skill_client.execute_skill("1+1")
+            while time.monotonic() < ready_deadline and not skill.ok:
+                if not any(
+                    "refused/reset" in (err or "") or "did not become ready" in (err or "")
+                    for err in skill.errors
+                ):
                     break
-                except OSError:
-                    time.sleep(0.1)
-            if not port_ready:
-                skill = VirtuosoResult(
-                    status=ExecutionStatus.ERROR,
-                    errors=["daemon port did not become ready after load"],
-                )
-            else:
+                time.sleep(0.5)
                 skill = skill_client.execute_skill("1+1")
         finally:
             tunnel_runner.stop_port_forward()
@@ -494,8 +496,18 @@ class RegistrationFlow:
             for _, e in self.registry.entries()
             if e.route.skill.daemon_port is not None
         }
+        reserved_local = {
+            e.route.skill.local_port
+            for _, e in self.registry.entries()
+            if e.route.skill.local_port is not None
+        }
         try:
-            result = probe_user(state.request, token=state.token, reserved_ports=reserved)
+            result = probe_user(
+                state.request,
+                token=state.token,
+                reserved_ports=reserved,
+                reserved_local_ports=reserved_local,
+            )
         except RegistrationProbeError as exc:
             state.stage = "failed"
             state.errors = [str(exc)]

@@ -55,6 +55,7 @@ class RemoteClient:
         self._parallel_runner: SSHRunner | None = None
         self._serial_lock = threading.Lock()
         self._channel_sem = threading.BoundedSemaphore(entry.runtime.channel_budget)
+        self._tunnel_lock = threading.Lock()
 
     # -- role runners --------------------------------------------------------
 
@@ -130,11 +131,17 @@ class RemoteClient:
         runner = self.skill_runner
         if runner.is_tunnel_alive:
             return
-        runner.start_port_forward(
-            self.targets.local_port,
-            remote_port=self.targets.skill_port,
-            deadline=deadline,
-        )
+        # First-use races: several concurrent requests for the same token can
+        # otherwise each launch ``ssh -L <same port>`` and fail with
+        # "address already in use".  Serialize creation, double-check inside.
+        with self._tunnel_lock:
+            if runner.is_tunnel_alive:
+                return
+            runner.start_port_forward(
+                self.targets.local_port,
+                remote_port=self.targets.skill_port,
+                deadline=deadline,
+            )
 
     def close(self) -> None:
         runners = list(self._runners.values())

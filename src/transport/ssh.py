@@ -21,6 +21,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, NamedTuple
 
+from transport.connlimit import connect_slot
 from transport.runtime_paths import command_log_file
 from transport.transfer import (
     TarDownloadPlan,
@@ -356,6 +357,28 @@ class SSHRunner:
         deadline: float | None = None,
     ) -> subprocess.Popen[Any] | None:
         """Start a persistent SSH port-forwarding tunnel.
+
+        Many per-user tunnels can start at once during a burst; queue their
+        handshakes through the global connection gate so the remote sshd
+        ``MaxStartups`` limit does not drop them mid-banner.
+        """
+        with connect_slot():
+            return self._start_port_forward_locked(
+                port,
+                settle,
+                remote_port=remote_port,
+                deadline=deadline,
+            )
+
+    def _start_port_forward_locked(
+        self,
+        port: int,
+        settle: float,
+        *,
+        remote_port: int | None = None,
+        deadline: float | None = None,
+    ) -> subprocess.Popen[Any] | None:
+        """Gated implementation of :meth:`start_port_forward`.
 
         *port* is the local port to bind.  *remote_port* is the port on the
         remote side; defaults to *port* when not specified.

@@ -361,7 +361,7 @@ def start_server():
                 sys.stderr.write(f"ERROR: Port {PORT} is already in use. Another daemon may be running.\n")
                 sys.exit(1)
             raise
-        s.listen(1)
+        s.listen(128)
         try:
             hn = socket.gethostname() or "unknown"
         except Exception:

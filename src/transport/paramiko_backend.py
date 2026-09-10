@@ -20,6 +20,8 @@ from pathlib import Path
 from typing import Any, Iterator
 from urllib.parse import unquote, urlsplit
 
+from transport.connlimit import connect_slot
+
 from transport.transfer import (
     FileDownloadPlan,
     TarDownloadPlan,
@@ -869,62 +871,79 @@ class ParamikoSessionBackend:
 
             target_endpoint = self._target_endpoint
             jump_endpoint = self._jump_endpoint
-            jump_client = None
-            jump_channel = None
-            target_client = None
-            proxy_socket = None
-            try:
-                if jump_endpoint is not None:
-                    proxy_socket = self._open_proxy_socket(jump_endpoint, deadline)
-                    jump_client = self._connect_client(
-                        jump_endpoint,
-                        deadline,
-                        sock=proxy_socket,
-                    )
-                    proxy_socket = None
-                    jump_transport = jump_client.get_transport()
-                    if jump_transport is None:
-                        raise OSError("Jump-host SSH transport is unavailable")
-                    jump_channel = jump_transport.open_channel(
-                        "direct-tcpip",
-                        (target_endpoint.hostname, target_endpoint.port),
-                        ("127.0.0.1", 0),
-                        timeout=deadline.remaining(target_endpoint.hostname),
-                    )
-                else:
-                    proxy_socket = self._open_proxy_socket(target_endpoint, deadline)
-                target_client = self._connect_client(
-                    target_endpoint,
-                    deadline,
-                    sock=(
-                        jump_channel
-                        if jump_channel is not None
-                        else proxy_socket
-                    ),
-                )
+            # Retry handshakes the remote sshd dropped mid-banner (MaxStartups
+            # burst).  A failure before authentication means nothing was sent,
+            # so retrying is safe.  Handshakes share the global connect gate.
+            last_error: Exception | None = None
+            for attempt in range(3):
+                jump_client = None
+                jump_channel = None
+                target_client = None
                 proxy_socket = None
-            except Exception:
-                if target_client is not None:
-                    target_client.close()
-                if jump_channel is not None:
-                    jump_channel.close()
-                if jump_client is not None:
-                    jump_client.close()
-                if proxy_socket is not None:
-                    proxy_socket.close()
-                raise
-
-            self._jump_client = jump_client
-            self._jump_channel = jump_channel
-            self._target_client = target_client
-            logger.info(
-                "Paramiko transport connected to %s via %s (max_sessions=%d)",
-                self._host,
-                jump_endpoint.host_alias if jump_endpoint is not None else "direct",
-                self._max_sessions,
-            )
+                try:
+                    with connect_slot():
+                        if jump_endpoint is not None:
+                            proxy_socket = self._open_proxy_socket(jump_endpoint, deadline)
+                            jump_client = self._connect_client(
+                                jump_endpoint,
+                                deadline,
+                                sock=proxy_socket,
+                            )
+                            proxy_socket = None
+                            jump_transport = jump_client.get_transport()
+                            if jump_transport is None:
+                                raise OSError("Jump-host SSH transport is unavailable")
+                            jump_channel = jump_transport.open_channel(
+                                "direct-tcpip",
+                                (target_endpoint.hostname, target_endpoint.port),
+                                ("127.0.0.1", 0),
+                                timeout=deadline.remaining(target_endpoint.hostname),
+                            )
+                        else:
+                            proxy_socket = self._open_proxy_socket(target_endpoint, deadline)
+                        target_client = self._connect_client(
+                            target_endpoint,
+                            deadline,
+                            sock=(
+                                jump_channel
+                                if jump_channel is not None
+                                else proxy_socket
+                            ),
+                        )
+                        proxy_socket = None
+                except Exception as exc:  # noqa: BLE001
+                    last_error = exc
+                    if target_client is not None:
+                        target_client.close()
+                    if jump_channel is not None:
+                        jump_channel.close()
+                    if jump_client is not None:
+                        jump_client.close()
+                    if proxy_socket is not None:
+                        proxy_socket.close()
+                    if attempt >= 2 or not self._is_banner_drop(exc):
+                        raise
+                    time.sleep(0.2 * (attempt + 1))
+                    continue
+                self._jump_client = jump_client
+                self._jump_channel = jump_channel
+                self._target_client = target_client
+                logger.info(
+                    "Paramiko transport connected to %s via %s (max_sessions=%d)",
+                    self._host,
+                    jump_endpoint.host_alias if jump_endpoint is not None else "direct",
+                    self._max_sessions,
+                )
+                return
+            if last_error is not None:
+                raise last_error
         finally:
             self._connect_lock.release()
+
+    @staticmethod
+    def _is_banner_drop(exc: Exception) -> bool:
+        text = str(exc).lower()
+        return "banner" in text or "connection reset" in text
 
     def test_connection(self, timeout: float | None = None) -> bool:
         try:

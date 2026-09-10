@@ -245,9 +245,22 @@ def allocate_remote_port(
     return None
 
 
-def allocate_local_port(start: int = 65081, tries: int = 50) -> int | None:
-    """Find a free local loopback port (remote-mode tunnel endpoint)."""
+def allocate_local_port(
+    start: int = 65081,
+    tries: int = 50,
+    reserved: set[int] | None = None,
+) -> int | None:
+    """Find a free local loopback port (remote-mode tunnel endpoint).
+
+    ``reserved`` are local tunnel ports already assigned to other registry
+    users.  They must never be handed out again, even if nothing is listening
+    right now (the tunnel is created lazily on first use, so OS-freeness alone
+    is not enough).
+    """
+    taken = reserved or set()
     for port in range(start, start + tries):
+        if port in taken:
+            continue
         if local_port_free(port):
             return port
     return None
@@ -268,18 +281,18 @@ def local_python() -> tuple[str, int]:
 
 
 def local_port_free(port: int) -> bool:
-    s = socket.socket()
+    # A wildcard bind() is not reliable on Windows: a specific-address
+    # listener (e.g. an existing ``ssh -L 127.0.0.1:port`` tunnel) does not
+    # block binding 0.0.0.0:port, so bind() alone can report "free" while
+    # something is already accepting connections.  Probe the real listener.
+    probe = socket.socket()
+    probe.settimeout(0.2)
     try:
-        s.bind(("0.0.0.0", port))
-        s.close()
+        if probe.connect_ex(("127.0.0.1", port)) == 0:
+            return False  # something already accepts on the loopback port
         return True
-    except OSError:
-        return False
     finally:
-        try:
-            s.close()
-        except OSError:
-            pass
+        probe.close()
 
 
 def local_path_writable(path: str | Path) -> bool:
