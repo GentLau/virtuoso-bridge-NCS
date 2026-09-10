@@ -110,11 +110,11 @@ class Middle(Protocol):
     ) -> CommandResult: ...
 
     def upload_file(
-        self, local_path: Path, remote_path: str, timeout: int | None = None, *, token: str
+        self, local_path: Path, remote_path: str, timeout: int | None = None, *, token: str, recursive: bool = False
     ) -> CommandResult: ...
 
     def download_file(
-        self, remote_path: str, local_path: Path, timeout: int | None = None, recursive: bool = False, *, token: str
+        self, remote_path: str, local_path: Path, timeout: int | None = None, *, token: str, recursive: bool = False
     ) -> CommandResult: ...
 
 

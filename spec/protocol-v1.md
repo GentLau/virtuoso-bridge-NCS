@@ -52,14 +52,15 @@ def upload_file(
     remote_path: str,
     timeout: int | None = None,
     *, token: str,                    # 必填：多用户路由参数（keyword-only）
+    recursive: bool = False,           # 可选：False=单文件，True=目录递归
 ) -> CommandResult: ...
 
 def download_file(
     remote_path: str,
     local_path: Path,
     timeout: int | None = None,
-    recursive: bool = False,
     *, token: str,                    # 必填：多用户路由参数（keyword-only）
+    recursive: bool = False,           # 可选：False=单文件，True=目录递归
 ) -> CommandResult: ...
 ```
 
@@ -272,8 +273,8 @@ CIW `printf` 和 daemon stderr 只是诊断输出，不是 response payload。
 高层↔中层：
   execute_skill(skill_code, timeout=None, *, token)
   run_command(cmd, timeout=None, *, token, parallel=False)
-  upload_file(local_path, remote_path, timeout=None, *, token)
-  download_file(remote_path, local_path, timeout=None, recursive=False, *, token)
+  upload_file(local_path, remote_path, timeout=None, *, token, recursive=False)
+  download_file(remote_path, local_path, timeout=None, *, token, recursive=False)
 
 中层↔daemon.py：
   请求 {"skill": ..., "timeout": ..., "token": ...}，EOF 结束
@@ -289,8 +290,8 @@ CIW `printf` 和 daemon stderr 只是诊断输出，不是 response payload。
 |---|---|---|
 | `execute_skill` | `(skill_code, timeout=None)` | 新增必填 keyword-only `token` |
 | `run_command` | `(cmd, timeout=None)` | 新增必填 keyword-only `token`、`parallel=False` |
-| `upload_file` | `(local_path, remote_path, timeout=None)` | 新增必填 keyword-only `token` |
-| `download_file` | `(remote_path, local_path, timeout=None, recursive=False)` | 新增必填 keyword-only `token` |
+| `upload_file` | `(local_path, remote_path, timeout=None)` | 新增必填 keyword-only `token`、可选 `recursive=False` |
+| `download_file` | `(remote_path, local_path, timeout=None, recursive=False)` | 新增必填 keyword-only `token`（上传/下载对称） |
 | 中层↔daemon 请求 | `{"skill", "timeout"}` | 新增 `"token"` |
 | 中层↔daemon 响应 | `STX/NAK/RS` 原始字节 | 不变 |
 | 底层↔Virtuoso | 内部实现：写 SKILL、读 `STX/NAK/RS` | 不变，不加 token（非跨层接口） |

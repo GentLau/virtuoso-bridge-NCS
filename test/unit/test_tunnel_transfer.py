@@ -244,5 +244,45 @@ class TestRemoteClientEdges(unittest.TestCase):
         self.assertIn("sha256 mismatch", res.stderr)
 
 
+class TestRemoteClientRecursiveUpload(unittest.TestCase):
+    def setUp(self):
+        set_working_dir(Path(tempfile.mkdtemp()))
+        FakeRunner.instances.clear()
+
+    def test_directory_without_recursive_is_rejected(self):
+        entry = make_entry()
+        from unittest import mock
+        d = Path(tempfile.mkdtemp())
+        with mock.patch("transport.tunnel.SSHRunner", FakeRunner):
+            client = RemoteClient(entry, resolve(entry))
+            res = client.upload_file(d, "/remote/dir")
+        self.assertEqual(res.returncode, 1)
+        self.assertIn("recursive=True", res.stderr)
+
+    def test_recursive_upload_skips_digest(self):
+        entry = make_entry()
+        from unittest import mock
+        d = Path(tempfile.mkdtemp())
+        with mock.patch("transport.tunnel.SSHRunner", FakeRunner):
+            client = RemoteClient(entry, resolve(entry))
+            res = client.upload_file(d, "/remote/dir", recursive=True)
+            runner = client.file_runner
+        self.assertEqual(res.returncode, 0)
+        uploads = [c for c in runner.calls if c[0] == "upload"]
+        self.assertTrue(uploads and uploads[-1][2].get("recursive"))
+        self.assertFalse(any(c[0] == "run_command" and c[1][0].startswith("sha256sum") for c in runner.calls))
+
+    def test_recursive_with_file_is_rejected(self):
+        entry = make_entry()
+        from unittest import mock
+        f = Path(tempfile.mkdtemp()) / "f.txt"
+        f.write_text("x", encoding="utf-8")
+        with mock.patch("transport.tunnel.SSHRunner", FakeRunner):
+            client = RemoteClient(entry, resolve(entry))
+            res = client.upload_file(f, "/remote/f.txt", recursive=True)
+        self.assertEqual(res.returncode, 1)
+        self.assertIn("recursive upload requires a directory", res.stderr)
+
+
 if __name__ == "__main__":
     unittest.main()

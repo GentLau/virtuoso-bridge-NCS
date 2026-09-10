@@ -40,7 +40,7 @@ class FakeRemoteClient:
     def run_command(self, cmd, timeout=None, parallel=False):
         return CommandResult(0, f"remote:{cmd}:{parallel}", "")
 
-    def upload_file(self, local_path, remote_path, timeout=None):
+    def upload_file(self, local_path, remote_path, timeout=None, recursive=False):
         return CommandResult(0, str(local_path), "")
 
     def download_file(self, remote_path, local_path, timeout=None, recursive=False):
@@ -154,12 +154,28 @@ class TestMiddleErrorAndLocalPaths(unittest.TestCase):
         self.assertIn("timed out", r.stderr)
 
     def test_local_upload_missing_source(self):
-        r = self.server._local_upload(Path("missing.txt"), str(Path(self.wd) / "dst.txt"))
+        r = self.server._local_upload(Path("missing.txt"), str(Path(self.wd) / "dst.txt"), recursive=False)
         self.assertEqual(r.returncode, 1)
 
     def test_local_download_missing_source(self):
         r = self.server._local_download(str(Path(self.wd) / "missing"), Path(self.wd) / "out.txt", recursive=False)
         self.assertEqual(r.returncode, 1)
+
+    def test_local_upload_directory_requires_recursive(self):
+        src = Path(self.wd) / "tree"
+        src.mkdir()
+        r = self.server._local_upload(src, str(Path(self.wd) / "dst"), recursive=False)
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("recursive=True", r.stderr)
+
+    def test_local_upload_recursive(self):
+        src = Path(self.wd) / "tree"
+        (src / "sub").mkdir(parents=True)
+        (src / "sub" / "f.txt").write_text("x", encoding="utf-8")
+        dst = Path(self.wd) / "copy"
+        r = self.server._local_upload(src, str(dst), recursive=True)
+        self.assertEqual(r.returncode, 0)
+        self.assertEqual((dst / "sub" / "f.txt").read_text(encoding="utf-8"), "x")
 
     def test_local_download_recursive(self):
         src = Path(self.wd) / "tree"

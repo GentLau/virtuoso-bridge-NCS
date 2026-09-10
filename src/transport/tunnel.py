@@ -219,11 +219,19 @@ class RemoteClient:
         local_path: Path,
         remote_path: str,
         timeout: int | None = None,
+        recursive: bool = False,
     ) -> CommandResult:
         if not self._channel_sem.acquire(blocking=False):
             return CommandResult(returncode=1, stdout="", stderr="channel budget exceeded")
         try:
             local_path = Path(local_path)
+            if recursive:
+                if not local_path.is_dir():
+                    return CommandResult(1, "", f"recursive upload requires a directory: {local_path}")
+                # directory tar upload; a single sha256 digest is not meaningful
+                return self.file_runner.upload(local_path, remote_path, recursive=True, timeout=timeout)
+            if local_path.is_dir():
+                return CommandResult(1, "", f"directory upload requires recursive=True: {local_path}")
             up = self.file_runner.upload(local_path, remote_path, timeout=timeout)
             if up.returncode != 0:
                 return up

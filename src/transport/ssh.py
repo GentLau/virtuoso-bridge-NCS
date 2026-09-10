@@ -807,6 +807,10 @@ class SSHRunner:
         budget = _TimeoutBudget.start(timeout, self._timeout)
         if not local_path.exists():
             raise FileNotFoundError(f"Local path not found: {local_path}")
+        if not recursive and local_path.is_dir():
+            raise IsADirectoryError(
+                f"{local_path} is a directory; use recursive=True to upload it"
+            )
         plans = build_tar_upload_plans(
             self._tar_cmd,
             [(local_path, remote_path)],

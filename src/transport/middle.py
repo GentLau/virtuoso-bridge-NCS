@@ -121,7 +121,7 @@ class BusinessServer(Middle):
             if acquired:
                 self._release(token)
 
-    def upload_file(self, local_path: Path, remote_path: str, timeout: int | None = None, *, token: str) -> CommandResult:
+    def upload_file(self, local_path: Path, remote_path: str, timeout: int | None = None, *, token: str, recursive: bool = False) -> CommandResult:
         acquired = False
         try:
             entry = self._entry(token)
@@ -129,15 +129,15 @@ class BusinessServer(Middle):
                 return CommandResult(returncode=1, stdout="", stderr="thread pool exceeded")
             acquired = True
             if entry.mode == "local":
-                return self._local_upload(local_path, remote_path)
-            return self._remote(token).upload_file(Path(local_path), remote_path, timeout=timeout)
+                return self._local_upload(local_path, remote_path, recursive)
+            return self._remote(token).upload_file(Path(local_path), remote_path, timeout=timeout, recursive=recursive)
         except LookupError as exc:
             return CommandResult(returncode=1, stdout="", stderr=str(exc))
         finally:
             if acquired:
                 self._release(token)
 
-    def download_file(self, remote_path: str, local_path: Path, timeout: int | None = None, recursive: bool = False, *, token: str) -> CommandResult:
+    def download_file(self, remote_path: str, local_path: Path, timeout: int | None = None, *, token: str, recursive: bool = False) -> CommandResult:
         acquired = False
         try:
             entry = self._entry(token)
@@ -164,11 +164,19 @@ class BusinessServer(Middle):
             return CommandResult(returncode=124, stdout="", stderr=f"command timed out after {timeout}s")
 
     @staticmethod
-    def _local_upload(local_path: Path, remote_path: str) -> CommandResult:
+    def _local_upload(local_path: Path, remote_path: str, recursive: bool) -> CommandResult:
         try:
+            src = Path(local_path)
             dst = Path(remote_path)
-            dst.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(Path(local_path), dst)
+            if recursive:
+                if not src.is_dir():
+                    return CommandResult(1, "", f"recursive upload requires a directory: {src}")
+                shutil.copytree(src, dst, dirs_exist_ok=True)
+            else:
+                if src.is_dir():
+                    return CommandResult(1, "", f"directory upload requires recursive=True: {src}")
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(src, dst)
             return CommandResult(0, str(dst), "")
         except OSError as exc:
             return CommandResult(1, "", str(exc))
