@@ -104,7 +104,7 @@ class ConnectivityReport:
 
     @property
     def ok(self) -> bool:
-        return self.command_ok and self.skill_ok and self.fingerprint_ok
+        return self.command_ok and self.skill_ok and self.token_ok and self.fingerprint_ok
 
 
 @dataclass

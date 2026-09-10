@@ -67,7 +67,7 @@ class TestFoundations(unittest.TestCase):
 
         text2, trunc2 = filter_delta(raw, "all", 5)
         self.assertTrue(trunc2)
-        self.assertIn("error line", text2)
+        self.assertLessEqual(len(text2.encode("utf-8")), 5)  # byte-level hard cap
 
         self.assertEqual(_parse_meta(b"/tmp/CDS.log\x1f42"), ("/tmp/CDS.log", 42))
 

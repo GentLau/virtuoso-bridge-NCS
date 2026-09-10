@@ -112,7 +112,13 @@ def _probe_local(request: RegistrationRequest, token: str) -> ProbeResult:
     daemon_port = request.daemon_port or _LOCAL_DEFAULT_PORT
     if not probes.local_port_free(daemon_port):
         raise RegistrationProbeError(f"daemon port {daemon_port} already in use locally")
-    local_port = request.local_port or daemon_port
+    local_port = request.local_port
+    if local_port is not None and local_port != daemon_port:
+        raise RegistrationProbeError(
+            f"local mode has no tunnel port: local_port must equal daemon_port "
+            f"(got local_port={local_port}, daemon_port={daemon_port})"
+        )
+    local_port = daemon_port
     scratch = request.scratch_root
     if scratch in ("", "~/.virtuoso-bridge"):
         scratch = str(working_dir())
@@ -143,6 +149,7 @@ def _probe_remote(
         user=request.ssh_user,
         jump_host=request.jump_host,
         jump_user=request.jump_user,
+        control_identity=token,
     )
     try:
         return _probe_remote_with_runner(request, token, reserved_ports, runner, host)
@@ -425,6 +432,13 @@ class RegistrationFlow:
             return None
         if self.state.stage == "failed":
             return None
+        if self.state.stage != expected_stage:
+            self.state.stage = "failed"
+            self.state.errors = [
+                f"step order violation: expected {expected_stage!r}, "
+                f"got {self.state.stage!r}"
+            ]
+            return None
         state = self.state
         state.step = step
         return state
@@ -503,6 +517,13 @@ class RegistrationFlow:
             )
             self.state = state
             return state
+        if self.state.stage != "deployed":
+            self.state.stage = "failed"
+            self.state.errors = [
+                f"step order violation: verify requires stage 'deployed', "
+                f"got {self.state.stage!r}"
+            ]
+            return self.state
 
         state = self.state
         state.step = 5

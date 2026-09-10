@@ -61,13 +61,13 @@ class RemoteClient:
     # -- role runners --------------------------------------------------------
 
     def _runner(self, host: str, user: str | None) -> SSHRunner:
-        """One SSHRunner per distinct target host; reused across roles."""
-        key = _norm_host(host)
+        """One SSHRunner per distinct (host, account); reused across roles."""
+        key = (_norm_host(host), user or "")
         runner = self._runners.get(key)
         if runner is not None:
             return runner
         jump_host = self.targets.jump_host
-        if jump_host and _norm_host(jump_host) == key:
+        if jump_host and _norm_host(jump_host) == _norm_host(host):
             # The role target itself is the login/jump host; suppress the jump.
             jump_host = None
         kwargs = self._runner_kwargs.copy()

@@ -25,21 +25,18 @@ visio = ["pywin32; sys_platform == 'win32'"]
 ssh = ["paramiko>=3.5", "PySocks>=1.7.1"]
 # Complete test environment, including the optional SSH backend exercised by
 # the transport suite.
-dev = ["pytest>=7.0", "paramiko>=3.5", "PySocks>=1.7.1"]
+dev = ["pytest>=7.0", "paramiko>=3.5", "PySocks>=1.7.1", "coverage>=7.0"]
 
 [project.scripts]
-virtuoso-bridge = "virtuoso_bridge.cli:main"
+virtuoso-bridge = "server.registration_server:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools.package-data]
-"server" = ["registration_page.html"]
-"virtuoso_bridge.resources" = [".env_template"]
-"virtuoso_bridge.virtuoso.basic.resources" = ["*.il", "*.py"]
-"virtuoso_bridge.virtuoso.maestro" = ["*.yaml"]
+"bridge.resources" = ["*.il", "*.py"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["test/unit", "test/integration", "test/scenario"]
 pythonpath = ["src"]
 addopts = "-q"
