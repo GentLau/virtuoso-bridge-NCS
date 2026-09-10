@@ -1,0 +1,275 @@
+"""Per-token remote side: deploy bottom files, tunnel, command and file ports.
+
+Uses the full SSHRunner (OpenSSH + Paramiko, persistent shell, ControlMaster,
+staging/atomic install) restored from the legacy implementation.  The registry
+supplies every transport knob.
+
+Role runners follow the legacy pattern: one ``SSHRunner`` per distinct target
+host, shared across roles that resolve to the same host.  This keeps the
+daemon/deploy, command and file roles independent when the registry pins them
+to different hosts, while avoiding duplicate persistent shells on one host.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import importlib.resources
+import logging
+import os
+import shlex
+import threading
+from pathlib import Path
+
+from pyapi.models import CommandResult
+from transport import remote_paths
+from transport.registry import UserEntry
+from transport.remote_roles import ResolvedTargets
+from transport.setup import generate_setup_il
+from transport.ssh import SSHRunner
+
+logger = logging.getLogger(__name__)
+
+
+def _norm_host(host: str | None) -> str:
+    return (host or "").strip().rstrip(".").lower()
+
+
+class RemoteClient:
+    """One instance per token; owns that token's SSH connections and locks."""
+
+    def __init__(self, entry: UserEntry, targets: ResolvedTargets) -> None:
+        self.entry = entry
+        self.targets = targets
+        self._is_local = entry.mode == "local"
+
+        self._runner_kwargs: dict = {
+            "jump_user": targets.jump_user,
+            "timeout": 600,
+            "connect_timeout": int(entry.runtime.connect_timeout),
+            "persistent_shell": True,
+            "backend": entry.ssh.backend or "openssh",
+            "max_sessions": entry.ssh.max_sessions or 10,
+            "proxy_url": entry.ssh.proxy,
+            "control_master": entry.ssh.control_master or "auto",
+            "tool_override": entry.ssh.tool_override or None,
+        }
+        self._runners: dict[str, SSHRunner] = {}
+        self._parallel_runner: SSHRunner | None = None
+        self._serial_lock = threading.Lock()
+        self._channel_sem = threading.BoundedSemaphore(entry.runtime.channel_budget)
+
+    # -- role runners --------------------------------------------------------
+
+    def _runner(self, host: str, user: str | None) -> SSHRunner:
+        """One SSHRunner per distinct target host; reused across roles."""
+        key = _norm_host(host)
+        runner = self._runners.get(key)
+        if runner is not None:
+            return runner
+        jump_host = self.targets.jump_host
+        if jump_host and _norm_host(jump_host) == key:
+            # The role target itself is the login/jump host; suppress the jump.
+            jump_host = None
+        kwargs = self._runner_kwargs.copy()
+        kwargs.update(host=host, user=user, jump_host=jump_host)
+        runner = SSHRunner(**kwargs)
+        self._runners[key] = runner
+        return runner
+
+    @property
+    def skill_runner(self) -> SSHRunner:
+        """Runner that reaches the bottom daemon host (deploy + tunnel)."""
+        return self._runner(self.targets.skill_host, self.entry.expected.daemon_user)
+
+    @property
+    def command_runner(self) -> SSHRunner:
+        return self._runner(self.targets.command_host, self.targets.command_user)
+
+    @property
+    def file_runner(self) -> SSHRunner:
+        return self._runner(self.targets.file_host, self.targets.command_user)
+
+    def _parallel_command_runner(self) -> SSHRunner:
+        if self._parallel_runner is None:
+            backend = (self.entry.ssh.backend or "openssh").strip().lower()
+            if backend == "paramiko":
+                # ParamikoSessionBackend multiplexes a session per call; the
+                # regular runner is already parallel, no second connection.
+                self._parallel_runner = self.command_runner
+            else:
+                jump_host = self.targets.jump_host
+                if jump_host and _norm_host(jump_host) == _norm_host(self.targets.command_host):
+                    jump_host = None
+                kwargs = self._runner_kwargs.copy()
+                kwargs.update(
+                    host=self.targets.command_host,
+                    user=self.targets.command_user,
+                    jump_host=jump_host,
+                    persistent_shell=False,  # parallel bypasses the serial shell
+                )
+                self._parallel_runner = SSHRunner(**kwargs)
+        return self._parallel_runner
+
+    # -- deployment ---------------------------------------------------------
+
+    def deploy(self, python_major: int = 3) -> str:
+        token = self.entry.token
+        root = self.targets.scratch_root
+        ramic = remote_paths.ramic_dir(token, root)
+        setup_dir = remote_paths.setup_dir(token, root)
+        status = remote_paths.status_dir(token, root)
+
+        daemon_src = importlib.resources.files("bridge.resources") / (
+            f"ramic_bridge_daemon_{'27' if python_major == 2 else '3'}.py"
+        )
+        il_src = importlib.resources.files("bridge.resources") / "ramic_bridge.il"
+        daemon_dst = remote_paths.daemon_path(token, python_major, root)
+        il_dst = remote_paths.il_path(token, root)
+        setup_dst = remote_paths.setup_il_path(token, root)
+        identity_dst = remote_paths.identity_path(token, root)
+
+        setup = generate_setup_il(
+            daemon=str(daemon_dst),
+            il=str(il_dst),
+            python_cmd=self.entry.expected.remote_python or "python3",
+            port=self.targets.skill_port,
+            token=token,
+            identity=str(identity_dst),
+        )
+
+        if self._is_local:
+            for d in (ramic, setup_dir, status):
+                Path(d).mkdir(parents=True, exist_ok=True)
+                try:
+                    os.chmod(d, 0o700)
+                except OSError:
+                    pass
+            Path(daemon_dst).write_bytes(daemon_src.read_bytes())
+            Path(il_dst).write_bytes(il_src.read_bytes())
+            Path(setup_dst).write_text(setup, encoding="utf-8")
+            return str(setup_dst)
+
+        runner = self.skill_runner
+        mkdir = (
+            f"mkdir -p {shlex.quote(ramic)} {shlex.quote(setup_dir)} {shlex.quote(status)}"
+            f" && chmod 700 {shlex.quote(ramic)} {shlex.quote(setup_dir)} {shlex.quote(status)}"
+        )
+        result = runner.run_command(mkdir)
+        if result.returncode != 0:
+            raise RuntimeError(f"deploy mkdir failed: {result.stderr.strip()}")
+
+        for src, dst in ((daemon_src, daemon_dst), (il_src, il_dst)):
+            text = src.read_text(encoding="utf-8")
+            result = runner.upload_text(text, str(dst))
+            if result.returncode != 0:
+                raise RuntimeError(f"deploy failed for {dst}: {result.stderr.strip()}")
+
+        result = runner.upload_text(setup, str(setup_dst))
+        if result.returncode != 0:
+            raise RuntimeError(f"deploy setup failed: {result.stderr.strip()}")
+        return str(setup_dst)
+
+    # -- tunnel -------------------------------------------------------------
+
+    def ensure_tunnel(self) -> None:
+        if self._is_local:
+            return
+        runner = self.skill_runner
+        if runner.is_tunnel_alive:
+            return
+        runner.start_port_forward(
+            self.targets.local_port,
+            remote_port=self.targets.skill_port,
+        )
+
+    def close(self) -> None:
+        runners = list(self._runners.values())
+        if self._parallel_runner is not None:
+            runners.append(self._parallel_runner)
+        seen: set[int] = set()
+        for runner in runners:
+            if id(runner) in seen:
+                continue
+            seen.add(id(runner))
+            runner.stop_port_forward()
+            runner.close()
+
+    # -- command -------------------------------------------------------------
+
+    def run_command(
+        self,
+        cmd: str,
+        timeout: int | None = None,
+        parallel: bool = False,
+    ) -> CommandResult:
+        if parallel:
+            if not self._channel_sem.acquire(blocking=False):
+                return CommandResult(returncode=1, stdout="", stderr="channel budget exceeded")
+            try:
+                return self._parallel_command_runner().run_command(cmd, timeout=timeout)
+            finally:
+                self._channel_sem.release()
+        with self._serial_lock:
+            return self.command_runner.run_command(cmd, timeout=timeout)
+
+    # -- file (runner already stages + atomically installs; we add digest) -----
+
+    def upload_file(
+        self,
+        local_path: Path,
+        remote_path: str,
+        timeout: int | None = None,
+    ) -> CommandResult:
+        if not self._channel_sem.acquire(blocking=False):
+            return CommandResult(returncode=1, stdout="", stderr="channel budget exceeded")
+        try:
+            local_path = Path(local_path)
+            up = self.file_runner.upload(local_path, remote_path, timeout=timeout)
+            if up.returncode != 0:
+                return up
+            return self._verify(remote_path, local_path.read_bytes())
+        finally:
+            self._channel_sem.release()
+
+    def download_file(
+        self,
+        remote_path: str,
+        local_path: Path,
+        timeout: int | None = None,
+        recursive: bool = False,
+    ) -> CommandResult:
+        if not self._channel_sem.acquire(blocking=False):
+            return CommandResult(returncode=1, stdout="", stderr="channel budget exceeded")
+        try:
+            local_path = Path(local_path)
+            if recursive:
+                return self.file_runner.download(
+                    remote_path, local_path, recursive=True, timeout=timeout
+                )
+            dl = self.file_runner.download(
+                remote_path, local_path, recursive=False, timeout=timeout
+            )
+            if dl.returncode != 0:
+                return dl
+            return self._verify(remote_path, local_path.read_bytes())
+        finally:
+            self._channel_sem.release()
+
+    def _verify(self, remote_path: str, local_bytes: bytes) -> CommandResult:
+        local_sha = hashlib.sha256(local_bytes).hexdigest()
+        check = self.file_runner.run_command(
+            f"sha256sum {shlex.quote(remote_path)}", timeout=60
+        )
+        if check.returncode != 0:
+            return check
+        remote_sha = check.stdout.strip().split()[0] if check.stdout.strip() else ""
+        if remote_sha != local_sha:
+            return CommandResult(
+                returncode=1,
+                stdout="",
+                stderr=f"sha256 mismatch: local={local_sha} remote={remote_sha}",
+            )
+        return CommandResult(0, remote_path, "")
+
+
+__all__ = ["RemoteClient"]

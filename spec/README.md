@@ -1,7 +1,7 @@
 # virtuoso-bridge-NCS Spec
 
 > 版本：Draft v1  
-> 日期：2026-09-04  
+> 日期：2026-09-07
 > 状态：提案，作为下一阶段重构的接口基线；实现前允许通过评审修改。
 > 接口正文：[protocol-v1.md](protocol-v1.md)。
 
@@ -10,15 +10,15 @@
 本项目采用三层架构：
 
 ```text
-上层（Domain / Product）
-  └─ schematic / layout / maestro / library / symbol / spectre / CLI adapters
+上层（业务封装层）
+  └─ 原理图 · 版图 · 测试平台 · Maestro · 库/符号 · 仿真 · 工具适配器
 
-中层（Business Server Runtime）
-  └─ Skill · RunCommand · File 三个对上接口
-     隐藏 local / SSH / split-host / tunnel / transfer 细节
+中层（业务服务器运行时）
+  └─ Skill · RunCommand · File 三个接口
+     隐藏本地/SSH、隧道、主机和文件传输细节
 
-底层（Virtuoso Resident Daemon）
-  └─ 只在 Virtuoso 内执行 SKILL
+底层（Virtuoso 常驻守护进程）
+  └─ 连接端口与 Virtuoso，只执行 SKILL
      不承担普通命令行和文件传输
 ```
 
@@ -28,12 +28,28 @@
 
 | 文件 | 内容 |
 |---|---|
-| [v1-architecture.md](v1-architecture.md) | 层次职责、依赖边界、运行模式、数据流、状态机、迁移映射 |
-| [protocol-v1.md](protocol-v1.md) | **当前唯一接口协议基线**：上层↔中层、中层↔daemon.py、daemon.py↔SKILL 的格式 |
-| [v1-interface-contracts.md](v1-interface-contracts.md) | 旧文件名兼容入口；正文已收敛到 `protocol-v1.md` |
+| [三层整体架构设计](design-concepts/总览/三层整体架构设计.md) | 总述、整体结构、层次职责、层间接口和设计要点 |
+| [protocol-v1.md](protocol-v1.md) | **当前唯一接口协议基线**：上层↔中层、中层↔daemon.py 两条跨层接口（daemon↔Virtuoso 为底层内部实现） |
+| [配置一览](design-concepts/总览/配置一览.md) | 本地/远端全部配置，以及配置跟随用户、`VB_*`/`RB_*` 的迁移映射 |
+| [核心修改设计](design-concepts/总览/核心修改.md) | 五项核心修改：并行、token、注册表替换 profile、脱离环境变量、CDSlog 增量返回 |
+| [改动报告](design-concepts/总览/改动报告.md) | 中层与底层按五项修改的改动位置、工作量、如何改与实施顺序 |
 | [design-concepts/底层与中层/多用户设计.md](design-concepts/底层与中层/多用户设计.md) | Token 寻址与路由：用户注册、注册表、中层按 token 投送、上层无感 |
+| [当前底层与中层代码梳理](design-concepts/底层与中层/代码梳理.md) | 现状执行机制、功能清单，以及保留/删除/改造的判定 |
+| [日志返回设计标准](design-concepts/底层与中层/日志返回设计标准.md) | CDS.log 增量返回、实现点、分级过滤与限长降级的唯一设计标准 |
 | [design-concepts/底层与中层/并发处理设计.md](design-concepts/底层与中层/并发处理设计.md) | 并发模型详解：进程隔离、GIL 与 I/O 等待、单通道串行机制、并发安全纪律 |
 | [research/README.md](research/README.md) | Virtuoso 数据模型、TB、日志和重构技术调研 |
+| [demo/README.md](demo/README.md) | 新功能独立最小验证：注册 + token 路由 + 并行的完整业务模拟，以及 CDS.log 增量 |
+| [demo/TB测试场景验证报告.md](demo/TB测试场景验证报告.md) | 8 个 TB 场景的实测数据与验证结论（复用 `tb_scenario_report.py`） |
+
+
+## 独立 Demo
+
+`demo/` 是与当前实现脱钩的最小参考验证目录。它只使用 Python 标准库，
+不读取 `.env`，不连接 SSH/Virtuoso；运行方式和验收口径见
+[demo/README.md](demo/README.md)。截至 **2026-09-09**，`full_demo.py` 收拢
+注册多用户、token 到端口路由、同用户串行/并行（`run_command` 用 pwsh 模拟，
+`execute_skill` 到达端口即成功），`cdslog_demo.py` 单独验证 CDS.log 增量
+算法；8 个 TB 场景的实测数据与验证结论见 [demo/TB测试场景验证报告.md](demo/TB测试场景验证报告.md)。
 
 ## 本版已经决定的事项
 

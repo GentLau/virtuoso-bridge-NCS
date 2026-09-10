@@ -1,0 +1,30 @@
+Name                                             Stmts   Miss  Cover
+--------------------------------------------------------------------
+src\bridge\resources\ramic_bridge_daemon_3.py      304    114    62%
+src\bridge\resources\ramic_bridge_daemon_27.py     299    132    56%
+src\pyapi\__init__.py                                2      0   100%
+src\pyapi\models.py                                 51      1    98%
+src\server\__init__.py                               8      4    50%
+src\server\registration_server.py                  115     18    84%
+src\transport\__init__.py                            3      0   100%
+src\transport\legacy_env.py                         53      0   100%
+src\transport\legacy_profile.py                      8      1    88%
+src\transport\middle.py                            143     24    83%
+src\transport\paramiko_backend.py                  760    284    63%
+src\transport\register\__init__.py                   3      0   100%
+src\transport\register\flow.py                     238     29    88%
+src\transport\register\models.py                    65      2    97%
+src\transport\register\probe.py                    132     24    82%
+src\transport\registry.py                          131      4    97%
+src\transport\remote_paths.py                       27      0   100%
+src\transport\remote_roles.py                       31      0   100%
+src\transport\runtime_paths.py                      34      3    91%
+src\transport\setup.py                               5      0   100%
+src\transport\skill_client.py                       79      5    94%
+src\transport\ssh.py                               902    395    56%
+src\transport\transfer.py                          152      3    98%
+src\transport\tunnel.py                            158     16    90%
+--------------------------------------------------------------------
+TOTAL                                             3703   1059    71%
+
+2 empty files skipped.
