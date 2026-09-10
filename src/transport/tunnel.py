@@ -13,15 +13,13 @@ to different hosts, while avoiding duplicate persistent shells on one host.
 from __future__ import annotations
 
 import hashlib
-import importlib.resources
 import logging
-import os
 import shlex
 import threading
 from pathlib import Path
 
 from pyapi.models import CommandResult
-from transport import remote_paths
+from transport.deploy import deploy_files
 from transport.registry import UserEntry
 from transport.remote_roles import ResolvedTargets
 from transport.setup import generate_setup_il
@@ -53,6 +51,7 @@ class RemoteClient:
             "proxy_url": entry.ssh.proxy,
             "control_master": entry.ssh.control_master or "auto",
             "tool_override": entry.ssh.tool_override or None,
+            "control_identity": entry.token,  # per-token ControlMaster namespace
         }
         self._runners: dict[str, SSHRunner] = {}
         self._parallel_runner: SSHRunner | None = None
@@ -114,70 +113,16 @@ class RemoteClient:
     # -- deployment ---------------------------------------------------------
 
     def deploy(self, python_major: int = 3) -> str:
-        user = self.user
-        token = self.entry.token  # verification token only; never a path segment
-        root = self.targets.scratch_root
-        ramic = remote_paths.ramic_dir(user, root)
-        setup_dir = remote_paths.setup_dir(user, root)
-        status = remote_paths.status_dir(user, root)
-
-        daemon_variants = [
-            ("ramic_bridge_daemon_3.py", remote_paths.daemon_path(user, 3, root)),
-            ("ramic_bridge_daemon_27.py", remote_paths.daemon_path(user, 2, root)),
-        ]
-        il_src = importlib.resources.files("bridge.resources") / "ramic_bridge.il"
-        selected_daemon = remote_paths.daemon_path(user, python_major, root)
-        il_dst = remote_paths.il_path(user, root)
-        setup_dst = remote_paths.setup_il_path(user, root)
-        identity_dst = remote_paths.identity_path(user, root)
-
-        setup = generate_setup_il(
-            daemon=str(selected_daemon),
-            il=str(il_dst),
+        return deploy_files(
+            runner=None if self._is_local else self.skill_runner,
+            token=self.entry.token,
+            user=self.user,
+            scratch_root=self.targets.scratch_root,
+            python_major=python_major,
             python_cmd=self.entry.expected.remote_python or "python3",
             port=self.targets.skill_port,
-            token=token,
-            identity=str(identity_dst),
+            local=self._is_local,
         )
-
-        if self._is_local:
-            for d in (ramic, setup_dir, status):
-                Path(d).mkdir(parents=True, exist_ok=True)
-                try:
-                    os.chmod(d, 0o700)
-                except OSError:
-                    pass
-            for src_name, dst in daemon_variants:
-                src = importlib.resources.files("bridge.resources") / src_name
-                Path(dst).write_bytes(src.read_bytes())
-            Path(il_dst).write_bytes(il_src.read_bytes())
-            Path(setup_dst).write_text(setup, encoding="utf-8")
-            return str(setup_dst)
-
-        runner = self.skill_runner
-        mkdir = (
-            f"mkdir -p {shlex.quote(ramic)} {shlex.quote(setup_dir)} {shlex.quote(status)}"
-            f" && chmod 700 {shlex.quote(ramic)} {shlex.quote(setup_dir)} {shlex.quote(status)}"
-        )
-        result = runner.run_command(mkdir)
-        if result.returncode != 0:
-            raise RuntimeError(f"deploy mkdir failed: {result.stderr.strip()}")
-
-        for src_name, dst in daemon_variants:
-            src = importlib.resources.files("bridge.resources") / src_name
-            text = src.read_text(encoding="utf-8")
-            result = runner.upload_text(text, str(dst))
-            if result.returncode != 0:
-                raise RuntimeError(f"deploy failed for {dst}: {result.stderr.strip()}")
-        il_text = il_src.read_text(encoding="utf-8")
-        result = runner.upload_text(il_text, str(il_dst))
-        if result.returncode != 0:
-            raise RuntimeError(f"deploy failed for {il_dst}: {result.stderr.strip()}")
-
-        result = runner.upload_text(setup, str(setup_dst))
-        if result.returncode != 0:
-            raise RuntimeError(f"deploy setup failed: {result.stderr.strip()}")
-        return str(setup_dst)
 
     # -- tunnel -------------------------------------------------------------
 

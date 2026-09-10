@@ -29,11 +29,11 @@ from transport.register.models import (
     RegistrationRequest,
     RegistrationState,
 )
+from transport.deploy import deploy_files
 from transport.remote_paths import identity_path
-from transport.remote_roles import resolve
 from transport.runtime_paths import working_dir
 from transport.skill_client import SkillClient
-from transport.tunnel import RemoteClient
+from transport.ssh import SSHRunner
 
 logger = logging.getLogger(__name__)
 
@@ -243,12 +243,35 @@ def probe_user(
 # -- step 4: deploy ------------------------------------------------------------
 
 def deploy_user(entry: UserEntry, python_major: int, user: str) -> str:
-    """Deploy daemon/il/setup for a candidate entry; return the setup path."""
-    remote = RemoteClient(entry, resolve(entry), user)
+    """Deploy daemon/il/setup for a candidate entry; return the setup path.
+
+    Registration is self-contained: it resolves the (single-host) target from
+    the candidate entry directly and uses only the SSH backend + the shared
+    tool-like deploy helper.  No runtime routing object is involved.
+    """
+    runner = None
+    if entry.mode != "local":
+        runner = SSHRunner(
+            entry.route.skill.daemon_host or entry.route.command.host,
+            user=entry.expected.daemon_user or entry.route.command.user,
+            jump_host=entry.route.jump.host,
+            jump_user=entry.route.jump.user,
+            control_identity=entry.token,
+        )
     try:
-        return remote.deploy(python_major=python_major)
+        return deploy_files(
+            runner=runner,
+            token=entry.token,
+            user=user,
+            scratch_root=entry.deploy.scratch_root,
+            python_major=python_major,
+            python_cmd=entry.expected.remote_python or "python3",
+            port=entry.route.skill.daemon_port or _LOCAL_DEFAULT_PORT,
+            local=entry.mode == "local",
+        )
     finally:
-        remote.close()
+        if runner is not None:
+            runner.close()
 
 
 # -- step 5: connectivity -------------------------------------------------------
@@ -266,12 +289,18 @@ def _banner_hostname(entry: UserEntry, user: str) -> str | None:
         if entry.mode == "local":
             text = Path(path).read_text(encoding="utf-8", errors="replace")
         else:
-            remote = RemoteClient(entry, resolve(entry), user)
+            runner = SSHRunner(
+                entry.route.skill.daemon_host or entry.route.command.host,
+                user=entry.expected.daemon_user or entry.route.command.user,
+                jump_host=entry.route.jump.host,
+                jump_user=entry.route.jump.user,
+                control_identity=entry.token,
+            )
             try:
                 # the identity file is written by the il on the daemon host
-                result = remote.skill_runner.run_command(f"cat {shlex.quote(path)}", timeout=10)
+                result = runner.run_command(f"cat {shlex.quote(path)}", timeout=10)
             finally:
-                remote.close()
+                runner.close()
             text = result.stdout if result.returncode == 0 else ""
         for line in text.splitlines():
             if line.startswith("host="):
@@ -285,14 +314,17 @@ def test_connectivity(entry: UserEntry, user: str) -> ConnectivityReport:
     """Step 5: daemon reachable + token match + host-key + dual smoke.
 
     Everything that required a live daemon in step 3 is completed here.
+    Registration uses SSHRunner + SkillClient directly (tool-like only).
     """
     token = entry.token
     warnings: list[str] = []
     detail: list[str] = []
 
+    local_port = entry.route.skill.local_port or entry.route.skill.daemon_port
+    skill_port = entry.route.skill.daemon_port
     skill_client = SkillClient(
         host="127.0.0.1",
-        port=resolve(entry).local_port,
+        port=local_port,
         timeout=30.0,
         token=token,
         log_level=entry.cdslog.log_level,
@@ -308,22 +340,39 @@ def test_connectivity(entry: UserEntry, user: str) -> ConnectivityReport:
         skill = skill_client.execute_skill("1+1")
     else:
         expected_fp = entry.expected.ssh_host_key_fingerprint
-        current_fp = probes.host_key_fingerprint(entry.route.skill.daemon_host)
+        daemon_host = entry.route.skill.daemon_host or entry.route.command.host
+        current_fp = probes.host_key_fingerprint(daemon_host)
         fingerprint_ok = (not expected_fp) or (current_fp == expected_fp)
         if expected_fp and not fingerprint_ok:
             detail.append(
                 f"host key fingerprint mismatch: current={current_fp} expected={expected_fp}"
             )
-        remote = RemoteClient(entry, resolve(entry), user)
+
+        command_runner = SSHRunner(
+            entry.route.command.host or daemon_host,
+            user=entry.route.command.user or entry.expected.daemon_user,
+            jump_host=entry.route.jump.host,
+            jump_user=entry.route.jump.user,
+            control_identity=token,
+        )
+        tunnel_runner = SSHRunner(
+            daemon_host,
+            user=entry.expected.daemon_user or entry.route.command.user,
+            jump_host=entry.route.jump.host,
+            jump_user=entry.route.jump.user,
+            control_identity=token,
+        )
         try:
-            remote.ensure_tunnel()
-            result = remote.run_command("echo vb-ok")
+            result = command_runner.run_command("echo vb-ok")
             command_ok = result.returncode == 0 and result.stdout.strip() == "vb-ok"
             if not command_ok:
                 detail.append(f"command={result.returncode}:{result.stderr.strip()}")
+            tunnel_runner.start_port_forward(local_port, remote_port=skill_port)
             skill = skill_client.execute_skill("1+1")
         finally:
-            remote.close()
+            tunnel_runner.stop_port_forward()
+            command_runner.close()
+            tunnel_runner.close()
 
     skill_ok = skill.ok and (skill.output or "").strip().strip('"') == "2"
     token_ok = "invalid token" not in " ".join(skill.errors).lower()

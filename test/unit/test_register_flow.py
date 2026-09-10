@@ -455,16 +455,19 @@ class TestConnectivityFingerprint(unittest.TestCase):
         entry.expected.ssh_host_key_fingerprint = "SHA256:expected"
         entry.expected.daemon_endpoint_hostname = "server-a"
         entry.deploy.scratch_root = "/home/alice/.virtuoso-bridge"
-        fake_remote = mock.Mock()
-        fake_remote.run_command.return_value = CommandResult(0, "vb-ok", "")
+        fake_cmd = mock.Mock()
+        fake_cmd.run_command.return_value = CommandResult(0, "vb-ok", "")
+        fake_tunnel = mock.Mock()
         with mock.patch("transport.register.flow.probes.host_key_fingerprint", return_value="SHA256:other"), \
-             mock.patch("transport.register.flow.RemoteClient", return_value=fake_remote), \
+             mock.patch("transport.register.flow.SSHRunner", side_effect=[fake_cmd, fake_tunnel]), \
              mock.patch("transport.register.flow.SkillClient") as skill_cls, \
              mock.patch("transport.register.flow._banner_hostname", return_value=None):
             skill_cls.return_value.execute_skill.return_value = VirtuosoResult(
                 status=ExecutionStatus.SUCCESS, output="2"
             )
             report = test_connectivity(entry, "alice")
+        fake_tunnel.start_port_forward.assert_called_once_with(65082, remote_port=65081)
+        fake_tunnel.stop_port_forward.assert_called_once()
         self.assertFalse(report.fingerprint_ok)
         self.assertFalse(report.ok)
         self.assertIn("host key fingerprint mismatch", report.detail)

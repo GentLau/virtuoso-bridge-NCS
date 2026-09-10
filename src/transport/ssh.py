@@ -181,17 +181,25 @@ def _derive_tool(base_cmd: str, old_name: str, new_name: str) -> str:
     return shutil.which(new_name) or new_name
 
 
-def _short_control_path(host: str, user: str | None, jump_host: str | None) -> str:
+def _short_control_path(
+    host: str,
+    user: str | None,
+    jump_host: str | None,
+    identity: str | None = None,
+) -> str:
     """Build a short literal ControlPath for OpenSSH multiplexing.
 
     macOS has a 104-byte Unix-domain socket path limit.  Its default temp dir
     can already consume most of that budget, so keep the socket in a short
     directory and hash the connection identity into a stable filename.
+
+    ``identity`` is a per-token namespace: tokens never share a master socket,
+    so closing one runner can never tear down another token's connection.
     """
     base_dir = "/tmp" if os.name != "nt" and Path("/tmp").is_dir() else tempfile.gettempdir()
     local_id = str(os.getuid()) if hasattr(os, "getuid") else os.environ.get("USERNAME", "local")
-    identity = f"{local_id}|{user or 'default'}@{host}|{jump_host or 'direct'}"
-    token = hashlib.sha1(identity.encode("utf-8")).hexdigest()[:16]
+    conn_identity = f"{local_id}|{user or 'default'}@{host}|{jump_host or 'direct'}|{identity or ''}"
+    token = hashlib.sha1(conn_identity.encode("utf-8")).hexdigest()[:16]
     return str(Path(base_dir) / f"vb_ssh_{token}")
 
 
@@ -216,6 +224,7 @@ class SSHRunner:
         proxy_url: str | None = None,
         control_master: str = "auto",
         tool_override: dict | None = None,
+        control_identity: str | None = None,
     ) -> None:
         _setup_command_log()
         self._host = host
@@ -255,7 +264,7 @@ class SSHRunner:
         else:  # auto
             self._use_control_master = self._backend == "openssh"
 
-        self._control_path = _short_control_path(host, user, jump_host)
+        self._control_path = _short_control_path(host, user, jump_host, control_identity)
 
         # Persistent SSH shell = one long-lived ``ssh host sh -s`` subprocess
         # shared by every run_command call.  Turns N cold handshakes into 1.
