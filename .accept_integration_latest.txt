@@ -1,0 +1,19 @@
+test_invalid_token_nak (test_daemon_handler.TestDaemon27Handler.test_invalid_token_nak) ... ok
+test_multiline_packaged (test_daemon_handler.TestDaemon27Handler.test_multiline_packaged) ... ok
+test_valid_single_line (test_daemon_handler.TestDaemon27Handler.test_valid_single_line) ... ok
+test_invalid_token_is_nak_without_touching_pipe (test_daemon_handler.TestDaemonHandler.test_invalid_token_is_nak_without_touching_pipe) ... ok
+test_json_decode_error (test_daemon_handler.TestDaemonHandler.test_json_decode_error) ... ok
+test_multiline_skill_is_packaged_into_il_file (test_daemon_handler.TestDaemonHandler.test_multiline_skill_is_packaged_into_il_file) ... ok
+test_timeout_without_virtuoso_reply (test_daemon_handler.TestDaemonHandler.test_timeout_without_virtuoso_reply) ... ok
+test_valid_single_line_skill_roundtrip (test_daemon_handler.TestDaemonHandler.test_valid_single_line_skill_roundtrip) ... ok
+test_invalid_token_over_tcp (test_daemon_handler.TestDaemonSubprocess.test_invalid_token_over_tcp) ... ok
+test_missing_token_exits_nonzero (test_daemon_handler.TestDaemonSubprocess.test_missing_token_exits_nonzero) ... ok
+test_port_in_use_exits_nonzero (test_daemon_handler.TestDaemonSubprocess.test_port_in_use_exits_nonzero) ... ok
+test_parallel_local (test_integration.TestIntegration.test_parallel_local) ... ok
+test_skill_end_to_end_fake_daemon (test_integration.TestIntegration.test_skill_end_to_end_fake_daemon) ... ok
+test_thread_capacity (test_integration.TestIntegration.test_thread_capacity) ... ok
+
+----------------------------------------------------------------------
+Ran 14 tests in 24.750s
+
+OK

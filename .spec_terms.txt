@@ -1,0 +1,307 @@
+doc\测试覆盖报告.md:16:  scenario/       3 项                   场景级：本地六步注册全流程、多用户 token 隔离
+doc\测试覆盖报告.md:29:| 场景级 | 本地六步注册（apply→load→verify→commit→业务三接口）与双用户隔离 | `test/scenario/*` |
+doc\测试覆盖报告.md:43:| `transport/register/flow.py` | 240 | 98% | 六步注册编排 |
+doc\测试覆盖报告.md:62:### 3.1 六步注册（多用户设计 §3.2）
+doc\测试覆盖报告.md:66:- 第三步探测：只做 daemon 可用前即可验证的项目——SSH 可达、host key 指纹、hostname、daemon 用户存在性、python 选型、端口空闲/分配（避让注册表已占端口）、部署根可写；**用户未填以探测固化，显式填写的参数做可用性校验**（如 local_port 占用、spectre 路径不可执行都会报告参数问题）；每个失败分支都有单测且不落盘；
+doc\测试覆盖报告.md:67:- 第四步部署：python 2/3 选 `_27/_3`，setup IL 注入 token 并**每次 load 打印 token**（新增 `printf("[RAMIC] token=%L\n" RBDToken)`，有单测 + 真机 load 验证）；
+doc\测试覆盖报告.md:68:- 第五步连通：daemon 可用后补齐第三步无法完成的全部校验——命令冒烟 + Skill 冒烟 + token 比对 + **host key 指纹运行时比对（不匹配 ERROR）** + banner 主机名漂移 WARNING，失败重试不落盘；
+doc\测试覆盖报告.md:69:- 第六步唯一写盘：`verify()` 成功才 `registry.register()`；**verify 幂等**（重复调用保持 committed）；注册表写盘先 `tmp+replace` 成功再提交内存，失败回滚。
+doc\测试覆盖报告.md:87:- token 使用范围：路由/校验用 token；**用户可读路径用唯一用户名**（`~/.virtuoso-bridge/<user>/`），路径层有单测 + 真机验证；
+doc\测试覆盖报告.md:120:12. `verify()` 重复调用会把 committed 翻成 failed → 已幂等。
+doc\测试覆盖报告.md:156:1. **split-host 独立探测**：手动注册单主机完整；`daemon_host ≠ command host` 时对 daemon 主机单独探测与路径可见性检查未实现；
+doc\测试覆盖报告.md:158:3. `route.spectre.bin` 目前只做显式输入可用性校验，尚未在第三步自动探测 spectre。
+doc\接口调用指南.md:25:## 2. 前置：用户注册（六步流程）
+doc\接口调用指南.md:37:浏览器打开 `http://127.0.0.1:8124/`，按页面六步引导完成：
+doc\接口调用指南.md:42:3 探测（SSH 可达、host key 指纹、hostname、daemon 用户、部署根可写、python 版本、端口空闲）
+doc\接口调用指南.md:45:6 写入注册表（前五步全部成功才落盘）
+doc\接口调用指南.md:54:| POST | `/api/register/<user>/verify` | 用户已 load → 执行第 5/6 步，成功后 `stage=committed` |
+doc\接口调用指南.md:55:| GET | `/api/register/<user>` | 查询当前注册状态 |
+doc\接口调用指南.md:68:state = flow.apply(RegistrationRequest(
+doc\接口调用指南.md:75:state = flow.verify()          # 用户在 CIW load 之后调用；成功即 stage == "committed"
+doc\接口调用指南.md:156:- **token 使用范围**：只用于路由与校验；用户可读的文件/目录路径一律用**唯一用户名**（如 `~/.virtuoso-bridge/<user>/`），token 不再作为路径段。
+doc\接口调用指南.md:207:c = server.run_command("spectre netlist.scs", token="a3f9c2…")
+doc\接口调用指南.md:228:- 配置唯一源头：`<本地工作目录>/registry.json`（上层不读 `VB_*`、`.env`、profile）；
+spec\README.md:34:| [核心修改设计](design-concepts/总览/核心修改.md) | 五项核心修改：并行、token、注册表替换 profile、脱离环境变量、CDSlog 增量返回 |
+spec\README.md:60:2. 底层 daemon 只处理 `Skill`；普通 shell 命令、Spectre、`spiceIn`、`strmOut` 等命令行工具都由中层的 `RunCommand` 执行。
+spec\README.md:65:7. runtime 在创建时可以选择逻辑 `purpose`（例如 `business`/`spectre`），由中层映射到角色主机；每次业务调用仍不接触物理 host。
+spec\README.md:72:- 第一个完整 Spectre 垂直切片需要确认 `RuntimePurpose` 的最小枚举和路径共享规则；新增 purpose 仍不能暴露物理 host。
+spec\README.md:81:- local/SSH/split-host 是否只影响中层；
+spec\design-concepts\底层与中层\注册配置一览.md:6:> 定位：本文件只回答"注册要提交哪些参数"；参数如何使用、在哪一步生效，见多用户设计.md §3.2 六步注册流程。
+spec\design-concepts\底层与中层\注册配置一览.md:33:| 目标 daemon 主机 | 否（缺省同 SSH 主机） | 不需要（隐含 `localhost`） | Skill 通道 daemon 监听的主机；split-host 下与 SSH 主机不同 |
+spec\design-concepts\底层与中层\注册配置一览.md:41:> **没有 profile 参数**：旧架构的 profile（`VB_*_<profile>` 后缀）使命是"给配置集合起名"，注册表 + token 已把它取代；人类可读标签由用户名（`alice`）承担。profile 仅存在于迁移兼容语境，不参与任何路由/安全决策。
+spec\design-concepts\底层与中层\注册配置一览.md:45:由六步流程第三步（探测）自动固化，供日后连接时比对：
+spec\design-concepts\底层与中层\注册配置一览.md:49:| **SSH host key 指纹** | 注册时执行一次 SSH 握手，从 `known_hosts`/首连指纹中提取并固化 | **不适用**（无 SSH 通道，由 token 承担全部身份职责） | 防机器漂移/别名重定向/中间人，不再依赖 TOFU 式的"首连按 yes" |
+spec\design-concepts\底层与中层\注册配置一览.md:52:| **部署根可见性标记** | 对 daemon/GUI 主机分别 `test -r`/`test -w` | 本机文件系统检查 | 注册时就发现 split-host 路径不可见，而不是部署到一半报错 |
+spec\design-concepts\底层与中层\注册配置一览.md:55:## 4. 参数在六步流程中的位置
+spec\design-concepts\底层与中层\注册配置一览.md:61:| 第三步 探测 | 必选参数全部 + 生成"自动固化的补充参数" |
+spec\design-concepts\底层与中层\注册配置一览.md:62:| 第四步 部署 | scratch root、python 版本、token |
+spec\design-concepts\底层与中层\注册配置一览.md:63:| 第五步 连通性测试 | daemon 端口、token、期望主机名 |
+spec\design-concepts\底层与中层\注册配置一览.md:64:| 第六步 写入注册表 | 全部参数 + 固化值 → registry.json |
+spec\design-concepts\底层与中层\注册配置一览.md:66:## 5. 注册表条目示例（第六步落盘结果）
+spec\design-concepts\底层与中层\注册配置一览.md:75:        "skill":   { "local_port": 65082, "daemon_host": "compute-host-b", "daemon_port": 65081 },
+spec\design-concepts\底层与中层\注册配置一览.md:77:        "file":    { "host": "server-a", "root": "/home/jtliu/.virtuoso-bridge/id_token" }
+spec\design-concepts\底层与中层\注册配置一览.md:80:        "ssh_host_key_fingerprint": "SHA256:7aX…",      ← 第三步探测固化
+spec\design-concepts\底层与中层\注册配置一览.md:81:        "daemon_endpoint_hostname": "compute-host-b",   ← 第三步探测固化
+spec\design-concepts\总览\配置一览.md:35:| `expected.ssh_host_key_fingerprint` | 注册时固化主机指纹，连接时比对，防机器漂移/中间人 | 必填（注册探测） |
+spec\design-concepts\总览\配置一览.md:66:| `route.skill.daemon_host` | 底层 daemon 实际监听的主机 | local 默认 `127.0.0.1`；remote 必填 |
+spec\design-concepts\总览\配置一览.md:68:| `route.command.host` | `RunCommand` 实际执行的主机 | 默认 `= daemon_host` |
+spec\design-concepts\总览\配置一览.md:71:| `route.file.root` | 文件传输的根目录/隔离域 | 默认 `= <scratch_root>/<user>`（**路径用用户名，不用 token**） |
+spec\design-concepts\总览\配置一览.md:72:| `route.spectre.host` | 可选：独立 Spectre 执行主机 | 默认 `= command.host` |
+spec\design-concepts\总览\配置一览.md:73:| `route.spectre.bin` | 可选：注册时探测固化的 spectre 绝对路径，避免依赖远端 shell PATH | 可选，无默认 |
+spec\design-concepts\总览\配置一览.md:74:| `deploy.scratch_root` | bridge 远端工作根；每个用户在其下用**唯一用户名**命名的子目录区分 | 默认 `~/.virtuoso-bridge` |
+spec\design-concepts\总览\配置一览.md:75:远端文件结构（写死，不配置；目录名 = 该用户的**用户名**，token 只用于路由/校验，不进入路径）：
+spec\design-concepts\总览\配置一览.md:78:<scratch_root = ~/.virtuoso-bridge>/<user>/
+spec\design-concepts\总览\配置一览.md:91:| `RBDPath`（il 常量） | daemon 脚本实际路径：`<scratch_root>/<user>/ramic/ramic_bridge_daemon_*.py` | 必填（部署生成） |
+spec\design-concepts\总览\配置一览.md:94:| `RBIdentityPath`（il 常量） | identity 文件路径：`<scratch_root>/<user>/status/daemon_identity.txt` | 必填（部署生成） |
+spec\design-concepts\总览\配置一览.md:100:| Spectre 环境 | 注册时固化 `spectre.bin` 或 cshrc 路径，执行时由中层显式传入 | 可选，无默认 |
+spec\design-concepts\总览\配置一览.md:109:| 部署目录 | `~/.virtuoso-bridge/<user>/`，目录名 = 唯一用户名 |
+spec\design-concepts\总览\配置一览.md:121:| `VB_REMOTE_HOST` | `route.skill.daemon_host` 缺省 | 迁移 |
+spec\design-concepts\总览\配置一览.md:125:| `VB_GUI_HOST` / `VB_DEPLOY_HOST` / `VB_DAEMON_HOST` / `VB_SPECTRE_HOST` | 对应 route 字段 | 迁移 |
+spec\design-concepts\总览\配置一览.md:128:| `VB_CLIENT_ID` / `VB_CLIENT_ID_<profile>` | — | 删除：远端目录按 token 子目录区分，不再做客户端分段 |
+spec\design-concepts\总览\配置一览.md:129:| `VB_CADENCE_CSHRC` / `VB_SPECTRE_BIN` | Spectre 环境（显式传入，不预设远端 shell） | 迁移 |
+spec\design-concepts\总览\配置一览.md:134:| `VB_PROFILE` / `VB_*_<profile>` | `user` | 删除主路径 |
+spec\design-concepts\总览\配置一览.md:153:5. from_env / profile 降级为迁移适配器，最终删除
+spec\design-concepts\底层与中层\日志返回设计标准.md:36:本版假设 `CDS.log` 与 daemon 同主机，不考虑 split-host 场景。
+spec\design-concepts\总览\核心修改.md:20:| 3 | 注册流程 | `profile` = `VB_*_<profile>` 环境变量 + 每 profile 一份 `state.json` | 本地 `registry.json` 注册表，注册→部署→load→连接 |
+spec\design-concepts\总览\核心修改.md:48:- 每 token 独立 SSH 连接和 channel 预算（默认 `MaxSessions=10`），超限拒绝。
+spec\design-concepts\总览\核心修改.md:66:- token 不用于 SSH 认证；命令和文件只按 token 对应的 route 寻址，SSH 侧仍走 host key + 账号权限。
+spec\design-concepts\总览\核心修改.md:70:## 4. 注册流程改造：profile → 注册表
+spec\design-concepts\总览\核心修改.md:76:| `profile`（`VB_*_<profile>`） | 配置散在环境变量，路由靠全局状态，上层按 profile 分支即违反分层 |
+spec\design-concepts\总览\核心修改.md:77:| `state.json`（每 profile 一份） | 事实上的注册表雏形，但没有 token 键和统一查询入口 |
+spec\design-concepts\总览\核心修改.md:84:- 每个条目保存 token、route、expected、部署路径：
+spec\design-concepts\总览\核心修改.md:93:        "skill":   {"local_port": 65082, "daemon_host": "compute-host-b", "daemon_port": 65081},
+spec\design-concepts\总览\核心修改.md:110:### 4.3 四步使用流程
+spec\design-concepts\总览\核心修改.md:113:① 注册（自动探测）   探测 SSH 指纹/hostname/端口空闲/部署根可见性/python 版本/daemon user
+spec\design-concepts\总览\核心修改.md:125:- `profile` 仅保留为旧 `.env` 脚本的迁移兼容入口，新代码一律用 `token`（或 `user` 便利索引）。
+spec\design-concepts\总览\核心修改.md:132:2. Spectre 等命令行工具依赖远端 shell 预先 source `VB_CADENCE_CSHRC` 设置 PATH / license 等环境。
+spec\design-concepts\总览\核心修改.md:174:5. 注册表迁移完成后，新代码不再依赖 profile 环境变量。
+spec\design-concepts\底层与中层\并发处理设计.md:474:| SSH 复用 | ControlMaster 同 host 全局共享一条 TCP | **每 token 独立 SSH**；token 内部才复用 channel |
+spec\design-concepts\底层与中层\并发处理设计.md:513:> 并发的地基是**进程隔离**（N 个 daemon = N 个 OS 进程，远端真并行）；并发的方式是**睡下等叫**（所有参与者阻塞在系统调用上，内核按数据到达唤醒，谁先完成谁先回）；并发的代价是**零**（等待期间 GIL 释放，计算只有微秒）；要守的纪律是**无共享可变状态**（注册表只读、连接私有、禁全局变量）。**并发配置（已定）**：每 token 独立 SSH + 线程池（默认 32，超限报错）+ channel 预算（超限拒绝）；Skill 串行（语义）、命令默认串行、显式并行（run_command 的 `parallel=True`）、文件默认并行。服务形态补上连接池与同 token 限流，就是完整的非阻塞多用户架构。
+spec\design-concepts\总览\改动报告.md:5:> 范围：只评估**中层**与**底层**。上层业务模块（schematic/layout/maestro/symbol/spectre）不在本次改动评估内。
+spec\design-concepts\总览\改动报告.md:9:- 五项核心修改：并行机制、token 机制、注册表替换 profile、远端脱离环境变量、CDSlog 增量返回。
+spec\design-concepts\总览\改动报告.md:20:| `transport/tunnel.py` | `SSHClient`：从 `VB_*` 解析角色、生成 setup il（`setShellEnvVar`）、隧道、上传/下载/命令 | registry 替换 profile；setup il 去环境变量；命令加 parallel |
+spec\design-concepts\总览\改动报告.md:23:| `env.py`、`profile.py` | `.env`/`VB_*`/profile 解析 | 被 registry 取代，保留为迁移适配器 |
+spec\design-concepts\总览\改动报告.md:65:### 3.3 注册流程改造：profile → 注册表
+spec\design-concepts\总览\改动报告.md:67:- **现状**：`profile.py`/`env.py` 从 `VB_*_<profile>` 读配置，`state.json` 每 profile 一份，端口按用户名哈希。
+spec\design-concepts\总览\改动报告.md:68:- **改动位置**：新增 `middle/registry.py`、`register.py`、`connect.py`；改造 `tunnel.py`、`profile.py`、`env.py` 为迁移适配器。
+spec\design-concepts\总览\改动报告.md:70:  1. `registry.json`：user 为键，保存 token、route、expected，冷启动只读；setup/identity 路径由固定目录结构派生，不落注册表；
+spec\design-concepts\总览\改动报告.md:71:  2. 注册探测六项：SSH 指纹、hostname、端口空闲、部署根可见、python 版本、daemon user；
+spec\design-concepts\总览\改动报告.md:74:  5. `profile` 只保留 `from_env(profile=…)` 语法糖。
+spec\design-concepts\总览\改动报告.md:75:- **工作量**：L。这是最大的一块，但可以分阶段：先 registry 只读 + token，再注册/连接流程，最后删 profile 依赖。
+spec\design-concepts\总览\改动报告.md:83:  - Spectre 依赖远端 shell source `VB_CADENCE_CSHRC`。
+spec\design-concepts\总览\改动报告.md:84:- **改动位置**：`tunnel.py`（setup 生成）、`ramic_bridge.il`（配置读取）、Spectre 命令构造（cli/runner）。
+spec\design-concepts\总览\改动报告.md:86:  1. setup il 把 `RB_DAEMON_PATH`/`RB_PYTHON_PATH`/`RB_PORT`/`RB_IDENTITY_PATH`/token 写成 il 常量（或 daemon 参数），部署到固定 `<user>/ramic|setup|status` 结构（路径用用户名，token 只用于路由/校验）；
+spec\design-concepts\总览\改动报告.md:89:- **工作量**：M。bridge 配置去 env 是 S；Spectre 环境显式化是 M。
+spec\design-concepts\总览\改动报告.md:104:- **如何改**：先跑通“一次 eval → 一个 `result.log`”；本版不考虑 split-host 下 CDS.log 与 daemon 不同主机的情况。
+spec\design-concepts\总览\改动报告.md:111:| 注册表 | 新增 registry/register/connect；profile/env 迁移 | L | 中（存量迁移） | — |
+spec\design-concepts\总览\改动报告.md:113:| 远端去 env | tunnel.py、il、Spectre 命令构造 | M | 中（现场验证） | 注册表部署 |
+spec\design-concepts\总览\改动报告.md:130:4. **registry 迁移**：`from_env`/`profile` 只降级不删除，先保证旧脚本可用，再做增量删除。
+spec\protocol-v1.md:75:r = middle.run_command("spectre netlist.scs", token="a3f9c2…")
+spec\protocol-v1.md:79:r1 = middle.run_command("spectre corner1.scs", token="a3f9c2…", parallel=True)
+spec\protocol-v1.md:80:r2 = middle.run_command("spectre corner2.scs", token="a3f9c2…", parallel=True)
+spec\protocol-v1.md:117:- 上层不传 host、port、SSH、tunnel、profile 或 daemon 地址。
+spec\design-concepts\底层与中层\代码梳理.md:4:> 对象：`src/virtuoso_bridge/` 中的中层（transport、basic/bridge、models、env/profile）与底层（basic/resources/*）
+spec\design-concepts\底层与中层\代码梳理.md:38:SSHClient（解析 GUI/Deploy/Daemon/Spectre/Jump 角色）
+spec\design-concepts\底层与中层\代码梳理.md:46:local 模式：`daemon_host=localhost` 时不建 SSH，loopback 直连 daemon，文件用本地 copy。
+spec\design-concepts\底层与中层\代码梳理.md:51:- `profile.py`：profile 解析、venv 绑定；
+spec\design-concepts\底层与中层\代码梳理.md:53:- `tunnel.py::save_state/read_state`：`state.json` 每 profile 一份；
+spec\design-concepts\底层与中层\代码梳理.md:70:| `transport/tunnel.py::SSHClient` | 角色 runner 管理；部署；隧道；`run_command`；`upload_file/download_file`；`save_state/read_state` | **保留**：runner 管理、部署、隧道、命令/文件底层调用、state 诊断<br>**删除**：`from_env` 作为主路径、profile/env 分支<br>**改造**：路由来源改 registry；命令/文件加 `token`；`run_command` 加 `parallel`；setup il 写 il 常量（去 `setShellEnvVar`）；token 注入 setup；部署到固定 `<user>` 下 `ramic`/`setup`/`status` 三目录（路径用用户名，不用 token） |
+spec\design-concepts\底层与中层\代码梳理.md:74:| `transport/remote_paths.py` | 远端路径/client_id 规则 | **改造**：删除 client_id 目录段，路径按**用户名**子目录（`~/.virtuoso-bridge/<user>`） |
+spec\design-concepts\底层与中层\代码梳理.md:75:| `env.py`、`profile.py` | `.env` 加载、profile 解析、venv 绑定 | **删除主路径**：被 registry 取代；仅保留为旧脚本迁移适配器 |
+spec\design-concepts\底层与中层\代码梳理.md:86:| 注册表 | transfer、ssh | env/profile 主路径 | registry/register/connect 新建；SSHClient/bridge 从 registry 取 route；runtime_paths 收拢为工作目录 |
+spec\design-concepts\底层与中层\代码梳理.md:87:| 远端去 env | daemon 启动/部署机制 | `setShellEnvVar("RB_*")` + il `getShellEnvVar` | setup il 写常量；Spectre 命令显式传环境 |
+spec\design-concepts\底层与中层\代码梳理.md:92:- **底层**：文件少但都是关键路径，**整体保留**，只做 token、去 env、CDSlog 三处改造；
+spec\design-concepts\底层与中层\代码梳理.md:95:- **迁移期保留为适配器**：`env.py`/`profile.py`/`from_env`，完成迁移后删除。
+spec\design-concepts\总览\三层整体架构设计.md:6:> 范围：定义上层、中层、底层的职责边界和层间接口；不定义原理图、版图、测试平台、Maestro、Spectre 等业务操作的内部实现。
+spec\design-concepts\总览\三层整体架构设计.md:176:r2 = middle.run_command("spectre netlist.scs", token="a3f9c2…")
+spec\design-concepts\总览\三层整体架构设计.md:182:- 三个接口的参数名、顺序和返回类型与现代码一致，**唯一改动是新增必填的关键字参数 `token`**；token 缺失直接报错，不提供旧路径默认值；
+spec\design-concepts\底层与中层\多用户设计.md:12:- 每个用户拥有独立的 resident daemon、独立监听端口、独立 SSH 通道；
+spec\design-concepts\底层与中层\多用户设计.md:15:- **上层完全无感**：上层代码不接触 host、端口、profile、SSH、tunnel，只看得到"一个业务服务器"。
+spec\design-concepts\底层与中层\多用户设计.md:19:> **N 个用户 = N 个命令通道 + N 个 Skill 通道**。例如 6 个用户，上层看到的是 6 个业务服务器；中层按 token 参数路由到 6 个隔离域，每个背后有一条独立的命令通道（SSH 会话/channel）和一条独立的 Skill 通道（本地端口 → 隧道 → daemon → CIW 会话）。跨用户并行互不阻塞；同账号场景下是桥层通道隔离（命令流不串、返回不混、文件在各自用户自己的远端目录）；**token 是核心区分**，OS 级权限分离由 IT 提供 Unix 账号保证，不在桥的职责内。
+spec\design-concepts\底层与中层\多用户设计.md:31:| `profile`（`VB_*_<profile>` 后缀） | 按名字区分多套连接配置 | 配置写在 `.env`，路由靠**环境变量全局状态**；上层若按 profile 分支即违反分层 |
+spec\design-concepts\底层与中层\多用户设计.md:32:| `client_id` | 隔离"同一远端用户从多台本地机器连" | 遗留机制：改造后**删除**，远端目录按**用户名**子目录区分（`~/.virtuoso-bridge/<user>`），不再做客户端分段 |
+spec\design-concepts\底层与中层\多用户设计.md:33:| `state.json`（每 profile 一份） | 记录端口/隧道/setup 路径 | 已是事实上的注册表雏形，但没有 token 键，也没有统一查询入口 |
+spec\design-concepts\底层与中层\多用户设计.md:37:本设计把上述机制**统一收拢**为六步注册流程（详见 3.2）：**①申请 → ②本地校验 → ③探测 → ④部署 → ⑤连通性测试 → ⑥写入注册表**。注册完成后，使用中按注册表路由，**每用户一个独立 SSH**（详见 [并发处理设计](并发处理设计.md)）。
+spec\design-concepts\底层与中层\多用户设计.md:52:  - token 由**客户端本地生成**，写入注册表（客户端侧索引，无副作用）；
+spec\design-concepts\底层与中层\多用户设计.md:54:- **token 使用范围（已明确）**：token 只用于**路由与校验**（注册表路由、daemon 比对、Skill 请求）；**用户可读路径一律用唯一用户名**（如 `~/.virtuoso-bridge/<user>/`），token 太长太散，不再作为路径段。
+spec\design-concepts\底层与中层\多用户设计.md:60:### 3.2 用户注册（六步注册流程）
+spec\design-concepts\底层与中层\多用户设计.md:64:注册是一条**先验证、后落盘**的流水线：前五步任何一步失败，注册表都不产生条目；第六步是唯一写入点。参数细节见 [注册配置一览](注册配置一览.md)，此处聚焦流程本身。
+spec\design-concepts\底层与中层\多用户设计.md:71:    B -->|通过| C{第三步 探测<br/>远端环境探测}
+spec\design-concepts\底层与中层\多用户设计.md:73:    C -->|通过| D[第四步 部署<br/>上传文件到指定路径]
+spec\design-concepts\底层与中层\多用户设计.md:75:    D2 --> E{第五步 连通性测试<br/>daemon 可用 + 双冒烟}
+spec\design-concepts\底层与中层\多用户设计.md:78:    E -->|通过| F[第六步 写入注册表]
+spec\design-concepts\底层与中层\多用户设计.md:84:用户发起注册请求，提交**必选参数**（用户名、目标主机、端口等）。本步只是"提出申请"，不产生任何副作用。token 在此时生成（自动或手动指定），随申请在流程内部传递，第六步才落盘。
+spec\design-concepts\底层与中层\多用户设计.md:97:本步只挡**注册表内**的冲突；远端环境是否真的可用，由第三步探测。
+spec\design-concepts\底层与中层\多用户设计.md:99:#### 第三步：探测（远端环境探测）
+spec\design-concepts\底层与中层\多用户设计.md:107:| 1 | 端口能不能用 | 远端 daemon 端口是否空闲（bind/占用检查）——**部署前可查**；是否真有 daemon 在监听留到第五步 |
+spec\design-concepts\底层与中层\多用户设计.md:108:| 2 | 主机对不对 | SSH 握手取 host key 指纹（固化，供日后比对防机器漂移）+ `hostname -f` 与期望主机名比对 |
+spec\design-concepts\底层与中层\多用户设计.md:110:| 4 | 路径可不可写 | `mkdir -p` + `test -w` 部署根；split-host 下对 daemon/GUI 主机分别检查 |
+spec\design-concepts\底层与中层\多用户设计.md:115:#### 第四步：部署
+spec\design-concepts\底层与中层\多用户设计.md:125:**完成后必须提示用户**：去 CIW 里 `load` 指定文件并启动 Virtuoso（load 会拉起 daemon，CIW 打印 token 供目视确认，见 3.5）。**部署结束 ≠ 注册完成**——daemon 起没起来、通道通不通，由第五步验收。
+spec\design-concepts\底层与中层\多用户设计.md:127:#### 第五步：连通性测试
+spec\design-concepts\底层与中层\多用户设计.md:129:**核心时序**：此时 daemon 已可用，把第三步“daemon 不可用期间无法完成”的校验全部补齐，完成全部探测/校准/确认后才允许进入第六步。
+spec\design-concepts\底层与中层\多用户设计.md:138:| **host key 指纹** | 当前 host key 与第三步固化值比对 | 不匹配 → **ERROR**（防机器漂移/中间人） |
+spec\design-concepts\底层与中层\多用户设计.md:142:失败 → 返回原因，**重试第五步**（提示 load / 重新部署）；通过 → 进入第六步。
+spec\design-concepts\底层与中层\多用户设计.md:144:#### 第六步：写入注册表
+spec\design-concepts\底层与中层\多用户设计.md:146:**前五步全部成功才落盘。** 写入完整注册条目（token、mode、route、expected 固化值，见 3.4）。从此该 user 进入"已注册"状态，使用中按注册表路由（见 3.3）。
+spec\design-concepts\底层与中层\多用户设计.md:148:> **不落盘原则**：第二~五步任何失败，注册表不产生任何条目——不会留下"半成品 user"污染后续注册与路由。
+spec\design-concepts\底层与中层\多用户设计.md:150:### 3.3 使用中的路由与并发（每用户一个 SSH）
+spec\design-concepts\底层与中层\多用户设计.md:152:**注册完成后，使用期的核心约定：每用户一个独立 SSH，按注册表路由。** 并发细节见 [并发处理设计](并发处理设计.md)，此处只列与路由相关的决策点。
+spec\design-concepts\底层与中层\多用户设计.md:163:- **每用户一个独立 SSH 连接**（+ 独立线程池 + 独立 channel 预算）——严禁跨 user 复用；两个 user 连同一台机器也是两条 SSH（详见并发处理设计 §11）；
+spec\design-concepts\底层与中层\多用户设计.md:170:| 注册第五步（连通性测试） | daemon 校验 + 双通道冒烟 | ✅ 唯一一次完整测试 |
+spec\design-concepts\底层与中层\多用户设计.md:189:- **注册时机**：六步流程**第六步**（前五步全部成功才落盘，见 3.2）；
+spec\design-concepts\底层与中层\多用户设计.md:190:- **不维护运行态字段**：注册表**没有** `status`/`authorized` 字段——每次连接都执行完整探测与冒烟（注册第五步），运行态是连接时的实时结论，落盘快照只会过时误导；
+spec\design-concepts\底层与中层\多用户设计.md:227:middle.run_command("spectre …", token="a3f9c2…")
+spec\design-concepts\底层与中层\多用户设计.md:235:上层 MUST NOT 接触：`profile`、端口、host、`SSHClient`、`state.json`、`VB_*`。
+spec\design-concepts\底层与中层\多用户设计.md:275:| RunCommand | 仅**寻址**（选 command host），无安全校验 | 信任 SSH host key + 账号权限边界（见 5.5） |
+spec\design-concepts\底层与中层\多用户设计.md:285:- 所有领域服务（schematic/layout/maestro/spectre…）只注入 runtime，不注入 host；
+spec\design-concepts\底层与中层\多用户设计.md:286:- 迁移期兼容：现有 `from_env(profile=…)` 等价于"从注册表取该 profile 对应的旧配置再路由"的语法糖，仅用于旧 `.env` 时代脚本的过渡；新代码一律用 user（或 token）。
+spec\design-concepts\底层与中层\多用户设计.md:291:- 新增 `register.py`：**第三步探测**（SSH 握手取指纹、hostname、端口空闲、部署根可见性、python 版本、daemon user 存在性）——只验部署前可验证项，任一失败返回原因、不落盘；
+spec\design-concepts\底层与中层\多用户设计.md:292:- 新增 `connect.py`：**连通性测试**（六步流程第五步，命令校验 → daemon 校验），逐项比对注册表 `expected` 与实况；host key 指纹与 TCP/token 失败为 ERROR，hostname/user/banner 漂移为 WARNING；**测试通过以命令冒烟（echo vb-ok）与 Skill 冒烟（1+1==2）双通为准**；部署归 `deploy.py`（六步流程第四步），不属连通性测试；
+spec\design-concepts\底层与中层\多用户设计.md:294:- 端口分配从"用户名哈希"升级为**注册表分配**：新注册时取未被占用的端口（第三步探测含远端占用检查），冲突显式报错；
+spec\design-concepts\底层与中层\多用户设计.md:295:- 隧道复用池：**每 token 独立 SSH 连接**，token 内部复用 channel（隧道、命令、文件），复用现有 `SSHRunner` 多会话与 `paramiko_backend` 基础；
+spec\design-concepts\底层与中层\多用户设计.md:296:- **命令执行隔离（多用户各自独立命令行）**：不同 token 的命令执行**必须各自独立**——每 token 独立 SSH 连接和 exec channel；**禁止跨 token 共用 SSH 连接或 persistent shell**（单会话 stdin/stdout 串命令）；同一 token 的多连接可复用其专属 channel；
+spec\design-concepts\底层与中层\多用户设计.md:314:| `check_daemon_host` | **降级为诊断**：建连时打印/比对主机名，帮用户发现配置写错；不再是安全校验 |
+spec\design-concepts\底层与中层\多用户设计.md:323:| 机器身份（是不是那台机器） | token 经 il 注入 daemon | host key ↔ 本地 `~/.ssh/known_hosts` |
+spec\design-concepts\底层与中层\多用户设计.md:329:- **网络层错连（中间人/DNS 劫持）**：host key 验证杜绝；
+spec\design-concepts\底层与中层\多用户设计.md:330:- **配置层错连（`VB_REMOTE_HOST` 打错字、split-host 角色配错）**：SSH 忠诚地到达错误的合法主机——这是用户意图错误，不是通道漏洞（与"token 目视确认放行到错误主机"同类，协议无法纠正错误意图）；靠 `hostname -f` 诊断在首次建连时暴露。
+spec\design-concepts\底层与中层\多用户设计.md:342:1. **注册表固化端点主机名与 host key 指纹**：注册时探测写入 `expected`（见 3.2）；
+spec\design-concepts\底层与中层\多用户设计.md:343:2. **建连时比对**：连通性测试的命令校验阶段逐项比对（host key 不匹配拒绝、hostname 漂移 warning），而非静默重试；
+spec\design-concepts\底层与中层\多用户设计.md:353:| SSH 机器身份 | known_hosts TOFU（首连警告，用户乱按 yes 即失效） | 注册时**主动探测并固化 host key 指纹**，连接时比对，不匹配直接拒绝 | 机器漂移/别名重定向/中间人从"靠人眼"变为"强断言" |
+spec\design-concepts\底层与中层\多用户设计.md:356:| 失败可诊断性 | 连接失败只有笼统的 Connection refused | 第三步探测 + 连通性测试，每项有独立原因 | 用户不用猜"哪里没对上" |
+spec\design-concepts\底层与中层\多用户设计.md:357:| 端口冲突 | 用户名哈希碰撞靠人工改 `VB_REMOTE_PORT` | 第三步探测远端占用，注册表分配 | 冲突在注册时就拒绝 |
+spec\design-concepts\底层与中层\多用户设计.md:358:| split-host 路径 | 部署到一半才报"文件不可见" | 注册时对 daemon/GUI 主机分别 `test -r`/`test -w` | 可见性问题在注册时暴露 |
+spec\design-concepts\底层与中层\多用户设计.md:366:| token 不防什么 | **SSH 通道不需要 token**（host key + 账号权限边界已足够，见 5.5）；恶意攻击：同服务器用户若能读目标用户的部署目录，可看到 il 里的 token 明文并冒充。缓解：部署目录 `chmod 700` + banner 不重现 token（token 仅在 load 时打印）+ token 终生不变，泄漏后的恢复手段就是删除用户重新注册 |
+spec\design-concepts\底层与中层\多用户设计.md:377:| 2 注册表 | `registry.json` 落地（user 为键，冷启动只读）；六步注册流程（申请 → 本地校验 → 探测 → 部署 → 连通性测试 → 写入注册表）+ 注册表 `expected` 固化；`middle.bind_user(user)` 便利入口 | ✅ |
+spec\design-concepts\底层与中层\多用户设计.md:378:| 3 连接流程 | 六步注册流程（申请 → 本地校验 → 探测 → 部署 → 连通性测试 → 写入注册表）；host key 指纹比对；端口注册表分配；token 终生固定 | ⚠️ 需一次性迁移 |
+spec\design-concepts\底层与中层\多用户设计.md:379:| 4 收紧 | daemon **强制** token 比对（旧版 il 不再放行）；部署目录 `chmod 700` | ⚠️ 需一次性迁移 |
+spec\design-concepts\底层与中层\多用户设计.md:408:4. **token 取代 profile**（已明确）：profile 的全部旧职能（环境变量后缀/状态文件分离/部署目录叶子/venv 绑定）已由注册表 + token + 用户名取代；profile 仅保留为旧 `.env` 脚本的迁移兼容入口；
+spec\design-concepts\底层与中层\多用户设计.md:412:8. **host key 指纹的更新时机**：机器重装后 host key 变更，连接阶段 2 会 ERROR——是否提供 `user re-register` / `user trust-host` 显式更新指纹？
+spec\research\00-research-method-and-evidence.md:144:    1/<TEST>/psf/spectre.out
+spec\research\00-research-method-and-evidence.md:172:现场同一 history 的 `spectre.out` 命令行包含 `+log ../psf/spectre.out`、`-raw ../psf` 和 `+logstatus`，末尾包含 simulator error/fatal 汇总。`Interactive.N.log` 只包含 history 摘要。这是本研究把 `msg.db + spectre.out + orchestration log` 定为组合证据源的直接依据。
+spec\research\00-research-method-and-evidence.md:223:3. Maestro/Spectre 长任务必须采用 callback/status/log-tail/artifact 的异步 observer，不能把所有内容塞进单次 TCP response。
+spec\research\01-virtuoso-data-model-and-editing.md:36:- **应用层**（Composer/Schematic、Layout、Maestro、Spectre/OCEAN 等）在同一数据库上定义更高层语义。
+spec\research\01-virtuoso-data-model-and-editing.md:135:| 复制并重排已有设计 | readback → Python planner → 新 Cell → readback verify | `ccpCopyDesign` 后局部修补 | 直接复制含锁/结果的目录 |
+spec\research\01-virtuoso-data-model-and-editing.md:191:  ├─ apply_with_cdf_callback()
+spec\research\01-virtuoso-data-model-and-editing.md:205:- `verify_readback()` 必须核对 instance presence/master/position/orientation/connectivity/pin。
+spec\demo\full_demo.py:193:                "-NoProfile",
+spec\demo\full_demo.py:226:                "-NoProfile",
+spec\demo\full_demo.py:626:    # ------------------------------------------------------- 注册四步流程
+spec\demo\full_demo.py:792:            return CommandResult(-1, stderr="token is required", error_kind="invalid_token")
+spec\demo\full_demo.py:796:            return CommandResult(-1, stderr="unknown token", error_kind="invalid_token")
+spec\research\02-virtuoso-logging-and-observability.md:16:| `psf/spectre.out` | 是，Spectre 原始输出 | netlist read-in、license、收敛、warning/error、命令行、最终 fatal 状态 |
+spec\research\02-virtuoso-logging-and-observability.md:18:| `netlist/runSimulation` | 不是日志，但很关键 | 实际启动 Spectre 的命令和参数 |
+spec\research\02-virtuoso-logging-and-observability.md:42:  1/<TEST>/psf/spectre.out
+spec\research\02-virtuoso-logging-and-observability.md:49:- `.msg.db` 的 `logs` 表含 `level/tool/timestamp/message/attrs`，能直接定位 `spectre` 的 `MMSPF-10013`；
+spec\research\02-virtuoso-logging-and-observability.md:50:- `location` 表把同一点关联到 ADE GUI、Simulation、spectre、Expression 各自的 log 文件和行号；
+spec\research\02-virtuoso-logging-and-observability.md:51:- `spectre.out` 末尾写明 `spectre completes with 2 errors...` 和 `spectre terminated prematurely due to fatal error`，这才是 simulator 根因层；
+spec\research\02-virtuoso-logging-and-observability.md:54:因此，**摘要 log 适合快速展示，`msg.db + spectre.out + Job*.log` 才适合自动诊断和审计**。
+spec\research\02-virtuoso-logging-and-observability.md:60:| 仿真是否成功、哪一点失败 | `msg.db` → `psf/spectre.out` → `JobN.log` → `<history>.log` | 结构化状态与根因互补；不能只看进程 exit code |
+spec\research\02-virtuoso-logging-and-observability.md:61:| 失败的具体 Spectre 原因 | 同一点的 `psf/spectre.out`，再看 `netlist/input.scs` 与 `runSimulation` | 包含 command line、环境、license、error/warning/fatal |
+spec\research\02-virtuoso-logging-and-observability.md:68:| 实时进度 | callback/事件文件或 `msg.db` 增量读取 + tail `JobN.log`/`spectre.out` | 不要用阻塞的 SKILL call 作为唯一心跳 |
+spec\research\02-virtuoso-logging-and-observability.md:122:- 启动每个 Virtuoso 实例时显式指定唯一 log：`CDS.<profile>.<pid-or-start>.log`；
+spec\research\02-virtuoso-logging-and-observability.md:125:- 不要在多个 profile 间复用同一个 `CDS.log`；
+spec\research\02-virtuoso-logging-and-observability.md:220:## 6. Spectre 与 per-point 工件
+spec\research\02-virtuoso-logging-and-observability.md:222:本机 `spectreref/chap2.html` 对命令选项的描述：
+spec\research\02-virtuoso-logging-and-observability.md:235:spectre -64 input.scs +escchars +log ../psf/spectre.out \
+spec\research\02-virtuoso-logging-and-observability.md:241:1. 把 `input.scs`、`runSimulation`、`spectre.out` 放进同一个 point artifact；
+spec\research\02-virtuoso-logging-and-observability.md:242:2. 运行期间 tail `spectre.out`；
+spec\research\02-virtuoso-logging-and-observability.md:247:项目旧实现的 `SpectreSimulator` 已有方向：显式 `+log`、`-raw`、`+logstatus`，下载 remote output，解析 PSF ASCII，并区分 `SUCCESS/PARTIAL/FAILURE`。重构时应把**原始 log 路径和 log 内容**纳入公开 `SimulationResult.metadata`，而不是只返回解析后的波形。
+spec\research\02-virtuoso-logging-and-observability.md:279:  ├─ per-point spectre.out：增量 tail + terminal-failure scan
+spec\research\02-virtuoso-logging-and-observability.md:284:每轮都做 terminal-failure scan。项目 `AGENTS.md` 已明确指出，`system()` 对会 fork 并写 log 的工具（例如 strmin、ihdl、某些 spectre flow）返回码不可靠；如果只轮询目标 artifact，会在工具两秒内失败后仍睡满十分钟。**artifact poll 与 log-tail failure poll 必须是一个不可拆开的组合。**
+spec\research\02-virtuoso-logging-and-observability.md:290:B. 获取 summary + msg.db + Job/ADE + spectre logs
+spec\research\02-virtuoso-logging-and-observability.md:306:  "producer": "spectre",
+spec\research\02-virtuoso-logging-and-observability.md:311:    "path": ".../psf/spectre.out",
+spec\research\02-virtuoso-logging-and-observability.md:318:  "raw_ref": "artifacts/Interactive.21/point-1/spectre.out#sha256:..."
+spec\research\02-virtuoso-logging-and-observability.md:324:- `producer` 与 `tool` 分开：`ADE GUI`、`Simulation Monitor`、`spectre`、`Expression Evaluator` 不应被压成一个字符串；
+spec\research\02-virtuoso-logging-and-observability.md:354:- 每个 request 增加 `request_id`、client/profile、start/end、skill hash、duration；
+spec\research\02-virtuoso-logging-and-observability.md:365:- **诊断/解释性**：`.log`、`.msg.db`、`Job*.log`、`spectre.out`；
+spec\research\02-virtuoso-logging-and-observability.md:410:- `../../skills/spectre/SKILL.md`：Spectre 结果契约和失败分类
+spec\research\02-virtuoso-logging-and-observability.md:414:- `../../src_bak/virtuoso_bridge/spectre/runner.py`：`+log/-raw/+logstatus` 与远程下载
+spec\research\02-virtuoso-logging-and-observability.md:421:- `C:\Users\user\Desktop\doc\spectreref\chap2.html`：Spectre `-log/+log/=log/-raw/+logstatus`
+spec\research\02-virtuoso-logging-and-observability.md:438:| Spectre `-log/+log/=log/-raw` 语义 | `C:\Users\user\Desktop\doc\spectreref\chap2.html:177-213` |
+spec\research\02-virtuoso-logging-and-observability.md:445:| 现场 `.msg.db` schema、`spectre.out` fatal 与分裂路径 | `00-research-method-and-evidence.md`、现场只读 SSH/SQLite 输出（2026-09-04） |
+spec\demo\README.md:10:`.env`、SSH、Virtuoso 或 Spectre。**（`run_command` 使用系统 PATH 里的
+spec\demo\README.md:49:### 四步接入
+spec\demo\README.md:58:`register_and_start()` 一步完成四步，供业务 demo 直接使用。
+spec\demo\README.md:106:- `run_command` 只跑演示用的 pwsh 命令，不连接 SSH / Spectre；
+spec\demo\README.md:112:- 不覆盖 SSH、split-host、Virtuoso 单 CIW、环境变量迁移、Spectre、文件通道。
+spec\research\03-rebuild-key-technical-points.md:33:│ Spectre runner · GUI/X11 recovery · RunObserver               │
+spec\research\03-rebuild-key-technical-points.md:50:TextConfig      → parse + backup + atomic replace + reopen/verify
+spec\research\03-rebuild-key-technical-points.md:109:Spectre host   → standalone Spectre
+spec\research\03-rebuild-key-technical-points.md:127:- `request_id`、`session/profile`、deadline；
+spec\research\03-rebuild-key-technical-points.md:135:不要为了追求“真正并发”把两个 SKILL mutation 同时发给一个 CIW；并发应放在独立 Virtuoso instance、独立 Spectre job 或不同 history/point 层。
+spec\research\03-rebuild-key-technical-points.md:151:spiceIn / Spectre / XStream availability
+spec\research\03-rebuild-key-technical-points.md:265:  "client": {"host": "...", "profile": "..."},
+spec\research\03-rebuild-key-technical-points.md:272:    {"role": "spectre_log", "path": "...", "sha256": "..."}
+spec\research\03-rebuild-key-technical-points.md:345:- 读拓扑、几何、CDF 分成可选 profile，避免默认拉全量；
+spec\research\03-rebuild-key-technical-points.md:347:- Spectre 并发放在独立 process/host/profile，不在单 CIW 内并行写。
+spec\research\03-rebuild-key-technical-points.md:354:- 对 snapshot 提供 `brief`、`setup`、`run`、`full` 四种 profile。
+spec\research\03-rebuild-key-technical-points.md:374:- profile/client scratch 隔离，避免跨用户文件碰撞；
+spec\research\03-rebuild-key-technical-points.md:376:- 日志脱敏：license token、密码、绝对个人路径、完整用户输入 SKILL；
+spec\research\03-rebuild-key-technical-points.md:387:- `CellViewRef`、RemotePath、profile resolution；
+spec\research\03-rebuild-key-technical-points.md:391:- Spectre log terminal marker / PSF parser；
+spec\research\03-rebuild-key-technical-points.md:404:T4: generate symbol + verify pins
+spec\research\03-rebuild-key-technical-points.md:415:- 模拟 `spectre.out` 先写 fatal、但 wrapper 返回 0；
+spec\research\03-rebuild-key-technical-points.md:445:    def read_cellview(self, ref: CellViewRef, *, profile="topology"): ...
+spec\research\03-rebuild-key-technical-points.md:446:    def apply_schematic(self, intent, *, mode="append") -> OperationResult: ...
+spec\research\03-rebuild-key-technical-points.md:481:- log path discovery + msg.db/spectre parser；
+spec\research\03-rebuild-key-technical-points.md:512:- parallel Spectre pools；
+spec\research\03-rebuild-key-technical-points.md:547:- `../../CONTEXT.md`：GUI/daemon/deploy/spectre host 术语
+spec\research\03-rebuild-key-technical-points.md:557:- `../../skills/spectre/SKILL.md`
+spec\research\03-rebuild-key-technical-points.md:570:- `C:\Users\user\Desktop\doc\spectreref\chap2.html`
+spec\research\03-rebuild-key-technical-points.md:576:| 远程角色、VirtuosoClient/Spectre/SSH 分层 | `../../README.md:318-330`；`../../CONTEXT.md` |
+spec\research\03-rebuild-key-technical-points.md:587:| Spectre/结果路径 | `C:\Users\user\Desktop\doc\spectreref\chap2.html:177-213`；`adexl/appEnvVars.html:10088-10098` |
+spec\research\04-log-return-system-proposal.md:9:如果 `virtuoso-bridge-NCS` 需要把 Virtuoso、Maestro、Spectre 以及 bridge 自身产生的日志可靠地返回给 Python、CLI、MCP 或 Agent，系统至少要同时满足：
+spec\research\04-log-return-system-proposal.md:62:异步 Maestro/Spectre 消息   → callback、状态 API、msg.db 和运行工件
+spec\research\04-log-return-system-proposal.md:138:- banner 中保存 daemon PID、bind、host、IP，能够诊断 split-host/错误 tunnel；
+spec\research\04-log-return-system-proposal.md:141:- Spectre runner 已显式使用 `+log`、`-raw`、`+logstatus`，并有 terminal-failure 扫描方向。
+spec\research\04-log-return-system-proposal.md:145:1. **没有 request ID**：同一个 CIW、同一个 `CDS.log`、多个 profile 或多个 agent 请求无法可靠关联。
+spec\research\04-log-return-system-proposal.md:151:7. **`CDS.log`、Maestro log、Spectre log 没有统一 artifact manifest**：调用者必须自己猜路径和时间关联。
+spec\research\04-log-return-system-proposal.md:180:- Spectre：license、netlist、convergence、fatal、summary；
+spec\research\04-log-return-system-proposal.md:194:- 每个 point 的 `netlist/input.scs`、`runSimulation`、`psf/spectre.out`、`psf/logFile`；
+spec\research\04-log-return-system-proposal.md:218:        │ muffleWarnings       │   │ spectre per-point files   │
+spec\research\04-log-return-system-proposal.md:237:profile      = bridge profile
+spec\research\04-log-return-system-proposal.md:365:不建议把它作为默认的每请求日志机制：secondary log 是 session 级状态，嵌套/并发操作会互相影响，而且它不包含 Spectre/Simulation Monitor 的所有输出。若 CIW 不是 bridge 独占，优先使用 marker + offset，并把关联置信度标为 `best_effort`。
+spec\research\04-log-return-system-proposal.md:373:- 用 `CDS_LOG_VERSION=pid` 或明确的 profile/PID 文件名避免多实例混写；
+spec\research\04-log-return-system-proposal.md:377:## 7. 异步 Maestro/Spectre：返回句柄，不等待一个巨大字符串
+spec\research\04-log-return-system-proposal.md:401:  ├─ per-point spectre.out / psf/logFile：byte cursor tail
+spec\research\04-log-return-system-proposal.md:419:- `spectre.out` 的 fatal、`terminated prematurely`、license/read-in/convergence failure；
+spec\research\04-log-return-system-proposal.md:451:  "producer": "spectre",
+spec\research\04-log-return-system-proposal.md:452:  "message": "spectre completes with 0 errors, 0 warnings, and 7 notices.",
+spec\research\04-log-return-system-proposal.md:466:    "host_role": "spectre",
+spec\research\04-log-return-system-proposal.md:467:    "path": "/.../Interactive.0/1/serdes_top_tran/psf/spectre.out",
+spec\research\04-log-return-system-proposal.md:472:  "raw_ref": "artifacts/Interactive.0/point-1/spectre.out#sha256:..."
+spec\research\04-log-return-system-proposal.md:478:- `producer` 和 `tool` 分开，不能把 ADE GUI、Simulation Monitor、Expression Evaluator、spectre 压成一个字符串；
+spec\research\04-log-return-system-proposal.md:528:  "source_id": "spectre:/path/to/spectre.out:device:inode",
+spec\research\04-log-return-system-proposal.md:537:如果 inode/device 改变、size 小于 offset 或 prefix hash 不匹配，产生 `source_reset`，从 offset 0 重新读取并递增 generation。这样可以处理 `CDS.log` 轮转、Spectre 重跑覆盖、远端临时目录复用。
+spec\research\04-log-return-system-proposal.md:544:  "kind": "spectre_log",
+spec\research\04-log-return-system-proposal.md:545:  "producer": "spectre",
+spec\research\04-log-return-system-proposal.md:546:  "host_role": "spectre",
+spec\research\04-log-return-system-proposal.md:547:  "remote_path": "/.../Interactive.0/1/tb/psf/spectre.out",
+spec\research\04-log-return-system-proposal.md:548:  "local_path": "artifacts/Interactive.0/point-1/spectre.out",
+spec\research\04-log-return-system-proposal.md:590:    host_role="spectre",   # per-point simulator artifact
+spec\research\04-log-return-system-proposal.md:591:    path="/scratch/.../psf/spectre.out",
+spec\research\04-log-return-system-proposal.md:598:- `spectre.out` 属于 Spectre/run host；
+spec\research\04-log-return-system-proposal.md:606:- 不把 license token、密码、完整环境变量或未经同意的绝对用户路径送入模型；
+spec\research\04-log-return-system-proposal.md:649:- 独立 Virtuoso instance、独立 Spectre job、不同 history/point 才是并行边界。
+spec\research\04-log-return-system-proposal.md:757:- 建立 `CDS.log`、msg.db、Job log、Spectre log fixture；
+spec\research\04-log-return-system-proposal.md:781:- 并行观察 `axlGetRunStatus`、job-point mapping、msg.db、Job/ADE、per-point Spectre；
+spec\research\04-log-return-system-proposal.md:816:- Spectre exit 0 但 log 有 fatal 时，最终不是 success；
+spec\research\04-log-return-system-proposal.md:824:- GUI/daemon/deploy/Spectre 分裂时，路径和 SSH 角色不混淆；
+spec\research\04-log-return-system-proposal.md:856:  → msg.db / Job / spectre observer
+spec\research\04-log-return-system-proposal.md:860:这条路径复用了当前 bridge 已有的 `progn`、STX/NAK/RS、daemon banner、callback marker、Spectre terminal scan 和远端角色模型，同时避免把 CIW、模拟器、结果数据库和日志混成一个不可追溯的字符串。
+spec\research\04-log-return-system-proposal.md:867:- [`README.md`](../../README.md)：VirtuosoClient/Spectre/SSH 分层与原始 bridge 说明。
+spec\research\04-log-return-system-proposal.md:877:- [`src_bak/virtuoso_bridge/spectre/runner.py`](../../src_bak/virtuoso_bridge/spectre/runner.py)：`+log/-raw/+logstatus`、terminal marker 和结果组装。
+spec\research\04-log-return-system-proposal.md:887:- `C:\Users\user\Desktop\doc\spectreref\chap2.html`：Spectre `+log`、`-raw`、`+logstatus`。
+spec\research\04-log-return-system-proposal.md:1037:- 一个 `maeRunSimulation()` 只启动了长任务，后续 Spectre 输出不应继续归属于启动命令。
+spec\research\05-cdslog-incremental-read-options.md:116:第三步：C —— 需要严格隔离时，为每个 operation 建专用 event 文件
+spec\demo\TB测试场景验证报告.md:113:3. **未覆盖**：SSH / split-host / 跳板、真实 Virtuoso CIW 与 `ipcBeginProcess`、Spectre、
+spec\research\05-concurrency-network-key-background.md:14:重构的第一步是「多线程」，而项目的旧机制（多线程/多用户）分散在 `.env`、profile、`state.json`、`paramiko_backend.py` 等各处。讨论中发现，理解重构目标的最大障碍不是 Python 语法，而是一组**网络与并发的底层事实**：SSH 是什么、端口转发是什么、daemon 是什么、谁常驻谁临时、一个进程如何服务多请求。本文把这些事实一次性讲清，作为后续设计文档（多用户设计、并发处理设计）的共同地基。
+spec\research\05-concurrency-network-key-background.md:262:- **跨用户**：真并发。每用户独立 daemon 进程 + 独立 SSH 会话，OS 调度，无需额外机制。
+spec\research\05-concurrency-network-key-background.md:272:2. 按角色/用户/密钥/跳板路径隔离（本项目 split-host 角色、多 profile 即多条 SSH 并存的现成例子）；
+spec\research\05-concurrency-network-key-background.md:317:| token 不随 `-L` 转发层携带，只在应用层 JSON 里校验；转发层确认连对机器靠 host key 指纹 | 多用户设计.md §3.1/3.2.1（SSH host key 指纹 + daemon token 双层校验） |
+spec\demo\test_full_demo.py:115:        self.assertEqual(command_result.error_kind, "invalid_token")
+spec\research\README.md:6:> 范围：Virtuoso/DFII/OpenAccess 数据模型、原理图与 testbench 编辑、Maestro/ADE/Spectre 日志，以及本项目重构的关键技术点。
+spec\research\README.md:13:4. **Virtuoso 没有唯一的“总日志”**。最可靠的取证方式是按问题组合日志：`*.msg.db`（结构化事件）+ per-point `psf/spectre.out`（模拟器根因）+ `Job*.log`/`virtuoso_ade_debug.log`（调度时序）+ `<history>.log`（人类摘要）；`CDS.log`主要用于 Virtuoso 进程级问题和崩溃取证。
+spec\research\README.md:31:- **项目内参考与实现**：`skills/virtuoso/references/`、`skills/spectre/`、`README.md`、`AGENTS.md`、`docs/adr/`、`examples/`、`tests/`。旧实现当前保存在工作树的 `src_bak/`，原 `src/` 多数文件存在预先的删除变更；本次调研没有恢复、删除或改写这些源码。

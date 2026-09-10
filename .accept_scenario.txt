@@ -1,0 +1,8 @@
+test_two_users_parallel_local_commands (test_multi_user_isolation.TestMultiUserIsolation.test_two_users_parallel_local_commands) ... ok
+test_two_users_route_to_their_own_daemons (test_multi_user_isolation.TestMultiUserIsolation.test_two_users_route_to_their_own_daemons) ... ok
+test_six_step_registration_then_business_use (test_registration_local_full.TestLocalRegistrationScenario.test_six_step_registration_then_business_use) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.825s
+
+OK

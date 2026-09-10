@@ -1,0 +1,265 @@
+test_filter_off (test_daemon27.TestDaemon27.test_filter_off) ... ok
+test_parse_meta (test_daemon27.TestDaemon27.test_parse_meta) ... ok
+test_classify_parity (test_daemon_parity.TestDaemonParity.test_classify_parity) ... ok
+test_filter_levels_parity (test_daemon_parity.TestDaemonParity.test_filter_levels_parity) ... ok
+test_parse_meta_parity (test_daemon_parity.TestDaemonParity.test_parse_meta_parity) ... ok
+test_read_delta_increment_and_clamp (test_daemon_parity.TestDaemonParity.test_read_delta_increment_and_clamp) ... ok
+test_truncation_degrade_parity (test_daemon_parity.TestDaemonParity.test_truncation_degrade_parity) ... ok
+test_import_user (test_legacy_adapters.TestLegacyAdapters.test_import_user) ... ok
+test_profile_resolve (test_legacy_adapters.TestLegacyAdapters.test_profile_resolve) ... ok
+test_off (test_log_off.TestLogOff.test_off) ... ok
+test_execute_skill_remote_routes_and_tunnels (test_middle_routing.TestBusinessServerRouting.test_execute_skill_remote_routes_and_tunnels) ... ok
+test_execute_skill_unknown_token (test_middle_routing.TestBusinessServerRouting.test_execute_skill_unknown_token) ... ok
+test_remote_clients_cached_per_token (test_middle_routing.TestBusinessServerRouting.test_remote_clients_cached_per_token) ... ok
+test_run_command_remote_passes_parallel (test_middle_routing.TestBusinessServerRouting.test_run_command_remote_passes_parallel) ... ok
+test_thread_pool_exceeded_for_remote (test_middle_routing.TestBusinessServerRouting.test_thread_pool_exceeded_for_remote) ... ok
+test_upload_download_remote (test_middle_routing.TestBusinessServerRouting.test_upload_download_remote) ... ok
+test_download_unknown_token (test_middle_routing.TestMiddleErrorAndLocalPaths.test_download_unknown_token) ... ok
+test_local_command_timeout (test_middle_routing.TestMiddleErrorAndLocalPaths.test_local_command_timeout) ... ok
+test_local_download_missing_source (test_middle_routing.TestMiddleErrorAndLocalPaths.test_local_download_missing_source) ... ok
+test_local_download_recursive (test_middle_routing.TestMiddleErrorAndLocalPaths.test_local_download_recursive) ... ok
+test_local_upload_directory_requires_recursive (test_middle_routing.TestMiddleErrorAndLocalPaths.test_local_upload_directory_requires_recursive) ... ok
+test_local_upload_missing_source (test_middle_routing.TestMiddleErrorAndLocalPaths.test_local_upload_missing_source) ... ok
+test_local_upload_recursive (test_middle_routing.TestMiddleErrorAndLocalPaths.test_local_upload_recursive) ... ok
+test_run_command_unknown_token (test_middle_routing.TestMiddleErrorAndLocalPaths.test_run_command_unknown_token) ... ok
+test_upload_unknown_token (test_middle_routing.TestMiddleErrorAndLocalPaths.test_upload_unknown_token) ... ok
+test_import_profile_suffix (test_models_paths.TestLegacyAdapters.test_import_profile_suffix) ... ok
+test_import_requires_host (test_models_paths.TestLegacyAdapters.test_import_requires_host) ... ok
+test_load_env_cache_and_ignore_comments (test_models_paths.TestLegacyAdapters.test_load_env_cache_and_ignore_comments) ... ok
+test_path_tree (test_models_paths.TestRemotePaths.test_path_tree) ... ok
+test_scratch_expansion (test_models_paths.TestRemotePaths.test_scratch_expansion) ... ok
+test_command_result_namedtuple (test_models_paths.TestResultModels.test_command_result_namedtuple) ... ok
+test_simulation_result_save (test_models_paths.TestResultModels.test_simulation_result_save) ... ok
+test_virtuoso_result_properties_and_save (test_models_paths.TestResultModels.test_virtuoso_result_properties_and_save) ... ok
+test_explicit_working_dir (test_models_paths.TestRuntimePaths.test_explicit_working_dir) ... ok
+test_posix_platform_defaults (test_models_paths.TestRuntimePaths.test_posix_platform_defaults) ... skipped 'POSIX path defaults require a POSIX host'
+test_windows_appdata_default (test_models_paths.TestRuntimePaths.test_windows_appdata_default) ... ok
+test_connection_refused_error (test_models_paths.TestSkillClientSocketPaths.test_connection_refused_error) ... ok
+test_parse_empty (test_models_paths.TestSkillClientSocketPaths.test_parse_empty) ... ok
+test_parse_malformed_json_marker (test_models_paths.TestSkillClientSocketPaths.test_parse_malformed_json_marker) ... ok
+test_success_roundtrip_with_fake_server (test_models_paths.TestSkillClientSocketPaths.test_success_roundtrip_with_fake_server) ... ok
+test_legacy_profile_from_env (test_models_paths.TestSmallEdgeCoverage.test_legacy_profile_from_env) ... ok
+test_server_lazy_main_and_unknown_attr (test_models_paths.TestSmallEdgeCoverage.test_server_lazy_main_and_unknown_attr) ... ok
+test_daemon_cdslog_filter (test_new_core.TestFoundations.test_daemon_cdslog_filter) ... ok
+test_registry_load_once_register (test_new_core.TestFoundations.test_registry_load_once_register) ... ok
+test_skill_client_parse (test_new_core.TestFoundations.test_skill_client_parse) ... ok
+test_working_dir_subdirs (test_new_core.TestFoundations.test_working_dir_subdirs) ... ok
+test_execute_skill_immediate_timeout (test_new_core.TestSkillClientMore.test_execute_skill_immediate_timeout) ... ok
+test_execute_skill_oserror (test_new_core.TestSkillClientMore.test_execute_skill_oserror) ... ok
+test_execute_skill_socket_timeout (test_new_core.TestSkillClientMore.test_execute_skill_socket_timeout) ... ok
+test_remaining_timeout_raises (test_new_core.TestSkillClientMore.test_remaining_timeout_raises) ... ok
+test_local_business_server (test_new_middle.TestNewMiddle.test_local_business_server) ... ok
+test_remote_paths_structure (test_new_middle.TestNewMiddle.test_remote_paths_structure) ... ok
+test_route_defaults (test_new_middle.TestNewMiddle.test_route_defaults) ... ok
+test_setup_il_globals (test_new_middle.TestNewMiddle.test_setup_il_globals) ... ok
+test_collect_channel (test_paramiko.TestBackendExecutionPaths.test_collect_channel) ... ok
+test_download_file_error_discards_stage (test_paramiko.TestBackendExecutionPaths.test_download_file_error_discards_stage) ... ok
+test_download_file_success (test_paramiko.TestBackendExecutionPaths.test_download_file_success) ... ok
+test_run_command_error_returns_255 (test_paramiko.TestBackendExecutionPaths.test_run_command_error_returns_255) ... ok
+test_stop_tar_transfer (test_paramiko.TestBackendExecutionPaths.test_stop_tar_transfer) ... ok
+test_tar_result_combines_errors (test_paramiko.TestBackendExecutionPaths.test_tar_result_combines_errors) ... ok
+test_test_connection (test_paramiko.TestBackendExecutionPaths.test_test_connection) ... Paramiko connection to server failed: no
+ok
+test_upload_text_error_returns_255 (test_paramiko.TestBackendExecutionPaths.test_upload_text_error_returns_255) ... ok
+test_wait_tar_transfer_success (test_paramiko.TestBackendExecutionPaths.test_wait_tar_transfer_success) ... ok
+test_missing_config_file_raises (test_paramiko.TestConstructionValidation.test_missing_config_file_raises) ... ok
+test_zero_max_sessions_raises (test_paramiko.TestConstructionValidation.test_zero_max_sessions_raises) ... ok
+test_remaining (test_paramiko.TestDeadline.test_remaining) ... ok
+test_common_tokens (test_paramiko.TestExpandSshPath.test_common_tokens) ... ok
+test_percent_escape_and_unknown_token (test_paramiko.TestExpandSshPath.test_percent_escape_and_unknown_token) ... ok
+test_posix_defaults (test_paramiko.TestKnownHostsFiles.test_posix_defaults) ... ok
+test_windows_defaults (test_paramiko.TestKnownHostsFiles.test_windows_defaults) ... ok
+test_decode (test_paramiko.TestPureClassHelpers.test_decode) ... ok
+test_error_result (test_paramiko.TestPureClassHelpers.test_error_result) ... ok
+test_transport_is_ready (test_paramiko.TestPureClassHelpers.test_transport_is_ready) ... ok
+test_bad_url (test_paramiko.TestSocks5ProxyParsing.test_bad_url) ... ok
+test_invalid_scheme (test_paramiko.TestSocks5ProxyParsing.test_invalid_scheme) ... ok
+test_missing_port (test_paramiko.TestSocks5ProxyParsing.test_missing_port) ... ok
+test_none_and_blank (test_paramiko.TestSocks5ProxyParsing.test_none_and_blank) ... ok
+test_valid (test_paramiko.TestSocks5ProxyParsing.test_valid) ... ok
+test_endpoint_uses_config (test_paramiko.TestSshConfigLookup.test_endpoint_uses_config) ... ok
+test_expand_connection_tokens (test_paramiko.TestSshConfigLookup.test_expand_connection_tokens) ... ok
+test_lookup_hostname_user_port (test_paramiko.TestSshConfigLookup.test_lookup_hostname_user_port) ... ok
+test_parse_proxy_jump (test_paramiko.TestSshConfigLookup.test_parse_proxy_jump) ... ok
+test_allocate_local_port (test_probe.TestProbeHelpers.test_allocate_local_port) ... ok
+test_allocate_port_batch (test_probe.TestProbeHelpers.test_allocate_port_batch) ... ok
+test_allocate_port_falls_back_to_single_checks (test_probe.TestProbeHelpers.test_allocate_port_falls_back_to_single_checks) ... ok
+test_allocate_remote_port_respects_reserved (test_probe.TestProbeHelpers.test_allocate_remote_port_respects_reserved) ... ok
+test_detect_cadence_python3 (test_probe.TestProbeHelpers.test_detect_cadence_python3) ... ok
+test_detect_falls_back_to_path (test_probe.TestProbeHelpers.test_detect_falls_back_to_path) ... ok
+test_detect_python27 (test_probe.TestProbeHelpers.test_detect_python27) ... ok
+test_host_key_fingerprint_uses_known_hosts (test_probe.TestProbeHelpers.test_host_key_fingerprint_uses_known_hosts) ... ok
+test_local_helpers (test_probe.TestProbeHelpers.test_local_helpers) ... ok
+test_remote_probes_with_fake_runner (test_probe.TestProbeHelpers.test_remote_probes_with_fake_runner) ... ok
+test_host_key_mismatch_blocks_commit (test_register_flow.TestConnectivityFingerprint.test_host_key_mismatch_blocks_commit) ... ok
+test_deploy_failure_stops_flow (test_register_flow.TestFlowApply.test_deploy_failure_stops_flow) ... ok
+test_happy_apply_reaches_deployed (test_register_flow.TestFlowApply.test_happy_apply_reaches_deployed) ... ok
+test_probe_failure_stops_flow (test_register_flow.TestFlowApply.test_probe_failure_stops_flow) ... ok
+test_validation_failure_stops_flow (test_register_flow.TestFlowApply.test_validation_failure_stops_flow) ... ok
+test_banner_hostname_local_file (test_register_flow.TestFlowMoreBranches.test_banner_hostname_local_file) ... ok
+test_connectivity_warning_on_banner_drift (test_register_flow.TestFlowMoreBranches.test_connectivity_warning_on_banner_drift) ... ok
+test_remote_probe_explicit_port_busy (test_register_flow.TestFlowMoreBranches.test_remote_probe_explicit_port_busy) ... ok
+test_remote_probe_missing_hostname (test_register_flow.TestFlowMoreBranches.test_remote_probe_missing_hostname) ... ok
+test_remote_probe_no_free_port (test_register_flow.TestFlowMoreBranches.test_remote_probe_no_free_port) ... ok
+test_remote_probe_no_python (test_register_flow.TestFlowMoreBranches.test_remote_probe_no_python) ... ok
+test_remote_probe_unreachable_host (test_register_flow.TestFlowMoreBranches.test_remote_probe_unreachable_host) ... ok
+test_resolve_scratch_absolute_passthrough_and_failure (test_register_flow.TestFlowMoreBranches.test_resolve_scratch_absolute_passthrough_and_failure) ... ok
+test_short_host_match (test_register_flow.TestFlowMoreBranches.test_short_host_match) ... ok
+test_connectivity_failure_does_not_commit (test_register_flow.TestFlowVerifyAndCommit.test_connectivity_failure_does_not_commit) ... ok
+test_success_commits_with_timestamp (test_register_flow.TestFlowVerifyAndCommit.test_success_commits_with_timestamp) ... ok
+test_verify_without_apply_reports_error (test_register_flow.TestFlowVerifyAndCommit.test_verify_without_apply_reports_error) ... ok
+test_policy_fields_are_written_into_entry (test_register_flow.TestPolicyFieldsApplied.test_policy_fields_are_written_into_entry) ... ok
+test_local_port_busy (test_register_flow.TestProbeFailureBranches.test_local_port_busy) ... ok
+test_local_unwritable_scratch (test_register_flow.TestProbeFailureBranches.test_local_unwritable_scratch) ... ok
+test_remote_daemon_user_missing (test_register_flow.TestProbeFailureBranches.test_remote_daemon_user_missing) ... ok
+test_remote_fingerprint_missing (test_register_flow.TestProbeFailureBranches.test_remote_fingerprint_missing) ... ok
+test_remote_scratch_not_writable (test_register_flow.TestProbeFailureBranches.test_remote_scratch_not_writable) ... ok
+test_committed_roundtrip (test_register_flow.TestRegisterUserOneShot.test_committed_roundtrip) ... ok
+test_port_range_validation (test_register_flow.TestRequestAndIdempotence.test_port_range_validation) ... ok
+test_remote_requires_host_and_ssh_user (test_register_flow.TestRequestAndIdempotence.test_remote_requires_host_and_ssh_user) ... ok
+test_token_charset_validation (test_register_flow.TestRequestAndIdempotence.test_token_charset_validation) ... ok
+test_verify_idempotent_after_commit (test_register_flow.TestRequestAndIdempotence.test_verify_idempotent_after_commit) ... ok
+test_clean (test_register_flow.TestValidateLocal.test_clean) ... ok
+test_daemon_port_conflict (test_register_flow.TestValidateLocal.test_daemon_port_conflict) ... ok
+test_local_port_conflict (test_register_flow.TestValidateLocal.test_local_port_conflict) ... ok
+test_user_duplicate (test_register_flow.TestValidateLocal.test_user_duplicate) ... ok
+test_commit_registry_error (test_register_flow.TestVerifyExceptionBranches.test_commit_registry_error) ... ok
+test_verify_connectivity_exception (test_register_flow.TestVerifyExceptionBranches.test_verify_connectivity_exception) ... ok
+test_duplicate_user_rejected_before_probe (test_registration_server.TestRegistrationServer.test_duplicate_user_rejected_before_probe) ... ok
+test_granular_six_steps (test_registration_server.TestRegistrationServer.test_granular_six_steps) ... ok
+test_invalid_json_body (test_registration_server.TestRegistrationServer.test_invalid_json_body) ... ok
+test_invalid_request_fields (test_registration_server.TestRegistrationServer.test_invalid_request_fields) ... ok
+test_local_apply_reaches_deployed (test_registration_server.TestRegistrationServer.test_local_apply_reaches_deployed) ... ok
+test_page_served (test_registration_server.TestRegistrationServer.test_page_served) ... ok
+test_remote_without_ssh_user_is_400 (test_registration_server.TestRegistrationServer.test_remote_without_ssh_user_is_400) ... ok
+test_state_endpoint_unknown_user (test_registration_server.TestRegistrationServer.test_state_endpoint_unknown_user) ... ok
+test_step_endpoint_unknown_user (test_registration_server.TestRegistrationServer.test_step_endpoint_unknown_user) ... ok
+test_unknown_post_route (test_registration_server.TestRegistrationServer.test_unknown_post_route) ... ok
+test_verify_endpoint_unknown_user (test_registration_server.TestRegistrationServer.test_verify_endpoint_unknown_user) ... ok
+test_verify_without_daemon_does_not_commit (test_registration_server.TestRegistrationServer.test_verify_without_daemon_does_not_commit) ... ok
+test_local_probe_does_not_touch_registry (test_registry_decoupling.TestProbeNeverPersists.test_local_probe_does_not_touch_registry) ... ok
+test_remote_probe_returns_candidate_without_commit (test_registry_decoupling.TestProbeNeverPersists.test_remote_probe_returns_candidate_without_commit) ... ok
+test_duplicate_user_rejected_without_overwrite (test_registry_decoupling.TestRegistryCommitPolicy.test_duplicate_user_rejected_without_overwrite) ... ok
+test_load_rejects_duplicate_tokens (test_registry_decoupling.TestRegistryCommitPolicy.test_load_rejects_duplicate_tokens) ... ok
+test_overwrite_replaces_entry_and_token_index (test_registry_decoupling.TestRegistryCommitPolicy.test_overwrite_replaces_entry_and_token_index) ... ok
+test_remove_clears_token_mapping (test_registry_decoupling.TestRegistryCommitPolicy.test_remove_clears_token_mapping) ... ok
+test_token_conflict_across_users_rejected (test_registry_decoupling.TestRegistryCommitPolicy.test_token_conflict_across_users_rejected) ... ok
+test_business_server_has_no_setup_phase_methods (test_registry_decoupling.TestRuntimeFacadePurity.test_business_server_has_no_setup_phase_methods) ... ok
+test_runtime_consumes_registry_in_memory_only (test_registry_decoupling.TestRuntimeFacadePurity.test_runtime_consumes_registry_in_memory_only) ... ok
+test_token_is_required_keyword (test_registry_decoupling.TestRuntimeFacadePurity.test_token_is_required_keyword) ... ok
+test_empty_token_rejected (test_registry_more.TestRegistryMore.test_empty_token_rejected) ... ok
+test_entries_snapshot_and_token_index (test_registry_more.TestRegistryMore.test_entries_snapshot_and_token_index) ... ok
+test_entry_without_mode_rejected_on_load (test_registry_more.TestRegistryMore.test_entry_without_mode_rejected_on_load) ... ok
+test_malformed_json_raises (test_registry_more.TestRegistryMore.test_malformed_json_raises) ... ok
+test_mode_validation (test_registry_more.TestRegistryMore.test_mode_validation) ... ok
+test_model_dump_has_no_runtime_state (test_registry_more.TestRegistryMore.test_model_dump_has_no_runtime_state) ... ok
+test_overwrite_refreshes_timestamp (test_registry_more.TestRegistryMore.test_overwrite_refreshes_timestamp) ... ok
+test_port_validation (test_registry_more.TestRegistryMore.test_port_validation) ... ok
+test_register_auto_timestamps_and_persists (test_registry_more.TestRegistryMore.test_register_auto_timestamps_and_persists) ... ok
+test_register_persist_failure_rolls_back_memory (test_registry_more.TestRegistryMore.test_register_persist_failure_rolls_back_memory) ... ok
+test_remove_persist_failure_keeps_entry (test_registry_more.TestRegistryMore.test_remove_persist_failure_keeps_entry) ... ok
+test_remove_persists (test_registry_more.TestRegistryMore.test_remove_persists) ... ok
+test_start_probe_failure_raises (test_ssh.TestEnsurePersistentShell.test_start_probe_failure_raises) ... ok
+test_start_success (test_ssh.TestEnsurePersistentShell.test_start_success) ... ok
+test_success (test_ssh.TestOneShotRunCommand.test_success) ... ok
+test_timeout_raises (test_ssh.TestOneShotRunCommand.test_timeout_raises) ... ok
+test_ensure_persistent_shell_disabled (test_ssh.TestPersistentShellMechanics.test_ensure_persistent_shell_disabled) ... ok
+test_pump_shell_output (test_ssh.TestPersistentShellMechanics.test_pump_shell_output) ... ok
+test_run_via_shell_protocol (test_ssh.TestPersistentShellMechanics.test_run_via_shell_protocol) ... ok
+test_shell_exited_raises (test_ssh.TestPersistentShellMechanics.test_shell_exited_raises) ... ok
+test_shell_not_running_raises (test_ssh.TestPersistentShellMechanics.test_shell_not_running_raises) ... ok
+test_shell_timeout (test_ssh.TestPersistentShellMechanics.test_shell_timeout) ... ok
+test_unexpected_protocol_line (test_ssh.TestPersistentShellMechanics.test_unexpected_protocol_line) ... ok
+test_start_port_forward_builds_command (test_ssh.TestPortForwardLifecycle.test_start_port_forward_builds_command) ... ok
+test_tunnel_pid_setter_marks_external (test_ssh.TestPortForwardLifecycle.test_tunnel_pid_setter_marks_external) ... ok
+test_as_text (test_ssh.TestPureHelpers.test_as_text) ... ok
+test_derive_tool_exe_sibling (test_ssh.TestPureHelpers.test_derive_tool_exe_sibling) ... ok
+test_derive_tool_fallback (test_ssh.TestPureHelpers.test_derive_tool_fallback) ... ok
+test_short_control_path_stable (test_ssh.TestPureHelpers.test_short_control_path_stable) ... ok
+test_timeout_budget (test_ssh.TestPureHelpers.test_timeout_budget) ... ok
+test_cm_fallback_disables_and_retries (test_ssh.TestRetryAndFallback.test_cm_fallback_disables_and_retries) ... ControlMaster failed on server (mux_client_request_session failed); disabling for this session. Set ssh.control_master='disable' in the registry to opt out.
+ok
+test_describe_failure (test_ssh.TestRetryAndFallback.test_describe_failure) ... ok
+test_non_retryable_breaks_immediately (test_ssh.TestRetryAndFallback.test_non_retryable_breaks_immediately) ... ok
+test_transient_retry_then_success (test_ssh.TestRetryAndFallback.test_transient_retry_then_success) ... ok
+test_command_timeout (test_ssh.TestRunRemoteTask.test_command_timeout) ... ok
+test_missing_local_file (test_ssh.TestRunRemoteTask.test_missing_local_file) ... ok
+test_success (test_ssh.TestRunRemoteTask.test_success) ... ok
+test_upload_failure (test_ssh.TestRunRemoteTask.test_upload_failure) ... ok
+test_build_ssh_base (test_ssh.TestSSHOptionConstruction.test_build_ssh_base) ... ok
+test_common_options_disable_cm (test_ssh.TestSSHOptionConstruction.test_common_options_disable_cm) ... ok
+test_common_options_force_cm_and_jump_and_files (test_ssh.TestSSHOptionConstruction.test_common_options_force_cm_and_jump_and_files) ... ok
+test_decode_b64_text (test_ssh.TestSSHOptionConstruction.test_decode_b64_text) ... ok
+test_error_classifiers (test_ssh.TestSSHOptionConstruction.test_error_classifiers) ... ok
+test_remote_scp_target (test_ssh.TestSSHOptionConstruction.test_remote_scp_target) ... ok
+test_summarize_transport_errors (test_ssh.TestSSHOptionConstruction.test_summarize_transport_errors) ... ok
+test_defaults (test_ssh.TestSSHRunnerConstruction.test_defaults) ... ok
+test_env_variables_are_ignored (test_ssh.TestSSHRunnerConstruction.test_env_variables_are_ignored) ... ok
+test_invalid_backend_raises (test_ssh.TestSSHRunnerConstruction.test_invalid_backend_raises) ... ok
+test_invalid_max_sessions_raises (test_ssh.TestSSHRunnerConstruction.test_invalid_max_sessions_raises) ... ok
+test_paramiko_backend_constructs (test_ssh.TestSSHRunnerConstruction.test_paramiko_backend_constructs) ... ok
+test_file_download_plan_staging (test_transfer.TestDownloadPlans.test_file_download_plan_staging) ... ok
+test_tar_download_invalid_path_raises (test_transfer.TestDownloadPlans.test_tar_download_invalid_path_raises) ... ok
+test_tar_download_plan (test_transfer.TestDownloadPlans.test_tar_download_plan) ... ok
+test_base64_roundtrip_and_wrapper (test_transfer.TestRemoteBashCommand.test_base64_roundtrip_and_wrapper) ... ok
+test_discard_stage (test_transfer.TestStagedInstall.test_discard_stage) ... ok
+test_failure_rolls_back_previous_target (test_transfer.TestStagedInstall.test_failure_rolls_back_previous_target) ... ok
+test_fresh_file_install (test_transfer.TestStagedInstall.test_fresh_file_install) ... ok
+test_install_staged_path_wrapper (test_transfer.TestStagedInstall.test_install_staged_path_wrapper) ... ok
+test_replace_existing_directory (test_transfer.TestStagedInstall.test_replace_existing_directory) ... ok
+test_replace_existing_file_removes_backup (test_transfer.TestStagedInstall.test_replace_existing_file_removes_backup) ... ok
+test_duplicate_remote_target_raises (test_transfer.TestTarUploadPlans.test_duplicate_remote_target_raises) ... ok
+test_grouping_by_remote_dir_and_parent (test_transfer.TestTarUploadPlans.test_grouping_by_remote_dir_and_parent) ... ok
+test_same_basename_different_targets_partitioned (test_transfer.TestTarUploadPlans.test_same_basename_different_targets_partitioned) ... ok
+test_single_file_plan_shape (test_transfer.TestTarUploadPlans.test_single_file_plan_shape) ... ok
+test_invalid_remote_path_raises (test_transfer.TestTextUploadPlan.test_invalid_remote_path_raises) ... ok
+test_persistent_command_embeds_payload_and_path (test_transfer.TestTextUploadPlan.test_persistent_command_embeds_payload_and_path) ... ok
+test_plan_fields_and_sha (test_transfer.TestTextUploadPlan.test_plan_fields_and_sha) ... ok
+test_ensure_tunnel_passes_remote_port_kwarg (test_tunnel.TestRemoteClientTunnel.test_ensure_tunnel_passes_remote_port_kwarg) ... ok
+test_local_deploy_uses_no_ssh (test_tunnel.TestRemoteClientTunnel.test_local_deploy_uses_no_ssh) ... ok
+test_parallel_openssh_uses_fresh_nonpersistent_runner (test_tunnel.TestRemoteClientTunnel.test_parallel_openssh_uses_fresh_nonpersistent_runner) ... ok
+test_parallel_paramiko_reuses_session_backend (test_tunnel.TestRemoteClientTunnel.test_parallel_paramiko_reuses_session_backend) ... ok
+test_single_host_reuses_one_runner (test_tunnel.TestRemoteClientTunnel.test_single_host_reuses_one_runner) ... ok
+test_split_host_gets_separate_runners (test_tunnel.TestRemoteClientTunnel.test_split_host_gets_separate_runners) ... ok
+test_paramiko_backend_constructs (test_tunnel.TestSSHRunnerParamikoBackend.test_paramiko_backend_constructs) ... ok
+test_unsupported_backend_rejected (test_tunnel.TestSSHRunnerParamikoBackend.test_unsupported_backend_rejected) ... ok
+test_deploy_mkdir_failure_raises (test_tunnel_transfer.TestRemoteClientEdges.test_deploy_mkdir_failure_raises) ... ok
+test_deploy_upload_failure_raises (test_tunnel_transfer.TestRemoteClientEdges.test_deploy_upload_failure_raises) ... ok
+test_download_budget_exceeded (test_tunnel_transfer.TestRemoteClientEdges.test_download_budget_exceeded) ... ok
+test_download_failure_propagates (test_tunnel_transfer.TestRemoteClientEdges.test_download_failure_propagates) ... ok
+test_ensure_tunnel_local_is_noop (test_tunnel_transfer.TestRemoteClientEdges.test_ensure_tunnel_local_is_noop) ... ok
+test_jump_suppressed_when_target_is_jump_host (test_tunnel_transfer.TestRemoteClientEdges.test_jump_suppressed_when_target_is_jump_host) ... ok
+test_upload_budget_exceeded (test_tunnel_transfer.TestRemoteClientEdges.test_upload_budget_exceeded) ... ok
+test_verify_command_failure_propagates (test_tunnel_transfer.TestRemoteClientEdges.test_verify_command_failure_propagates) ... ok
+test_verify_mismatch (test_tunnel_transfer.TestRemoteClientEdges.test_verify_mismatch) ... ok
+test_directory_without_recursive_is_rejected (test_tunnel_transfer.TestRemoteClientRecursiveUpload.test_directory_without_recursive_is_rejected) ... ok
+test_recursive_upload_skips_digest (test_tunnel_transfer.TestRemoteClientRecursiveUpload.test_recursive_upload_skips_digest) ... ok
+test_recursive_with_file_is_rejected (test_tunnel_transfer.TestRemoteClientRecursiveUpload.test_recursive_with_file_is_rejected) ... ok
+test_channel_budget_exceeded (test_tunnel_transfer.TestRemoteClientTransport.test_channel_budget_exceeded) ... ok
+test_close_stops_and_closes_runners (test_tunnel_transfer.TestRemoteClientTransport.test_close_stops_and_closes_runners) ... ok
+test_download_recursive_skips_digest (test_tunnel_transfer.TestRemoteClientTransport.test_download_recursive_skips_digest) ... ok
+test_serial_command_uses_command_runner (test_tunnel_transfer.TestRemoteClientTransport.test_serial_command_uses_command_runner) ... ok
+test_upload_failure_propagates (test_tunnel_transfer.TestRemoteClientTransport.test_upload_failure_propagates) ... ok
+test_upload_success_verifies_sha (test_tunnel_transfer.TestRemoteClientTransport.test_upload_success_verifies_sha) ... ok
+
+----------------------------------------------------------------------
+Ran 241 tests in 26.965s
+
+OK (skipped=1)
+[registration] 127.0.0.1 - "POST /api/register HTTP/1.1" 200 -
+[registration] 127.0.0.1 - "POST /api/register/apply HTTP/1.1" 200 -
+[registration] 127.0.0.1 - "POST /api/register/bob/validate HTTP/1.1" 200 -
+[registration] 127.0.0.1 - "POST /api/register/bob/probe HTTP/1.1" 200 -
+[registration] 127.0.0.1 - "POST /api/register/bob/deploy HTTP/1.1" 200 -
+[registration] 127.0.0.1 - "POST /api/register/bob/verify HTTP/1.1" 200 -
+[registration] 127.0.0.1 - "POST /api/register HTTP/1.1" 400 -
+[registration] 127.0.0.1 - "POST /api/register HTTP/1.1" 400 -
+[registration] 127.0.0.1 - "POST /api/register HTTP/1.1" 200 -
+[registration] 127.0.0.1 - "GET / HTTP/1.1" 200 -
+[registration] 127.0.0.1 - "POST /api/register HTTP/1.1" 400 -
+[registration] 127.0.0.1 - "GET /api/register/ghost HTTP/1.1" 404 -
+[registration] 127.0.0.1 - "POST /api/register/ghost/validate HTTP/1.1" 404 -
+[registration] 127.0.0.1 - "POST /nope HTTP/1.1" 404 -
+[registration] 127.0.0.1 - "POST /api/register/ghost/verify HTTP/1.1" 404 -
+[registration] 127.0.0.1 - "POST /api/register HTTP/1.1" 200 -
+[registration] 127.0.0.1 - "POST /api/register/alice/verify HTTP/1.1" 200 -

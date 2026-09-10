@@ -150,9 +150,22 @@ function post(path, body, ok) {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: body === undefined ? '' : JSON.stringify(body)
-  }).then(function (r) { return r.json(); })
-    .then(ok)
-    .catch(function (err) { show('请求失败: ' + err); });
+  }).then(function (r) {
+    return r.json().then(function (data) { return { status: r.status, data: data }; });
+  }).then(function (res) {
+    if (res.status === 404) {
+      // in-memory session lost (server restarted) -> guide back to step 1
+      render({
+        user: (res.data && res.data.user) || '',
+        stage: 'failed',
+        step: 0,
+        token: null,
+        errors: ['注册会话不存在（服务可能已重启或过期）。请返回修改参数后重新从第 1 步提交。']
+      });
+      return;
+    }
+    ok(res.data);
+  }).catch(function (err) { show('请求失败: ' + err); });
 }
 function applyStep() {
   post('/api/register/apply', collectPayload(), render);

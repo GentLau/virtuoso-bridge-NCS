@@ -1,0 +1,35 @@
+test_each_invocation_returns_only_new_byte_range (test_cdslog_demo.CdsLogDemoTests.test_each_invocation_returns_only_new_byte_range) ... ok
+test_file_rotation_resets_cursor (test_cdslog_demo.CdsLogDemoTests.test_file_rotation_resets_cursor) ... ok
+test_invalid_configuration_is_rejected (test_cdslog_demo.CdsLogDemoTests.test_invalid_configuration_is_rejected) ... ok
+test_log_levels_filter_after_cursor_is_read (test_cdslog_demo.CdsLogDemoTests.test_log_levels_filter_after_cursor_is_read) ... ok
+test_many_errors_keep_head_and_tail_when_still_too_large (test_cdslog_demo.CdsLogDemoTests.test_many_errors_keep_head_and_tail_when_still_too_large) ... ok
+test_oversized_increment_degrades_to_error_only (test_cdslog_demo.CdsLogDemoTests.test_oversized_increment_degrades_to_error_only) ... ok
+test_skill_result_exposes_increment_as_log_field (test_cdslog_demo.CdsLogDemoTests.test_skill_result_exposes_increment_as_log_field) ... ok
+test_connect_smoke_through_register_and_start (test_full_demo.FullDemoTests.test_connect_smoke_through_register_and_start) ... ok
+test_cross_user_skills_run_in_parallel (test_full_demo.FullDemoTests.test_cross_user_skills_run_in_parallel) ... ok
+test_execute_skill_routes_by_token_and_arrival_is_success (test_full_demo.FullDemoTests.test_execute_skill_routes_by_token_and_arrival_is_success) ... ok
+test_four_step_flow_and_registry_has_no_runtime_fields (test_full_demo.FullDemoTests.test_four_step_flow_and_registry_has_no_runtime_fields) ... ok
+test_register_multiple_users_gets_distinct_tokens_ports_and_persisted_registry (test_full_demo.FullDemoTests.test_register_multiple_users_gets_distinct_tokens_ports_and_persisted_registry) ... ok
+test_run_command_default_serial_keeps_persistent_shell_state (test_full_demo.FullDemoTests.test_run_command_default_serial_keeps_persistent_shell_state) ... ok
+test_run_command_default_serial_never_overlaps (test_full_demo.FullDemoTests.test_run_command_default_serial_never_overlaps) ... ok
+test_run_command_parallel_true_overlaps (test_full_demo.FullDemoTests.test_run_command_parallel_true_overlaps) ... ok
+test_same_user_skills_serialize_on_single_threaded_daemon (test_full_demo.FullDemoTests.test_same_user_skills_serialize_on_single_threaded_daemon) ... ok
+test_unknown_token_is_rejected_without_touching_any_daemon (test_full_demo.FullDemoTests.test_unknown_token_is_rejected_without_touching_any_daemon) ... ok
+test_worker_pool_rejects_when_at_capacity (test_full_demo.FullDemoTests.test_worker_pool_rejects_when_at_capacity) ... ok
+
+----------------------------------------------------------------------
+Ran 18 tests in 9.460s
+
+OK
+[DEMO load] user=alice token=alice-prod port=60481
+[DEMO load] user=alice token=alice-prod port=50505
+[DEMO load] user=bob token=bob-prod port=50506
+[DEMO load] user=alice token=alice-prod port=54787
+[DEMO load] user=bob token=bob-prod port=54788
+[DEMO load] user=alice token=alice-prod port=54791
+[DEMO load] user=alice token=alice-prod port=54794
+[DEMO load] user=alice token=alice-prod port=58778
+[DEMO load] user=alice token=alice-prod port=58779
+[DEMO load] user=alice token=alice-prod port=60242
+[DEMO load] user=alice token=alice-prod port=60245
+[DEMO load] user=alice token=alice-prod port=60246

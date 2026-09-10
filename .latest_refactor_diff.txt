@@ -1,0 +1,1046 @@
+diff --git "a/doc/\346\216\245\345\217\243\350\260\203\347\224\250\346\214\207\345\215\227.md" "b/doc/\346\216\245\345\217\243\350\260\203\347\224\250\346\214\207\345\215\227.md"
+index 85a8c6a..ca58144 100644
+--- "a/doc/\346\216\245\345\217\243\350\260\203\347\224\250\346\214\207\345\215\227.md"
++++ "b/doc/\346\216\245\345\217\243\350\260\203\347\224\250\346\214\207\345\215\227.md"
+@@ -152,7 +152,8 @@ CommandResult(returncode, stdout, stderr)
+ 
+ - 每次调用必填；是“寻址键 + 授权票”，不是绑定会话对象；
+ - 中层按 token 查注册表路由；底层 daemon 校验 token，**不匹配直接 NAK，SKILL 零接触**；
+-- token 不进入 SKILL 执行帧，也不回显给上层。
++- token 不进入 SKILL 执行帧，也不回显给上层；
++- **token 使用范围**：只用于路由与校验；用户可读的文件/目录路径一律用**唯一用户名**（如 `~/.virtuoso-bridge/<user>/`），token 不再作为路径段。
+ 
+ ### 5.2 `parallel`（仅 RunCommand，可选参数，默认 `False`）
+ 
+diff --git "a/doc/\346\265\213\350\257\225\350\246\206\347\233\226\346\212\245\345\221\212.md" "b/doc/\346\265\213\350\257\225\350\246\206\347\233\226\346\212\245\345\221\212.md"
+index f2fd4c9..59a095f 100644
+--- "a/doc/\346\265\213\350\257\225\350\246\206\347\233\226\346\212\245\345\221\212.md"
++++ "b/doc/\346\265\213\350\257\225\350\246\206\347\233\226\346\212\245\345\221\212.md"
+@@ -63,9 +63,9 @@ test_bak/        旧 tests/ 归档，不参与常规运行
+ 
+ - 申请参数校验：远程模式 host/ssh_user 必填、端口 1–65535、token 字符集、user 非空；
+ - 第二步本地校验：user 查重 + daemon/local 端口查重（单测 + 页面 400 路径）；
+-- 第三步探测：SSH 可达、host key 指纹（known_hosts 优先 + `ssh -G` 别名解析 + `ssh-keyscan` 回退）、hostname、daemon 用户存在性、python 选型、端口空闲/分配、部署根可写；**每个失败分支都有单测，且不落盘**；
++- 第三步探测：只做 daemon 可用前即可验证的项目——SSH 可达、host key 指纹、hostname、daemon 用户存在性、python 选型、端口空闲/分配（避让注册表已占端口）、部署根可写；**用户未填以探测固化，显式填写的参数做可用性校验**（如 local_port 占用、spectre 路径不可执行都会报告参数问题）；每个失败分支都有单测且不落盘；
+ - 第四步部署：python 2/3 选 `_27/_3`，setup IL 注入 token 并**每次 load 打印 token**（新增 `printf("[RAMIC] token=%L\n" RBDToken)`，有单测 + 真机 load 验证）；
+-- 第五步连通：命令冒烟 + Skill 冒烟 + token 比对 + banner 主机名漂移 WARNING（短名/FQDN 兼容），失败重试不落盘；
++- 第五步连通：daemon 可用后补齐第三步无法完成的全部校验——命令冒烟 + Skill 冒烟 + token 比对 + **host key 指纹运行时比对（不匹配 ERROR）** + banner 主机名漂移 WARNING，失败重试不落盘；
+ - 第六步唯一写盘：`verify()` 成功才 `registry.register()`；**verify 幂等**（重复调用保持 committed）；注册表写盘先 `tmp+replace` 成功再提交内存，失败回滚。
+ 
+ ### 3.2 token 机制
+@@ -84,6 +84,7 @@ test_bak/        旧 tests/ 归档，不参与常规运行
+ 
+ ### 3.4 CDS.log 增量返回
+ 
++- token 使用范围：路由/校验用 token；**用户可读路径用唯一用户名**（`~/.virtuoso-bridge/<user>/`），路径层有单测 + 真机验证；
+ - 两个 daemon 用**同一组 fixture 做 parity**：`off/all/warn/error` 分级、未知前缀按 info、超长降级 error-only、error-only 头尾 100 行、UTF-8 按字节计数；
+ - `_read_delta` cursor：增量推进、路径切换重置、文件轮转从 0 重读、`end<start`/`end>size` 夹紧（本次修复了负长度读取崩溃）；
+ - 真机 E2E 断言 `execute_skill` 返回非空 `log`。
+@@ -152,9 +153,9 @@ coverage.py 无法统计 SKILL。用静态断言 + 真机验收：BEGIN→flush
+ 
+ ### 5.6 尚未实现/待验收的 spec 能力（审查代理指出，需业务决策）
+ 
+-1. **连接期 host key 指纹比对**：注册固化指纹，但连接阶段尚未实时比对（防漂移字段目前是冷启动数据）；
+-2. **split-host 独立探测**：手动注册单主机完整；`daemon_host ≠ command host` 时对 daemon 主机单独探测与路径可见性检查未实现；
+-3. SOCKS5/跳板真实拓扑、MaxSessions 临界并发、断线自愈的现场压力测试未执行。
++1. **split-host 独立探测**：手动注册单主机完整；`daemon_host ≠ command host` 时对 daemon 主机单独探测与路径可见性检查未实现；
++2. SOCKS5/跳板真实拓扑、MaxSessions 临界并发、断线自愈的现场压力测试未执行；
++3. `route.spectre.bin` 目前只做显式输入可用性校验，尚未在第三步自动探测 spectre。
+ 
+ 以上三点属于功能缺口而非测试缺口，需要在 spec 评审后补实现，再回到本报告。
+ 
+diff --git "a/spec/design-concepts/\345\272\225\345\261\202\344\270\216\344\270\255\345\261\202/\344\273\243\347\240\201\346\242\263\347\220\206.md" "b/spec/design-concepts/\345\272\225\345\261\202\344\270\216\344\270\255\345\261\202/\344\273\243\347\240\201\346\242\263\347\220\206.md"
+index 3bc364d..e23a656 100644
+--- "a/spec/design-concepts/\345\272\225\345\261\202\344\270\216\344\270\255\345\261\202/\344\273\243\347\240\201\346\242\263\347\220\206.md"
++++ "b/spec/design-concepts/\345\272\225\345\261\202\344\270\216\344\270\255\345\261\202/\344\273\243\347\240\201\346\242\263\347\220\206.md"
+@@ -67,11 +67,11 @@ local 模式：`daemon_host=localhost` 时不建 SSH，loopback 直连 daemon，
+ | 模块 | 提供的功能 | 处置 |
+ |---|---|---|
+ | `basic/bridge.py::VirtuosoClient` | 纯 TCP SKILL 客户端：连接重试、deadline、`execute_skill`、`ensure_ready`/`warm`、`test_connection`；同时混入 cellview/window/screenshot/CIW shell/文件/skill finder 等 | **保留**：TCP 客户端核心 + 超时/重试 + STX/NAK 解析<br>**删除/移交上层**：`run_shell_command`（csh 偷渡）、cellview/window/screenshot/x11/fetch/find_skill/search_docs、LayoutOps/SchematicOps/MaestroOps 挂载<br>**改造**：`execute_skill` 加 `token`；解析 JSON payload，`VirtuosoResult.log`；文件方法移归中层 File port；去掉对已删除上层模块的 import |
+-| `transport/tunnel.py::SSHClient` | 角色 runner 管理；部署；隧道；`run_command`；`upload_file/download_file`；`save_state/read_state` | **保留**：runner 管理、部署、隧道、命令/文件底层调用、state 诊断<br>**删除**：`from_env` 作为主路径、profile/env 分支<br>**改造**：路由来源改 registry；命令/文件加 `token`；`run_command` 加 `parallel`；setup il 写 il 常量（去 `setShellEnvVar`）；token 注入 setup；部署到固定 `id_token` 下 `ramic`/`setup`/`status` 三目录 |
++| `transport/tunnel.py::SSHClient` | 角色 runner 管理；部署；隧道；`run_command`；`upload_file/download_file`；`save_state/read_state` | **保留**：runner 管理、部署、隧道、命令/文件底层调用、state 诊断<br>**删除**：`from_env` 作为主路径、profile/env 分支<br>**改造**：路由来源改 registry；命令/文件加 `token`；`run_command` 加 `parallel`；setup il 写 il 常量（去 `setShellEnvVar`）；token 注入 setup；部署到固定 `<user>` 下 `ramic`/`setup`/`status` 三目录（路径用用户名，不用 token） |
+ | `transport/ssh.py::SSHRunner` | persistent shell + base64 分帧；ControlMaster；一次性 ssh；tar/scp 上传下载；端口转发；transient/CM 重试；错误摘要；`CommandResult` | **保留**：整个传输实现<br>**改造**：新增 `parallel=True` 的一次性 exec channel；按 token 隔离连接；channel 预算/线程池记账 |
+ | `models.py` | `ExecutionStatus`、`VirtuosoResult`、`SimulationResult`、`VirtuosoInterface` | **保留**：全部<br>**改造**：`VirtuosoResult` 加 `log: str = ""` |
+ | `transport/transfer.py`、`paramiko_backend.py` | tar/scp 计划、staging、原子安装；paramiko 后端 | **保留**：全部（属于 File port 实现） |
+-| `transport/remote_paths.py` | 远端路径/client_id 规则 | **改造**：删除 client_id 目录段，路径按 token 子目录（`~/.virtuoso-bridge/id_token`） |
++| `transport/remote_paths.py` | 远端路径/client_id 规则 | **改造**：删除 client_id 目录段，路径按**用户名**子目录（`~/.virtuoso-bridge/<user>`） |
+ | `env.py`、`profile.py` | `.env` 加载、profile 解析、venv 绑定 | **删除主路径**：被 registry 取代；仅保留为旧脚本迁移适配器 |
+ | `runtime_paths.py` | 本地 config/state/cache/log/artifact 目录 | **改造**：收拢为单一本地工作目录 + 固定 `temp/log/artifact` 子目录，自动创建 |
+ | `daemon_guard.py` | 事后查证 daemon user/host | **删除强制校验**：daemon token 前置校验取代；仅保留诊断函数（或整体删除） |
+diff --git "a/spec/design-concepts/\345\272\225\345\261\202\344\270\216\344\270\255\345\261\202/\345\244\232\347\224\250\346\210\267\350\256\276\350\256\241.md" "b/spec/design-concepts/\345\272\225\345\261\202\344\270\216\344\270\255\345\261\202/\345\244\232\347\224\250\346\210\267\350\256\276\350\256\241.md"
+index 206a8a4..a10e177 100644
+--- "a/spec/design-concepts/\345\272\225\345\261\202\344\270\216\344\270\255\345\261\202/\345\244\232\347\224\250\346\210\267\350\256\276\350\256\241.md"
++++ "b/spec/design-concepts/\345\272\225\345\261\202\344\270\216\344\270\255\345\261\202/\345\244\232\347\224\250\346\210\267\350\256\276\350\256\241.md"
+@@ -29,7 +29,7 @@
+ | 现状机制 | 承担的角色 | 多用户下的缺口 |
+ |---|---|---|
+ | `profile`（`VB_*_<profile>` 后缀） | 按名字区分多套连接配置 | 配置写在 `.env`，路由靠**环境变量全局状态**；上层若按 profile 分支即违反分层 |
+-| `client_id` | 隔离"同一远端用户从多台本地机器连" | 遗留机制：改造后**删除**，远端目录按 token 子目录区分（`~/.virtuoso-bridge/id_token`），不再做客户端分段 |
++| `client_id` | 隔离"同一远端用户从多台本地机器连" | 遗留机制：改造后**删除**，远端目录按**用户名**子目录区分（`~/.virtuoso-bridge/<user>`），不再做客户端分段 |
+ | `state.json`（每 profile 一份） | 记录端口/隧道/setup 路径 | 已是事实上的注册表雏形，但没有 token 键，也没有统一查询入口 |
+ | `daemon_guard` | 事后校验"连没连错" | 每次新建客户端都要发一条 SKILL 查证；拦截点太晚（已接触错误会话） |
+ | 端口分配（用户名哈希） | 远端 daemon 端口去冲突 | 哈希碰撞靠人工改 `VB_REMOTE_PORT`；多用户规模化后不可持续 |
+@@ -51,6 +51,7 @@
+ - **生成与授权分离（目视确认）**：
+   - token 由**客户端本地生成**，写入注册表（客户端侧索引，无副作用）；
+   - **授权是用户目视确认动作**：token 在投送（部署）时自动写入生成的 il 文件；用户在 CIW 里 `load` 时，il 打印 token，**用户目视确认与客户端持有的 token 一致**——确认即授权（见 3.5）。
++- **token 使用范围（已明确）**：token 只用于**路由与校验**（注册表路由、daemon 比对、Skill 请求）；**用户可读路径一律用唯一用户名**（如 `~/.virtuoso-bridge/<user>/`），token 太长太散，不再作为路径段。
+ - 存放位置（闭环）：
+   1. **生成的 il 文件** —— 投送时自动把 token 写成 il 常量（或 daemon 启动参数），CIW load 时打印供目视确认，daemon 直接持有，不经 Virtuoso 进程环境；
+   2. daemon 进程 —— 持有 token，比对来访请求；
+@@ -97,6 +98,8 @@ flowchart TD
+ 
+ #### 第三步：探测（远端环境探测）
+ 
++**核心时序**：此时 daemon 尚未启动，但 SSH 已可达——本步只探测“不依赖 daemon 即可验证”的项目并**固化**。对用户未填写的参数，以探测结果为准；对用户**显式填写**的参数，做**可用性校验**，不可用必须报告“该参数有问题”（而不是静默替换）。
++
+ **通过 SSH 去远端验证环境**（本地模式则在本机执行等价检查）。探测清单：
+ 
+ | # | 探测项 | 验什么 |
+@@ -123,6 +126,8 @@ ramic_bridge.il
+ 
+ #### 第五步：连通性测试
+ 
++**核心时序**：此时 daemon 已可用，把第三步“daemon 不可用期间无法完成”的校验全部补齐，完成全部探测/校准/确认后才允许进入第六步。
++
+ 用户 load 之后，逐项验收：
+ 
+ | 校验项 | 方式 | 不匹配处置 |
+@@ -130,6 +135,7 @@ ramic_bridge.il
+ | daemon 是否可用 | 连注册的 daemon 端口（本地直连 / 远程经隧道） | 无响应 → **ERROR**（提示 CIW 里 load setup） |
+ | token 比对 | daemon 校验 il 注入的 token | NAK → **ERROR**（未授权，SKILL 零接触） |
+ | banner 主机名 | daemon banner `host=` vs 注册的期望主机名 | WARNING（漂移可追踪） |
++| **host key 指纹** | 当前 host key 与第三步固化值比对 | 不匹配 → **ERROR**（防机器漂移/中间人） |
+ | **命令冒烟** | SSH 跑 `echo vb-ok` 并校验返回 | ERROR（命令通道不可用） |
+ | **Skill 冒烟** | `execute_skill("1+1")` 必须 SUCCESS 且值为 `2` | ERROR（Skill 链未真正打通） |
+ 
+diff --git "a/spec/design-concepts/\346\200\273\350\247\210/\346\224\271\345\212\250\346\212\245\345\221\212.md" "b/spec/design-concepts/\346\200\273\350\247\210/\346\224\271\345\212\250\346\212\245\345\221\212.md"
+index 9196c2e..1c29c16 100644
+--- "a/spec/design-concepts/\346\200\273\350\247\210/\346\224\271\345\212\250\346\212\245\345\221\212.md"
++++ "b/spec/design-concepts/\346\200\273\350\247\210/\346\224\271\345\212\250\346\212\245\345\221\212.md"
+@@ -83,7 +83,7 @@
+   - Spectre 依赖远端 shell source `VB_CADENCE_CSHRC`。
+ - **改动位置**：`tunnel.py`（setup 生成）、`ramic_bridge.il`（配置读取）、Spectre 命令构造（cli/runner）。
+ - **改动点**：
+-  1. setup il 把 `RB_DAEMON_PATH`/`RB_PYTHON_PATH`/`RB_PORT`/`RB_IDENTITY_PATH`/token 写成 il 常量（或 daemon 参数），部署到固定 `id_token/ramic|setup|status` 结构；
++  1. setup il 把 `RB_DAEMON_PATH`/`RB_PYTHON_PATH`/`RB_PORT`/`RB_IDENTITY_PATH`/token 写成 il 常量（或 daemon 参数），部署到固定 `<user>/ramic|setup|status` 结构（路径用用户名，token 只用于路由/校验）；
+   2. `ramic_bridge.il` 不再 `getShellEnvVar`，改读 load 时注入的常量/参数；
+   3. 命令执行不要求远端 shell 预配置：注册时固化解出的绝对路径与所需环境，执行时显式传入。
+ - **工作量**：M。bridge 配置去 env 是 S；Spectre 环境显式化是 M。
+diff --git "a/spec/design-concepts/\346\200\273\350\247\210/\346\240\270\345\277\203\344\277\256\346\224\271.md" "b/spec/design-concepts/\346\200\273\350\247\210/\346\240\270\345\277\203\344\277\256\346\224\271.md"
+index 8cec496..2360a88 100644
+--- "a/spec/design-concepts/\346\200\273\350\247\210/\346\240\270\345\277\203\344\277\256\346\224\271.md"
++++ "b/spec/design-concepts/\346\200\273\350\247\210/\346\240\270\345\277\203\344\277\256\346\224\271.md"
+@@ -92,7 +92,7 @@ def run_command(
+       "route": {
+         "skill":   {"local_port": 65082, "daemon_host": "compute-host-b", "daemon_port": 65081},
+         "command": {"host": "server-a", "user": "jtliu"},
+-        "file":    {"host": "server-a", "root": "/home/jtliu/.virtuoso-bridge/id_token"}
++        "file":    {"host": "server-a", "root": "/home/jtliu/.virtuoso-bridge/alice"}
+       },
+       "expected": {
+         "ssh_host_key_fingerprint": "SHA256:7aX…",
+diff --git "a/spec/design-concepts/\346\200\273\350\247\210/\351\205\215\347\275\256\344\270\200\350\247\210.md" "b/spec/design-concepts/\346\200\273\350\247\210/\351\205\215\347\275\256\344\270\200\350\247\210.md"
+index 3580819..e7b882a 100644
+--- "a/spec/design-concepts/\346\200\273\350\247\210/\351\205\215\347\275\256\344\270\200\350\247\210.md"
++++ "b/spec/design-concepts/\346\200\273\350\247\210/\351\205\215\347\275\256\344\270\200\350\247\210.md"
+@@ -68,14 +68,14 @@
+ | `route.command.host` | `RunCommand` 实际执行的主机 | 默认 `= daemon_host` |
+ | `route.command.user` | 命令执行使用的远端账号 | 默认 `= expected.daemon_user` |
+ | `route.file.host` | 文件传输目标主机 | 默认 `= command.host` |
+-| `route.file.root` | 文件传输的根目录/隔离域 | 默认 `= <scratch_root>/id_token` |
++| `route.file.root` | 文件传输的根目录/隔离域 | 默认 `= <scratch_root>/<user>`（**路径用用户名，不用 token**） |
+ | `route.spectre.host` | 可选：独立 Spectre 执行主机 | 默认 `= command.host` |
+ | `route.spectre.bin` | 可选：注册时探测固化的 spectre 绝对路径，避免依赖远端 shell PATH | 可选，无默认 |
+-| `deploy.scratch_root` | bridge 远端工作根；每个用户在其下用 token 命名的 `id_token` 子目录区分 | 默认 `~/.virtuoso-bridge` |
+-远端文件结构（写死，不配置；`id_token` = 该用户 token 命名的目录）：
++| `deploy.scratch_root` | bridge 远端工作根；每个用户在其下用**唯一用户名**命名的子目录区分 | 默认 `~/.virtuoso-bridge` |
++远端文件结构（写死，不配置；目录名 = 该用户的**用户名**，token 只用于路由/校验，不进入路径）：
+ 
+ ```text
+-<scratch_root = ~/.virtuoso-bridge>/id_token/
++<scratch_root = ~/.virtuoso-bridge>/<user>/
+   ramic/
+     ramic_bridge_daemon_3.py   ← daemon（按 python 版本选 3 / 27）
+     ramic_bridge_daemon_27.py
+@@ -88,13 +88,13 @@
+ 
+ | 变量 | 作用（满足什么需求） | 默认值 |
+ |---|---|---|
+-| `RBDPath`（il 常量） | daemon 脚本实际路径：`<scratch_root>/id_token/ramic/ramic_bridge_daemon_*.py` | 必填（部署生成） |
++| `RBDPath`（il 常量） | daemon 脚本实际路径：`<scratch_root>/<user>/ramic/ramic_bridge_daemon_*.py` | 必填（部署生成） |
+ | `RBPython`（il 常量） | 拉起 daemon 的 python 解释器 | 默认 `python`（探测失败时） |
+ | `RBPort`（il 常量） | daemon 监听端口 | 必填（= `route.skill.daemon_port`） |
+-| `RBIdentityPath`（il 常量） | identity 文件路径：`<scratch_root>/id_token/status/daemon_identity.txt` | 必填（部署生成） |
++| `RBIdentityPath`（il 常量） | identity 文件路径：`<scratch_root>/<user>/status/daemon_identity.txt` | 必填（部署生成） |
+ | daemon `token`（argv / il 常量） | daemon 持有用于校验来访请求；不匹配则 SKILL 零接触 | 必填（部署注入） |
+-| daemon `bind`（argv） | 监听地址（默认回环，仅诊断需要时改） | 默认 `127.0.0.1` |
+-| `RBLocal`（il 常量） | 调试开关：仅本地监听 | 默认 `nil` |
++| daemon `bind`（argv） | 监听地址，**固定回环**（仅诊断需要时再扩展外网） | 默认 `127.0.0.1` |
++| `RBLocal`（il 常量） | 兼容保留的调试开关；**当前 daemon 固定绑定 `127.0.0.1`** | 默认 `nil`（不使用） |
+ | `RBEcho`（il 常量） | 调试开关：回显 bridge 消息 | 默认 `nil` |
+ | `RBDLog`（il 常量） | 调试开关：daemon 日志 | 默认 `nil` |
+ | Spectre 环境 | 注册时固化 `spectre.bin` 或 cshrc 路径，执行时由中层显式传入 | 可选，无默认 |
+@@ -106,7 +106,7 @@
+ | token | 每用户唯一，注册表保存 |
+ | 端口 | 每用户注册表分配 |
+ | SSH 连接 / channel | 每 token 独立 |
+-| 部署目录 | `~/.virtuoso-bridge/id_token/`，id_token = 该用户 token 命名的目录 |
++| 部署目录 | `~/.virtuoso-bridge/<user>/`，目录名 = 唯一用户名 |
+ | identity 文件 | 每用户一份 |
+ | 线程池 / channel 预算 | 每 token 独立 |
+ | CDS.log cursor | daemon 内存（每 CIW 独立） |
+diff --git a/src/server/registration_server.py b/src/server/registration_server.py
+index 592e156..634ed59 100644
+--- a/src/server/registration_server.py
++++ b/src/server/registration_server.py
+@@ -1,15 +1,17 @@
+-"""Registration HTTP server (the future registration page).
++"""Registration HTTP server (the registration page).
+ 
+-Stdlib-only ``ThreadingHTTPServer`` guiding a user through the six-step manual
+-registration flow:
++Stdlib-only ``ThreadingHTTPServer`` guiding a user step by step through the
++six-step manual registration flow:
+ 
+-  POST /api/register             submit the application -> steps 2/3/4
+-  POST /api/register/<user>/verify   user has load()ed -> steps 5/6
+-  GET  /api/register/<user>           current in-progress state
+-  GET  /                                registration form page
++  1 申请        POST /api/register/apply
++  2 本地校验    POST /api/register/<user>/validate
++  3 探测        POST /api/register/<user>/probe
++  4 部署        POST /api/register/<user>/deploy
++  5 连通性      POST /api/register/<user>/verify   (also performs step 6)
++  6 写注册表    (inside verify; the only durable write)
+ 
+-Registration state is kept in memory only; the single durable write is the
+-step-6 registry commit performed by ``RegistrationFlow.verify()``.
++``POST /api/register`` remains as a one-shot steps 1-4 convenience.
++State is kept in memory only; the single durable write is the step-6 commit.
+ """
+ 
+ from __future__ import annotations
+@@ -38,14 +40,17 @@ label{display:block;margin:12px 0 4px;font-size:14px}
+ input,select{width:100%;box-sizing:border-box;padding:8px;font-size:14px}
+ .row{display:flex;gap:12px}
+ .row>div{flex:1}
+-button{margin:16px 0;padding:10px 18px;font-size:15px}
++button{margin:8px 0;padding:10px 18px;font-size:15px;cursor:pointer}
++#steps{margin:16px 0;font-size:13px;color:#555}
++#steps b{color:#000}
+ #out{white-space:pre-wrap;background:#f5f5f5;border:1px solid #ddd;padding:12px;margin-top:12px;font-size:13px}
+ pre{white-space:pre-wrap}
+ </style>
+ </head>
+ <body>
+ <h1>Virtuoso Bridge 用户注册</h1>
+-<p>六步流程：申请 → 本地校验 → 探测 → 部署 → 连通性测试 → 写入注册表。前五步任何一步失败都不会写入注册表。</p>
++<p>六步：①申请 → ②本地校验 → ③探测 → ④部署 → ⑤连通性测试 → ⑥写入注册表。前五步任何一步失败都不会写入注册表。</p>
++<div id="steps"></div>
+ <form id="f">
+ <div class="row">
+   <div><label>用户名（必填）</label><input name="user" required></div>
+@@ -75,49 +80,123 @@ pre{white-space:pre-wrap}
+   <div><label>跳板主机</label><input name="jump_host"></div>
+   <div><label>跳板用户</label><input name="jump_user"></div>
+ </div>
+-<button type="submit">第一步：提交申请（含 2 本地校验 / 3 探测 / 4 部署）</button>
++<details>
++<summary>高级策略配置（可选，缺省用注册表默认）</summary>
++<div class="row">
++  <div><label>SSH 后端</label>
++    <select name="ssh_backend"><option value="">默认 openssh</option><option value="openssh">openssh</option><option value="paramiko">paramiko</option></select></div>
++  <div><label>SSH 并发会话上限</label><input name="ssh_max_sessions" type="number" min="1"></div>
++</div>
++<label>SOCKS5 代理（如 socks5://127.0.0.1:1080，可选）</label>
++<input name="ssh_proxy">
++<div class="row">
++  <div><label>ControlMaster 策略</label>
++    <select name="ssh_control_master"><option value="">默认 auto</option><option value="auto">auto</option><option value="force">force</option><option value="disable">disable</option></select></div>
++  <div><label>连接建立超时（秒）</label><input name="connect_timeout" type="number" min="0.1" step="0.1"></div>
++</div>
++<div class="row">
++  <div><label>线程池大小</label><input name="thread_pool_size" type="number" min="1"></div>
++  <div><label>channel 预算</label><input name="channel_budget" type="number" min="1"></div>
++</div>
++<div class="row">
++  <div><label>CDS.log 返回级别</label>
++    <select name="log_level"><option value="">默认 all</option><option value="off">off</option><option value="all">all</option><option value="warn">warn</option><option value="error">error</option></select></div>
++  <div><label>CDS.log 单次上限（字节）</label><input name="log_max_bytes" type="number" min="1"></div>
++</div>
++<div class="row">
++  <div><label>Spectre 主机（缺省同 command 主机）</label><input name="spectre_host"></div>
++  <div><label>Spectre 可执行文件路径（可选固化）</label><input name="spectre_bin"></div>
++</div>
++</details>
++<button type="button" id="applyBtn">第 1 步：提交申请</button>
+ </form>
+ <div id="out"></div>
+ <script>
+-const out = document.getElementById('out');
+-document.getElementById('f').addEventListener('submit', async (e) => {
+-  e.preventDefault();
+-  const fd = new FormData(e.target);
+-  const payload = {};
+-  for (const [k, v] of fd.entries()) if (v !== '') payload[k] = v;
+-  for (const k of ['daemon_port','local_port']) if (payload[k] !== undefined) payload[k] = Number(payload[k]);
++var STEPS = ['申请','本地校验','探测','部署','连通性测试','写入注册表'];
++var CURRENT_USER = null;
++
++function esc(s) {
++  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
++}
++function collectPayload() {
++  var fd = new FormData(document.getElementById('f'));
++  var payload = {};
++  fd.forEach(function (v, k) { if (v !== '') payload[k] = v; });
++  var nums = ['daemon_port','local_port','ssh_max_sessions','connect_timeout','thread_pool_size','channel_budget','log_max_bytes'];
++  for (var i = 0; i < nums.length; i++) {
++    var k = nums[i];
++    if (payload[k] !== undefined && payload[k] !== '') payload[k] = Number(payload[k]);
++  }
+   payload.local = payload.mode === 'local';
+   delete payload.mode;
+-  out.textContent = '正在处理……';
+-  try {
+-    const res = await fetch('/api/register', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
+-    const data = await res.json();
+-    render(data);
+-  } catch (err) { out.textContent = '请求失败: ' + err; }
+-});
+-async function verify(user) {
+-  out.textContent = '正在做第五步连通性测试……';
+-  try {
+-    const res = await fetch('/api/register/' + encodeURIComponent(user) + '/verify', {method:'POST'});
+-    render(await res.json());
+-  } catch (err) { out.textContent = '请求失败: ' + err; }
++  return payload;
++}
++function show(text, html) {
++  var el = document.getElementById('out');
++  if (html) el.innerHTML = text; else el.textContent = text;
++}
++function showSteps(step, stage) {
++  var okStep = (stage === 'committed') ? 6 : step;
++  var html = '';
++  for (var i = 0; i < 6; i++) {
++    var cls = i < okStep ? '✔' : (i + 1 === okStep ? '▶' : '○');
++    html += cls + ' ' + (i + 1) + '.' + STEPS[i] + (i < 5 ? ' → ' : '');
++  }
++  document.getElementById('steps').innerHTML = '<b>当前进度：</b>' + html;
++}
++function post(path, body, ok) {
++  show('正在处理……');
++  fetch(path, {
++    method: 'POST',
++    headers: {'Content-Type': 'application/json'},
++    body: body === undefined ? '' : JSON.stringify(body)
++  }).then(function (r) { return r.json(); })
++    .then(ok)
++    .catch(function (err) { show('请求失败: ' + err); });
++}
++function applyStep() {
++  post('/api/register/apply', collectPayload(), render);
++}
++function step(user, action, label) {
++  show(label);
++  post('/api/register/' + encodeURIComponent(user) + '/' + action, undefined, render);
+ }
+ function render(data) {
+-  if (data.stage === 'deployed') {
+-    out.innerHTML = '<b>第四步完成，请在 CIW 中执行（每次 load 都会打印 token，请目视确认与下面一致）：</b><br>' +
+-      '<pre>' + html_escape('load("' + data.setup_path + '")') + '</pre>' +
+-      '<b>token：</b>' + html_escape(data.token || '') + '<br><br>' +
+-      '<button onclick="verify(' + JSON.stringify(data.user) + ')">我已 load，开始第五步连通性测试</button>';
++  CURRENT_USER = data.user;
++  showSteps(data.step || 0, data.stage);
++  var errors = (data.errors && data.errors.length) ? data.errors.join('\\n') : '';
++  if (data.stage === 'applied') {
++    show('第 1 步完成，token=' + (data.token || '') + '\\n\\n下一步：本地校验（user/端口查重，纯本地）。');
++    outButtons('<button onclick="step(\\'' + esc(data.user) + '\\',\\'validate\\',\\'第 2 步：本地校验\\')">第 2 步：本地校验</button>');
++  } else if (data.stage === 'validated') {
++    show('第 2 步通过（user/端口与注册表无冲突）。\\n\\n下一步：探测远端环境。');
++    outButtons('<button onclick="step(\\'' + esc(data.user) + '\\',\\'probe\\',\\'第 3 步：探测\\')">第 3 步：探测</button>');
++  } else if (data.stage === 'probed') {
++    show('第 3 步通过（SSH/指纹/python/端口/部署根）。\\n\\n下一步：上传 daemon/il/setup 到远端。');
++    outButtons('<button onclick="step(\\'' + esc(data.user) + '\\',\\'deploy\\',\\'第 4 步：部署\\')">第 4 步：部署</button>');
++  } else if (data.stage === 'deployed') {
++    show('<b>第 4 步完成。请在 CIW 中执行（每次 load 都会打印 token，请目视确认与下面一致）：</b><br>' +
++      '<pre>' + esc('load("' + data.setup_path + '")') + '</pre>' +
++      '<b>token：</b>' + esc(data.token || ''), true);
++    outButtons('<button onclick="step(\\'' + esc(data.user) + '\\',\\'verify\\',\\'第 5 步：连通性测试\\')">我已 load，开始第 5 步连通性测试</button>');
+   } else if (data.stage === 'committed') {
+-    out.innerHTML = '<b>注册完成。</b> 配置已写入 registry.json，此后按 token 路由使用。';
++    show('注册完成。配置已写入 registry.json，此后按 token 路由使用。', false);
++    outButtons('');
+   } else {
+-    let text = (data.stage || 'failed') + '\n';
+-    if (data.errors && data.errors.length) text += data.errors.join('\n');
+-    else text += data.detail || '';
+-    out.textContent = text;
++    show('失败于第 ' + (data.step || 0) + ' 步：\\n' + errors + '\\n\\n可修改参数后重新提交，或对同一用户重试当前步骤。');
++    var stepNo = data.step || 0;
++    var action = stepNo === 2 ? 'validate' : stepNo === 3 ? 'probe' : stepNo === 4 ? 'deploy' : stepNo === 5 ? 'verify' : null;
++    var html = '<button onclick="location.reload()">返回修改</button>';
++    if (action) html += '<button onclick="step(\\'' + esc(data.user) + '\\',\\'' + action + '\\',\\'重试第 ' + stepNo + ' 步\\')">重试第 ' + stepNo + ' 步</button>';
++    outButtons(html);
+   }
+ }
+-function html_escape(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
++function outButtons(html) {
++  var extra = document.getElementById('action');
++  if (!extra) { extra = document.createElement('div'); extra.id = 'action'; document.getElementById('out').appendChild(extra); }
++  extra.innerHTML = html;
++}
++document.getElementById('applyBtn').addEventListener('click', applyStep);
+ </script>
+ </body>
+ </html>
+@@ -125,9 +204,7 @@ function html_escape(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&
+ 
+ 
+ class RegistrationHandler(BaseHTTPRequestHandler):
+-    server_version = "vb-registration/0.1"
+-
+-    # -- helpers -------------------------------------------------------------
++    server_version = "vb-registration/0.2"
+ 
+     def _send_json(self, status: int, payload: dict) -> None:
+         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+@@ -154,10 +231,15 @@ class RegistrationHandler(BaseHTTPRequestHandler):
+         with self.server.flow_lock:  # type: ignore[attr-defined]
+             return self.server.flows.get(user)  # type: ignore[attr-defined]
+ 
++    def _store(self, flow: RegistrationFlow, user: str) -> None:
++        with self.server.flow_lock:  # type: ignore[attr-defined]
++            self.server.flows[user] = flow  # type: ignore[attr-defined]
++
+     def _state_payload(self, state) -> dict:
+         payload = {
+             "user": state.user,
+             "stage": state.stage,
++            "step": state.step,
+             "token": state.token,
+             "errors": state.errors,
+             "warnings": state.warnings,
+@@ -176,7 +258,7 @@ class RegistrationHandler(BaseHTTPRequestHandler):
+             }
+         return payload
+ 
+-    # -- routing ---------------------------------------------------------------
++    # -- routing --------------------------------------------------------------
+ 
+     def do_GET(self) -> None:  # noqa: N802
+         path = urlparse(self.path).path
+@@ -184,7 +266,7 @@ class RegistrationHandler(BaseHTTPRequestHandler):
+             self._send_html(200, _PAGE)
+             return
+         if path.startswith("/api/register/"):
+-            user = path[len("/api/register/"):].rstrip("/")
++            user = unquote(path[len("/api/register/"):].rstrip("/"))
+             flow = self._flow(user)
+             if flow is None or flow.state is None:
+                 self._send_json(404, {"error": "no registration in progress", "user": user})
+@@ -195,41 +277,49 @@ class RegistrationHandler(BaseHTTPRequestHandler):
+ 
+     def do_POST(self) -> None:  # noqa: N802
+         path = urlparse(self.path).path
+-        if path == "/api/register":
++        if path == "/api/register/apply":
+             self._handle_apply()
+             return
+-        if path.startswith("/api/register/") and path.endswith("/verify"):
+-            user = path[len("/api/register/"):-len("/verify")]
+-            self._handle_verify(user)
++        if path == "/api/register":
++            self._handle_apply(granular=False)
+             return
++        if path.startswith("/api/register/"):
++            rest = path[len("/api/register/"):].rstrip("/")
++            for action in ("validate", "probe", "deploy", "verify"):
++                if rest.endswith("/" + action):
++                    user = unquote(rest[: -(len(action) + 1)])
++                    self._handle_step(user, action)
++                    return
+         self._send_json(404, {"error": "not found"})
+ 
+-    def _handle_apply(self) -> None:
++    def _parse_request(self):
+         try:
+             raw = self._read_json()
+         except (json.JSONDecodeError, UnicodeDecodeError):
+             self._send_json(400, {"error": "invalid JSON body"})
+-            return
++            return None
+         try:
+-            request = RegistrationRequest(**raw)
++            return RegistrationRequest(**raw)
+         except ValidationError as exc:
+             detail = [str(e) for e in exc.errors()]
+             self._send_json(400, {"error": "invalid request", "detail": detail})
+-            return
++            return None
+ 
++    def _handle_apply(self, granular: bool = True) -> None:
++        request = self._parse_request()
++        if request is None:
++            return
+         flow = RegistrationFlow(self.server.registry)  # type: ignore[attr-defined]
+-        state = flow.apply(request)
+-        with self.server.flow_lock:  # type: ignore[attr-defined]
+-            self.server.flows[request.user] = flow  # type: ignore[attr-defined]
++        state = flow.start(request) if granular else flow.apply(request)
++        self._store(flow, request.user)
+         self._send_json(200, self._state_payload(state))
+ 
+-    def _handle_verify(self, user: str) -> None:
+-        user = unquote(user)
++    def _handle_step(self, user: str, action: str) -> None:
+         flow = self._flow(user)
+         if flow is None:
+             self._send_json(404, {"error": "no registration in progress", "user": user})
+             return
+-        state = flow.verify()
++        state = getattr(flow, action)()
+         self._send_json(200, self._state_payload(state))
+ 
+     def log_message(self, format: str, *args) -> None:  # noqa: A002
+diff --git a/src/transport/register/flow.py b/src/transport/register/flow.py
+index f2ca9f4..3e6c457 100644
+--- a/src/transport/register/flow.py
++++ b/src/transport/register/flow.py
+@@ -78,6 +78,34 @@ def _resolve_remote_scratch(runner, scratch_root: str) -> str:
+     raise RegistrationProbeError("cannot resolve remote $HOME for scratch root")
+ 
+ 
++def _apply_policies(request: RegistrationRequest, entry: UserEntry) -> None:
++    """Copy the optional per-user policy fields from the catalog into the entry."""
++    if request.ssh_backend:
++        entry.ssh.backend = request.ssh_backend
++    if request.ssh_max_sessions is not None:
++        entry.ssh.max_sessions = request.ssh_max_sessions
++    if request.ssh_proxy is not None:
++        entry.ssh.proxy = request.ssh_proxy
++    if request.ssh_control_master:
++        entry.ssh.control_master = request.ssh_control_master
++    if request.ssh_tool_override:
++        entry.ssh.tool_override = dict(request.ssh_tool_override)
++    if request.thread_pool_size is not None:
++        entry.runtime.thread_pool_size = request.thread_pool_size
++    if request.channel_budget is not None:
++        entry.runtime.channel_budget = request.channel_budget
++    if request.connect_timeout is not None:
++        entry.runtime.connect_timeout = request.connect_timeout
++    if request.log_level:
++        entry.cdslog.log_level = request.log_level
++    if request.log_max_bytes is not None:
++        entry.cdslog.log_max_bytes = request.log_max_bytes
++    if request.spectre_host:
++        entry.route.spectre.host = request.spectre_host
++    if request.spectre_bin:
++        entry.route.spectre.bin = request.spectre_bin
++
++
+ def _probe_local(request: RegistrationRequest, token: str) -> ProbeResult:
+     hostname = probes.local_hostname()
+     python_cmd, python_major = probes.local_python()
+@@ -99,11 +127,14 @@ def _probe_local(request: RegistrationRequest, token: str) -> ProbeResult:
+     entry.expected.daemon_user = probes.local_user()
+     entry.expected.remote_python = python_cmd
+     entry.deploy.scratch_root = scratch
+-    entry.route.file.root = f"{scratch}/{token}"
++    entry.route.file.root = f"{scratch}/{request.user}"
++    _apply_policies(request, entry)
+     return ProbeResult(entry=entry, python_major=python_major)
+ 
+ 
+-def _probe_remote(request: RegistrationRequest, token: str) -> ProbeResult:
++def _probe_remote(
++    request: RegistrationRequest, token: str, reserved_ports: set[int] | None = None
++) -> ProbeResult:
+     from transport.ssh import SSHRunner
+ 
+     host = request.resolved_host
+@@ -141,7 +172,9 @@ def _probe_remote(request: RegistrationRequest, token: str) -> ProbeResult:
+             raise RegistrationProbeError(f"daemon port {request.daemon_port} already in use on {host}")
+         daemon_port = request.daemon_port
+     else:
+-        daemon_port = probes.allocate_remote_port(runner, python_cmd)
++        daemon_port = probes.allocate_remote_port(
++            runner, python_cmd, reserved=reserved_ports
++        )
+         if daemon_port is None:
+             raise RegistrationProbeError(f"no free remote daemon port found on {host}")
+ 
+@@ -149,7 +182,20 @@ def _probe_remote(request: RegistrationRequest, token: str) -> ProbeResult:
+     if not probes.remote_path_writable(runner, scratch):
+         raise RegistrationProbeError(f"deploy root not writable on {host}: {scratch}")
+ 
+-    local_port = request.local_port or daemon_port
++    # explicit tool paths are validated here while the daemon is still down
++    if request.spectre_bin and not probes.remote_executable_exists(runner, request.spectre_bin):
++        raise RegistrationProbeError(f"spectre executable not usable on {host}: {request.spectre_bin}")
++
++    local_port = request.local_port
++    if local_port is not None:
++        if not probes.local_port_free(local_port):
++            raise RegistrationProbeError(
++                f"local port {local_port} is not usable on the caller"
++            )
++    else:
++        local_port = probes.allocate_local_port()
++        if local_port is None:
++            raise RegistrationProbeError("no free local tunnel port found")
+     entry = UserEntry(token=token, mode="remote")
+     entry.route.skill.daemon_host = request.resolved_daemon_host
+     entry.route.skill.daemon_port = daemon_port
+@@ -157,7 +203,7 @@ def _probe_remote(request: RegistrationRequest, token: str) -> ProbeResult:
+     entry.route.command.host = host
+     entry.route.command.user = login_user
+     entry.route.file.host = host
+-    entry.route.file.root = f"{scratch}/{token}"
++    entry.route.file.root = f"{scratch}/{request.user}"
+     entry.route.jump.host = request.jump_host
+     entry.route.jump.user = request.jump_user
+     entry.expected.ssh_host_key_fingerprint = fingerprint
+@@ -165,21 +211,27 @@ def _probe_remote(request: RegistrationRequest, token: str) -> ProbeResult:
+     entry.expected.daemon_user = daemon_user
+     entry.expected.remote_python = python_cmd
+     entry.deploy.scratch_root = scratch
++    _apply_policies(request, entry)
+     return ProbeResult(entry=entry, python_major=python_major)
+ 
+ 
+-def probe_user(request: RegistrationRequest, *, token: str) -> ProbeResult:
++def probe_user(
++    request: RegistrationRequest,
++    *,
++    token: str,
++    reserved_ports: set[int] | None = None,
++) -> ProbeResult:
+     """Step 3: probe and build a candidate entry.  Never touches the registry."""
+     if request.mode == "local":
+         return _probe_local(request, token)
+-    return _probe_remote(request, token)
++    return _probe_remote(request, token, reserved_ports)
+ 
+ 
+ # -- step 4: deploy ------------------------------------------------------------
+ 
+-def deploy_user(entry: UserEntry, python_major: int) -> str:
++def deploy_user(entry: UserEntry, python_major: int, user: str) -> str:
+     """Deploy daemon/il/setup for a candidate entry; return the setup path."""
+-    remote = RemoteClient(entry, resolve(entry))
++    remote = RemoteClient(entry, resolve(entry), user)
+     try:
+         return remote.deploy(python_major=python_major)
+     finally:
+@@ -195,13 +247,13 @@ def _short_host_match(a: str | None, b: str | None) -> bool:
+     return a.strip().split(".")[0].lower() == b.strip().split(".")[0].lower()
+ 
+ 
+-def _banner_hostname(entry: UserEntry) -> str | None:
+-    path = identity_path(entry.token, entry.deploy.scratch_root)
++def _banner_hostname(entry: UserEntry, user: str) -> str | None:
++    path = identity_path(user, entry.deploy.scratch_root)
+     try:
+         if entry.mode == "local":
+             text = Path(path).read_text(encoding="utf-8", errors="replace")
+         else:
+-            remote = RemoteClient(entry, resolve(entry))
++            remote = RemoteClient(entry, resolve(entry), user)
+             try:
+                 # the identity file is written by the il on the daemon host
+                 result = remote.skill_runner.run_command(f"cat {shlex.quote(path)}", timeout=10)
+@@ -216,8 +268,11 @@ def _banner_hostname(entry: UserEntry) -> str | None:
+     return None
+ 
+ 
+-def test_connectivity(entry: UserEntry) -> ConnectivityReport:
+-    """Step 5: daemon reachable + token match + command/skill smoke."""
++def test_connectivity(entry: UserEntry, user: str) -> ConnectivityReport:
++    """Step 5: daemon reachable + token match + host-key + dual smoke.
++
++    Everything that required a live daemon in step 3 is completed here.
++    """
+     token = entry.token
+     warnings: list[str] = []
+     detail: list[str] = []
+@@ -231,6 +286,7 @@ def test_connectivity(entry: UserEntry) -> ConnectivityReport:
+         log_max_bytes=entry.cdslog.log_max_bytes,
+     )
+ 
++    fingerprint_ok = True
+     if entry.mode == "local":
+         cmd = subprocess.run("echo vb-ok", shell=True, capture_output=True, text=True, timeout=15)
+         command_ok = cmd.returncode == 0 and cmd.stdout.strip() == "vb-ok"
+@@ -238,7 +294,14 @@ def test_connectivity(entry: UserEntry) -> ConnectivityReport:
+             detail.append(f"command={cmd.returncode}:{cmd.stderr.strip()}")
+         skill = skill_client.execute_skill("1+1")
+     else:
+-        remote = RemoteClient(entry, resolve(entry))
++        expected_fp = entry.expected.ssh_host_key_fingerprint
++        current_fp = probes.host_key_fingerprint(entry.route.skill.daemon_host)
++        fingerprint_ok = (not expected_fp) or (current_fp == expected_fp)
++        if expected_fp and not fingerprint_ok:
++            detail.append(
++                f"host key fingerprint mismatch: current={current_fp} expected={expected_fp}"
++            )
++        remote = RemoteClient(entry, resolve(entry), user)
+         try:
+             remote.ensure_tunnel()
+             result = remote.run_command("echo vb-ok")
+@@ -254,7 +317,7 @@ def test_connectivity(entry: UserEntry) -> ConnectivityReport:
+     if not skill_ok:
+         detail.append(f"skill={skill.status}:{skill.errors}")
+ 
+-    banner = _banner_hostname(entry)
++    banner = _banner_hostname(entry, user)
+     expected = entry.expected.daemon_endpoint_hostname
+     if banner and expected and not _short_host_match(banner, expected):
+         warnings.append(f"daemon banner host {banner!r} differs from expected {expected!r}")
+@@ -264,6 +327,7 @@ def test_connectivity(entry: UserEntry) -> ConnectivityReport:
+         command_ok=command_ok,
+         skill_ok=skill_ok,
+         token_ok=token_ok,
++        fingerprint_ok=fingerprint_ok,
+         banner_hostname=banner,
+         expected_hostname=expected,
+         detail="; ".join(detail),
+@@ -280,41 +344,92 @@ class RegistrationFlow:
+         self.registry = registry
+         self.state: RegistrationState | None = None
+ 
+-    def apply(self, request: RegistrationRequest) -> RegistrationState:
+-        state = RegistrationState(user=request.user, request=request)
++    # step 1: submit the application (no side effects beyond the in-memory state)
++    def start(self, request: RegistrationRequest) -> RegistrationState:
++        state = RegistrationState(user=request.user, request=request, step=1)
+         state.token = request.token or uuid.uuid4().hex
++        state.stage = "applied"
++        self.state = state
++        return state
+ 
+-        errors = validate_local(self.registry, request)
++    def _ensure(self, expected_stage: str, step: int):
++        if self.state is None or self.state.request is None:
++            state = RegistrationState(
++                user=self.state.user if self.state else "",
++                stage="failed",
++                errors=["no registration in progress"],
++            )
++            self.state = state
++            return None
++        if self.state.stage == "failed":
++            return None
++        state = self.state
++        state.step = step
++        return state
++
++    # step 2: local registry checks (pure local, no network)
++    def validate(self) -> RegistrationState:
++        state = self._ensure("applied", 2)
++        if state is None:
++            return self.state
++        errors = validate_local(self.registry, state.request)
+         if errors:
+             state.stage = "failed"
+             state.errors = errors
+-            self.state = state
+-            return state
++        else:
++            state.stage = "validated"
++        self.state = state
++        return state
+ 
++    # step 3: remote/local environment probes
++    def probe(self) -> RegistrationState:
++        state = self._ensure("validated", 3)
++        if state is None:
++            return self.state
++        reserved = {
++            e.route.skill.daemon_port
++            for _, e in self.registry.entries()
++            if e.route.skill.daemon_port is not None
++        }
+         try:
+-            probe = probe_user(request, token=state.token)
++            result = probe_user(state.request, token=state.token, reserved_ports=reserved)
+         except RegistrationProbeError as exc:
+             state.stage = "failed"
+             state.errors = [str(exc)]
+             self.state = state
+             return state
+-
+-        state.entry = probe.entry
+-        state.python_major = probe.python_major
++        state.entry = result.entry
++        state.python_major = result.python_major
+         state.stage = "probed"
++        self.state = state
++        return state
+ 
++    # step 4: upload daemon/il/setup; returns load instructions
++    def deploy(self) -> RegistrationState:
++        state = self._ensure("probed", 4)
++        if state is None:
++            return self.state
+         try:
+-            state.setup_path = deploy_user(probe.entry, probe.python_major)
++            state.setup_path = deploy_user(state.entry, state.python_major, state.user)
+         except Exception as exc:  # noqa: BLE001
+             state.stage = "failed"
+             state.errors = [f"deploy failed: {exc}"]
+             self.state = state
+             return state
+-
+         state.stage = "deployed"
+         self.state = state
+         return state
+ 
++    # steps 1-4 in one shot (used by the CLI and API compatibility endpoint)
++    def apply(self, request: RegistrationRequest) -> RegistrationState:
++        self.start(request)
++        self.validate()
++        if self.state.stage == "validated":
++            self.probe()
++        if self.state.stage == "probed":
++            self.deploy()
++        return self.state
++
+     def verify(self) -> RegistrationState:
+         if self.state is not None and self.state.stage == "committed":
+             return self.state  # idempotent: step 6 is the terminal state
+@@ -328,8 +443,9 @@ class RegistrationFlow:
+             return state
+ 
+         state = self.state
++        state.step = 5
+         try:
+-            report = test_connectivity(state.entry)
++            report = test_connectivity(state.entry, state.user)
+         except Exception as exc:  # noqa: BLE001
+             state.stage = "failed"
+             state.errors = [f"connectivity test failed: {exc}"]
+@@ -355,6 +471,7 @@ class RegistrationFlow:
+             return state
+ 
+         state.stage = "committed"
++        state.step = 6
+         self.state = state
+         return state
+ 
+diff --git a/src/transport/register/models.py b/src/transport/register/models.py
+index 1342bf7..81096a2 100644
+--- a/src/transport/register/models.py
++++ b/src/transport/register/models.py
+@@ -10,6 +10,8 @@ from __future__ import annotations
+ 
+ from dataclasses import dataclass, field
+ 
++from typing import Literal
++
+ from pydantic import BaseModel, Field, model_validator
+ 
+ from transport.registry import UserEntry
+@@ -34,6 +36,20 @@ class RegistrationRequest(BaseModel):
+     jump_user: str | None = None
+     local: bool = False                   # explicit local mode
+ 
++    # runtime / transport / log policies (optional; defaults live in UserEntry)
++    ssh_backend: Literal["openssh", "paramiko"] | None = None
++    ssh_max_sessions: int | None = Field(default=None, ge=1)
++    ssh_proxy: str | None = None
++    ssh_control_master: Literal["auto", "force", "disable"] | None = None
++    ssh_tool_override: dict[str, str] | None = None
++    thread_pool_size: int | None = Field(default=None, ge=1)
++    channel_budget: int | None = Field(default=None, ge=1)
++    connect_timeout: float | None = Field(default=None, gt=0)
++    log_level: Literal["off", "all", "warn", "error"] | None = None
++    log_max_bytes: int | None = Field(default=None, ge=1)
++    spectre_host: str | None = None
++    spectre_bin: str | None = None
++
+     @property
+     def mode(self) -> str:
+         """local / remote, resolved per the registration spec."""
+@@ -80,6 +96,7 @@ class ConnectivityReport:
+     command_ok: bool
+     skill_ok: bool
+     token_ok: bool
++    fingerprint_ok: bool = True
+     banner_hostname: str | None = None
+     expected_hostname: str | None = None
+     detail: str = ""
+@@ -87,7 +104,7 @@ class ConnectivityReport:
+ 
+     @property
+     def ok(self) -> bool:
+-        return self.command_ok and self.skill_ok
++        return self.command_ok and self.skill_ok and self.fingerprint_ok
+ 
+ 
+ @dataclass
+@@ -96,6 +113,7 @@ class RegistrationState:
+ 
+     user: str
+     stage: str = "applied"                # validated/probed/deployed/verified/committed/failed
++    step: int = 0                         # current six-step position (1..6)
+     request: RegistrationRequest | None = None
+     entry: UserEntry | None = None
+     python_major: int | None = None
+diff --git a/src/transport/remote_paths.py b/src/transport/remote_paths.py
+index 3f4bb1e..8a2a1dc 100644
+--- a/src/transport/remote_paths.py
++++ b/src/transport/remote_paths.py
+@@ -13,37 +13,42 @@ def scratch_root(root: str | None = None) -> str:
+     return value.rstrip("/")
+ 
+ 
+-def token_dir(token: str, root: str | None = None) -> str:
+-    return posixpath.join(scratch_root(root), token)
++def user_dir(user: str, root: str | None = None) -> str:
++    """User-visible remote directory keyed by the (unique) username.
+ 
++    Tokens are only used for routing/verification, never in user-visible
++    paths (see the multi-user design).
++    """
++    return posixpath.join(scratch_root(root), user)
+ 
+-def ramic_dir(token: str, root: str | None = None) -> str:
+-    return posixpath.join(token_dir(token, root), "ramic")
+ 
++def ramic_dir(user: str, root: str | None = None) -> str:
++    return posixpath.join(user_dir(user, root), "ramic")
+ 
+-def setup_dir(token: str, root: str | None = None) -> str:
+-    return posixpath.join(token_dir(token, root), "setup")
+ 
++def setup_dir(user: str, root: str | None = None) -> str:
++    return posixpath.join(user_dir(user, root), "setup")
+ 
+-def status_dir(token: str, root: str | None = None) -> str:
+-    return posixpath.join(token_dir(token, root), "status")
+ 
++def status_dir(user: str, root: str | None = None) -> str:
++    return posixpath.join(user_dir(user, root), "status")
+ 
+-def daemon_path(token: str, python_major: int, root: str | None = None) -> str:
++
++def daemon_path(user: str, python_major: int, root: str | None = None) -> str:
+     name = "ramic_bridge_daemon_27.py" if python_major == 2 else "ramic_bridge_daemon_3.py"
+-    return posixpath.join(ramic_dir(token, root), name)
++    return posixpath.join(ramic_dir(user, root), name)
+ 
+ 
+-def il_path(token: str, root: str | None = None) -> str:
+-    return posixpath.join(ramic_dir(token, root), "ramic_bridge.il")
++def il_path(user: str, root: str | None = None) -> str:
++    return posixpath.join(ramic_dir(user, root), "ramic_bridge.il")
+ 
+ 
+-def setup_il_path(token: str, root: str | None = None) -> str:
+-    return posixpath.join(setup_dir(token, root), "virtuoso_setup.il")
++def setup_il_path(user: str, root: str | None = None) -> str:
++    return posixpath.join(setup_dir(user, root), "virtuoso_setup.il")
+ 
+ 
+-def identity_path(token: str, root: str | None = None) -> str:
+-    return posixpath.join(status_dir(token, root), "daemon_identity.txt")
++def identity_path(user: str, root: str | None = None) -> str:
++    return posixpath.join(status_dir(user, root), "daemon_identity.txt")
+ 
+ 
+ __all__ = [
+@@ -56,5 +61,5 @@ __all__ = [
+     "setup_dir",
+     "setup_il_path",
+     "status_dir",
+-    "token_dir",
++    "user_dir",
+ ]
+diff --git a/src/transport/tunnel.py b/src/transport/tunnel.py
+index a1c7233..0ac2826 100644
+--- a/src/transport/tunnel.py
++++ b/src/transport/tunnel.py
+@@ -37,9 +37,10 @@ def _norm_host(host: str | None) -> str:
+ class RemoteClient:
+     """One instance per token; owns that token's SSH connections and locks."""
+ 
+-    def __init__(self, entry: UserEntry, targets: ResolvedTargets) -> None:
++    def __init__(self, entry: UserEntry, targets: ResolvedTargets, user: str) -> None:
+         self.entry = entry
+         self.targets = targets
++        self.user = user  # user-visible path identity (username is unique)
+         self._is_local = entry.mode == "local"
+ 
+         self._runner_kwargs: dict = {
+@@ -113,23 +114,25 @@ class RemoteClient:
+     # -- deployment ---------------------------------------------------------
+ 
+     def deploy(self, python_major: int = 3) -> str:
+-        token = self.entry.token
++        user = self.user
++        token = self.entry.token  # verification token only; never a path segment
+         root = self.targets.scratch_root
+-        ramic = remote_paths.ramic_dir(token, root)
+-        setup_dir = remote_paths.setup_dir(token, root)
+-        status = remote_paths.status_dir(token, root)
+-
+-        daemon_src = importlib.resources.files("bridge.resources") / (
+-            f"ramic_bridge_daemon_{'27' if python_major == 2 else '3'}.py"
+-        )
++        ramic = remote_paths.ramic_dir(user, root)
++        setup_dir = remote_paths.setup_dir(user, root)
++        status = remote_paths.status_dir(user, root)
++
++        daemon_variants = [
++            ("ramic_bridge_daemon_3.py", remote_paths.daemon_path(user, 3, root)),
++            ("ramic_bridge_daemon_27.py", remote_paths.daemon_path(user, 2, root)),
++        ]
+         il_src = importlib.resources.files("bridge.resources") / "ramic_bridge.il"
+-        daemon_dst = remote_paths.daemon_path(token, python_major, root)
+-        il_dst = remote_paths.il_path(token, root)
+-        setup_dst = remote_paths.setup_il_path(token, root)
+-        identity_dst = remote_paths.identity_path(token, root)
++        selected_daemon = remote_paths.daemon_path(user, python_major, root)
++        il_dst = remote_paths.il_path(user, root)
++        setup_dst = remote_paths.setup_il_path(user, root)
++        identity_dst = remote_paths.identity_path(user, root)
+ 
+         setup = generate_setup_il(
+-            daemon=str(daemon_dst),
++            daemon=str(selected_daemon),
+             il=str(il_dst),
+             python_cmd=self.entry.expected.remote_python or "python3",
+             port=self.targets.skill_port,
+@@ -144,7 +147,9 @@ class RemoteClient:
+                     os.chmod(d, 0o700)
+                 except OSError:
+                     pass
+-            Path(daemon_dst).write_bytes(daemon_src.read_bytes())
++            for src_name, dst in daemon_variants:
++                src = importlib.resources.files("bridge.resources") / src_name
++                Path(dst).write_bytes(src.read_bytes())
+             Path(il_dst).write_bytes(il_src.read_bytes())
+             Path(setup_dst).write_text(setup, encoding="utf-8")
+             return str(setup_dst)
+@@ -158,11 +163,16 @@ class RemoteClient:
+         if result.returncode != 0:
+             raise RuntimeError(f"deploy mkdir failed: {result.stderr.strip()}")
+ 
+-        for src, dst in ((daemon_src, daemon_dst), (il_src, il_dst)):
++        for src_name, dst in daemon_variants:
++            src = importlib.resources.files("bridge.resources") / src_name
+             text = src.read_text(encoding="utf-8")
+             result = runner.upload_text(text, str(dst))
+             if result.returncode != 0:
+                 raise RuntimeError(f"deploy failed for {dst}: {result.stderr.strip()}")
++        il_text = il_src.read_text(encoding="utf-8")
++        result = runner.upload_text(il_text, str(il_dst))
++        if result.returncode != 0:
++            raise RuntimeError(f"deploy failed for {il_dst}: {result.stderr.strip()}")
+ 
+         result = runner.upload_text(setup, str(setup_dst))
+         if result.returncode != 0:
