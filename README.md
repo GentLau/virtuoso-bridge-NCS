@@ -42,6 +42,23 @@ server.download_file("/home/user/run/out.psf", "out.psf", token="<token>")
 
 `token` 每次调用必填（keyword-only）；`run_command(..., parallel=False)`、文件接口 `recursive=False` 是可选参数。
 
+## 只看前端：Mock Testbench
+
+Mock TB 复用正式注册页面，但所有 API 状态都保存在内存中，**不会连接
+SSH / Virtuoso、不会部署文件，也不会读写 `registry.json`**：
+
+```bash
+# 安装后可直接运行
+virtuoso-bridge-ui-tb --port 8125
+
+# 或从源码运行
+PYTHONPATH=src python -m server.registration_mock_server --port 8125
+```
+
+浏览器打开 `http://127.0.0.1:8125/`。右下角 **Front-end Mock TB**
+可以切换成功、步骤失败、404 会话失效、临时 500 等接口场景，也可以直接
+跳到任意一步的 UI 状态，无需完整执行前置步骤。
+
 ## 设计文档
 
 - 接口基线：`spec/design-concepts/总览/三层整体架构设计.md` 第 4 节
