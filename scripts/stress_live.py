@@ -141,7 +141,7 @@ def main():
         client = subprocess.run(
             [sys.executable, str(Path(__file__).resolve().parent / "stress_client.py"),
              "--base", "http://127.0.0.1:8126", "--token", token,
-             "--concurrency", "20", "--commands", "60", "--skills", "20"],
+             "--concurrency", "100", "--commands", "200", "--skills", "50", "--parallel"],
             capture_output=True, text=True, timeout=300,
         )
         print(client.stdout)

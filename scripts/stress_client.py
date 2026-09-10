@@ -1,16 +1,10 @@
-"""Stress client for the middle-layer HTTP wrapper.
-
-Usage:
-  python scripts/stress_client.py --base http://127.0.0.1:8125 --token TOKEN \
-      --concurrency 20 --commands 60 --skills 20
-"""
+"""Stress client for the middle-layer HTTP wrapper."""
 
 from __future__ import annotations
 
 import argparse
 import json
 import statistics
-import threading
 import time
 import urllib.error
 import urllib.request
@@ -35,12 +29,12 @@ def post(base, path, payload, timeout=120):
         return time.perf_counter() - start, -1, {"error": str(exc)}
 
 
-def run(base, token, concurrency, commands, skills):
+def run(base, token, concurrency, commands, skills, parallel=False):
     results = {"command": [], "skill": []}
 
     def one(kind, i):
         if kind == "command":
-            payload = {"token": token, "cmd": f"echo vb-{i}"}
+            payload = {"token": token, "cmd": f"echo vb-{i}", "parallel": parallel}
             latency, status, body = post(base, "/api/command", payload)
             results["command"].append((latency, status, body))
         else:
@@ -51,19 +45,24 @@ def run(base, token, concurrency, commands, skills):
     tasks = [("command", i) for i in range(commands)] + [("skill", i) for i in range(skills)]
     with ThreadPoolExecutor(max_workers=concurrency) as pool:
         list(pool.map(lambda t: one(*t), tasks))
-
     return results
 
 
 def summarize(label, rows):
     lat = [r[0] for r in rows]
     statuses = {}
-    for _, s, _ in rows:
+    rejected = 0
+    for _, s, b in rows:
         statuses[s] = statuses.get(s, 0) + 1
-    err = sum(1 for _, s, b in rows if s != 200 or (isinstance(b, dict) and "error" in b))
+        if isinstance(b, dict):
+            if "stderr" in b and "exceeded" in str(b.get("stderr")):
+                rejected += 1
+            if "errors" in b and any("exceeded" in str(e) for e in b.get("errors", [])):
+                rejected += 1
+    http_errors = sum(1 for _, s, _ in rows if s != 200)
     if not lat:
         return
-    print(f"[{label}] n={len(rows)} errors={err} statuses={statuses}")
+    print(f"[{label}] n={len(rows)} rejected={rejected} http_errors={http_errors} statuses={statuses}")
     print(f"  latency p50={statistics.median(lat):.3f}s p95={statistics.quantiles(lat, n=20)[18]:.3f}s max={max(lat):.3f}s")
 
 
@@ -94,10 +93,11 @@ def main(argv=None):
     parser.add_argument("--concurrency", type=int, default=20)
     parser.add_argument("--commands", type=int, default=60)
     parser.add_argument("--skills", type=int, default=20)
+    parser.add_argument("--parallel", action="store_true")
     args = parser.parse_args(argv)
 
     t0 = time.time()
-    results = run(args.base, args.token, args.concurrency, args.commands, args.skills)
+    results = run(args.base, args.token, args.concurrency, args.commands, args.skills, parallel=args.parallel)
     summarize("command", results["command"])
     summarize("skill", results["skill"])
     check_parallel_overlap(args.base, args.token)
