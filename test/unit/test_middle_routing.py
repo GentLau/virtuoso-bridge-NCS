@@ -35,8 +35,9 @@ class FakeRemoteClient:
         self.user = user
         FakeRemoteClient.instances[entry.token] = self
 
-    def ensure_tunnel(self):
+    def ensure_tunnel(self, deadline=None):
         self.ensure_tunnel_called = True
+        self.ensure_tunnel_deadline = deadline
 
     def run_command(self, cmd, timeout=None, parallel=False):
         return CommandResult(0, f"remote:{cmd}:{parallel}", "")

@@ -126,7 +126,7 @@ class RemoteClient:
 
     # -- tunnel -------------------------------------------------------------
 
-    def ensure_tunnel(self) -> None:
+    def ensure_tunnel(self, deadline: float | None = None) -> None:
         if self._is_local:
             return
         runner = self.skill_runner
@@ -135,6 +135,7 @@ class RemoteClient:
         runner.start_port_forward(
             self.targets.local_port,
             remote_port=self.targets.skill_port,
+            deadline=deadline,
         )
 
     def close(self) -> None:

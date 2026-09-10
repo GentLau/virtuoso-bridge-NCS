@@ -9,6 +9,7 @@ import logging
 import shutil
 import subprocess
 import threading
+import time
 from pathlib import Path
 
 from pyapi.models import CommandResult, ExecutionStatus, Middle, VirtuosoResult
@@ -92,14 +93,16 @@ class BusinessServer(Middle):
 
     def execute_skill(self, skill_code: str, timeout: float | None = None, *, token: str) -> VirtuosoResult:
         acquired = False
+        deadline = None if timeout is None else time.monotonic() + timeout
         try:
             entry = self._entry(token)
             if not self._acquire(token, entry):
                 return VirtuosoResult(status=ExecutionStatus.ERROR, errors=["thread pool exceeded"])
             acquired = True
             if entry.mode != "local":
-                self._remote(token).ensure_tunnel()
-            return self._skill(token).execute_skill(skill_code, timeout=timeout)
+                self._remote(token).ensure_tunnel(deadline=deadline)
+            remaining = None if deadline is None else max(0.0, deadline - time.monotonic())
+            return self._skill(token).execute_skill(skill_code, timeout=remaining)
         except LookupError as exc:
             return VirtuosoResult(status=ExecutionStatus.ERROR, errors=[str(exc)])
         finally:

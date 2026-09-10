@@ -89,7 +89,8 @@ class TestRemoteClientTunnel(unittest.TestCase):
         self.assertEqual(len(calls), 1)
         _, args, kwargs = calls[0]
         self.assertEqual(args, (65082,))
-        self.assertEqual(kwargs, {"remote_port": 65081})
+        self.assertEqual(kwargs.get("remote_port"), 65081)
+        self.assertIn("deadline", kwargs)
 
     def test_single_host_reuses_one_runner(self) -> None:
         with mock.patch("transport.tunnel.SSHRunner", FakeRunner):

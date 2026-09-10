@@ -347,7 +347,14 @@ class SSHRunner:
 
     # -- port-forwarding tunnel ----------------------------------------------
 
-    def start_port_forward(self, port: int, settle: float = 1.5, *, remote_port: int | None = None) -> subprocess.Popen[Any] | None:
+    def start_port_forward(
+        self,
+        port: int,
+        settle: float = 1.5,
+        *,
+        remote_port: int | None = None,
+        deadline: float | None = None,
+    ) -> subprocess.Popen[Any] | None:
         """Start a persistent SSH port-forwarding tunnel.
 
         *port* is the local port to bind.  *remote_port* is the port on the
@@ -358,6 +365,14 @@ class SSHRunner:
         """
         if remote_port is None:
             remote_port = port
+
+        # the tunnel startup loop must spend from the caller's remaining budget,
+        # never restart a fresh settle window (end-to-end deadline rule)
+        if deadline is not None:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise subprocess.TimeoutExpired(cmd="port-forward", timeout=settle)
+            settle = min(settle, remaining)
 
         cmd: list[str] = [self._ssh_cmd]
         # A long-lived forward must own its own ssh process.  Attaching it to

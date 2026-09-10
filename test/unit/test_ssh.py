@@ -217,6 +217,14 @@ class TestPortForwardLifecycle(unittest.TestCase):
         r.stop_port_forward()
         self.assertFalse(r.is_tunnel_alive)
 
+    def test_start_port_forward_past_deadline_raises(self):
+        r = SSHRunner("server", user="u")
+        import time as _t
+        with mock.patch.object(ssh_mod.subprocess, "Popen") as popen:
+            with self.assertRaises(subprocess.TimeoutExpired):
+                r.start_port_forward(65082, deadline=_t.monotonic() - 1)
+        popen.assert_not_called()
+
     def test_tunnel_pid_setter_marks_external(self):
         r = SSHRunner("server")
         self.assertFalse(r.is_tunnel_alive)
