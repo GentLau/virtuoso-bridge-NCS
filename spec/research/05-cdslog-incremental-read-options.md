@@ -1,4 +1,6 @@
 # CDS.log 增量获取：API 调研结论与实时跟随方案
+> 现状说明（2026-09-11）：本文是调研历史。正式实现采用 **offset 定界**（请求前后 `hiFlushLogFile`+`fileLength` 回传 `[start,end)`），**不向 CDS.log 写 VB-BEGIN/VB-END**；见[日志返回设计标准](../design-concepts/底层与中层/日志返回设计标准.md)。
+
 
 > 2026-09-09 · 只回答一个问题：Cadence 有没有“读取 CDS.log 增量”的接口，以及如何让日志跟随 daemon 执行链条实时返回。
 

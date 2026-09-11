@@ -1,4 +1,6 @@
 # Virtuoso Bridge 日志返回体系设计建议
+> 现状说明（2026-09-11）：本文是调研历史。正式实现采用 **offset 定界**（请求前后 `hiFlushLogFile`+`fileLength` 回传 `[start,end)`），**不向 CDS.log 写 VB-BEGIN/VB-END**；见[日志返回设计标准](../design-concepts/底层与中层/日志返回设计标准.md)。
+
 
 > 调研日期：2026-09-04  
 > 文档性质：在已有底层调研基础上的补充研究与架构建议。  

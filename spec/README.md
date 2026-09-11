@@ -44,6 +44,7 @@
 | 类别 | 文件 | 内容 |
 |---|---|---|
 | Normative | [三层整体架构设计](design-concepts/总览/三层整体架构设计.md) | 分层、职责、接口唯一基线、错误总则 |
+| Normative | [本版范围与明确不支持](design-concepts/总览/本版范围与明确不支持.md) | 本版不做什么的唯一口径（含遇到时的行为） |
 | Normative | [配置一览](design-concepts/总览/配置一览.md) | 全部配置 + 注册可提交参数目录 + 每用户隔离 |
 | Normative | [多用户设计](design-concepts/底层与中层/多用户设计.md) | 六步注册、token 寻址/校验、路由与授权 |
 | Normative | [并发处理设计](design-concepts/底层与中层/并发处理设计.md) | 并发模型、每 token×endpoint SSH、线程池/channel、建连重试 |
@@ -71,17 +72,12 @@
 
 ## 本版明确不支持（非目标）
 
-以下能力**不在本版范围**，遇到时按括号内行为处理，不得静默降级：
+完整清单与“遇到时的行为”唯一口径见[本版范围与明确不支持](design-concepts/总览/本版范围与明确不支持.md)。摘要：
 
-- **purpose 路由 / Spectre 业务消费入口**：不提供 `purpose` 参数；`route.spectre.host/bin` 仅作为注册期固化、留给后续版本的字段，本版业务调用不会路由到它。
-- **GUI/deploy 独立 role**：不提供 `gui_host`/`deploy_host`；daemon 与 GUI 同主机，deploy 目标即 daemon 主机。
-- **无 token 旧客户端/旧 il**：不支持，请求缺 token 直接报错、daemon 侧 NAK。
-- **非对称签名/HMAC**：本版 token 是对称 ticket，非对称认证留给后续。
-- **`request_id`**：不引入；daemon 同一时刻只有一个 in-flight 请求。
-- **argv/无 shell 命令模式、异步 command handle**：`RunCommand` 为同步 shell 字符串；长任务由上层 marker/轮询实现。
-- **split-host 的 CDS.log**：日志增量仅支持 daemon 与 CDS.log 同主机。
-- **全量日志 parser / push stream / 日志数据库**：只做同步增量返回。
-- **文件空间安全沙箱**：`route.file.root` 是默认工作目录，不是沙箱（见三层架构 §5.6）。
+- 不提供 `purpose`/Spectre 业务消费入口、GUI/deploy 独立 role；
+- 不支持无 token 旧客户端/旧 il、`profile`/`VB_*`/`.env` 迁移、非对称签名；
+- 不引入 `request_id`、argv/无 shell 模式、异步 command handle；
+- 不支持 split-host CDS.log、全量日志体系、文件安全沙箱。
 
 ## 评审重点
 

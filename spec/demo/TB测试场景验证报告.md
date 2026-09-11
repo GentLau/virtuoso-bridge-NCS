@@ -89,7 +89,7 @@
 
 - 做法：预置 12 字节旧日志，连续两次 Skill 调用；另做超长降级与文件轮转。
 - 实测：
-  - 第一次增量只含本次 `VB-BEGIN/…/VB-END`，第二次不含第一次内容；
+  - （历史 marker 方案，已被 offset 定界取代）第一次增量只含本次 `VB-BEGIN/…/VB-END`，第二次不含第一次内容；
   - 超长输入 → `truncated = true`、含 `[log truncated: error-only` 说明、只留 error；
   - 文件被清空/轮转后，下一次 `start_offset = 0`。
 - 判据：增量、级别过滤、限长降级、轮转重置全部成立。

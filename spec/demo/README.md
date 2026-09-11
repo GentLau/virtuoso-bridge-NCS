@@ -71,7 +71,7 @@ python -m unittest spec.demo.test_full_demo -v
 ## CDS.log 增量（cdslog_demo.py）
 
 `CdsLogIncrementReader` 只持有 `path + cursor`；`SkillLogEmitter` 模拟底层
-`VB-BEGIN → 本次日志 → VB-END → flush → end_offset`；`DemoSkillExecutor` 把
+`VB-BEGIN → 本次日志 → VB-END → flush → end_offset`（**历史演示口径**；正式标准已改为 offset 定界、不写 marker，见[日志返回设计标准](../design-concepts/底层与中层/日志返回设计标准.md)）；`DemoSkillExecutor` 把
 裁剪后的增量挂到 `SkillResult.log`。过滤顺序：
 
 ```text
