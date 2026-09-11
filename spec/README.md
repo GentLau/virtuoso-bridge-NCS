@@ -48,7 +48,7 @@
 | Normative | [本版范围与明确不支持](design-concepts/总览/本版范围与明确不支持.md) | 本版不做什么的唯一口径（含遇到时的行为） |
 | Normative | [配置一览](design-concepts/总览/配置一览.md) | 全部配置 + 注册可提交参数目录 + 每用户隔离 |
 | Normative | [多用户设计](design-concepts/底层与中层/多用户设计.md) | 六步注册、token 寻址/校验、路由与授权 |
-| Normative | [并发处理设计](design-concepts/底层与中层/并发处理设计.md) | 并发模型、每 token×endpoint SSH、线程池/channel、建连重试 |
+| Normative | [并发处理设计](design-concepts/底层与中层/并发处理设计.md) | 并发模型、每 token 预算 + 按 endpoint 复用 SSH、线程池/channel、建连重试 |
 | Normative | [日志返回设计标准](design-concepts/底层与中层/日志返回设计标准.md) | CDS.log 增量返回唯一口径（offset 定界、分级、限长） |
 | Informative | [核心修改设计](design-concepts/总览/核心修改.md) | 五项修改的索引/摘要，不重复定义 |
 | Historical | [改动报告](design-concepts/总览/改动报告.md) | 重构前对照与历史迁移，Non-normative |
