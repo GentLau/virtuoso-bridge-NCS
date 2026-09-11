@@ -1,6 +1,6 @@
 # Spec 收口说明（对照最新复审 P0/P1）
 
-> 代码基线：`e6722e2`
+> 代码基线：`c680c4a75dbdd00164a88e22e6ec76ca6a6bdc02`（短复审送审基线）
 > 用途：供 Spec 短复审快速定位每项整改位置。
 
 | 复审项 | 整改结论 | 位置 |
@@ -13,7 +13,7 @@
 | P1-03/04 deadline/重试/错误 | 默认 timeout/connect、≤3 次重试、124/255、CommandResult.kind | 三层架构 §4.4、§5.8 |
 | P1-05 registry 生命周期 | 文件锁、碰撞、update 缓存失效、remove=本机解绑、吊销步骤 | 多用户设计 §11 |
 | P1-06 host-key 输入 | expected.ssh_endpoints 显式 per-endpoint 指纹 schema | 配置一览 §4.2、§6.1 |
-| P1-07 日志内部帧 | 第二帧字节格式、UTF-8、限长边界、非法配置拒绝、\\e/\\w 字符 | 日志标准 §4、§6.3、§7 |
+| P1-07 日志内部帧 | 第二帧字节格式、UTF-8 截断丢弃半个字符、帧 deadline、warning 固定文本、限长边界、非法配置拒绝、\\e/\\w 字符 | 日志标准 §4、§5、§6.3、§7、§8 |
 | P1-08 canonical schema/API | 注册字段、registry JSON、mode×route 矩阵、端口 TOCTOU、Windows 路径 | 配置一览 §6 |
 | P1-09 版本治理 | owner 列表补本版范围、冻结 Manifest、版本号、Supersedes | README §0、Manifest |
 | 索引/重复标题/旧路径 | research 02 重复标题、04 显示路径、demo TB 索引、research 07 入库 | research/demo 目录 |
