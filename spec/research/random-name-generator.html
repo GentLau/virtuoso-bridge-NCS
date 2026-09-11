@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>随机英文名生成器（三词 / 混成词）</title>
+<style>
+  body { font-family: system-ui, "Microsoft YaHei", sans-serif; text-align: center; margin-top: 10vh; background: #fafafa; }
+  h1 { color: #333; }
+  .card { max-width: 640px; margin: 0 auto; background: #fff; border-radius: 10px; padding: 2em; box-shadow: 0 2px 12px rgba(0,0,0,.08); }
+  #name { font-size: 2.8em; font-weight: bold; margin: .3em 0; word-break: break-word; }
+  #src  { color: #888; min-height: 1.4em; }
+  .mode { margin: 1.2em 0 .4em; }
+  .mode label { margin: 0 1em; cursor: pointer; }
+  button { font-size: 1.1em; padding: .55em 1.6em; margin: .8em .3em 0; border: none; border-radius: 6px; cursor: pointer; background: #2d7ff9; color: #fff; }
+  button.secondary { background: #e0e0e0; color: #333; }
+  #list { margin-top: 1.2em; color: #444; line-height: 1.9; text-align: left; display: inline-block; }
+</style>
+</head>
+<body>
+  <h1>随机英文名生成器</h1>
+  <div class="card">
+    <div class="mode">
+      <label><input type="radio" name="mode" value="words" checked> 三词拼接（monkey tomato barbecue）</label>
+      <label><input type="radio" name="mode" value="blend"> 混成词（monkato / barbato）</label>
+    </div>
+    <div id="name">—</div>
+    <div id="src"></div>
+    <div>
+      <button onclick="genOne()">生成一个</button>
+      <button class="secondary" onclick="genFive()">生成 5 个</button>
+    </div>
+    <div id="list"></div>
+  </div>
+
+<script>
+const WORDS = [
+  "monkey","tomato","barbecue","apple","banana","cactus","donkey","eagle",
+  "falcon","grape","hammer","island","jungle","kettle","lemon","mango",
+  "needle","ocean","panda","quartz","rabbit","salmon","tiger","umbrella",
+  "violin","walnut","zebra","anchor","biscuit","candle","dolphin","ember",
+  "forest","garden","honey","jacket","koala","lantern","magnet",
+  "napkin","otter","paddle","pepper","rocket","saddle","temple","turtle",
+  "velvet","window","yogurt","bubble","coral","dragon","fossil","glacier",
+  "harbor","lizard","meadow","noodle","orchid","pebble","rainbow","shelter"
+];
+
+function randInt(n) {                    // [0, n) 无偏（拒绝采样）
+  if (n <= 1) return 0;
+  const buf = new Uint32Array(1);
+  const limit = Math.floor(0x100000000 / n) * n;
+  do { crypto.getRandomValues(buf); } while (buf[0] >= limit);
+  return buf[0] % n;
+}
+const pick = arr => arr[randInt(arr.length)];
+
+/* ---------- 模式一：三词拼接 ---------- */
+function makeWords() {
+  const pool = [...WORDS];
+  const parts = [];
+  for (let i = 0; i < 3; i++) {
+    parts.push(pool.splice(randInt(pool.length), 1)[0]);  // 抽走，保证不重复
+  }
+  return { name: parts.join(" ") + " " + randInt(1000), src: parts.join(" + ") + " + 数字" };
+}
+
+/* ---------- 模式二：混成词 ---------- */
+function blend(a, b) {
+  // 1) 重叠合并：找 a 尾与 b 头最长公共子串（≥2 字母）
+  const maxN = Math.min(a.length, b.length) - 1;
+  for (let n = maxN; n >= 2; n--) {
+    if (a.endsWith(b.slice(0, n))) return a + b.slice(n);
+  }
+  // 2) 切点拼接：前缀≥3，后缀≥3
+  let k1 = 3 + randInt(a.length - 3);               // monkey: 3~5 → "mon"~"monke"
+  let k2 = 2 + randInt(Math.max(1, b.length - 4));  // tomato: 2~3 → "mato"/"ato"
+  let p = a.slice(0, k1), s = b.slice(k2);
+  if (p[p.length - 1] === s[0]) p = p.slice(0, -1);  // 去拼接处重复字母
+  return p + s;
+}
+
+function makeBlend() {
+  for (let i = 0; i < 10; i++) {
+    const a = pick(WORDS), b = pick(WORDS);
+    if (a === b) continue;
+    const name = blend(a, b);
+    if (name.length <= 10) return { name, src: `${a} + ${b}` };
+  }
+  const a = pick(WORDS), b = pick(WORDS);
+  return { name: blend(a, b), src: `${a} + ${b}` };
+}
+
+function currentMode() {
+  return document.querySelector('input[name="mode"]:checked').value;
+}
+
+function makeOne() {
+  return currentMode() === "blend" ? makeBlend() : makeWords();
+}
+
+/* ---------- 输出 ---------- */
+function genOne() {
+  const { name, src } = makeOne();
+  document.getElementById("name").textContent = name;
+  document.getElementById("src").textContent = src;
+  document.getElementById("list").innerHTML = "";
+}
+
+function genFive() {
+  const el = document.getElementById("list");
+  el.innerHTML = "";
+  for (let i = 0; i < 5; i++) {
+    const { name, src } = makeOne();
+    const div = document.createElement("div");
+    div.textContent = `${name}  ←  ${src}`;
+    el.appendChild(div);
+  }
+}
+
+document.querySelectorAll('input[name="mode"]').forEach(r =>
+  r.addEventListener("change", genOne)
+);
+
+genOne();
+</script>
+</body>
+</html>

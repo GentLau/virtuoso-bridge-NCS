@@ -19,6 +19,7 @@
 | `full_demo.py` | 完整业务 demo：注册多个用户 → token 路由 → 单用户并行；`run_command` 用 pwsh 模拟，`execute_skill` 投送到端口、**到达即成功** |
 | `cdslog_demo.py` | CDS.log byte cursor、BEGIN/END marker、增量读取、级别过滤、超长 error-only 降级、轮转重置 |
 | `run_all.py` | 依次运行 `full_demo` 和 `cdslog_demo` 的短示例 |
+| `TB测试场景验证报告.md` | 8 个 TB 场景实测（Historical；其中 marker 定界已废弃，正式口径见日志标准） |
 | `test_*.py` | 可执行验收单元；只导入本目录 demo 和标准库 |
 
 ## 完整业务 demo（full_demo.py）

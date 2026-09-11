@@ -427,7 +427,7 @@ confidence: high | medium | low
 
 - [Cadence Virtuosity：Virtuoso Read Mode Done Right](https://community.cadence.com/cadence_blogs_8/b/cic/posts/virtuosity-read-mode-done-right)：用于交叉理解 ADE read-only run、project/run 目录与 results database 的分工；具体路径仍以目标版本现场为准。
 
-## 13. 证据定位（便于复核）
+## 14. 证据定位（便于复核）
 
 | 结论 | 证据 |
 |---|---|

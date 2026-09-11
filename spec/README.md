@@ -10,6 +10,7 @@
 
 1. **Normative（唯一规范源）**：只有下列文件是正式规范，且每个主题只有一个 owner；
    - 分层/接口/错误总则：[三层整体架构设计](design-concepts/总览/三层整体架构设计.md)（第 4 节为接口唯一基线）
+   - 本版范围/非目标：[本版范围与明确不支持](design-concepts/总览/本版范围与明确不支持.md)
    - 配置与注册输入目录：[配置一览](design-concepts/总览/配置一览.md)
    - 多用户/注册/token：[多用户设计](design-concepts/底层与中层/多用户设计.md)
    - 并发/SSH/线程池：[并发处理设计](design-concepts/底层与中层/并发处理设计.md)
@@ -54,6 +55,19 @@
 | Historical | [代码梳理](design-concepts/底层与中层/代码梳理.md) | 旧执行机制梳理，Non-normative |
 | Research | [research/README.md](research/README.md) | Virtuoso/TB/日志/并发背景调研 |
 | Demo | [demo/README.md](demo/README.md) | 脱钩最小验证（Informative，不复刻正式口径） |
+
+## 冻结 Manifest
+
+| 文档 | 版本 | 状态 | Supersedes |
+|---|---|---|---|
+| 三层整体架构设计 | Draft v3 | Normative | Draft v2 |
+| 本版范围与明确不支持 | v1 | Normative | — |
+| 配置一览 | Draft v7 | Normative | Draft v6、已删除的《注册配置一览》 |
+| 多用户设计 | Draft v3 | Normative | Draft v2 |
+| 并发处理设计 | Draft v4 | Normative | Draft v3 |
+| 日志返回设计标准 | Draft v5 | Normative | Draft v4（废除 marker 定界） |
+| 核心修改设计 | Draft v3 | Informative | Draft v2 |
+| 改动报告 / 代码梳理 | — | Historical | — |
 
 ## 独立 Demo
 

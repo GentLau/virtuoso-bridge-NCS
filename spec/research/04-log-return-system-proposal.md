@@ -128,10 +128,10 @@ Python TCP client
 
 证据：
 
-- [`src/virtuoso_bridge/virtuoso/basic/resources/ramic_bridge.il:68-93`](../../src/bridge/resources/ramic_bridge.il)：`RBIpcDataHandler` 使用 `errset`、`evalstring` 和 STX/NAK/RS；
-- [`src/virtuoso_bridge/virtuoso/basic/resources/ramic_bridge.il:95-157`](../../src/bridge/resources/ramic_bridge.il)：stderr ring buffer、banner/stat 解析；
-- [`src/virtuoso_bridge/virtuoso/basic/resources/ramic_bridge_daemon_3.py:110-243`](../../src/bridge/resources/ramic_bridge_daemon_3.py)：内层 frame、watchdog、外层 TCP response；
-- [`src/virtuoso_bridge/virtuoso/basic/bridge.py:313-395`](../../src/transport/skill_client.py) 和 `:1440-1496`：Python 端只把结果解析为 output/errors/warnings。
+- [`src/bridge/resources/ramic_bridge.il:68-93`](../../src/bridge/resources/ramic_bridge.il)：`RBIpcDataHandler` 使用 `errset`、`evalstring` 和 STX/NAK/RS；
+- [`src/bridge/resources/ramic_bridge.il:95-157`](../../src/bridge/resources/ramic_bridge.il)：stderr ring buffer、banner/stat 解析；
+- [`src/bridge/resources/ramic_bridge_daemon_3.py:110-243`](../../src/bridge/resources/ramic_bridge_daemon_3.py)：内层 frame、watchdog、外层 TCP response；
+- [`src/transport/skill_client.py:313-395`](../../src/transport/skill_client.py) 和 `:1440-1496`：Python 端只把结果解析为 output/errors/warnings。
 
 ### 3.2 当前实现值得保留
 
@@ -153,7 +153,7 @@ Python TCP client
 7. **`CDS.log`、Maestro log、Spectre log 没有统一 artifact manifest**：调用者必须自己猜路径和时间关联。
 8. **对 `system()`/fork 工具不能只看 exit code**：项目 `AGENTS.md` 已明确要求在每次 poll 同时 tail 工具 log 的 terminal failure marker，否则会把快速失败误判成长时间运行。
 
-当前公共模型 [`src/virtuoso_bridge/models.py:12-81`](../../src/pyapi/models.py) 可以作为兼容外壳，但不应继续把所有诊断塞进 `errors: list[str]` 或 `metadata: dict`。
+当前公共模型 [`src/pyapi/models.py:12-81`](../../src/pyapi/models.py) 可以作为兼容外壳，但不应继续把所有诊断塞进 `errors: list[str]` 或 `metadata: dict`。
 
 ## 4. 总体建议：三个返回平面
 
@@ -872,9 +872,9 @@ request_id
 - [`skills/virtuoso/references/maestro-python-api.md`](../../skills/virtuoso/references/maestro-python-api.md)：Detail CSV、snapshot、run observer 约定。
 - [`skills/virtuoso/references/cellview-on-disk-layout.md`](../../skills/virtuoso/references/cellview-on-disk-layout.md)：`.log/.msg.db/.rdb` 职责和只读边界。
 - [`skills/virtuoso/references/troubleshooting.md`](../../skills/virtuoso/references/troubleshooting.md)：modal dialog、远端文件、readback 限制。
-- [`src/virtuoso_bridge/virtuoso/basic/bridge.py`](../../src/transport/skill_client.py)：当前 TCP request/result、timeout、response parser。
-- [`src/virtuoso_bridge/virtuoso/basic/resources/ramic_bridge.il`](../../src/bridge/resources/ramic_bridge.il)：SKILL IPC handler、stderr ring、daemon lifecycle。
-- [`src/virtuoso_bridge/virtuoso/basic/resources/ramic_bridge_daemon_3.py`](../../src/bridge/resources/ramic_bridge_daemon_3.py)：内外层 framing、watchdog、banner、`listen(1)`。
+- [`src/transport/skill_client.py`](../../src/transport/skill_client.py)：当前 TCP request/result、timeout、response parser。
+- [`src/bridge/resources/ramic_bridge.il`](../../src/bridge/resources/ramic_bridge.il)：SKILL IPC handler、stderr ring、daemon lifecycle。
+- [`src/bridge/resources/ramic_bridge_daemon_3.py`](../../src/bridge/resources/ramic_bridge_daemon_3.py)：内外层 framing、watchdog、banner、`listen(1)`。
 - [`src_bak/virtuoso_bridge/virtuoso/maestro/writer.py`](../../src_bak/virtuoso_bridge/virtuoso/maestro/writer.py)：callback marker 观察和 run timeout。
 - [`src_bak/virtuoso_bridge/spectre/runner.py`](../../src_bak/virtuoso_bridge/spectre/runner.py)：`+log/-raw/+logstatus`、terminal marker 和结果组装。
 
