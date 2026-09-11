@@ -73,10 +73,13 @@ procedure(RBIpcDataHandler(ipcId data)
   ; flush, no fileLength, no meta frame).  When RBDLogOn is t, we flush
   ; the existing buffer and capture the byte offsets around the SKILL
   ; execution, then send one meta frame: STX + path + US + start + US + end + RS.
-    let((result lp lo_start lo_end frames)
+    let((result lp lo_start lo_end frames log_on)
     when(RBEcho printf("[RAMIC Bridge (%L)] receive:%L\n" ipcId data))
     lp = "" lo_start = 0 lo_end = 0
-    when(RBDLogOn
+    ; the daemon prefixes the per-request directive into data itself;
+    ; inspect data text so the FIRST log request already captures start
+    log_on = index(data "RBDLogOn=t") != nil
+    when(log_on
         errset(hiFlushLogFile())
         errset(progn(lp = hiGetLogFileName() lo_start = fileLength(lp)))
     )
@@ -88,7 +91,7 @@ procedure(RBIpcDataHandler(ipcId data)
         ; Error: NAK + payload，不打印 CIW
         frames = sprintf(nil "%c%L%c" intToChar(21) errset.errset intToChar(30))
     )
-    when(RBDLogOn
+    when(log_on
         errset(hiFlushLogFile())
         errset(progn(lp = hiGetLogFileName() lo_end = fileLength(lp)))
         frames = strcat(frames

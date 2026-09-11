@@ -273,10 +273,6 @@ def handle_connection(conn):
 
         frame1 = _read_frame()
 
-        _timeout_flag = True
-        if _watchdog:
-            _watchdog.cancel()
-
         status_byte = frame1[0] if isinstance(frame1[0], int) else ord(frame1[0])
         value_payload = frame1[1:].decode("utf-8", "replace")
         ok = status_byte == STX
@@ -285,6 +281,12 @@ def handle_connection(conn):
         warnings = []
         if log_on:
             frame2 = _read_frame()
+
+        _timeout_flag = True
+        if _watchdog:
+            _watchdog.cancel()
+
+        if log_on:
             meta = _parse_meta(frame2[1:])
             log_path, start_offset, end_offset = meta
             raw_delta, warn = _read_range(log_path, start_offset, end_offset)
