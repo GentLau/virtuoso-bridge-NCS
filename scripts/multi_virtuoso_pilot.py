@@ -26,7 +26,7 @@ from transport.runtime_paths import registry_path, set_working_dir
 
 HOST = "wsl-gent"
 SSH_USER = "Gent"
-DISPLAY = ":10"
+DISPLAY = os.environ.get("VB_DISPLAY", ":10")
 MEM_MIN_FREE_GB = 2.0
 
 

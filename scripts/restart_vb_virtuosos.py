@@ -4,7 +4,7 @@ from __future__ import annotations
 import subprocess, sys, time
 
 HOST = "wsl-gent"
-DISPLAY = ":10"
+DISPLAY = os.environ.get("VB_DISPLAY", ":10")
 USERS = [f"vb{n:02d}" for n in range(1, 58)]
 
 def ssh(cmd, timeout=120):
