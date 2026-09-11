@@ -1,6 +1,7 @@
 """Restart the vbNN Virtuoso instances so their daemons pick up the new
 ramic_bridge_daemon files (listen backlog 128).  One instance per user dir."""
 from __future__ import annotations
+import os
 import subprocess, sys, time
 
 HOST = "wsl-gent"
