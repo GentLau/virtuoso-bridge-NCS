@@ -10,6 +10,7 @@ routing and per-token thread-pool rejection.
 from __future__ import annotations
 
 import hashlib
+import os
 import json
 import socket
 import subprocess
@@ -160,6 +161,19 @@ class TestBusinessLocal(unittest.TestCase):
         )
         self.assertEqual(c.returncode, 124)
         self.assertIn("timed out", c.stderr)
+
+    def test_local_persistent_session_state(self):
+        # same token shares one interpreter: cwd persists across commands
+        if os.name == "nt":
+            cd_cmd = f'cd /d "{self.root}"'
+            pwd_cmd = "cd"
+        else:
+            cd_cmd = f'cd {self.root}'
+            pwd_cmd = "pwd"
+        self.assertEqual(self.server.run_command(cd_cmd, token="tok-a").returncode, 0)
+        c = self.server.run_command(pwd_cmd, token="tok-a")
+        self.assertEqual(c.returncode, 0, c.stderr)
+        self.assertIn(str(self.root).lower(), c.stdout.strip().lower())
 
     def test_local_default_serial_and_explicit_parallel(self):
         py = sys.executable
