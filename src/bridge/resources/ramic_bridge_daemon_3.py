@@ -196,6 +196,8 @@ def filter_delta(raw, level, max_bytes):
     degradation/truncation are exempt from ``max_bytes``."""
     if level == "off":
         return "", False
+    if level == "all" and len(raw.encode("utf-8")) <= max_bytes:
+        return raw, False  # byte-for-byte identity with the file interval
     lines = raw.splitlines()
     kept = [ln for ln in lines if _keep(level, ln)]
     text = "\n".join(kept)
