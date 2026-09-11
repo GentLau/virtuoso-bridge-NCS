@@ -92,7 +92,6 @@ class Deploy(BaseModel):
 class Ssh(BaseModel):
     backend: Literal["openssh", "paramiko"] = "openssh"
     max_sessions: int = Field(default=10, ge=1)
-    connection_budget: int = Field(default=16, ge=1)
     proxy: str | None = None
     control_master: str = "auto"
     tool_override: dict[str, str] = Field(default_factory=dict)

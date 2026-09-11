@@ -21,7 +21,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, NamedTuple
 
-from transport.connlimit import connect_slot
 from transport.runtime_paths import command_log_file
 from transport.transfer import (
     TarDownloadPlan,
@@ -226,7 +225,6 @@ class SSHRunner:
         control_master: str = "auto",
         tool_override: dict | None = None,
         control_identity: str | None = None,
-        connection_budget: int = 16,
     ) -> None:
         _setup_command_log()
         self._host = host
@@ -238,8 +236,6 @@ class SSHRunner:
         self._timeout = timeout
         self._connect_timeout = connect_timeout
         self._verbose = verbose
-        self._connection_budget = max(1, int(connection_budget))
-        self._endpoint_key = f"{host}|{user or ''}|{jump_host or ''}|{jump_user or ''}"
 
         selected_backend = (backend or "openssh").strip().lower()
         if selected_backend not in ("openssh", "paramiko"):
@@ -322,7 +318,6 @@ class SSHRunner:
                 connect_timeout=connect_timeout,
                 max_sessions=max_sessions,
                 proxy_url=self._proxy_url,
-                connection_budget=self._connection_budget,
             )
 
     @property
@@ -366,17 +361,12 @@ class SSHRunner:
         handshakes through the global connection gate so the remote sshd
         ``MaxStartups`` limit does not drop them mid-banner.
         """
-        with connect_slot(
-            self._endpoint_key,
-            budget=self._connection_budget,
+        return self._start_port_forward_locked(
+            port,
+            settle,
+            remote_port=remote_port,
             deadline=deadline,
-        ):
-            return self._start_port_forward_locked(
-                port,
-                settle,
-                remote_port=remote_port,
-                deadline=deadline,
-            )
+        )
 
     @staticmethod
     def _transient_tunnel_error(stderr_tail: str) -> bool:

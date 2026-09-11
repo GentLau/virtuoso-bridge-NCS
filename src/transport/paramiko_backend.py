@@ -20,8 +20,6 @@ from pathlib import Path
 from typing import Any, Iterator
 from urllib.parse import unquote, urlsplit
 
-from transport.connlimit import connect_slot
-
 from transport.transfer import (
     FileDownloadPlan,
     TarDownloadPlan,
@@ -242,7 +240,6 @@ class ParamikoSessionBackend:
         connect_timeout: float,
         max_sessions: int,
         proxy_url: str | None = None,
-        connection_budget: int = 16,
     ) -> None:
         if max_sessions < 1:
             raise ValueError("Paramiko max_sessions must be at least 1")
@@ -264,7 +261,6 @@ class ParamikoSessionBackend:
         self._ssh_cmd = ssh_cmd
         self._connect_timeout = float(connect_timeout)
         self._max_sessions = max_sessions
-        self._connection_budget = max(1, int(connection_budget))
         self._proxy = self._parse_socks5_proxy(proxy_url)
         self._socks: Any | None = None
         if self._proxy is not None:
@@ -875,7 +871,7 @@ class ParamikoSessionBackend:
             jump_endpoint = self._jump_endpoint
             # Retry handshakes the remote sshd dropped mid-banner (MaxStartups
             # burst).  A failure before authentication means nothing was sent,
-            # so retrying is safe.  Handshakes share the global connect gate.
+            # so retrying is safe; after 3 attempts the error is returned.
             last_error: Exception | None = None
             for attempt in range(3):
                 jump_client = None
@@ -883,43 +879,35 @@ class ParamikoSessionBackend:
                 target_client = None
                 proxy_socket = None
                 try:
-                    with connect_slot(
-                        "%s|%s|%s|%s" % (
-                            self._host, self._user or "",
-                            self._jump_host or "", self._jump_user or "",
-                        ),
-                        budget=getattr(self, "_connection_budget", 16),
-                        deadline=deadline.deadline,
-                    ):
-                        if jump_endpoint is not None:
-                            proxy_socket = self._open_proxy_socket(jump_endpoint, deadline)
-                            jump_client = self._connect_client(
-                                jump_endpoint,
-                                deadline,
-                                sock=proxy_socket,
-                            )
-                            proxy_socket = None
-                            jump_transport = jump_client.get_transport()
-                            if jump_transport is None:
-                                raise OSError("Jump-host SSH transport is unavailable")
-                            jump_channel = jump_transport.open_channel(
-                                "direct-tcpip",
-                                (target_endpoint.hostname, target_endpoint.port),
-                                ("127.0.0.1", 0),
-                                timeout=deadline.remaining(target_endpoint.hostname),
-                            )
-                        else:
-                            proxy_socket = self._open_proxy_socket(target_endpoint, deadline)
-                        target_client = self._connect_client(
-                            target_endpoint,
+                    if jump_endpoint is not None:
+                        proxy_socket = self._open_proxy_socket(jump_endpoint, deadline)
+                        jump_client = self._connect_client(
+                            jump_endpoint,
                             deadline,
-                            sock=(
-                                jump_channel
-                                if jump_channel is not None
-                                else proxy_socket
-                            ),
+                            sock=proxy_socket,
                         )
                         proxy_socket = None
+                        jump_transport = jump_client.get_transport()
+                        if jump_transport is None:
+                            raise OSError("Jump-host SSH transport is unavailable")
+                        jump_channel = jump_transport.open_channel(
+                            "direct-tcpip",
+                            (target_endpoint.hostname, target_endpoint.port),
+                            ("127.0.0.1", 0),
+                            timeout=deadline.remaining(target_endpoint.hostname),
+                        )
+                    else:
+                        proxy_socket = self._open_proxy_socket(target_endpoint, deadline)
+                    target_client = self._connect_client(
+                        target_endpoint,
+                        deadline,
+                        sock=(
+                            jump_channel
+                            if jump_channel is not None
+                            else proxy_socket
+                        ),
+                    )
+                    proxy_socket = None
                 except Exception as exc:  # noqa: BLE001
                     last_error = exc
                     if target_client is not None:

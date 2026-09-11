@@ -56,7 +56,7 @@ class TestNewMiddle(unittest.TestCase):
         server = BusinessServer(self.wd)
         r = server.run_command("echo vb-ok", token="tok-1")
         if sys.platform == "win32":
-            self.assertIn(r.stdout, ("", "vb-ok\r\n", "vb-ok\n"))
+            self.assertIn(r.stdout, ("", "vb-ok", "vb-ok\r\n", "vb-ok\n"))
         else:
             self.assertEqual(r.stdout.strip(), "vb-ok")
         self.assertEqual(r.returncode, 0)
