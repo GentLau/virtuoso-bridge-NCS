@@ -7,7 +7,7 @@ or writes registry.json.
 
 Run with:
 
-    python -m server.registration_mock_server --port 8125
+    .venv/Scripts/python.exe test/frontend_tb/registration_mock_server.py --port 8125
 """
 
 from __future__ import annotations
@@ -19,13 +19,14 @@ import time
 import uuid
 from dataclasses import dataclass, field
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from importlib.resources import files
+from pathlib import Path
 from typing import Any
 from urllib.parse import unquote, urlparse
 
 
-_PAGE = files("server").joinpath("registration_page.html").read_text(encoding="utf-8")
-_PANEL = files("server").joinpath("registration_mock_panel.html").read_text(encoding="utf-8")
+_PROJECT_ROOT = Path(__file__).resolve().parents[2]
+_PAGE = (_PROJECT_ROOT / "src" / "server" / "registration_page.html").read_text(encoding="utf-8")
+_PANEL = (Path(__file__).resolve().parent / "registration_mock_panel.html").read_text(encoding="utf-8")
 
 SCENARIOS: dict[str, str] = {
     "happy": "全流程成功",

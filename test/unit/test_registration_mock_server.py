@@ -7,9 +7,9 @@ import threading
 import unittest
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "test"))
 
-from server.registration_mock_server import RegistrationMockServer
+from frontend_tb.registration_mock_server import RegistrationMockServer
 
 
 class _MockServerThread:

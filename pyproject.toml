@@ -29,13 +29,12 @@ dev = ["pytest>=7.0", "paramiko>=3.5", "PySocks>=1.7.1", "coverage>=7.0"]
 
 [project.scripts]
 virtuoso-bridge = "server.registration_server:main"
-virtuoso-bridge-ui-tb = "server.registration_mock_server:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools.package-data]
-"server" = ["registration_page.html", "registration_mock_panel.html"]
+"server" = ["registration_page.html"]
 "bridge.resources" = ["*.il", "*.py"]
 
 [tool.pytest.ini_options]

@@ -48,7 +48,7 @@ button,input,select {
   font:inherit
 }
 .shell {
-  width:min(1180px,calc(100% - 40px));
+  width:min(1480px,calc(100% - 40px));
   margin:auto;
   padding:28px 0 56px
 }
@@ -108,11 +108,13 @@ button,input,select {
 }
 .workspace {
   display:grid;
-  grid-template-columns:290px minmax(0,1fr);
+  grid-template-columns:minmax(360px,.9fr) minmax(430px,1.1fr) 280px;
   gap:22px;
   align-items:start
 }
 .progress-panel {
+  grid-column:3;
+  grid-row:1;
   position:sticky;
   top:22px;
   overflow:hidden;
@@ -276,11 +278,153 @@ button,input,select {
   color:var(--success);
   background:#dff5ea
 }
+.flow-guide {
+  margin:2px 18px 14px;
+  padding:14px;
+  border:1px solid #ddd9fb;
+  border-radius:12px;
+  background:#f8f7ff
+}
+.flow-guide-label {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  margin:0 0 7px;
+  color:var(--primary);
+  font-size:9px;
+  font-weight:850;
+  letter-spacing:.08em;
+  text-transform:uppercase
+}
+.flow-guide-label span {
+  padding:3px 6px;
+  border-radius:99px;
+  color:#5548bd;
+  background:#e8e5ff;
+  letter-spacing:0;
+  text-transform:none
+}
+.flow-guide strong {
+  display:block;
+  font-size:12px
+}
+.flow-guide p:last-child {
+  margin:5px 0 0;
+  color:var(--muted);
+  font-size:10px;
+  line-height:1.5
+}
+.flow-guide-actions {
+  margin-top:11px
+}
+.flow-guide-actions .btn {
+  width:100%;
+  min-height:36px;
+  padding:8px 10px;
+  font-size:10px
+}
 .content {
-  display:grid;
-  gap:18px;
+  grid-column:1;
+  grid-row:1;
   min-width:0
 }
+#formCard {
+  min-width:0
+}
+.config-summary-card {
+  position:sticky;
+  top:22px;
+  overflow:hidden
+}
+.status-card {
+  grid-column:2;
+  grid-row:1;
+  min-width:0;
+  position:sticky;
+  top:22px
+}
+.config-summary-head {
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:14px;
+  padding:22px 22px 18px;
+  border-bottom:1px solid var(--line)
+}
+.config-summary-head h2 {
+  margin:0;
+  font-size:18px;
+  letter-spacing:-.02em
+}
+.config-summary-head p:not(.eyebrow) {
+  margin:5px 0 0;
+  color:var(--muted);
+  font-size:10px
+}
+.config-summary-body {
+  padding:18px 22px 22px
+}
+.config-stage {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:15px;
+  padding:10px 11px;
+  border-radius:10px;
+  color:#4c3fc0;
+  background:var(--primary-bg);
+  font-size:10px
+}
+.config-stage strong {
+  color:var(--primary2);
+  font-size:11px
+}
+.config-summary-list {
+  display:grid;
+  gap:0;
+  margin:0
+}
+.config-summary-row {
+  display:grid;
+  grid-template-columns:88px minmax(0,1fr) auto;
+  align-items:start;
+  gap:9px;
+  padding:10px 0;
+  border-bottom:1px solid var(--line)
+}
+.config-summary-row:last-child {
+  border-bottom:0
+}
+.config-summary-row dt {
+  margin:0;
+  color:var(--muted);
+  font-size:10px;
+  font-weight:750
+}
+.config-summary-row dd {
+  min-width:0;
+  margin:0;
+  overflow-wrap:anywhere;
+  color:#344054;
+  font-size:11px
+}
+.config-summary-row dd.mono {
+  font-family:"Cascadia Code",Consolas,monospace;
+  font-size:10px
+}
+.config-summary-note {
+  margin:14px 0 0;
+  padding:10px 11px;
+  border:1px solid #dce3ef;
+  border-radius:9px;
+  color:#5a687d;
+  background:#f8fafd;
+  font-size:9px;
+  line-height:1.5
+}
+
 .card {
   border:1px solid rgba(255,255,255,.94);
   border-radius:var(--radius);
@@ -918,6 +1062,95 @@ button,input,select {
 .confirm-row strong {
   color:var(--ink)
 }
+.comparison {
+  margin-top:16px;
+  overflow:hidden;
+  border:1px solid var(--line);
+  border-radius:12px
+}
+.comparison-head {
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  padding:12px 13px;
+  border-bottom:1px solid var(--line);
+  background:var(--subtle)
+}
+.comparison-head h3 {
+  margin:0;
+  font-size:11px
+}
+.comparison-head span {
+  color:var(--muted);
+  font-size:9px
+}
+.comparison-columns,.comparison-row {
+  display:grid;
+  grid-template-columns:94px minmax(0,1fr) minmax(0,1fr);
+  gap:10px;
+  align-items:center
+}
+.comparison-columns {
+  padding:8px 13px;
+  color:var(--soft);
+  background:#fcfcfd;
+  font-size:8px;
+  font-weight:800;
+  letter-spacing:.04em;
+  text-transform:uppercase
+}
+.comparison-row {
+  padding:10px 13px;
+  border-top:1px solid #eef0f4;
+  font-size:10px
+}
+.comparison-row strong {
+  color:#475467;
+  font-size:10px
+}
+.comparison-config {
+  min-width:0;
+  overflow-wrap:anywhere;
+  color:var(--muted)
+}
+.comparison-result {
+  min-width:0;
+  display:flex;
+  align-items:flex-start;
+  gap:6px;
+  overflow-wrap:anywhere;
+  color:#344054
+}
+.comparison-result i {
+  width:7px;
+  height:7px;
+  flex:0 0 auto;
+  margin-top:4px;
+  border-radius:50%;
+  background:var(--info)
+}
+.comparison-result.success i {
+  background:var(--success)
+}
+.comparison-result.warning i {
+  background:var(--warn)
+}
+.comparison-result.danger {
+  color:var(--danger)
+}
+.comparison-result.danger i {
+  background:var(--danger)
+}
+.comparison-footnote {
+  margin:0;
+  padding:9px 13px 11px;
+  border-top:1px solid var(--line);
+  color:var(--soft);
+  background:#fcfcfd;
+  font-size:8px;
+  line-height:1.45
+}
 .report {
   margin-top:17px
 }
@@ -1034,11 +1267,110 @@ button,input,select {
     transform:rotate(360deg)
   }
 }
-@media(max-width:920px) {
+@media(max-width:1050px) and (min-width:621px) {
+  .shell {
+    width:calc(100% - 24px)
+  }
+  .workspace {
+    grid-template-columns:minmax(0,1fr) minmax(0,1.12fr);
+    gap:14px
+  }
+  .progress-panel {
+    grid-column:1/-1;
+    grid-row:1;
+    position:static
+  }
+  .progress-head {
+    padding:16px 18px 13px
+  }
+  .progress-head p:not(.eyebrow),.safety-note {
+    display:none
+  }
+  .progress-summary {
+    margin-top:10px
+  }
+  .step-list {
+    display:grid;
+    grid-template-columns:repeat(6,minmax(88px,1fr));
+    overflow-x:auto;
+    padding:15px 18px 10px
+  }
+  .step-item {
+    display:block;
+    min-height:auto;
+    padding-right:10px
+  }
+  .step-item:not(:last-child):after {
+    top:16px;
+    bottom:auto;
+    left:34px;
+    right:0;
+    width:auto;
+    height:2px
+  }
+  .step-copy {
+    padding:8px 0 0
+  }
+  .step-copy span {
+    display:none
+  }
+  .flow-guide {
+    display:grid;
+    grid-template-columns:120px minmax(0,1fr) 180px;
+    align-items:center;
+    gap:12px;
+    margin:3px 18px 14px
+  }
+  .flow-guide-label {
+    margin:0
+  }
+  .flow-guide p:last-of-type {
+    margin:0
+  }
+  .flow-guide-actions {
+    margin:0
+  }
+  .content {
+    grid-column:1;
+    grid-row:2
+  }
+  .status-card {
+    grid-column:2;
+    grid-row:2;
+    position:sticky;
+    top:12px
+  }
+  .config-summary-card {
+    position:sticky;
+    top:12px
+  }
+  .fields.two,.mode-grid {
+    grid-template-columns:1fr
+  }
+  .mode-body {
+    min-height:0
+  }
+}
+@media(max-width:620px) {
+  .shell {
+    width:calc(100% - 24px);
+    padding-top:16px
+  }
   .workspace {
     grid-template-columns:1fr
   }
   .progress-panel {
+    grid-column:1;
+    grid-row:1;
+    position:static
+  }
+  .content {
+    grid-column:1;
+    grid-row:2
+  }
+  .status-card {
+    grid-column:1;
+    grid-row:3;
     position:static
   }
   .step-list {
@@ -1065,12 +1397,6 @@ button,input,select {
   }
   .step-copy span,.safety-note {
     display:none
-  }
-}
-@media(max-width:680px) {
-  .shell {
-    width:calc(100% - 24px);
-    padding-top:16px
   }
   .topbar {
     align-items:flex-start;
@@ -1122,6 +1448,24 @@ button,input,select {
     align-items:flex-start;
     flex-direction:column
   }
+  .config-summary-head {
+    padding:19px 18px 15px
+  }
+  .config-summary-body {
+    padding:15px 18px 18px
+  }
+  .config-summary-row {
+    grid-template-columns:78px minmax(0,1fr) auto
+  }
+  .comparison-columns,.comparison-row {
+    grid-template-columns:78px minmax(0,1fr)
+  }
+  .comparison-columns span:nth-child(2) {
+    display:none
+  }
+  .comparison-row .comparison-config,.comparison-row .comparison-result {
+    grid-column:2
+  }
 }
 @media(prefers-reduced-motion:reduce) {
   *,*:before,*:after {
@@ -1139,13 +1483,7 @@ button,input,select {
     <div class="persist-badge"><i aria-hidden="true"></i>仅第 6 步写入 registry.json</div>
   </header>
   <main class="workspace">
-    <aside class="progress-panel" aria-label="注册进度">
-      <div class="progress-head"><p class="eyebrow">Registration Flow</p><h2>六步注册</h2><p>按顺序完成检查与部署，连通性通过后才会持久化配置。</p><div class="progress-summary"><strong id="progressText">准备开始</strong><span id="progressMeta">0 / 6 完成</span></div></div>
-      <ol id="steps" class="step-list"></ol>
-      <div class="safety-note"><b aria-hidden="true">✓</b><span>安全约束：第 1–5 步失败时不会写入注册表，可放心排查后重新申请。</span></div>
-    </aside>
     <div class="content">
-      <section id="statusCard" class="card status-card" aria-live="polite" aria-atomic="false" tabindex="-1" hidden><div class="status-accent"></div><div id="statusContent" class="status-inner"></div></section>
       <section id="formCard" class="card">
         <div class="form-head"><div><p class="eyebrow">New Registration</p><h1>配置用户接入信息</h1><p>先填写必要参数。后续每一步都会单独确认，页面不会跳过检查或提前写入注册表。</p></div><span class="step-chip">第 1 步 · 申请</span></div>
         <form id="f" class="form-body" autocomplete="off">
@@ -1160,8 +1498,7 @@ button,input,select {
             <section class="form-section">
               <div class="section-head"><span class="section-number">02</span><div><h2>运行模式</h2><p>选择接入拓扑，页面会自动显示对应参数并进行前置校验。</p></div></div>
               <div class="mode-grid" role="radiogroup" aria-label="运行模式">
-                <label class="mode-option"><input type="radio" name="mode" value="auto" checked><span class="mode-body"><span class="mode-name"><span class="mode-dot"></span>自动判断</span><span class="mode-desc">未填写远程参数时按本机；检测到远程参数时按 SSH 模式。</span></span></label>
-                <label class="mode-option"><input type="radio" name="mode" value="remote"><span class="mode-body"><span class="mode-name"><span class="mode-dot"></span>远程服务器</span><span class="mode-desc">通过 SSH 探测、部署，并在本机建立到 daemon 的访问端口。</span></span></label>
+                <label class="mode-option"><input type="radio" name="mode" value="remote" checked><span class="mode-body"><span class="mode-name"><span class="mode-dot"></span>远程服务器</span><span class="mode-desc">通过 SSH 探测、部署，并在本机建立到 daemon 的访问端口。</span></span></label>
                 <label class="mode-option"><input type="radio" name="mode" value="local"><span class="mode-body"><span class="mode-name"><span class="mode-dot"></span>本机 Virtuoso</span><span class="mode-desc">不使用 SSH，直接在当前机器部署并连接 Virtuoso。</span></span></label>
               </div>
               <div id="modeStatus" class="mode-status"><span class="info-dot" aria-hidden="true">i</span><span></span></div>
@@ -1208,10 +1545,33 @@ button,input,select {
             </section>
           </fieldset>
           <div id="formError" class="form-error" role="alert" hidden></div>
-          <div class="form-actions"><p>提交申请只会创建内存会话并生成 Token，不会发起 SSH 探测，也不会写入注册表。</p><button type="submit" id="applyBtn" class="btn btn-primary"><span id="applyBtnLabel">提交申请并生成 Token</span><span aria-hidden="true">→</span></button></div>
+          <div class="form-actions"><p>填写完成后，从右侧流程栏提交申请。第 1 步只创建内存会话并生成 Token，不会发起 SSH 探测。</p><button type="submit" id="applyBtn" class="btn btn-primary" hidden><span id="applyBtnLabel">提交申请并生成 Token</span><span aria-hidden="true">→</span></button></div>
         </form>
       </section>
+      <section id="configSummaryCard" class="card config-summary-card" hidden>
+        <div class="config-summary-head">
+          <div><p class="eyebrow">Submitted Configuration</p><h2>本次配置</h2><p>这里始终展示当前流程实际使用的参数，便于与探测结果逐项比对。</p></div>
+          <button id="summaryEditBtn" class="btn btn-secondary" type="button">修改配置</button>
+        </div>
+        <div class="config-summary-body">
+          <div class="config-stage"><strong>配置快照</strong><span id="configStageText">第 1 步已锁定</span></div>
+          <dl id="configSummaryList" class="config-summary-list"></dl>
+          <p class="config-summary-note">修改配置会创建新的注册会话并从第 1 步重新开始；当前探测结果不会套用到新参数。</p>
+        </div>
+      </section>
     </div>
+    <section id="statusCard" class="card status-card" aria-live="polite" aria-atomic="false" tabindex="-1"><div class="status-accent"></div><div id="statusContent" class="status-inner"></div></section>
+    <aside class="progress-panel" aria-label="注册进度">
+      <div class="progress-head"><p class="eyebrow">Registration Flow</p><h2>六步注册</h2><p>按顺序完成检查与部署，连通性通过后才会持久化配置。</p><div class="progress-summary"><strong id="progressText">准备开始</strong><span id="progressMeta">0 / 6 完成</span></div></div>
+      <ol id="steps" class="step-list"></ol>
+      <div id="flowGuide" class="flow-guide">
+        <p class="flow-guide-label">当前任务 <span id="flowGuideStep">第 1 步</span></p>
+        <strong id="flowGuideTitle">填写注册配置</strong>
+        <p id="flowGuideText">完成左侧必要参数后提交申请，流程才会开始。</p>
+        <div id="flowGuideActions" class="flow-guide-actions"></div>
+      </div>
+      <div class="safety-note"><b aria-hidden="true">✓</b><span>安全约束：第 1–5 步失败时不会写入注册表，可放心排查后重新申请。</span></div>
+    </aside>
   </main>
 </div>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
@@ -1410,6 +1770,127 @@ function collectPayload() {
   return payload
 }
 
+function resolvedValues(data) {
+  if (data && data.resolved) return data.resolved;
+  const entry = data && data.entry ? data.entry : {},
+    route = entry.route || {},
+    skill = route.skill || {},
+    command = route.command || {},
+    file = route.file || {},
+    jump = route.jump || {},
+    spectre = route.spectre || {},
+    expected = entry.expected || {},
+    deploy = entry.deploy || {},
+    ssh = entry.ssh || {},
+    runtime = entry.runtime || {},
+    cdslog = entry.cdslog || {};
+  return {
+    mode: entry.mode,
+    command_host: command.host,
+    command_user: command.user,
+    daemon_host: skill.daemon_host,
+    daemon_user: expected.daemon_user,
+    daemon_port: skill.daemon_port,
+    local_port: skill.local_port,
+    file_host: file.host,
+    file_root: file.root,
+    deploy_root: deploy.scratch_root,
+    remote_python: expected.remote_python,
+    ssh_host_key_fingerprint: expected.ssh_host_key_fingerprint,
+    daemon_endpoint_hostname: expected.daemon_endpoint_hostname,
+    jump_host: jump.host,
+    jump_user: jump.user,
+    spectre_host: spectre.host,
+    spectre_bin: spectre.bin,
+    ssh_backend: ssh.backend,
+    ssh_max_sessions: ssh.max_sessions,
+    ssh_control_master: ssh.control_master,
+    thread_pool_size: runtime.thread_pool_size,
+    channel_budget: runtime.channel_budget,
+    connect_timeout: runtime.connect_timeout,
+    log_level: cdslog.log_level,
+    log_max_bytes: cdslog.log_max_bytes
+  }
+}
+
+function configurationSnapshot(data) {
+  const values = {};
+  document.querySelectorAll('#f [name]').forEach(function(control) {
+    if (control.type === 'radio') {
+      if (control.checked) values[control.name] = control.value
+    } else values[control.name] = String(control.value || '').trim()
+  });
+  const requested = data && data.requested ? data.requested : {};
+  Object.keys(requested).forEach(function(key) {
+    if (requested[key] !== null && requested[key] !== undefined && requested[key] !== '') {
+      values[key] = requested[key]
+    }
+  });
+  const resolved = resolvedValues(data),
+    mode = resolved.mode || (requested.local ? 'local' : (requested.host ? 'remote' : resolvedMode())),
+    modeChoice = requested.local ? 'local' : (requested.host ? 'remote' : (values.mode || 'auto')),
+    host = values.host || '',
+    sshUser = values.ssh_user || '',
+    daemonHost = mode === 'local' ? '127.0.0.1' : (values.daemon_host || host || '未填写'),
+    daemonUser = values.daemon_user || sshUser,
+    daemonPort = values.daemon_port || '自动分配',
+    localPort = mode === 'local' ? (values.daemon_port || '同 Daemon 端口') : (values.local_port || '自动分配');
+  return {
+    user: (data && data.user) || values.user || '—',
+    token: (data && data.token) || values.token || '服务端生成',
+    mode: mode,
+    modeLabel: modeChoice === 'auto' ? '自动判断 → ' + (mode === 'local' ? '本机' : '远程') :
+      (mode === 'local' ? '本机 Virtuoso' : '远程服务器'),
+    target: mode === 'local' ? '当前机器' : ((sshUser ? sshUser + '@' : '') + (host || '未填写')),
+    daemon: (daemonUser && mode !== 'local' ? daemonUser + '@' : '') + daemonHost + ':' + daemonPort,
+    daemonPort: daemonPort,
+    localPort: localPort,
+    scratch: values.scratch_root || '~/.virtuoso-bridge',
+    jump: values.jump_host ? ((values.jump_user ? values.jump_user + '@' : '') + values.jump_host) : '',
+    spectre: values.spectre_host || values.spectre_bin ?
+      ((values.spectre_host || '同 command 主机') + (values.spectre_bin ? ' · ' + values.spectre_bin : '')) : ''
+  }
+}
+
+function appendSummaryRow(list, label, value, options) {
+  const row = make('div', 'config-summary-row'),
+    term = make('dt', '', label),
+    detail = make('dd', options && options.mono ? 'mono' : '', value || '—');
+  row.append(term, detail);
+  if (options && options.copy && value) {
+    const button = make('button', 'icon-btn', '复制');
+    button.type = 'button';
+    button.addEventListener('click', function() {
+      copyText(value, label)
+    });
+    row.appendChild(button)
+  } else row.appendChild(make('span'));
+  list.appendChild(row)
+}
+
+function renderConfigSummary(data) {
+  const snapshot = configurationSnapshot(data),
+    list = byId('configSummaryList'),
+    editButton = byId('summaryEditBtn');
+  clear(list);
+  appendSummaryRow(list, '用户', snapshot.user);
+  appendSummaryRow(list, '运行模式', snapshot.modeLabel);
+  appendSummaryRow(list, '执行目标', snapshot.target, {mono: snapshot.mode === 'remote'});
+  appendSummaryRow(list, 'Daemon', snapshot.daemon, {mono: true});
+  appendSummaryRow(list, '本地端口', snapshot.localPort);
+  appendSummaryRow(list, '部署根目录', snapshot.scratch, {mono: true});
+  if (snapshot.jump) appendSummaryRow(list, '跳板机', snapshot.jump, {mono: true});
+  if (snapshot.spectre) appendSummaryRow(list, 'Spectre', snapshot.spectre, {mono: true});
+  appendSummaryRow(list, 'Token', snapshot.token, {mono: true, copy: snapshot.token !== '服务端生成'});
+
+  const step = Math.max(1, Number(data.step || 1));
+  if (data.stage === 'committed') byId('configStageText').textContent = '第 6 步已完成';
+  else if (data.stage === 'failed') byId('configStageText').textContent = '第 ' + step + ' 步未通过';
+  else byId('configStageText').textContent = '第 ' + step + ' 步已完成';
+  editButton.textContent = data.stage === 'committed' ? '注册新用户' : '修改配置';
+  byId('configSummaryCard').hidden = false
+}
+
 function clearFieldErrors() {
   ['user', 'host', 'ssh_user'].forEach(function(id) {
     byId(id).setCustomValidity('')
@@ -1435,6 +1916,7 @@ function validateApplication() {
       behavior: 'smooth',
       block: 'center'
     });
+    renderIdleStatus('请补充左侧标记为必填的配置项后再提交。', 'danger');
     return false
   }
   return true
@@ -1467,6 +1949,73 @@ function visualState(stepNo, state, processing) {
   return 'pending'
 }
 
+function flowGuideContent(state, processing) {
+  if (processing) return {
+    step: '第 ' + processing + ' 步',
+    title: '正在执行' + STEPS[processing - 1].name,
+    text: '请等待左侧返回结果，处理期间不要重复提交。',
+    action: ''
+  };
+  if (!state) return {
+    step: '第 1 步',
+    title: '填写并确认配置',
+    text: '在左侧填写必要参数；确认无误后从这里提交申请。',
+    action: '提交注册申请'
+  };
+  if (state.stage === 'committed') return {
+    step: '全部完成',
+    title: '注册已经完成',
+    text: '配置已持久化。需要继续时，可以开始注册另一个用户。',
+    action: '注册另一个用户'
+  };
+  if (state.stage === 'failed') {
+    const failedStep = Math.max(1, Number(state.step || 1));
+    return {
+      step: failedStep ? '第 ' + failedStep + ' 步' : '会话失效',
+      title: failedStep === 5 ? '处理连通性问题' : '修改左侧配置后重新申请',
+      text: failedStep === 5 ? '查看左侧检查结果，修复 CIW 或 daemon 后可直接重试。' :
+        '左侧保留了本次配置和错误信息，修改参数会重新从第 1 步开始。',
+      action: failedStep === 5 ? '重新测试连通性' : '返回修改配置'
+    }
+  }
+  const guides = {
+    applied: ['第 2 步', '执行本地校验', '比对用户名和端口是否与现有注册项冲突。', '开始本地校验'],
+    validated: ['第 3 步', '探测目标环境', '检查连接、Python、端口和部署目录是否满足要求。', '开始环境探测'],
+    probed: ['第 4 步', '部署 Bridge 文件', '探测通过后，将 daemon、SKILL 和 setup 文件部署到目标目录。', '开始部署'],
+    deployed: ['第 5 步', '在目标 CIW 完成加载', '先按左侧说明执行 load 并确认 Token，再启动连通性测试。', '查看 CIW 操作']
+  };
+  const guide = guides[state.stage] || ['下一步', '继续当前流程', '根据左侧结果继续操作。', '查看操作'];
+  return {step: guide[0], title: guide[1], text: guide[2], action: guide[3]}
+}
+
+function updateFlowGuide(state, processing) {
+  const guide = flowGuideContent(state, processing),
+    actions = byId('flowGuideActions');
+  byId('flowGuideStep').textContent = guide.step;
+  byId('flowGuideTitle').textContent = guide.title;
+  byId('flowGuideText').textContent = guide.text;
+  clear(actions);
+  if (!guide.action) return;
+  const button = make('button', 'btn btn-primary', guide.action);
+  button.type = 'button';
+  button.addEventListener('click', function() {
+    if (!state) {
+      byId('applyBtn').click();
+      return
+    }
+    if (state.stage === 'deployed') {
+      const verify = byId('statusCard').querySelector('.btn-primary:not(:disabled)');
+      if (verify) verify.click();
+      else byId('statusCard').scrollIntoView({behavior: 'smooth', block: 'start'});
+      return
+    }
+    const primary = byId('statusCard').querySelector('.btn-primary:not(:disabled)');
+    if (primary) primary.click();
+    else byId('statusCard').scrollIntoView({behavior: 'smooth', block: 'start'})
+  });
+  actions.appendChild(button)
+}
+
 function renderSteps(state, processing) {
   const list = byId('steps');
   clear(list);
@@ -1492,15 +2041,17 @@ function renderSteps(state, processing) {
   else if (state.stage === 'committed') byId('progressText').textContent = '注册完成';
   else if (state.stage === 'failed') byId('progressText').textContent = '第 ' + Math.max(1, Number(state
     .step || 1)) + ' 步需要处理';
-  else byId('progressText').textContent = '下一步：' + Math.min(6, done + 1) + ' / 6'
+  else byId('progressText').textContent = '下一步：' + Math.min(6, done + 1) + ' / 6';
+  updateFlowGuide(state, processing)
 }
 
 function setBusy(value, step, label) {
   BUSY = value;
   byId('formFields').disabled = value;
   byId('applyBtn').disabled = value;
+  byId('summaryEditBtn').disabled = value;
   byId('applyBtnLabel').textContent = value && step === 1 ? '正在提交申请…' : '提交申请并生成 Token';
-  document.querySelectorAll('#statusCard button').forEach(function(button) {
+  document.querySelectorAll('#statusCard button,#flowGuideActions button').forEach(function(button) {
     button.disabled = value
   });
   if (value) {
@@ -1511,7 +2062,9 @@ function setBusy(value, step, label) {
 
 function showForm(message, tone) {
   byId('formCard').hidden = false;
-  byId('statusCard').hidden = true;
+  byId('configSummaryCard').hidden = true;
+  byId('statusCard').hidden = false;
+  byId('formFields').disabled = false;
   byId('f').classList.remove('was-validated');
   clearFieldErrors();
   if (message) {
@@ -1520,6 +2073,7 @@ function showForm(message, tone) {
     byId('formError').hidden = false
   }
   updateModeUI();
+  renderIdleStatus(message, tone);
   setTimeout(function() {
     byId('formCard').scrollIntoView({
       behavior: 'smooth',
@@ -1529,7 +2083,13 @@ function showForm(message, tone) {
 }
 
 function hideForm() {
-  byId('formCard').hidden = true
+  byId('formCard').hidden = true;
+  renderConfigSummary(CURRENT_STATE || {
+    user: CURRENT_USER || byId('user').value.trim(),
+    token: byId('token').value.trim() || null,
+    stage: 'applied',
+    step: 1
+  })
 }
 
 function newStatus(tone, kicker, title, description, symbol) {
@@ -1553,6 +2113,26 @@ function newStatus(tone, kicker, title, description, symbol) {
     body: body,
     title: h
   }
+}
+
+function renderIdleStatus(message, tone) {
+  const hasError = Boolean(message) && tone !== 'info',
+    view = newStatus(hasError ? 'danger' : 'info', 'Live Result', hasError ? '配置需要修正' :
+      '等待开始探测', hasError ? '错误固定显示在结果区；请在左侧对应字段完成修改。' :
+      '提交申请后，本地校验、环境探测、部署和连通性结果都会持续显示在这里。', hasError ? '!' : 'i'),
+    draftState = {
+      user: byId('user').value.trim(),
+      token: byId('token').value.trim() || null,
+      stage: 'idle',
+      step: 0,
+      errors: [],
+      warnings: []
+    };
+  if (message) {
+    const noticeTone = hasError ? 'danger' : '';
+    appendNotice(view.body, message, noticeTone)
+  } else appendNotice(view.body, '左侧是用户配置值；下方结果表将在探测后填入实际注册表候选值。');
+  appendComparison(view.body, draftState)
 }
 
 function focusStatus(title) {
@@ -1628,6 +2208,141 @@ function appendWarnings(container, data) {
   container.appendChild(list)
 }
 
+function checkpointResult(data, step, successText, failureText) {
+  if (!data || Number(data.step || 0) < step) return {tone: '', text: '等待第 ' + step + ' 步'};
+  if (data.stage === 'failed' && Number(data.step || 0) === step) return {
+    tone: 'danger',
+    text: failureText || '未通过，详见错误信息'
+  };
+  return {tone: 'success', text: successText}
+}
+
+function addComparisonRow(table, label, configured, result) {
+  const row = make('div', 'comparison-row'),
+    resultNode = make('span', 'comparison-result ' + (result.tone || ''));
+  resultNode.append(make('i'), document.createTextNode(result.text || '—'));
+  row.append(make('strong', '', label), make('span', 'comparison-config', configured || '—'), resultNode);
+  table.appendChild(row)
+}
+
+function appendComparison(container, data) {
+  const snapshot = configurationSnapshot(data),
+    resolved = resolvedValues(data),
+    section = make('section', 'comparison'),
+    head = make('div', 'comparison-head'),
+    table = make('div');
+  const heading = make('div');
+  heading.append(make('h3', '', '配置值 / 探测回填值'), make('span', '', '右侧结果随每一步实时更新'));
+  head.appendChild(heading);
+  section.appendChild(head);
+  const columns = make('div', 'comparison-columns');
+  columns.append(make('span', '', '字段'), make('span', '', '配置 / 期望'), make('span', '', '当前结果'));
+  section.appendChild(columns);
+
+  const modeResult = checkpointResult(data, 1, resolved.mode ?
+    (resolved.mode === 'local' ? '本机模式' : '远程模式') : '模式已解析', '模式解析失败');
+  addComparisonRow(table, '运行模式', snapshot.modeLabel, modeResult);
+
+  let targetResult = checkpointResult(data, 3, '目标环境可达', '目标环境探测失败');
+  if (!(data && data.stage === 'failed' && Number(data.step) === 3) && resolved.command_host) {
+    targetResult = {
+      tone: 'success',
+      text: (resolved.command_user ? resolved.command_user + '@' : '') + resolved.command_host
+    }
+  }
+  addComparisonRow(table, '命令主机', snapshot.target, targetResult);
+
+  let daemonResult = checkpointResult(data, 3, 'Daemon 端点可用', 'Daemon 端点探测失败');
+  if (!(data && data.stage === 'failed' && Number(data.step) === 3) && resolved.daemon_host) {
+    daemonResult = {
+      tone: 'success',
+      text: (resolved.daemon_user ? resolved.daemon_user + '@' : '') + resolved.daemon_host +
+        (resolved.daemon_port ? ':' + resolved.daemon_port : '')
+    }
+  }
+  addComparisonRow(table, 'Daemon', snapshot.daemon, daemonResult);
+
+  let pythonResult = checkpointResult(data, 3, 'Python 已验证', 'Python 探测失败');
+  if (!(data && data.stage === 'failed' && Number(data.step) === 3) && resolved.remote_python) {
+    pythonResult = {tone: 'success', text: resolved.remote_python}
+  }
+  addComparisonRow(table, '运行时 Python', '由第 3 步自动探测', pythonResult);
+
+  let fingerprintResult;
+  if (snapshot.mode === 'local') fingerprintResult = {tone: 'success', text: '本机模式无需 SSH 指纹'};
+  else {
+    fingerprintResult = checkpointResult(data, 3, 'SSH 指纹已固定', 'SSH 指纹获取失败');
+    if (!(data && data.stage === 'failed' && Number(data.step) === 3) && resolved.ssh_host_key_fingerprint) {
+      fingerprintResult = {tone: 'success', text: resolved.ssh_host_key_fingerprint}
+    }
+  }
+  addComparisonRow(table, 'SSH 指纹', snapshot.mode === 'local' ? '不适用' : '首次探测并记录', fingerprintResult);
+
+  const probeFailed = Boolean(data && data.stage === 'failed' && Number(data.step) === 3);
+  let deployResult = probeFailed ? {tone: 'warning', text: '未生成：环境探测未通过'} :
+    checkpointResult(data, 4, data && data.setup_path ? data.setup_path : '部署产物已生成', '部署失败');
+  if (!probeFailed && !(data && data.stage === 'failed' && Number(data.step) === 4) && resolved.file_root) {
+    deployResult = {tone: 'success', text: resolved.file_root}
+  } else if (!probeFailed && Number(data && data.step || 0) === 3 && resolved.deploy_root) {
+    deployResult = {tone: 'success', text: resolved.deploy_root + ' 可写'}
+  }
+  addComparisonRow(table, '部署位置', snapshot.scratch, deployResult);
+
+  if (!probeFailed && (resolved.file_host || resolved.file_root)) addComparisonRow(table, '文件路由',
+    '跟随 command 主机并按用户隔离', {
+      tone: 'success',
+      text: (resolved.file_host || '—') + (resolved.file_root ? ' · ' + resolved.file_root : '')
+    });
+  if (!probeFailed && (resolved.daemon_endpoint_hostname || resolved.daemon_user)) addComparisonRow(table, 'Daemon 身份',
+    '探测实际主机名与运行用户', {
+      tone: 'success',
+      text: (resolved.daemon_endpoint_hostname || '—') + (resolved.daemon_user ? ' · ' + resolved.daemon_user : '')
+    });
+  if (!probeFailed && resolved.ssh_backend) addComparisonRow(table, 'SSH 策略', '配置值或注册表默认值', {
+    tone: 'success',
+    text: resolved.ssh_backend + ' · max ' + resolved.ssh_max_sessions + ' sessions · ControlMaster ' +
+      resolved.ssh_control_master
+  });
+  if (!probeFailed && resolved.thread_pool_size) addComparisonRow(table, '运行时策略', '配置值或注册表默认值', {
+    tone: 'success',
+    text: '线程 ' + resolved.thread_pool_size + ' · channel ' + resolved.channel_budget + ' · timeout ' +
+      resolved.connect_timeout + 's'
+  });
+  if (!probeFailed && resolved.log_level) addComparisonRow(table, 'CDS.log', '配置值或注册表默认值', {
+    tone: 'success',
+    text: resolved.log_level + ' · ' + resolved.log_max_bytes + ' bytes'
+  });
+  if (!probeFailed && (resolved.spectre_host || resolved.spectre_bin)) addComparisonRow(table, 'Spectre',
+    snapshot.spectre || '跟随 command 主机', {
+      tone: 'success',
+      text: (resolved.spectre_host || '—') + (resolved.spectre_bin ? ' · ' + resolved.spectre_bin : '')
+    });
+
+  let connectivityResult = checkpointResult(data, 5, '命令、SKILL 与 Token 均通过', '连通性未通过');
+  if (data && data.report) {
+    const passed = data.report.command_ok && data.report.skill_ok && data.report.token_ok;
+    connectivityResult = {
+      tone: passed ? 'success' : 'danger',
+      text: '命令 ' + (data.report.command_ok ? '✓' : '×') + ' · SKILL ' +
+        (data.report.skill_ok ? '✓' : '×') + ' · Token ' + (data.report.token_ok ? '✓' : '×')
+    }
+  }
+  addComparisonRow(table, '连通性', '命令 + SKILL + Token', connectivityResult);
+
+  let registryResult = {tone: '', text: '等待第 6 步'};
+  if (data && data.stage === 'committed') registryResult = {tone: 'success', text: '已写入 registry.json'};
+  else if (data && data.stage === 'failed' && Number(data.step) === 6) registryResult = {
+    tone: 'danger',
+    text: '写入失败，未完成持久化'
+  };
+  addComparisonRow(table, '注册表', '仅全部检查通过后写入', registryResult);
+
+  section.appendChild(table);
+  section.appendChild(make('p', 'comparison-footnote',
+    '“当前结果”优先展示接口返回的 entry（兼容 resolved）候选注册表字段；没有明细时只显示步骤结论。'));
+  container.appendChild(section)
+}
+
 function appendReport(container, report) {
   if (!report) return;
   const section = make('section', 'report'),
@@ -1700,13 +2415,15 @@ function renderLoading(step, label) {
   copy.append(make('strong', '', label || '正在处理请求'), make('span', '', step === 3 ? '环境探测可能需要一些时间，请勿重复提交。' :
     '请勿刷新或重复点击。'));
   block.appendChild(copy);
-  view.body.appendChild(block)
+  view.body.appendChild(block);
+  if (CURRENT_STATE) appendComparison(view.body, CURRENT_STATE)
 }
 
 function renderApplied(data) {
   const view = newStatus('success', 'Step 1 of 6 · 已完成', '申请已受理', '已创建内存注册会话并生成 Token；当前尚未访问网络，也未写入注册表。',
   '✓');
   appendNotice(view.body, '下一步仅在本机检查用户名与端口是否和现有注册项冲突。', 'success');
+  appendComparison(view.body, data);
   appendValue(view.body, 'User', data.user, '用户名');
   appendValue(view.body, 'Token', data.token, 'Token');
   const actions = appendActions(view.body, '参数提交后已暂时锁定；如需修改，可重新从第 1 步申请。');
@@ -1722,6 +2439,7 @@ function renderApplied(data) {
 function renderValidated(data) {
   const view = newStatus('success', 'Step 2 of 6 · 已完成', '本地校验通过', '用户名和端口与当前注册表无冲突，可以开始探测目标环境。', '✓');
   appendNotice(view.body, '第 3 步会检查主机连通性、Python、端口与部署根目录，但仍不会写入注册表。');
+  appendComparison(view.body, data);
   const actions = appendActions(view.body);
   actionButton(actions, '继续：探测环境', 'primary', function() {
     runStep(data.user, 'probe', 3, '正在探测目标环境')
@@ -1737,6 +2455,7 @@ function renderProbed(data) {
   const view = newStatus('success', 'Step 3 of 6 · 已完成', '环境探测通过',
     '目标环境满足部署条件，下一步将上传 daemon、SKILL 与 setup 文件。', '✓');
   appendNotice(view.body, '部署只会写入部署目录，不会写 registry.json。完成后需要你在指定 CIW 手动执行 load 命令。');
+  appendComparison(view.body, data);
   const actions = appendActions(view.body);
   actionButton(actions, '继续：部署 Bridge', 'primary', function() {
     runStep(data.user, 'deploy', 4, '正在部署 Bridge 文件')
@@ -1774,6 +2493,7 @@ function renderDeployed(data) {
   tokenLine.append(tokenBlock, copyToken);
   panel.appendChild(tokenLine);
   view.body.appendChild(panel);
+  appendComparison(view.body, data);
   const confirm = make('div', 'confirm-row'),
     checkbox = make('input'),
     label = make('label');
@@ -1789,7 +2509,9 @@ function renderDeployed(data) {
       runStep(data.user, 'verify', 5, '正在测试连通性')
     }, true);
   checkbox.addEventListener('change', function() {
-    verify.disabled = !checkbox.checked || BUSY
+    verify.disabled = !checkbox.checked || BUSY;
+    const guideButton = byId('flowGuideActions').querySelector('button');
+    if (guideButton) guideButton.textContent = checkbox.checked ? '开始连通性测试并完成注册' : '查看 CIW 操作'
   });
   actionButton(actions, '放弃并重新填写', 'secondary', function() {
     editAndRestart(true)
@@ -1804,6 +2526,7 @@ function renderCommitted(data) {
   appendNotice(view.body, '持久化已完成。后续无需重复执行本注册流程。', 'success');
   appendValue(view.body, 'User', data.user, '用户名');
   appendValue(view.body, 'Token', data.token, 'Token');
+  appendComparison(view.body, data);
   appendReport(view.body, data.report);
   appendWarnings(view.body, data);
   const actions = appendActions(view.body);
@@ -1829,6 +2552,7 @@ function renderFailed(data) {
     details.append(make('summary', '', '查看原始技术信息'), make('pre', '', raw.join('\n')));
     view.body.appendChild(details)
   }
+  appendComparison(view.body, data);
   appendReport(view.body, data.report);
   appendWarnings(view.body, data);
   appendNotice(view.body, lost ? '服务端只在内存中保存进行中的会话。请重新提交第 1 步。' : '本次失败未写入注册表。', 'danger');
@@ -1920,6 +2644,7 @@ function renderRequestFailure(error, info) {
     list.appendChild(make('li', '', message))
   });
   view.body.appendChild(list);
+  if (CURRENT_STATE) appendComparison(view.body, CURRENT_STATE);
   const actions = appendActions(view.body);
   if (CURRENT_USER) actionButton(actions, '查询当前会话状态', 'primary', function() {
     refreshState(CURRENT_USER)
@@ -2016,6 +2741,10 @@ function resetForNewUser() {
   showForm();
   byId('user').focus()
 }
+byId('summaryEditBtn').addEventListener('click', function() {
+  if (CURRENT_STATE && CURRENT_STATE.stage === 'committed') resetForNewUser();
+  else editAndRestart(Boolean(CURRENT_STATE && Number(CURRENT_STATE.step || 0) >= 4))
+});
 byId('f').addEventListener('submit', function(event) {
   event.preventDefault();
   applyStep()
@@ -2034,6 +2763,13 @@ document.querySelectorAll('input[name="mode"]').forEach(function(radio) {
 restoreDraft();
 updateModeUI();
 renderSteps(null);
+renderIdleStatus();
+document.querySelectorAll('#f input,#f select').forEach(function(control) {
+  const eventName = control.tagName === 'SELECT' || control.type === 'radio' ? 'change' : 'input';
+  control.addEventListener(eventName, function() {
+    if (!CURRENT_STATE && !byId('formCard').hidden) renderIdleStatus()
+  })
+});
 const savedUser = storageGet(ACTIVE_USER_KEY);
 if (savedUser) refreshState(savedUser, true);
 </script>

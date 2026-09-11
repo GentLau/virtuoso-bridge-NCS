@@ -4,12 +4,24 @@
 
 ```text
 test/
+  frontend_tb/  前端 Mock Testbench：模拟注册接口和 UI 场景
   unit/         函数级：纯函数、数据模型、解析、带 mock 的传输/注册分支
   integration/  集成级：真实 socket 的假 daemon、daemon 子进程、wire 协议
   scenario/     场景级：六步注册全流程、多用户隔离、完整业务模拟（skill/command/file/并发）
   e2e/          真实场景级：远端单用户全流程 + 57 用户远端业务并发 + 6 用户本地业务并发
 test_bak/       旧 tests/ 内容 + 调试期临时文件（不参与常规运行）
 ```
+
+## 前端 Mock Testbench
+
+Mock 注册页面位于 `test/frontend_tb/`，复用 `src/server/registration_page.html`，
+但 Mock Server、场景控制面板和模拟状态全部属于测试代码，不进入 `src/`。
+
+```powershell
+.\.venv\Scripts\python.exe test\frontend_tb\registration_mock_server.py --port 8125
+```
+
+浏览器打开 `http://127.0.0.1:8125/`，可在右下角切换成功、失败、会话失效和临时错误场景。
 
 ## 运行
 

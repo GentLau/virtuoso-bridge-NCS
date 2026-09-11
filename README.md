@@ -48,11 +48,8 @@ Mock TB 复用正式注册页面，但所有 API 状态都保存在内存中，*
 SSH / Virtuoso、不会部署文件，也不会读写 `registry.json`**：
 
 ```bash
-# 安装后可直接运行
-virtuoso-bridge-ui-tb --port 8125
-
-# 或从源码运行
-PYTHONPATH=src python -m server.registration_mock_server --port 8125
+# 从仓库根目录运行（Mock 实现和控制面板位于 test/）
+.\.venv\Scripts\python.exe test\frontend_tb\registration_mock_server.py --port 8125
 ```
 
 浏览器打开 `http://127.0.0.1:8125/`。右下角 **Front-end Mock TB**
