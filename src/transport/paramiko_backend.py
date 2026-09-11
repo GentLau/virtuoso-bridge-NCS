@@ -242,6 +242,7 @@ class ParamikoSessionBackend:
         connect_timeout: float,
         max_sessions: int,
         proxy_url: str | None = None,
+        connection_budget: int = 16,
     ) -> None:
         if max_sessions < 1:
             raise ValueError("Paramiko max_sessions must be at least 1")
@@ -263,6 +264,7 @@ class ParamikoSessionBackend:
         self._ssh_cmd = ssh_cmd
         self._connect_timeout = float(connect_timeout)
         self._max_sessions = max_sessions
+        self._connection_budget = max(1, int(connection_budget))
         self._proxy = self._parse_socks5_proxy(proxy_url)
         self._socks: Any | None = None
         if self._proxy is not None:
@@ -881,7 +883,14 @@ class ParamikoSessionBackend:
                 target_client = None
                 proxy_socket = None
                 try:
-                    with connect_slot():
+                    with connect_slot(
+                        "%s|%s|%s|%s" % (
+                            self._host, self._user or "",
+                            self._jump_host or "", self._jump_user or "",
+                        ),
+                        budget=getattr(self, "_connection_budget", 16),
+                        deadline=deadline.deadline,
+                    ):
                         if jump_endpoint is not None:
                             proxy_socket = self._open_proxy_socket(jump_endpoint, deadline)
                             jump_client = self._connect_client(
@@ -1029,7 +1038,7 @@ class ParamikoSessionBackend:
             raise subprocess.TimeoutExpired(command, deadline.timeout) from exc
         except Exception as exc:  # noqa: BLE001
             self._invalidate_if_transport_failed(exc)
-            return 255, "", str(exc)
+            return 255, "", "VB-TRANSPORT: " + str(exc)
 
     @staticmethod
     def _wait_tar_transfer(
@@ -1208,7 +1217,7 @@ class ParamikoSessionBackend:
             ) from exc
         except Exception as exc:  # noqa: BLE001
             self._invalidate_if_transport_failed(exc)
-            return 255, "", str(exc)
+            return 255, "", "VB-TRANSPORT: " + str(exc)
 
     def download_tar(
         self,
@@ -1322,7 +1331,7 @@ class ParamikoSessionBackend:
         except Exception as exc:  # noqa: BLE001
             discard_stage(plan.stage_path)
             self._invalidate_if_transport_failed(exc)
-            return 255, "", str(exc)
+            return 255, "", "VB-TRANSPORT: " + str(exc)
 
     @staticmethod
     def _error_result(exc: Exception) -> tuple[int, str, str]:

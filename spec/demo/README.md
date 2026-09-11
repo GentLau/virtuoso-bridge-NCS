@@ -4,7 +4,7 @@
 当前收拢为两个自包含 demo：
 
 - **`full_demo.py`**：注册 + token 路由 + 并行的完整业务模拟；
-- **`cdslog_demo.py`**：CDS.log 增量返回算法。
+- **`cdslog_demo.py`**：CDS.log 增量返回算法（演示过滤/限长；其 marker 定界仅为历史演示，正式口径已改为 offset 定界，见[日志返回设计标准](../design-concepts/底层与中层/日志返回设计标准.md)）。
 
 **所有代码只依赖 Python 标准库，不导入 `src/virtuoso_bridge`，不需要
 `.env`、SSH、Virtuoso 或 Spectre。**（`run_command` 使用系统 PATH 里的
@@ -18,7 +18,6 @@
 |---|---|
 | `full_demo.py` | 完整业务 demo：注册多个用户 → token 路由 → 单用户并行；`run_command` 用 pwsh 模拟，`execute_skill` 投送到端口、**到达即成功** |
 | `cdslog_demo.py` | CDS.log byte cursor、BEGIN/END marker、增量读取、级别过滤、超长 error-only 降级、轮转重置 |
-| `TB测试典型场景.md` | 一个典型 testbench 验证场景，说明业务链路如何映射到三层接口、token 路由和并行语义 |
 | `run_all.py` | 依次运行 `full_demo` 和 `cdslog_demo` 的短示例 |
 | `test_*.py` | 可执行验收单元；只导入本目录 demo 和标准库 |
 

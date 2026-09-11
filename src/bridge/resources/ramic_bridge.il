@@ -9,6 +9,10 @@ unless(boundp('RBPython) RBPython = "python")
 unless(boundp('RBPort) RBPort = 65432)
 unless(boundp('RBIdentityPath) RBIdentityPath = "")
 unless(boundp('RBDToken) RBDToken = nil)
+; Per-request directive set by daemon.py before the SKILL text:
+; t  -> capture CDS.log [start,end) without injecting any output into CDS.log
+; nil -> behave exactly like the old no-log code path (no flush/fileLength)
+unless(boundp('RBDLogOn) RBDLogOn = nil)
 RBLocal = nil                                                                      ; Local-only connections (127.0.0.1 vs 0.0.0.0)
 RBEcho = nil                                                                     ; Echo bridging messages for debugging
 RBDLog = nil                                                                     ; Enable daemon logging to /tmp/RB.log
@@ -63,11 +67,19 @@ procedure(RBIpcDataHandler(ipcId data)
   ; the first form take effect.  The progn wrap is a no-op for
   ; single-form input and returns the last form's value for multi-form
   ; input, matching what every Python caller already expects.
-    let((result lp lo)
+  ;
+  ; CDS.log delta: we NEVER print into CDS.log for log-return.  When
+  ; RBDLogOn is nil, this handler does exactly the old no-log work (no
+  ; flush, no fileLength, no meta frame).  When RBDLogOn is t, we flush
+  ; the existing buffer and capture the byte offsets around the SKILL
+  ; execution, then send one meta frame: STX + path + US + start + US + end + RS.
+    let((result lp lo_start lo_end)
     when(RBEcho printf("[RAMIC Bridge (%L)] receive:%L\n" ipcId data))
-    ; request BEGIN marker + flush（必须 hiFlushLogFile，不是 hiFlush）
-    errset(hiPrintToLogFile("VB-BEGIN"))
-    errset(hiFlushLogFile())
+    lp = "" lo_start = 0 lo_end = 0
+    when(RBDLogOn
+        errset(hiFlushLogFile())
+        errset(progn(lp = hiGetLogFileName() lo_start = fileLength(lp)))
+    )
     if(errset(result=evalstring(strcat("(progn " data ")"))) then
         ; Success: STX + %L value + RS
         ipcWriteProcess(ipcId sprintf(nil "%c%L%c" intToChar(2) result intToChar(30)))
@@ -76,13 +88,12 @@ procedure(RBIpcDataHandler(ipcId data)
         ; Error: NAK + payload，不打印 CIW
         ipcWriteProcess(ipcId sprintf(nil "%c%L%c" intToChar(21) errset.errset intToChar(30)))
     )
-    ; END marker + flush
-    errset(hiPrintToLogFile("VB-END"))
-    errset(hiFlushLogFile())
-    ; 第二帧：log meta = 02 + path + US(31) + byte-offset + RS(30)
-    lp = "" lo = 0
-    errset(progn(lp = hiGetLogFileName() lo = fileLength(lp)))
-    ipcWriteProcess(ipcId sprintf(nil "%c%s%c%d%c" intToChar(2) lp intToChar(31) lo intToChar(30)))
+    when(RBDLogOn
+        errset(hiFlushLogFile())
+        errset(progn(lp = hiGetLogFileName() lo_end = fileLength(lp)))
+        ipcWriteProcess(ipcId sprintf(nil "%c%s%c%d%c%d%c"
+            intToChar(2) lp intToChar(31) lo_start intToChar(31) lo_end intToChar(30)))
+    )
   )
 )
 

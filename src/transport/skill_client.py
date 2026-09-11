@@ -135,9 +135,22 @@ class SkillClient:
             )
 
         log = data.get("log", "") or ""
+        warnings = data.get("warnings") or []
         if status_mark == STX:
-            return VirtuosoResult(status=ExecutionStatus.SUCCESS, output=data.get("value", ""), log=log, execution_time=elapsed)
-        return VirtuosoResult(status=ExecutionStatus.ERROR, errors=[data.get("error", "")], log=log, execution_time=elapsed)
+            return VirtuosoResult(
+                status=ExecutionStatus.SUCCESS,
+                output=data.get("value", ""),
+                log=log,
+                warnings=list(warnings),
+                execution_time=elapsed,
+            )
+        return VirtuosoResult(
+            status=ExecutionStatus.ERROR,
+            errors=[data.get("error", "")],
+            log=log,
+            warnings=list(warnings),
+            execution_time=elapsed,
+        )
 
 
 __all__ = ["SkillClient"]

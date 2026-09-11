@@ -8,10 +8,10 @@ from bridge.resources.ramic_bridge_daemon_27 import _parse_meta, filter_delta
 
 class TestDaemon27(unittest.TestCase):
     def test_parse_meta(self):
-        self.assertEqual(_parse_meta(b"/tmp/CDS.log\x1f42"), ("/tmp/CDS.log", 42))
+        self.assertEqual(_parse_meta(b"/tmp/CDS.log\x1f10\x1f42"), ("/tmp/CDS.log", 10, 42))
 
     def test_filter_off(self):
-        text, trunc = filter_delta("\\e err\n\\w warn\nVB-BEGIN\n", "off", 100)
+        text, trunc = filter_delta("\\e err\n\\w warn\n", "off", 100)
         self.assertEqual(text, "")
         self.assertFalse(trunc)
 

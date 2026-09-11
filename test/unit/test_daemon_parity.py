@@ -48,27 +48,20 @@ class TestDaemonParity(unittest.TestCase):
 
     def test_parse_meta_parity(self):
         for name, mod in MODULES:
-            self.assertEqual(mod._parse_meta(b"/tmp/CDS.log\x1f42"), ("/tmp/CDS.log", 42))
-            self.assertEqual(mod._parse_meta(b"no-separator"), (None, 0))
-            self.assertEqual(mod._parse_meta(b"/p\x1fabc"), ("/p", 0))
+            self.assertEqual(mod._parse_meta(b"/tmp/CDS.log\x1f10\x1f42"), ("/tmp/CDS.log", 10, 42))
+            self.assertEqual(mod._parse_meta(b"no-separator"), (None, 0, 0))
+            self.assertEqual(mod._parse_meta(b"/p\x1fabc"), (None, 0, 0))
 
-    def test_read_delta_increment_and_clamp(self):
+    def test_read_range_offset_delta(self):
         for name, mod in MODULES:
-            mod._cursor_path = None
-            mod._cursor_offset = 0
             f = Path(tempfile.mkdtemp()) / "CDS.log"
             f.write_bytes(b"abc")
-            self.assertEqual(mod._read_delta(str(f), 2), "ab", name)
-            self.assertEqual(mod._read_delta(str(f), 3), "c", name)
-            # path switch resets
-            f2 = Path(tempfile.mkdtemp()) / "other.log"
-            f2.write_bytes(b"xy")
-            self.assertEqual(mod._read_delta(str(f2), 2), "xy", name)
-            # truncation / end < cursor must not raise
-            # truncated/rotated file resets the cursor and rereads from 0
-            mod._cursor_path = str(f2)
-            mod._cursor_offset = 100
-            self.assertEqual(mod._read_delta(str(f2), 50), "xy", name)
+            self.assertEqual(mod._read_range(str(f), 0, 2), ("ab", None), name)
+            self.assertEqual(mod._read_range(str(f), 2, 3), ("c", None), name)
+            # rotated/truncated file: start > size -> read current file from 0
+            self.assertEqual(mod._read_range(str(f), 100, 50), ("abc", None), name)
+            self.assertEqual(mod._read_range(str(f), -1, 99), ("abc", None), name)
+            self.assertEqual(mod._read_range("", 0, 10), ("", "CDS.log path unavailable"), name)
 
 
 if __name__ == "__main__":

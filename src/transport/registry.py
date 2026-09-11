@@ -78,7 +78,8 @@ class Route(BaseModel):
 
 
 class Expected(BaseModel):
-    ssh_host_key_fingerprint: str | None = None
+    ssh_host_key_fingerprint: str | None = None  # command host (probe endpoint)
+    ssh_endpoints: dict[str, str] = Field(default_factory=dict)  # per SSH endpoint
     daemon_endpoint_hostname: str | None = None
     daemon_user: str | None = None
     remote_python: str | None = None
@@ -91,6 +92,7 @@ class Deploy(BaseModel):
 class Ssh(BaseModel):
     backend: Literal["openssh", "paramiko"] = "openssh"
     max_sessions: int = Field(default=10, ge=1)
+    connection_budget: int = Field(default=16, ge=1)
     proxy: str | None = None
     control_master: str = "auto"
     tool_override: dict[str, str] = Field(default_factory=dict)
@@ -108,7 +110,7 @@ class CdsLog(BaseModel):
 
 
 class UserEntry(BaseModel):
-    token: str = Field(min_length=1, max_length=64)
+    token: str = Field(min_length=1, max_length=64, pattern=r"^[A-Za-z0-9._-]+$")
     mode: Literal["local", "remote"]  # required, no default
     route: Route = Field(default_factory=Route)
     expected: Expected = Field(default_factory=Expected)

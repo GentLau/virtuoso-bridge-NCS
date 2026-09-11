@@ -55,11 +55,11 @@ def _fingerprint_from_key_lines(lines: list[str]) -> str | None:
 
 
 def host_key_fingerprint(host: str, port: int = 22) -> str | None:
-    """Fingerprint for the target host, preferring recorded ``known_hosts``.
+    """Fingerprint for the target host from ``known_hosts`` only.
 
-    SSH aliases (e.g. ``wsl-gent``) may only exist in ``~/.ssh/config``; try
-    the alias, then its resolved hostname, in known_hosts before falling back
-    to ``ssh-keyscan``.
+    No TOFU: a fingerprint may only come from an already recorded and
+    matching known_hosts entry.  Missing entries make registration fail and
+    ask the user to establish trust out-of-band first.
     """
     candidates = [host]
     resolved = _ssh_config_hostname(host)
@@ -81,27 +81,7 @@ def host_key_fingerprint(host: str, port: int = 22) -> str | None:
             fp = _fingerprint_from_key_lines(key_lines)
             if fp:
                 return fp
-
-    for candidate in candidates:
-        try:
-            scan = subprocess.run(
-                ["ssh-keyscan", "-t", "ed25519,rsa", "-p", str(port), candidate],
-                capture_output=True, text=True, timeout=15,
-            ).stdout
-        except (OSError, subprocess.TimeoutExpired):
-            scan = ""
-        key_lines = [
-            ln for ln in scan.splitlines()
-            if "ssh-" in ln and not ln.startswith("#")
-        ]
-        if key_lines:
-            fp = _fingerprint_from_key_lines(key_lines)
-            if fp:
-                return fp
     return None
-
-
-# -- remote probes -----------------------------------------------------------
 
 def remote_hostname(runner: SSHRunner) -> str:
     """Remote hostname, preferring the fully-qualified name."""

@@ -183,6 +183,25 @@ class TestRegistrationServer(unittest.TestCase):
         self.assertEqual(entry.cdslog.log_level, "error")
         self.assertEqual(entry.runtime.thread_pool_size, 16)
 
+    def test_update_nested_three_segment_path(self):
+        self.registry.register("dave", UserEntry(token="tok-dave", mode="local"))
+        status, raw = self.srv.request(
+            "POST", "/api/user/dave/update",
+            {"spectre_host": "spectre-a", "spectre_bin": "/opt/spectre", "file_root": "/work/dave"},
+        )
+        self.assertEqual(status, 200, raw)
+        entry = self.registry.get("dave")
+        self.assertEqual(entry.route.spectre.host, "spectre-a")
+        self.assertEqual(entry.route.spectre.bin, "/opt/spectre")
+        self.assertEqual(entry.route.file.root, "/work/dave")
+
+    def test_update_invalid_value_keeps_old_entry(self):
+        self.registry.register("erin", UserEntry(token="tok-erin", mode="local"))
+        before = self.registry.get("erin").model_dump()
+        status, raw = self.srv.request("POST", "/api/user/erin/update", {"log_level": "bogus"})
+        self.assertEqual(status, 400)
+        self.assertEqual(self.registry.get("erin").model_dump(), before)
+
     def test_delete_unknown_user(self):
         status, raw = self.srv.request("DELETE", "/api/user/ghost", None)
         self.assertEqual(status, 404)

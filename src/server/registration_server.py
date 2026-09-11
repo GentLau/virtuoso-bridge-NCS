@@ -190,18 +190,26 @@ class RegistrationHandler(BaseHTTPRequestHandler):
             "spectre_bin": "route.spectre.bin",
             "file_root": "route.file.root",
         }
-        for key, target in direct.items():
-            if key not in fields:
-                continue
-            obj, attr = target.split(".")
-            getattr(getattr(entry, obj), attr)
-            setattr(getattr(entry, obj), attr, fields[key])
+        # transactional: mutate a deep copy; the live entry changes only after
+        # register(overwrite=True) persists the replacement successfully
+        candidate = entry.model_copy(deep=True)
         try:
-            self.server.registry.register(user, entry, overwrite=True)
+            for key, target in direct.items():
+                if key not in fields:
+                    continue
+                segments = target.split(".")
+                obj = candidate
+                for segment in segments[:-1]:
+                    obj = getattr(obj, segment)
+                attr = segments[-1]
+                setattr(obj, attr, fields[key])
+            # re-validate the whole candidate so bad values can never pollute
+            candidate = type(candidate).model_validate(candidate.model_dump())
+            self.server.registry.register(user, candidate, overwrite=True)
         except Exception as exc:  # noqa: BLE001
             self._send_json(400, {"error": "invalid update", "detail": str(exc)})
             return
-        self._send_json(200, {"user": user, "entry": entry.model_dump()})
+        self._send_json(200, {"user": user, "entry": candidate.model_dump()})
 
     def _handle_step(self, user: str, action: str) -> None:
         flow = self._flow(user)

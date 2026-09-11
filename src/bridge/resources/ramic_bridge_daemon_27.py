@@ -47,8 +47,6 @@ try:
 except Exception:
     virtuoso_pid = None
 
-_cursor_path = None
-_cursor_offset = 0
 _timeout_flag = False
 _watchdog = None
 
@@ -147,14 +145,18 @@ def _read_frame():
 
 def _parse_meta(payload):
     if _US_BYTE not in payload:
-        return None, 0
-    path_b, off_b = payload.split(_US_BYTE, 1)
-    path = path_b.decode("utf-8", "replace").strip().strip('"') or None
+        return None, 0, 0
+    parts = payload.split(_US_BYTE)
+    if len(parts) < 3:
+        return None, 0, 0
+    path = parts[0].decode("utf-8", "replace").strip().strip('"') or None
     try:
-        offset = int(off_b.decode("ascii", "ignore").strip() or "0")
+        start = int(parts[1].decode("ascii", "ignore").strip() or "0")
+        end = int(parts[2].decode("ascii", "ignore").strip() or "0")
     except ValueError:
-        offset = 0
-    return path, offset
+        start = 0
+        end = 0
+    return path, start, end
 
 
 def classify_level(line):
@@ -166,8 +168,6 @@ def classify_level(line):
 
 
 def _keep(level, line):
-    if "VB-BEGIN" in line or "VB-END" in line:
-        return True
     if level == "off":
         return False
     lvl = classify_level(line)
@@ -198,7 +198,7 @@ def filter_delta(raw, level, max_bytes):
     text = "\n".join(kept)
     if len(text.encode("utf-8")) <= max_bytes:
         return text, False
-    err_lines = [ln for ln in lines if "VB-BEGIN" in ln or "VB-END" in ln or classify_level(ln) == "error"]
+    err_lines = [ln for ln in lines if classify_level(ln) == "error"]
     err_text = "\n".join(err_lines)
     dropped = len(text.encode("utf-8")) - len(err_text.encode("utf-8"))
     note = "\n... [log truncated: error-only, %d bytes dropped]" % dropped
@@ -210,33 +210,27 @@ def filter_delta(raw, level, max_bytes):
     return _cap_with_note("\n".join(body), note, max_bytes), True
 
 
-def _read_delta(path, end_offset):
-    global _cursor_path, _cursor_offset
+def _read_range(path, start_offset, end_offset):
     if not path:
-        return ""
+        return "", "CDS.log path unavailable"
     try:
         size = os.path.getsize(path)
     except OSError:
-        _cursor_path = None
-        _cursor_offset = 0
-        return ""
-    if _cursor_path != path or size < _cursor_offset:
-        _cursor_path = path
-        _cursor_offset = 0
-    start = _cursor_offset
-    # clamp the requested end into the real file: malformed meta must never
-    # produce a negative read or move the cursor past EOF
+        return "", "CDS.log unreadable"
+    start = max(start_offset, 0)
     end = min(max(end_offset, 0), size)
+    if size < start:
+        # log rotated/truncated mid-request: read the current file from 0
+        start = 0
     if end < start:
-        return ""
+        end = start
     try:
         with open(path, "rb") as f:
             f.seek(start)
             data = f.read(end - start)
     except OSError:
-        return ""
-    _cursor_offset = end
-    return data.decode("utf-8", "replace")
+        return "", "CDS.log unreadable"
+    return data.decode("utf-8", "replace"), None
 
 
 def handle_connection(conn):
@@ -256,6 +250,7 @@ def handle_connection(conn):
         token = req.get("token")
         log_level = req.get("log_level", "all")
         log_max_bytes = int(req.get("log_max_bytes", 65536))
+        log_on = log_level != "off"
 
         if not DAEMON_TOKEN or token != DAEMON_TOKEN:
             _safe_sendall(conn, _B(NAK) + json.dumps({"error": "invalid token", "log": ""}).encode("utf-8") + _B(RS))
@@ -269,14 +264,15 @@ def handle_connection(conn):
             except IOError:
                 break
 
+        log_directive = "RBDLogOn=t " if log_on else "RBDLogOn=nil "
         if "\n" in skill_code:
             fd, tmp_il_path = tempfile.mkstemp(suffix=".il", prefix="vb_eval_")
             with os.fdopen(fd, "wb") as f:
                 f.write(("_vb_eval_result = progn(\n%s\n)\n" % skill_code).encode("utf-8"))
             escaped = tmp_il_path.replace("\\", "/")
-            send_code = 'load("%s") hiFlush() _vb_eval_result\n' % escaped
+            send_code = log_directive + ('load("%s") hiFlush() _vb_eval_result\n' % escaped)
         else:
-            send_code = 'let(((__vb_r %s)) hiFlush() __vb_r)\n' % skill_code
+            send_code = log_directive + ('let(((__vb_r %s)) hiFlush() __vb_r)\n' % skill_code)
 
         sys.stdout.write(send_code.encode("utf-8"))
         sys.stdout.flush()
@@ -286,7 +282,6 @@ def handle_connection(conn):
         _watchdog.start()
 
         frame1 = _read_frame()
-        frame2 = _read_frame()
 
         _timeout_flag = True
         if _watchdog:
@@ -296,17 +291,22 @@ def handle_connection(conn):
         value_payload = frame1[1:].decode("utf-8", "replace")
         ok = status_byte == STX
 
-        meta = _parse_meta(frame2[1:])
-        log_path, end_offset = meta
-        raw_delta = _read_delta(log_path, end_offset)
-        log_text, _truncated = filter_delta(raw_delta, log_level, log_max_bytes)
+        log_text = ""
+        warnings = []
+        if log_on:
+            frame2 = _read_frame()
+            meta = _parse_meta(frame2[1:])
+            log_path, start_offset, end_offset = meta
+            raw_delta, warn = _read_range(log_path, start_offset, end_offset)
+            if warn:
+                warnings.append(warn)
+            log_text, _truncated = filter_delta(raw_delta, log_level, log_max_bytes)
 
-        if ok:
-            payload = json.dumps({"value": value_payload, "log": log_text}, ensure_ascii=False)
-            _safe_sendall(conn, _B(STX) + payload.encode("utf-8") + _B(RS))
-        else:
-            payload = json.dumps({"error": value_payload, "log": log_text}, ensure_ascii=False)
-            _safe_sendall(conn, _B(NAK) + payload.encode("utf-8") + _B(RS))
+        resp = {"value" if ok else "error": value_payload, "log": log_text}
+        if warnings:
+            resp["warnings"] = warnings
+        payload = json.dumps(resp, ensure_ascii=False)
+        _safe_sendall(conn, _B(STX if ok else NAK) + payload.encode("utf-8") + _B(RS))
 
         _RB_CALLS += 1
         if not ok:

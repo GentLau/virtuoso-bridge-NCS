@@ -50,6 +50,7 @@ class RemoteClient:
             "control_master": entry.ssh.control_master or "auto",
             "tool_override": entry.ssh.tool_override or None,
             "control_identity": entry.token,  # per-token ControlMaster namespace
+            "connection_budget": entry.ssh.connection_budget,
         }
         self._runners: dict[str, SSHRunner] = {}
         self._parallel_runner: SSHRunner | None = None

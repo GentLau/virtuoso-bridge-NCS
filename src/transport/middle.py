@@ -29,6 +29,7 @@ class BusinessServer(Middle):
         self._clients: dict[str, RemoteClient] = {}
         self._skill_clients: dict[str, SkillClient] = {}
         self._capacity: dict[str, threading.BoundedSemaphore] = {}
+        self._local_locks: dict[str, threading.Lock] = {}
         self._lock = threading.Lock()
 
     # -- per-token state -----------------------------------------------------
@@ -39,8 +40,8 @@ class BusinessServer(Middle):
             raise LookupError(f"unknown token")
         return entry
 
-    def _targets(self, entry) -> ResolvedTargets:
-        return resolve(entry)
+    def _targets(self, entry, user: str | None = None) -> ResolvedTargets:
+        return resolve(entry, user=user)
 
     def _remote(self, token: str) -> RemoteClient:
         with self._lock:
@@ -48,7 +49,7 @@ class BusinessServer(Middle):
             if client is None:
                 entry = self._entry(token)
                 user = self.registry.user_of(token) or token
-                client = RemoteClient(entry, self._targets(entry), user)
+                client = RemoteClient(entry, self._targets(entry, user=user), user)
                 self._clients[token] = client
                 # Never replace a semaphore that _acquire() may already hold.
                 self._capacity.setdefault(
@@ -89,6 +90,15 @@ class BusinessServer(Middle):
         if sem is not None:
             sem.release()
 
+    def _local_lock(self, token: str) -> threading.Lock:
+        """Per-token serial lock for local run_command(parallel=False)."""
+        with self._lock:
+            lock = self._local_locks.get(token)
+            if lock is None:
+                lock = threading.Lock()
+                self._local_locks[token] = lock
+            return lock
+
     # -- three interfaces -----------------------------------------------------
 
     def execute_skill(self, skill_code: str, timeout: float | None = None, *, token: str) -> VirtuosoResult:
@@ -121,7 +131,10 @@ class BusinessServer(Middle):
                 return CommandResult(returncode=1, stdout="", stderr="thread pool exceeded")
             acquired = True
             if entry.mode == "local":
-                return self._local_command(cmd, timeout)
+                if parallel:
+                    return self._local_command(cmd, timeout)
+                with self._local_lock(token):
+                    return self._local_command(cmd, timeout)
             return self._remote(token).run_command(cmd, timeout=timeout, parallel=parallel)
         except LookupError as exc:
             return CommandResult(returncode=1, stdout="", stderr=str(exc))

@@ -176,9 +176,19 @@ def _probe_remote_with_runner(
     if not runner.test_connection():
         raise RegistrationProbeError(f"ssh unreachable: {host}")
 
-    fingerprint = probes.host_key_fingerprint(host)
-    if not fingerprint:
-        raise RegistrationProbeError(f"cannot obtain SSH host key fingerprint for {host}")
+    endpoint_hosts = list(dict.fromkeys(
+        h for h in (host, request.resolved_daemon_host, request.spectre_host) if h
+    ))
+    endpoint_fingerprints: dict[str, str] = {}
+    for endpoint_host in endpoint_hosts:
+        fp = probes.host_key_fingerprint(endpoint_host)
+        if not fp:
+            raise RegistrationProbeError(
+                f"cannot obtain SSH host key fingerprint for {endpoint_host} "
+                f"(add it to known_hosts out-of-band first)"
+            )
+        endpoint_fingerprints[endpoint_host] = fp
+    fingerprint = endpoint_fingerprints[host]
 
     hostname = probes.remote_hostname(runner)
     if not hostname:
@@ -241,6 +251,7 @@ def _probe_remote_with_runner(
     entry.route.jump.host = request.jump_host
     entry.route.jump.user = request.jump_user
     entry.expected.ssh_host_key_fingerprint = fingerprint
+    entry.expected.ssh_endpoints = endpoint_fingerprints
     entry.expected.daemon_endpoint_hostname = hostname
     entry.expected.daemon_user = daemon_user
     entry.expected.remote_python = python_cmd
@@ -363,14 +374,19 @@ def test_connectivity(entry: UserEntry, user: str) -> ConnectivityReport:
             detail.append(f"command={cmd.returncode}:{cmd.stderr.strip()}")
         skill = skill_client.execute_skill("1+1")
     else:
-        expected_fp = entry.expected.ssh_host_key_fingerprint
         daemon_host = entry.route.skill.daemon_host or entry.route.command.host
-        current_fp = probes.host_key_fingerprint(daemon_host)
-        fingerprint_ok = (not expected_fp) or (current_fp == expected_fp)
-        if expected_fp and not fingerprint_ok:
-            detail.append(
-                f"host key fingerprint mismatch: current={current_fp} expected={expected_fp}"
-            )
+        expected_endpoints = entry.expected.ssh_endpoints or {}
+        if not expected_endpoints and entry.expected.ssh_host_key_fingerprint:
+            expected_endpoints = {daemon_host: entry.expected.ssh_host_key_fingerprint}
+        fingerprint_ok = True
+        for endpoint_host, expected_fp in expected_endpoints.items():
+            current_fp = probes.host_key_fingerprint(endpoint_host)
+            if expected_fp and current_fp != expected_fp:
+                fingerprint_ok = False
+                detail.append(
+                    f"host key fingerprint mismatch for {endpoint_host}: "
+                    f"current={current_fp} expected={expected_fp}"
+                )
 
         command_runner = SSHRunner(
             entry.route.command.host or daemon_host,

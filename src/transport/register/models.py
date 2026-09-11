@@ -23,7 +23,11 @@ _DEFAULT_SCRATCH = "~/.virtuoso-bridge"
 class RegistrationRequest(BaseModel):
     """Step 1 application: required parameters submitted by the user."""
 
-    user: str = Field(min_length=1, max_length=64)
+    user: str = Field(
+        min_length=1,
+        max_length=64,
+        pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]*$",
+    )
     token: str | None = Field(default=None, pattern=r"^[A-Za-z0-9._-]{1,64}$")
     host: str | None = None               # remote SSH host (command/file host)
     ssh_user: str | None = None           # remote SSH account
@@ -69,6 +73,9 @@ class RegistrationRequest(BaseModel):
                 raise ValueError("host is required in remote mode")
             if not self.ssh_user:
                 raise ValueError("ssh_user is required in remote mode")
+        user = self.user or ""
+        if user.startswith(("/", "\\")) or "/" in user or "\\" in user or ".." in user:
+            raise ValueError("user must be a single path segment (no '/', '\\', '..', absolute path)")
         return self
 
     @property

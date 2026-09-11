@@ -23,7 +23,9 @@
 | [05-cdslog-incremental-read-options.md](05-cdslog-incremental-read-options.md) | CDS.log 增量：API 调研结论与三个简单实时跟随方案 | 任务 2 |
 | [04-log-return-system-proposal.md](04-log-return-system-proposal.md) | 日志返回体系：同步 SKILL 捕获、异步 run observer、事件/工件协议 | 任务 2 + 重构落地 |
 | [03-rebuild-key-technical-points.md](03-rebuild-key-technical-points.md) | 重构架构、关键风险、接口草案、测试与实施路线 | 任务 3 |
+| [05-concurrency-network-key-background.md](05-concurrency-network-key-background.md) | SSH 端口转发、常驻/临时连接、并发与网络基础 | 并发设计背景 |
 | [06-crypto-sign-encrypt-basics.md](06-crypto-sign-encrypt-basics.md) | 密码学地基：签名/加密分工、混合加密性能、先验签后解密原则 | 未来安全加固 |
+| [07-random-name-generation.md](07-random-name-generation.md) + [random-name-generator.html](random-name-generator.html) | HTML 随机英文名：三种业内方案、无偏随机抽样、三词拼接与混成词算法（含可直接运行的单文件 HTML） | 通用前端零件 |
 | [three-interface-report.md](three-interface-report.md) | 已存在的 CLI/MCP/Harness 单注册表研究，不属于本次改写范围 | 相关基础设施 |
 
 ## 证据等级与来源

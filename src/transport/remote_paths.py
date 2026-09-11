@@ -13,12 +13,24 @@ def scratch_root(root: str | None = None) -> str:
     return value.rstrip("/")
 
 
+def _valid_user_segment(user: str) -> None:
+    if (
+        not user
+        or user.startswith(("/", "\\"))
+        or "/" in user
+        or "\\" in user
+        or ".." in user
+    ):
+        raise ValueError(f"user must be a single path segment: {user!r}")
+
+
 def user_dir(user: str, root: str | None = None) -> str:
     """User-visible remote directory keyed by the (unique) username.
 
     Tokens are only used for routing/verification, never in user-visible
     paths (see the multi-user design).
     """
+    _valid_user_segment(user)
     return posixpath.join(scratch_root(root), user)
 
 

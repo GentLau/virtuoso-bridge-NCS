@@ -57,19 +57,18 @@ class TestFoundations(unittest.TestCase):
         self.assertEqual(legacy.status, ExecutionStatus.ERROR)
 
     def test_daemon_cdslog_filter(self):
-        raw = "\\o output\n\\w warn\n\\e error line\nVB-BEGIN\nVB-END\n"
+        raw = "\\o output\n\\w warn\n\\e error line\n"
         self.assertEqual(classify_level("\\e x"), "error")
         text, trunc = filter_delta(raw, "error", 100)
         self.assertIn("error line", text)
         self.assertNotIn("warn", text)
-        self.assertIn("VB-BEGIN", text)
         self.assertFalse(trunc)
 
         text2, trunc2 = filter_delta(raw, "all", 5)
         self.assertTrue(trunc2)
         self.assertLessEqual(len(text2.encode("utf-8")), 5)  # byte-level hard cap
 
-        self.assertEqual(_parse_meta(b"/tmp/CDS.log\x1f42"), ("/tmp/CDS.log", 42))
+        self.assertEqual(_parse_meta(b"/tmp/CDS.log\x1f10\x1f42"), ("/tmp/CDS.log", 10, 42))
 
 
 class TestSkillClientMore(unittest.TestCase):

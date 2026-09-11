@@ -1,10 +1,24 @@
 # virtuoso-bridge-NCS Spec
 
-> 版本：Draft v2  
-> 日期：2026-09-10
-> 状态：已冻结；接口基线（冲突时仍以文件修改时间更晚为准，且接口细节只索引不复制）。
-> **版本治理（已定）**：本目录内文档冲突时，以**文件修改时间更晚**的为准；接口基线唯一为《三层整体架构设计》第 4 节；《日志返回设计标准》是其专项扩展；《核心修改设计》只索引设计文档，不重复定义。
-> 接口基线：[三层整体架构设计](design-concepts/总览/三层整体架构设计.md) 第 4 节；CDS.log 请求与回包扩展见[日志返回设计标准](design-concepts/底层与中层/日志返回设计标准.md)。
+> 版本：Draft v3
+> 日期：2026-09-11
+> 状态：已冻结（本版验收基线）
+
+## 0. 版本治理（替代“文件修改时间优先”）
+
+本目录不用文件 mtime 判优先级。冲突消解遵循以下确定性规则：
+
+1. **Normative（唯一规范源）**：只有下列文件是正式规范，且每个主题只有一个 owner；
+   - 分层/接口/错误总则：[三层整体架构设计](design-concepts/总览/三层整体架构设计.md)（第 4 节为接口唯一基线）
+   - 配置与注册输入目录：[配置一览](design-concepts/总览/配置一览.md)
+   - 多用户/注册/token：[多用户设计](design-concepts/底层与中层/多用户设计.md)
+   - 并发/SSH/线程池：[并发处理设计](design-concepts/底层与中层/并发处理设计.md)
+   - CDS.log 返回：[日志返回设计标准](design-concepts/底层与中层/日志返回设计标准.md)
+2. **Informative（只索引/摘要，不定义）**：[核心修改设计](design-concepts/总览/核心修改.md)、[demo](demo/README.md)。
+3. **Historical / Non-normative（历史对照，无规范效力）**：[改动报告](design-concepts/总览/改动报告.md)、[代码梳理](design-concepts/底层与中层/代码梳理.md) 及其中的“旧实现/双轨期/迁移阶段”描述；它们不得推翻 Normative。
+4. **Research**：[research](research/README.md)，仅作背景知识。
+5. 主题冲突时只认其 Normative owner；其余副本若与 owner 不一致，一律以 owner 为准。
+6. 版本变更必须记录 `Supersedes`（替换了哪份/哪节）。
 
 ## 目标
 
@@ -27,58 +41,56 @@
 
 ## 文档
 
-| 文件 | 内容 |
-|---|---|
-| [三层整体架构设计](design-concepts/总览/三层整体架构设计.md) | **当前架构与接口基线**：总述、整体结构、层次职责、上层↔中层及中层↔daemon.py 接口 |
-| [配置一览](design-concepts/总览/配置一览.md) | 本地/远端全部配置，以及配置跟随用户 |
-| [核心修改设计](design-concepts/总览/核心修改.md) | 五项核心修改：并行、token、注册表替换 profile、脱离环境变量、CDSlog 增量返回 |
-| [改动报告](design-concepts/总览/改动报告.md) | 中层与底层按五项修改的改动位置、工作量、如何改与实施顺序 |
-| [design-concepts/底层与中层/多用户设计.md](design-concepts/底层与中层/多用户设计.md) | Token 寻址与路由：用户注册、注册表、中层按 token 投送、上层无感 |
-| [当前底层与中层代码梳理](design-concepts/底层与中层/代码梳理.md) | 现状执行机制、功能清单，以及保留/删除/改造的判定 |
-| [日志返回设计标准](design-concepts/底层与中层/日志返回设计标准.md) | CDS.log 增量返回、实现点、分级过滤与限长降级的唯一设计标准 |
-| [design-concepts/底层与中层/并发处理设计.md](design-concepts/底层与中层/并发处理设计.md) | 并发模型详解：进程隔离、GIL 与 I/O 等待、单通道串行机制、并发安全纪律 |
-| [research/README.md](research/README.md) | Virtuoso 数据模型、TB、日志和重构技术调研 |
-| [demo/README.md](demo/README.md) | 新功能独立最小验证：注册 + token 路由 + 并行的完整业务模拟，以及 CDS.log 增量 |
-| [demo/TB测试场景验证报告.md](demo/TB测试场景验证报告.md) | 8 个 TB 场景的实测数据与验证结论（复用 `tb_scenario_report.py`） |
-
+| 类别 | 文件 | 内容 |
+|---|---|---|
+| Normative | [三层整体架构设计](design-concepts/总览/三层整体架构设计.md) | 分层、职责、接口唯一基线、错误总则 |
+| Normative | [配置一览](design-concepts/总览/配置一览.md) | 全部配置 + 注册可提交参数目录 + 每用户隔离 |
+| Normative | [多用户设计](design-concepts/底层与中层/多用户设计.md) | 六步注册、token 寻址/校验、路由与授权 |
+| Normative | [并发处理设计](design-concepts/底层与中层/并发处理设计.md) | 并发模型、每 token×endpoint SSH、线程池/channel/建连预算 |
+| Normative | [日志返回设计标准](design-concepts/底层与中层/日志返回设计标准.md) | CDS.log 增量返回唯一口径（offset 定界、分级、限长） |
+| Informative | [核心修改设计](design-concepts/总览/核心修改.md) | 五项修改的索引/摘要，不重复定义 |
+| Historical | [改动报告](design-concepts/总览/改动报告.md) | 重构前对照与历史迁移，Non-normative |
+| Historical | [代码梳理](design-concepts/底层与中层/代码梳理.md) | 旧执行机制梳理，Non-normative |
+| Research | [research/README.md](research/README.md) | Virtuoso/TB/日志/并发背景调研 |
+| Demo | [demo/README.md](demo/README.md) | 脱钩最小验证（Informative，不复刻正式口径） |
 
 ## 独立 Demo
 
-`demo/` 是与当前实现脱钩的最小参考验证目录。它只使用 Python 标准库，
-不读取 `.env`，不连接 SSH/Virtuoso；运行方式和验收口径见
-[demo/README.md](demo/README.md)。截至 **2026-09-09**，`full_demo.py` 收拢
-注册多用户、token 到端口路由、同用户串行/并行（`run_command` 用 pwsh 模拟，
-`execute_skill` 到达端口即成功），`cdslog_demo.py` 单独验证 CDS.log 增量
-算法；8 个 TB 场景的实测数据与验证结论见 [demo/TB测试场景验证报告.md](demo/TB测试场景验证报告.md)。
+`demo/` 是与当前实现脱钩的最小参考验证目录，只使用 Python 标准库。其演示口径不构成正式规范；当前 offset 定界的正式规则见[日志返回设计标准](design-concepts/底层与中层/日志返回设计标准.md)。
 
 ## 本版已经决定的事项
 
-1. 中层对上只承诺三个**操作接口**：
-   - `Skill`：向 Virtuoso CIW 执行 SKILL；
-   - `RunCommand`：在业务服务器的命令环境执行命令行；
-   - `File`：在上层所在机器与业务服务器之间传输/管理文件。
-2. 底层 daemon 只处理 `Skill`；普通 shell 命令、Spectre、`spiceIn`、`strmOut` 等命令行工具都由中层的 `RunCommand` 执行。
-3. 上层不读取 `VB_*`、不判断 local/SSH、不创建 SSH/Paramiko/subprocess/socket，也不解析底层 STX/NAK/RS 协议。
-4. 上层使用逻辑 `ServerPath` 表示业务服务器路径；实际 host、jump、role、tunnel 和共享目录由中层解析。
-5. 所有调用采用端到端 deadline；中层不得在内部阶段重新开始完整 timeout。
-6. 普通命令的非零退出码是结构化结果，不是传输异常；传输异常、超时和路径不可见必须可区分。
-7. runtime 在创建时可以选择逻辑 `purpose`（例如 `business`/`spectre`），由中层映射到角色主机；每次业务调用仍不接触物理 host。
-8. 不保留旧项目兼容：`profile`/`VB_*`/`.env` 与相关适配层已彻底删除；新用户只按六步注册流程创建 registry 条目。
+1. 中层对上只承诺三个**操作接口**：`Skill`、`RunCommand`、`File`；`token` 是每次调用的必填关键字参数。
+2. 底层 daemon 只处理 `Skill`；shell 命令与文件传输全部由中层执行。
+3. 上层不读 `VB_*`/`.env`、不判断 local/SSH、不创建 SSH/socket，也不解析 STX/NAK/RS 协议。
+4. 上层使用逻辑 `ServerPath`；实际 host/jump/role/tunnel 由中层按 registry 路由解析。
+5. 所有调用采用端到端 deadline；中层子阶段只继承剩余预算。
+6. 命令非零退出码是结构化结果；transport 失败、超时、路径不可见、结果未知必须可区分（见三层架构 §4.4 错误总则）。
+7. token 是对称共享授权票：部署注入 il/daemon，CIW load 时目视确认；缺失/不匹配一律 NAK 且 SKILL 零接触。
+8. 不保留旧项目兼容：`profile`/`VB_*`/`.env` 已删除，双轨期已结束；新用户只走六步注册。
 
-## 本版尚未决定的事项
+## 本版明确不支持（非目标）
 
-- v1 的 `RunCommand` 保持 shell 字符串接口；argv/无 shell 模式作为 v2 扩展。
-- v1 先提供同步 `run_command`；长任务通过上层生成 marker/log 后轮询，专用异步 command handle 作为后续扩展。
-- Spectre 本版仅固化 `route.spectre.host/bin`，不实现 purpose 路由；`RuntimePurpose` 枚举与路径共享规则作为后续扩展，新增 purpose 仍不能暴露物理 host。
-- 正式认证已定：本版使用对称 token（il 注入 + load 目视确认）；非对称签名不在本版，未来若 daemon 脱离 SSH 隧道直连再评估。
+以下能力**不在本版范围**，遇到时按括号内行为处理，不得静默降级：
+
+- **purpose 路由 / Spectre 业务消费入口**：不提供 `purpose` 参数；`route.spectre.host/bin` 仅作为注册期固化、留给后续版本的字段，本版业务调用不会路由到它。
+- **GUI/deploy 独立 role**：不提供 `gui_host`/`deploy_host`；daemon 与 GUI 同主机，deploy 目标即 daemon 主机。
+- **无 token 旧客户端/旧 il**：不支持，请求缺 token 直接报错、daemon 侧 NAK。
+- **非对称签名/HMAC**：本版 token 是对称 ticket，非对称认证留给后续。
+- **`request_id`**：不引入；daemon 同一时刻只有一个 in-flight 请求。
+- **argv/无 shell 命令模式、异步 command handle**：`RunCommand` 为同步 shell 字符串；长任务由上层 marker/轮询实现。
+- **split-host 的 CDS.log**：日志增量仅支持 daemon 与 CDS.log 同主机。
+- **全量日志 parser / push stream / 日志数据库**：只做同步增量返回。
+- **文件空间安全沙箱**：`route.file.root` 是默认工作目录，不是沙箱（见三层架构 §5.6）。
 
 ## 评审重点
 
 后续评审应优先检查：
 
-- 上层是否能够完全用 fake middle 做单元测试；
-- `Skill` 与 `RunCommand` 是否真正分离，是否存在把 `csh/system` 偷渡进底层的路径；
+- 上层能否完全用 fake middle 做单元测试；
+- `Skill` 与 `RunCommand` 是否真正分离；
 - local/SSH/split-host 是否只影响中层；
 - 文件上传是否有原子落盘、校验和和路径可见性保证；
 - 同一 Virtuoso CIW 的写操作是否串行；
+- `log=off` 是否从 IL 源头不 flush/不读文件、不向 CDS.log 注入任何输出；
 - 失败时是否能得到明确的 transport/command/skill/file 证据。

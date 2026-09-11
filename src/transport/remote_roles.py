@@ -30,7 +30,7 @@ class ResolvedTargets:
     scratch_root: str
 
 
-def resolve(entry: UserEntry) -> ResolvedTargets:
+def resolve(entry: UserEntry, user: str | None = None) -> ResolvedTargets:
     r = entry.route
     scratch = entry.deploy.scratch_root or "~/.virtuoso-bridge"
     daemon_host = r.skill.daemon_host or "127.0.0.1"
@@ -41,7 +41,8 @@ def resolve(entry: UserEntry) -> ResolvedTargets:
     command_host = r.command.host or daemon_host
     command_user = r.command.user or daemon_user
     file_host = r.file.host or command_host
-    file_root = r.file.root or f"{scratch}/{entry.token}"
+    # default file root is keyed by the unique username, never by token
+    file_root = r.file.root or (f"{scratch}/{user}" if user else f"{scratch}/{entry.token}")
     spectre_host = r.spectre.host or command_host
 
     return ResolvedTargets(

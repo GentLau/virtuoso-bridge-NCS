@@ -167,6 +167,16 @@ class TestProbeFailureBranches(unittest.TestCase):
                 pass
             return probe_user, runner
 
+    def test_user_path_escape_rejected(self):
+        from transport.register.models import RegistrationRequest
+        from pydantic import ValidationError
+        for bad in ("../escape", "/tmp/escape", "a/b", "a..b", ".", ".."):
+            with self.assertRaises(ValidationError):
+                RegistrationRequest(user=bad, local=True)
+        for good in ("alice", "vb01", "a.b-c_d"):
+            req = RegistrationRequest(user=good, local=True)
+            self.assertEqual(req.user, good)
+
     def test_local_port_busy(self):
         from transport.register import probe_user
         import socket

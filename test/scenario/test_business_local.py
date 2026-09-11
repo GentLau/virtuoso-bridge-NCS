@@ -161,6 +161,37 @@ class TestBusinessLocal(unittest.TestCase):
         self.assertEqual(c.returncode, 124)
         self.assertIn("timed out", c.stderr)
 
+    def test_local_default_serial_and_explicit_parallel(self):
+        py = sys.executable
+        cmd = f'"{py}" -c "import time; time.sleep(0.4)"'
+
+        def run(parallel: bool, out: dict, key: str) -> None:
+            out[key] = self.server.run_command(cmd, token="tok-a", parallel=parallel).returncode
+
+        serial = {}
+        t0 = time.time()
+        ts = [threading.Thread(target=run, args=(False, serial, 1)),
+              threading.Thread(target=run, args=(False, serial, 2))]
+        for th in ts:
+            th.start()
+        for th in ts:
+            th.join()
+        serial_elapsed = time.time() - t0
+        self.assertEqual(set(serial.values()), {0})
+        # default parallel=False must hold the per-token serial lock
+        self.assertGreaterEqual(serial_elapsed, 0.8)
+
+        parallel = {}
+        t0 = time.time()
+        ts = [threading.Thread(target=run, args=(True, parallel, 1)),
+              threading.Thread(target=run, args=(True, parallel, 2))]
+        for th in ts:
+            th.start()
+        for th in ts:
+            th.join()
+        self.assertEqual(set(parallel.values()), {0})
+        self.assertLess(time.time() - t0, 0.7)
+
     def test_parallel_commands_overlap(self):
         py = sys.executable
         results: dict[int, tuple[float, float]] = {}
