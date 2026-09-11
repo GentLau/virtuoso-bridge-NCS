@@ -130,11 +130,16 @@ class TestLiveE2E(unittest.TestCase):
         state = flow.verify()
         self.assertEqual(state.stage, "committed", str(state.errors) + str(state.report))
 
-        # 5. skill returns value + log
-        r = server.execute_skill("1+1", token=token)
+        # 5. skill returns value + log: the bridge never injects CDS.log
+        #    output, so write one user line and assert the [start,end) delta
+        #    captures exactly that request's own output
+        marker = f"vb-e2e-log-{token}"
+        r = server.execute_skill(
+            f'progn(hiPrintToLogFile("{marker}") 1+1)', token=token
+        )
         self.assertTrue(r.ok, str(r))
         self.assertEqual(r.output.strip().strip('"'), "2")
-        self.assertTrue(r.log)
+        self.assertIn(marker, r.log)
 
         # 6. command
         c = server.run_command("echo vb-ok", token=token)
