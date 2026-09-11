@@ -78,6 +78,41 @@ class Handler(BaseHTTPRequestHandler):
                 )
                 self._send(200, {"returncode": c.returncode, "stdout": c.stdout, "stderr": c.stderr})
                 return
+            if path == "/api/composite":
+                token = body["token"]
+                seq = str(body.get("seq", "0"))
+                delay_ms = float(body.get("delay_ms", 0))
+                token_owner = middle.registry.user_of(token) or token
+                entry = middle.registry.by_token(token)
+                if entry is None:
+                    self._send(400, {"error": "unknown token"})
+                    return
+                import time as _time
+                payload = (token + seq).encode() * 2048
+                src = Path(tempfile.mkdtemp()) / "p.bin"
+                src.write_bytes(payload)
+                remote = f"{entry.deploy.scratch_root}/composite-{token_owner}-{seq}.bin"
+                up = middle.upload_file(src, remote, token=token)
+                _time.sleep(delay_ms / 1000.0)
+                sk = middle.execute_skill("RBDToken", token=token)
+                _time.sleep(delay_ms / 1000.0)
+                cmd = f"echo composite-{seq}; sleep {0.1 + (float(seq[-2:]) % 40) / 100.0}"
+                cm = middle.run_command(cmd, token=token)
+                back = Path(tempfile.mkdtemp()) / "out.bin"
+                dn = middle.download_file(remote, back, token=token)
+                sha_ok = back.exists() and hashlib.sha256(back.read_bytes()).hexdigest() == hashlib.sha256(payload).hexdigest()
+                self._send(200, {
+                    "upload_rc": up.returncode,
+                    "skill_ok": sk.ok,
+                    "skill_out": sk.output,
+                    "skill_log": sk.log,
+                    "command_rc": cm.returncode,
+                    "command_out": cm.stdout,
+                    "download_rc": dn.returncode,
+                    "sha_ok": sha_ok,
+                    "ok": up.returncode == 0 and sk.ok and cm.returncode == 0 and dn.returncode == 0 and sha_ok,
+                })
+                return
             self._send(404, {"error": "not found"})
         except KeyError:
             self._send(400, {"error": "token is required"})
