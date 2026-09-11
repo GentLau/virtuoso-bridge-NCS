@@ -73,7 +73,7 @@ procedure(RBIpcDataHandler(ipcId data)
   ; flush, no fileLength, no meta frame).  When RBDLogOn is t, we flush
   ; the existing buffer and capture the byte offsets around the SKILL
   ; execution, then send one meta frame: STX + path + US + start + US + end + RS.
-    let((result lp lo_start lo_end)
+    let((result lp lo_start lo_end frames)
     when(RBEcho printf("[RAMIC Bridge (%L)] receive:%L\n" ipcId data))
     lp = "" lo_start = 0 lo_end = 0
     when(RBDLogOn
@@ -82,18 +82,22 @@ procedure(RBIpcDataHandler(ipcId data)
     )
     if(errset(result=evalstring(strcat("(progn " data ")"))) then
         ; Success: STX + %L value + RS
-        ipcWriteProcess(ipcId sprintf(nil "%c%L%c" intToChar(2) result intToChar(30)))
+        frames = sprintf(nil "%c%L%c" intToChar(2) result intToChar(30))
         when(RBEcho printf("[RAMIC Bridge (%L)] return:%L\n" ipcId result))
     else
         ; Error: NAK + payload，不打印 CIW
-        ipcWriteProcess(ipcId sprintf(nil "%c%L%c" intToChar(21) errset.errset intToChar(30)))
+        frames = sprintf(nil "%c%L%c" intToChar(21) errset.errset intToChar(30))
     )
     when(RBDLogOn
         errset(hiFlushLogFile())
         errset(progn(lp = hiGetLogFileName() lo_end = fileLength(lp)))
-        ipcWriteProcess(ipcId sprintf(nil "%c%s%c%d%c%d%c"
-            intToChar(2) lp intToChar(31) lo_start intToChar(31) lo_end intToChar(30)))
+        frames = strcat(frames
+            sprintf(nil "%c%s%c%d%c%d%c"
+                intToChar(2) lp intToChar(31) lo_start intToChar(31) lo_end intToChar(30)))
     )
+    ; value frame and log-meta frame must arrive as ONE ipc write, otherwise
+    ; CIW buffering can reorder the two frames under load
+    ipcWriteProcess(ipcId frames)
   )
 )
 
