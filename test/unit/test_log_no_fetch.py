@@ -14,8 +14,10 @@ class TestLogOffNoFetch(unittest.TestCase):
         il = (RES / "ramic_bridge.il").read_text(encoding="utf-8")
         self.assertNotIn('hiPrintToLogFile("VB-BEGIN")', il)
         self.assertNotIn('hiPrintToLogFile("VB-END")', il)
-        # every flush/fileLength/meta-frame send is gated by RBDLogOn
-        self.assertIn("when(RBDLogOn", il)
+        # every flush/fileLength/meta-frame send is gated by log_on
+        # (log_on is parsed from the per-request "RBDLogOn=t" directive)
+        self.assertIn("when(log_on", il)
+        self.assertIn("hiFlushLogFile()", il)
 
     def test_daemons_gate_meta_frame_on_log_on(self):
         for name in ("ramic_bridge_daemon_3.py", "ramic_bridge_daemon_27.py"):
