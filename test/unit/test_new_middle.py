@@ -18,12 +18,13 @@ class TestNewMiddle(unittest.TestCase):
         self.wd = set_working_dir(Path(tempfile.mkdtemp()))
 
     def test_remote_paths_structure(self):
-        p = user_dir("alice", "/tmp/root")
-        self.assertEqual(str(p).replace("\\", "/"), "/tmp/root/alice")
-        self.assertIn("ramic", str(il_path("alice", "/tmp/root")))
-        self.assertIn("setup", str(setup_il_path("alice", "/tmp/root")))
-        self.assertIn("status", str(identity_path("alice", "/tmp/root")))
-        self.assertIn("ramic_bridge_daemon_3.py", str(daemon_path("alice", 3, "/tmp/root")))
+        root = "/tmp/root/alice"
+        p = user_dir("alice", root)
+        self.assertEqual(str(p).replace("\\", "/"), root)
+        self.assertIn("ramic", str(il_path("alice", root)))
+        self.assertIn("setup", str(setup_il_path("alice", root)))
+        self.assertIn("status", str(identity_path("alice", root)))
+        self.assertIn("ramic_bridge_daemon_3.py", str(daemon_path("alice", 3, root)))
 
     def test_setup_il_globals(self):
         text = generate_setup_il("/r/ramic_daemon.py", "/r/ramic_bridge.il", "python3", 65081, "tok-1", "/s/id.txt")

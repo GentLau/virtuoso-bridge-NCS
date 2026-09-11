@@ -118,7 +118,7 @@ class RemoteClient:
             user=self.user,
             scratch_root=self.targets.scratch_root,
             python_major=python_major,
-            python_cmd=self.entry.expected.remote_python or "python3",
+            python_cmd=self.entry.environment.remote_python or "python3",
             port=self.targets.skill_port,
             local=self._is_local,
         )

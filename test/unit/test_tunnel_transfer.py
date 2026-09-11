@@ -70,7 +70,7 @@ def make_entry(**kwargs):
     entry.route.command.host = kwargs.get("command_host", "daemon-a")
     entry.route.file.host = kwargs.get("file_host", "daemon-a")
     entry.expected.daemon_user = "alice"
-    entry.expected.remote_python = "python3"
+    entry.environment.remote_python = "python3"
     entry.deploy.scratch_root = "/home/alice/.virtuoso-bridge"
     entry.runtime.channel_budget = kwargs.get("channel_budget", 10)
     return entry

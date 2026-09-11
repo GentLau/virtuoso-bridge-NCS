@@ -38,7 +38,7 @@ class RegistrationRequest(BaseModel):
     scratch_root: str = _DEFAULT_SCRATCH  # deploy root
     jump_host: str | None = None
     jump_user: str | None = None
-    local: bool = False                   # explicit local mode
+    mode: Literal["local", "remote"]      # mandatory; never inferred
 
     # runtime / transport / log policies (optional; defaults live in UserEntry)
     ssh_backend: Literal["openssh", "paramiko"] | None = None
@@ -53,18 +53,6 @@ class RegistrationRequest(BaseModel):
     log_max_bytes: int | None = Field(default=None, ge=1)
     spectre_host: str | None = None
     spectre_bin: str | None = None
-
-    @property
-    def mode(self) -> str:
-        """local / remote, resolved per the registration spec."""
-        if self.local:
-            return "local"
-        daemon = (self.daemon_host or self.host or "").strip().lower()
-        if daemon in _LOCAL_HOSTS:
-            return "local"
-        if not self.host and not self.ssh_user and not self.jump_host:
-            return "local"
-        return "remote"
 
     @model_validator(mode="after")
     def _check_remote_required(self):

@@ -188,7 +188,7 @@ class RegistrationHandler(BaseHTTPRequestHandler):
             "log_max_bytes": "cdslog.log_max_bytes",
             "spectre_host": "route.spectre.host",
             "spectre_bin": "route.spectre.bin",
-            "file_root": "route.file.root",
+            "scratch_root": "deploy.scratch_root",
         }
         # transactional: mutate a deep copy; the live entry changes only after
         # register(overwrite=True) persists the replacement successfully

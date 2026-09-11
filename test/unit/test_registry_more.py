@@ -101,7 +101,7 @@ class TestRegistryMore(unittest.TestCase):
     def test_model_dump_has_no_runtime_state(self):
         entry = UserEntry(token="t", mode="remote")
         keys = set(entry.model_dump().keys())
-        self.assertEqual(keys, {"token", "mode", "route", "expected", "deploy", "ssh", "runtime", "cdslog", "registered_at"})
+        self.assertEqual(keys, {"token", "mode", "route", "expected", "environment", "deploy", "ssh", "runtime", "cdslog", "registered_at"})
 
 
 if __name__ == "__main__":

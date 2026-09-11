@@ -256,6 +256,18 @@ def local_user() -> str:
     return getpass.getuser()
 
 
+def local_executable_exists(path: str) -> bool:
+    """Validate a user-provided local executable (bare name or absolute path)."""
+    if not path:
+        return False
+    import shutil as _shutil
+    import os as _os
+    resolved = _shutil.which(path) if ("/" not in path and "\\" not in path) else path
+    if not resolved:
+        return False
+    return _os.path.isfile(resolved) and _os.access(resolved, _os.X_OK)
+
+
 def local_python() -> tuple[str, int]:
     return sys.executable, 2 if sys.version_info.major == 2 else 3
 

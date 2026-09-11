@@ -61,7 +61,7 @@ class TestRegistrationMockServer(unittest.TestCase):
     def apply(self, user="alice"):
         status, data = self.srv.request("POST", "/api/register/apply", {
             "user": user,
-            "local": True,
+            "mode": "local",
         })
         self.assertEqual(status, 200)
         self.assertEqual((data["stage"], data["step"]), ("applied", 1))
@@ -81,6 +81,10 @@ class TestRegistrationMockServer(unittest.TestCase):
         self.assertEqual(self.step(user, "probe")["stage"], "probed")
         data = self.step(user, "deploy")
         self.assertEqual(data["stage"], "deployed")
+        self.assertIn("entry", data)
+        self.assertNotIn("resolved", data)
+        self.assertTrue(data["entry"]["expected"]["remote_python"])
+        self.assertTrue(data["entry"]["route"]["file"]["root"])
         return data
 
     def test_page_is_production_ui_with_mock_controller(self):
@@ -90,6 +94,10 @@ class TestRegistrationMockServer(unittest.TestCase):
         self.assertIn("Front-end Mock TB", page)
         self.assertIn("MOCK TB · 无真实副作用", page)
         self.assertIn("[Mock TB] Virtuoso Bridge", page)
+        self.assertIn('id="configSummaryCard"', page)
+        self.assertIn('id="statusCard"', page)
+        self.assertIn('id="flowGuide"', page)
+        self.assertIn("配置值 / 探测回填值", page)
 
     def test_happy_path_reaches_committed_without_registry(self):
         deployed = self.deploy_ready()
@@ -122,6 +130,9 @@ class TestRegistrationMockServer(unittest.TestCase):
                 self.assertEqual(data["stage"], "failed")
                 self.assertEqual(data["step"], failed_step)
                 self.assertTrue(data["errors"])
+                if failed_step == 3:
+                    self.assertNotIn("entry", data)
+                    self.assertNotIn("resolved", data)
 
     def test_verify_failure_is_retryable_and_second_attempt_succeeds(self):
         self.set_scenario("verify_fail_once")

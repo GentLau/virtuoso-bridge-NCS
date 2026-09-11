@@ -66,7 +66,8 @@ class TestFoundations(unittest.TestCase):
 
         text2, trunc2 = filter_delta(raw, "all", 5)
         self.assertTrue(trunc2)
-        self.assertLessEqual(len(text2.encode("utf-8")), 5)  # byte-level hard cap
+        self.assertIn("[log auto-degraded", text2)
+        self.assertIn("[log truncated", text2)
 
         self.assertEqual(_parse_meta(b"/tmp/CDS.log\x1f10\x1f42"), ("/tmp/CDS.log", 10, 42))
 

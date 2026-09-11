@@ -26,7 +26,7 @@ from transport.runtime_paths import registry_path, set_working_dir
 
 
 def remote_request(**kwargs):
-    base = dict(user="alice", host="server-a", ssh_user="alice", token="tok-1")
+    base = dict(mode="remote", user="alice", host="server-a", ssh_user="alice", token="tok-1")
     base.update(kwargs)
     return RegistrationRequest(**base)
 
@@ -141,7 +141,7 @@ class TestRegisterUserOneShot(unittest.TestCase):
         with mock.patch("transport.register.flow.probe_user", return_value=ProbeResult(entry, 3)), \
              mock.patch("transport.register.flow.deploy_user", return_value="/home/alice/setup.il"), \
              mock.patch("transport.register.flow.test_connectivity", return_value=report):
-            state = register_user(self.reg, user="alice", host="server-a", ssh_user="alice", token="tok-1")
+            state = register_user(self.reg, mode="remote", user="alice", host="server-a", ssh_user="alice", token="tok-1")
         self.assertEqual(state.stage, "committed")
         self.assertIsNotNone(self.reg.get("alice"))
 
@@ -172,9 +172,9 @@ class TestProbeFailureBranches(unittest.TestCase):
         from pydantic import ValidationError
         for bad in ("../escape", "/tmp/escape", "a/b", "a..b", ".", ".."):
             with self.assertRaises(ValidationError):
-                RegistrationRequest(user=bad, local=True)
+                RegistrationRequest(user=bad, mode="local")
         for good in ("alice", "vb01", "a.b-c_d"):
-            req = RegistrationRequest(user=good, local=True)
+            req = RegistrationRequest(user=good, mode="local")
             self.assertEqual(req.user, good)
 
     def test_local_port_busy(self):
@@ -185,14 +185,14 @@ class TestProbeFailureBranches(unittest.TestCase):
         port = s.getsockname()[1]
         try:
             with self.assertRaises(RegistrationProbeError):
-                probe_user(RegistrationRequest(user="u", local=True, daemon_port=port), token="t")
+                probe_user(RegistrationRequest(user="u", mode="local", daemon_port=port), token="t")
         finally:
             s.close()
 
     def test_local_unwritable_scratch(self):
         from transport.register import probe_user
         from unittest import mock
-        request = RegistrationRequest(user="u", local=True, scratch_root=str(Path(self.wd)))
+        request = RegistrationRequest(user="u", mode="local", scratch_root=str(Path(self.wd)))
         with mock.patch("transport.register.probe.local_path_writable", return_value=False):
             with self.assertRaises(RegistrationProbeError):
                 probe_user(request, token="t")
@@ -205,7 +205,7 @@ class TestProbeFailureBranches(unittest.TestCase):
             runner.return_value.test_connection.return_value = True
             runner.return_value.run_command.return_value = CommandResult(0, "/home/alice", "")
             with self.assertRaises(RegistrationProbeError):
-                probe_user(RegistrationRequest(user="u", host="h", ssh_user="a"), token="t")
+                probe_user(RegistrationRequest(mode="remote", user="u", host="h", ssh_user="a"), token="t")
 
     def test_remote_scratch_not_writable(self):
         from transport.register import probe_user
@@ -221,7 +221,7 @@ class TestProbeFailureBranches(unittest.TestCase):
             runner.return_value.test_connection.return_value = True
             runner.return_value.run_command.return_value = CommandResult(0, "/home/alice", "")
             with self.assertRaises(RegistrationProbeError):
-                probe_user(RegistrationRequest(user="u", host="h", ssh_user="a"), token="t")
+                probe_user(RegistrationRequest(mode="remote", user="u", host="h", ssh_user="a"), token="t")
 
     def test_remote_daemon_user_missing(self):
         from transport.register import probe_user
@@ -237,7 +237,7 @@ class TestProbeFailureBranches(unittest.TestCase):
             runner.return_value.test_connection.return_value = True
             runner.return_value.run_command.return_value = CommandResult(0, "/home/alice", "")
             with self.assertRaises(RegistrationProbeError):
-                probe_user(RegistrationRequest(user="u", host="h", ssh_user="a", daemon_user="ghost"), token="t")
+                probe_user(RegistrationRequest(mode="remote", user="u", host="h", ssh_user="a", daemon_user="ghost"), token="t")
 
 
 class TestVerifyExceptionBranches(unittest.TestCase):
@@ -292,7 +292,7 @@ class TestFlowMoreBranches(unittest.TestCase):
         with mock.patch("transport.register.flow.SSHRunner") as runner:
             runner.return_value.test_connection.return_value = False
             with self.assertRaises(RegistrationProbeError):
-                probe_user(RegistrationRequest(user="u", host="h", ssh_user="a"), token="t")
+                probe_user(RegistrationRequest(mode="remote", user="u", host="h", ssh_user="a"), token="t")
 
     def test_remote_probe_missing_hostname(self):
         from unittest import mock
@@ -303,7 +303,7 @@ class TestFlowMoreBranches(unittest.TestCase):
             runner.return_value.test_connection.return_value = True
             runner.return_value.run_command.return_value = CommandResult(0, "/home/u", "")
             with self.assertRaises(RegistrationProbeError):
-                probe_user(RegistrationRequest(user="u", host="h", ssh_user="a"), token="t")
+                probe_user(RegistrationRequest(mode="remote", user="u", host="h", ssh_user="a"), token="t")
 
     def test_remote_probe_no_python(self):
         from unittest import mock
@@ -317,7 +317,7 @@ class TestFlowMoreBranches(unittest.TestCase):
             runner.return_value.test_connection.return_value = True
             runner.return_value.run_command.return_value = CommandResult(0, "/home/u", "")
             with self.assertRaises(RegistrationProbeError):
-                probe_user(RegistrationRequest(user="u", host="h", ssh_user="a"), token="t")
+                probe_user(RegistrationRequest(mode="remote", user="u", host="h", ssh_user="a"), token="t")
 
     def test_remote_probe_explicit_port_busy(self):
         from unittest import mock
@@ -332,7 +332,7 @@ class TestFlowMoreBranches(unittest.TestCase):
             runner.return_value.test_connection.return_value = True
             runner.return_value.run_command.return_value = CommandResult(0, "/home/u", "")
             with self.assertRaises(RegistrationProbeError):
-                probe_user(RegistrationRequest(user="u", host="h", ssh_user="a", daemon_port=65081), token="t")
+                probe_user(RegistrationRequest(mode="remote", user="u", host="h", ssh_user="a", daemon_port=65081), token="t")
 
     def test_remote_probe_no_free_port(self):
         from unittest import mock
@@ -347,7 +347,7 @@ class TestFlowMoreBranches(unittest.TestCase):
             runner.return_value.test_connection.return_value = True
             runner.return_value.run_command.return_value = CommandResult(0, "/home/u", "")
             with self.assertRaises(RegistrationProbeError):
-                probe_user(RegistrationRequest(user="u", host="h", ssh_user="a"), token="t")
+                probe_user(RegistrationRequest(mode="remote", user="u", host="h", ssh_user="a"), token="t")
 
     def test_short_host_match(self):
         from transport.register.flow import _short_host_match
@@ -390,21 +390,21 @@ class TestRequestAndIdempotence(unittest.TestCase):
     def test_remote_requires_host_and_ssh_user(self):
         from pydantic import ValidationError
         with self.assertRaises(ValidationError):
-            RegistrationRequest(user="u", host="h")
+            RegistrationRequest(mode="remote", user="u", host="h")
         with self.assertRaises(ValidationError):
-            RegistrationRequest(user="u", ssh_user="a")
+            RegistrationRequest(mode="remote", user="u", ssh_user="a")
 
     def test_port_range_validation(self):
         from pydantic import ValidationError
         with self.assertRaises(ValidationError):
-            RegistrationRequest(user="u", local=True, daemon_port=0)
+            RegistrationRequest(user="u", mode="local", daemon_port=0)
         with self.assertRaises(ValidationError):
-            RegistrationRequest(user="u", host="h", ssh_user="a", local_port=70000)
+            RegistrationRequest(mode="remote", user="u", host="h", ssh_user="a", local_port=70000)
 
     def test_token_charset_validation(self):
         from pydantic import ValidationError
         with self.assertRaises(ValidationError):
-            RegistrationRequest(user="u", local=True, token='bad"token')
+            RegistrationRequest(user="u", mode="local", token='bad"token')
 
     def test_verify_idempotent_after_commit(self):
         from unittest import mock
@@ -421,7 +421,7 @@ class TestPolicyFieldsApplied(unittest.TestCase):
         from unittest import mock
         from transport.register import probe_user
         request = RegistrationRequest(
-            user="u", host="h", ssh_user="a", token="tok",
+            mode="remote", user="u", host="h", ssh_user="a", token="tok",
             ssh_backend="paramiko", ssh_max_sessions=5, ssh_proxy="socks5://127.0.0.1:1080",
             ssh_control_master="disable", thread_pool_size=8, channel_budget=3,
             connect_timeout=9.5, log_level="error", log_max_bytes=4096,
@@ -487,7 +487,7 @@ class TestSpectreAutoProbe(unittest.TestCase):
     def test_auto_detect_fills_route(self):
         from unittest import mock
         from transport.register import probe_user
-        request = RegistrationRequest(user="u", host="h", ssh_user="a", token="tok")
+        request = RegistrationRequest(mode="remote", user="u", host="h", ssh_user="a", token="tok")
         with mock.patch("transport.register.flow.SSHRunner") as runner, \
              mock.patch("transport.register.probe.host_key_fingerprint", return_value="fp"), \
              mock.patch("transport.register.probe.remote_hostname", return_value="host-a"), \
@@ -507,7 +507,7 @@ class TestSpectreAutoProbe(unittest.TestCase):
     def test_explicit_bad_spectre_rejected(self):
         from unittest import mock
         from transport.register import probe_user
-        request = RegistrationRequest(user="u", host="h", ssh_user="a", token="tok", spectre_bin="/bad/spectre")
+        request = RegistrationRequest(mode="remote", user="u", host="h", ssh_user="a", token="tok", spectre_bin="/bad/spectre")
         with mock.patch("transport.register.flow.SSHRunner") as runner, \
              mock.patch("transport.register.probe.host_key_fingerprint", return_value="fp"), \
              mock.patch("transport.register.probe.remote_hostname", return_value="host-a"), \

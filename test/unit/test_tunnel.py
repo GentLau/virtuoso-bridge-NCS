@@ -68,7 +68,7 @@ def make_entry(*, skill_host="daemon-a", command_host="daemon-a", file_host="dae
     entry.route.command.user = None
     entry.route.file.host = file_host
     entry.expected.daemon_user = "alice"
-    entry.expected.remote_python = "python3"
+    entry.environment.remote_python = "python3"
     entry.deploy.scratch_root = "/home/alice/.virtuoso-bridge"
     return entry
 
@@ -134,7 +134,7 @@ class TestRemoteClientTunnel(unittest.TestCase):
         entry = UserEntry(token="tok-1", mode="local")
         entry.route.skill.daemon_port = 65432
         entry.route.skill.local_port = 65432
-        entry.expected.remote_python = "python3"
+        entry.environment.remote_python = "python3"
         root = Path(tempfile.mkdtemp())
         entry.deploy.scratch_root = str(root)
         with mock.patch("transport.tunnel.SSHRunner", FakeRunner):
@@ -142,9 +142,9 @@ class TestRemoteClientTunnel(unittest.TestCase):
             setup = rc.deploy(python_major=3)
         self.assertEqual(FakeRunner.instances, [])
         self.assertTrue(Path(setup).is_file())
-        self.assertTrue((root / "alice" / "ramic" / "ramic_bridge_daemon_3.py").is_file())
-        self.assertTrue((root / "alice" / "ramic" / "ramic_bridge_daemon_27.py").is_file())
-        self.assertTrue((root / "alice" / "ramic" / "ramic_bridge.il").is_file())
+        self.assertTrue((root / "ramic" / "ramic_bridge_daemon_3.py").is_file())
+        self.assertTrue((root / "ramic" / "ramic_bridge_daemon_27.py").is_file())
+        self.assertTrue((root / "ramic" / "ramic_bridge.il").is_file())
 
 
 class TestSSHRunnerParamikoBackend(unittest.TestCase):

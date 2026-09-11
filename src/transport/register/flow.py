@@ -131,13 +131,17 @@ def _probe_local(request: RegistrationRequest, token: str) -> ProbeResult:
     entry.route.skill.local_port = local_port
     entry.expected.daemon_endpoint_hostname = hostname
     entry.expected.daemon_user = probes.local_user()
-    entry.expected.remote_python = python_cmd
-    entry.deploy.scratch_root = scratch
-    entry.route.file.root = f"{scratch}/{request.user}"
+    entry.environment.remote_python = python_cmd
+    entry.deploy.scratch_root = f"{scratch}/{request.user}"
     if request.spectre_bin:
-        entry.route.spectre.bin = request.spectre_bin
+        if not probes.local_executable_exists(request.spectre_bin):
+            raise RegistrationProbeError(f"spectre bin not usable: {request.spectre_bin}")
+        spectre_bin = request.spectre_bin
     else:
-        entry.route.spectre.bin = probes.detect_local_spectre()
+        spectre_bin = probes.detect_local_spectre()
+        if not spectre_bin:
+            raise RegistrationProbeError("no usable spectre found locally")
+    entry.route.spectre.bin = spectre_bin
     entry.route.spectre.host = request.spectre_host or "127.0.0.1"
     _apply_policies(request, entry)
     return ProbeResult(entry=entry, python_major=python_major)
@@ -221,14 +225,32 @@ def _probe_remote_with_runner(
     if not probes.remote_path_writable(runner, scratch):
         raise RegistrationProbeError(f"deploy root not writable on {host}: {scratch}")
 
-    # explicit tool paths are validated here while the daemon is still down;
-    # when the user did not supply one, auto-detect (same as the legacy CLI)
-    if request.spectre_bin:
-        if not probes.remote_executable_exists(runner, request.spectre_bin):
-            raise RegistrationProbeError(f"spectre executable not usable on {host}: {request.spectre_bin}")
-        spectre_bin = request.spectre_bin
-    else:
-        spectre_bin = probes.detect_remote_spectre(runner)
+    # spectre is consumed on the remote side: explicit value is validated,
+    # absent value is auto-detected on the spectre host; both failures reject
+    spectre_host = request.spectre_host or host
+    spectre_runner = runner
+    spectre_runner_owned = False
+    if spectre_host != host:
+        spectre_runner = SSHRunner(
+            spectre_host,
+            user=request.ssh_user,
+            jump_host=request.jump_host,
+            jump_user=request.jump_user,
+            control_identity=token,
+        )
+        spectre_runner_owned = True
+    try:
+        if request.spectre_bin:
+            if not probes.remote_executable_exists(spectre_runner, request.spectre_bin):
+                raise RegistrationProbeError(f"spectre executable not usable on {spectre_host}: {request.spectre_bin}")
+            spectre_bin = request.spectre_bin
+        else:
+            spectre_bin = probes.detect_remote_spectre(spectre_runner)
+            if not spectre_bin:
+                raise RegistrationProbeError(f"no usable spectre found on {spectre_host}")
+    finally:
+        if spectre_runner_owned:
+            spectre_runner.close()
 
     local_port = request.local_port
     if local_port is not None:
@@ -247,17 +269,16 @@ def _probe_remote_with_runner(
     entry.route.command.host = host
     entry.route.command.user = login_user
     entry.route.file.host = host
-    entry.route.file.root = f"{scratch}/{request.user}"
     entry.route.jump.host = request.jump_host
     entry.route.jump.user = request.jump_user
     entry.expected.ssh_host_key_fingerprint = fingerprint
     entry.expected.ssh_endpoints = endpoint_fingerprints
     entry.expected.daemon_endpoint_hostname = hostname
     entry.expected.daemon_user = daemon_user
-    entry.expected.remote_python = python_cmd
-    entry.deploy.scratch_root = scratch
+    entry.environment.remote_python = python_cmd
+    entry.deploy.scratch_root = f"{scratch}/{request.user}"
     entry.route.spectre.bin = spectre_bin
-    entry.route.spectre.host = request.spectre_host or host
+    entry.route.spectre.host = spectre_host
     _apply_policies(request, entry)
     return ProbeResult(entry=entry, python_major=python_major)
 
@@ -300,7 +321,7 @@ def deploy_user(entry: UserEntry, python_major: int, user: str) -> str:
             user=user,
             scratch_root=entry.deploy.scratch_root,
             python_major=python_major,
-            python_cmd=entry.expected.remote_python or "python3",
+            python_cmd=entry.environment.remote_python or "python3",
             port=entry.route.skill.daemon_port or _LOCAL_DEFAULT_PORT,
             local=entry.mode == "local",
         )

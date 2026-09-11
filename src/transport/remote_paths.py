@@ -25,13 +25,14 @@ def _valid_user_segment(user: str) -> None:
 
 
 def user_dir(user: str, root: str | None = None) -> str:
-    """User-visible remote directory keyed by the (unique) username.
+    """Return the single per-user bridge work directory.
 
-    Tokens are only used for routing/verification, never in user-visible
-    paths (see the multi-user design).
+    ``root`` is already ``deploy.scratch_root``, i.e. the per-user directory
+    (``~/.virtuoso-bridge/<user>``); no user segment is appended here.  The
+    username is still validated for containment.
     """
     _valid_user_segment(user)
-    return posixpath.join(scratch_root(root), user)
+    return scratch_root(root)
 
 
 def ramic_dir(user: str, root: str | None = None) -> str:

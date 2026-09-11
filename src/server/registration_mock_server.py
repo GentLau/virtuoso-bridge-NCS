@@ -97,6 +97,7 @@ class MockRegistrationState:
     token: str
     scenario: str
     mode: str = "local"
+    request: dict[str, Any] = field(default_factory=dict)
     stage: str = "applied"
     step: int = 1
     setup_path: str | None = None
@@ -104,6 +105,98 @@ class MockRegistrationState:
     warnings: list[str] = field(default_factory=list)
     report: dict[str, Any] | None = None
     attempts: dict[str, int] = field(default_factory=dict)
+
+    def resolved_payload(self) -> dict[str, Any]:
+        request = self.request
+        remote = self.mode == "remote"
+        command_host = str(request.get("host") or ("mock-eda-host" if remote else "localhost"))
+        command_user = str(request.get("ssh_user") or ("designer1" if remote else "local-user"))
+        daemon_host = str(request.get("daemon_host") or ("mock-compute-01" if remote else "127.0.0.1"))
+        daemon_user = str(request.get("daemon_user") or command_user)
+        daemon_port = int(request.get("daemon_port") or (65128 if remote else 65432))
+        local_port = int(request.get("local_port") or daemon_port)
+        scratch = str(request.get("scratch_root") or ("/home/designer1/.virtuoso-bridge" if remote else "C:/mock/virtuoso-bridge"))
+        return {
+            "mode": self.mode,
+            "command_host": command_host,
+            "command_user": command_user,
+            "daemon_host": daemon_host,
+            "daemon_user": daemon_user,
+            "daemon_port": daemon_port,
+            "local_port": local_port,
+            "file_host": command_host,
+            "deploy_root": scratch,
+            "file_root": f"{scratch.rstrip('/')}/{self.user}",
+            "remote_python": "python3.11" if remote else "python3.12",
+            "ssh_host_key_fingerprint": "SHA256:MOCK-FINGERPRINT-7vQp2K" if remote else None,
+            "daemon_endpoint_hostname": "mock-compute-01" if remote else "mock-localhost",
+            "jump_host": request.get("jump_host"),
+            "jump_user": request.get("jump_user"),
+            "spectre_host": request.get("spectre_host") or command_host,
+            "spectre_bin": request.get("spectre_bin"),
+            "ssh_backend": request.get("ssh_backend") or "openssh",
+            "ssh_max_sessions": int(request.get("ssh_max_sessions") or 10),
+            "ssh_control_master": request.get("ssh_control_master") or "auto",
+            "thread_pool_size": int(request.get("thread_pool_size") or 32),
+            "channel_budget": int(request.get("channel_budget") or 10),
+            "connect_timeout": float(request.get("connect_timeout") or 15.0),
+            "log_level": request.get("log_level") or "all",
+            "log_max_bytes": int(request.get("log_max_bytes") or 65536),
+        }
+
+    def entry_payload(self) -> dict[str, Any]:
+        resolved = self.resolved_payload()
+        return {
+            "token": self.token,
+            "mode": self.mode,
+            "route": {
+                "skill": {
+                    "local_port": resolved["local_port"],
+                    "daemon_host": resolved["daemon_host"],
+                    "daemon_port": resolved["daemon_port"],
+                },
+                "command": {
+                    "host": resolved["command_host"],
+                    "user": resolved["command_user"],
+                },
+                "file": {
+                    "host": resolved["file_host"],
+                    "root": resolved["file_root"],
+                },
+                "spectre": {
+                    "host": resolved["spectre_host"],
+                    "bin": resolved["spectre_bin"],
+                },
+                "jump": {
+                    "host": resolved["jump_host"],
+                    "user": resolved["jump_user"],
+                },
+            },
+            "expected": {
+                "ssh_host_key_fingerprint": resolved["ssh_host_key_fingerprint"],
+                "daemon_endpoint_hostname": resolved["daemon_endpoint_hostname"],
+                "daemon_user": resolved["daemon_user"],
+                "remote_python": resolved["remote_python"],
+            },
+            "deploy": {"scratch_root": resolved["deploy_root"]},
+            "ssh": {
+                "backend": resolved["ssh_backend"],
+                "max_sessions": resolved["ssh_max_sessions"],
+                "proxy": self.request.get("ssh_proxy"),
+                "control_master": resolved["ssh_control_master"],
+                "tool_override": {},
+            },
+            "runtime": {
+                "thread_pool_size": resolved["thread_pool_size"],
+                "channel_budget": resolved["channel_budget"],
+                "connect_timeout": resolved["connect_timeout"],
+            },
+            "cdslog": {
+                "log_level": resolved["log_level"],
+                "log_max_bytes": resolved["log_max_bytes"],
+            },
+            "registered_at": None,
+        }
 
     def payload(self) -> dict[str, Any]:
         payload: dict[str, Any] = {
@@ -113,7 +206,11 @@ class MockRegistrationState:
             "token": self.token,
             "errors": list(self.errors),
             "warnings": list(self.warnings),
+            "requested": dict(self.request),
         }
+        probe_completed = self.step > 3 or (self.step == 3 and self.stage != "failed")
+        if probe_completed:
+            payload["entry"] = self.entry_payload()
         if self.setup_path:
             payload["setup_path"] = self.setup_path
         if self.report is not None:
@@ -209,12 +306,15 @@ class RegistrationMockHandler(BaseHTTPRequestHandler):
         if not user:
             raise ValueError("user is required")
         token = str(request.get("token") or "").strip() or f"mock-{uuid.uuid4().hex[:16]}"
-        mode = "local" if request.get("local") or not request.get("host") else "remote"
+        mode = str(request.get("mode") or "").strip()
+        if mode not in ("local", "remote"):
+            raise ValueError("mode is required and must be local or remote")
         flow = MockRegistrationState(
             user=user,
             token=token,
             scenario=self.mock_server.scenario,
             mode=mode,
+            request=dict(request),
         )
         with self.mock_server.flow_lock:
             self.mock_server.flows[user] = flow
@@ -320,10 +420,26 @@ class RegistrationMockHandler(BaseHTTPRequestHandler):
             self.mock_server.preview_counter += 1
             sequence = self.mock_server.preview_counter
             user = f"mock-preview-{sequence:02d}"
+            request = {
+                "user": user,
+                "host": "mock-eda-host",
+                "ssh_user": "designer1",
+                "daemon_host": "mock-compute-01",
+                "daemon_user": "designer1",
+                "scratch_root": "/home/designer1/.virtuoso-bridge",
+                "ssh_backend": "openssh",
+                "thread_pool_size": 32,
+                "channel_budget": 10,
+                "connect_timeout": 15.0,
+                "log_level": "all",
+                "log_max_bytes": 65536,
+            }
             flow = MockRegistrationState(
                 user=user,
                 token=f"mock-preview-token-{sequence:02d}",
                 scenario=self.mock_server.scenario,
+                mode="remote",
+                request=request,
             )
             stage_map = {
                 "applied": ("applied", 1),

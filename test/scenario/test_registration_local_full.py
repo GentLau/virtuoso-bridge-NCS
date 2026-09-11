@@ -78,8 +78,9 @@ class TestLocalRegistrationScenario(unittest.TestCase):
             registry = load_registry(registry_path())
             flow = RegistrationFlow(registry)
             state = flow.apply(RegistrationRequest(
-                user="alice", token="tok-local", local=True,
+                user="alice", token="tok-local", mode="local",
                 daemon_port=port, scratch_root=str(root),
+                spectre_bin=sys.executable,
             ))
             self.assertEqual(state.stage, "deployed", str(state.errors))
             setup = Path(state.setup_path)

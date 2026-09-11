@@ -51,7 +51,7 @@ def main(argv=None):
         raise SystemExit(2)
 
     tokens = [e.token for _, e in entries]
-    roots = [e.route.file.root for _, e in entries]
+    roots = [e.deploy.scratch_root for _, e in entries]
     users = len(tokens)
     print(
         f"real-daemon stress: users={users} "

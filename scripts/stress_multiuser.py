@@ -80,10 +80,10 @@ def build_registry(users, wd):
         entry.route.skill.daemon_port = daemon.port
         entry.route.skill.local_port = daemon.port
         entry.route.skill.daemon_host = "127.0.0.1"
-        entry.route.file.root = str((Path(wd) / "users" / f"u{i}").resolve())
+        entry.deploy.scratch_root = str((Path(wd) / "users" / f"u{i}").resolve())
         registry.register(f"u{i}", entry)
         tokens.append(token)
-        roots.append(entry.route.file.root)
+        roots.append(entry.deploy.scratch_root)
     return registry, daemons, tokens, roots
 
 

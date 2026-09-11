@@ -41,8 +41,8 @@ def resolve(entry: UserEntry, user: str | None = None) -> ResolvedTargets:
     command_host = r.command.host or daemon_host
     command_user = r.command.user or daemon_user
     file_host = r.file.host or command_host
-    # default file root is keyed by the unique username, never by token
-    file_root = r.file.root or (f"{scratch}/{user}" if user else f"{scratch}/{entry.token}")
+    # single bridge work directory: default file root == deploy.scratch_root
+    file_root = scratch
     spectre_host = r.spectre.host or command_host
 
     return ResolvedTargets(

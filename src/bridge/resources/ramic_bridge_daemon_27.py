@@ -180,14 +180,8 @@ def _keep(level, line):
     return True
 
 
-def _cap_with_note(text, note, max_bytes):
-    """Byte-level hard cap: the returned text never exceeds ``max_bytes``."""
-    note_b = note.encode("utf-8")
-    budget = max_bytes - len(note_b)
-    if budget <= 0:
-        return note_b[:max_bytes].decode("utf-8", errors="ignore")
-    body = text.encode("utf-8")[:budget].decode("utf-8", errors="ignore")
-    return body + note
+_DEGRADE_NOTE = "\n[log auto-degraded: error-only due to log_max_bytes]"
+_TRUNCATE_NOTE = "\n[log truncated: increment not fully returned due to log_max_bytes]"
 
 
 def filter_delta(raw, level, max_bytes):
@@ -200,14 +194,10 @@ def filter_delta(raw, level, max_bytes):
         return text, False
     err_lines = [ln for ln in lines if classify_level(ln) == "error"]
     err_text = "\n".join(err_lines)
-    dropped = len(text.encode("utf-8")) - len(err_text.encode("utf-8"))
-    note = "\n... [log truncated: error-only, %d bytes dropped]" % dropped
-    if len(err_text.encode("utf-8")) + len(note.encode("utf-8")) <= max_bytes:
-        return err_text + note, True
-    head = err_lines[:100]
-    tail = err_lines[-100:]
-    body = head if head == tail else head + ["..."] + tail
-    return _cap_with_note("\n".join(body), note, max_bytes), True
+    if len(err_text.encode("utf-8")) <= max_bytes:
+        return err_text + _DEGRADE_NOTE, True
+    body = err_text.encode("utf-8")[:max_bytes].decode("utf-8", errors="ignore")
+    return body + _DEGRADE_NOTE + _TRUNCATE_NOTE, True
 
 
 def _read_range(path, start_offset, end_offset):

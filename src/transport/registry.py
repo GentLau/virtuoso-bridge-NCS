@@ -56,7 +56,7 @@ class CommandRoute(BaseModel):
 
 class FileRoute(BaseModel):
     host: str | None = None
-    root: str | None = None
+    # 默认文件根 = deploy.scratch_root（唯一工作目录），不再单独配置 root
 
 
 class SpectreRoute(BaseModel):
@@ -82,7 +82,10 @@ class Expected(BaseModel):
     ssh_endpoints: dict[str, str] = Field(default_factory=dict)  # per SSH endpoint
     daemon_endpoint_hostname: str | None = None
     daemon_user: str | None = None
-    remote_python: str | None = None
+
+
+class Environment(BaseModel):
+    remote_python: str | None = None  # detected on the remote side, consumed there
 
 
 class Deploy(BaseModel):
@@ -113,6 +116,7 @@ class UserEntry(BaseModel):
     mode: Literal["local", "remote"]  # required, no default
     route: Route = Field(default_factory=Route)
     expected: Expected = Field(default_factory=Expected)
+    environment: Environment = Field(default_factory=Environment)
     deploy: Deploy = Field(default_factory=Deploy)
     ssh: Ssh = Field(default_factory=Ssh)
     runtime: Runtime = Field(default_factory=Runtime)
@@ -161,6 +165,10 @@ class Registry:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         tmp = self.path.with_suffix(".json.tmp")
         tmp.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        try:
+            tmp.chmod(0o600)
+        except OSError:
+            pass  # Windows filesystems have no POSIX mode
         tmp.replace(self.path)
 
     def register(self, user: str, entry: UserEntry, *, overwrite: bool = False) -> None:
