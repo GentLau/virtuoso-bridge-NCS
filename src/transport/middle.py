@@ -28,12 +28,10 @@ logger = logging.getLogger(__name__)
 class _LocalCommandSession:
     """One persistent local command interpreter per token.
 
-    ``parallel=False`` commands share this session: submission order and
-    session state (cwd, shell variables) are preserved, exactly like the
-    remote persistent shell.  ``parallel=True`` still launches an independent
-    process per call.  stdout/stderr are kept separate via a per-call
-    stderr temp file; the bridge never injects output into the command
-    stream.
+    ``parallel=False`` commands share this session (order + cwd/env state
+    preserved); ``parallel=True`` launches an independent process per call.
+    stdout/stderr are kept separate via a per-call stderr file that Python
+    reads back after the shell finishes the command.
     """
 
     def __init__(self) -> None:
@@ -47,19 +45,15 @@ class _LocalCommandSession:
         self._err_dir = Path(tempfile.mkdtemp(prefix="vb_local_err_"))
         self._spawn()
 
-    # -- platform shell ---------------------------------------------------
-
     @staticmethod
     def _shell_command() -> list[str]:
-        if os.name == "nt":
-            return ["cmd.exe", "/Q", "/D"]
-        return ["sh"]
+        return ["cmd.exe", "/Q", "/D"] if os.name == "nt" else ["sh"]
 
     @staticmethod
     def _env() -> dict:
         env = dict(os.environ)
         if os.name == "nt":
-            env["PROMPT"] = "__VBPS__"  # fixed prompt marker, filtered out
+            env["PROMPT"] = "__VBPS__"
         return env
 
     @staticmethod
@@ -72,8 +66,6 @@ class _LocalCommandSession:
 
     def _quote_path(self, path: str) -> str:
         return f'"{path}"' if os.name == "nt" else shlex.quote(path)
-
-    # -- process management ------------------------------------------------
 
     def _spawn(self) -> None:
         proc = subprocess.Popen(
@@ -93,19 +85,14 @@ class _LocalCommandSession:
         self._seq = 0
         self._reader = threading.Thread(target=self._read_loop, daemon=True)
         self._reader.start()
-        time.sleep(0.1)  # let cmd/sh finish startup before the first write
+        time.sleep(0.1)
         self._drain_banner()
 
     def _drain_banner(self) -> None:
         marker = "__VB_DRAIN_0__"
         with self._lock:
-            self._current = {
-                "out_marker": marker, "err_marker": "__VB_ERREND_0__",
-                "phase": "out", "out": [], "err": [], "rc": 0,
-                "done": False, "eof": False,
-            }
+            self._current = {"marker": marker, "out": [], "rc": 0, "done": False, "eof": False}
         self._write_line(f"echo {marker}")
-        self._write_line("echo __VB_ERREND_0__")
         self._wait_current(None)
         with self._lock:
             self._current = None
@@ -115,8 +102,6 @@ class _LocalCommandSession:
             for line in self._proc.stdout:  # type: ignore[union-attr]
                 stripped = line.strip()
                 if os.name == "nt":
-                    # cmd.exe prints the prompt on the same line as the next
-                    # command's output; strip every prompt prefix
                     while stripped.startswith("__VBPS__"):
                         stripped = stripped[len("__VBPS__"):].lstrip()
                     if not stripped:
@@ -125,21 +110,15 @@ class _LocalCommandSession:
                     cur = self._current
                     if cur is None:
                         continue
-                    if cur["phase"] == "out":
-                        if stripped == cur["out_marker"]:
-                            cur["phase"] = "err"
-                        elif stripped.startswith("__VB_RC_") and stripped.endswith("__"):
-                            try:
-                                cur["rc"] = int(stripped[len("__VB_RC_"):-2])
-                            except ValueError:
-                                pass
-                        else:
-                            cur["out"].append(stripped + "\n")
+                    if stripped == cur["marker"]:
+                        cur["done"] = True
+                    elif stripped.startswith("__VB_RC_") and stripped.endswith("__"):
+                        try:
+                            cur["rc"] = int(stripped[len("__VB_RC_"):-2])
+                        except ValueError:
+                            pass
                     else:
-                        if stripped == cur["err_marker"]:
-                            cur["done"] = True
-                        else:
-                            cur["err"].append(stripped + "\n")
+                        cur["out"].append(stripped + "\n")
         except (OSError, ValueError):
             pass
         finally:
@@ -170,14 +149,12 @@ class _LocalCommandSession:
         self._dead = True
         proc = self._proc
         if proc is not None:
-            already_exited = proc.poll() is not None
-            if not already_exited:
-                for stream in (proc.stdin, proc.stdout):
-                    try:
-                        if stream:
-                            stream.close()
-                    except OSError:
-                        pass
+            for stream in (proc.stdin, proc.stdout):
+                try:
+                    if stream:
+                        stream.close()
+                except OSError:
+                    pass
             try:
                 proc.terminate()
                 proc.wait(timeout=2)
@@ -200,16 +177,9 @@ class _LocalCommandSession:
                 self._seq += 1
                 n = self._seq
                 err_path = self._err_dir / f"err_{n}.txt"
-                out_marker = f"__VB_EOM_{n}__"
-                err_marker = f"__VB_ERREND_{n}__"
-                self._current = {
-                    "out_marker": out_marker, "err_marker": err_marker,
-                    "phase": "out", "out": [], "err": [], "rc": 0,
-                    "done": False, "eof": False,
-                }
+                marker = f"__VB_EOM_{n}__"
+                self._current = {"marker": marker, "out": [], "rc": 0, "done": False, "eof": False}
         if need_spawn:
-            # spawn WITHOUT holding the session lock: the reader thread must
-            # be able to take it while we drain the new shell banner
             try:
                 self._close_locked()
                 self._spawn()
@@ -220,17 +190,10 @@ class _LocalCommandSession:
                 self._seq += 1
                 n = self._seq
                 err_path = self._err_dir / f"err_{n}.txt"
-                out_marker = f"__VB_EOM_{n}__"
-                err_marker = f"__VB_ERREND_{n}__"
-                self._current = {
-                    "out_marker": out_marker, "err_marker": err_marker,
-                    "phase": "out", "out": [], "err": [], "rc": 0,
-                    "done": False, "eof": False,
-                }
+                marker = f"__VB_EOM_{n}__"
+                self._current = {"marker": marker, "out": [], "rc": 0, "done": False, "eof": False}
 
         quoted_err = self._quote_path(str(err_path))
-        # group the command so its stderr redirects to the per-call file;
-        # braces/parens run in the current session so cwd/env state persists
         if os.name == "nt":
             grouped = f"( {cmd} ) 2> {quoted_err}"
         else:
@@ -238,10 +201,7 @@ class _LocalCommandSession:
         try:
             self._write_line(grouped)
             self._write_line(self._rc_echo())
-            self._write_line(f"echo {out_marker}")
-            self._write_line(f"type {quoted_err}" if os.name == "nt" else f"cat {quoted_err}")
-            self._write_line(f"echo {err_marker}")
-            self._write_line(f"del {quoted_err}" if os.name == "nt" else f"rm -f {quoted_err}")
+            self._write_line(f"echo {marker}")
         except (OSError, ValueError):
             self._close_locked()
             return CommandResult(255, "", "VB-TRANSPORT: local shell write failed")
@@ -251,13 +211,15 @@ class _LocalCommandSession:
         with self._lock:
             cur = self._current
             out = "".join(cur["out"]).rstrip("\n")
-            err = "".join(cur["err"]).rstrip("\n")
             rc = cur["rc"]
             done = cur["done"]
             eof = cur["eof"]
             if self._current is cur:
                 self._current = None
+        err = ""
         try:
+            if err_path.exists():
+                err = err_path.read_text(encoding="utf-8", errors="replace").rstrip("\n")
             err_path.unlink(missing_ok=True)
         except OSError:
             pass
