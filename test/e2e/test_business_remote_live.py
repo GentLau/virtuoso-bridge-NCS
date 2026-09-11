@@ -100,7 +100,7 @@ class TestBusinessRemoteLive(unittest.TestCase):
             entry.route.command.host = HOST
             entry.route.command.user = USER
             entry.route.file.host = HOST
-            entry.route.file.root = f"{SCRATCH}/{username}"
+            entry.deploy.scratch_root = f"{SCRATCH}/{username}"
             entry.expected.daemon_user = USER
             entry.ssh.backend = "paramiko"
             entry.ssh.control_master = "disable"

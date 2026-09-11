@@ -113,7 +113,7 @@ class TestLiveE2E(unittest.TestCase):
         flow = RegistrationFlow(server.registry)
         local_port = _free_local_port()  # avoid stale detached tunnels
         state = flow.apply(RegistrationRequest(
-            user="e2e", token=token, host=HOST, ssh_user=USER,
+            mode="remote", user="e2e", token=token, host=HOST, ssh_user=USER,
             scratch_root=SCRATCH, local_port=local_port,
         ))
         self.assertEqual(state.stage, "deployed", str(state.errors))

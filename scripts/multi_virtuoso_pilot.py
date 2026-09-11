@@ -102,7 +102,7 @@ def main(argv=None):
         token = f"vb-{user}"
         flow = RegistrationFlow(registry)
         state = flow.apply(RegistrationRequest(
-            user=user, token=token, host=HOST, ssh_user=SSH_USER,
+            mode="remote", user=user, token=token, host=HOST, ssh_user=SSH_USER,
             daemon_port=65100 + n,
         ))
         if state.stage != "deployed":
