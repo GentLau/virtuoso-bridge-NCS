@@ -919,7 +919,13 @@ class SSHRunner:
             len(stdout),
             len(stderr),
         )
-        return CommandResult(returncode=last.returncode, stdout=stdout, stderr=stderr)
+        # ssh(1) reserves exit code 255 for its own transport failures; the
+        # persistent-shell path reports the *remote* rc explicitly, so only
+        # this one-shot path needs the classification (spec 三层架构 §4.4).
+        kind = "transport" if last.returncode == 255 else "command"
+        return CommandResult(
+            returncode=last.returncode, stdout=stdout, stderr=stderr, kind=kind
+        )
 
     def upload(
         self,
