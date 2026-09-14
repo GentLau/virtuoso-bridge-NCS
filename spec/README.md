@@ -62,7 +62,7 @@
 
 - **Release ID**：`SPEC-2026-09-14-r1`
 - **Normative 文件集**（7 份）：三层整体架构设计、本版范围与明确不支持、配置一览、多节点设计、多用户设计、并发处理设计、日志返回设计标准；
-- **Normative 内容哈希**：`2a34ffa261825f56e139358b607b3435863fa09502903043d6f5aa1dcdbed42e`
+- **Normative 内容哈希**：`db0c3fb088274798633bbc8b8fd0f5fec403c36b8575dd733baac30f71b874e7`
   - 算法：按相对路径排序，逐文件 SHA-256 的 `"<相对路径> <hex>"` 行以 LF 拼接，再取一次 SHA-256；
 - **基线 commit**：本 Release 段所在提交即基线（见 `git log -1 -- spec/`）；任何 Normative 文档变更必须同时更新本段哈希。
 
@@ -71,10 +71,10 @@
 | 文档 | 版本 | 状态 | Supersedes |
 |---|---|---|---|
 | 三层整体架构设计 | Draft v8 | Normative | Draft v7（per-role mode） |
-| 多节点设计 | v5 | Normative | v4（per-role mode） |
+| 多节点设计 | v6 | Normative | v5（daemon python 命名） |
 | 本版范围与明确不支持 | v5 | Normative | v4（新增跨机 daemon 启动非目标） |
-| 配置一览 | Draft v14 | Normative | Draft v13（expected 分散到各 role） |
-| 多用户设计 | Draft v10 | Normative | Draft v9（expected 分散到各 role） |
+| 配置一览 | Draft v15 | Normative | Draft v14（role.daemon.python + roles 容器命名） |
+| 多用户设计 | Draft v11 | Normative | Draft v10（roles 命名对齐） |
 | 并发处理设计 | Draft v9 | Normative | Draft v8（local role 语义） |
 | 日志返回设计标准 | Draft v6 | Normative | Draft v5（统一 warning 文本） |
 | 核心修改设计 | Draft v4 | Informative | Draft v3 |
