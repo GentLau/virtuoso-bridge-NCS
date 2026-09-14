@@ -24,6 +24,7 @@ import json
 import os
 import threading
 import time
+from contextlib import contextmanager
 from pathlib import Path
 
 try:  # POSIX: advisory file lock used across processes
@@ -36,6 +37,51 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from transport.runtime_paths import registry_path
+
+
+def canonical_host(value: str | None) -> str:
+    """Canonical host form for endpoint keys and port scoping (配置一览 §6.5).
+
+    ``strip`` -> lowercase -> drop trailing dots -> drop IPv6 brackets, so
+    ``Server-A``, ``server-a.`` and ``server-a`` are the same value and
+    ``[::1]`` becomes ``::1``.  Never resolves names (no DNS, no ssh config).
+    """
+    text = (value or "").strip().lower().rstrip(".")
+    if len(text) >= 2 and text.startswith("[") and text.endswith("]"):
+        text = text[1:-1]
+    return text
+
+
+@contextmanager
+def file_lock(path: Path):
+    """Short-lived cross-process exclusive lock on ``path``.
+
+    POSIX uses ``fcntl.flock``; Windows (no ``flock``) uses ``msvcrt.locking``
+    on the first byte, which is the documented equivalent for "one writer at
+    a time" semantics (配置一览 §6.4).
+    """
+    lock_path = Path(path).with_suffix(Path(path).suffix + ".lock")
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    fd = os.open(lock_path, os.O_RDWR | os.O_CREAT, 0o600)
+    try:
+        os.write(fd, b"0")  # keep a byte so msvcrt can lock a real region
+        os.lseek(fd, 0, os.SEEK_SET)
+        if fcntl is not None:
+            fcntl.flock(fd, fcntl.LOCK_EX)
+        else:  # pragma: no cover - Windows
+            import msvcrt
+            msvcrt.locking(fd, msvcrt.LK_LOCK, 1)
+        try:
+            yield
+        finally:
+            if fcntl is not None:
+                fcntl.flock(fd, fcntl.LOCK_UN)
+            else:  # pragma: no cover - Windows
+                import msvcrt as _m
+                os.lseek(fd, 0, os.SEEK_SET)
+                _m.locking(fd, _m.LK_UNLCK, 1)
+    finally:
+        os.close(fd)
 
 
 class RegistryError(Exception):
@@ -191,36 +237,17 @@ class Registry:
 
     def _save_payload_locked(self, payload: dict) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        lock_path = self.path.with_suffix(".json.lock")
         tmp = self.path.with_suffix(".json.tmp")
-        fd = os.open(lock_path, os.O_RDWR | os.O_CREAT, 0o600)
-        try:
-            os.write(fd, b"0")  # keep a byte so msvcrt can lock a real region
-            os.lseek(fd, 0, os.SEEK_SET)
-            if fcntl is not None:
-                fcntl.flock(fd, fcntl.LOCK_EX)
-            else:
-                import msvcrt
-                msvcrt.locking(fd, msvcrt.LK_LOCK, 1)
+        with file_lock(self.path):
+            tmp.write_text(
+                json.dumps(payload, ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
             try:
-                tmp.write_text(
-                    json.dumps(payload, ensure_ascii=False, indent=2),
-                    encoding="utf-8",
-                )
-                try:
-                    tmp.chmod(0o600)
-                except OSError:
-                    pass  # Windows filesystems have no POSIX mode
-                tmp.replace(self.path)
-            finally:
-                if fcntl is not None:
-                    fcntl.flock(fd, fcntl.LOCK_UN)
-                else:
-                    import msvcrt as _m
-                    os.lseek(fd, 0, os.SEEK_SET)
-                    _m.locking(fd, _m.LK_UNLCK, 1)
-        finally:
-            os.close(fd)
+                tmp.chmod(0o600)
+            except OSError:
+                pass  # Windows filesystems have no POSIX mode
+            tmp.replace(self.path)
 
     def register(self, user: str, entry: UserEntry, *, overwrite: bool = False) -> None:
         """Verify and atomically commit one user entry (setup-phase write)."""
@@ -315,14 +342,11 @@ def endpoint_key(
     ``[host, user, jump_host, jump_user, proxy]``.  Hosts are lowercased and
     stripped of trailing dots; empty values become ``""``.
     """
-    def _host(value: str | None) -> str:
-        return (value or "").strip().rstrip(".").lower()
-
     def _text(value: str | None) -> str:
         return (value or "").strip()
 
     canonical = json.dumps(
-        [_host(host), _text(user), _host(jump_host), _text(jump_user), _text(proxy)],
+        [canonical_host(host), _text(user), canonical_host(jump_host), _text(jump_user), _text(proxy)],
         ensure_ascii=True,
         separators=(",", ":"),
     )
@@ -336,6 +360,8 @@ def load_registry(path: str | Path | None = None) -> Registry:
 
 __all__ = [
     "CdsLog",
+    "canonical_host",
+    "file_lock",
     "DaemonRoleConfig",
     "ModeConfig",
     "RoleConfig",

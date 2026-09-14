@@ -57,10 +57,20 @@ class TestValidateLocal(unittest.TestCase):
 
     def test_daemon_port_conflict(self):
         other = UserEntry(token="other", mode="remote")
+        other.roles.daemon.host = "server-a"          # same daemon host as the request
         other.roles.daemon.daemon_port = 65081
         self.reg.register("bob", other)
         errors = validate_local(self.reg, remote_request(roles={"daemon": {"daemon_port": 65081}}))
         self.assertTrue(any("daemon port 65081 conflicts" in e for e in errors))
+
+    def test_daemon_port_same_number_other_host_is_allowed(self):
+        """daemon_port uniqueness scope is the daemon target host (配置一览 §6.4)."""
+        other = UserEntry(token="other", mode="remote")
+        other.roles.daemon.host = "server-b"          # different host
+        other.roles.daemon.daemon_port = 65081
+        self.reg.register("bob", other)
+        errors = validate_local(self.reg, remote_request(roles={"daemon": {"daemon_port": 65081}}))
+        self.assertEqual(errors, [])
 
     def test_local_port_conflict(self):
         other = UserEntry(token="other", mode="remote")
@@ -505,7 +515,10 @@ class TestConnectivityFingerprint(unittest.TestCase):
                 status=ExecutionStatus.SUCCESS, output="2"
             )
             report = test_connectivity(entry, "alice")
-        fake_tunnel.start_port_forward.assert_called_once_with(65082, remote_port=65081)
+        fake_tunnel.start_port_forward.assert_called_once()
+        call_args, call_kwargs = fake_tunnel.start_port_forward.call_args
+        self.assertEqual(call_args[0], 65082)
+        self.assertEqual(call_kwargs.get("remote_port"), 65081)
         fake_tunnel.stop_port_forward.assert_called_once()
         self.assertFalse(report.fingerprint_ok)
         self.assertFalse(report.ok)

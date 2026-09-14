@@ -28,6 +28,7 @@ from pathlib import Path
 
 from transport.registry import (
     CdsLog,
+    canonical_host,
     DaemonRoleConfig,
     ModeConfig,
     Registry,
@@ -43,6 +44,7 @@ from transport.registry import (
     endpoint_key,
 )
 from transport.remote_roles import fingerprint_conflicts, resolve, ResolvedRole
+from transport.register.reservation import Reservation, ReservationTable
 from transport.register import probe as probes
 from transport.register.models import (
     ConnectivityReport,
@@ -67,20 +69,92 @@ class RegistrationProbeError(RuntimeError):
     """A required probe failed; registration aborts without persisting."""
 
 
+STEP_BUDGET_SECONDS = 30.0
+
+
+class StepBudget:
+    """One end-to-end deadline per registration step (配置一览 §6.4 / 架构 §5.8).
+
+    Every network phase of a step spends from the same budget; a phase never
+    restarts the window, and retries inside a phase share what is left.
+    """
+
+    def __init__(self, label: str, seconds: float = STEP_BUDGET_SECONDS) -> None:
+        self.label = label
+        self.seconds = float(seconds)
+        self.deadline = time.monotonic() + self.seconds
+
+    def remaining(self, per_call: float | None = None) -> float:
+        # never hand out more than the step budget itself (float safety)
+        left = min(self.deadline - time.monotonic(), self.seconds)
+        if left <= 0:
+            raise RegistrationProbeError(
+                f"{self.label} deadline ({self.seconds:g}s) exhausted"
+            )
+        return left if per_call is None else min(left, float(per_call))
+
+    def expired(self) -> bool:
+        return time.monotonic() >= self.deadline
+
+
+class _BudgetedRunner:
+    """Wrap an ``SSHRunner`` so every call spends from one step budget."""
+
+    def __init__(self, runner: SSHRunner, budget: StepBudget) -> None:
+        self._runner = runner
+        self._budget = budget
+
+    def run_command(self, cmd: str, timeout: float | None = None):
+        return self._runner.run_command(cmd, timeout=self._budget.remaining(timeout))
+
+    def __getattr__(self, name):  # upload/download/close/... pass through
+        return getattr(self._runner, name)
+
+
 # -- step 2: local validation ------------------------------------------------
 
+def daemon_scope_of_request(request: RegistrationRequest) -> str:
+    """Uniqueness scope of the candidate daemon port: canonical host, or "local"."""
+    role = request.roles.daemon
+    mode = role.mode or request.mode.default
+    if mode == "local":
+        return "local"
+    host = role.host or request.ssh.default.host
+    return canonical_host(host) or "local"
+
+
+def daemon_scope_of_entry(entry: UserEntry, user: str) -> str:
+    """Same scope computed for an already-registered entry."""
+    targets = resolve(entry, user)
+    if targets.daemon.mode == "local":
+        return "local"
+    return canonical_host(targets.daemon.host) or "local"
+
+
 def validate_local(registry: Registry, request: RegistrationRequest) -> list[str]:
-    """Pure-local checks: user-name and port de-dup inside the registry."""
+    """Pure-local checks: user/token de-dup + port de-dup with correct scope.
+
+    ``daemon_port`` is unique **per daemon target host** (two hosts may use the
+    same number); ``local_port`` is unique on this machine (配置一览 §6.4).
+    """
     errors: list[str] = []
     if registry.get(request.user) is not None:
         errors.append(f"user {request.user!r} is already registered")
+    holder = registry.user_of(request.token)
+    if holder is not None and holder != request.user:
+        errors.append(f"token {request.token!r} already belongs to user {holder!r}")
 
+    scope = daemon_scope_of_request(request)
     daemon_port = request.roles.daemon.daemon_port
     local_port = request.roles.daemon.local_port
     for name, entry in registry.entries():
         if entry.roles.daemon.daemon_port is not None and daemon_port is not None:
-            if entry.roles.daemon.daemon_port == daemon_port:
-                errors.append(f"daemon port {daemon_port} conflicts with user {name!r}")
+            if entry.roles.daemon.daemon_port == daemon_port and \
+                    daemon_scope_of_entry(entry, name) == scope:
+                errors.append(
+                    f"daemon port {daemon_port} conflicts with user {name!r} "
+                    f"on {scope}"
+                )
         if entry.roles.daemon.local_port is not None and local_port is not None:
             if entry.roles.daemon.local_port == local_port:
                 errors.append(f"local port {local_port} conflicts with user {name!r}")
@@ -88,6 +162,28 @@ def validate_local(registry: Registry, request: RegistrationRequest) -> list[str
 
 
 # -- helpers -------------------------------------------------------------------
+
+def validate_final(registry: Registry, entry: UserEntry, user: str) -> list[str]:
+    """Step 6 re-check with the *final* ports (配置一览 §6.4 commit 冲突)."""
+    errors: list[str] = []
+    if registry.get(user) is not None:
+        errors.append(f"user {user!r} is already registered")
+    holder = registry.user_of(entry.token)
+    if holder is not None and holder != user:
+        errors.append(f"token {entry.token!r} already belongs to user {holder!r}")
+    scope = daemon_scope_of_entry(entry, user)
+    daemon_port = entry.roles.daemon.daemon_port
+    local_port = entry.roles.daemon.local_port
+    for name, existing in registry.entries():
+        if (existing.roles.daemon.daemon_port is not None and daemon_port is not None
+                and existing.roles.daemon.daemon_port == daemon_port
+                and daemon_scope_of_entry(existing, name) == scope):
+            errors.append(f"daemon port {daemon_port} conflicts with user {name!r} on {scope}")
+        if (existing.roles.daemon.local_port is not None and local_port is not None
+                and existing.roles.daemon.local_port == local_port):
+            errors.append(f"local port {local_port} conflicts with user {name!r}")
+    return errors
+
 
 def _resolve_remote_scratch(runner, scratch_root: str) -> str:
     if not scratch_root.startswith("~"):
@@ -193,12 +289,20 @@ def _remote_role_checks(runner: SSHRunner, role: ResolvedRole) -> str:
     return root
 
 
-def _probe(request: RegistrationRequest, token: str) -> ProbeResult:
+def _probe(
+    request: RegistrationRequest,
+    token: str,
+    reserved_ports: set[int] | None = None,
+    reserved_local_ports: set[int] | None = None,
+) -> ProbeResult:
     entry = _build_entry(request, token)
     user = request.user
     targets = resolve(entry, user)
     warnings: list[str] = []
     runners: dict[str, SSHRunner] = {}
+    budget = StepBudget("step 3 (probe)")
+    reserved_ports = set(reserved_ports or ())
+    reserved_local_ports = set(reserved_local_ports or ())
 
     def close_all():
         for runner in runners.values():
@@ -216,7 +320,7 @@ def _probe(request: RegistrationRequest, token: str) -> ProbeResult:
                 continue
             runner = _new_runner(role, token)
             runners[name] = runner
-            if not runner.test_connection():
+            if not runner.test_connection(budget.remaining(15.0)):
                 raise RegistrationProbeError(f"ssh unreachable for {name} role: {role.host}")
             fp = probes.host_key_fingerprint(role.host)
             if not fp:
@@ -232,13 +336,14 @@ def _probe(request: RegistrationRequest, token: str) -> ProbeResult:
                     )
             else:
                 entry_role.expected_fingerprint = fp
+            budgeted = _BudgetedRunner(runner, budget)
             if name == "spectre":
                 try:
-                    entry_role.root = _remote_role_checks(runner, role)
+                    entry_role.root = _remote_role_checks(budgeted, role)
                 except RegistrationProbeError as exc:
                     warnings.append(f"{exc} (non-blocking)")
             else:
-                entry_role.root = _remote_role_checks(runner, role)
+                entry_role.root = _remote_role_checks(budgeted, role)
 
         # daemon-specific environment probes
         daemon = targets.daemon
@@ -261,7 +366,7 @@ def _probe(request: RegistrationRequest, token: str) -> ProbeResult:
             entry.roles.daemon.daemon_port = daemon_port
             entry.roles.daemon.local_port = daemon_port
         else:
-            runner = runners["daemon"]
+            runner = _BudgetedRunner(runners["daemon"], budget)
             python = probes.detect_remote_python(runner)
             if python is None:
                 raise RegistrationProbeError(
@@ -280,6 +385,11 @@ def _probe(request: RegistrationRequest, token: str) -> ProbeResult:
                 )
             entry.roles.daemon.expected_user = daemon_user
             if request.roles.daemon.daemon_port is not None:
+                if request.roles.daemon.daemon_port in reserved_ports:
+                    raise RegistrationProbeError(
+                        f"daemon port {request.roles.daemon.daemon_port} is reserved "
+                        f"by another registration in progress"
+                    )
                 if not probes.port_free_on_remote(
                     runner, request.roles.daemon.daemon_port, python_cmd
                 ):
@@ -290,7 +400,7 @@ def _probe(request: RegistrationRequest, token: str) -> ProbeResult:
                 entry.roles.daemon.daemon_port = request.roles.daemon.daemon_port
             else:
                 allocated = probes.allocate_remote_port(
-                    runner, python_cmd, reserved=set()
+                    runner, python_cmd, reserved=reserved_ports
                 )
                 if allocated is None:
                     raise RegistrationProbeError(
@@ -299,10 +409,15 @@ def _probe(request: RegistrationRequest, token: str) -> ProbeResult:
                 entry.roles.daemon.daemon_port = allocated
             local_port = request.roles.daemon.local_port
             if local_port is not None:
+                if local_port in reserved_local_ports:
+                    raise RegistrationProbeError(
+                        f"local port {local_port} is reserved by another "
+                        f"registration in progress"
+                    )
                 if not probes.local_port_free(local_port):
                     raise RegistrationProbeError(f"local port {local_port} is not usable")
             else:
-                local_port = probes.allocate_local_port()
+                local_port = probes.allocate_local_port(reserved=reserved_local_ports)
                 if local_port is None:
                     raise RegistrationProbeError("no free local tunnel port found")
             entry.roles.daemon.local_port = local_port
@@ -326,7 +441,8 @@ def _probe(request: RegistrationRequest, token: str) -> ProbeResult:
                 else:
                     warnings.append("no usable spectre found locally (non-blocking)")
         else:
-            runner = runners.get("spectre")
+            raw_runner = runners.get("spectre")
+            runner = _BudgetedRunner(raw_runner, budget) if raw_runner is not None else None
             if runner is not None:
                 if request.roles.spectre.bin:
                     if probes.remote_executable_exists(runner, request.roles.spectre.bin):
@@ -364,7 +480,11 @@ def probe_user(
     reserved_local_ports: set[int] | None = None,
 ) -> ProbeResult:
     """Step 3: probe and build a candidate entry.  Never touches the registry."""
-    return _probe(request, token)
+    return _probe(
+        request, token,
+        reserved_ports=reserved_ports,
+        reserved_local_ports=reserved_local_ports,
+    )
 
 
 # -- step 4: deploy ------------------------------------------------------------
@@ -400,7 +520,7 @@ def _short_host_match(a: str | None, b: str | None) -> bool:
     return a.strip().split(".")[0].lower() == b.strip().split(".")[0].lower()
 
 
-def _banner_hostname(entry: UserEntry, user: str) -> str | None:
+def _banner_hostname(entry: UserEntry, user: str, budget: StepBudget | None = None) -> str | None:
     targets = resolve(entry, user)
     path = identity_path(user, targets.daemon.root)
     try:
@@ -408,6 +528,8 @@ def _banner_hostname(entry: UserEntry, user: str) -> str | None:
             text = Path(path).read_text(encoding="utf-8", errors="replace")
         else:
             runner = _new_runner(targets.daemon, entry.token)
+            if budget is not None:
+                runner = _BudgetedRunner(runner, budget)
             try:
                 result = runner.run_command(f"cat {shlex.quote(path)}", timeout=10)
             finally:
@@ -428,12 +550,13 @@ def test_connectivity(entry: UserEntry, user: str) -> ConnectivityReport:
     detail: list[str] = []
     targets = resolve(entry, user)
     daemon = targets.daemon
+    budget = StepBudget("step 5 (connectivity)")
 
     skill_port = targets.daemon_port if daemon.mode == "local" else targets.local_port
     skill_client = SkillClient(
         host="127.0.0.1",
         port=skill_port,
-        timeout=30.0,
+        timeout=budget.remaining(30.0),
         token=token,
         log_level=entry.cdslog.log_level,
         log_max_bytes=entry.cdslog.log_max_bytes,
@@ -454,7 +577,7 @@ def test_connectivity(entry: UserEntry, user: str) -> ConnectivityReport:
                 detail.append(f"command={proc.returncode}:{proc.stderr.strip()}")
         else:
             command_runner = _new_runner(command_role, token)
-            result = command_runner.run_command("echo vb-ok")
+            result = _BudgetedRunner(command_runner, budget).run_command("echo vb-ok")
             command_ok = result.returncode == 0 and result.stdout.strip() == "vb-ok"
             if not command_ok:
                 detail.append(f"command={result.returncode}:{result.stderr.strip()}")
@@ -481,20 +604,25 @@ def test_connectivity(entry: UserEntry, user: str) -> ConnectivityReport:
         if daemon.mode == "remote":
             tunnel_runner = _new_runner(daemon, token)
             tunnel_runner.start_port_forward(
-                targets.local_port, remote_port=targets.daemon_port
+                targets.local_port,
+                remote_port=targets.daemon_port,
+                deadline=budget.deadline,
             )
-        skill = skill_client.execute_skill("1+1")
+        skill = skill_client.execute_skill("1+1", timeout=budget.remaining())
         if daemon.mode == "remote":
-            # right after the tunnel comes up the daemon may still be binding
-            ready_deadline = time.monotonic() + 60.0
-            while time.monotonic() < ready_deadline and not skill.ok:
+            # right after the tunnel comes up the daemon may still be binding;
+            # the retry loop spends the *same* step budget (no fresh window)
+            while not skill.ok and not budget.expired():
                 if not any(
                     "refused/reset" in (err or "") or "did not become ready" in (err or "")
                     for err in skill.errors
                 ):
                     break
                 time.sleep(0.5)
-                skill = skill_client.execute_skill("1+1")
+                try:
+                    skill = skill_client.execute_skill("1+1", timeout=budget.remaining())
+                except RegistrationProbeError:
+                    break
     finally:
         if tunnel_runner is not None:
             tunnel_runner.stop_port_forward()
@@ -507,7 +635,7 @@ def test_connectivity(entry: UserEntry, user: str) -> ConnectivityReport:
     if not skill_ok:
         detail.append(f"skill={skill.status}:{skill.errors}")
 
-    banner = _banner_hostname(entry, user)
+    banner = _banner_hostname(entry, user, budget=budget)
     expected_hostname = entry.roles.daemon.expected_hostname
     if banner and expected_hostname and not _short_host_match(banner, expected_hostname):
         warnings.append(
@@ -532,11 +660,78 @@ def test_connectivity(entry: UserEntry, user: str) -> ConnectivityReport:
 class RegistrationFlow:
     """In-memory state machine for one manual six-step registration."""
 
-    def __init__(self, registry: Registry) -> None:
+    def __init__(
+        self,
+        registry: Registry,
+        reservations: ReservationTable | None = None,
+    ) -> None:
         self.registry = registry
+        self.reservations = reservations or ReservationTable()
         self.state: RegistrationState | None = None
 
+    # -- reservation plumbing (配置一览 §6.4) --------------------------------
+    def _candidate_reservation(self, state: RegistrationState) -> Reservation:
+        entry = state.entry
+        daemon_port = None
+        local_port = None
+        if entry is not None:
+            daemon_port = entry.roles.daemon.daemon_port
+            local_port = entry.roles.daemon.local_port
+        else:
+            daemon_port = state.request.roles.daemon.daemon_port
+            local_port = state.request.roles.daemon.local_port
+        return Reservation.create(
+            user=state.user,
+            token=state.token,
+            daemon_scope=daemon_scope_of_request(state.request),
+            daemon_port=daemon_port,
+            local_port=local_port,
+        )
+
+    def _reserve(self, state: RegistrationState) -> list[str]:
+        return self.reservations.reserve(self._candidate_reservation(state))
+
+    def _update_reservation(self, state: RegistrationState) -> list[str]:
+        return self.reservations.update(self._candidate_reservation(state))
+
+    def _release_reservation(self, state: RegistrationState | None) -> None:
+        if state is not None and state.user:
+            try:
+                self.reservations.release(state.user)
+            except Exception:  # noqa: BLE001 - release is best effort
+                logger.warning("failed to release reservation for %s", state.user)
+
+    def _fail(self, state: RegistrationState, errors: list[str]) -> RegistrationState:
+        state.stage = "failed"
+        state.errors = list(errors)
+        self._release_reservation(state)
+        return state
+
+    def cancel(self) -> RegistrationState | None:
+        """Explicit cancellation: drop the reservation, keep the registry clean."""
+        if self.state is not None:
+            self._release_reservation(self.state)
+            self.state.stage = "cancelled"
+        return self.state
+
+    def reserved_daemon_ports(self) -> set[int]:
+        """daemon ports held by *other* in-progress registrations."""
+        others = [
+            r for r in self.reservations.records()
+            if self.state is None or r.user != self.state.user
+        ]
+        return {r.daemon_port for r in others if r.daemon_port is not None}
+
+    def reserved_local_ports(self) -> set[int]:
+        """local tunnel ports held by *other* in-progress registrations."""
+        others = [
+            r for r in self.reservations.records()
+            if self.state is None or r.user != self.state.user
+        ]
+        return {r.local_port for r in others if r.local_port is not None}
+
     def start(self, request: RegistrationRequest) -> RegistrationState:
+        self._release_reservation(self.state)
         token = request.token or uuid.uuid4().hex[:24]
         self.state = RegistrationState(
             user=request.user, stage="applied", step=1, request=request, token=token
@@ -556,11 +751,13 @@ class RegistrationFlow:
         if state is None:
             return self.state
         errors = validate_local(self.registry, state.request)
+        if not errors:
+            # reserve before touching the network so concurrent registrations
+            # cannot pick the same user/token/ports
+            errors = self._reserve(state)
         if errors:
-            state.stage = "failed"
-            state.errors = errors
-        else:
-            state.stage = "validated"
+            return self._fail(state, errors)
+        state.stage = "validated"
         return state
 
     def probe(self) -> RegistrationState:
@@ -568,14 +765,24 @@ class RegistrationFlow:
         if state is None:
             return self.state
         try:
-            result = probe_user(state.request, token=state.token)
-        except RegistrationProbeError as exc:
-            state.stage = "failed"
-            state.errors = [str(exc)]
-            return state
+            result = probe_user(
+                state.request,
+                token=state.token,
+                reserved_ports=self.reserved_daemon_ports(),
+                reserved_local_ports=self.reserved_local_ports(),
+            )
+        except (RegistrationProbeError, Exception) as exc:  # noqa: BLE001
+            if not isinstance(exc, RegistrationProbeError):
+                logger.warning("probe failed with %s: %s", type(exc).__name__, exc)
+            return self._fail(state, [str(exc)])
         state.entry = result.entry
         state.python_major = result.python_major
         state.warnings = list(result.warnings)
+        # step 3 may have allocated the real ports: refresh the reservation so
+        # other registrations see the final numbers
+        conflicts = self._update_reservation(state)
+        if conflicts:
+            return self._fail(state, conflicts)
         state.stage = "probed"
         return state
 
@@ -586,10 +793,14 @@ class RegistrationFlow:
         try:
             state.setup_path = deploy_user(state.entry, state.python_major, state.user)
         except Exception as exc:  # noqa: BLE001
-            state.stage = "failed"
-            state.errors = [f"deploy failed: {exc}"]
-            return state
+            return self._fail(state, [f"deploy failed: {exc}"])
         state.stage = "deployed"
+        # the user may take a long time to load the setup in the CIW: keep the
+        # reservation fresh so a long wait is not mistaken for a crash
+        try:
+            self.reservations.touch(state.user)
+        except Exception:  # noqa: BLE001
+            pass
         return state
 
     def apply(self, request: RegistrationRequest) -> RegistrationState:
@@ -623,25 +834,24 @@ class RegistrationFlow:
         try:
             report = test_connectivity(state.entry, state.user)
         except Exception as exc:  # noqa: BLE001
-            state.stage = "failed"
-            state.errors = [f"connectivity test failed: {exc}"]
-            return state
+            return self._fail(state, [f"connectivity test failed: {exc}"])
 
         state.report = report
         state.warnings = list(report.warnings)
         if not report.ok:
-            state.stage = "failed"
-            state.errors = [report.detail or "connectivity test failed"]
-            return state
+            return self._fail(state, [report.detail or "connectivity test failed"])
 
+        # step 6: the only durable write, guarded by a final conflict re-check
+        errors = validate_final(self.registry, state.entry, state.user)
+        if errors:
+            return self._fail(state, errors)
         state.entry.registered_at = int(time.time())
         try:
             self.registry.register(state.user, state.entry)
         except RegistryError as exc:
-            state.stage = "failed"
-            state.errors = [str(exc)]
-            return state
+            return self._fail(state, [str(exc)])
 
+        self._release_reservation(state)
         state.stage = "committed"
         state.step = 6
         return state

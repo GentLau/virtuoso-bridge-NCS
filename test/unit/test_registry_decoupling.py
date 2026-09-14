@@ -32,7 +32,7 @@ class _FakeProbeRunner:
     def __init__(self, *args, **kwargs):
         self.kwargs = kwargs
 
-    def test_connection(self) -> bool:
+    def test_connection(self, timeout=None) -> bool:
         return True
 
     def close(self):
