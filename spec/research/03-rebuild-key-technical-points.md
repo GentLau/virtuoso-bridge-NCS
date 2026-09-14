@@ -1,5 +1,8 @@
 # Virtuoso Bridge 重构的关键技术点
 
+> **Research / 非规范**：本文只提供背景与依据，**不得用于实现或验收**；各主题的唯一口径见 [Spec 索引](../README.md)。
+
+
 > 调研日期：2026-09-04  
 > 目标：在已有开源上游能力基础上，给 `virtuoso-bridge-NCS` 提供可落地的重构优先级，而不是立即实现全部功能。
 
@@ -570,6 +573,8 @@ class RunObserver:
 - `C:\Users\user\Desktop\doc\spectreref\chap2.html`
 
 ## 14. 证据定位（便于复核）
+
+> 下表证据指向**重构前/上游仓库**的路径（`../../src_bak`、`../../docs/adr`、`../../CONTEXT.md` 等），仅作考古与追溯；当前口径以 [Spec 索引](../README.md) 为准，编码/验收不得引用下表路径。
 
 | 方向 | 证据 |
 |---|---|

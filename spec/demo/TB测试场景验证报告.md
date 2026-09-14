@@ -1,5 +1,8 @@
 # TB 测试场景验证报告
 
+> **Demo / Informative**：本文件不构成规范，**不得用于实现或验收**；口径以 Normative 文档为准（索引见 [Spec 索引](../README.md)）。
+
+
 > 日期：2026-09-09
 > 环境：Windows + Python 3.12 + 系统 `pwsh`
 > 验证对象：`spec/demo/full_demo.py`（注册 + token 路由 + 并行）、
