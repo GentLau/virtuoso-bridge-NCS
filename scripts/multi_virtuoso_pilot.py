@@ -104,13 +104,13 @@ def main(argv=None):
         state = flow.apply(RegistrationRequest(
             mode="remote", user=user, token=token,
             ssh={"default": {"host": HOST, "user": SSH_USER}},
-            role={"daemon": {"daemon_port": 65100 + n}},
+            roles={"daemon": {"daemon_port": 65100 + n}},
         ))
         if state.stage != "deployed":
             print(f"{user} deploy failed: {state.errors}")
             continue
         flows[user] = (flow, state)
-        print(f"{user} deployed: {state.setup_path} port={state.entry.route.daemon.daemon_port}")
+        print(f"{user} deployed: {state.setup_path} port={state.entry.roles.daemon.daemon_port}")
 
     print("starting Virtuoso instances one by one...")
     for user, (flow, state) in flows.items():
@@ -125,7 +125,7 @@ def main(argv=None):
     print("waiting for daemons...")
     ok = []
     for user, (flow, state) in flows.items():
-        ready = daemon_ready(user, state.entry.route.daemon.daemon_port)
+        ready = daemon_ready(user, state.entry.roles.daemon.daemon_port)
         print(f"{user} daemon_ready={ready} available={free_gb():.1f}G")
         if not ready:
             continue

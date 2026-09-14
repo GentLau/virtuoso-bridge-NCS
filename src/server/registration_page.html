@@ -1777,15 +1777,15 @@ function collectPayload() {
   const payload = {};
   if (flat.user) payload.user = flat.user;
   if (flat.token) payload.token = flat.token;
-  payload.mode = flat.mode || 'remote';
-  if (flat.scratch_root) payload.scratch_root = flat.scratch_root;
+  payload.mode = {default: flat.mode || 'remote'};
+  payload.root = flat.scratch_root ? {default: flat.scratch_root} : {};
   payload.ssh = {default: ep(flat.host, flat.ssh_user, flat.jump_host, flat.jump_user, flat.ssh_proxy)};
   const daemon = ep(flat.daemon_host, flat.daemon_user, null, null, null);
   if (flat.daemon_port !== undefined) daemon.daemon_port = flat.daemon_port;
   if (flat.local_port !== undefined) daemon.local_port = flat.local_port;
   const spectre = ep(flat.spectre_host, null, null, null, null);
   if (flat.spectre_bin) spectre.bin = flat.spectre_bin;
-  payload.role = {gui: {}, daemon: daemon, command: {}, file: {}, spectre: spectre};
+  payload.roles = {gui: {}, daemon: daemon, command: {}, file: {}, spectre: spectre};
   ['ssh_backend', 'ssh_control_master', 'ssh_tool_override', 'thread_pool_size',
    'channel_budget', 'connect_timeout', 'log_level', 'log_max_bytes'
   ].forEach(function(key) {
@@ -1797,30 +1797,29 @@ function collectPayload() {
 function resolvedValues(data) {
   if (data && data.resolved) return data.resolved;
   const entry = data && data.entry ? data.entry : {},
-    route = entry.route || {},
-    daemon = route.daemon || {},
-    command = route.command || {},
-    file = route.file || {},
-    spectre = route.spectre || {},
-    expected = entry.expected || {},
-    environment = entry.environment || {},
-    deploy = entry.deploy || {},
+    roles = entry.roles || {},
+    daemon = roles.daemon || {},
+    command = roles.command || {},
+    file = roles.file || {},
+    spectre = roles.spectre || {},
+    rootCfg = entry.root || {},
+    modeCfg = entry.mode || {},
     ssh = entry.ssh || {},
     sshDefault = ssh.default || {},
     runtime = entry.runtime || {},
     cdslog = entry.cdslog || {};
   return {
-    mode: entry.mode,
-    command_host: command.host,
-    command_user: command.user,
-    daemon_host: daemon.host,
-    daemon_user: expected.daemon_user,
+    mode: modeCfg.default,
+    command_host: command.host || sshDefault.host,
+    command_user: command.user || sshDefault.user,
+    daemon_host: daemon.host || sshDefault.host,
+    daemon_user: daemon.expected_user || daemon.user || sshDefault.user,
     daemon_port: daemon.daemon_port,
     local_port: daemon.local_port,
-    file_host: file.host,
-    deploy_root: deploy.scratch_root,
-    remote_python: environment.remote_python,
-    daemon_endpoint_hostname: expected.daemon_endpoint_hostname,
+    file_host: file.host || sshDefault.host,
+    deploy_root: rootCfg.default,
+    remote_python: daemon.python,
+    daemon_endpoint_hostname: daemon.expected_hostname,
     jump_host: sshDefault.jump_host,
     jump_user: sshDefault.jump_user,
     spectre_host: spectre.host,

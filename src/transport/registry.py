@@ -33,7 +33,7 @@ except ImportError:  # pragma: no cover - Windows
 
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from transport.runtime_paths import registry_path
 
@@ -50,53 +50,69 @@ class TokenConflictError(RegistryError):
     """Registering a token that already belongs to another user."""
 
 
-class EndpointConfig(BaseModel):
-    """Per-role endpoint policy: each field falls back to ``ssh.default.*``."""
+class RoleConfig(BaseModel):
+    """Per-role configuration (spec: 配置一览 §2.3).
+
+    ``mode`` is per role; ``None`` means "fall back to ``mode.default``".
+    ``root`` is the role's file root; ``None`` means
+    ``root.default/<role>``.  ``expected_*`` fields are probe-written
+    verification baselines, not user configuration.
+    """
+
+    mode: Literal["local", "remote"] | None = None
+    host: str | None = None
+    user: str | None = None
+    jump_host: str | None = None
+    jump_user: str | None = None
+    proxy: str | None = None
+    root: str | None = None
+    expected_fingerprint: str | None = None
+
+
+class DaemonRoleConfig(RoleConfig):
+    """daemon role: Skill endpoint, deployment target, python environment."""
+
+    daemon_port: int | None = Field(default=None, ge=1, le=65535)
+    local_port: int | None = Field(default=None, ge=1, le=65535)
+    python: str | None = None  # 环境：探测写入（或显式提供后校验）
+    expected_hostname: str | None = None
+    expected_user: str | None = None
+
+
+class SpectreRoleConfig(RoleConfig):
+    bin: str | None = None
+
+
+class Roles(BaseModel):
+    """The five role configurations; container key in registry.json is ``roles``."""
+
+    gui: RoleConfig = Field(default_factory=RoleConfig)
+    daemon: DaemonRoleConfig = Field(default_factory=DaemonRoleConfig)
+    command: RoleConfig = Field(default_factory=RoleConfig)
+    file: RoleConfig = Field(default_factory=RoleConfig)
+    spectre: SpectreRoleConfig = Field(default_factory=SpectreRoleConfig)
+
+
+class ModeConfig(BaseModel):
+    """Global mode default (required, no default value)."""
+
+    default: Literal["local", "remote"]
+
+
+class RootConfig(BaseModel):
+    """Global file-root default; ``None`` means ``~/.virtuoso-bridge/<user>``."""
+
+    default: str | None = None
+
+
+class SshDefaults(BaseModel):
+    """Global SSH fallback consumed by every remote role field left unset."""
 
     host: str | None = None
     user: str | None = None
     jump_host: str | None = None
     jump_user: str | None = None
     proxy: str | None = None
-
-
-class DaemonConfig(EndpointConfig):
-    """The only role with ports (daemon listen port + local tunnel port)."""
-
-    daemon_port: int | None = Field(default=None, ge=1, le=65535)
-    local_port: int | None = Field(default=None, ge=1, le=65535)
-
-
-class SpectreConfig(EndpointConfig):
-    """Spectre role is recorded this version, never consumed by business calls."""
-
-    bin: str | None = None
-
-
-class SshDefaults(EndpointConfig):
-    """Global SSH fallback consumed by every role field left unset."""
-
-
-class Route(BaseModel):
-    gui: EndpointConfig = Field(default_factory=EndpointConfig)
-    daemon: DaemonConfig = Field(default_factory=DaemonConfig)
-    command: EndpointConfig = Field(default_factory=EndpointConfig)
-    file: EndpointConfig = Field(default_factory=EndpointConfig)
-    spectre: SpectreConfig = Field(default_factory=SpectreConfig)
-
-
-class Expected(BaseModel):
-    ssh_endpoints: dict[str, str] = Field(default_factory=dict)  # per business SSH endpoint
-    daemon_endpoint_hostname: str | None = None
-    daemon_user: str | None = None
-
-
-class Environment(BaseModel):
-    remote_python: str | None = None  # detected on the remote side, consumed there
-
-
-class Deploy(BaseModel):
-    scratch_root: str = "~/.virtuoso-bridge"
 
 
 class Ssh(BaseModel):
@@ -118,17 +134,23 @@ class CdsLog(BaseModel):
 
 
 class UserEntry(BaseModel):
+    model_config = ConfigDict(validate_assignment=True)
+
     token: str = Field(min_length=1, max_length=64, pattern=r"^[A-Za-z0-9._-]+$")
-    mode: Literal["local", "remote"]  # required, no default
-    route: Route = Field(default_factory=Route)
-    expected: Expected = Field(default_factory=Expected)
-    environment: Environment = Field(default_factory=Environment)
-    deploy: Deploy = Field(default_factory=Deploy)
+    # mode.default is required; a bare string is accepted as shorthand.
+    mode: ModeConfig | Literal["local", "remote"]
     ssh: Ssh = Field(default_factory=Ssh)
+    root: RootConfig = Field(default_factory=RootConfig)
+    roles: Roles = Field(default_factory=Roles)
     runtime: Runtime = Field(default_factory=Runtime)
     cdslog: CdsLog = Field(default_factory=CdsLog)
-    registered_at: int | None = None # unix seconds; set at the step-6 commit
+    registered_at: int | None = None  # unix seconds; set at the step-6 commit
 
+    @model_validator(mode="after")
+    def _normalize_mode(self):
+        if isinstance(self.mode, str):
+            object.__setattr__(self, "mode", ModeConfig(default=self.mode))
+        return self
 
 class Registry:
     """Load-once, in-memory, verified user registry."""
@@ -314,21 +336,20 @@ def load_registry(path: str | Path | None = None) -> Registry:
 
 __all__ = [
     "CdsLog",
-    "EndpointConfig",
-    "Deploy",
-    "Expected",
-    "SpectreConfig",
-    "SshDefaults",
+    "DaemonRoleConfig",
+    "ModeConfig",
+    "RoleConfig",
+    "Roles",
+    "RootConfig",
     "Registry",
     "RegistryError",
-    "Route",
     "Runtime",
-    "DaemonConfig",
-
+    "SpectreRoleConfig",
     "Ssh",
+    "SshDefaults",
     "TokenConflictError",
-    "endpoint_key",
     "UserAlreadyRegisteredError",
     "UserEntry",
+    "endpoint_key",
     "load_registry",
 ]

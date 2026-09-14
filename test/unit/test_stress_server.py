@@ -62,8 +62,8 @@ class TestStressServer(unittest.TestCase):
         daemon = FakeDaemon("tok-1")
         registry = load_registry(registry_path())
         entry = UserEntry(token="tok-1", mode="local")
-        entry.route.daemon.local_port = daemon.port
-        entry.route.daemon.daemon_port = daemon.port
+        entry.roles.daemon.local_port = daemon.port
+        entry.roles.daemon.daemon_port = daemon.port
         registry.register("u1", entry)
         middle = BusinessServer(cls.wd)
         cls.server = StressServer(("127.0.0.1", 0), middle)

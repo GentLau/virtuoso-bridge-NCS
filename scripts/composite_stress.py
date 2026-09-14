@@ -30,6 +30,8 @@ def post(base, path, payload, timeout=180):
 def start_local(user, setup, display):
     proj = Path(f"/home/Gent/project/{user}")
     proj.mkdir(parents=True, exist_ok=True)
+    # a previous run may have crashed and left the log lock behind
+    (proj / "CDS.log.cdslck").unlink(missing_ok=True)
     (proj / ".cdsinit").write_text(f'load("{setup}")\n', encoding="utf-8")
     cmd = (f"cd {proj} && DISPLAY={display} nohup bash -lc "
            f"'source ~/.bashrc; virtuoso -log {proj}/CDS.log' > {proj}/start.log 2>&1 < /dev/null &")
@@ -61,19 +63,19 @@ def main():
             user, token, port = f"vb{n:02d}", f"vb-vb{n:02d}", 65100 + n
             lp = allocate_local_port(reserved=reserved, tries=200); reserved.add(lp)
             e = UserEntry(token=token, mode="remote")
-            e.route.daemon.host = "wsl-gent"; e.route.daemon.daemon_port = port; e.route.daemon.local_port = lp
-            e.route.command.host = "wsl-gent"; e.route.command.user = "Gent"; e.route.file.host = "wsl-gent"
-            e.deploy.scratch_root = f"/home/Gent/.virtuoso-bridge/{user}"
-            e.expected.daemon_user = "Gent"
+            e.roles.daemon.host = "wsl-gent"; e.roles.daemon.daemon_port = port; e.roles.daemon.local_port = lp
+            e.roles.command.host = "wsl-gent"; e.roles.command.user = "Gent"; e.roles.file.host = "wsl-gent"
+            e.roles.daemon.root = f"/home/Gent/.virtuoso-bridge/{user}"
+            e.roles.daemon.expected_user = "Gent"
             reg.register(user, e); users.append((user, token, "real"))
         for n in range(10):
             user, token, port = f"cloud{n:02d}", f"cloud-{n:02d}", 6701 + n
             lp = allocate_local_port(reserved=reserved, tries=200); reserved.add(lp)
             e = UserEntry(token=token, mode="remote")
-            e.route.daemon.host = "vps"; e.route.daemon.daemon_port = port; e.route.daemon.local_port = lp
-            e.route.command.host = "vps"; e.route.command.user = "root"; e.route.file.host = "vps"
-            e.deploy.scratch_root = "/root/vbtest"
-            e.expected.daemon_user = "root"
+            e.roles.daemon.host = "vps"; e.roles.daemon.daemon_port = port; e.roles.daemon.local_port = lp
+            e.roles.command.host = "vps"; e.roles.command.user = "root"; e.roles.file.host = "vps"
+            e.roles.daemon.root = "/root/vbtest"
+            e.roles.daemon.expected_user = "root"
             reg.register(user, e); users.append((user, token, "fake"))
     else:
         # wsl client: 4 local real users + 4 vps fake users
@@ -83,7 +85,7 @@ def main():
             flow = RegistrationFlow(reg)
             state = flow.apply(RegistrationRequest(
                 mode="local", user=user, token=token,
-                role={"daemon": {"daemon_port": port},
+                roles={"daemon": {"daemon_port": port},
                       "spectre": {"bin": SPECTRE}},
             ))
             if state.stage != "deployed":
@@ -99,10 +101,10 @@ def main():
             user, token, port = f"cloud{n:02d}", f"cloud-{n:02d}", 6701 + n
             lp = allocate_local_port(reserved=reserved, tries=200); reserved.add(lp)
             e = UserEntry(token=token, mode="remote")
-            e.route.daemon.host = "vps"; e.route.daemon.daemon_port = port; e.route.daemon.local_port = lp
-            e.route.command.host = "vps"; e.route.command.user = "root"; e.route.file.host = "vps"
-            e.deploy.scratch_root = "/root/vbtest"
-            e.expected.daemon_user = "root"
+            e.roles.daemon.host = "vps"; e.roles.daemon.daemon_port = port; e.roles.daemon.local_port = lp
+            e.roles.command.host = "vps"; e.roles.command.user = "root"; e.roles.file.host = "vps"
+            e.roles.daemon.root = "/root/vbtest"
+            e.roles.daemon.expected_user = "root"
             reg.register(user, e); users.append((user, token, "fake"))
 
     middle = BusinessServer(wd)
@@ -149,7 +151,7 @@ def main():
                 else:
                     data = (tok + str(seq)).encode() * 512
                     src = Path(tempfile.mkdtemp()) / "f.bin"; src.write_bytes(data)
-                    remote = f"{middle.registry.by_token(tok).deploy.scratch_root}/comp-{user}-{seq}.bin"
+                    remote = f"{middle.registry.by_token(tok).roles.daemon.root}/comp-{user}-{seq}.bin"
                     st, body = post(base, "/api/upload", {"token": tok, "remote_path": remote,
                                                            "content_b64": __import__('base64').b64encode(data).decode()})
                     body = {"ok": body.get("returncode") == 0, "body": body}

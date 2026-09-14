@@ -42,7 +42,7 @@ def main(argv=None):
 
     entries = sorted(
         registry.entries(),
-        key=lambda kv: (kv[1].route.daemon.daemon_port or 0, kv[0]),
+        key=lambda kv: (kv[1].roles.daemon.daemon_port or 0, kv[0]),
     )
     if args.users:
         entries = entries[: args.users]
@@ -51,11 +51,11 @@ def main(argv=None):
         raise SystemExit(2)
 
     tokens = [e.token for _, e in entries]
-    roots = [e.deploy.scratch_root for _, e in entries]
+    roots = [e.roles.daemon.root for _, e in entries]
     users = len(tokens)
     print(
         f"real-daemon stress: users={users} "
-        f"daemon_ports={[e.route.daemon.daemon_port for _, e in entries]}"
+        f"daemon_ports={[e.roles.daemon.daemon_port for _, e in entries]}"
     )
 
     server_log = wd / "log" / "stress_server.log"

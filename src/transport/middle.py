@@ -34,7 +34,7 @@ class _LocalCommandSession:
     reads back after the shell finishes the command.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, cwd: str | None = None) -> None:
         self._lock = threading.RLock()
         self._seq = 0
         self._proc = None
@@ -43,6 +43,11 @@ class _LocalCommandSession:
         self._eof = False
         self._current = None
         self._err_dir = Path(tempfile.mkdtemp(prefix="vb_local_err_"))
+        self._cwd = None
+        if cwd:
+            workdir = Path(cwd).expanduser()
+            workdir.mkdir(parents=True, exist_ok=True)
+            self._cwd = str(workdir)
         self._spawn()
 
     @staticmethod
@@ -78,6 +83,7 @@ class _LocalCommandSession:
             errors="replace",
             bufsize=1,
             env=self._env(),
+            cwd=self._cwd or None,
         )
         self._proc = proc
         self._dead = False
@@ -279,10 +285,16 @@ class BusinessServer(Middle):
             client = self._skill_clients.get(token)
             if client is None:
                 entry = self._entry(token)
-                targets = self._targets(entry)
+                user = self.registry.user_of(token) or token
+                targets = self._targets(entry, user=user)
+                port = (
+                    targets.daemon_port
+                    if targets.daemon.mode == "local"
+                    else targets.local_port
+                )
                 client = SkillClient(
                     host="127.0.0.1",
-                    port=targets.local_port,
+                    port=port,
                     timeout=30.0,
                     token=token,
                     log_level=entry.cdslog.log_level,
@@ -315,11 +327,11 @@ class BusinessServer(Middle):
                 self._local_locks[token] = lock
             return lock
 
-    def _local_session(self, token: str) -> _LocalCommandSession:
+    def _local_session(self, token: str, cwd: str | None = None) -> _LocalCommandSession:
         with self._lock:
             session = self._local_sessions.get(token)
             if session is None:
-                session = _LocalCommandSession()
+                session = _LocalCommandSession(cwd=cwd)
                 self._local_sessions[token] = session
             return session
 
@@ -333,7 +345,9 @@ class BusinessServer(Middle):
             if not self._acquire(token, entry):
                 return VirtuosoResult(status=ExecutionStatus.ERROR, errors=["thread pool exceeded"])
             acquired = True
-            if entry.mode != "local":
+            user = self.registry.user_of(token) or token
+            targets = self._targets(entry, user=user)
+            if targets.daemon.mode == "remote":
                 self._remote(token).ensure_tunnel(deadline=deadline)
             remaining = None if deadline is None else max(0.0, deadline - time.monotonic())
             return self._skill(token).execute_skill(skill_code, timeout=remaining)
@@ -354,11 +368,13 @@ class BusinessServer(Middle):
             if not self._acquire(token, entry):
                 return CommandResult(returncode=1, stdout="", stderr="thread pool exceeded", kind="rejected")
             acquired = True
-            if entry.mode == "local":
+            user = self.registry.user_of(token) or token
+            targets = self._targets(entry, user=user)
+            if targets.command.mode == "local":
                 if parallel:
-                    return self._local_command(cmd, timeout)
+                    return self._local_command(cmd, timeout, cwd=targets.command.root)
                 with self._local_lock(token):
-                    return self._local_session(token).execute(cmd, timeout)
+                    return self._local_session(token, cwd=targets.command.root).execute(cmd, timeout)
             return self._remote(token).run_command(cmd, timeout=timeout, parallel=parallel)
         except LookupError as exc:
             return CommandResult(returncode=1, stdout="", stderr=str(exc), kind="invalid-token")
@@ -373,8 +389,10 @@ class BusinessServer(Middle):
             if not self._acquire(token, entry):
                 return CommandResult(returncode=1, stdout="", stderr="thread pool exceeded", kind="rejected")
             acquired = True
-            if entry.mode == "local":
-                return self._local_upload(local_path, remote_path, recursive)
+            user = self.registry.user_of(token) or token
+            targets = self._targets(entry, user=user)
+            if targets.file.mode == "local":
+                return self._local_upload(local_path, remote_path, recursive, root=targets.file.root)
             return self._remote(token).upload_file(Path(local_path), remote_path, timeout=timeout, recursive=recursive)
         except LookupError as exc:
             return CommandResult(returncode=1, stdout="", stderr=str(exc), kind="invalid-token")
@@ -389,9 +407,40 @@ class BusinessServer(Middle):
             if not self._acquire(token, entry):
                 return CommandResult(returncode=1, stdout="", stderr="thread pool exceeded", kind="rejected")
             acquired = True
-            if entry.mode == "local":
-                return self._local_download(remote_path, local_path, recursive)
+            user = self.registry.user_of(token) or token
+            targets = self._targets(entry, user=user)
+            if targets.file.mode == "local":
+                return self._local_download(remote_path, local_path, recursive, root=targets.file.root)
             return self._remote(token).download_file(remote_path, Path(local_path), timeout=timeout, recursive=recursive)
+        except LookupError as exc:
+            return CommandResult(returncode=1, stdout="", stderr=str(exc), kind="invalid-token")
+        finally:
+            if acquired:
+                self._release(token)
+
+    # -- one-shot role interfaces (gui / spectre) ------------------------------
+
+    def run_gui_command(self, cmd: str, timeout: int | None = None, *, token: str) -> CommandResult:
+        """GUI 命令执行：在 gui role 上执行一条一次性命令（无常驻 shell）。"""
+        return self._one_shot_role("gui", cmd, timeout, token)
+
+    def run_spectre_command(self, cmd: str, timeout: int | None = None, *, token: str) -> CommandResult:
+        """Spectre 命令执行：在 spectre role 上执行一条一次性命令。"""
+        return self._one_shot_role("spectre", cmd, timeout, token)
+
+    def _one_shot_role(self, role_name: str, cmd: str, timeout: int | None, token: str) -> CommandResult:
+        acquired = False
+        try:
+            entry = self._entry(token)
+            if not self._acquire(token, entry):
+                return CommandResult(returncode=1, stdout="", stderr="thread pool exceeded", kind="rejected")
+            acquired = True
+            user = self.registry.user_of(token) or token
+            targets = self._targets(entry, user=user)
+            role = targets.role(role_name)
+            if role.mode == "local":
+                return self._local_command(cmd, timeout, cwd=role.root)
+            return self._remote(token).run_one_shot(role_name, cmd, timeout=timeout)
         except LookupError as exc:
             return CommandResult(returncode=1, stdout="", stderr=str(exc), kind="invalid-token")
         finally:
@@ -401,18 +450,29 @@ class BusinessServer(Middle):
     # -- local-mode helpers ---------------------------------------------------
 
     @staticmethod
-    def _local_command(cmd: str, timeout: int | None) -> CommandResult:
+    def _local_command(cmd: str, timeout: int | None, cwd: str | None = None) -> CommandResult:
+        workdir = None
+        if cwd:
+            workdir = Path(cwd).expanduser()
+            workdir.mkdir(parents=True, exist_ok=True)
         try:
-            proc = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=timeout)
+            proc = subprocess.run(
+                cmd, shell=True, capture_output=True, text=True,
+                timeout=timeout, cwd=workdir,
+            )
             return CommandResult(proc.returncode, proc.stdout, proc.stderr)
         except subprocess.TimeoutExpired:
             return CommandResult(returncode=124, stdout="", stderr=f"command timed out after {timeout}s", kind="timeout")
+        except OSError as exc:
+            return CommandResult(returncode=1, stdout="", stderr=str(exc), kind="path")
 
     @staticmethod
-    def _local_upload(local_path: Path, remote_path: str, recursive: bool) -> CommandResult:
+    def _local_upload(local_path: Path, remote_path: str, recursive: bool, root: str | None = None) -> CommandResult:
         try:
             src = Path(local_path)
             dst = Path(remote_path)
+            if not dst.is_absolute() and root:
+                dst = Path(root).expanduser() / dst
             if recursive:
                 if not src.is_dir():
                     return CommandResult(1, "", f"recursive upload requires a directory: {src}")
@@ -427,9 +487,11 @@ class BusinessServer(Middle):
             return CommandResult(1, "", str(exc))
 
     @staticmethod
-    def _local_download(remote_path: str, local_path: Path, recursive: bool) -> CommandResult:
+    def _local_download(remote_path: str, local_path: Path, recursive: bool, root: str | None = None) -> CommandResult:
         try:
             src = Path(remote_path)
+            if not src.is_absolute() and root:
+                src = Path(root).expanduser() / src
             local_path.parent.mkdir(parents=True, exist_ok=True)
             if recursive:
                 shutil.copytree(src, local_path, dirs_exist_ok=True)

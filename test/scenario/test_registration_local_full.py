@@ -79,8 +79,8 @@ class TestLocalRegistrationScenario(unittest.TestCase):
             flow = RegistrationFlow(registry)
             state = flow.apply(RegistrationRequest(
                 user="alice", token="tok-local", mode="local",
-                scratch_root=str(root),
-                role={"daemon": {"daemon_port": port},
+                root={"default": str(root)},
+                roles={"daemon": {"daemon_port": port},
                       "spectre": {"bin": sys.executable}},
             ))
             self.assertEqual(state.stage, "deployed", str(state.errors))

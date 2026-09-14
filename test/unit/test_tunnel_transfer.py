@@ -64,14 +64,14 @@ class FakeRunner:
 
 def make_entry(**kwargs):
     entry = UserEntry(token="tok-1", mode="remote")
-    entry.route.daemon.host = kwargs.get("skill_host", "daemon-a")
-    entry.route.daemon.daemon_port = 65081
-    entry.route.daemon.local_port = 65082
-    entry.route.command.host = kwargs.get("command_host", "daemon-a")
-    entry.route.file.host = kwargs.get("file_host", "daemon-a")
-    entry.expected.daemon_user = "alice"
-    entry.environment.remote_python = "python3"
-    entry.deploy.scratch_root = "/home/alice/.virtuoso-bridge"
+    entry.roles.daemon.host = kwargs.get("skill_host", "daemon-a")
+    entry.roles.daemon.daemon_port = 65081
+    entry.roles.daemon.local_port = 65082
+    entry.roles.command.host = kwargs.get("command_host", "daemon-a")
+    entry.roles.file.host = kwargs.get("file_host", "daemon-a")
+    entry.roles.daemon.expected_user = "alice"
+    entry.roles.daemon.python = "python3"
+    entry.roles.daemon.root = "/home/alice/.virtuoso-bridge"
     entry.runtime.channel_budget = kwargs.get("channel_budget", 10)
     return entry
 

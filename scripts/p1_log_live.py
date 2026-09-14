@@ -11,11 +11,11 @@ def build_entry(level):
     wd = set_working_dir(Path(tempfile.mkdtemp()))
     reg = load_registry(registry_path())
     e = UserEntry(token="vb-vb01", mode="remote")
-    e.route.daemon.host = "wsl-gent"; e.route.daemon.daemon_port = 65101
-    e.route.daemon.local_port = allocate_local_port()
-    e.route.command.host = "wsl-gent"; e.route.command.user = "Gent"
-    e.deploy.scratch_root = "/home/Gent/.virtuoso-bridge/vb01"
-    e.expected.daemon_user = "Gent"
+    e.roles.daemon.host = "wsl-gent"; e.roles.daemon.daemon_port = 65101
+    e.roles.daemon.local_port = allocate_local_port()
+    e.roles.command.host = "wsl-gent"; e.roles.command.user = "Gent"
+    e.roles.daemon.root = "/home/Gent/.virtuoso-bridge/vb01"
+    e.roles.daemon.expected_user = "Gent"
     e.cdslog.log_level = level
     reg.register("vb01", e)
     return BusinessServer(wd)

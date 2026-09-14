@@ -15,11 +15,11 @@ from transport.registry import UserEntry
 class TestFileRootFallback(unittest.TestCase):
     def test_file_root_is_the_single_bridge_workdir(self):
         entry = UserEntry(token="tok-123", mode="remote")
-        entry.deploy.scratch_root = "~/.virtuoso-bridge/alice"
-        entry.route.daemon.host = "server"
-        entry.route.daemon.daemon_port = 65081
+        entry.roles.daemon.root = "~/.virtuoso-bridge/alice"
+        entry.roles.daemon.host = "server"
+        entry.roles.daemon.daemon_port = 65081
         targets = resolve(entry, user="alice")
-        self.assertEqual(targets.scratch_root, "~/.virtuoso-bridge/alice")
+        self.assertEqual(targets.daemon.root, "~/.virtuoso-bridge/alice")
 
 
 if __name__ == "__main__":

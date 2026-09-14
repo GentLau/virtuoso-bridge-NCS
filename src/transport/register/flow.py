@@ -1,19 +1,17 @@
 """Six-step registration flow (setup phase).
 
-See ``spec/design-concepts/底层与中层/多用户设计.md`` §3.2:
+Spec: ``多用户设计`` §3.2 and ``多节点设计``.
 
-1. 申请           submit required params (token generated here, no side effect)
-2. 本地校验       user-name / port de-dup against the registry (no network)
-3. 探测           remote/local environment probes -> candidate ``UserEntry``
-4. 部署           upload daemon/il/setup, then hand the load prompt to the user
-5. 连通性测试     daemon reachable + token match + dual smoke
-6. 写入注册表     only after 1-5 succeed; the single write point
+1. 申请       submit canonical params (token generated here, no side effect)
+2. 本地校验   user-name / port de-dup against the registry (no network)
+3. 探测       per-role probes: mode=local runs locally, mode=remote via SSH
+4. 部署       upload daemon/il/setup to the daemon role root, prompt CIW load
+5. 连通性     daemon reachable + token match + dual smoke + fingerprint
+6. 写注册表   the only durable write point
 
-Five roles (gui/daemon/command/file/spectre) each fall back to
-``ssh.default.*``; the corresponding probe runs on the corresponding role
-(python/port/scratch -> daemon, command smoke -> command, file root -> file,
-spectre bin -> spectre).  Spectre is only recorded this version: its SSH and
-binary failures are WARNINGs, never registration blockers.
+Roles are probed on their own role (python/port/root -> daemon; command smoke
+-> command; file root -> file; bin -> spectre).  Spectre probe failures are
+WARNING-only.  Registration never persists partial state.
 """
 
 from __future__ import annotations
@@ -21,29 +19,36 @@ from __future__ import annotations
 import getpass
 import logging
 import shlex
+import socket
 import subprocess
+import sys
 import time
 import uuid
 from pathlib import Path
 
 from transport.registry import (
+    CdsLog,
+    DaemonRoleConfig,
+    ModeConfig,
     Registry,
     RegistryError,
-    UserEntry,
-    DaemonConfig,
-    EndpointConfig,
-    SpectreConfig,
+    RoleConfig,
+    Roles,
+    RootConfig,
+    Runtime,
+    SpectreRoleConfig,
+    Ssh,
     SshDefaults,
+    UserEntry,
     endpoint_key,
 )
-from transport.remote_roles import resolve, ResolvedRole, ResolvedTargets
+from transport.remote_roles import fingerprint_conflicts, resolve, ResolvedRole
 from transport.register import probe as probes
 from transport.register.models import (
     ConnectivityReport,
     ProbeResult,
     RegistrationRequest,
     RegistrationState,
-    RequestEndpoint,
 )
 from transport.deploy import deploy_files
 from transport.remote_paths import identity_path
@@ -55,6 +60,7 @@ logger = logging.getLogger(__name__)
 
 _LOCAL_DEFAULT_PORT = 65432
 _BUSINESS_ROLES = ("gui", "daemon", "command", "file")
+_ALL_ROLES = ("gui", "daemon", "command", "file", "spectre")
 
 
 class RegistrationProbeError(RuntimeError):
@@ -69,19 +75,19 @@ def validate_local(registry: Registry, request: RegistrationRequest) -> list[str
     if registry.get(request.user) is not None:
         errors.append(f"user {request.user!r} is already registered")
 
-    daemon_port = request.role.daemon.daemon_port
-    local_port = request.role.daemon.local_port
+    daemon_port = request.roles.daemon.daemon_port
+    local_port = request.roles.daemon.local_port
     for name, entry in registry.entries():
-        if entry.route.daemon.daemon_port is not None and daemon_port is not None:
-            if entry.route.daemon.daemon_port == daemon_port:
+        if entry.roles.daemon.daemon_port is not None and daemon_port is not None:
+            if entry.roles.daemon.daemon_port == daemon_port:
                 errors.append(f"daemon port {daemon_port} conflicts with user {name!r}")
-        if entry.route.daemon.local_port is not None and local_port is not None:
-            if entry.route.daemon.local_port == local_port:
+        if entry.roles.daemon.local_port is not None and local_port is not None:
+            if entry.roles.daemon.local_port == local_port:
                 errors.append(f"local port {local_port} conflicts with user {name!r}")
     return errors
 
 
-# -- step 3: probe ------------------------------------------------------------
+# -- helpers -------------------------------------------------------------------
 
 def _resolve_remote_scratch(runner, scratch_root: str) -> str:
     if not scratch_root.startswith("~"):
@@ -90,45 +96,35 @@ def _resolve_remote_scratch(runner, scratch_root: str) -> str:
     home = result.stdout.strip()
     if result.returncode == 0 and home:
         return scratch_root.replace("~", home, 1)
-    raise RegistrationProbeError("cannot resolve remote $HOME for scratch root")
-
-
-def _as_endpoint(ep: RequestEndpoint) -> EndpointConfig:
-    return EndpointConfig(
-        host=ep.host, user=ep.user, jump_host=ep.jump_host,
-        jump_user=ep.jump_user, proxy=ep.proxy,
-    )
+    raise RegistrationProbeError("cannot resolve remote $HOME for role root")
 
 
 def _build_entry(request: RegistrationRequest, token: str) -> UserEntry:
-    entry = UserEntry(token=token, mode=request.mode)
-    entry.ssh.default = SshDefaults(
-        host=request.ssh.default.host, user=request.ssh.default.user,
-        jump_host=request.ssh.default.jump_host,
-        jump_user=request.ssh.default.jump_user, proxy=request.ssh.default.proxy,
-    )
-    entry.route.gui = _as_endpoint(request.role.gui)
-    entry.route.daemon = DaemonConfig(
-        host=request.role.daemon.host, user=request.role.daemon.user,
-        jump_host=request.role.daemon.jump_host,
-        jump_user=request.role.daemon.jump_user, proxy=request.role.daemon.proxy,
-        daemon_port=request.role.daemon.daemon_port,
-        local_port=request.role.daemon.local_port,
-    )
-    entry.route.command = _as_endpoint(request.role.command)
-    entry.route.file = _as_endpoint(request.role.file)
-    entry.route.spectre = SpectreConfig(
-        host=request.role.spectre.host, user=request.role.spectre.user,
-        jump_host=request.role.spectre.jump_host,
-        jump_user=request.role.spectre.jump_user, proxy=request.role.spectre.proxy,
-        bin=request.role.spectre.bin,
+    entry = UserEntry(
+        token=token,
+        mode=ModeConfig(default=request.mode.default),
+        ssh=Ssh(
+            default=SshDefaults(
+                host=request.ssh.default.host, user=request.ssh.default.user,
+                jump_host=request.ssh.default.jump_host,
+                jump_user=request.ssh.default.jump_user,
+                proxy=request.ssh.default.proxy,
+            )
+        ),
+        root=RootConfig(default=request.root.default),
+        roles=Roles(
+            gui=RoleConfig(**request.roles.gui.model_dump()),
+            daemon=DaemonRoleConfig(**request.roles.daemon.model_dump()),
+            command=RoleConfig(**request.roles.command.model_dump()),
+            file=RoleConfig(**request.roles.file.model_dump()),
+            spectre=SpectreRoleConfig(**request.roles.spectre.model_dump()),
+        ),
     )
     _apply_policies(request, entry)
     return entry
 
 
 def _apply_policies(request: RegistrationRequest, entry: UserEntry) -> None:
-    """Copy the optional per-user policy fields from the catalog into the entry."""
     if request.ssh_backend:
         entry.ssh.backend = request.ssh_backend
     if request.ssh_control_master:
@@ -147,18 +143,6 @@ def _apply_policies(request: RegistrationRequest, entry: UserEntry) -> None:
         entry.cdslog.log_max_bytes = request.log_max_bytes
 
 
-def _resolved_request_role(ep: RequestEndpoint, default: RequestEndpoint) -> ResolvedRole:
-    host = ep.host or default.host or ""
-    user = ep.user or default.user
-    jump_host = ep.jump_host or default.jump_host
-    jump_user = ep.jump_user or default.jump_user
-    proxy = ep.proxy or default.proxy
-    return ResolvedRole(
-        host=host, user=user, jump_host=jump_host, jump_user=jump_user,
-        proxy=proxy, key=endpoint_key(host, user, jump_host, jump_user, proxy),
-    )
-
-
 def _new_runner(role: ResolvedRole, token: str) -> SSHRunner:
     return SSHRunner(
         host=role.host,
@@ -170,64 +154,50 @@ def _new_runner(role: ResolvedRole, token: str) -> SSHRunner:
     )
 
 
-def _probe_local(request: RegistrationRequest, token: str) -> ProbeResult:
-    hostname = probes.local_hostname()
-    python_cmd, python_major = probes.local_python()
-    daemon_port = request.role.daemon.daemon_port or _LOCAL_DEFAULT_PORT
-    if not probes.local_port_free(daemon_port):
-        raise RegistrationProbeError(f"daemon port {daemon_port} already in use locally")
-    local_port = request.role.daemon.local_port
-    if local_port is not None and local_port != daemon_port:
+def _local_role_checks(role: ResolvedRole) -> str:
+    """Command availability + root writability for a local role.
+
+    Returns the expanded local root (stored back into the registry entry).
+    """
+    proc = subprocess.run(
+        "echo vb-ok", shell=True, capture_output=True, text=True, timeout=15
+    )
+    if proc.returncode != 0 or proc.stdout.strip() != "vb-ok":
         raise RegistrationProbeError(
-            f"local mode has no tunnel port: local_port must equal daemon_port "
-            f"(got local_port={local_port}, daemon_port={daemon_port})"
+            f"local role {role.name} command probe failed: rc={proc.returncode}"
         )
-    local_port = daemon_port
-    scratch = request.scratch_root
-    if scratch in ("", "~/.virtuoso-bridge"):
-        scratch = str(working_dir())
-    if not probes.local_path_writable(scratch):
-        raise RegistrationProbeError(f"deploy root not writable locally: {scratch}")
+    root = Path(role.root).expanduser()
+    if not probes.local_path_writable(root):
+        raise RegistrationProbeError(
+            f"role {role.name} root not writable locally: {root}"
+        )
+    return str(root)
 
+
+def _remote_role_checks(runner: SSHRunner, role: ResolvedRole) -> str:
+    """Command availability + root writability for a remote role.
+
+    Returns the resolved absolute root (stored back into the registry entry).
+    """
+    smoke = runner.run_command("echo vb-ok", timeout=15)
+    if smoke.returncode != 0 or smoke.stdout.strip() != "vb-ok":
+        raise RegistrationProbeError(
+            f"role {role.name} command probe failed on {role.host}: "
+            f"rc={smoke.returncode} err={smoke.stderr.strip()}"
+        )
+    root = _resolve_remote_scratch(runner, role.root)
+    if not probes.remote_path_writable(runner, root):
+        raise RegistrationProbeError(
+            f"role {role.name} root not writable on {role.host}: {root}"
+        )
+    return root
+
+
+def _probe(request: RegistrationRequest, token: str) -> ProbeResult:
     entry = _build_entry(request, token)
-    entry.expected.daemon_endpoint_hostname = hostname
-    entry.expected.daemon_user = probes.local_user()
-    entry.environment.remote_python = python_cmd
-    entry.deploy.scratch_root = f"{scratch}/{request.user}"
-    entry.route.daemon.daemon_port = daemon_port
-    entry.route.daemon.local_port = local_port
-
+    user = request.user
+    targets = resolve(entry, user)
     warnings: list[str] = []
-    if request.role.spectre.bin:
-        if not probes.local_executable_exists(request.role.spectre.bin):
-            warnings.append(f"spectre bin not usable locally: {request.role.spectre.bin}")
-        else:
-            entry.route.spectre.bin = request.role.spectre.bin
-    else:
-        spectre_bin = probes.detect_local_spectre()
-        if spectre_bin:
-            entry.route.spectre.bin = spectre_bin
-        else:
-            warnings.append("no usable spectre found locally (non-blocking)")
-    return ProbeResult(entry=entry, python_major=python_major, warnings=warnings)
-
-
-def _probe_remote(
-    request: RegistrationRequest,
-    token: str,
-    reserved_ports: set[int] | None = None,
-    reserved_local_ports: set[int] | None = None,
-) -> ProbeResult:
-    default = request.ssh.default
-    roles = {
-        "gui": _resolved_request_role(request.role.gui, default),
-        "daemon": _resolved_request_role(request.role.daemon, default),
-        "command": _resolved_request_role(request.role.command, default),
-        "file": _resolved_request_role(request.role.file, default),
-        "spectre": _resolved_request_role(request.role.spectre, default),
-    }
-    warnings: list[str] = []
-    fingerprints: dict[str, str] = {}
     runners: dict[str, SSHRunner] = {}
 
     def close_all():
@@ -238,115 +208,149 @@ def _probe_remote(
                 pass
 
     try:
-        # host-key + SSH reachability per role; spectre is warning-only
-        for name in ("gui", "daemon", "command", "file", "spectre"):
-            role = roles[name]
+        for name in _ALL_ROLES:
+            role = targets.role(name)
+            entry_role = getattr(entry.roles, name)
+            if role.mode == "local":
+                entry_role.root = _local_role_checks(role)
+                continue
             runner = _new_runner(role, token)
             runners[name] = runner
-            reachable = runner.test_connection()
+            if not runner.test_connection():
+                raise RegistrationProbeError(f"ssh unreachable for {name} role: {role.host}")
             fp = probes.host_key_fingerprint(role.host)
-            if name == "spectre":
-                if not reachable:
-                    warnings.append(f"spectre role SSH unreachable: {role.host} (non-blocking)")
-                elif not fp:
+            if not fp:
+                if name == "spectre":
                     warnings.append(
                         f"cannot obtain SSH host key fingerprint for spectre role "
                         f"{role.host} (non-blocking)"
                     )
                 else:
-                    fingerprints[role.key] = fp
-                continue
-            if not reachable:
-                raise RegistrationProbeError(f"ssh unreachable for {name} role: {role.host}")
-            if not fp:
-                raise RegistrationProbeError(
-                    f"cannot obtain SSH host key fingerprint for {name} role "
-                    f"{role.host} (add it to known_hosts out-of-band first)"
-                )
-            fingerprints[role.key] = fp
-
-        daemon = roles["daemon"]
-        daemon_runner = runners["daemon"]
-
-        hostname = probes.remote_hostname(daemon_runner)
-        if not hostname:
-            raise RegistrationProbeError(f"cannot resolve remote hostname on {daemon.host}")
-        daemon_user = probes.remote_user(daemon_runner)
-        if not daemon_user:
-            raise RegistrationProbeError(f"cannot resolve daemon user on {daemon.host}")
-
-        python = probes.detect_remote_python(daemon_runner)
-        if python is None:
-            raise RegistrationProbeError(f"no usable remote python found on {daemon.host}")
-        python_cmd, python_major = python
-
-        if request.role.daemon.daemon_port is not None:
-            if not probes.port_free_on_remote(
-                daemon_runner, request.role.daemon.daemon_port, python_cmd
-            ):
-                raise RegistrationProbeError(
-                    f"daemon port {request.role.daemon.daemon_port} already in use "
-                    f"on {daemon.host}"
-                )
-            daemon_port = request.role.daemon.daemon_port
-        else:
-            daemon_port = probes.allocate_remote_port(
-                daemon_runner, python_cmd, reserved=reserved_ports
-            )
-            if daemon_port is None:
-                raise RegistrationProbeError(f"no free remote daemon port found on {daemon.host}")
-
-        scratch = _resolve_remote_scratch(daemon_runner, request.scratch_root)
-        if not probes.remote_path_writable(daemon_runner, scratch):
-            raise RegistrationProbeError(f"deploy root not writable on {daemon.host}: {scratch}")
-
-        # command smoke on the command role
-        command_runner = runners["command"]
-        smoke = command_runner.run_command("echo vb-ok", timeout=15)
-        if smoke.returncode != 0 or smoke.stdout.strip() != "vb-ok":
-            raise RegistrationProbeError(
-                f"command role smoke failed on {roles['command'].host}: "
-                f"rc={smoke.returncode} err={smoke.stderr.strip()}"
-            )
-
-        # spectre binary: explicit -> validate, absent -> detect (both warning-only)
-        spectre_runner = runners["spectre"]
-        spectre_bin: str | None = None
-        if request.role.spectre.bin:
-            if probes.remote_executable_exists(spectre_runner, request.role.spectre.bin):
-                spectre_bin = request.role.spectre.bin
+                    raise RegistrationProbeError(
+                        f"cannot obtain SSH host key fingerprint for {name} role "
+                        f"{role.host} (add it to known_hosts out-of-band first)"
+                    )
             else:
-                warnings.append(
-                    f"spectre executable not usable on {roles['spectre'].host}: "
-                    f"{request.role.spectre.bin} (non-blocking)"
-                )
-        else:
-            detected = probes.detect_remote_spectre(spectre_runner)
-            if detected:
-                spectre_bin = detected
+                entry_role.expected_fingerprint = fp
+            if name == "spectre":
+                try:
+                    entry_role.root = _remote_role_checks(runner, role)
+                except RegistrationProbeError as exc:
+                    warnings.append(f"{exc} (non-blocking)")
             else:
-                warnings.append(
-                    f"no usable spectre found on {roles['spectre'].host} (non-blocking)"
+                entry_role.root = _remote_role_checks(runner, role)
+
+        # daemon-specific environment probes
+        daemon = targets.daemon
+        python_major = 2 if sys.version_info.major == 2 else 3
+        if daemon.mode == "local":
+            entry.roles.daemon.python = sys.executable
+            entry.roles.daemon.expected_hostname = socket.gethostname()
+            entry.roles.daemon.expected_user = getpass.getuser()
+            daemon_port = request.roles.daemon.daemon_port or _LOCAL_DEFAULT_PORT
+            if not probes.local_port_free(daemon_port):
+                raise RegistrationProbeError(
+                    f"daemon port {daemon_port} already in use locally"
                 )
-
-        local_port = request.role.daemon.local_port
-        if local_port is not None:
-            if not probes.local_port_free(local_port):
-                raise RegistrationProbeError(f"local port {local_port} is not usable on the caller")
+            local_port = request.roles.daemon.local_port
+            if local_port is not None and local_port != daemon_port:
+                raise RegistrationProbeError(
+                    f"daemon role is local: local_port must equal daemon_port "
+                    f"(got local_port={local_port}, daemon_port={daemon_port})"
+                )
+            entry.roles.daemon.daemon_port = daemon_port
+            entry.roles.daemon.local_port = daemon_port
         else:
-            local_port = probes.allocate_local_port(reserved=reserved_local_ports)
-            if local_port is None:
-                raise RegistrationProbeError("no free local tunnel port found")
+            runner = runners["daemon"]
+            python = probes.detect_remote_python(runner)
+            if python is None:
+                raise RegistrationProbeError(
+                    f"no usable python found on daemon role {daemon.host}"
+                )
+            python_cmd, python_major = python
+            entry.roles.daemon.python = python_cmd
+            hostname = probes.remote_hostname(runner)
+            if not hostname:
+                raise RegistrationProbeError(f"cannot resolve daemon hostname on {daemon.host}")
+            entry.roles.daemon.expected_hostname = hostname
+            daemon_user = probes.remote_user(runner)
+            if not daemon_user:
+                raise RegistrationProbeError(
+                    f"cannot resolve daemon user on {daemon.host}"
+                )
+            entry.roles.daemon.expected_user = daemon_user
+            if request.roles.daemon.daemon_port is not None:
+                if not probes.port_free_on_remote(
+                    runner, request.roles.daemon.daemon_port, python_cmd
+                ):
+                    raise RegistrationProbeError(
+                        f"daemon port {request.roles.daemon.daemon_port} already in use "
+                        f"on {daemon.host}"
+                    )
+                entry.roles.daemon.daemon_port = request.roles.daemon.daemon_port
+            else:
+                allocated = probes.allocate_remote_port(
+                    runner, python_cmd, reserved=set()
+                )
+                if allocated is None:
+                    raise RegistrationProbeError(
+                        f"no free remote daemon port found on {daemon.host}"
+                    )
+                entry.roles.daemon.daemon_port = allocated
+            local_port = request.roles.daemon.local_port
+            if local_port is not None:
+                if not probes.local_port_free(local_port):
+                    raise RegistrationProbeError(f"local port {local_port} is not usable")
+            else:
+                local_port = probes.allocate_local_port()
+                if local_port is None:
+                    raise RegistrationProbeError("no free local tunnel port found")
+            entry.roles.daemon.local_port = local_port
 
-        entry = _build_entry(request, token)
-        entry.route.daemon.daemon_port = daemon_port
-        entry.route.daemon.local_port = local_port
-        entry.expected.ssh_endpoints = fingerprints
-        entry.expected.daemon_endpoint_hostname = hostname
-        entry.expected.daemon_user = daemon_user
-        entry.environment.remote_python = python_cmd
-        entry.deploy.scratch_root = f"{scratch}/{request.user}"
-        entry.route.spectre.bin = spectre_bin
+        # spectre bin (warning-only)
+        spectre_role = targets.spectre
+        if spectre_role.mode == "local":
+            if request.roles.spectre.bin:
+                if probes.local_executable_exists(request.roles.spectre.bin):
+                    entry.roles.spectre.bin = request.roles.spectre.bin
+                else:
+                    entry.roles.spectre.bin = None
+                    warnings.append(
+                        f"spectre bin not usable locally: {request.roles.spectre.bin} "
+                        f"(non-blocking)"
+                    )
+            else:
+                detected = probes.detect_local_spectre()
+                if detected:
+                    entry.roles.spectre.bin = detected
+                else:
+                    warnings.append("no usable spectre found locally (non-blocking)")
+        else:
+            runner = runners.get("spectre")
+            if runner is not None:
+                if request.roles.spectre.bin:
+                    if probes.remote_executable_exists(runner, request.roles.spectre.bin):
+                        entry.roles.spectre.bin = request.roles.spectre.bin
+                    else:
+                        entry.roles.spectre.bin = None
+                        warnings.append(
+                            f"spectre bin not usable on {spectre_role.host}: "
+                            f"{request.roles.spectre.bin} (non-blocking)"
+                        )
+                else:
+                    detected = probes.detect_remote_spectre(runner)
+                    if detected:
+                        entry.roles.spectre.bin = detected
+                    else:
+                        warnings.append(
+                            f"no usable spectre found on {spectre_role.host} (non-blocking)"
+                        )
+
+        # endpoint-fingerprint consistency across roles sharing an endpoint
+        conflicts = fingerprint_conflicts(entry, user)
+        if conflicts:
+            raise RegistrationProbeError("; ".join(conflicts))
+
         return ProbeResult(entry=entry, python_major=python_major, warnings=warnings)
     finally:
         close_all()
@@ -360,29 +364,28 @@ def probe_user(
     reserved_local_ports: set[int] | None = None,
 ) -> ProbeResult:
     """Step 3: probe and build a candidate entry.  Never touches the registry."""
-    if request.mode == "local":
-        return _probe_local(request, token)
-    return _probe_remote(request, token, reserved_ports, reserved_local_ports)
+    return _probe(request, token)
 
 
 # -- step 4: deploy ------------------------------------------------------------
 
 def deploy_user(entry: UserEntry, python_major: int, user: str) -> str:
-    """Deploy daemon/il/setup for a candidate entry; return the setup path."""
+    """Deploy daemon/il/setup to the daemon role root; return the setup path."""
     targets = resolve(entry, user)
+    daemon = targets.daemon
     runner = None
-    if entry.mode != "local":
-        runner = _new_runner(targets.daemon, entry.token)
+    if daemon.mode == "remote":
+        runner = _new_runner(daemon, entry.token)
     try:
         return deploy_files(
             runner=runner,
             token=entry.token,
             user=user,
-            scratch_root=targets.scratch_root,
+            scratch_root=daemon.root,
             python_major=python_major,
-            python_cmd=entry.environment.remote_python or "python3",
+            python_cmd=entry.roles.daemon.python or "python3",
             port=targets.daemon_port,
-            local=entry.mode == "local",
+            local=daemon.mode == "local",
         )
     finally:
         if runner is not None:
@@ -398,12 +401,12 @@ def _short_host_match(a: str | None, b: str | None) -> bool:
 
 
 def _banner_hostname(entry: UserEntry, user: str) -> str | None:
-    path = identity_path(user, entry.deploy.scratch_root)
+    targets = resolve(entry, user)
+    path = identity_path(user, targets.daemon.root)
     try:
-        if entry.mode == "local":
+        if targets.daemon.mode == "local":
             text = Path(path).read_text(encoding="utf-8", errors="replace")
         else:
-            targets = resolve(entry, user)
             runner = _new_runner(targets.daemon, entry.token)
             try:
                 result = runner.run_command(f"cat {shlex.quote(path)}", timeout=10)
@@ -419,15 +422,17 @@ def _banner_hostname(entry: UserEntry, user: str) -> str | None:
 
 
 def test_connectivity(entry: UserEntry, user: str) -> ConnectivityReport:
-    """Step 5: daemon reachable + token match + host-key + dual smoke."""
+    """Step 5: daemon reachable + token match + fingerprints + dual smoke."""
     token = entry.token
     warnings: list[str] = []
     detail: list[str] = []
     targets = resolve(entry, user)
-    local_port = entry.route.daemon.local_port or entry.route.daemon.daemon_port
+    daemon = targets.daemon
+
+    skill_port = targets.daemon_port if daemon.mode == "local" else targets.local_port
     skill_client = SkillClient(
         host="127.0.0.1",
-        port=local_port,
+        port=skill_port,
         timeout=30.0,
         token=token,
         log_level=entry.cdslog.log_level,
@@ -435,45 +440,53 @@ def test_connectivity(entry: UserEntry, user: str) -> ConnectivityReport:
     )
 
     fingerprint_ok = True
-    if entry.mode == "local":
-        cmd = subprocess.run("echo vb-ok", shell=True, capture_output=True, text=True, timeout=15)
-        command_ok = cmd.returncode == 0 and cmd.stdout.strip() == "vb-ok"
-        if not command_ok:
-            detail.append(f"command={cmd.returncode}:{cmd.stderr.strip()}")
-        skill = skill_client.execute_skill("1+1")
-    else:
-        expected_endpoints = entry.expected.ssh_endpoints or {}
-        for name in _BUSINESS_ROLES:
-            role = getattr(targets, name)
-            current_fp = probes.host_key_fingerprint(role.host)
-            expected_fp = expected_endpoints.get(role.key)
-            if expected_fp and current_fp != expected_fp:
-                fingerprint_ok = False
-                detail.append(
-                    f"host key fingerprint mismatch for {name} role {role.host}: "
-                    f"current={current_fp} expected={expected_fp}"
-                )
-        spectre_role = targets.spectre
-        current_fp = probes.host_key_fingerprint(spectre_role.host)
-        expected_fp = expected_endpoints.get(spectre_role.key)
-        if expected_fp and current_fp != expected_fp:
-            warnings.append(
-                f"spectre role host key mismatch for {spectre_role.host} "
-                f"(non-blocking): current={current_fp} expected={expected_fp}"
+    tunnel_runner = None
+    command_runner = None
+    try:
+        # command smoke on the command role
+        command_role = targets.command
+        if command_role.mode == "local":
+            proc = subprocess.run(
+                "echo vb-ok", shell=True, capture_output=True, text=True, timeout=15
             )
-
-        command_runner = _new_runner(targets.command, token)
-        tunnel_runner = _new_runner(targets.daemon, token)
-        try:
+            command_ok = proc.returncode == 0 and proc.stdout.strip() == "vb-ok"
+            if not command_ok:
+                detail.append(f"command={proc.returncode}:{proc.stderr.strip()}")
+        else:
+            command_runner = _new_runner(command_role, token)
             result = command_runner.run_command("echo vb-ok")
             command_ok = result.returncode == 0 and result.stdout.strip() == "vb-ok"
             if not command_ok:
                 detail.append(f"command={result.returncode}:{result.stderr.strip()}")
+
+        # per-role fingerprint comparison (remote roles only)
+        for name in _ALL_ROLES:
+            role = targets.role(name)
+            expected = getattr(entry.roles, name).expected_fingerprint
+            if role.mode != "remote" or not expected:
+                continue
+            current = probes.host_key_fingerprint(role.host)
+            if current != expected:
+                message = (
+                    f"{name} role host key mismatch for {role.host}: "
+                    f"current={current} expected={expected}"
+                )
+                if name == "spectre":
+                    warnings.append(message + " (non-blocking)")
+                else:
+                    fingerprint_ok = False
+                    detail.append(message)
+
+        # skill smoke through the daemon role
+        if daemon.mode == "remote":
+            tunnel_runner = _new_runner(daemon, token)
             tunnel_runner.start_port_forward(
-                local_port, remote_port=targets.daemon_port
+                targets.local_port, remote_port=targets.daemon_port
             )
+        skill = skill_client.execute_skill("1+1")
+        if daemon.mode == "remote":
+            # right after the tunnel comes up the daemon may still be binding
             ready_deadline = time.monotonic() + 60.0
-            skill = skill_client.execute_skill("1+1")
             while time.monotonic() < ready_deadline and not skill.ok:
                 if not any(
                     "refused/reset" in (err or "") or "did not become ready" in (err or "")
@@ -482,10 +495,12 @@ def test_connectivity(entry: UserEntry, user: str) -> ConnectivityReport:
                     break
                 time.sleep(0.5)
                 skill = skill_client.execute_skill("1+1")
-        finally:
+    finally:
+        if tunnel_runner is not None:
             tunnel_runner.stop_port_forward()
-            command_runner.close()
             tunnel_runner.close()
+        if command_runner is not None:
+            command_runner.close()
 
     skill_ok = skill.ok and (skill.output or "").strip().strip('"') == "2"
     token_ok = "invalid token" not in " ".join(skill.errors).lower()
@@ -493,9 +508,11 @@ def test_connectivity(entry: UserEntry, user: str) -> ConnectivityReport:
         detail.append(f"skill={skill.status}:{skill.errors}")
 
     banner = _banner_hostname(entry, user)
-    expected = entry.expected.daemon_endpoint_hostname
-    if banner and expected and not _short_host_match(banner, expected):
-        warnings.append(f"daemon banner host {banner!r} differs from expected {expected!r}")
+    expected_hostname = entry.roles.daemon.expected_hostname
+    if banner and expected_hostname and not _short_host_match(banner, expected_hostname):
+        warnings.append(
+            f"daemon banner host {banner!r} differs from expected {expected_hostname!r}"
+        )
 
     return ConnectivityReport(
         token=token,
@@ -504,7 +521,7 @@ def test_connectivity(entry: UserEntry, user: str) -> ConnectivityReport:
         token_ok=token_ok,
         fingerprint_ok=fingerprint_ok,
         banner_hostname=banner,
-        expected_hostname=expected,
+        expected_hostname=expected_hostname,
         detail="; ".join(detail),
         warnings=warnings,
     )
@@ -521,7 +538,9 @@ class RegistrationFlow:
 
     def start(self, request: RegistrationRequest) -> RegistrationState:
         token = request.token or uuid.uuid4().hex[:24]
-        self.state = RegistrationState(user=request.user, stage="applied", step=1, request=request, token=token)
+        self.state = RegistrationState(
+            user=request.user, stage="applied", step=1, request=request, token=token
+        )
         return self.state
 
     def _ensure(self, expected: str, step: int) -> RegistrationState | None:
@@ -548,23 +567,8 @@ class RegistrationFlow:
         state = self._ensure("validated", 3)
         if state is None:
             return self.state
-        reserved = {
-            e.route.daemon.daemon_port
-            for _, e in self.registry.entries()
-            if e.route.daemon.daemon_port is not None
-        }
-        reserved_local = {
-            e.route.daemon.local_port
-            for _, e in self.registry.entries()
-            if e.route.daemon.local_port is not None
-        }
         try:
-            result = probe_user(
-                state.request,
-                token=state.token,
-                reserved_ports=reserved,
-                reserved_local_ports=reserved_local,
-            )
+            result = probe_user(state.request, token=state.token)
         except RegistrationProbeError as exc:
             state.stage = "failed"
             state.errors = [str(exc)]

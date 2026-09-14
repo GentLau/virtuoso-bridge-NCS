@@ -38,8 +38,8 @@ class TestNewMiddle(unittest.TestCase):
         from transport.registry import SshDefaults
         entry = UserEntry(token="tok-1", mode="remote")
         entry.ssh.default = SshDefaults(host="daemon-a", user="alice")
-        entry.route.daemon.daemon_port = 65081
-        entry.route.daemon.local_port = 65082
+        entry.roles.daemon.daemon_port = 65081
+        entry.roles.daemon.local_port = 65082
         t = resolve(entry)
         self.assertEqual(t.command.host, "daemon-a")
         self.assertEqual(t.command.user, "alice")
@@ -50,8 +50,8 @@ class TestNewMiddle(unittest.TestCase):
     def test_local_business_server(self):
         reg = load_registry(registry_path())
         entry = UserEntry(token="tok-1", mode="local")
-        entry.route.daemon.daemon_port = 65432
-        entry.route.daemon.local_port = 65432
+        entry.roles.daemon.daemon_port = 65432
+        entry.roles.daemon.local_port = 65432
         reg.register("alice", entry)
 
         server = BusinessServer(self.wd)

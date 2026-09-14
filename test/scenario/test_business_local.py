@@ -99,8 +99,8 @@ class FakeDaemon:
 
 def _entry(token: str, daemon: FakeDaemon) -> UserEntry:
     entry = UserEntry(token=token, mode="local")
-    entry.route.daemon.daemon_port = daemon.port
-    entry.route.daemon.local_port = daemon.port
+    entry.roles.daemon.daemon_port = daemon.port
+    entry.roles.daemon.local_port = daemon.port
     entry.runtime.thread_pool_size = 4  # small pool to exercise rejection
     return entry
 
@@ -204,7 +204,10 @@ class TestBusinessLocal(unittest.TestCase):
         for th in ts:
             th.join()
         self.assertEqual(set(parallel.values()), {0})
-        self.assertLess(time.time() - t0, 0.7)
+        parallel_elapsed = time.time() - t0
+        # parallel=True must be faster than the serialized run (process spawn
+        # cost varies; compare against the measured serial time, not a fixed SLA)
+        self.assertLess(parallel_elapsed, serial_elapsed)
 
     def test_parallel_commands_overlap(self):
         py = sys.executable

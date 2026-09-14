@@ -58,11 +58,11 @@ class TestMultiUserIsolation(unittest.TestCase):
         try:
             reg = load_registry(registry_path())
             a = UserEntry(token="tok-a", mode="local")
-            a.route.daemon.local_port = da.port
-            a.route.daemon.daemon_port = da.port
+            a.roles.daemon.local_port = da.port
+            a.roles.daemon.daemon_port = da.port
             b = UserEntry(token="tok-b", mode="local")
-            b.route.daemon.local_port = db.port
-            b.route.daemon.daemon_port = db.port
+            b.roles.daemon.local_port = db.port
+            b.roles.daemon.daemon_port = db.port
             reg.register("alice", a)
             reg.register("bob", b)
 

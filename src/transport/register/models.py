@@ -1,13 +1,8 @@
 """Registration request / state models.
 
-These describe the six-step registration flow (see
-``spec/design-concepts/底层与中层/多用户设计.md`` §3.2) and are consumed by
-the registration HTTP page and the CLI.  They are setup-phase models only;
-the runtime consumes ``UserEntry`` from the registry.
-
-Canonical request fields follow 配置一览 §6: ``ssh.default.*`` carries the
-global fallback and ``role.<gui|daemon|command|file|spectre>.*`` carries the
-per-role override.  Unknown fields are rejected (``extra="forbid"``).
+Six-step registration (spec: 多用户设计 §3.2).  Canonical request fields
+follow 配置一览 §6: ``mode.default`` + ``ssh.default.*`` + ``root.default`` +
+``roles.<gui|daemon|command|file|spectre>.*``.  Unknown fields are rejected.
 """
 
 from __future__ import annotations
@@ -20,7 +15,52 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from transport.registry import UserEntry
 
-_DEFAULT_SCRATCH = "~/.virtuoso-bridge"
+
+class RequestRole(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    mode: Literal["local", "remote"] | None = None
+    host: str | None = None
+    user: str | None = None
+    jump_host: str | None = None
+    jump_user: str | None = None
+    proxy: str | None = None
+    root: str | None = None
+    expected_fingerprint: str | None = None
+
+
+class RequestDaemonRole(RequestRole):
+    daemon_port: int | None = Field(default=None, ge=1, le=65535)
+    local_port: int | None = Field(default=None, ge=1, le=65535)
+    python: str | None = None
+    expected_hostname: str | None = None
+    expected_user: str | None = None
+
+
+class RequestSpectreRole(RequestRole):
+    bin: str | None = None
+
+
+class RequestRoles(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    gui: RequestRole = Field(default_factory=RequestRole)
+    daemon: RequestDaemonRole = Field(default_factory=RequestDaemonRole)
+    command: RequestRole = Field(default_factory=RequestRole)
+    file: RequestRole = Field(default_factory=RequestRole)
+    spectre: RequestSpectreRole = Field(default_factory=RequestSpectreRole)
+
+
+class RequestMode(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    default: Literal["local", "remote"]  # required, no default
+
+
+class RequestRoot(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    default: str | None = None  # None -> ~/.virtuoso-bridge/<user>
 
 
 class RequestEndpoint(BaseModel):
@@ -33,29 +73,10 @@ class RequestEndpoint(BaseModel):
     proxy: str | None = None
 
 
-class RequestDaemon(RequestEndpoint):
-    daemon_port: int | None = Field(default=None, ge=1, le=65535)
-    local_port: int | None = Field(default=None, ge=1, le=65535)
-
-
-class RequestSpectre(RequestEndpoint):
-    bin: str | None = None
-
-
 class RequestSsh(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     default: RequestEndpoint = Field(default_factory=RequestEndpoint)
-
-
-class RequestRoles(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    gui: RequestEndpoint = Field(default_factory=RequestEndpoint)
-    daemon: RequestDaemon = Field(default_factory=RequestDaemon)
-    command: RequestEndpoint = Field(default_factory=RequestEndpoint)
-    file: RequestEndpoint = Field(default_factory=RequestEndpoint)
-    spectre: RequestSpectre = Field(default_factory=RequestSpectre)
 
 
 class RegistrationRequest(BaseModel):
@@ -65,11 +86,11 @@ class RegistrationRequest(BaseModel):
 
     user: str = Field(min_length=1, max_length=64, pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
     token: str | None = Field(default=None, pattern=r"^[A-Za-z0-9._-]{1,64}$")
-    mode: Literal["local", "remote"]      # mandatory; never inferred
-    scratch_root: str = _DEFAULT_SCRATCH  # deploy root
-
+    # mode.default is required; a bare "local"/"remote" is accepted as shorthand.
+    mode: RequestMode | Literal["local", "remote"]
     ssh: RequestSsh = Field(default_factory=RequestSsh)
-    role: RequestRoles = Field(default_factory=RequestRoles)
+    root: RequestRoot = Field(default_factory=RequestRoot)
+    roles: RequestRoles = Field(default_factory=RequestRoles)
 
     # runtime / transport / log policies (optional; defaults live in UserEntry)
     ssh_backend: Literal["openssh", "paramiko"] | None = None
@@ -82,15 +103,32 @@ class RegistrationRequest(BaseModel):
     log_max_bytes: int | None = Field(default=None, ge=1)
 
     @model_validator(mode="after")
-    def _check_remote_required(self):
-        if self.mode == "remote":
-            if not (self.ssh.default.host or "").strip():
-                raise ValueError("ssh.default.host is required in remote mode")
-            if not (self.ssh.default.user or "").strip():
-                raise ValueError("ssh.default.user is required in remote mode")
+    def _normalize_mode(self):
+        if isinstance(self.mode, str):
+            object.__setattr__(self, "mode", RequestMode(default=self.mode))
+        return self
+
+    @model_validator(mode="after")
+    def _check_roles(self):
         user = self.user or ""
         if user.startswith(("/", "\\")) or "/" in user or "\\" in user or ".." in user:
-            raise ValueError("user must be a single path segment (no '/', '\', '..', absolute path)")
+            raise ValueError("user must be a single path segment (no '/', '\\', '..', absolute path)")
+        for name in ("gui", "daemon", "command", "file", "spectre"):
+            role = getattr(self.roles, name)
+            role_mode = role.mode or self.mode.default
+            conn = (role.host, role.user, role.jump_host, role.jump_user, role.proxy)
+            if role_mode == "local":
+                if any(v for v in conn):
+                    raise ValueError(
+                        f"role {name} is local: host/user/jump/proxy must not be set"
+                    )
+            else:
+                host = role.host or self.ssh.default.host
+                account = role.user or self.ssh.default.user
+                if not host:
+                    raise ValueError(f"role {name} is remote: host is required")
+                if not account:
+                    raise ValueError(f"role {name} is remote: user is required")
         return self
 
 

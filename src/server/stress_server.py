@@ -91,7 +91,8 @@ class Handler(BaseHTTPRequestHandler):
                 payload = (token + seq).encode() * 2048
                 src = Path(tempfile.mkdtemp()) / "p.bin"
                 src.write_bytes(payload)
-                remote = f"{entry.deploy.scratch_root}/composite-{token_owner}-{seq}.bin"
+                from transport.remote_roles import resolve as _resolve
+                remote = f"{_resolve(entry, token_owner).file.root}/composite-{token_owner}-{seq}.bin"
                 up = middle.upload_file(src, remote, token=token)
                 _time.sleep(delay_ms / 1000.0)
                 sk = middle.execute_skill("RBDToken", token=token)

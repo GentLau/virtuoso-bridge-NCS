@@ -27,9 +27,9 @@ def _valid_user_segment(user: str) -> None:
 def user_dir(user: str, root: str | None = None) -> str:
     """Return the single per-user bridge work directory.
 
-    ``root`` is already ``deploy.scratch_root``, i.e. the per-user directory
-    (``~/.virtuoso-bridge/<user>``); no user segment is appended here.  The
-    username is still validated for containment.
+    ``root`` is already a resolved role root (e.g.
+    ``~/.virtuoso-bridge/<user>/daemon``); no user segment is appended here.
+    The username is still validated for containment.
     """
     _valid_user_segment(user)
     return scratch_root(root)

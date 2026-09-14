@@ -56,14 +56,14 @@ def main() -> int:
         assert lp is not None
         reserved.add(lp)
         e = UserEntry(token=token, mode="remote")
-        e.route.daemon.host = host
-        e.route.daemon.daemon_port = port
-        e.route.daemon.local_port = lp
-        e.route.command.host = host
-        e.route.command.user = "root" if host == VPS else "Gent"
-        e.route.file.host = host
-        e.deploy.scratch_root = "/root/vbtest" if host == VPS else "/home/Gent/vbtest"
-        e.expected.daemon_user = "root" if host == VPS else "Gent"
+        e.roles.daemon.host = host
+        e.roles.daemon.daemon_port = port
+        e.roles.daemon.local_port = lp
+        e.roles.command.host = host
+        e.roles.command.user = "root" if host == VPS else "Gent"
+        e.roles.file.host = host
+        e.roles.daemon.root = "/root/vbtest" if host == VPS else "/home/Gent/vbtest"
+        e.roles.daemon.expected_user = "root" if host == VPS else "Gent"
         e.runtime.thread_pool_size = 4
         e.runtime.channel_budget = 2
         reg.register(user, e)

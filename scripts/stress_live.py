@@ -145,7 +145,8 @@ def main():
             [sys.executable, str(Path(__file__).resolve().parent / "stress_client.py"),
              "--base", "http://127.0.0.1:8126", "--token", token,
              "--concurrency", "100", "--commands", "100", "--skills", "30",
-             "--uploads", "20", "--downloads", "20", "--parallel"],
+             "--uploads", "20", "--downloads", "20", "--parallel",
+             "--skill-expr", "RBDToken"],
             capture_output=True, text=True, timeout=300,
         )
         print(client.stdout)

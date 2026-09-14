@@ -26,14 +26,14 @@ def main() -> int:
     reg = load_registry(registry_path())
     lp = allocate_local_port(tries=200)
     e = UserEntry(token="recon-00", mode="remote")
-    e.route.daemon.host = VPS
-    e.route.daemon.daemon_port = 6888
-    e.route.daemon.local_port = lp
-    e.route.command.host = VPS
-    e.route.command.user = "root"
-    e.route.file.host = VPS
-    e.deploy.scratch_root = "/root/vbtest"
-    e.expected.daemon_user = "root"
+    e.roles.daemon.host = VPS
+    e.roles.daemon.daemon_port = 6888
+    e.roles.daemon.local_port = lp
+    e.roles.command.host = VPS
+    e.roles.command.user = "root"
+    e.roles.file.host = VPS
+    e.roles.daemon.root = "/root/vbtest"
+    e.roles.daemon.expected_user = "root"
     reg.register("recon01", e)
     middle = BusinessServer(wd)
 

@@ -1,18 +1,16 @@
-"""Per-token remote side: deploy bottom files, tunnel, command and file ports.
+"""Per-token remote side: daemon tunnel, command, file and one-shot role runners.
 
-Uses the full SSHRunner (OpenSSH + Paramiko, persistent shell, ControlMaster,
-staging/atomic install); the registry supplies every transport knob.
-
-Five roles (gui/daemon/command/file/spectre) resolve into endpoints through
-``ResolvedTargets``; roles that resolve to the same endpoint share one
-SSHRunner.  Budgets (thread pool, channel budget) are per-token and are not
-split per endpoint.
+Only ``mode=remote`` roles are handled here; ``mode=local`` roles are executed
+directly by ``BusinessServer`` (no SSH).  One ``SSHRunner`` is created per
+resolved endpoint (``ResolvedRole.key``); roles sharing an endpoint share it.
+Budgets (thread pool, channel budget) are per-token.
 """
 
 from __future__ import annotations
 
 import hashlib
 import logging
+import posixpath
 import shlex
 import threading
 from pathlib import Path
@@ -30,6 +28,13 @@ def _norm_host(host: str | None) -> str:
     return (host or "").strip().rstrip(".").lower()
 
 
+def remote_root_path(remote_path: str, root: str) -> str:
+    """Resolve a role-relative remote path against that role's root."""
+    if remote_path.startswith(("/", "~")):
+        return remote_path
+    return posixpath.join(root.rstrip("/"), remote_path)
+
+
 class RemoteClient:
     """One instance per token; owns that token's SSH connections and locks."""
 
@@ -37,7 +42,6 @@ class RemoteClient:
         self.entry = entry
         self.targets = targets
         self.user = user  # user-visible path identity (username is unique)
-        self._is_local = entry.mode == "local"
 
         self._runner_kwargs: dict = {
             "timeout": 600,
@@ -50,7 +54,7 @@ class RemoteClient:
             "control_identity": entry.token,  # per-token ControlMaster namespace
         }
         self._runners: dict[str, SSHRunner] = {}
-        self._parallel_runner: SSHRunner | None = None
+        self._one_shot_runners: dict[str, SSHRunner] = {}
         self._serial_lock = threading.Lock()
         self._channel_sem = threading.BoundedSemaphore(entry.runtime.channel_budget)
         self._tunnel_lock = threading.Lock()
@@ -58,7 +62,9 @@ class RemoteClient:
     # -- role runners --------------------------------------------------------
 
     def _runner(self, role: ResolvedRole) -> SSHRunner:
-        """One SSHRunner per resolved endpoint; roles sharing a key share it."""
+        """One SSHRunner per resolved remote endpoint; shared by same key."""
+        assert role.mode == "remote", f"role {role.name} is local; no SSH runner"
+        assert role.key is not None
         runner = self._runners.get(role.key)
         if runner is not None:
             return runner
@@ -67,19 +73,38 @@ class RemoteClient:
             jump_host = None  # the target itself is the jump host
         kwargs = self._runner_kwargs.copy()
         kwargs.update(
-            host=role.host,
-            user=role.user,
-            jump_host=jump_host,
-            jump_user=role.jump_user,
-            proxy_url=role.proxy,
+            host=role.host, user=role.user, jump_host=jump_host,
+            jump_user=role.jump_user, proxy_url=role.proxy,
         )
         runner = SSHRunner(**kwargs)
         self._runners[role.key] = runner
         return runner
 
+    def _one_shot_runner(self, role: ResolvedRole) -> SSHRunner:
+        """Dedicated one-shot (non-persistent) runner for gui/spectre/parallel."""
+        assert role.mode == "remote", f"role {role.name} is local; no SSH runner"
+        if (self.entry.ssh.backend or "openssh").lower() == "paramiko":
+            # Paramiko multiplexes a session per call; the regular runner is
+            # already parallel, so no second connection/runner is needed.
+            return self._runner(role)
+        runner = self._one_shot_runners.get(role.name)
+        if runner is not None:
+            return runner
+        jump_host = role.jump_host
+        if jump_host and _norm_host(jump_host) == _norm_host(role.host):
+            jump_host = None
+        kwargs = self._runner_kwargs.copy()
+        kwargs.update(
+            host=role.host, user=role.user, jump_host=jump_host,
+            jump_user=role.jump_user, proxy_url=role.proxy,
+            persistent_shell=False,  # 一次性命令，无常驻 shell
+        )
+        runner = SSHRunner(**kwargs)
+        self._one_shot_runners[role.name] = runner
+        return runner
+
     @property
     def skill_runner(self) -> SSHRunner:
-        """Runner that reaches the daemon role (deploy + tunnel)."""
         return self._runner(self.targets.daemon)
 
     @property
@@ -90,44 +115,28 @@ class RemoteClient:
     def file_runner(self) -> SSHRunner:
         return self._runner(self.targets.file)
 
-    def _parallel_command_runner(self) -> SSHRunner:
-        if self._parallel_runner is None:
-            backend = (self.entry.ssh.backend or "openssh").strip().lower()
-            if backend == "paramiko":
-                self._parallel_runner = self.command_runner
-            else:
-                role = self.targets.command
-                jump_host = role.jump_host
-                if jump_host and _norm_host(jump_host) == _norm_host(role.host):
-                    jump_host = None
-                kwargs = self._runner_kwargs.copy()
-                kwargs.update(
-                    host=role.host, user=role.user, jump_host=jump_host,
-                    jump_user=role.jump_user, proxy_url=role.proxy,
-                    persistent_shell=False,  # parallel bypasses the serial shell
-                )
-                self._parallel_runner = SSHRunner(**kwargs)
-        return self._parallel_runner
-
     # -- deployment ---------------------------------------------------------
 
     def deploy(self, python_major: int = 3) -> str:
+        """Deploy bridge files to the daemon role root (local or remote)."""
+        role = self.targets.daemon
+        runner = self._runner(role) if role.mode == "remote" else None
         return deploy_files(
-            runner=None if self._is_local else self.skill_runner,
+            runner=runner,
             token=self.entry.token,
             user=self.user,
-            scratch_root=self.targets.scratch_root,
+            scratch_root=role.root,
             python_major=python_major,
-            python_cmd=self.entry.environment.remote_python or "python3",
+            python_cmd=self.entry.roles.daemon.python or "python3",
             port=self.targets.daemon_port,
-            local=self._is_local,
+            local=role.mode == "local",
         )
 
     # -- tunnel -------------------------------------------------------------
 
     def ensure_tunnel(self, deadline: float | None = None) -> None:
-        if self._is_local:
-            return
+        if self.targets.daemon.mode == "local":
+            return  # local daemon: direct 127.0.0.1 connection, no tunnel
         runner = self.skill_runner
         if runner.is_tunnel_alive:
             return
@@ -141,9 +150,7 @@ class RemoteClient:
             )
 
     def close(self) -> None:
-        runners = list(self._runners.values())
-        if self._parallel_runner is not None:
-            runners.append(self._parallel_runner)
+        runners = list(self._runners.values()) + list(self._one_shot_runners.values())
         seen: set[int] = set()
         for runner in runners:
             if id(runner) in seen:
@@ -167,11 +174,26 @@ class RemoteClient:
                     kind="rejected",
                 )
             try:
-                return self._parallel_command_runner().run_command(cmd, timeout=timeout)
+                return self._one_shot_runner(self.targets.command).run_command(
+                    cmd, timeout=timeout
+                )
             finally:
                 self._channel_sem.release()
         with self._serial_lock:
             return self.command_runner.run_command(cmd, timeout=timeout)
+
+    def run_one_shot(self, role_name: str, cmd: str, timeout: int | None = None) -> CommandResult:
+        """One-shot command on gui/spectre; occupies the token channel budget."""
+        role = self.targets.role(role_name)
+        if not self._channel_sem.acquire(blocking=False):
+            return CommandResult(
+                returncode=1, stdout="", stderr="channel budget exceeded",
+                kind="rejected",
+            )
+        try:
+            return self._one_shot_runner(role).run_command(cmd, timeout=timeout)
+        finally:
+            self._channel_sem.release()
 
     # -- file (runner already stages + atomically installs; we add digest) -----
 
@@ -189,6 +211,7 @@ class RemoteClient:
             )
         try:
             local_path = Path(local_path)
+            remote_path = remote_root_path(remote_path, self.targets.file.root)
             if recursive:
                 if not local_path.is_dir():
                     return CommandResult(
@@ -224,6 +247,7 @@ class RemoteClient:
             )
         try:
             local_path = Path(local_path)
+            remote_path = remote_root_path(remote_path, self.targets.file.root)
             if recursive:
                 return self.file_runner.download(
                     remote_path, local_path, recursive=True, timeout=timeout
@@ -254,4 +278,4 @@ class RemoteClient:
         return CommandResult(0, remote_path, "")
 
 
-__all__ = ["RemoteClient"]
+__all__ = ["RemoteClient", "remote_root_path"]

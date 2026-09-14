@@ -23,11 +23,11 @@ def main() -> int:
         lp = allocate_local_port(reserved=reserved, tries=200)
         reserved.add(lp)
         e = UserEntry(token=token, mode="remote")
-        e.route.daemon.host = WSL; e.route.daemon.daemon_port = port; e.route.daemon.local_port = lp
-        e.route.command.host = WSL; e.route.command.user = "Gent"
-        e.route.file.host = WSL
-        e.deploy.scratch_root = f"/home/Gent/.virtuoso-bridge/{user}"
-        e.expected.daemon_user = "Gent"
+        e.roles.daemon.host = WSL; e.roles.daemon.daemon_port = port; e.roles.daemon.local_port = lp
+        e.roles.command.host = WSL; e.roles.command.user = "Gent"
+        e.roles.file.host = WSL
+        e.roles.daemon.root = f"/home/Gent/.virtuoso-bridge/{user}"
+        e.roles.daemon.expected_user = "Gent"
         e.ssh.backend = "openssh"
         reg.register(user, e)
         users.append((user, token))
@@ -37,11 +37,11 @@ def main() -> int:
         lp = allocate_local_port(reserved=reserved, tries=200)
         reserved.add(lp)
         e = UserEntry(token=token, mode="remote")
-        e.route.daemon.host = VPS; e.route.daemon.daemon_port = port; e.route.daemon.local_port = lp
-        e.route.command.host = VPS; e.route.command.user = "root"
-        e.route.file.host = VPS
-        e.deploy.scratch_root = "/root/vbtest"
-        e.expected.daemon_user = "root"
+        e.roles.daemon.host = VPS; e.roles.daemon.daemon_port = port; e.roles.daemon.local_port = lp
+        e.roles.command.host = VPS; e.roles.command.user = "root"
+        e.roles.file.host = VPS
+        e.roles.daemon.root = "/root/vbtest"
+        e.roles.daemon.expected_user = "root"
         e.ssh.backend = "openssh"
         reg.register(user, e)
         users.append((user, token))

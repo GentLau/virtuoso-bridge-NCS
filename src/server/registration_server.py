@@ -177,16 +177,19 @@ class RegistrationHandler(BaseHTTPRequestHandler):
             self._send_json(400, {"error": "invalid JSON body"})
             return
         direct = {
+            "mode_default": "mode.default",
+            "root_default": "root.default",
             "ssh_backend": "ssh.backend",
             "ssh_control_master": "ssh.control_master",
+            "ssh_proxy": "ssh.default.proxy",
             "thread_pool_size": "runtime.thread_pool_size",
             "channel_budget": "runtime.channel_budget",
             "connect_timeout": "runtime.connect_timeout",
             "log_level": "cdslog.log_level",
             "log_max_bytes": "cdslog.log_max_bytes",
-            "spectre_host": "route.spectre.host",
-            "spectre_bin": "route.spectre.bin",
-            "scratch_root": "deploy.scratch_root",
+            "daemon_python": "roles.daemon.python",
+            "spectre_host": "roles.spectre.host",
+            "spectre_bin": "roles.spectre.bin",
         }
         # transactional: mutate a deep copy; the live entry changes only after
         # register(overwrite=True) persists the replacement successfully

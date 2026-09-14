@@ -25,6 +25,15 @@ from transport.registry import UserEntry, SshDefaults, endpoint_key, load_regist
 from transport.runtime_paths import registry_path, set_working_dir
 
 
+def _probe_run(cmd, timeout=None):
+    """Smart fake for per-role probes: smoke / $HOME / writable check."""
+    if "vb-ok" in cmd:
+        return CommandResult(0, "vb-ok", "")
+    if "$HOME" in cmd:
+        return CommandResult(0, "/home/alice", "")
+    return CommandResult(0, "", "")
+
+
 def remote_request(**kwargs):
     return RegistrationRequest(
         mode="remote", user="alice", token="tok-1",
@@ -48,16 +57,16 @@ class TestValidateLocal(unittest.TestCase):
 
     def test_daemon_port_conflict(self):
         other = UserEntry(token="other", mode="remote")
-        other.route.daemon.daemon_port = 65081
+        other.roles.daemon.daemon_port = 65081
         self.reg.register("bob", other)
-        errors = validate_local(self.reg, remote_request(role={"daemon": {"daemon_port": 65081}}))
+        errors = validate_local(self.reg, remote_request(roles={"daemon": {"daemon_port": 65081}}))
         self.assertTrue(any("daemon port 65081 conflicts" in e for e in errors))
 
     def test_local_port_conflict(self):
         other = UserEntry(token="other", mode="remote")
-        other.route.daemon.local_port = 65082
+        other.roles.daemon.local_port = 65082
         self.reg.register("bob", other)
-        errors = validate_local(self.reg, remote_request(role={"daemon": {"local_port": 65082}}))
+        errors = validate_local(self.reg, remote_request(roles={"daemon": {"local_port": 65082}}))
         self.assertTrue(any("local port 65082 conflicts" in e for e in errors))
 
 
@@ -167,7 +176,7 @@ class TestProbeFailureBranches(unittest.TestCase):
              mock.patch("transport.register.probe.allocate_remote_port", return_value=65081), \
              mock.patch("transport.register.probe.remote_path_writable", return_value=True):
             runner.return_value.test_connection.return_value = True
-            runner.return_value.run_command.side_effect = [CommandResult(0, "/home/alice", ""), CommandResult(0, "vb-ok", ""), CommandResult(0, "", "")]
+            runner.return_value.run_command.side_effect = _probe_run
             for name, value in patches.items():
                 pass
             return probe_user, runner
@@ -193,7 +202,7 @@ class TestProbeFailureBranches(unittest.TestCase):
                 probe_user(
                 RegistrationRequest(
                     user="u", mode="local",
-                    role={"daemon": {"daemon_port": port}},
+                    roles={"daemon": {"daemon_port": port}},
                 ), token="t"
             )
         finally:
@@ -202,7 +211,7 @@ class TestProbeFailureBranches(unittest.TestCase):
     def test_local_unwritable_scratch(self):
         from transport.register import probe_user
         from unittest import mock
-        request = RegistrationRequest(user="u", mode="local", scratch_root=str(Path(self.wd)))
+        request = RegistrationRequest(user="u", mode="local", root={"default": str(Path(self.wd))})
         with mock.patch("transport.register.probe.local_path_writable", return_value=False):
             with self.assertRaises(RegistrationProbeError):
                 probe_user(request, token="t")
@@ -213,7 +222,7 @@ class TestProbeFailureBranches(unittest.TestCase):
         with mock.patch("transport.register.flow.SSHRunner") as runner, \
              mock.patch("transport.register.probe.host_key_fingerprint", return_value=None):
             runner.return_value.test_connection.return_value = True
-            runner.return_value.run_command.side_effect = [CommandResult(0, "/home/alice", ""), CommandResult(0, "vb-ok", "")]
+            runner.return_value.run_command.side_effect = _probe_run
             with self.assertRaises(RegistrationProbeError):
                 probe_user(
                 RegistrationRequest(
@@ -234,7 +243,7 @@ class TestProbeFailureBranches(unittest.TestCase):
              mock.patch("transport.register.probe.allocate_remote_port", return_value=65081), \
              mock.patch("transport.register.probe.remote_path_writable", return_value=False):
             runner.return_value.test_connection.return_value = True
-            runner.return_value.run_command.side_effect = [CommandResult(0, "/home/alice", ""), CommandResult(0, "vb-ok", "")]
+            runner.return_value.run_command.side_effect = _probe_run
             with self.assertRaises(RegistrationProbeError):
                 probe_user(RegistrationRequest(mode="remote", user="u", ssh={"default": {"host": "h", "user": "a"}}), token="t")
 
@@ -249,7 +258,7 @@ class TestProbeFailureBranches(unittest.TestCase):
              mock.patch("transport.register.probe.allocate_remote_port", return_value=65081), \
              mock.patch("transport.register.probe.remote_path_writable", return_value=True):
             runner.return_value.test_connection.return_value = True
-            runner.return_value.run_command.side_effect = [CommandResult(0, "/home/alice", ""), CommandResult(0, "vb-ok", "")]
+            runner.return_value.run_command.side_effect = _probe_run
             with self.assertRaises(RegistrationProbeError):
                 probe_user(
                 RegistrationRequest(
@@ -320,7 +329,7 @@ class TestFlowMoreBranches(unittest.TestCase):
              mock.patch("transport.register.probe.host_key_fingerprint", return_value="fp"), \
              mock.patch("transport.register.probe.remote_hostname", return_value=""):
             runner.return_value.test_connection.return_value = True
-            runner.return_value.run_command.side_effect = [CommandResult(0, "/home/u", ""), CommandResult(0, "vb-ok", "")]
+            runner.return_value.run_command.side_effect = _probe_run
             with self.assertRaises(RegistrationProbeError):
                 probe_user(RegistrationRequest(mode="remote", user="u", ssh={"default": {"host": "h", "user": "a"}}), token="t")
 
@@ -334,7 +343,7 @@ class TestFlowMoreBranches(unittest.TestCase):
              mock.patch("transport.register.probe.remote_user_exists", return_value=True), \
              mock.patch("transport.register.probe.detect_remote_python", return_value=None):
             runner.return_value.test_connection.return_value = True
-            runner.return_value.run_command.side_effect = [CommandResult(0, "/home/u", ""), CommandResult(0, "vb-ok", "")]
+            runner.return_value.run_command.side_effect = _probe_run
             with self.assertRaises(RegistrationProbeError):
                 probe_user(RegistrationRequest(mode="remote", user="u", ssh={"default": {"host": "h", "user": "a"}}), token="t")
 
@@ -349,9 +358,9 @@ class TestFlowMoreBranches(unittest.TestCase):
              mock.patch("transport.register.probe.detect_remote_python", return_value=("python3", 3)), \
              mock.patch("transport.register.probe.port_free_on_remote", return_value=False):
             runner.return_value.test_connection.return_value = True
-            runner.return_value.run_command.side_effect = [CommandResult(0, "/home/u", ""), CommandResult(0, "vb-ok", "")]
+            runner.return_value.run_command.side_effect = _probe_run
             with self.assertRaises(RegistrationProbeError):
-                probe_user(RegistrationRequest(mode="remote", user="u", ssh={"default": {"host": "h", "user": "a"}}, role={"daemon": {"daemon_port": 65081}}), token="t")
+                probe_user(RegistrationRequest(mode="remote", user="u", ssh={"default": {"host": "h", "user": "a"}}, roles={"daemon": {"daemon_port": 65081}}), token="t")
 
     def test_remote_probe_no_free_port(self):
         from unittest import mock
@@ -364,7 +373,7 @@ class TestFlowMoreBranches(unittest.TestCase):
              mock.patch("transport.register.probe.detect_remote_python", return_value=("python3", 3)), \
              mock.patch("transport.register.probe.allocate_remote_port", return_value=None):
             runner.return_value.test_connection.return_value = True
-            runner.return_value.run_command.side_effect = [CommandResult(0, "/home/u", ""), CommandResult(0, "vb-ok", "")]
+            runner.return_value.run_command.side_effect = _probe_run
             with self.assertRaises(RegistrationProbeError):
                 probe_user(RegistrationRequest(mode="remote", user="u", ssh={"default": {"host": "h", "user": "a"}}), token="t")
 
@@ -379,7 +388,7 @@ class TestFlowMoreBranches(unittest.TestCase):
         from transport.register.flow import _banner_hostname
         entry = UserEntry(token="t", mode="local")
         root = Path(tempfile.mkdtemp())
-        entry.deploy.scratch_root = str(root)
+        entry.roles.daemon.root = str(root)
         from transport.remote_paths import identity_path
         p = Path(identity_path("alice", str(root)))
         p.parent.mkdir(parents=True, exist_ok=True)
@@ -390,7 +399,7 @@ class TestFlowMoreBranches(unittest.TestCase):
         from unittest import mock
         from transport.register.flow import test_connectivity
         entry = UserEntry(token="t", mode="local")
-        entry.expected.daemon_endpoint_hostname = "expected-host"
+        entry.roles.daemon.expected_hostname = "expected-host"
         with mock.patch("transport.register.flow.SkillClient") as skill_cls, \
              mock.patch("transport.register.flow._banner_hostname", return_value="different-host"):
             skill_cls.return_value.execute_skill.return_value = VirtuosoResult(
@@ -416,9 +425,9 @@ class TestRequestAndIdempotence(unittest.TestCase):
     def test_port_range_validation(self):
         from pydantic import ValidationError
         with self.assertRaises(ValidationError):
-            RegistrationRequest(user="u", mode="local", role={"daemon": {"daemon_port": 0}})
+            RegistrationRequest(user="u", mode="local", roles={"daemon": {"daemon_port": 0}})
         with self.assertRaises(ValidationError):
-            RegistrationRequest(mode="remote", user="u", ssh={"default": {"host": "h", "user": "a"}}, role={"daemon": {"local_port": 70000}})
+            RegistrationRequest(mode="remote", user="u", ssh={"default": {"host": "h", "user": "a"}}, roles={"daemon": {"local_port": 70000}})
 
     def test_token_charset_validation(self):
         from pydantic import ValidationError
@@ -443,7 +452,7 @@ class TestPolicyFieldsApplied(unittest.TestCase):
             mode="remote", user="u", token="tok",
             ssh={"default": {"host": "h", "user": "a",
                              "proxy": "socks5://127.0.0.1:1080"}},
-            role={"spectre": {"host": "spec-host",
+            roles={"spectre": {"host": "spec-host",
                               "bin": "/opt/spectre/bin/spectre"}},
             ssh_backend="paramiko", ssh_control_master="disable",
             thread_pool_size=8, channel_budget=3, connect_timeout=9.5,
@@ -459,7 +468,7 @@ class TestPolicyFieldsApplied(unittest.TestCase):
              mock.patch("transport.register.probe.remote_path_writable", return_value=True), \
              mock.patch("transport.register.probe.allocate_local_port", return_value=65082):
             runner.return_value.test_connection.return_value = True
-            runner.return_value.run_command.side_effect = [CommandResult(0, "/home/alice", ""), CommandResult(0, "vb-ok", ""), CommandResult(0, "", "")]
+            runner.return_value.run_command.side_effect = _probe_run
             result = probe_user(request, token="tok")
         entry = result.entry
         self.assertEqual(entry.ssh.backend, "paramiko")
@@ -469,9 +478,9 @@ class TestPolicyFieldsApplied(unittest.TestCase):
         self.assertEqual(entry.runtime.connect_timeout, 9.5)
         self.assertEqual(entry.cdslog.log_level, "error")
         self.assertEqual(entry.cdslog.log_max_bytes, 4096)
-        self.assertEqual(entry.route.spectre.host, "spec-host")
-        self.assertEqual(entry.route.spectre.bin, "/opt/spectre/bin/spectre")
-        self.assertEqual(entry.route.daemon.local_port, 65082)
+        self.assertEqual(entry.roles.spectre.host, "spec-host")
+        self.assertEqual(entry.roles.spectre.bin, "/opt/spectre/bin/spectre")
+        self.assertEqual(entry.roles.daemon.local_port, 65082)
 
 
 class TestConnectivityFingerprint(unittest.TestCase):
@@ -480,13 +489,11 @@ class TestConnectivityFingerprint(unittest.TestCase):
         from transport.register.flow import test_connectivity
         entry = UserEntry(token="tok", mode="remote")
         entry.ssh.default = SshDefaults(host="server-a", user="alice")
-        entry.route.daemon.daemon_port = 65081
-        entry.route.daemon.local_port = 65082
-        entry.expected.ssh_endpoints = {
-            endpoint_key("server-a", "alice"): "SHA256:expected"
-        }
-        entry.expected.daemon_endpoint_hostname = "server-a"
-        entry.deploy.scratch_root = "/home/alice/.virtuoso-bridge"
+        entry.roles.daemon.daemon_port = 65081
+        entry.roles.daemon.local_port = 65082
+        entry.roles.daemon.expected_fingerprint = "SHA256:expected"
+        entry.roles.daemon.expected_hostname = "server-a"
+        entry.roles.daemon.root = "/home/alice/.virtuoso-bridge"
         fake_cmd = mock.Mock()
         fake_cmd.run_command.return_value = CommandResult(0, "vb-ok", "")
         fake_tunnel = mock.Mock()
@@ -502,7 +509,7 @@ class TestConnectivityFingerprint(unittest.TestCase):
         fake_tunnel.stop_port_forward.assert_called_once()
         self.assertFalse(report.fingerprint_ok)
         self.assertFalse(report.ok)
-        self.assertIn("host key fingerprint mismatch", report.detail)
+        self.assertIn("host key mismatch", report.detail)
 
 
 class TestSpectreAutoProbe(unittest.TestCase):
@@ -521,16 +528,16 @@ class TestSpectreAutoProbe(unittest.TestCase):
              mock.patch("transport.register.probe.allocate_local_port", return_value=65082), \
              mock.patch("transport.register.probe.detect_remote_spectre", return_value="/opt/cad/bin/spectre"):
             runner.return_value.test_connection.return_value = True
-            runner.return_value.run_command.side_effect = [CommandResult(0, "/home/alice", ""), CommandResult(0, "vb-ok", "")]
+            runner.return_value.run_command.side_effect = _probe_run
             result = probe_user(request, token="tok")
-        self.assertEqual(result.entry.route.spectre.bin, "/opt/cad/bin/spectre")
+        self.assertEqual(result.entry.roles.spectre.bin, "/opt/cad/bin/spectre")
         from transport.remote_roles import resolve
         self.assertEqual(resolve(result.entry).spectre.host, "h")
 
     def test_explicit_bad_spectre_non_blocking(self):
         from unittest import mock
         from transport.register import probe_user
-        request = RegistrationRequest(mode="remote", user="u", token="tok", ssh={"default": {"host": "h", "user": "a"}}, role={"spectre": {"bin": "/bad/spectre"}})
+        request = RegistrationRequest(mode="remote", user="u", token="tok", ssh={"default": {"host": "h", "user": "a"}}, roles={"spectre": {"bin": "/bad/spectre"}})
         with mock.patch("transport.register.flow.SSHRunner") as runner, \
              mock.patch("transport.register.probe.host_key_fingerprint", return_value="fp"), \
              mock.patch("transport.register.probe.remote_hostname", return_value="host-a"), \
@@ -541,9 +548,9 @@ class TestSpectreAutoProbe(unittest.TestCase):
              mock.patch("transport.register.probe.allocate_local_port", return_value=65082), \
              mock.patch("transport.register.probe.remote_executable_exists", return_value=False):
             runner.return_value.test_connection.return_value = True
-            runner.return_value.run_command.side_effect = [CommandResult(0, "/home/alice", ""), CommandResult(0, "vb-ok", "")]
+            runner.return_value.run_command.side_effect = _probe_run
             result = probe_user(request, token="tok")
-        self.assertIsNone(result.entry.route.spectre.bin)
+        self.assertIsNone(result.entry.roles.spectre.bin)
         self.assertTrue(any("non-blocking" in w for w in result.warnings))
 
 

@@ -16,13 +16,13 @@ from transport.runtime_paths import registry_path, set_working_dir
 
 def make_remote_entry(token="tok-1"):
     entry = UserEntry(token=token, mode="remote")
-    entry.route.daemon.host = "daemon-a"
-    entry.route.daemon.daemon_port = 65081
-    entry.route.daemon.local_port = 65082
-    entry.route.command.host = "daemon-a"
-    entry.route.command.user = "alice"
-    entry.expected.daemon_user = "alice"
-    entry.deploy.scratch_root = "/home/alice/.virtuoso-bridge"
+    entry.roles.daemon.host = "daemon-a"
+    entry.roles.daemon.daemon_port = 65081
+    entry.roles.daemon.local_port = 65082
+    entry.roles.command.host = "daemon-a"
+    entry.roles.command.user = "alice"
+    entry.roles.daemon.expected_user = "alice"
+    entry.roles.daemon.root = "/home/alice/.virtuoso-bridge"
     return entry
 
 

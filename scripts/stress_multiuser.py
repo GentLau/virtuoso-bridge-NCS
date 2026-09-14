@@ -77,13 +77,13 @@ def build_registry(users, wd):
         daemon = FakeDaemon(token)
         daemons.append(daemon)
         entry = UserEntry(token=token, mode="local")
-        entry.route.daemon.daemon_port = daemon.port
-        entry.route.daemon.local_port = daemon.port
-        entry.route.daemon.host = "127.0.0.1"
-        entry.deploy.scratch_root = str((Path(wd) / "users" / f"u{i}").resolve())
+        entry.roles.daemon.daemon_port = daemon.port
+        entry.roles.daemon.local_port = daemon.port
+        entry.roles.daemon.host = "127.0.0.1"
+        entry.roles.daemon.root = str((Path(wd) / "users" / f"u{i}").resolve())
         registry.register(f"u{i}", entry)
         tokens.append(token)
-        roots.append(entry.deploy.scratch_root)
+        roots.append(entry.roles.daemon.root)
     return registry, daemons, tokens, roots
 
 

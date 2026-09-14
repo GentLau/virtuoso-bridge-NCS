@@ -90,9 +90,9 @@ class TestRegistryMore(unittest.TestCase):
 
     def test_port_validation(self):
         with self.assertRaises(ValidationError):
-            UserEntry(token="t", mode="remote", route={"daemon": {"daemon_port": 0}})
+            UserEntry(token="t", mode="remote", roles={"daemon": {"daemon_port": 0}})
         with self.assertRaises(ValidationError):
-            UserEntry(token="t", mode="remote", route={"daemon": {"local_port": 70000}})
+            UserEntry(token="t", mode="remote", roles={"daemon": {"local_port": 70000}})
 
     def test_empty_token_rejected(self):
         with self.assertRaises(ValidationError):
@@ -101,7 +101,7 @@ class TestRegistryMore(unittest.TestCase):
     def test_model_dump_has_no_runtime_state(self):
         entry = UserEntry(token="t", mode="remote")
         keys = set(entry.model_dump().keys())
-        self.assertEqual(keys, {"token", "mode", "route", "expected", "environment", "deploy", "ssh", "runtime", "cdslog", "registered_at"})
+        self.assertEqual(keys, {"token", "mode", "ssh", "root", "roles", "runtime", "cdslog", "registered_at"})
 
 
 if __name__ == "__main__":

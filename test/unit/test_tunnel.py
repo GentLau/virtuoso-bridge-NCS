@@ -61,15 +61,15 @@ class FakeRunner:
 
 def make_entry(*, skill_host="daemon-a", command_host="daemon-a", file_host="daemon-a") -> UserEntry:
     entry = UserEntry(token="tok-1", mode="remote")
-    entry.route.daemon.host = skill_host
-    entry.route.daemon.daemon_port = 65081
-    entry.route.daemon.local_port = 65082
-    entry.route.command.host = command_host
-    entry.route.command.user = None
-    entry.route.file.host = file_host
-    entry.expected.daemon_user = "alice"
-    entry.environment.remote_python = "python3"
-    entry.deploy.scratch_root = "/home/alice/.virtuoso-bridge"
+    entry.roles.daemon.host = skill_host
+    entry.roles.daemon.daemon_port = 65081
+    entry.roles.daemon.local_port = 65082
+    entry.roles.command.host = command_host
+    entry.roles.command.user = None
+    entry.roles.file.host = file_host
+    entry.roles.daemon.expected_user = "alice"
+    entry.roles.daemon.python = "python3"
+    entry.roles.daemon.root = "/home/alice/.virtuoso-bridge"
     return entry
 
 
@@ -116,7 +116,7 @@ class TestRemoteClientTunnel(unittest.TestCase):
             entry = make_entry()
             rc = RemoteClient(entry, resolve(entry), "alice")
             serial = rc.command_runner
-            parallel = rc._parallel_command_runner()
+            parallel = rc._one_shot_runner(rc.targets.command)
         self.assertIsNot(serial, parallel)
         self.assertFalse(parallel.kwargs["persistent_shell"])
         self.assertEqual(parallel.host, "daemon-a")
@@ -127,16 +127,16 @@ class TestRemoteClientTunnel(unittest.TestCase):
             entry.ssh.backend = "paramiko"
             rc = RemoteClient(entry, resolve(entry), "alice")
             serial = rc.command_runner
-            parallel = rc._parallel_command_runner()
+            parallel = rc._one_shot_runner(rc.targets.command)
         self.assertIs(serial, parallel)
 
     def test_local_deploy_uses_no_ssh(self) -> None:
         entry = UserEntry(token="tok-1", mode="local")
-        entry.route.daemon.daemon_port = 65432
-        entry.route.daemon.local_port = 65432
-        entry.environment.remote_python = "python3"
+        entry.roles.daemon.daemon_port = 65432
+        entry.roles.daemon.local_port = 65432
+        entry.roles.daemon.python = "python3"
         root = Path(tempfile.mkdtemp())
-        entry.deploy.scratch_root = str(root)
+        entry.roles.daemon.root = str(root)
         with mock.patch("transport.tunnel.SSHRunner", FakeRunner):
             rc = RemoteClient(entry, resolve(entry), "alice")
             setup = rc.deploy(python_major=3)

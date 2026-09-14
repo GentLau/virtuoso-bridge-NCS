@@ -90,8 +90,8 @@ class TestProbeNeverPersists(unittest.TestCase):
         self.wd = set_working_dir(Path(tempfile.mkdtemp()))
 
     def test_local_probe_does_not_touch_registry(self) -> None:
-        result = probe_user(RegistrationRequest(user="alice", mode="local", role={"spectre": {"bin": sys.executable}}), token="tok-1")
-        self.assertEqual(result.entry.mode, "local")
+        result = probe_user(RegistrationRequest(user="alice", mode="local", roles={"spectre": {"bin": sys.executable}}), token="tok-1")
+        self.assertEqual(result.entry.mode.default, "local")
         self.assertFalse(registry_path().exists())
 
     def test_remote_probe_returns_candidate_without_commit(self) -> None:
@@ -107,8 +107,8 @@ class TestProbeNeverPersists(unittest.TestCase):
                 RegistrationRequest(mode="remote", user="alice", ssh={"default": {"host": "compute-a", "user": "alice"}}),
                 token="tok-1",
             )
-        self.assertEqual(result.entry.route.daemon.daemon_port, 65081)
-        self.assertEqual(result.entry.expected.daemon_user, "alice")
+        self.assertEqual(result.entry.roles.daemon.daemon_port, 65081)
+        self.assertEqual(result.entry.roles.daemon.expected_user, "alice")
         self.assertFalse(registry_path().exists())
 
 

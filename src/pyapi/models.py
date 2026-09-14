@@ -96,11 +96,11 @@ class VirtuosoInterface(ABC):
 
 
 class Middle(Protocol):
-    """The three cross-layer capabilities (interface definition).
+    """The five cross-layer interfaces (spec: 三层架构 §4.1).
 
-    ``token`` is a required per-call routing/authorization parameter;
-    ``parallel`` is an explicit invocation mode of RunCommand, not a fourth
-    interface.
+    Interfaces: Skill / 命令 / 文件（上传+下载）/ GUI 命令 / Spectre 命令。
+    GUI 与 Spectre 命令是一次性命令（等价 ``parallel=True`` 语义，无持久
+    shell），同样占用该 token 的 channel 预算。``token`` 每次调用必填。
     """
 
     def execute_skill(
@@ -117,6 +117,14 @@ class Middle(Protocol):
 
     def download_file(
         self, remote_path: str, local_path: Path, timeout: int | None = None, *, token: str, recursive: bool = False
+    ) -> CommandResult: ...
+
+    def run_gui_command(
+        self, cmd: str, timeout: int | None = None, *, token: str
+    ) -> CommandResult: ...
+
+    def run_spectre_command(
+        self, cmd: str, timeout: int | None = None, *, token: str
     ) -> CommandResult: ...
 
 

@@ -115,8 +115,8 @@ class TestLiveE2E(unittest.TestCase):
         state = flow.apply(RegistrationRequest(
             mode="remote", user="e2e", token=token,
             ssh={"default": {"host": HOST, "user": USER}},
-            scratch_root=SCRATCH,
-            role={"daemon": {"local_port": local_port}},
+            root={"default": SCRATCH},
+            roles={"daemon": {"local_port": local_port}},
         ))
         self.assertEqual(state.stage, "deployed", str(state.errors))
         self.assertTrue(state.setup_path.startswith(SCRATCH))
