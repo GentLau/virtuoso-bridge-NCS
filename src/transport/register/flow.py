@@ -300,7 +300,11 @@ def _probe(
     targets = resolve(entry, user)
     warnings: list[str] = []
     runners: dict[str, SSHRunner] = {}
-    budget = StepBudget("step 3 (probe)")
+    # One deadline per probe phase: a phase never restarts its own 30s window
+    # and all of its sub-steps (connect + smoke + root check) share it.  The
+    # five-role sweep is therefore bounded per role, not globally — a Windows
+    # client pays several seconds per SSH call, and a single 30s window for all
+    # five roles would make registration impossible on real sites.
     reserved_ports = set(reserved_ports or ())
     reserved_local_ports = set(reserved_local_ports or ())
 
@@ -315,6 +319,7 @@ def _probe(
         for name in _ALL_ROLES:
             role = targets.role(name)
             entry_role = getattr(entry.roles, name)
+            budget = StepBudget(f"step 3 (probe {name})")
             if role.mode == "local":
                 entry_role.root = _local_role_checks(role)
                 continue
@@ -345,7 +350,8 @@ def _probe(
             else:
                 entry_role.root = _remote_role_checks(budgeted, role)
 
-        # daemon-specific environment probes
+        # daemon-specific environment probes (own phase budget)
+        budget = StepBudget("step 3 (daemon environment)")
         daemon = targets.daemon
         python_major = 2 if sys.version_info.major == 2 else 3
         if daemon.mode == "local":
