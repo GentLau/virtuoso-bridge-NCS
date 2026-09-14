@@ -26,6 +26,7 @@
 | [05-concurrency-network-key-background.md](05-concurrency-network-key-background.md) | SSH 端口转发、常驻/临时连接、并发与网络基础 | 并发设计背景 |
 | [06-crypto-sign-encrypt-basics.md](06-crypto-sign-encrypt-basics.md) | 密码学地基：签名/加密分工、混合加密性能、先验签后解密原则 | 未来安全加固 |
 | [07-random-name-generation.md](07-random-name-generation.md) + [random-name-generator.html](random-name-generator.html) | HTML 随机英文名：三种业内方案、无偏随机抽样、三词拼接与混成词算法（含可直接运行的单文件 HTML） | 通用前端零件 |
+| [08-multi-node-topology-research.md](08-multi-node-topology-research.md) | 多节点拓扑调研：历史动机、旧实现事实、当前五 role 的矛盾、必要性与推荐模型 | 架构决策依据 |
 | [three-interface-report.md](three-interface-report.md) | 已存在的 CLI/MCP/Harness 单注册表研究，不属于本次改写范围 | 相关基础设施 |
 
 ## 证据等级与来源
