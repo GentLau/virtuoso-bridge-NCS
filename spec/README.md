@@ -58,17 +58,25 @@
 | Research | [research/README.md](research/README.md) | Virtuoso/TB/日志/并发背景调研 |
 | Demo | [demo/README.md](demo/README.md) | 脱钩最小验证（Informative，不复刻正式口径） |
 
+## Release（本冻结基线）
+
+- **Release ID**：`SPEC-2026-09-14-r1`
+- **Normative 文件集**（7 份）：三层整体架构设计、本版范围与明确不支持、配置一览、多节点设计、多用户设计、并发处理设计、日志返回设计标准；
+- **Normative 内容哈希**：`7562e406d1777b4a3c51b49a9e5f2046c0f55f981739b3a61c43ac784c799864`
+  - 算法：按相对路径排序，逐文件 SHA-256 的 `"<相对路径> <hex>"` 行以 LF 拼接，再取一次 SHA-256；
+- **基线 commit**：本 Release 段所在提交即基线（见 `git log -1 -- spec/`）；任何 Normative 文档变更必须同时更新本段哈希。
+
 ## 冻结 Manifest
 
 | 文档 | 版本 | 状态 | Supersedes |
 |---|---|---|---|
-| 三层整体架构设计 | Draft v6 | Normative | Draft v5（每 role 文件根） |
+| 三层整体架构设计 | Draft v7 | Normative | Draft v6（kind 逐情形 + 表格修复） |
 | 多节点设计 | v4 | Normative | v3（标注当前为 CIW 本地子进程） |
 | 本版范围与明确不支持 | v5 | Normative | v4（新增跨机 daemon 启动非目标） |
-| 配置一览 | Draft v10 | Normative | Draft v9（root.default + role.*.root） |
-| 多用户设计 | Draft v7 | Normative | Draft v6（当前 daemon 启动形态） |
-| 并发处理设计 | Draft v7 | Normative | Draft v6（当前 daemon 启动形态） |
-| 日志返回设计标准 | Draft v5 | Normative | Draft v4（废除 marker 定界） |
+| 配置一览 | Draft v11 | Normative | Draft v10（reservation + endpoint key 合同 + 禁用语义） |
+| 多用户设计 | Draft v8 | Normative | Draft v7（跨进程缓存语义） |
+| 并发处理设计 | Draft v8 | Normative | Draft v7（backlog 容量提示） |
+| 日志返回设计标准 | Draft v6 | Normative | Draft v5（统一 warning 文本） |
 | 核心修改设计 | Draft v3 | Informative | Draft v2 |
 | 改动报告 / 代码梳理 | — | Historical | — |
 

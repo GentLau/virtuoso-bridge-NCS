@@ -576,9 +576,9 @@ class RunObserver:
 | 远程角色、VirtuosoClient/Spectre/SSH 分层 | `../../README.md:318-330`；`../../CONTEXT.md` |
 | bridge 的 IPC framing、`progn`、stderr/banner/stats | `../../src/bridge/resources/ramic_bridge.il`（对应 `RBIpcDataHandler`、`RBIpcErrHandler`、`RBIpcFinishHandler`、`RBStart`）；`git show HEAD:src/bridge/resources/ramic_bridge.il` |
 | daemon watchdog、STX/NAK/RS、banner | `../../src/bridge/resources/ramic_bridge_daemon_3.py:101-225`、`:245-294` |
-| split host / scratch / client isolation | `../../src/virtuoso_bridge/transport/remote_roles.py`、`remote_paths.py`、`../../docs/adr/0001-explicit-remote-host-roles.md` |
+| split host / scratch / client isolation | 旧实现：`../../src_bak/virtuoso_bridge/transport/remote_roles.py`、`remote_paths.py`、`git show e7ae05d:docs/adr/0001-explicit-remote-host-roles.md`；当前口径：[多节点设计](../design-concepts/底层与中层/多节点设计.md) |
 | deterministic schematic planner | `../../docs/adr/0002-deterministic-schematic-planner.md` |
-| 三接口单注册表 | `three-interface-report.md` |
+| 单注册表（旧三接口研究，本版已扩展为五接口） | [three-interface-report.md](three-interface-report.md) |
 | 数据、锁、Maestro、原理图约束 | `01-virtuoso-data-model-and-editing.md` |
 | 日志、artifact、observer 约束 | `02-virtuoso-logging-and-observability.md` |
 | Cadence DFII/OpenAccess 与生命周期 | `C:\Users\user\Desktop\doc\skdfref\chap2.html:156-165`、`cvio.html:2375-2495` |

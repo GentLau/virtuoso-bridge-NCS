@@ -689,10 +689,10 @@ class Diagnostic(BaseModel):
 
 建议 `events(run_id, cursor, limit)` 返回：
 
-```json
+```text
 {
   "run_id": "run-01J...",
-  "events": [/* normalized LogEvent */],
+  "events": [/* normalized LogEvent */],  // 伪代码：示意结构，非合法 JSON
   "next_cursor": "...",
   "source_states": [
     {"source_id": "...", "state": "active", "offset": 18291}
