@@ -63,8 +63,8 @@
 | 文档 | 版本 | 状态 | Supersedes |
 |---|---|---|---|
 | 三层整体架构设计 | Draft v6 | Normative | Draft v5（每 role 文件根） |
-| 多节点设计 | v2 | Normative | v1（每 role 独立文件根） |
-| 本版范围与明确不支持 | v4 | Normative | v3 |
+| 多节点设计 | v3 | Normative | v2（明确跨机 daemon 启动为后续版本） |
+| 本版范围与明确不支持 | v5 | Normative | v4（新增跨机 daemon 启动非目标） |
 | 配置一览 | Draft v10 | Normative | Draft v9（root.default + role.*.root） |
 | 多用户设计 | Draft v6 | Normative | Draft v5 |
 | 并发处理设计 | Draft v6 | Normative | Draft v5（五接口记账） |
