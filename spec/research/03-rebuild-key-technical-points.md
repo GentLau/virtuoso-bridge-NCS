@@ -555,8 +555,8 @@ class RunObserver:
 - `../../skills/virtuoso/references/simulation-flow.md`
 - `../../skills/virtuoso/references/troubleshooting.md`
 - `../../skills/spectre/SKILL.md`
-- `../../src/virtuoso_bridge/virtuoso/basic/resources/ramic_bridge.il`
-- `../../src/virtuoso_bridge/virtuoso/basic/resources/ramic_bridge_daemon_3.py`
+- `../../src/bridge/resources/ramic_bridge.il`
+- `../../src/bridge/resources/ramic_bridge_daemon_3.py`
 - `../../src_bak/virtuoso_bridge/virtuoso/maestro/reader/snapshot.py`
 - `../../src_bak/virtuoso_bridge/virtuoso/maestro/writer.py`
 
@@ -574,8 +574,8 @@ class RunObserver:
 | 方向 | 证据 |
 |---|---|
 | 远程角色、VirtuosoClient/Spectre/SSH 分层 | `../../README.md:318-330`；`../../CONTEXT.md` |
-| bridge 的 IPC framing、`progn`、stderr/banner/stats | `../../src/virtuoso_bridge/virtuoso/basic/resources/ramic_bridge.il`（对应 `RBIpcDataHandler`、`RBIpcErrHandler`、`RBIpcFinishHandler`、`RBStart`）；`git show HEAD:src/virtuoso_bridge/virtuoso/basic/resources/ramic_bridge.il` |
-| daemon watchdog、STX/NAK/RS、banner | `../../src/virtuoso_bridge/virtuoso/basic/resources/ramic_bridge_daemon_3.py:101-225`、`:245-294` |
+| bridge 的 IPC framing、`progn`、stderr/banner/stats | `../../src/bridge/resources/ramic_bridge.il`（对应 `RBIpcDataHandler`、`RBIpcErrHandler`、`RBIpcFinishHandler`、`RBStart`）；`git show HEAD:src/bridge/resources/ramic_bridge.il` |
+| daemon watchdog、STX/NAK/RS、banner | `../../src/bridge/resources/ramic_bridge_daemon_3.py:101-225`、`:245-294` |
 | split host / scratch / client isolation | `../../src/virtuoso_bridge/transport/remote_roles.py`、`remote_paths.py`、`../../docs/adr/0001-explicit-remote-host-roles.md` |
 | deterministic schematic planner | `../../docs/adr/0002-deterministic-schematic-planner.md` |
 | 三接口单注册表 | `three-interface-report.md` |
