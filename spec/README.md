@@ -62,7 +62,7 @@
 
 - **Release ID**：`SPEC-2026-09-14-r1`
 - **Normative 文件集**（7 份）：三层整体架构设计、本版范围与明确不支持、配置一览、多节点设计、多用户设计、并发处理设计、日志返回设计标准；
-- **Normative 内容哈希**：`c073a0b6820236f275f589d9754fa7260664fdf246a5d7097c9a9ed81ec9fa9a`
+- **Normative 内容哈希**：`ce7974734869e08972d3b3c835695eb9322fcae79f4ecd2b3179be47ae257718`
   - 算法：按相对路径排序，逐文件 SHA-256 的 `"<相对路径> <hex>"` 行以 LF 拼接，再取一次 SHA-256；
 - **基线 commit**：本 Release 段所在提交即基线（见 `git log -1 -- spec/`）；任何 Normative 文档变更必须同时更新本段哈希。
 
@@ -73,7 +73,7 @@
 | 三层整体架构设计 | Draft v7 | Normative | Draft v6（kind 逐情形 + 表格修复） |
 | 多节点设计 | v4 | Normative | v3（标注当前为 CIW 本地子进程） |
 | 本版范围与明确不支持 | v5 | Normative | v4（新增跨机 daemon 启动非目标） |
-| 配置一览 | Draft v11 | Normative | Draft v10（reservation + endpoint key 合同 + 禁用语义） |
+| 配置一览 | Draft v12 | Normative | Draft v11（§2 重组：通用/策略/各 role） |
 | 多用户设计 | Draft v8 | Normative | Draft v7（跨进程缓存语义） |
 | 并发处理设计 | Draft v8 | Normative | Draft v7（backlog 容量提示） |
 | 日志返回设计标准 | Draft v6 | Normative | Draft v5（统一 warning 文本） |
