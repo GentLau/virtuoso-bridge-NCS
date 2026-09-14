@@ -63,11 +63,11 @@
 | 文档 | 版本 | 状态 | Supersedes |
 |---|---|---|---|
 | 三层整体架构设计 | Draft v6 | Normative | Draft v5（每 role 文件根） |
-| 多节点设计 | v3 | Normative | v2（明确跨机 daemon 启动为后续版本） |
+| 多节点设计 | v4 | Normative | v3（标注当前为 CIW 本地子进程） |
 | 本版范围与明确不支持 | v5 | Normative | v4（新增跨机 daemon 启动非目标） |
 | 配置一览 | Draft v10 | Normative | Draft v9（root.default + role.*.root） |
-| 多用户设计 | Draft v6 | Normative | Draft v5 |
-| 并发处理设计 | Draft v6 | Normative | Draft v5（五接口记账） |
+| 多用户设计 | Draft v7 | Normative | Draft v6（当前 daemon 启动形态） |
+| 并发处理设计 | Draft v7 | Normative | Draft v6（当前 daemon 启动形态） |
 | 日志返回设计标准 | Draft v5 | Normative | Draft v4（废除 marker 定界） |
 | 核心修改设计 | Draft v3 | Informative | Draft v2 |
 | 改动报告 / 代码梳理 | — | Historical | — |
