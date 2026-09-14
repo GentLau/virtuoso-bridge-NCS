@@ -16,7 +16,7 @@ import tempfile
 import time
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 from transport.registry import UserEntry, load_registry
 from transport.register.probe import allocate_local_port
 from transport.runtime_paths import set_working_dir, registry_path
@@ -38,7 +38,7 @@ def main() -> int:
                       "--base-port 6900 --count 40 --token-prefix p2a > /tmp/vb_p2.log 2>&1 < /dev/null &"],
                      stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     subprocess.Popen(["ssh", "wsl-gent", "cd /home/Gent/vb-ncs && setsid nohup "
-                      ".venv/bin/python scripts/fake_daemon_host.py --base-port 6601 --count 60 "
+                      ".venv/bin/python test/tb/fake_daemon_host.py --base-port 6601 --count 60 "
                       "--token-prefix p2b > /tmp/vb_p2_wsl.log 2>&1 < /dev/null &"],
                      stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     time.sleep(5)
@@ -72,7 +72,7 @@ def main() -> int:
              for tok in tokens]
 
     env = dict(__import__("os").environ)
-    env["PYTHONPATH"] = str(Path(__file__).resolve().parents[1] / "src")
+    env["PYTHONPATH"] = str(Path(__file__).resolve().parents[2] / "src")
     server = subprocess.Popen(
         [sys.executable, "-m", "server.stress_server", "--port", "8127", "--work-dir", str(wd)],
         stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT, env=env,

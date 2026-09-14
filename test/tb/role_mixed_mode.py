@@ -2,13 +2,13 @@
 
 Client runs on wsl-gent (local): daemon/command/file roles are local; gui and
 spectre roles are remote (vps).  Proves one token can mix local and remote
-roles.  Run ON wsl-gent:  PYTHONPATH=src .venv/bin/python scripts/role_mixed_mode.py
+roles.  Run ON wsl-gent:  PYTHONPATH=src .venv/bin/python test/tb/role_mixed_mode.py
 """
 from __future__ import annotations
 import json, socket, subprocess, sys, tempfile, threading
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 from transport.middle import BusinessServer
 from transport.registry import UserEntry, load_registry
 from transport.runtime_paths import set_working_dir, registry_path

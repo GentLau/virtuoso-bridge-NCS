@@ -2,7 +2,7 @@
 
 > 日期：2026-09-11
 > 代码基线：`6b489a2`
-> 执行脚本：`scripts/p1_log_live.py`；目标 vb01（65101）。
+> 执行脚本：`test/tb/p1_log_live.py`；目标 vb01（65101）。
 
 ## 1. 期望
 
@@ -29,7 +29,7 @@ CDS.log bridge-marker count: 0
 
 ## 3.1 逐字节与文件一致性（HTTPServer 发起）
 
-`scripts/log_file_verify.py`：通过本地 `StressServer` 的 `/api/skill` 发请求；每次请求前 `stat -c %s` 记录 offset，请求后用 `dd ... | base64` 读出真实 CDS.log 区间字节，与 HTTP 返回的 `log` 逐字节比较：
+`test/tb/log_file_verify.py`：通过本地 `StressServer` 的 `/api/skill` 发请求；每次请求前 `stat -c %s` 记录 offset，请求后用 `dd ... | base64` 读出真实 CDS.log 区间字节，与 HTTP 返回的 `log` 逐字节比较：
 
 ```json
 {"requests": 12, "equal": 12, "rows": [

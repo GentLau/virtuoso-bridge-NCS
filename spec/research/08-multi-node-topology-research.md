@@ -164,7 +164,7 @@ spectre = spectre or legacy or daemon or deploy or GUI
 |---|---|---|
 | 单机 remote（六步注册 + CIW load + 三接口 + CDS.log） | **真机跑过** | `doc/report/测试执行报告.md`、`log契约-P1.md` |
 | 单机 local（6 用户并发、持久 shell） | **真机跑过** | `test/e2e/test_business_local_live.py` |
-| 同一 registry 下"每 token 一台机器"（6 wsl 真实 + 10 vps fake） | **真机跑过** | `scripts/multienv_mixed.py`、`并发专项-三环境随机混合.md` |
+| 同一 registry 下"每 token 一台机器"（6 wsl 真实 + 10 vps fake） | **真机跑过** | `test/tb/multienv_mixed.py`、`并发专项-三环境随机混合.md` |
 | 跳板网络路径（Windows→云→wsl） | 真实存在，但通过 SSH config 透明实现 | `doc/report/环境支持.md:22-34` |
 
 ### 4.2 从未验证的拓扑

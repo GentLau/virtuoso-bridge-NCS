@@ -4,7 +4,7 @@ Each instance runs in its own folder with a local .cdsinit that loads that
 user's generated setup (unique token/port).  Starts one by one, checks memory,
 then waits for the daemon banner and runs the step-5 verification.
 
-Usage: python scripts/multi_virtuoso_pilot.py --users 3
+Usage: python test/tb/multi_virtuoso_pilot.py --users 3
 """
 
 from __future__ import annotations
@@ -18,7 +18,7 @@ import time
 import os
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from transport.register import RegistrationFlow, RegistrationRequest
 from transport.registry import load_registry

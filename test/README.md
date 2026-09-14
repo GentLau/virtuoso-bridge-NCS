@@ -9,6 +9,7 @@ test/
   integration/  集成级：真实 socket 的假 daemon、daemon 子进程、wire 协议
   scenario/     场景级：六步注册全流程、多用户隔离、完整业务模拟（skill/command/file/并发）
   e2e/          真实场景级：远端单用户全流程 + 57 用户远端业务并发 + 6 用户本地业务并发
+  tb/           真机 Testbench：可执行的压测/多环境/日志契约 TB + fixtures（不被 pytest 收集）
 test_bak/       旧 tests/ 内容 + 调试期临时文件（不参与常规运行）
 ```
 
@@ -42,6 +43,17 @@ $env:VB_E2E='1'; python -m unittest discover -s test/e2e -p "test_*.py" -v
 # scp -r src test wsl-gent:/home/Gent/vb-ncs/
 # ssh wsl-gent 'cd /home/Gent/vb-ncs && python3 -m venv .venv && .venv/bin/pip install pydantic paramiko pytest'
 ssh wsl-gent 'cd /home/Gent/vb-ncs && VB_E2E_LOCAL=1 VB_LOCAL_USERS=6 .venv/bin/python -m unittest discover -s test/e2e -p "test_business_local_live.py" -v'
+```
+
+## 真机 Testbench（test/tb/）
+
+`test/tb/` 放可执行 TB（不是 pytest 用例，名字不以 `test_` 开头、不会被收集）：多环境混合并发、
+五 role 跨主机、local/remote 混合、CDS.log 契约、弱机极端梯度、以及 fake daemon / 多 Virtuoso 等 fixtures。
+每个 TB 的用途与所需环境见 `test/tb/README.md`，判定标准见 `doc/report/` 的对应报告。
+
+```bash
+# 例：单用户五接口逐阶段计时（需要 wsl-gent）
+PYTHONPATH=src python test/tb/smoke_user.py --user vb03 --daemon-port 65103 --repeat 2
 ```
 
 ## 覆盖率

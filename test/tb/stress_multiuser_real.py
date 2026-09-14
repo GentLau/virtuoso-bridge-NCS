@@ -5,7 +5,7 @@ Every skill request executes ``RBDToken`` and must return the token owned by
 the daemon that answered — a per-user routing check on real daemons, not
 protocol fakes.  Commands/upload/download go through the same middle layer.
 
-Usage: python scripts/stress_multiuser_real.py --work-dir C:\\Users\\user\\vb-multi-work-2
+Usage: python test/tb/stress_multiuser_real.py --work-dir C:\\Users\\user\\vb-multi-work-2
 """
 
 from __future__ import annotations
@@ -18,7 +18,7 @@ import sys
 import time
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from transport.registry import load_registry
 from transport.runtime_paths import registry_path, set_working_dir
@@ -65,7 +65,7 @@ def main(argv=None):
         [sys.executable, "-m", "server.stress_server", "--port", str(args.port), "--work-dir", str(wd)],
         stdout=server_log_fh,
         stderr=subprocess.STDOUT,
-        env={**os.environ, "PYTHONPATH": str(Path(__file__).resolve().parents[1] / "src")},
+        env={**os.environ, "PYTHONPATH": str(Path(__file__).resolve().parents[2] / "src")},
     )
     try:
         for _ in range(80):

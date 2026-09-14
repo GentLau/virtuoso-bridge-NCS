@@ -1,7 +1,7 @@
 """HTTP-based log byte verification against the real CDS.log interval."""
 import argparse, base64, json, socket, subprocess, sys, tempfile, threading, time, urllib.error, urllib.request, uuid
 from pathlib import Path
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 from transport.registry import UserEntry, load_registry
 from transport.register.probe import allocate_local_port
 from transport.runtime_paths import set_working_dir, registry_path

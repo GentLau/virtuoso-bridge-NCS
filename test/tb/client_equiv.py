@@ -3,11 +3,9 @@ from __future__ import annotations
 import argparse, hashlib, json, random, sys, tempfile, threading, time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-_here = Path(__file__).resolve().parent
-for _cand in (_here / "src", _here.parent / "src"):
-    if _cand.is_dir():
-        sys.path.insert(0, str(_cand))
-        break
+_root = Path(__file__).resolve().parents[2]
+if (_root / "src").is_dir():
+    sys.path.insert(0, str(_root / "src"))
 from transport.middle import BusinessServer
 from transport.registry import UserEntry, load_registry
 from transport.register.probe import allocate_local_port

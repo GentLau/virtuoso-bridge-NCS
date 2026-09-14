@@ -1,13 +1,13 @@
 """T2: per-role split across hosts (daemon/gui on wsl, command/file/spectre on vps).
 
 Proves the 5 interfaces route to their own role endpoint, not to one host.
-Run from Windows:  python scripts/role_split_cross_host.py
+Run from Windows:  python test/tb/role_split_cross_host.py
 """
 from __future__ import annotations
 import json, sys, tempfile, time
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 from transport.middle import BusinessServer
 from transport.registry import UserEntry, load_registry
 from transport.register.probe import allocate_local_port

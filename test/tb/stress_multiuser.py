@@ -5,7 +5,7 @@ user (skills), plus per-user command/file traffic.  Every instruction must
 receive a response; the skill response must come from the daemon owning that
 token (automatic routing check).
 
-Usage: python scripts/stress_multiuser.py --users 100
+Usage: python test/tb/stress_multiuser.py --users 100
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ import threading
 import time
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from transport.registry import UserEntry, load_registry
 from transport.runtime_paths import registry_path, set_working_dir
@@ -100,7 +100,7 @@ def main(argv=None):
     server = subprocess.Popen(
         [sys.executable, "-m", "server.stress_server", "--port", "8126", "--work-dir", str(wd)],
         stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT,
-        env={**__import__("os").environ, "PYTHONPATH": str(Path(__file__).resolve().parents[1] / "src")},
+        env={**__import__("os").environ, "PYTHONPATH": str(Path(__file__).resolve().parents[2] / "src")},
     )
     try:
         for _ in range(40):

@@ -3,7 +3,7 @@
 Registers a dedicated user, loads the daemon into the running CIW, then
 starts the stress HTTP server and hammers it with mixed command/skill calls.
 
-Usage: python scripts/stress_live.py
+Usage: python test/tb/stress_live.py
 """
 
 from __future__ import annotations
@@ -18,7 +18,7 @@ import time
 import uuid
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from transport.register import RegistrationFlow, RegistrationRequest
 from transport.registry import load_registry
@@ -123,7 +123,7 @@ def main():
 
     import os
     env = dict(os.environ)
-    env["PYTHONPATH"] = str(Path(__file__).resolve().parents[1] / "src")
+    env["PYTHONPATH"] = str(Path(__file__).resolve().parents[2] / "src")
     server_proc = subprocess.Popen(
         [sys.executable, "-m", "server.stress_server", "--port", "8126", "--work-dir", str(wd)],
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, env=env,

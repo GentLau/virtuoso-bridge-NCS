@@ -8,7 +8,7 @@ from __future__ import annotations
 import argparse, hashlib, json, random, sys, tempfile, threading, time, uuid
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 from transport.middle import BusinessServer
 from transport.registry import UserEntry, load_registry
 from transport.register.probe import allocate_local_port
