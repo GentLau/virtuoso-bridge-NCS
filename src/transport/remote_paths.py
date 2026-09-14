@@ -5,6 +5,15 @@ import posixpath
 DEFAULT_SCRATCH_ROOT = "~/.virtuoso-bridge"
 
 
+class RemotePathError(RuntimeError):
+    """A remote path cannot be turned into an absolute path on the target.
+
+    Raised when a role root still contains ``~`` and the target account's
+    ``$HOME`` could not be resolved: the alternative would be silently
+    writing to a literal ``~`` directory, which is what this prevents.
+    """
+
+
 def scratch_root(root: str | None = None) -> str:
     value = root or DEFAULT_SCRATCH_ROOT
     if value.startswith("~"):
@@ -66,6 +75,7 @@ def identity_path(user: str, root: str | None = None) -> str:
 
 __all__ = [
     "DEFAULT_SCRATCH_ROOT",
+    "RemotePathError",
     "daemon_path",
     "identity_path",
     "il_path",

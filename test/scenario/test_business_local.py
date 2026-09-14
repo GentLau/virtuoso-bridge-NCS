@@ -139,7 +139,7 @@ class TestBusinessLocal(unittest.TestCase):
     def test_unknown_token_rejected_before_daemon(self):
         r = self.server.execute_skill("1+1", token="nope")
         self.assertFalse(r.ok)
-        self.assertIn("unknown token", str(r.errors).lower())
+        self.assertIn("invalid token", str(r.errors).lower())
         self.assertEqual(self.daemon.requests, 0)
 
     # -- command -------------------------------------------------------------

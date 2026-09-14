@@ -7,6 +7,7 @@ import base64
 import binascii
 import hashlib
 import logging
+import logging.handlers
 import os
 import queue
 import shutil
@@ -38,23 +39,32 @@ from transport.transfer import (
 logger = logging.getLogger(__name__)
 
 def _setup_command_log() -> None:
-    """Add a file handler to the package root logger."""
-    pkg_logger = logging.getLogger("virtuoso_bridge")
-    if any(getattr(h, '_vb_cmd_log', False) for h in pkg_logger.handlers):
+    """Add a rotating file handler to the root logger.
+
+    The handler lives on the root logger (not on a package logger) so both the
+    ``transport.*`` loggers used by the middle layer and anything else in the
+    process land in ``<working dir>/log/commands.log`` — that file is the
+    support artifact for "what did the bridge actually run".  Rotation keeps a
+    long-running daemon from filling the disk.
+    """
+    root = logging.getLogger()
+    if any(getattr(h, '_vb_cmd_log', False) for h in root.handlers):
         return
     try:
         log_file = command_log_file()
         log_file.parent.mkdir(parents=True, exist_ok=True)
-        fh = logging.FileHandler(log_file, encoding="utf-8")
+        fh: logging.Handler = logging.handlers.RotatingFileHandler(
+            log_file, maxBytes=5 * 1024 * 1024, backupCount=3, encoding="utf-8"
+        )
     except OSError as exc:
         logger.debug("Command file logging disabled: %s", exc)
         return
     fh._vb_cmd_log = True  # type: ignore[attr-defined]
     fh.setLevel(logging.DEBUG)
     fh.setFormatter(logging.Formatter("%(asctime)s [%(name)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S"))
-    pkg_logger.addHandler(fh)
-    if pkg_logger.level == logging.NOTSET or pkg_logger.level > logging.DEBUG:
-        pkg_logger.setLevel(logging.DEBUG)
+    root.addHandler(fh)
+    if root.level == logging.NOTSET or root.level > logging.DEBUG:
+        root.setLevel(logging.DEBUG)
 
 _INTERPRETER_SHUTTING_DOWN = False
 
@@ -188,12 +198,28 @@ def _short_control_path(
 
     ``identity`` is a per-token namespace: tokens never share a master socket,
     so closing one runner can never tear down another token's connection.
+    The local pid is part of the namespace so that a master left behind by a
+    previous (killed/crashed) process can never be reused: a wedged leftover
+    master answers the mux handshake but never replies to the session request,
+    which hangs every later connection with no client-side timeout.
     """
     base_dir = "/tmp" if os.name != "nt" and Path("/tmp").is_dir() else tempfile.gettempdir()
     local_id = str(os.getuid()) if hasattr(os, "getuid") else os.environ.get("USERNAME", "local")
-    conn_identity = f"{local_id}|{user or 'default'}@{host}|{jump_host or 'direct'}|{identity or ''}"
+    conn_identity = (
+        f"{local_id}|{os.getpid()}|{user or 'default'}@{host}|"
+        f"{jump_host or 'direct'}|{identity or ''}"
+    )
     token = hashlib.sha1(conn_identity.encode("utf-8")).hexdigest()[:16]
     return str(Path(base_dir) / f"vb_ssh_{token}")
+
+
+class UnknownEffectError(RuntimeError):
+    """The command was delivered to a remote shell that then died.
+
+    Whether the remote side executed it (fully, partially, or not at all) is
+    unknowable from here, so the caller must decide instead of the bridge
+    silently replaying a possibly non-idempotent command.
+    """
 
 
 class SSHRunner:
@@ -659,6 +685,28 @@ class SSHRunner:
                     _budget=budget,
                 )
             except subprocess.TimeoutExpired:
+                if not (self._mux_master_wedged() and budget.available() > 0):
+                    raise
+                # The command never started: tear the wedged master (and the
+                # shell pinned to it) down and retry over a direct connection.
+                # ``budget.remaining`` below fails the retry if no time is left,
+                # so a genuinely slow command still reports its own timeout.
+                self._recover_from_wedged_mux()
+                with self._shell_lock:
+                    self._close_persistent_shell_locked(_budget=budget)
+                try:
+                    return self._run_via_persistent_shell_with_retry(
+                        command,
+                        _budget=budget,
+                    )
+                except Exception as exc:  # noqa: BLE001
+                    self._log_persistent_shell_fallback(
+                        "Persistent SSH shell failed after mux recovery", exc
+                    )
+                    return self._run_command_once(command, _budget=budget)
+            except UnknownEffectError:
+                # Delivered-then-died: replaying a possibly non-idempotent
+                # command would double its effect, so the caller decides.
                 raise
             except Exception as exc:  # noqa: BLE001
                 self._log_persistent_shell_fallback("Persistent SSH shell failed", exc)
@@ -761,7 +809,17 @@ class SSHRunner:
         err: bytes = b""
         for attempt in range(max_attempts):
             budget.remaining(command)
-            rc, out, err = run_one()
+            try:
+                rc, out, err = run_one()
+            except subprocess.TimeoutExpired:
+                if not (
+                    self._mux_master_wedged()
+                    and attempt + 1 < max_attempts
+                    and budget.available() > 0
+                ):
+                    raise
+                self._recover_from_wedged_mux()
+                continue
             if rc == 0:
                 return rc, out, err
             err_text = err.decode("utf-8", errors="replace") if isinstance(err, bytes) else str(err)
@@ -817,14 +875,24 @@ class SSHRunner:
         for attempt in range(attempts):
             cmd = self._build_ssh_base() + ["sh", "-l"]
             self._print_cmd(cmd)
-            last = subprocess.run(
-                cmd,
-                input=command.encode("utf-8"),
-                capture_output=True,
-                text=False,
-                timeout=budget.remaining(cmd),
-                **_windows_no_window_kwargs(),
-            )
+            try:
+                last = subprocess.run(
+                    cmd,
+                    input=command.encode("utf-8"),
+                    capture_output=True,
+                    text=False,
+                    timeout=budget.remaining(cmd),
+                    **_windows_no_window_kwargs(),
+                )
+            except subprocess.TimeoutExpired:
+                if not (
+                    self._mux_master_wedged()
+                    and attempt + 1 < attempts
+                    and budget.available() > 0
+                ):
+                    raise
+                self._recover_from_wedged_mux()
+                continue
             stderr_text = last.stderr.decode("utf-8", errors="replace")
             if last.returncode == 0:
                 break
@@ -1310,6 +1378,7 @@ class SSHRunner:
                 probe = self._run_command_via_persistent_shell_locked(
                     ":",
                     _budget=budget,
+                    _unknown_effect_on_exit=False,
                 )
             except Exception:
                 self._close_persistent_shell_locked(_budget=budget)
@@ -1344,6 +1413,44 @@ class SSHRunner:
                 **_windows_no_window_kwargs(),
             )
         except (OSError, subprocess.TimeoutExpired):
+            pass
+
+    def _mux_master_wedged(self, probe_timeout: float = 3.0) -> bool:
+        """Detect a wedged ControlMaster (mux handshake answers, session never runs).
+
+        ``ssh -O check`` talks to the master over the control socket and has no
+        client-side timeout of its own, so a wedged master makes *it* hang too;
+        the short probe timeout is the detector.  A missing/stale socket fails
+        fast and is not reported as wedged (that case never hangs a session).
+        """
+        if not self._use_control_master or self._backend != "openssh":
+            return False
+        cmd: list[str] = [self._ssh_cmd, "-o", f"ControlPath={self._control_path}", "-O", "check"]
+        cmd.append(f"{self._user}@{self._host}" if self._user else self._host)
+        try:
+            proc = subprocess.run(
+                cmd,
+                capture_output=True,
+                timeout=probe_timeout,
+                **_windows_no_window_kwargs(),
+            )
+        except subprocess.TimeoutExpired:
+            return True
+        except OSError:
+            return False
+        return False
+
+    def _recover_from_wedged_mux(self) -> None:
+        """Drop the wedged master and stop multiplexing for this session.
+
+        The socket is unlinked as well: the wedged master may stay alive for a
+        while, and leaving its socket behind would make the next ssh process
+        pick up the same dead end.
+        """
+        self._disable_cm_for_session("mux master wedged (control-socket probe timed out)")
+        try:
+            os.unlink(self._control_path)
+        except OSError:
             pass
 
     def close(self) -> None:
@@ -1476,6 +1583,7 @@ class SSHRunner:
         timeout: float | None = None,
         *,
         _budget: _TimeoutBudget | None = None,
+        _unknown_effect_on_exit: bool = True,
     ) -> CommandResult:
         budget = _budget or _TimeoutBudget.start(timeout, self._timeout)
         proc = self._shell_proc
@@ -1543,6 +1651,13 @@ class SSHRunner:
 
             if line is None:
                 self._close_persistent_shell_locked(_budget=budget)
+                if _unknown_effect_on_exit:
+                    # The script was written to the shell before it died: the
+                    # remote side may already have executed it.  Never replay.
+                    raise UnknownEffectError(
+                        "persistent SSH shell exited while the command was "
+                        "running; the remote effect is unknown"
+                    )
                 raise RuntimeError("Persistent SSH shell exited unexpectedly.")
 
             stripped = line.rstrip("\r\n")

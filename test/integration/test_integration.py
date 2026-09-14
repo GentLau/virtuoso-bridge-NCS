@@ -87,7 +87,7 @@ class TestIntegration(unittest.TestCase):
 
             r2 = server.execute_skill("1+1", token="wrong")
             self.assertEqual(r2.status, ExecutionStatus.ERROR)
-            self.assertIn("unknown token", r2.errors[0])
+            self.assertIn("invalid token", r2.errors[0])
         finally:
             fake.close()
 

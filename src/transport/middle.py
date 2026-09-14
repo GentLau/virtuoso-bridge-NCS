@@ -16,13 +16,49 @@ import time
 from pathlib import Path
 
 from pyapi.models import CommandResult, ExecutionStatus, Middle, VirtuosoResult
+from transport.remote_paths import RemotePathError
 from transport.registry import Registry, load_registry
 from transport.remote_roles import ResolvedTargets, resolve
 from transport.runtime_paths import registry_path, set_working_dir
 from transport.skill_client import SkillClient
+from transport.ssh import UnknownEffectError
 from transport.tunnel import RemoteClient
 
 logger = logging.getLogger(__name__)
+
+_DEFAULT_TIMEOUT = 30.0  # spec: timeout=None -> 30s for all five interfaces
+
+# Reserved diagnostic prefixes (spec: 三层架构 §4.4).  Upper layers may match
+# on them; the text after the prefix is diagnostic detail only.
+_VB_TRANSPORT = "VB-TRANSPORT: "
+_VB_PATH = "VB-PATH-NOT-VISIBLE: "
+_VB_UNKNOWN_EFFECT = "VB-UNKNOWN-EFFECT: "
+
+
+def _effective_timeout(timeout: float | int | None) -> float:
+    return _DEFAULT_TIMEOUT if timeout is None else float(timeout)
+
+
+def _error_result(exc: BaseException, budget: float | None = None) -> CommandResult:
+    """Map a transported exception onto the ``CommandResult.kind`` contract.
+
+    Timeouts keep the bridge reserved code 124, transport failures 255; the
+    only place a real command's exit code is exposed is ``kind="command"``.
+    """
+    if isinstance(exc, (subprocess.TimeoutExpired, TimeoutError)):
+        detail = (
+            f"command timed out after {float(budget):g}s"
+            if budget is not None
+            else "command timed out"
+        )
+        return CommandResult(returncode=124, stdout="", stderr=detail, kind="timeout")
+    if isinstance(exc, RemotePathError):
+        return CommandResult(1, "", f"{_VB_PATH}{exc}", kind="path")
+    if isinstance(exc, UnknownEffectError):
+        return CommandResult(255, "", f"{_VB_UNKNOWN_EFFECT}{exc}", kind="unknown-effect")
+    if isinstance(exc, (FileNotFoundError, IsADirectoryError, NotADirectoryError)):
+        return CommandResult(1, "", f"{_VB_PATH}{exc}", kind="path")
+    return CommandResult(255, "", f"{_VB_TRANSPORT}{exc}", kind="transport")
 
 
 class _LocalCommandSession:
@@ -339,7 +375,7 @@ class BusinessServer(Middle):
 
     def execute_skill(self, skill_code: str, timeout: float | None = None, *, token: str) -> VirtuosoResult:
         acquired = False
-        deadline = None if timeout is None else time.monotonic() + timeout
+        deadline = time.monotonic() + _effective_timeout(timeout)
         try:
             entry = self._entry(token)
             if not self._acquire(token, entry):
@@ -351,18 +387,31 @@ class BusinessServer(Middle):
                 self._remote(token).ensure_tunnel(deadline=deadline)
             remaining = None if deadline is None else max(0.0, deadline - time.monotonic())
             return self._skill(token).execute_skill(skill_code, timeout=remaining)
-        except LookupError as exc:
-            return VirtuosoResult(status=ExecutionStatus.ERROR, errors=[str(exc)])
-        except RuntimeError as exc:
-            # transient transport setup failure (e.g. a cold sshd handshake
-            # drop); surface as an error result so callers can retry
-            return VirtuosoResult(status=ExecutionStatus.ERROR, errors=[str(exc)])
+        except LookupError:
+            return VirtuosoResult(status=ExecutionStatus.ERROR, errors=["invalid token"])
+        except RemotePathError as exc:
+            return VirtuosoResult(
+                status=ExecutionStatus.ERROR, errors=[f"{_VB_PATH}{exc}"]
+            )
+        except (subprocess.TimeoutExpired, TimeoutError) as exc:
+            return VirtuosoResult(
+                status=ExecutionStatus.ERROR,
+                errors=[f"SKILL execution timed out ({exc})"],
+            )
+        except Exception as exc:  # noqa: BLE001
+            # transport/tunnel setup failure (e.g. a cold sshd handshake drop);
+            # surface as an error result so callers can retry
+            return VirtuosoResult(
+                status=ExecutionStatus.ERROR,
+                errors=[f"Daemon connection failed: {exc}"],
+            )
         finally:
             if acquired:
                 self._release(token)
 
     def run_command(self, cmd: str, timeout: int | None = None, *, token: str, parallel: bool = False) -> CommandResult:
         acquired = False
+        budget: float | None = None
         try:
             entry = self._entry(token)
             if not self._acquire(token, entry):
@@ -370,20 +419,50 @@ class BusinessServer(Middle):
             acquired = True
             user = self.registry.user_of(token) or token
             targets = self._targets(entry, user=user)
+            budget = _effective_timeout(timeout)
+            deadline = time.monotonic() + budget
             if targets.command.mode == "local":
                 if parallel:
-                    return self._local_command(cmd, timeout, cwd=targets.command.root)
-                with self._local_lock(token):
-                    return self._local_session(token, cwd=targets.command.root).execute(cmd, timeout)
-            return self._remote(token).run_command(cmd, timeout=timeout, parallel=parallel)
-        except LookupError as exc:
-            return CommandResult(returncode=1, stdout="", stderr=str(exc), kind="invalid-token")
+                    return self._local_command(cmd, budget, cwd=targets.command.root)
+                lock = self._local_lock(token)
+                if not lock.acquire(timeout=budget):
+                    return CommandResult(
+                        returncode=124, stdout="",
+                        stderr=f"command timed out waiting for the serial command slot after {budget}s",
+                        kind="timeout",
+                    )
+                try:
+                    remaining = max(0.0, deadline - time.monotonic())
+                    if remaining <= 0:
+                        return CommandResult(
+                            returncode=124, stdout="",
+                            stderr=f"command timed out waiting for the serial command slot after {budget}s",
+                            kind="timeout",
+                        )
+                    return self._local_session(token, cwd=targets.command.root).execute(cmd, remaining)
+                finally:
+                    lock.release()
+            remaining = max(0.0, deadline - time.monotonic())
+            if remaining <= 0:
+                return CommandResult(
+                    returncode=124, stdout="",
+                    stderr=f"command timed out before execution after {budget}s",
+                    kind="timeout",
+                )
+            return self._remote(token).run_command(
+                cmd, timeout=remaining, parallel=parallel
+            )
+        except LookupError:
+            return CommandResult(returncode=1, stdout="", stderr="invalid token", kind="invalid-token")
+        except Exception as exc:  # noqa: BLE001 - mapped onto the kind contract
+            return _error_result(exc, budget)
         finally:
             if acquired:
                 self._release(token)
 
     def upload_file(self, local_path: Path, remote_path: str, timeout: int | None = None, *, token: str, recursive: bool = False) -> CommandResult:
         acquired = False
+        budget = _effective_timeout(timeout)
         try:
             entry = self._entry(token)
             if not self._acquire(token, entry):
@@ -393,15 +472,21 @@ class BusinessServer(Middle):
             targets = self._targets(entry, user=user)
             if targets.file.mode == "local":
                 return self._local_upload(local_path, remote_path, recursive, root=targets.file.root)
-            return self._remote(token).upload_file(Path(local_path), remote_path, timeout=timeout, recursive=recursive)
-        except LookupError as exc:
-            return CommandResult(returncode=1, stdout="", stderr=str(exc), kind="invalid-token")
+            return self._remote(token).upload_file(
+                Path(local_path), remote_path,
+                timeout=budget, recursive=recursive,
+            )
+        except LookupError:
+            return CommandResult(returncode=1, stdout="", stderr="invalid token", kind="invalid-token")
+        except Exception as exc:  # noqa: BLE001 - mapped onto the kind contract
+            return _error_result(exc, budget)
         finally:
             if acquired:
                 self._release(token)
 
     def download_file(self, remote_path: str, local_path: Path, timeout: int | None = None, *, token: str, recursive: bool = False) -> CommandResult:
         acquired = False
+        budget = _effective_timeout(timeout)
         try:
             entry = self._entry(token)
             if not self._acquire(token, entry):
@@ -411,9 +496,14 @@ class BusinessServer(Middle):
             targets = self._targets(entry, user=user)
             if targets.file.mode == "local":
                 return self._local_download(remote_path, local_path, recursive, root=targets.file.root)
-            return self._remote(token).download_file(remote_path, Path(local_path), timeout=timeout, recursive=recursive)
-        except LookupError as exc:
-            return CommandResult(returncode=1, stdout="", stderr=str(exc), kind="invalid-token")
+            return self._remote(token).download_file(
+                remote_path, Path(local_path),
+                timeout=budget, recursive=recursive,
+            )
+        except LookupError:
+            return CommandResult(returncode=1, stdout="", stderr="invalid token", kind="invalid-token")
+        except Exception as exc:  # noqa: BLE001 - mapped onto the kind contract
+            return _error_result(exc, budget)
         finally:
             if acquired:
                 self._release(token)
@@ -430,6 +520,7 @@ class BusinessServer(Middle):
 
     def _one_shot_role(self, role_name: str, cmd: str, timeout: int | None, token: str) -> CommandResult:
         acquired = False
+        budget = _effective_timeout(timeout)
         try:
             entry = self._entry(token)
             if not self._acquire(token, entry):
@@ -439,10 +530,14 @@ class BusinessServer(Middle):
             targets = self._targets(entry, user=user)
             role = targets.role(role_name)
             if role.mode == "local":
-                return self._local_command(cmd, timeout, cwd=role.root)
-            return self._remote(token).run_one_shot(role_name, cmd, timeout=timeout)
-        except LookupError as exc:
-            return CommandResult(returncode=1, stdout="", stderr=str(exc), kind="invalid-token")
+                return self._local_command(cmd, budget, cwd=role.root)
+            return self._remote(token).run_one_shot(
+                role_name, cmd, timeout=budget
+            )
+        except LookupError:
+            return CommandResult(returncode=1, stdout="", stderr="invalid token", kind="invalid-token")
+        except Exception as exc:  # noqa: BLE001 - mapped onto the kind contract
+            return _error_result(exc, budget)
         finally:
             if acquired:
                 self._release(token)

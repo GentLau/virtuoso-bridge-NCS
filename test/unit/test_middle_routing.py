@@ -86,7 +86,7 @@ class TestBusinessServerRouting(unittest.TestCase):
         server = self._server()
         r = server.execute_skill("1+1", token="nope")
         self.assertEqual(r.status, ExecutionStatus.ERROR)
-        self.assertIn("unknown token", r.errors[0])
+        self.assertIn("invalid token", r.errors[0])
 
     def test_run_command_remote_passes_parallel(self):
         entry = make_remote_entry()
@@ -138,17 +138,17 @@ class TestMiddleErrorAndLocalPaths(unittest.TestCase):
     def test_run_command_unknown_token(self):
         r = self.server.run_command("echo x", token="ghost")
         self.assertEqual(r.returncode, 1)
-        self.assertIn("unknown token", r.stderr)
+        self.assertIn("invalid token", r.stderr)
 
     def test_upload_unknown_token(self):
         r = self.server.upload_file(Path("a.txt"), "/x/a.txt", token="ghost")
         self.assertEqual(r.returncode, 1)
-        self.assertIn("unknown token", r.stderr)
+        self.assertIn("invalid token", r.stderr)
 
     def test_download_unknown_token(self):
         r = self.server.download_file("/x/a.txt", Path("b.txt"), token="ghost")
         self.assertEqual(r.returncode, 1)
-        self.assertIn("unknown token", r.stderr)
+        self.assertIn("invalid token", r.stderr)
 
     def test_local_command_timeout(self):
         r = self.server._local_command('"{}" -c "import time; time.sleep(5)"'.format(sys.executable), 0.1)

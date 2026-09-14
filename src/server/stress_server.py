@@ -102,15 +102,27 @@ class Handler(BaseHTTPRequestHandler):
                 back = Path(tempfile.mkdtemp()) / "out.bin"
                 dn = middle.download_file(remote, back, token=token)
                 sha_ok = back.exists() and hashlib.sha256(back.read_bytes()).hexdigest() == hashlib.sha256(payload).hexdigest()
+                stages = (up, cm, dn)
+                rejected = any(
+                    getattr(stage, "kind", "") == "rejected" for stage in stages
+                )
                 self._send(200, {
                     "upload_rc": up.returncode,
+                    "upload_stderr": up.stderr,
+                    "upload_kind": up.kind,
                     "skill_ok": sk.ok,
                     "skill_out": sk.output,
                     "skill_log": sk.log,
+                    "skill_errors": sk.errors,
                     "command_rc": cm.returncode,
                     "command_out": cm.stdout,
+                    "command_stderr": cm.stderr,
+                    "command_kind": cm.kind,
                     "download_rc": dn.returncode,
+                    "download_stderr": dn.stderr,
+                    "download_kind": dn.kind,
                     "sha_ok": sha_ok,
+                    "rejected": rejected,
                     "ok": up.returncode == 0 and sk.ok and cm.returncode == 0 and dn.returncode == 0 and sha_ok,
                 })
                 return

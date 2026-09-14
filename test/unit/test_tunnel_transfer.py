@@ -43,6 +43,8 @@ class FakeRunner:
         self.calls.append(("run_command", (cmd, timeout), {}))
         if cmd in self.command_results:
             return self.command_results[cmd]
+        if "$HOME" in cmd:
+            return CommandResult(0, "/home/alice", "")
         if cmd.startswith("sha256sum"):
             path = cmd.split()[-1].strip("'")
             digest = hashlib.sha256(path.encode()).hexdigest()
@@ -86,6 +88,8 @@ class TestRemoteClientTransport(unittest.TestCase):
         from unittest import mock
         with mock.patch("transport.tunnel.SSHRunner", FakeRunner):
             client = RemoteClient(entry, resolve(entry), "alice")
+            # one-shot channels (digest check) reuse the role runner here
+            client._one_shot_runner = client._runner
             res = client.run_command("echo hi")
             runner = client.command_runner
         self.assertEqual(res.returncode, 0)
@@ -98,6 +102,8 @@ class TestRemoteClientTransport(unittest.TestCase):
         local.write_bytes(b"payload")
         with mock.patch("transport.tunnel.SSHRunner", FakeRunner):
             client = RemoteClient(entry, resolve(entry), "alice")
+            # one-shot channels (digest check) reuse the role runner here
+            client._one_shot_runner = client._runner
             digest = hashlib.sha256(local.read_bytes()).hexdigest()
             client.file_runner.command_results[f"sha256sum /remote/p.bin"] = CommandResult(
                 0, f"{digest}  /remote/p.bin", ""
@@ -115,6 +121,8 @@ class TestRemoteClientTransport(unittest.TestCase):
         local.write_bytes(b"x")
         with mock.patch("transport.tunnel.SSHRunner", FakeRunner):
             client = RemoteClient(entry, resolve(entry), "alice")
+            # one-shot channels (digest check) reuse the role runner here
+            client._one_shot_runner = client._runner
             client.file_runner.upload_result = CommandResult(1, "", "upload boom")
             res = client.upload_file(local, "/remote/p.bin")
         self.assertEqual(res.returncode, 1)
@@ -125,6 +133,8 @@ class TestRemoteClientTransport(unittest.TestCase):
         from unittest import mock
         with mock.patch("transport.tunnel.SSHRunner", FakeRunner):
             client = RemoteClient(entry, resolve(entry), "alice")
+            # one-shot channels (digest check) reuse the role runner here
+            client._one_shot_runner = client._runner
             res = client.download_file("/remote/dir", Path(tempfile.mkdtemp()) / "out", recursive=True)
             runner = client.file_runner
         self.assertEqual(res.returncode, 0)
@@ -135,6 +145,8 @@ class TestRemoteClientTransport(unittest.TestCase):
         from unittest import mock
         with mock.patch("transport.tunnel.SSHRunner", FakeRunner):
             client = RemoteClient(entry, resolve(entry), "alice")
+            # one-shot channels (digest check) reuse the role runner here
+            client._one_shot_runner = client._runner
             client._channel_sem.acquire()  # exhaust the budget
             res = client.run_command("echo hi", parallel=True)
             client._channel_sem.release()
@@ -146,6 +158,8 @@ class TestRemoteClientTransport(unittest.TestCase):
         from unittest import mock
         with mock.patch("transport.tunnel.SSHRunner", FakeRunner):
             client = RemoteClient(entry, resolve(entry), "alice")
+            # one-shot channels (digest check) reuse the role runner here
+            client._one_shot_runner = client._runner
             client.ensure_tunnel()
             client.run_command("echo hi")
             client.close()
@@ -164,6 +178,8 @@ class TestRemoteClientEdges(unittest.TestCase):
         from unittest import mock
         with mock.patch("transport.tunnel.SSHRunner", FakeRunner):
             client = RemoteClient(entry, resolve(entry), "alice")
+            # one-shot channels (digest check) reuse the role runner here
+            client._one_shot_runner = client._runner
             runner = client.command_runner
         self.assertIsNone(runner.kwargs["jump_host"])
 
@@ -173,6 +189,8 @@ class TestRemoteClientEdges(unittest.TestCase):
         from unittest import mock
         with mock.patch("transport.tunnel.SSHRunner", FakeRunner):
             client = RemoteClient(entry, resolve(entry), "alice")
+            # one-shot channels (digest check) reuse the role runner here
+            client._one_shot_runner = client._runner
             client.ensure_tunnel()
         self.assertEqual(FakeRunner.instances, [])
 
@@ -181,6 +199,8 @@ class TestRemoteClientEdges(unittest.TestCase):
         from unittest import mock
         with mock.patch("transport.tunnel.SSHRunner", FakeRunner):
             client = RemoteClient(entry, resolve(entry), "alice")
+            # one-shot channels (digest check) reuse the role runner here
+            client._one_shot_runner = client._runner
             client.skill_runner.command_results = {}
             client.skill_runner.run_command = lambda *a, **k: CommandResult(1, "", "mkdir boom")
             with self.assertRaises(RuntimeError):
@@ -191,6 +211,8 @@ class TestRemoteClientEdges(unittest.TestCase):
         from unittest import mock
         with mock.patch("transport.tunnel.SSHRunner", FakeRunner):
             client = RemoteClient(entry, resolve(entry), "alice")
+            # one-shot channels (digest check) reuse the role runner here
+            client._one_shot_runner = client._runner
             client.skill_runner.upload_text = lambda *a, **k: CommandResult(1, "", "upload boom")
             with self.assertRaises(RuntimeError):
                 client.deploy(python_major=3)
@@ -200,6 +222,8 @@ class TestRemoteClientEdges(unittest.TestCase):
         from unittest import mock
         with mock.patch("transport.tunnel.SSHRunner", FakeRunner):
             client = RemoteClient(entry, resolve(entry), "alice")
+            # one-shot channels (digest check) reuse the role runner here
+            client._one_shot_runner = client._runner
             client._channel_sem.acquire()
             res = client.upload_file(Path(tempfile.mkdtemp()) / "p.bin", "/remote/p.bin")
             client._channel_sem.release()
@@ -210,6 +234,8 @@ class TestRemoteClientEdges(unittest.TestCase):
         from unittest import mock
         with mock.patch("transport.tunnel.SSHRunner", FakeRunner):
             client = RemoteClient(entry, resolve(entry), "alice")
+            # one-shot channels (digest check) reuse the role runner here
+            client._one_shot_runner = client._runner
             client._channel_sem.acquire()
             res = client.download_file("/remote/p.bin", Path(tempfile.mkdtemp()) / "p.bin")
             client._channel_sem.release()
@@ -220,6 +246,8 @@ class TestRemoteClientEdges(unittest.TestCase):
         from unittest import mock
         with mock.patch("transport.tunnel.SSHRunner", FakeRunner):
             client = RemoteClient(entry, resolve(entry), "alice")
+            # one-shot channels (digest check) reuse the role runner here
+            client._one_shot_runner = client._runner
             client.file_runner.download_result = CommandResult(1, "", "download boom")
             res = client.download_file("/remote/p.bin", Path(tempfile.mkdtemp()) / "p.bin")
         self.assertIn("download boom", res.stderr)
@@ -229,6 +257,8 @@ class TestRemoteClientEdges(unittest.TestCase):
         from unittest import mock
         with mock.patch("transport.tunnel.SSHRunner", FakeRunner):
             client = RemoteClient(entry, resolve(entry), "alice")
+            # one-shot channels (digest check) reuse the role runner here
+            client._one_shot_runner = client._runner
             client.file_runner.run_command = lambda *a, **k: CommandResult(1, "", "sha boom")
             res = client._verify("/remote/p.bin", b"abc")
         self.assertIn("sha boom", res.stderr)
@@ -238,6 +268,8 @@ class TestRemoteClientEdges(unittest.TestCase):
         from unittest import mock
         with mock.patch("transport.tunnel.SSHRunner", FakeRunner):
             client = RemoteClient(entry, resolve(entry), "alice")
+            # one-shot channels (digest check) reuse the role runner here
+            client._one_shot_runner = client._runner
             client.file_runner.run_command = lambda *a, **k: CommandResult(0, "deadbeef  /remote/p.bin", "")
             res = client._verify("/remote/p.bin", b"abc")
         self.assertEqual(res.returncode, 1)
@@ -255,6 +287,8 @@ class TestRemoteClientRecursiveUpload(unittest.TestCase):
         d = Path(tempfile.mkdtemp())
         with mock.patch("transport.tunnel.SSHRunner", FakeRunner):
             client = RemoteClient(entry, resolve(entry), "alice")
+            # one-shot channels (digest check) reuse the role runner here
+            client._one_shot_runner = client._runner
             res = client.upload_file(d, "/remote/dir")
         self.assertEqual(res.returncode, 1)
         self.assertIn("recursive=True", res.stderr)
@@ -265,6 +299,8 @@ class TestRemoteClientRecursiveUpload(unittest.TestCase):
         d = Path(tempfile.mkdtemp())
         with mock.patch("transport.tunnel.SSHRunner", FakeRunner):
             client = RemoteClient(entry, resolve(entry), "alice")
+            # one-shot channels (digest check) reuse the role runner here
+            client._one_shot_runner = client._runner
             res = client.upload_file(d, "/remote/dir", recursive=True)
             runner = client.file_runner
         self.assertEqual(res.returncode, 0)
@@ -279,6 +315,8 @@ class TestRemoteClientRecursiveUpload(unittest.TestCase):
         f.write_text("x", encoding="utf-8")
         with mock.patch("transport.tunnel.SSHRunner", FakeRunner):
             client = RemoteClient(entry, resolve(entry), "alice")
+            # one-shot channels (digest check) reuse the role runner here
+            client._one_shot_runner = client._runner
             res = client.upload_file(f, "/remote/f.txt", recursive=True)
         self.assertEqual(res.returncode, 1)
         self.assertIn("recursive upload requires a directory", res.stderr)
