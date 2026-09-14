@@ -211,29 +211,51 @@ def filter_delta(raw, level, max_bytes):
     return body + _DEGRADE_NOTE + _TRUNCATE_NOTE, True
 
 
-def _read_range(path, start_offset, end_offset):
-    """Read CDS.log bytes in [start,end); never touches cursor state."""
-    if not path:
-        return "", "CDS.log path unavailable"
-    try:
-        size = os.path.getsize(path)
-    except OSError:
-        return "", "CDS.log unreadable"
-    start = max(start_offset, 0)
-    end = min(max(end_offset, 0), size)
-    if size < start:
-        # log rotated/truncated mid-request: read the current file from 0
-        start = 0
-    if end < start:
-        end = start
-    try:
-        with open(path, "rb") as f:
-            f.seek(start)
-            data = f.read(end - start)
-    except OSError:
-        return "", "CDS.log unreadable"
-    return data.decode("utf-8", errors="replace"), None
+class LocalFileRangeReader(object):
+    """Read a CDS.log byte range on the host that owns the file.
 
+    版本边界（spec: 本版范围与明确不支持 §2 第 8 项）：本版假设 CDS.log 与
+    daemon 同主机（daemon 是 CIW 的 ipcBeginProcess 子进程），所以这里就是
+    一次本地文件读。
+
+    预留（本版不做）：将来 daemon 若跨机启动，**不要**让远端 daemon 直接打开
+    异地路径（`/tmp`、项目本地路径在别的主机上无效），也**不要**把读取挪进
+    SKILL/CIW（会阻塞单个 CIW、引入转义与自我污染风险）。正确方向是保持契约
+    不变（IL 仍给出 `path + [start,end)`），只把"读取"换成**锚定 CIW 主机**的
+    实现——例如经 gui role 的连接执行 `dd ... | base64` 或一个小 filter 脚本；
+    **过滤/限长必须在读取端就地完成**，避免日志字节多跨一跳网络。
+    """
+
+    def read(self, path, start_offset, end_offset):
+        if not path:
+            return "", "CDS.log path unavailable"
+        try:
+            size = os.path.getsize(path)
+        except OSError:
+            return "", "CDS.log unreadable"
+        start = max(start_offset, 0)
+        end = min(max(end_offset, 0), size)
+        if size < start:
+            # log rotated/truncated mid-request: read the current file from 0
+            start = 0
+        if end < start:
+            end = start
+        try:
+            with open(path, "rb") as f:
+                f.seek(start)
+                data = f.read(end - start)
+        except OSError:
+            return "", "CDS.log unreadable"
+        return data.decode("utf-8", errors="replace"), None
+
+
+#: 当前唯一实现：本地读。split-host 版本在这里换成"锚定 CIW 主机"的 reader。
+_READER = LocalFileRangeReader()
+
+
+def _read_range(path, start_offset, end_offset):
+    """兼容包装：所有调用都经 `_READER`，将来只替换读取端。"""
+    return _READER.read(path, start_offset, end_offset)
 
 def handle_connection(conn):
     global _timeout_flag, _watchdog, _RB_CALLS, _RB_ERRORS

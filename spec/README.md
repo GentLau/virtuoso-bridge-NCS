@@ -88,7 +88,7 @@ CDS.log metadata frame 完整字节格式
 
 - **Release ID**：`SPEC-2026-09-14-r2`
 - **Normative 文件集**（7 份）：三层整体架构设计、本版范围与明确不支持、配置一览、多节点设计、多用户设计、并发处理设计、日志返回设计标准；
-- **Normative 内容哈希**：`b14e58d23c6522ad674b10e3248138cfd3c0f3a36a26735d6831c28460e98d0a`
+- **Normative 内容哈希**：`bc2723683623322dc6af9552f8dafea2761bda7895923a673dbe84940109b385`
   - 算法：按相对路径排序，逐文件 SHA-256（**按 Git 提交内容计算，即 LF 行尾**；Windows 工作区受 `core.autocrlf` 影响的行尾差异不计入）的 `"<相对路径> <hex>"` 行以 LF 拼接，再取一次 SHA-256；
 - **基线 commit**：本 Release 段所在提交即基线（见 `git log -1 -- spec/`）；任何 Normative 文档变更必须同时更新本段哈希。
 
@@ -102,7 +102,7 @@ CDS.log metadata frame 完整字节格式
 | 配置一览 | Draft v16 | Normative | Draft v15（reservation 跨平台模型与唯一性作用域、root 定义索引化） |
 | 多用户设计 | Draft v12 | Normative | Draft v11（六步预测目标/失败合同、注册 deadline、resolver 复用口径） |
 | 并发处理设计 | Draft v10 | Normative | Draft v9（channel 记账矩阵、local role 预算口径） |
-| 日志返回设计标准 | Draft v6 | Normative | Draft v5（统一 warning 文本） |
+| 日志返回设计标准 | Draft v7 | Normative | Draft v6（split-host 边界索引） |
 | 核心修改设计 | Draft v4 | Informative | Draft v3 |
 | 改动报告 / 代码梳理 | — | Historical | — |
 
