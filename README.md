@@ -3,7 +3,7 @@
 通过 Python 控制 Cadence Virtuoso 的重构版桥接项目。三层架构：
 
 ```text
-pyapi       上层接口定义（三个接口 + 返回模型）
+pyapi       上层接口定义（五个接口 + 返回模型）
 transport   中层：本地/SSH 投送、注册、路由（业务服务器运行时）
 bridge      底层：Virtuoso 常驻 daemon 资源（ramic_bridge.il + daemon）
 server      注册 HTTP 页面（六步注册引导）
@@ -27,7 +27,7 @@ PYTHONPATH=src python -m server.registration_server --port 8124
 ```
 
 2. 浏览器打开 `http://127.0.0.1:8124/`，按六步注册（申请 → 本地校验 → 探测 → 部署 → CIW load → 连通性测试 → 写注册表）；
-3. 上层调用三个接口：
+3. 上层调用五个接口：
 
 ```python
 from transport.middle import BusinessServer
@@ -37,10 +37,14 @@ server = BusinessServer()   # 工作目录缺省为平台配置目录
 r = server.execute_skill("1+2", token="<token>")              # VirtuosoResult(output, log, ...)
 c = server.run_command("echo vb-ok", token="<token>")          # CommandResult(rc, stdout, stderr)
 server.upload_file("local.scs", "/home/user/run/local.scs", token="<token>")
+server.run_gui_command("echo vb-ok", token="<token>")        # GUI 一次性命令
+server.run_spectre_command("spectre -v", token="<token>")    # Spectre 一次性命令
 server.download_file("/home/user/run/out.psf", "out.psf", token="<token>")
 ```
 
 `token` 每次调用必填（keyword-only）；`run_command(..., parallel=False)`、文件接口 `recursive=False` 是可选参数。
+
+接口共 5 个：Skill 执行 / 命令执行 / 文件执行 / GUI 命令执行 / Spectre 命令执行；role 与目标位置见 [spec/design-concepts/底层与中层/多节点设计.md](spec/design-concepts/底层与中层/多节点设计.md)。
 
 ## 只看前端：Mock Testbench
 

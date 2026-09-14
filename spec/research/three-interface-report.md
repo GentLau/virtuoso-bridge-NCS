@@ -1,5 +1,7 @@
 # 三接口统一架构研究报告
 
+> 历史说明（2026-09-14）：本文研究的是旧版三接口（Skill / RunCommand / File）；本版中层接口已扩展为 5 个（+ GUI 命令执行 / Spectre 命令执行），当前口径见 [design-concepts/底层与中层/多节点设计.md](../design-concepts/底层与中层/多节点设计.md)。
+
 **CLI / MCP / Harness Tool-Call 共享单一工具注册表的最小可行架构**
 
 > 日期:2026-09-04 · 仓库:virtuoso-bridge-NCS · 目录:`spec/research/` · 语言:Python

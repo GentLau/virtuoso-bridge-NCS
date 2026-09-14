@@ -13,6 +13,7 @@
    - 本版范围/非目标：[本版范围与明确不支持](design-concepts/总览/本版范围与明确不支持.md)
    - 配置与注册输入目录：[配置一览](design-concepts/总览/配置一览.md)
    - 多用户/注册/token：[多用户设计](design-concepts/底层与中层/多用户设计.md)
+   - 多节点/5 role 拓扑：[多节点设计](design-concepts/底层与中层/多节点设计.md)
    - 并发/SSH/线程池：[并发处理设计](design-concepts/底层与中层/并发处理设计.md)
    - CDS.log 返回：[日志返回设计标准](design-concepts/底层与中层/日志返回设计标准.md)
 2. **Informative（只索引/摘要，不定义）**：[核心修改设计](design-concepts/总览/核心修改.md)、[demo](demo/README.md)。
@@ -30,7 +31,7 @@
   └─ 原理图 · 版图 · 测试平台 · Maestro · 库/符号 · 仿真 · 工具适配器
 
 中层（业务服务器运行时）
-  └─ Skill · RunCommand · File 三个接口
+  └─ Skill · 命令 · 文件 · GUI 命令 · Spectre 命令（5 接口）
      隐藏本地/SSH、隧道、主机和文件传输细节
 
 底层（Virtuoso 常驻守护进程）
@@ -47,6 +48,7 @@
 | Normative | [三层整体架构设计](design-concepts/总览/三层整体架构设计.md) | 分层、职责、接口唯一基线、错误总则 |
 | Normative | [本版范围与明确不支持](design-concepts/总览/本版范围与明确不支持.md) | 本版不做什么的唯一口径（含遇到时的行为） |
 | Normative | [配置一览](design-concepts/总览/配置一览.md) | 全部配置 + 注册可提交参数目录 + 每用户隔离 |
+| Normative | [多节点设计](design-concepts/底层与中层/多节点设计.md) | 5 role 拓扑与职责、五接口与 role 的对应、逐 role 探测、部署与 endpoint |
 | Normative | [多用户设计](design-concepts/底层与中层/多用户设计.md) | 六步注册、token 寻址/校验、路由与授权 |
 | Normative | [并发处理设计](design-concepts/底层与中层/并发处理设计.md) | 并发模型、每 token 预算 + 按 endpoint 复用 SSH、线程池/channel、建连重试 |
 | Normative | [日志返回设计标准](design-concepts/底层与中层/日志返回设计标准.md) | CDS.log 增量返回唯一口径（offset 定界、分级、限长） |
@@ -60,11 +62,12 @@
 
 | 文档 | 版本 | 状态 | Supersedes |
 |---|---|---|---|
-| 三层整体架构设计 | Draft v4 | Normative | Draft v3 |
-| 本版范围与明确不支持 | v2 | Normative | v1 |
-| 配置一览 | Draft v8 | Normative | Draft v7 |
-| 多用户设计 | Draft v4 | Normative | Draft v3 |
-| 并发处理设计 | Draft v5 | Normative | Draft v4 |
+| 三层整体架构设计 | Draft v5 | Normative | Draft v4（五接口） |
+| 多节点设计 | v1 | Normative | —（新文件，收拢此前 split-host 副本） |
+| 本版范围与明确不支持 | v3 | Normative | v2 |
+| 配置一览 | Draft v9 | Normative | Draft v8 |
+| 多用户设计 | Draft v5 | Normative | Draft v4 |
+| 并发处理设计 | Draft v6 | Normative | Draft v5（五接口记账） |
 | 日志返回设计标准 | Draft v5 | Normative | Draft v4（废除 marker 定界） |
 | 核心修改设计 | Draft v3 | Informative | Draft v2 |
 | 改动报告 / 代码梳理 | — | Historical | — |
@@ -75,8 +78,8 @@
 
 ## 本版已经决定的事项
 
-1. 中层对上只承诺三个**操作接口**：`Skill`、`RunCommand`、`File`；`token` 是每次调用的必填关键字参数。
-2. 底层 daemon 只处理 `Skill`；shell 命令与文件传输全部由中层执行。
+1. 中层对上只承诺五个**操作接口**：`Skill`、`RunCommand`、`File`、`GUI 命令`、`Spectre 命令`；`token` 是每次调用的必填关键字参数。
+2. 底层 daemon 只处理 `Skill`；命令、文件、GUI 命令、Spectre 命令全部由中层执行。
 3. 上层不读 `VB_*`/`.env`、不判断 local/SSH、不创建 SSH/socket，也不解析 STX/NAK/RS 协议。
 4. 上层使用逻辑 `ServerPath`；实际 host/jump/role/tunnel 由中层按 registry 路由解析。
 5. 所有调用采用端到端 deadline；中层子阶段只继承剩余预算。
@@ -88,7 +91,7 @@
 
 完整清单与“遇到时的行为”唯一口径见[本版范围与明确不支持](design-concepts/总览/本版范围与明确不支持.md)。摘要：
 
-- 不提供 `purpose`/Spectre 业务消费入口、GUI 独立业务入口（gui role 仅记录）、deploy 独立 role；
+- 不提供 `purpose`、Spectre 高层业务封装（只提供 Spectre 命令执行接口）、GUI 图形化业务封装（只提供 GUI 命令执行接口）、deploy 独立 role；
 - 不支持无 token 旧客户端/旧 il、`profile`/`VB_*`/`.env` 迁移、非对称签名；
 - 不引入 `request_id`、argv/无 shell 模式、异步 command handle；
 - 不支持 split-host CDS.log、全量日志体系、文件安全沙箱。
@@ -98,7 +101,7 @@
 后续评审应优先检查：
 
 - 上层能否完全用 fake middle 做单元测试；
-- `Skill` 与 `RunCommand` 是否真正分离；
+- 五个接口（Skill / 命令 / 文件 / GUI 命令 / Spectre 命令）是否各自路由到对应 role；
 - local/SSH/split-host 是否只影响中层；
 - 文件上传是否有原子落盘、校验和和路径可见性保证；
 - 同一 Virtuoso CIW 的写操作是否串行；
