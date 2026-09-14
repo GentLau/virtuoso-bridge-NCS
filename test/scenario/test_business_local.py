@@ -99,8 +99,8 @@ class FakeDaemon:
 
 def _entry(token: str, daemon: FakeDaemon) -> UserEntry:
     entry = UserEntry(token=token, mode="local")
-    entry.route.skill.daemon_port = daemon.port
-    entry.route.skill.local_port = daemon.port
+    entry.route.daemon.daemon_port = daemon.port
+    entry.route.daemon.local_port = daemon.port
     entry.runtime.thread_pool_size = 4  # small pool to exercise rejection
     return entry
 

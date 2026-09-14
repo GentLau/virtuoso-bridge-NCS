@@ -3,10 +3,10 @@
 Uses the full SSHRunner (OpenSSH + Paramiko, persistent shell, ControlMaster,
 staging/atomic install); the registry supplies every transport knob.
 
-Role runners: one ``SSHRunner`` per distinct ``(host, account)``, shared
-across roles that resolve to the same target.  This keeps the
-daemon/deploy, command and file roles independent when the registry pins them
-to different hosts, while avoiding duplicate persistent shells on one host.
+Five roles (gui/daemon/command/file/spectre) resolve into endpoints through
+``ResolvedTargets``; roles that resolve to the same endpoint share one
+SSHRunner.  Budgets (thread pool, channel budget) are per-token and are not
+split per endpoint.
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ from pathlib import Path
 from pyapi.models import CommandResult
 from transport.deploy import deploy_files
 from transport.registry import UserEntry
-from transport.remote_roles import ResolvedTargets
+from transport.remote_roles import ResolvedRole, ResolvedTargets
 from transport.ssh import SSHRunner
 
 logger = logging.getLogger(__name__)
@@ -40,13 +40,11 @@ class RemoteClient:
         self._is_local = entry.mode == "local"
 
         self._runner_kwargs: dict = {
-            "jump_user": targets.jump_user,
             "timeout": 600,
             "connect_timeout": int(entry.runtime.connect_timeout),
             "persistent_shell": True,
             "backend": entry.ssh.backend or "openssh",
-            "max_sessions": entry.ssh.max_sessions or 10,
-            "proxy_url": entry.ssh.proxy,
+            "max_sessions": entry.runtime.channel_budget or 10,
             "control_master": entry.ssh.control_master or "auto",
             "tool_override": entry.ssh.tool_override or None,
             "control_identity": entry.token,  # per-token ControlMaster namespace
@@ -59,51 +57,53 @@ class RemoteClient:
 
     # -- role runners --------------------------------------------------------
 
-    def _runner(self, host: str, user: str | None) -> SSHRunner:
-        """One SSHRunner per distinct (host, account); reused across roles."""
-        key = (_norm_host(host), user or "")
-        runner = self._runners.get(key)
+    def _runner(self, role: ResolvedRole) -> SSHRunner:
+        """One SSHRunner per resolved endpoint; roles sharing a key share it."""
+        runner = self._runners.get(role.key)
         if runner is not None:
             return runner
-        jump_host = self.targets.jump_host
-        if jump_host and _norm_host(jump_host) == _norm_host(host):
-            # The role target itself is the login/jump host; suppress the jump.
-            jump_host = None
+        jump_host = role.jump_host
+        if jump_host and _norm_host(jump_host) == _norm_host(role.host):
+            jump_host = None  # the target itself is the jump host
         kwargs = self._runner_kwargs.copy()
-        kwargs.update(host=host, user=user, jump_host=jump_host)
+        kwargs.update(
+            host=role.host,
+            user=role.user,
+            jump_host=jump_host,
+            jump_user=role.jump_user,
+            proxy_url=role.proxy,
+        )
         runner = SSHRunner(**kwargs)
-        self._runners[key] = runner
+        self._runners[role.key] = runner
         return runner
 
     @property
     def skill_runner(self) -> SSHRunner:
-        """Runner that reaches the bottom daemon host (deploy + tunnel)."""
-        return self._runner(self.targets.skill_host, self.entry.expected.daemon_user)
+        """Runner that reaches the daemon role (deploy + tunnel)."""
+        return self._runner(self.targets.daemon)
 
     @property
     def command_runner(self) -> SSHRunner:
-        return self._runner(self.targets.command_host, self.targets.command_user)
+        return self._runner(self.targets.command)
 
     @property
     def file_runner(self) -> SSHRunner:
-        return self._runner(self.targets.file_host, self.targets.command_user)
+        return self._runner(self.targets.file)
 
     def _parallel_command_runner(self) -> SSHRunner:
         if self._parallel_runner is None:
             backend = (self.entry.ssh.backend or "openssh").strip().lower()
             if backend == "paramiko":
-                # ParamikoSessionBackend multiplexes a session per call; the
-                # regular runner is already parallel, no second connection.
                 self._parallel_runner = self.command_runner
             else:
-                jump_host = self.targets.jump_host
-                if jump_host and _norm_host(jump_host) == _norm_host(self.targets.command_host):
+                role = self.targets.command
+                jump_host = role.jump_host
+                if jump_host and _norm_host(jump_host) == _norm_host(role.host):
                     jump_host = None
                 kwargs = self._runner_kwargs.copy()
                 kwargs.update(
-                    host=self.targets.command_host,
-                    user=self.targets.command_user,
-                    jump_host=jump_host,
+                    host=role.host, user=role.user, jump_host=jump_host,
+                    jump_user=role.jump_user, proxy_url=role.proxy,
                     persistent_shell=False,  # parallel bypasses the serial shell
                 )
                 self._parallel_runner = SSHRunner(**kwargs)
@@ -119,7 +119,7 @@ class RemoteClient:
             scratch_root=self.targets.scratch_root,
             python_major=python_major,
             python_cmd=self.entry.environment.remote_python or "python3",
-            port=self.targets.skill_port,
+            port=self.targets.daemon_port,
             local=self._is_local,
         )
 
@@ -131,15 +131,12 @@ class RemoteClient:
         runner = self.skill_runner
         if runner.is_tunnel_alive:
             return
-        # First-use races: several concurrent requests for the same token can
-        # otherwise each launch ``ssh -L <same port>`` and fail with
-        # "address already in use".  Serialize creation, double-check inside.
         with self._tunnel_lock:
             if runner.is_tunnel_alive:
                 return
             runner.start_port_forward(
                 self.targets.local_port,
-                remote_port=self.targets.skill_port,
+                remote_port=self.targets.daemon_port,
                 deadline=deadline,
             )
 
@@ -165,7 +162,10 @@ class RemoteClient:
     ) -> CommandResult:
         if parallel:
             if not self._channel_sem.acquire(blocking=False):
-                return CommandResult(returncode=1, stdout="", stderr="channel budget exceeded")
+                return CommandResult(
+                    returncode=1, stdout="", stderr="channel budget exceeded",
+                    kind="rejected",
+                )
             try:
                 return self._parallel_command_runner().run_command(cmd, timeout=timeout)
             finally:
@@ -183,16 +183,26 @@ class RemoteClient:
         recursive: bool = False,
     ) -> CommandResult:
         if not self._channel_sem.acquire(blocking=False):
-            return CommandResult(returncode=1, stdout="", stderr="channel budget exceeded")
+            return CommandResult(
+                returncode=1, stdout="", stderr="channel budget exceeded",
+                kind="rejected",
+            )
         try:
             local_path = Path(local_path)
             if recursive:
                 if not local_path.is_dir():
-                    return CommandResult(1, "", f"recursive upload requires a directory: {local_path}")
-                # directory tar upload; a single sha256 digest is not meaningful
-                return self.file_runner.upload(local_path, remote_path, recursive=True, timeout=timeout)
+                    return CommandResult(
+                        1, "", f"recursive upload requires a directory: {local_path}",
+                        kind="path",
+                    )
+                return self.file_runner.upload(
+                    local_path, remote_path, recursive=True, timeout=timeout
+                )
             if local_path.is_dir():
-                return CommandResult(1, "", f"directory upload requires recursive=True: {local_path}")
+                return CommandResult(
+                    1, "", f"directory upload requires recursive=True: {local_path}",
+                    kind="path",
+                )
             up = self.file_runner.upload(local_path, remote_path, timeout=timeout)
             if up.returncode != 0:
                 return up
@@ -208,7 +218,10 @@ class RemoteClient:
         recursive: bool = False,
     ) -> CommandResult:
         if not self._channel_sem.acquire(blocking=False):
-            return CommandResult(returncode=1, stdout="", stderr="channel budget exceeded")
+            return CommandResult(
+                returncode=1, stdout="", stderr="channel budget exceeded",
+                kind="rejected",
+            )
         try:
             local_path = Path(local_path)
             if recursive:
@@ -234,9 +247,9 @@ class RemoteClient:
         remote_sha = check.stdout.strip().split()[0] if check.stdout.strip() else ""
         if remote_sha != local_sha:
             return CommandResult(
-                returncode=1,
-                stdout="",
+                returncode=1, stdout="",
                 stderr=f"sha256 mismatch: local={local_sha} remote={remote_sha}",
+                kind="checksum",
             )
         return CommandResult(0, remote_path, "")
 

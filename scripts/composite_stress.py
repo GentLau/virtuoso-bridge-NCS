@@ -61,7 +61,7 @@ def main():
             user, token, port = f"vb{n:02d}", f"vb-vb{n:02d}", 65100 + n
             lp = allocate_local_port(reserved=reserved, tries=200); reserved.add(lp)
             e = UserEntry(token=token, mode="remote")
-            e.route.skill.daemon_host = "wsl-gent"; e.route.skill.daemon_port = port; e.route.skill.local_port = lp
+            e.route.daemon.host = "wsl-gent"; e.route.daemon.daemon_port = port; e.route.daemon.local_port = lp
             e.route.command.host = "wsl-gent"; e.route.command.user = "Gent"; e.route.file.host = "wsl-gent"
             e.deploy.scratch_root = f"/home/Gent/.virtuoso-bridge/{user}"
             e.expected.daemon_user = "Gent"
@@ -70,7 +70,7 @@ def main():
             user, token, port = f"cloud{n:02d}", f"cloud-{n:02d}", 6701 + n
             lp = allocate_local_port(reserved=reserved, tries=200); reserved.add(lp)
             e = UserEntry(token=token, mode="remote")
-            e.route.skill.daemon_host = "vps"; e.route.skill.daemon_port = port; e.route.skill.local_port = lp
+            e.route.daemon.host = "vps"; e.route.daemon.daemon_port = port; e.route.daemon.local_port = lp
             e.route.command.host = "vps"; e.route.command.user = "root"; e.route.file.host = "vps"
             e.deploy.scratch_root = "/root/vbtest"
             e.expected.daemon_user = "root"
@@ -79,9 +79,13 @@ def main():
         # wsl client: 4 local real users + 4 vps fake users
         from transport.register import RegistrationFlow, RegistrationRequest
         for n in range(4):
-            user, token, port = f"lc{n:02d}", f"l-{user}", 65411 + n
+            user, token, port = f"lc{n:02d}", f"l-lc{n:02d}", 65411 + n
             flow = RegistrationFlow(reg)
-            state = flow.apply(RegistrationRequest(mode="local", user=user, token=token, daemon_port=port, spectre_bin=SPECTRE))
+            state = flow.apply(RegistrationRequest(
+                mode="local", user=user, token=token,
+                role={"daemon": {"daemon_port": port},
+                      "spectre": {"bin": SPECTRE}},
+            ))
             if state.stage != "deployed":
                 raise RuntimeError(state.errors)
             start_local(user, state.setup_path, os.environ.get("VB_DISPLAY", "localhost:10.0"))
@@ -95,7 +99,7 @@ def main():
             user, token, port = f"cloud{n:02d}", f"cloud-{n:02d}", 6701 + n
             lp = allocate_local_port(reserved=reserved, tries=200); reserved.add(lp)
             e = UserEntry(token=token, mode="remote")
-            e.route.skill.daemon_host = "vps"; e.route.skill.daemon_port = port; e.route.skill.local_port = lp
+            e.route.daemon.host = "vps"; e.route.daemon.daemon_port = port; e.route.daemon.local_port = lp
             e.route.command.host = "vps"; e.route.command.user = "root"; e.route.file.host = "vps"
             e.deploy.scratch_root = "/root/vbtest"
             e.expected.daemon_user = "root"
@@ -152,7 +156,7 @@ def main():
                     if not body["ok"]:
                         with lock: errors.append(f"upload {user} {seq}: {body['body']}")
                         break
-                    continue
+                    break
             except urllib.error.HTTPError as exc:
                 body = {}
                 try: body = json.loads(exc.read().decode())

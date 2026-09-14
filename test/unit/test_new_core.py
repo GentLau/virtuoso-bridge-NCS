@@ -36,11 +36,11 @@ class TestFoundations(unittest.TestCase):
     def test_registry_load_once_register(self):
         reg = load_registry(registry_path())
         entry = UserEntry(token="tok-1", mode="remote")
-        entry.route.skill.daemon_host = "compute-a"
-        entry.route.skill.daemon_port = 65081
+        entry.route.daemon.host = "compute-a"
+        entry.route.daemon.daemon_port = 65081
         reg.register("alice", entry)
         self.assertIs(reg.by_token("tok-1"), entry)
-        self.assertEqual(reg.get("alice").route.skill.daemon_port, 65081)
+        self.assertEqual(reg.get("alice").route.daemon.daemon_port, 65081)
 
     def test_skill_client_parse(self):
         ok = SkillClient._parse_response("\x02" + json.dumps({"value": "3", "log": r"\e *Error*"}) + "\x1e", 0.1)

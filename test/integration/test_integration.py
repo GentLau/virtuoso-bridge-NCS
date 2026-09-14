@@ -75,8 +75,8 @@ class TestIntegration(unittest.TestCase):
         try:
             reg = load_registry(registry_path())
             entry = UserEntry(token="tok-1", mode="local")
-            entry.route.skill.local_port = fake.port
-            entry.route.skill.daemon_port = fake.port
+            entry.route.daemon.local_port = fake.port
+            entry.route.daemon.daemon_port = fake.port
             reg.register("alice", entry)
 
             server = BusinessServer(wd)

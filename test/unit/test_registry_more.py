@@ -90,9 +90,9 @@ class TestRegistryMore(unittest.TestCase):
 
     def test_port_validation(self):
         with self.assertRaises(ValidationError):
-            UserEntry(token="t", mode="remote", route={"skill": {"daemon_port": 0}})
+            UserEntry(token="t", mode="remote", route={"daemon": {"daemon_port": 0}})
         with self.assertRaises(ValidationError):
-            UserEntry(token="t", mode="remote", route={"skill": {"local_port": 70000}})
+            UserEntry(token="t", mode="remote", route={"daemon": {"local_port": 70000}})
 
     def test_empty_token_rejected(self):
         with self.assertRaises(ValidationError):

@@ -36,8 +36,8 @@ def main():
     wd = set_working_dir(Path(tempfile.mkdtemp(prefix="vb-logver-")))
     reg = load_registry(registry_path())
     e = UserEntry(token="vb-vb01", mode="remote")
-    e.route.skill.daemon_host = "wsl-gent"; e.route.skill.daemon_port = 65101
-    e.route.skill.local_port = allocate_local_port()
+    e.route.daemon.host = "wsl-gent"; e.route.daemon.daemon_port = 65101
+    e.route.daemon.local_port = allocate_local_port()
     e.route.command.host = "wsl-gent"; e.route.command.user = "Gent"
     e.deploy.scratch_root = "/home/Gent/.virtuoso-bridge/vb01"
     e.expected.daemon_user = "Gent"

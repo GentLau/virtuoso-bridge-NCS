@@ -185,7 +185,7 @@ class TestOneShotRunCommand(unittest.TestCase):
         with mock.patch.object(ssh_mod.subprocess, "run") as run:
             run.return_value = mock.Mock(returncode=0, stdout=b"out\n", stderr=b"")
             res = r.run_command("echo hi")
-        self.assertEqual(res, CommandResult(0, "out\n", ""))
+        self.assertEqual(res, CommandResult(0, "out\n", "", kind="command"))
         self.assertTrue(run.called)
 
     def test_timeout_raises(self):

@@ -23,7 +23,7 @@ def build_users(reg):
         user, token, port = f"vb{n:02d}", f"vb-vb{n:02d}", 65100 + n
         lp = allocate_local_port(reserved=reserved, tries=200); reserved.add(lp)
         e = UserEntry(token=token, mode="remote")
-        e.route.skill.daemon_host = WSL; e.route.skill.daemon_port = port; e.route.skill.local_port = lp
+        e.route.daemon.host = WSL; e.route.daemon.daemon_port = port; e.route.daemon.local_port = lp
         e.route.command.host = WSL; e.route.command.user = "Gent"; e.route.file.host = WSL
         e.deploy.scratch_root = f"/home/Gent/.virtuoso-bridge/{user}"
         e.expected.daemon_user = "Gent"
@@ -32,7 +32,7 @@ def build_users(reg):
         user, token, port = f"cloud{n:02d}", f"cloud-{n:02d}", 6701 + n
         lp = allocate_local_port(reserved=reserved, tries=200); reserved.add(lp)
         e = UserEntry(token=token, mode="remote")
-        e.route.skill.daemon_host = VPS; e.route.skill.daemon_port = port; e.route.skill.local_port = lp
+        e.route.daemon.host = VPS; e.route.daemon.daemon_port = port; e.route.daemon.local_port = lp
         e.route.command.host = VPS; e.route.command.user = "root"; e.route.file.host = VPS
         e.deploy.scratch_root = "/root/vbtest"
         e.expected.daemon_user = "root"

@@ -32,7 +32,7 @@ def main():
         user, token, port = f"cloud{n:02d}", f"cloud-{n:02d}", 6701 + n
         lp = allocate_local_port(reserved=reserved, tries=200); reserved.add(lp)
         e = UserEntry(token=token, mode="remote")
-        e.route.skill.daemon_host = VPS; e.route.skill.daemon_port = port; e.route.skill.local_port = lp
+        e.route.daemon.host = VPS; e.route.daemon.daemon_port = port; e.route.daemon.local_port = lp
         e.route.command.host = VPS; e.route.command.user = "root"; e.route.file.host = VPS
         e.deploy.scratch_root = "/root/vbtest"
         e.expected.daemon_user = "root"

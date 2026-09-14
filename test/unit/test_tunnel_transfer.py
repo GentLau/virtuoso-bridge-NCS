@@ -64,9 +64,9 @@ class FakeRunner:
 
 def make_entry(**kwargs):
     entry = UserEntry(token="tok-1", mode="remote")
-    entry.route.skill.daemon_host = kwargs.get("skill_host", "daemon-a")
-    entry.route.skill.daemon_port = 65081
-    entry.route.skill.local_port = 65082
+    entry.route.daemon.host = kwargs.get("skill_host", "daemon-a")
+    entry.route.daemon.daemon_port = 65081
+    entry.route.daemon.local_port = 65082
     entry.route.command.host = kwargs.get("command_host", "daemon-a")
     entry.route.file.host = kwargs.get("file_host", "daemon-a")
     entry.expected.daemon_user = "alice"
@@ -160,7 +160,7 @@ class TestRemoteClientEdges(unittest.TestCase):
 
     def test_jump_suppressed_when_target_is_jump_host(self):
         entry = make_entry()
-        entry.route.jump.host = "daemon-a"
+        entry.ssh.default.jump_host = "daemon-a"
         from unittest import mock
         with mock.patch("transport.tunnel.SSHRunner", FakeRunner):
             client = RemoteClient(entry, resolve(entry), "alice")

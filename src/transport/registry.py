@@ -19,10 +19,17 @@ Lifecycle contract:
 
 from __future__ import annotations
 
+import hashlib
 import json
+import os
 import threading
 import time
 from pathlib import Path
+
+try:  # POSIX: advisory file lock used across processes
+    import fcntl
+except ImportError:  # pragma: no cover - Windows
+    fcntl = None
 
 from typing import Literal
 
@@ -43,43 +50,43 @@ class TokenConflictError(RegistryError):
     """Registering a token that already belongs to another user."""
 
 
-class SkillRoute(BaseModel):
-    local_port: int | None = Field(default=None, ge=1, le=65535)
-    daemon_host: str | None = None
-    daemon_port: int | None = Field(default=None, ge=1, le=65535)
+class EndpointConfig(BaseModel):
+    """Per-role endpoint policy: each field falls back to ``ssh.default.*``."""
 
-
-class CommandRoute(BaseModel):
     host: str | None = None
     user: str | None = None
+    jump_host: str | None = None
+    jump_user: str | None = None
+    proxy: str | None = None
 
 
-class FileRoute(BaseModel):
-    host: str | None = None
-    # 默认文件根 = deploy.scratch_root（唯一工作目录），不再单独配置 root
+class DaemonConfig(EndpointConfig):
+    """The only role with ports (daemon listen port + local tunnel port)."""
+
+    daemon_port: int | None = Field(default=None, ge=1, le=65535)
+    local_port: int | None = Field(default=None, ge=1, le=65535)
 
 
-class SpectreRoute(BaseModel):
-    host: str | None = None
+class SpectreConfig(EndpointConfig):
+    """Spectre role is recorded this version, never consumed by business calls."""
+
     bin: str | None = None
 
 
-class JumpRoute(BaseModel):
-    host: str | None = None
-    user: str | None = None
+class SshDefaults(EndpointConfig):
+    """Global SSH fallback consumed by every role field left unset."""
 
 
 class Route(BaseModel):
-    skill: SkillRoute = Field(default_factory=SkillRoute)
-    command: CommandRoute = Field(default_factory=CommandRoute)
-    file: FileRoute = Field(default_factory=FileRoute)
-    spectre: SpectreRoute = Field(default_factory=SpectreRoute)
-    jump: JumpRoute = Field(default_factory=JumpRoute)
+    gui: EndpointConfig = Field(default_factory=EndpointConfig)
+    daemon: DaemonConfig = Field(default_factory=DaemonConfig)
+    command: EndpointConfig = Field(default_factory=EndpointConfig)
+    file: EndpointConfig = Field(default_factory=EndpointConfig)
+    spectre: SpectreConfig = Field(default_factory=SpectreConfig)
 
 
 class Expected(BaseModel):
-    ssh_host_key_fingerprint: str | None = None  # command host (probe endpoint)
-    ssh_endpoints: dict[str, str] = Field(default_factory=dict)  # per SSH endpoint
+    ssh_endpoints: dict[str, str] = Field(default_factory=dict)  # per business SSH endpoint
     daemon_endpoint_hostname: str | None = None
     daemon_user: str | None = None
 
@@ -93,9 +100,8 @@ class Deploy(BaseModel):
 
 
 class Ssh(BaseModel):
+    default: SshDefaults = Field(default_factory=SshDefaults)
     backend: Literal["openssh", "paramiko"] = "openssh"
-    max_sessions: int = Field(default=10, ge=1)
-    proxy: str | None = None
     control_master: str = "auto"
     tool_override: dict[str, str] = Field(default_factory=dict)
 
@@ -163,13 +169,36 @@ class Registry:
 
     def _save_payload_locked(self, payload: dict) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
+        lock_path = self.path.with_suffix(".json.lock")
         tmp = self.path.with_suffix(".json.tmp")
-        tmp.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        fd = os.open(lock_path, os.O_RDWR | os.O_CREAT, 0o600)
         try:
-            tmp.chmod(0o600)
-        except OSError:
-            pass  # Windows filesystems have no POSIX mode
-        tmp.replace(self.path)
+            os.write(fd, b"0")  # keep a byte so msvcrt can lock a real region
+            os.lseek(fd, 0, os.SEEK_SET)
+            if fcntl is not None:
+                fcntl.flock(fd, fcntl.LOCK_EX)
+            else:
+                import msvcrt
+                msvcrt.locking(fd, msvcrt.LK_LOCK, 1)
+            try:
+                tmp.write_text(
+                    json.dumps(payload, ensure_ascii=False, indent=2),
+                    encoding="utf-8",
+                )
+                try:
+                    tmp.chmod(0o600)
+                except OSError:
+                    pass  # Windows filesystems have no POSIX mode
+                tmp.replace(self.path)
+            finally:
+                if fcntl is not None:
+                    fcntl.flock(fd, fcntl.LOCK_UN)
+                else:
+                    import msvcrt as _m
+                    os.lseek(fd, 0, os.SEEK_SET)
+                    _m.locking(fd, _m.LK_UNLCK, 1)
+        finally:
+            os.close(fd)
 
     def register(self, user: str, entry: UserEntry, *, overwrite: bool = False) -> None:
         """Verify and atomically commit one user entry (setup-phase write)."""
@@ -251,6 +280,33 @@ class Registry:
         return list(self._entries.items())
 
 
+def endpoint_key(
+    host: str,
+    user: str | None = None,
+    jump_host: str | None = None,
+    jump_user: str | None = None,
+    proxy: str | None = None,
+) -> str:
+    """Versioned, unambiguous SSH endpoint identity (配置一览 §6.5).
+
+    ``v1:`` + SHA256 of the canonical JSON array
+    ``[host, user, jump_host, jump_user, proxy]``.  Hosts are lowercased and
+    stripped of trailing dots; empty values become ``""``.
+    """
+    def _host(value: str | None) -> str:
+        return (value or "").strip().rstrip(".").lower()
+
+    def _text(value: str | None) -> str:
+        return (value or "").strip()
+
+    canonical = json.dumps(
+        [_host(host), _text(user), _host(jump_host), _text(jump_user), _text(proxy)],
+        ensure_ascii=True,
+        separators=(",", ":"),
+    )
+    return "v1:" + hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
 def load_registry(path: str | Path | None = None) -> Registry:
     """Convenience loader used once at startup."""
     return Registry(path or registry_path()).load()
@@ -258,19 +314,20 @@ def load_registry(path: str | Path | None = None) -> Registry:
 
 __all__ = [
     "CdsLog",
-    "CommandRoute",
+    "EndpointConfig",
     "Deploy",
     "Expected",
-    "FileRoute",
-    "JumpRoute",
+    "SpectreConfig",
+    "SshDefaults",
     "Registry",
     "RegistryError",
     "Route",
     "Runtime",
-    "SkillRoute",
-    "SpectreRoute",
+    "DaemonConfig",
+
     "Ssh",
     "TokenConflictError",
+    "endpoint_key",
     "UserAlreadyRegisteredError",
     "UserEntry",
     "load_registry",

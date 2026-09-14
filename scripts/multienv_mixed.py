@@ -23,7 +23,7 @@ def main() -> int:
         lp = allocate_local_port(reserved=reserved, tries=200)
         reserved.add(lp)
         e = UserEntry(token=token, mode="remote")
-        e.route.skill.daemon_host = WSL; e.route.skill.daemon_port = port; e.route.skill.local_port = lp
+        e.route.daemon.host = WSL; e.route.daemon.daemon_port = port; e.route.daemon.local_port = lp
         e.route.command.host = WSL; e.route.command.user = "Gent"
         e.route.file.host = WSL
         e.deploy.scratch_root = f"/home/Gent/.virtuoso-bridge/{user}"
@@ -37,7 +37,7 @@ def main() -> int:
         lp = allocate_local_port(reserved=reserved, tries=200)
         reserved.add(lp)
         e = UserEntry(token=token, mode="remote")
-        e.route.skill.daemon_host = VPS; e.route.skill.daemon_port = port; e.route.skill.local_port = lp
+        e.route.daemon.host = VPS; e.route.daemon.daemon_port = port; e.route.daemon.local_port = lp
         e.route.command.host = VPS; e.route.command.user = "root"
         e.route.file.host = VPS
         e.deploy.scratch_root = "/root/vbtest"

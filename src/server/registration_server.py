@@ -178,8 +178,6 @@ class RegistrationHandler(BaseHTTPRequestHandler):
             return
         direct = {
             "ssh_backend": "ssh.backend",
-            "ssh_max_sessions": "ssh.max_sessions",
-            "ssh_proxy": "ssh.proxy",
             "ssh_control_master": "ssh.control_master",
             "thread_pool_size": "runtime.thread_pool_size",
             "channel_budget": "runtime.channel_budget",

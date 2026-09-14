@@ -1526,7 +1526,7 @@ button,input,select {
               <details class="advanced"><summary>高级策略配置（可选）</summary><div class="advanced-body">
                 <div class="advanced-group" data-remote-only><h3>SSH 策略</h3><div class="fields two">
                   <div class="field"><label for="ssh_backend">SSH 后端</label><select id="ssh_backend" name="ssh_backend"><option value="">默认 openssh</option><option value="openssh">OpenSSH</option><option value="paramiko">Paramiko</option></select></div>
-                  <div class="field"><label for="ssh_max_sessions">并发会话上限</label><input id="ssh_max_sessions" name="ssh_max_sessions" type="number" min="1" inputmode="numeric" placeholder="使用默认值"></div>
+                  <div class="field"><label for="channel_budget">Channel 预算</label><input id="channel_budget" name="channel_budget" type="number" min="1" inputmode="numeric" placeholder="默认 10"></div>
                   <div class="field"><label for="ssh_control_master">ControlMaster 策略</label><select id="ssh_control_master" name="ssh_control_master"><option value="">默认 auto</option><option value="auto">auto</option><option value="force">force</option><option value="disable">disable</option></select></div>
                   <div class="field"><label for="ssh_proxy">SOCKS5 代理</label><input id="ssh_proxy" name="ssh_proxy" placeholder="socks5://127.0.0.1:1080" spellcheck="false"></div>
                 </div></div>
@@ -1595,7 +1595,7 @@ const STEPS = [{
   name: '写入注册表',
   detail: '成功后唯一持久化点'
 }];
-const NUMERIC_FIELDS = ['daemon_port', 'local_port', 'ssh_max_sessions', 'connect_timeout',
+const NUMERIC_FIELDS = ['daemon_port', 'local_port', 'channel_budget', 'connect_timeout',
   'thread_pool_size', 'channel_budget', 'log_max_bytes'
 ];
 const LOCAL_HOSTS = ['localhost', '127.0.0.1', '::1'];
@@ -1757,16 +1757,40 @@ function restoreDraft() {
 }
 
 function collectPayload() {
-  const payload = {};
+  const flat = {};
   new FormData(byId('f')).forEach(function(value, key) {
     const v = typeof value === 'string' ? value.trim() : value;
-    if (v !== '') payload[key] = v
+    if (v !== '') flat[key] = v
   });
   NUMERIC_FIELDS.forEach(function(key) {
-    if (payload[key] !== undefined) payload[key] = Number(payload[key])
+    if (flat[key] !== undefined) flat[key] = Number(flat[key])
   });
-  payload.local = payload.mode === 'local';
-  delete payload.mode;
+  const ep = function(h, u, jh, ju, p) {
+    const o = {};
+    if (h) o.host = h;
+    if (u) o.user = u;
+    if (jh) o.jump_host = jh;
+    if (ju) o.jump_user = ju;
+    if (p) o.proxy = p;
+    return o
+  };
+  const payload = {};
+  if (flat.user) payload.user = flat.user;
+  if (flat.token) payload.token = flat.token;
+  payload.mode = flat.mode || 'remote';
+  if (flat.scratch_root) payload.scratch_root = flat.scratch_root;
+  payload.ssh = {default: ep(flat.host, flat.ssh_user, flat.jump_host, flat.jump_user, flat.ssh_proxy)};
+  const daemon = ep(flat.daemon_host, flat.daemon_user, null, null, null);
+  if (flat.daemon_port !== undefined) daemon.daemon_port = flat.daemon_port;
+  if (flat.local_port !== undefined) daemon.local_port = flat.local_port;
+  const spectre = ep(flat.spectre_host, null, null, null, null);
+  if (flat.spectre_bin) spectre.bin = flat.spectre_bin;
+  payload.role = {gui: {}, daemon: daemon, command: {}, file: {}, spectre: spectre};
+  ['ssh_backend', 'ssh_control_master', 'ssh_tool_override', 'thread_pool_size',
+   'channel_budget', 'connect_timeout', 'log_level', 'log_max_bytes'
+  ].forEach(function(key) {
+    if (flat[key] !== undefined) payload[key] = flat[key]
+  });
   return payload
 }
 
@@ -1774,36 +1798,34 @@ function resolvedValues(data) {
   if (data && data.resolved) return data.resolved;
   const entry = data && data.entry ? data.entry : {},
     route = entry.route || {},
-    skill = route.skill || {},
+    daemon = route.daemon || {},
     command = route.command || {},
     file = route.file || {},
-    jump = route.jump || {},
     spectre = route.spectre || {},
     expected = entry.expected || {},
+    environment = entry.environment || {},
     deploy = entry.deploy || {},
     ssh = entry.ssh || {},
+    sshDefault = ssh.default || {},
     runtime = entry.runtime || {},
     cdslog = entry.cdslog || {};
   return {
     mode: entry.mode,
     command_host: command.host,
     command_user: command.user,
-    daemon_host: skill.daemon_host,
+    daemon_host: daemon.host,
     daemon_user: expected.daemon_user,
-    daemon_port: skill.daemon_port,
-    local_port: skill.local_port,
+    daemon_port: daemon.daemon_port,
+    local_port: daemon.local_port,
     file_host: file.host,
-    file_root: file.root,
     deploy_root: deploy.scratch_root,
-    remote_python: expected.remote_python,
-    ssh_host_key_fingerprint: expected.ssh_host_key_fingerprint,
+    remote_python: environment.remote_python,
     daemon_endpoint_hostname: expected.daemon_endpoint_hostname,
-    jump_host: jump.host,
-    jump_user: jump.user,
+    jump_host: sshDefault.jump_host,
+    jump_user: sshDefault.jump_user,
     spectre_host: spectre.host,
     spectre_bin: spectre.bin,
     ssh_backend: ssh.backend,
-    ssh_max_sessions: ssh.max_sessions,
     ssh_control_master: ssh.control_master,
     thread_pool_size: runtime.thread_pool_size,
     channel_budget: runtime.channel_budget,
@@ -2300,7 +2322,7 @@ function appendComparison(container, data) {
     });
   if (!probeFailed && resolved.ssh_backend) addComparisonRow(table, 'SSH 策略', '配置值或注册表默认值', {
     tone: 'success',
-    text: resolved.ssh_backend + ' · max ' + resolved.ssh_max_sessions + ' sessions · ControlMaster ' +
+    text: resolved.ssh_backend + ' · channel budget ' + resolved.channel_budget + ' · ControlMaster ' +
       resolved.ssh_control_master
   });
   if (!probeFailed && resolved.thread_pool_size) addComparisonRow(table, '运行时策略', '配置值或注册表默认值', {

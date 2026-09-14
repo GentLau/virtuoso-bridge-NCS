@@ -1,64 +1,84 @@
-"""Resolve a registry entry into concrete host/user targets.
+"""Resolve a registry entry into the five concrete role targets.
 
-Defaults follow the documented chain:
-
-    daemon_host ──> command.host ──> file.host ──> spectre.host
-    daemon_user ──> command.user
-    scratch_root ──> file.root
+Each role carries ``host/user/jump_host/jump_user/proxy``; any unset field
+falls back to the user's global ``ssh.default.*`` (配置一览 §2.2).  Roles that
+resolve to the same endpoint share one SSH connection (keyed by ``endpoint_key``).
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 
-from transport.registry import UserEntry
+from transport.registry import UserEntry, endpoint_key
+
+
+@dataclass(frozen=True)
+class ResolvedRole:
+    host: str
+    user: str | None
+    jump_host: str | None
+    jump_user: str | None
+    proxy: str | None
+    key: str  # endpoint_key(...): connection identity
 
 
 @dataclass(frozen=True)
 class ResolvedTargets:
-    skill_host: str
-    skill_port: int
+    gui: ResolvedRole
+    daemon: ResolvedRole
+    command: ResolvedRole
+    file: ResolvedRole
+    spectre: ResolvedRole
+    daemon_port: int
     local_port: int
-    command_host: str
-    command_user: str | None
-    file_host: str
-    file_root: str
-    spectre_host: str | None
-    spectre_bin: str | None
-    jump_host: str | None
-    jump_user: str | None
     scratch_root: str
+    spectre_bin: str | None
 
 
-def resolve(entry: UserEntry, user: str | None = None) -> ResolvedTargets:
-    r = entry.route
-    scratch = entry.deploy.scratch_root or "~/.virtuoso-bridge"
-    daemon_host = r.skill.daemon_host or "127.0.0.1"
-    daemon_port = r.skill.daemon_port or 65432
-    local_port = r.skill.local_port or daemon_port
-    daemon_user = entry.expected.daemon_user
+_LOCAL_HOST = "127.0.0.1"
 
-    command_host = r.command.host or daemon_host
-    command_user = r.command.user or daemon_user
-    file_host = r.file.host or command_host
-    # single bridge work directory: default file root == deploy.scratch_root
-    file_root = scratch
-    spectre_host = r.spectre.host or command_host
 
-    return ResolvedTargets(
-        skill_host=daemon_host,
-        skill_port=daemon_port,
-        local_port=local_port,
-        command_host=command_host,
-        command_user=command_user,
-        file_host=file_host,
-        file_root=file_root,
-        spectre_host=spectre_host,
-        spectre_bin=r.spectre.bin,
-        jump_host=r.jump.host,
-        jump_user=r.jump.user,
-        scratch_root=scratch,
+def _resolve_role(role, default, *, local: bool, local_user: str) -> ResolvedRole:
+    if local:
+        return ResolvedRole(
+            host=_LOCAL_HOST, user=local_user, jump_host=None, jump_user=None,
+            proxy=None, key=endpoint_key(_LOCAL_HOST, local_user),
+        )
+    host = role.host or default.host
+    user = role.user or default.user
+    jump_host = role.jump_host or default.jump_host
+    jump_user = role.jump_user or default.jump_user
+    proxy = role.proxy or default.proxy
+    return ResolvedRole(
+        host=host or "", user=user, jump_host=jump_host, jump_user=jump_user,
+        proxy=proxy, key=endpoint_key(host, user, jump_host, jump_user, proxy),
     )
 
 
-__all__ = ["ResolvedTargets", "resolve"]
+def resolve(entry: UserEntry, user: str | None = None) -> ResolvedTargets:
+    import getpass
+
+    local = entry.mode == "local"
+    local_user = getpass.getuser()
+    dflt = entry.ssh.default
+    r = entry.route
+
+    gui = _resolve_role(r.gui, dflt, local=local, local_user=local_user)
+    daemon = _resolve_role(r.daemon, dflt, local=local, local_user=local_user)
+    command = _resolve_role(r.command, dflt, local=local, local_user=local_user)
+    file = _resolve_role(r.file, dflt, local=local, local_user=local_user)
+    spectre = _resolve_role(r.spectre, dflt, local=local, local_user=local_user)
+
+    daemon_port = r.daemon.daemon_port or 65432
+    local_port = r.daemon.local_port or daemon_port
+    # scratch_root is already the per-user work directory
+    # (~/.virtuoso-bridge/<user>); resolve() never appends a user segment.
+    scratch = entry.deploy.scratch_root or "~/.virtuoso-bridge"
+    return ResolvedTargets(
+        gui=gui, daemon=daemon, command=command, file=file, spectre=spectre,
+        daemon_port=daemon_port, local_port=local_port,
+        scratch_root=scratch, spectre_bin=r.spectre.bin,
+    )
+
+
+__all__ = ["ResolvedRole", "ResolvedTargets", "resolve"]

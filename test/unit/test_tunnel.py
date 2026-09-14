@@ -61,9 +61,9 @@ class FakeRunner:
 
 def make_entry(*, skill_host="daemon-a", command_host="daemon-a", file_host="daemon-a") -> UserEntry:
     entry = UserEntry(token="tok-1", mode="remote")
-    entry.route.skill.daemon_host = skill_host
-    entry.route.skill.daemon_port = 65081
-    entry.route.skill.local_port = 65082
+    entry.route.daemon.host = skill_host
+    entry.route.daemon.daemon_port = 65081
+    entry.route.daemon.local_port = 65082
     entry.route.command.host = command_host
     entry.route.command.user = None
     entry.route.file.host = file_host
@@ -132,8 +132,8 @@ class TestRemoteClientTunnel(unittest.TestCase):
 
     def test_local_deploy_uses_no_ssh(self) -> None:
         entry = UserEntry(token="tok-1", mode="local")
-        entry.route.skill.daemon_port = 65432
-        entry.route.skill.local_port = 65432
+        entry.route.daemon.daemon_port = 65432
+        entry.route.daemon.local_port = 65432
         entry.environment.remote_python = "python3"
         root = Path(tempfile.mkdtemp())
         entry.deploy.scratch_root = str(root)

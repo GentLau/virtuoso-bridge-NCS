@@ -99,7 +99,10 @@ def main():
     registry = load_registry(registry_path())
 
     flow = RegistrationFlow(registry)
-    state = flow.apply(RegistrationRequest(mode="remote", user="stress", token=token, host=HOST, ssh_user=USER))
+    state = flow.apply(RegistrationRequest(
+        mode="remote", user="stress", token=token,
+        ssh={"default": {"host": HOST, "user": USER}},
+    ))
     if state.stage != "deployed":
         print("deploy failed:", state.errors)
         sys.exit(1)

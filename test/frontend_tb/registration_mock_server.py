@@ -117,6 +117,7 @@ class MockRegistrationState:
         daemon_port = int(request.get("daemon_port") or (65128 if remote else 65432))
         local_port = int(request.get("local_port") or daemon_port)
         scratch = str(request.get("scratch_root") or ("/home/designer1/.virtuoso-bridge" if remote else "C:/mock/virtuoso-bridge"))
+        # 5-role route shape (mock-only panel view)
         return {
             "mode": self.mode,
             "command_host": command_host,

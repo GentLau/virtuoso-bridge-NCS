@@ -185,7 +185,7 @@ class _LocalCommandSession:
                 self._spawn()
             except OSError as exc:
                 self._dead = True
-                return CommandResult(255, "", f"VB-TRANSPORT: local shell unavailable: {exc}")
+                return CommandResult(255, "", f"VB-TRANSPORT: local shell unavailable: {exc}", kind="transport")
             with self._lock:
                 self._seq += 1
                 n = self._seq
@@ -204,7 +204,7 @@ class _LocalCommandSession:
             self._write_line(f"echo {marker}")
         except (OSError, ValueError):
             self._close_locked()
-            return CommandResult(255, "", "VB-TRANSPORT: local shell write failed")
+            return CommandResult(255, "", "VB-TRANSPORT: local shell write failed", kind="transport")
 
         deadline = None if timeout is None else time.monotonic() + timeout
         self._wait_current(deadline)
@@ -225,7 +225,7 @@ class _LocalCommandSession:
             pass
         if not done and not eof:
             self._close_locked()
-            return CommandResult(124, out, f"command timed out after {timeout}s")
+            return CommandResult(124, out, f"command timed out after {timeout}s", kind="timeout")
         if eof:
             proc_rc = self._proc.poll() if self._proc is not None else None
             self._close_locked()
@@ -352,7 +352,7 @@ class BusinessServer(Middle):
         try:
             entry = self._entry(token)
             if not self._acquire(token, entry):
-                return CommandResult(returncode=1, stdout="", stderr="thread pool exceeded")
+                return CommandResult(returncode=1, stdout="", stderr="thread pool exceeded", kind="rejected")
             acquired = True
             if entry.mode == "local":
                 if parallel:
@@ -361,7 +361,7 @@ class BusinessServer(Middle):
                     return self._local_session(token).execute(cmd, timeout)
             return self._remote(token).run_command(cmd, timeout=timeout, parallel=parallel)
         except LookupError as exc:
-            return CommandResult(returncode=1, stdout="", stderr=str(exc))
+            return CommandResult(returncode=1, stdout="", stderr=str(exc), kind="invalid-token")
         finally:
             if acquired:
                 self._release(token)
@@ -371,13 +371,13 @@ class BusinessServer(Middle):
         try:
             entry = self._entry(token)
             if not self._acquire(token, entry):
-                return CommandResult(returncode=1, stdout="", stderr="thread pool exceeded")
+                return CommandResult(returncode=1, stdout="", stderr="thread pool exceeded", kind="rejected")
             acquired = True
             if entry.mode == "local":
                 return self._local_upload(local_path, remote_path, recursive)
             return self._remote(token).upload_file(Path(local_path), remote_path, timeout=timeout, recursive=recursive)
         except LookupError as exc:
-            return CommandResult(returncode=1, stdout="", stderr=str(exc))
+            return CommandResult(returncode=1, stdout="", stderr=str(exc), kind="invalid-token")
         finally:
             if acquired:
                 self._release(token)
@@ -387,13 +387,13 @@ class BusinessServer(Middle):
         try:
             entry = self._entry(token)
             if not self._acquire(token, entry):
-                return CommandResult(returncode=1, stdout="", stderr="thread pool exceeded")
+                return CommandResult(returncode=1, stdout="", stderr="thread pool exceeded", kind="rejected")
             acquired = True
             if entry.mode == "local":
                 return self._local_download(remote_path, local_path, recursive)
             return self._remote(token).download_file(remote_path, Path(local_path), timeout=timeout, recursive=recursive)
         except LookupError as exc:
-            return CommandResult(returncode=1, stdout="", stderr=str(exc))
+            return CommandResult(returncode=1, stdout="", stderr=str(exc), kind="invalid-token")
         finally:
             if acquired:
                 self._release(token)
@@ -406,7 +406,7 @@ class BusinessServer(Middle):
             proc = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=timeout)
             return CommandResult(proc.returncode, proc.stdout, proc.stderr)
         except subprocess.TimeoutExpired:
-            return CommandResult(returncode=124, stdout="", stderr=f"command timed out after {timeout}s")
+            return CommandResult(returncode=124, stdout="", stderr=f"command timed out after {timeout}s", kind="timeout")
 
     @staticmethod
     def _local_upload(local_path: Path, remote_path: str, recursive: bool) -> CommandResult:

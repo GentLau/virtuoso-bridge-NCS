@@ -16,9 +16,9 @@ from transport.runtime_paths import registry_path, set_working_dir
 
 def make_remote_entry(token="tok-1"):
     entry = UserEntry(token=token, mode="remote")
-    entry.route.skill.daemon_host = "daemon-a"
-    entry.route.skill.daemon_port = 65081
-    entry.route.skill.local_port = 65082
+    entry.route.daemon.host = "daemon-a"
+    entry.route.daemon.daemon_port = 65081
+    entry.route.daemon.local_port = 65082
     entry.route.command.host = "daemon-a"
     entry.route.command.user = "alice"
     entry.expected.daemon_user = "alice"

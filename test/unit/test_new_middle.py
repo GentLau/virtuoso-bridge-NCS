@@ -35,23 +35,23 @@ class TestNewMiddle(unittest.TestCase):
         self.assertNotIn("setShellEnvVar", text)
 
     def test_route_defaults(self):
+        from transport.registry import SshDefaults
         entry = UserEntry(token="tok-1", mode="remote")
-        entry.route.skill.daemon_host = "daemon-a"
-        entry.route.skill.daemon_port = 65081
-        entry.route.skill.local_port = 65082
-        entry.expected.daemon_user = "alice"
+        entry.ssh.default = SshDefaults(host="daemon-a", user="alice")
+        entry.route.daemon.daemon_port = 65081
+        entry.route.daemon.local_port = 65082
         t = resolve(entry)
-        self.assertEqual(t.command_host, "daemon-a")
-        self.assertEqual(t.command_user, "alice")
-        self.assertEqual(t.file_host, "daemon-a")
-        self.assertEqual(t.skill_port, 65081)
+        self.assertEqual(t.command.host, "daemon-a")
+        self.assertEqual(t.command.user, "alice")
+        self.assertEqual(t.file.host, "daemon-a")
+        self.assertEqual(t.daemon_port, 65081)
         self.assertEqual(t.local_port, 65082)
 
     def test_local_business_server(self):
         reg = load_registry(registry_path())
         entry = UserEntry(token="tok-1", mode="local")
-        entry.route.skill.daemon_port = 65432
-        entry.route.skill.local_port = 65432
+        entry.route.daemon.daemon_port = 65432
+        entry.route.daemon.local_port = 65432
         reg.register("alice", entry)
 
         server = BusinessServer(self.wd)

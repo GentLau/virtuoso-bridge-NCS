@@ -51,11 +51,17 @@ class VirtuosoResult(BaseModel):
 
 
 class CommandResult(NamedTuple):
-    """Result of a remote command / file transfer."""
+    """Result of a remote command / file transfer.
+
+    ``kind`` classifies the failure mode (see the architecture §4.4): only
+    ``command`` means the returncode is the real command exit code; the bridge
+    reserved codes 124/255 are only meaningful when ``kind != "command"``.
+    """
 
     returncode: int
     stdout: str
     stderr: str
+    kind: str = "command"
 
 
 class SimulationResult(BaseModel):

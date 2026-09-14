@@ -39,6 +39,8 @@ class _FakeProbeRunner:
         pass
 
     def run_command(self, cmd: str, timeout=None) -> CommandResult:
+        if "vb-ok" in cmd:
+            return CommandResult(0, "vb-ok", "")
         return CommandResult(0, "/home/alice", "")
 
 
@@ -88,7 +90,7 @@ class TestProbeNeverPersists(unittest.TestCase):
         self.wd = set_working_dir(Path(tempfile.mkdtemp()))
 
     def test_local_probe_does_not_touch_registry(self) -> None:
-        result = probe_user(RegistrationRequest(user="alice", mode="local", spectre_bin=sys.executable), token="tok-1")
+        result = probe_user(RegistrationRequest(user="alice", mode="local", role={"spectre": {"bin": sys.executable}}), token="tok-1")
         self.assertEqual(result.entry.mode, "local")
         self.assertFalse(registry_path().exists())
 
@@ -102,10 +104,10 @@ class TestProbeNeverPersists(unittest.TestCase):
              mock.patch("transport.register.probe.remote_path_writable", return_value=True), \
              mock.patch("transport.register.probe.host_key_fingerprint", return_value="SHA256:abc"):
             result = probe_user(
-                RegistrationRequest(mode="remote", user="alice", host="compute-a", ssh_user="alice"),
+                RegistrationRequest(mode="remote", user="alice", ssh={"default": {"host": "compute-a", "user": "alice"}}),
                 token="tok-1",
             )
-        self.assertEqual(result.entry.route.skill.daemon_port, 65081)
+        self.assertEqual(result.entry.route.daemon.daemon_port, 65081)
         self.assertEqual(result.entry.expected.daemon_user, "alice")
         self.assertFalse(registry_path().exists())
 

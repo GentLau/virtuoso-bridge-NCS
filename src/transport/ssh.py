@@ -21,6 +21,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, NamedTuple
 
+from pyapi.models import CommandResult
 from transport.runtime_paths import command_log_file
 from transport.transfer import (
     TarDownloadPlan,
@@ -86,14 +87,6 @@ def _windows_no_window_kwargs(
         "close_fds": True,
         "startupinfo": startupinfo,
     }
-
-class CommandResult(NamedTuple):
-    """Result of a remote command execution."""
-
-    returncode: int
-    stdout: str
-    stderr: str
-
 
 @dataclass(frozen=True)
 class _TimeoutBudget:

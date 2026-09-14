@@ -64,7 +64,8 @@ class TestBusinessLocalLive(unittest.TestCase):
             port = port_base + i
             flow = RegistrationFlow(registry)
             state = flow.apply(RegistrationRequest(
-                user=user, token=token, mode="local", daemon_port=port,
+                user=user, token=token, mode="local",
+                role={"daemon": {"daemon_port": port}},
             ))
             if state.stage != "deployed":
                 raise RuntimeError(f"{user} deploy failed: {state.errors}")

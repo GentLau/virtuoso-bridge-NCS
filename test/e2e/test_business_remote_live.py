@@ -94,9 +94,9 @@ class TestBusinessRemoteLive(unittest.TestCase):
                 raise RuntimeError("no free local tunnel ports")
             reserved.add(local_port)
             entry = UserEntry(token=token, mode="remote")
-            entry.route.skill.daemon_host = HOST
-            entry.route.skill.daemon_port = port
-            entry.route.skill.local_port = local_port
+            entry.route.daemon.host = HOST
+            entry.route.daemon.daemon_port = port
+            entry.route.daemon.local_port = local_port
             entry.route.command.host = HOST
             entry.route.command.user = USER
             entry.route.file.host = HOST
@@ -104,7 +104,7 @@ class TestBusinessRemoteLive(unittest.TestCase):
             entry.expected.daemon_user = USER
             entry.ssh.backend = "paramiko"
             entry.ssh.control_master = "disable"
-            entry.ssh.max_sessions = 12
+            entry.runtime.channel_budget = 12
             registry.register(username, entry)
         cls.server = BusinessServer(cls.wd)
 

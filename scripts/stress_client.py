@@ -166,9 +166,25 @@ def main(argv=None):
                     cmd_stats.samples.append({"i": i, "tok": tok, "cmd": cmd, "got": body.get("stdout"), "stderr": body.get("stderr"), "rc": body.get("returncode")})
                 cmd_stats.bad_value += 1
         elif kind == "skill":
-            lat, status, body, reject_retries, http_retries = post_retry(
-                args.base, "/api/skill", {"token": tok, "skill": args.skill_expr},
-            )
+            # upper-layer retry for transient transport failures (daemon refused/
+            # reset during tunnel bring-up) in addition to business rejections.
+            transient_retries = 0
+            while True:
+                lat, status, body, reject_retries, http_retries = post_retry(
+                    args.base, "/api/skill", {"token": tok, "skill": args.skill_expr},
+                )
+                errs = body.get("errors") or []
+                transient = any(
+                    ("Daemon connection failed" in str(e))
+                    or ("refused" in str(e)) or ("reset" in str(e))
+                    for e in errs
+                )
+                if transient and transient_retries < 2000:
+                    transient_retries += 1
+                    http_retries += 1
+                    time.sleep(0.05)
+                    continue
+                break
             skill_stats.add(lat, status, body, reject_retries, http_retries)
             out = str(body.get("output", "")).strip().strip('"')
             want = tok if args.skill_expect == "token" else "2"
