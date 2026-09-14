@@ -1,6 +1,6 @@
 # virtuoso-bridge-NCS Spec
 
-> 版本：Draft v3
+> 版本：Draft v4
 > 日期：2026-09-11
 > 状态：已冻结（本版验收基线）
 
@@ -60,11 +60,11 @@
 
 | 文档 | 版本 | 状态 | Supersedes |
 |---|---|---|---|
-| 三层整体架构设计 | Draft v3 | Normative | Draft v2 |
-| 本版范围与明确不支持 | v1 | Normative | — |
-| 配置一览 | Draft v7 | Normative | Draft v6、已删除的《注册配置一览》 |
-| 多用户设计 | Draft v3 | Normative | Draft v2 |
-| 并发处理设计 | Draft v4 | Normative | Draft v3 |
+| 三层整体架构设计 | Draft v4 | Normative | Draft v3 |
+| 本版范围与明确不支持 | v2 | Normative | v1 |
+| 配置一览 | Draft v8 | Normative | Draft v7 |
+| 多用户设计 | Draft v4 | Normative | Draft v3 |
+| 并发处理设计 | Draft v5 | Normative | Draft v4 |
 | 日志返回设计标准 | Draft v5 | Normative | Draft v4（废除 marker 定界） |
 | 核心修改设计 | Draft v3 | Informative | Draft v2 |
 | 改动报告 / 代码梳理 | — | Historical | — |
@@ -88,7 +88,7 @@
 
 完整清单与“遇到时的行为”唯一口径见[本版范围与明确不支持](design-concepts/总览/本版范围与明确不支持.md)。摘要：
 
-- 不提供 `purpose`/Spectre 业务消费入口、GUI/deploy 独立 role；
+- 不提供 `purpose`/Spectre 业务消费入口、GUI 独立业务入口（gui role 仅记录）、deploy 独立 role；
 - 不支持无 token 旧客户端/旧 il、`profile`/`VB_*`/`.env` 迁移、非对称签名；
 - 不引入 `request_id`、argv/无 shell 模式、异步 command handle；
 - 不支持 split-host CDS.log、全量日志体系、文件安全沙箱。
