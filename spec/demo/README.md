@@ -1,5 +1,7 @@
 # 新功能最小 Demo（独立参考验证）
 
+> **Informative / 非规范**：本目录只是脱钩的最小验证，**不得用于实现或验收**；口径以 Normative 文档为准（唯一 owner 索引见[Spec 索引](../README.md)）。
+
 本目录验证 `spec/design-concepts/总览/核心修改.md` 中可先行落地的功能点，
 当前收拢为两个自包含 demo：
 

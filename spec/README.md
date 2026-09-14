@@ -1,8 +1,9 @@
 # virtuoso-bridge-NCS Spec
 
-> 版本：Draft v4
-> 日期：2026-09-11
-> 状态：已冻结（本版验收基线）
+> 版本：Release `SPEC-2026-09-14-r2`（送审修订版）
+> 日期：2026-09-14
+> 状态：Normative 基线（取代 r1）
+> Supersedes：`SPEC-2026-09-14-r1`（五接口口径收口、token↔主机边界、root 唯一算法、注册失败合同、预算与 deadline 矩阵、reservation 跨平台模型、去重索引化）
 
 ## 0. 版本治理（替代“文件修改时间优先”）
 
@@ -21,6 +22,7 @@
 4. **Research**：[research](research/README.md)，仅作背景知识。
 5. 主题冲突时只认其 Normative owner；其余副本若与 owner 不一致，一律以 owner 为准。
 6. 版本变更必须记录 `Supersedes`（替换了哪份/哪节）。
+7. **非 owner 不得复制完整定义**：只有一句摘要 + 链接；完整算法/枚举/状态机/矩阵只允许出现在唯一 owner 中（见下节 owner 表）。
 
 ## 目标
 
@@ -58,27 +60,53 @@
 | Research | [research/README.md](research/README.md) | Virtuoso/TB/日志/并发背景调研 |
 | Demo | [demo/README.md](demo/README.md) | 脱钩最小验证（Informative，不复刻正式口径） |
 
-## Release（本冻结基线）
+## 主题 owner 表（唯一定义处）
 
-- **Release ID**：`SPEC-2026-09-14-r1`
+| 主题 | 唯一 owner | 其它文档允许出现的形态 |
+|---|---|---|
+| 五接口签名、返回与错误总则（含 `kind` 枚举、保留码） | [三层整体架构设计](design-concepts/总览/三层整体架构设计.md) §4 | 一句摘要 + 链接 |
+| 五接口 ↔ role 映射、role 职责、token↔主机边界、per-role 根算法 | [多节点设计](design-concepts/底层与中层/多节点设计.md) | 一句摘要 + 链接 |
+| 字段与默认值、per-role mode/字段回退、endpoint canonical key、reservation | [配置一览](design-concepts/总览/配置一览.md) | 一句摘要 + 链接 |
+| 六步注册状态机、探测/部署/连通性合同、注册 deadline、token 生命周期 | [多用户设计](design-concepts/底层与中层/多用户设计.md) | 一句摘要 + 链接 |
+| 并发形态、线程池/channel 记账矩阵、SSH 连接生命周期、建连重试 | [并发处理设计](design-concepts/底层与中层/并发处理设计.md) | 一句摘要 + 链接 |
+| CDS.log offset/frame/分级/限长/warning | [日志返回设计标准](design-concepts/底层与中层/日志返回设计标准.md) | 一句摘要 + 链接 |
+| 本版不做什么（非目标清单与遇到时的行为） | [本版范围与明确不支持](design-concepts/总览/本版范围与明确不支持.md) | 一句摘要 + 链接 |
+
+**Spec CI 检查词表**（出现在非 owner 文档的正文中即视为违规；标题/索引行/示例标注除外）：
+
+```text
+三接口 / 三端口 / 三条数据流（子集示例标注除外）
+endpoint_key = ……（完整算法）
+root.default/<role> 的完整回退算法
+channel 记账完整表
+CommandResult.kind 完整枚举
+CDS.log metadata frame 完整字节格式
+六步注册完整状态机
+```
+
+## Release（本基线）
+
+- **Release ID**：`SPEC-2026-09-14-r2`
 - **Normative 文件集**（7 份）：三层整体架构设计、本版范围与明确不支持、配置一览、多节点设计、多用户设计、并发处理设计、日志返回设计标准；
-- **Normative 内容哈希**：`db0c3fb088274798633bbc8b8fd0f5fec403c36b8575dd733baac30f71b874e7`
-  - 算法：按相对路径排序，逐文件 SHA-256 的 `"<相对路径> <hex>"` 行以 LF 拼接，再取一次 SHA-256；
+- **Normative 内容哈希**：`b14e58d23c6522ad674b10e3248138cfd3c0f3a36a26735d6831c28460e98d0a`
+  - 算法：按相对路径排序，逐文件 SHA-256（**按 Git 提交内容计算，即 LF 行尾**；Windows 工作区受 `core.autocrlf` 影响的行尾差异不计入）的 `"<相对路径> <hex>"` 行以 LF 拼接，再取一次 SHA-256；
 - **基线 commit**：本 Release 段所在提交即基线（见 `git log -1 -- spec/`）；任何 Normative 文档变更必须同时更新本段哈希。
 
 ## 冻结 Manifest
 
 | 文档 | 版本 | 状态 | Supersedes |
 |---|---|---|---|
-| 三层整体架构设计 | Draft v8 | Normative | Draft v7（per-role mode） |
-| 多节点设计 | v6 | Normative | v5（daemon python 命名） |
+| 三层整体架构设计 | Draft v9 | Normative | Draft v8（五接口口径收口：五数据流、五接口 deadline 表、去重复定义） |
+| 多节点设计 | v7 | Normative | v6（token↔主机边界、根算法唯一化） |
 | 本版范围与明确不支持 | v5 | Normative | v4（新增跨机 daemon 启动非目标） |
-| 配置一览 | Draft v15 | Normative | Draft v14（role.daemon.python + roles 容器命名） |
-| 多用户设计 | Draft v11 | Normative | Draft v10（roles 命名对齐） |
-| 并发处理设计 | Draft v9 | Normative | Draft v8（local role 语义） |
+| 配置一览 | Draft v16 | Normative | Draft v15（reservation 跨平台模型与唯一性作用域、root 定义索引化） |
+| 多用户设计 | Draft v12 | Normative | Draft v11（六步预测目标/失败合同、注册 deadline、resolver 复用口径） |
+| 并发处理设计 | Draft v10 | Normative | Draft v9（channel 记账矩阵、local role 预算口径） |
 | 日志返回设计标准 | Draft v6 | Normative | Draft v5（统一 warning 文本） |
 | 核心修改设计 | Draft v4 | Informative | Draft v3 |
 | 改动报告 / 代码梳理 | — | Historical | — |
+
+> 版本链规则：每份文档的文件头 `版本 / 日期 / Supersedes` 必须与本表一致；版本号只递增，跳号必须在 `Supersedes` 中说明合并了哪些版本。
 
 ## 独立 Demo
 

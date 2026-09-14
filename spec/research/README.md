@@ -5,6 +5,9 @@
 > 关联规范：[spec/design-concepts/总览/三层整体架构设计.md](../design-concepts/总览/三层整体架构设计.md)
 > 范围：Virtuoso/DFII/OpenAccess 数据模型、原理图与 testbench 编辑、Maestro/ADE/Spectre 日志，以及本项目重构的关键技术点。
 
+> **Research / 非规范**：本目录只提供背景知识与决策依据，**不得用于实现或验收**。
+> 若与 Normative 文档不一致，一律以 Normative 为准；当前各主题的唯一 owner 见[Spec 索引](../README.md)。
+
 ## 结论先行
 
 1. **Virtuoso 不是“目录里的一堆可独立编辑文本文件”**。它以 DFII 统一数据库对象模型管理设计；当前现场通过 `dbGetDatabaseType()` 验证为 `OpenAccess`。库/Cell/View 是寻址层，`sch.oa`、`layout.oa`、`symbol.oa` 等 OA master/co-master 数据是逻辑/物理设计语义的主要载体，`master.tag`、`data.dm` 和锁等 sidecar 也参与解析与一致性。对 OA 二进制直接做文本替换是高风险且不支持的做法。
