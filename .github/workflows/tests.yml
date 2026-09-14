@@ -23,6 +23,14 @@ jobs:
       - name: Run full test suite
         run: uv run --python ${{ matrix.python-version }} --extra dev pytest
 
+  spec:
+    name: Spec governance
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Check spec hash, links, JSON, owner rules
+        run: python3 tools/check_spec.py
+
   windows-ssh:
     name: Windows / SSH transports
     runs-on: windows-latest
