@@ -62,11 +62,11 @@
 
 | 文档 | 版本 | 状态 | Supersedes |
 |---|---|---|---|
-| 三层整体架构设计 | Draft v5 | Normative | Draft v4（五接口） |
-| 多节点设计 | v1 | Normative | —（新文件，收拢此前 split-host 副本） |
-| 本版范围与明确不支持 | v3 | Normative | v2 |
-| 配置一览 | Draft v9 | Normative | Draft v8 |
-| 多用户设计 | Draft v5 | Normative | Draft v4 |
+| 三层整体架构设计 | Draft v6 | Normative | Draft v5（每 role 文件根） |
+| 多节点设计 | v2 | Normative | v1（每 role 独立文件根） |
+| 本版范围与明确不支持 | v4 | Normative | v3 |
+| 配置一览 | Draft v10 | Normative | Draft v9（root.default + role.*.root） |
+| 多用户设计 | Draft v6 | Normative | Draft v5 |
 | 并发处理设计 | Draft v6 | Normative | Draft v5（五接口记账） |
 | 日志返回设计标准 | Draft v5 | Normative | Draft v4（废除 marker 定界） |
 | 核心修改设计 | Draft v3 | Informative | Draft v2 |
