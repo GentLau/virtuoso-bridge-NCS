@@ -278,6 +278,24 @@ class TestRegistrationServer(unittest.TestCase):
         self.assertTrue(status == 400 or data.get("stage") == "failed", (status, data))
         self.assertIn("token", json.dumps(data))
 
+    def test_second_registration_with_same_daemon_port_fails_before_probe(self):
+        """同 daemon 主机同端口：第二个注册在第二步就必须失败（配置一览 §6.4）。"""
+        port = _free_port()
+        first = self.srv.request("POST", "/api/register", {
+            "user": "laura", "mode": "local",
+            "roles": {"daemon": {"daemon_port": port}, "spectre": {"bin": sys.executable}},
+        })
+        self.assertEqual(json.loads(first[1])["stage"], "deployed")
+
+        second = self.srv.request("POST", "/api/register", {
+            "user": "mike", "mode": "local",
+            "roles": {"daemon": {"daemon_port": port}, "spectre": {"bin": sys.executable}},
+        })
+        data = json.loads(second[1])
+        self.assertEqual(data["stage"], "failed", data)
+        self.assertTrue(any("daemon port" in e for e in data.get("errors", [])), data)
+        self.assertIsNone(self.registry.get("mike"), "失败注册不得落盘")
+
     def test_delete_unknown_user(self):
         status, raw = self.srv.request("DELETE", "/api/user/ghost", None)
         self.assertEqual(status, 404)
