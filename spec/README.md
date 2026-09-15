@@ -95,7 +95,7 @@ CDS.log metadata frame 完整字节格式
 
 - **Release ID**：`SPEC-2026-09-14-r2`
 - **Normative 文件集**（7 份）：四层整体架构与接口、本版范围与明确不支持、配置一览、路由设计、多用户设计、并发设计、日志返回设计标准；
-- **Normative 内容哈希**：`6e7a03c5651fd7832ac946e8b0db4bf0a263992754f5d16d173fca18cd5383bf`
+- **Normative 内容哈希**：`3845f6a5325134e57b99000535ca64f757cff97cee20ba36433daf6045cb2f94`
   - 算法：按相对路径排序，逐文件 SHA-256（**按 Git 提交内容计算，即 LF 行尾**；Windows 工作区受 `core.autocrlf` 影响的行尾差异不计入）的 `"<相对路径> <hex>"` 行以 LF 拼接，再取一次 SHA-256；
 - **基线 commit**：本 Release 段所在提交即基线（见 `git log -1 -- spec/`）；任何 Normative 文档变更必须同时更新本段哈希。
 
@@ -103,12 +103,12 @@ CDS.log metadata frame 完整字节格式
 
 | 文档 | 版本 | 状态 | Supersedes |
 |---|---|---|---|
-| 四层整体架构与接口 | Draft v14 | Normative | Draft v13（四层化：新增顶层 HTTPServer） |
-| 路由设计 | v9 | Normative | v8（两步路由流程；探测/部署/根算法迁出到多用户设计） |
+| 四层整体架构与接口 | Draft v15 | Normative | Draft v14（rejected 行补 role max_sessions exceeded 文本） |
+| 路由设计 | v10 | Normative | v9（第二步预算检查顺序与三参数拒绝文本） |
 | 本版范围与明确不支持 | v7 | Normative | v6（split-host 可观察合同统一为“不保证”） |
 | 配置一览 | Draft v19 | Normative | Draft v18（新增 role.<name>.max_sessions） |
 | 多用户设计 | Draft v14 | Normative | Draft v13（第一步必填引用、重试措辞、update 的 root 语义） |
-| 并发设计 | Draft v14 | Normative | Draft v13（限流三字段与排队/并行模型重写） |
+| 并发设计 | Draft v15 | Normative | Draft v14（三预算拒绝文本明确） |
 | 日志返回设计标准 | Draft v10 | Normative | Draft v9（off 缺省口径、in-flight 措辞） |
 | 核心修改设计 | Draft v4 | Informative | Draft v3 |
 | 改动报告 / 代码梳理 | — | Historical | — |
