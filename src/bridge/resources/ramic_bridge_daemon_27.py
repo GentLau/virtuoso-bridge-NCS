@@ -316,7 +316,8 @@ def handle_connection(conn):
             log_path, start_offset, end_offset = meta
             raw_delta, warn = _read_range(log_path, start_offset, end_offset)
             if warn:
-                warnings.append(warn)
+                # 固定文案由日志标准 §6.3 冻结：middle 只透传，不再自己拼前缀
+                warnings.append("CDS.log unavailable: " + warn)
             log_text, _truncated = filter_delta(raw_delta, log_level, log_max_bytes)
 
         resp = {"value" if ok else "error": value_payload, "log": log_text}

@@ -119,6 +119,19 @@ class TestDaemonHandler(DaemonHandlerTestBase):
         self.assertEqual(body["log"], "")
         self.assertIn(b"let((", sent)
 
+    def test_unavailable_cds_log_uses_frozen_warning_text(self):
+        """日志标准 §6.3：读不到 CDS.log 时 log="" 且 warnings 必须是固定文案。"""
+        raw, _sent = self._run_handler(
+            {"skill": "1+1", "timeout": 5, "token": "tok-1", "log_level": "all"}
+        )
+        self.assertTrue(raw.startswith(STX), raw)
+        body = json.loads(raw[1:].rstrip(RS).decode("utf-8"))
+        self.assertEqual(body["log"], "")
+        warnings = body.get("warnings") or []
+        self.assertTrue(
+            any(w.startswith("CDS.log unavailable: ") for w in warnings), warnings
+        )
+
     def test_multiline_skill_is_packaged_into_il_file(self):
         raw, sent = self._run_handler({"skill": "a = 1\nb = 2", "timeout": 5, "token": "tok-1"})
         self.assertTrue(raw.startswith(STX), raw)
