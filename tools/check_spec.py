@@ -37,7 +37,7 @@ README = SPEC / "README.md"
 NORMATIVE = [
     "design-concepts/总览/1-四层整体架构与接口.md",
     "design-concepts/总览/本版范围与明确不支持.md",
-    "design-concepts/总览/add-中层配置文档.md",
+    "design-concepts/中层/add-中层配置文档.md",
     "design-concepts/中层/3-路由设计.md",
     "design-concepts/中层/1-多用户与注册.md",
     "design-concepts/中层/2-并发设计.md",
@@ -46,7 +46,7 @@ NORMATIVE = [
 
 # mechanism -> (owner file, patterns that may only appear in the owner)
 OWNED_PATTERNS = [
-    ("endpoint canonical key", "design-concepts/总览/add-中层配置文档.md",
+    ("endpoint canonical key", "design-concepts/中层/add-中层配置文档.md",
      [r"endpoint_key\s*=", r"canonical_json\s*="]),
     ("channel 记账矩阵", "design-concepts/中层/2-并发设计.md",
      [r"\|\s*动作\s*\|\s*线程预算\s*\|\s*channel 预算"]),
@@ -54,7 +54,7 @@ OWNED_PATTERNS = [
      [r"(?:.*`kind=[a-z-]+`.*){3,}"]),
     ("六步注册状态机", "design-concepts/中层/1-多用户与注册.md",
      [r"\|\s*步\s*\|\s*预测目标"]),
-    ("reservation 记录格式", "design-concepts/总览/add-中层配置文档.md",
+    ("reservation 记录格式", "design-concepts/中层/add-中层配置文档.md",
      [r"registry\.reservation", r"\"local_port\":\s*6"]),
 ]
 

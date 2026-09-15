@@ -12,7 +12,7 @@
 1. **Normative（唯一规范源）**：只有下列文件是正式规范，且每个主题只有一个 owner；
    - 分层/接口/错误总则：[四层整体架构与接口](design-concepts/总览/1-四层整体架构与接口.md)（第 4 节为接口唯一基线）
    - 本版范围/非目标：[本版范围与明确不支持](design-concepts/总览/本版范围与明确不支持.md)
-   - 配置与注册输入目录：[中层配置文档](design-concepts/总览/add-中层配置文档.md)
+   - 配置与注册输入目录：[中层配置文档](design-concepts/中层/add-中层配置文档.md)
    - 多用户/注册/token：[多用户与注册](design-concepts/中层/1-多用户与注册.md)
    - 多节点/5 role 拓扑：[路由设计](design-concepts/中层/3-路由设计.md)
    - 并发/SSH/线程池：[并发设计](design-concepts/中层/2-并发设计.md)
@@ -52,7 +52,7 @@
 |---|---|---|
 | Normative | [四层整体架构与接口](design-concepts/总览/1-四层整体架构与接口.md) | 分层、职责、接口唯一基线、错误总则 |
 | Normative | [本版范围与明确不支持](design-concepts/总览/本版范围与明确不支持.md) | 本版不做什么的唯一口径（含遇到时的行为） |
-| Normative | [中层配置文档](design-concepts/总览/add-中层配置文档.md) | 全部配置 + 注册可提交参数目录 + 每用户隔离 |
+| Normative | [中层配置文档](design-concepts/中层/add-中层配置文档.md) | 全部配置 + 注册可提交参数目录 + 每用户隔离 |
 | Normative | [路由设计](design-concepts/中层/3-路由设计.md) | 5 role 拓扑与职责、五接口与 role 的对应、逐 role 探测、部署与 endpoint |
 | Normative | [多用户与注册](design-concepts/中层/1-多用户与注册.md) | 六步注册、token 寻址/校验、路由与授权 |
 | Normative | [并发设计](design-concepts/中层/2-并发设计.md) | 并发与限流唯一口径：排队投递/直接开通道、三预算（线程/最大通道数/单目标点上限）、建连重试 |
@@ -71,9 +71,9 @@
 |---|---|---|
 | 五接口签名、返回与错误总则（含 `kind` 枚举、保留码） | [四层整体架构与接口](design-concepts/总览/1-四层整体架构与接口.md) §4 | 一句摘要 + 链接 |
 | 五接口 ↔ role 映射、role 职责、token↔主机边界、per-role 根算法 | [路由设计](design-concepts/中层/3-路由设计.md) | 一句摘要 + 链接 |
-| 逐 role 探测矩阵、部署与文件根 | [多用户与注册](design-concepts/中层/1-多用户与注册.md) §12 | 一句摘要 + 链接 |
+| 逐 role 探测矩阵、部署与文件根 | [多用户与注册](design-concepts/中层/1-多用户与注册.md) §4 | 一句摘要 + 链接 |
 | 连接数量与复用拓扑 | [路由设计](design-concepts/中层/3-路由设计.md) §4 | 一句摘要 + 链接 |
-| 字段与默认值、per-role mode/字段回退、endpoint canonical key、reservation | [中层配置文档](design-concepts/总览/add-中层配置文档.md) | 一句摘要 + 链接 |
+| 字段与默认值、per-role mode/字段回退、endpoint canonical key、reservation | [中层配置文档](design-concepts/中层/add-中层配置文档.md) | 一句摘要 + 链接 |
 | 六步注册状态机、注册 deadline、token 生命周期 | [多用户与注册](design-concepts/中层/1-多用户与注册.md) | 一句摘要 + 链接 |
 | 并发形态与排队语义、三预算与通道记账矩阵、连接生命周期、建连重试 | [并发设计](design-concepts/中层/2-并发设计.md) | 一句摘要 + 链接 |
 | CDS.log offset/frame/分级/限长/warning | [日志返回设计标准](design-concepts/底层/6-日志返回设计标准.md) | 一句摘要 + 链接 |
@@ -95,7 +95,7 @@ CDS.log metadata frame 完整字节格式
 
 - **Release ID**：`SPEC-2026-09-14-r2`
 - **Normative 文件集**（7 份）：四层整体架构与接口、本版范围与明确不支持、中层配置文档、路由设计、多用户与注册、并发设计、日志返回设计标准；
-- **Normative 内容哈希**：`bcaf553acd9458c98954de0d8a2af2c5c40698f8926d290199987a3e83d1e50a`
+- **Normative 内容哈希**：`83e5ca520ea35a777480d61cfed0daa3f2ef7ba2703525bc831a7de809c4a0db`
   - 算法：按相对路径排序，逐文件 SHA-256（**按 Git 提交内容计算，即 LF 行尾**；Windows 工作区受 `core.autocrlf` 影响的行尾差异不计入）的 `"<相对路径> <hex>"` 行以 LF 拼接，再取一次 SHA-256；
 - **基线 commit**：本 Release 段所在提交即基线（见 `git log -1 -- spec/`）；任何 Normative 文档变更必须同时更新本段哈希。
 
@@ -107,7 +107,7 @@ CDS.log metadata frame 完整字节格式
 | 路由设计 | v11 | Normative | v10（endpoint 复用原则表） |
 | 本版范围与明确不支持 | v7 | Normative | v6（split-host 可观察合同统一为“不保证”） |
 | 中层配置文档 | Draft v20 | Normative | Draft v19（改名中层配置文档，作为多用户与注册的详细补充） |
-| 多用户与注册 | Draft v15 | Normative | Draft v14（改名并聚焦注册：六步/授权/参数；路由侧重移交路由设计） |
+| 多用户与注册 | Draft v16 | Normative | Draft v15（重写：精简为注册核心，删除旧机制对照与历史段落） |
 | 并发设计 | Draft v15 | Normative | Draft v14（三预算拒绝文本明确） |
 | 日志返回设计标准 | Draft v10 | Normative | Draft v9（off 缺省口径、in-flight 措辞） |
 | 核心修改设计 | Draft v4 | Informative | Draft v3 |
