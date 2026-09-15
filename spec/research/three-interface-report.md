@@ -3,7 +3,7 @@
 > **Research / 非规范**：本文只提供背景与依据，**不得用于实现或验收**；各主题的唯一口径见 [Spec 索引](../README.md)。
 
 
-> 历史说明（2026-09-14）：本文研究的是旧版三接口（Skill / RunCommand / File）；本版中层接口已扩展为 5 个（+ GUI 命令执行 / Spectre 命令执行），**该三接口口径已被 SPEC-2026-09-14-r2 否决**；当前口径见 [design-concepts/底层与中层/多节点设计.md](../design-concepts/底层与中层/多节点设计.md)。
+> 历史说明（2026-09-14）：本文研究的是旧版三接口（Skill / RunCommand / File）；本版中层接口已扩展为 5 个（+ GUI 命令执行 / Spectre 命令执行），**该三接口口径已被 SPEC-2026-09-14-r2 否决**；当前口径见 [design-concepts/中层/多节点设计.md](../design-concepts/中层/多节点设计.md)。
 
 **CLI / MCP / Harness Tool-Call 共享单一工具注册表的最小可行架构**
 

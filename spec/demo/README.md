@@ -6,7 +6,7 @@
 当前收拢为两个自包含 demo：
 
 - **`full_demo.py`**：注册 + token 路由 + 并行的完整业务模拟；
-- **`cdslog_demo.py`**：CDS.log 增量返回算法（演示过滤/限长；其 marker 定界仅为历史演示，正式口径已改为 offset 定界，见[日志返回设计标准](../design-concepts/底层与中层/日志返回设计标准.md)）。
+- **`cdslog_demo.py`**：CDS.log 增量返回算法（演示过滤/限长；其 marker 定界仅为历史演示，正式口径已改为 offset 定界，见[日志返回设计标准](../design-concepts/底层/6-日志返回设计标准.md)）。
 
 **所有代码只依赖 Python 标准库，不导入 `src/virtuoso_bridge`，不需要
 `.env`、SSH、Virtuoso 或 Spectre。**（`run_command` 使用系统 PATH 里的
@@ -50,7 +50,7 @@ python -m unittest spec.demo.test_full_demo -v
 
 ### 四步接入（demo 简化分组）
 
-> demo 的“四步”只是[多用户设计 §3.2 六步注册](../design-concepts/底层与中层/多用户设计.md)的**分组演示**，不是正式流程口径；正式注册=①申请→②本地校验→③探测→④部署→⑤连通性测试→⑥写入注册表。
+> demo 的“四步”只是[多用户设计 §3.2 六步注册](../design-concepts/中层/多用户设计.md)的**分组演示**，不是正式流程口径；正式注册=①申请→②本地校验→③探测→④部署→⑤连通性测试→⑥写入注册表。
 
 | 步骤 | 行为 | demo 实现 |
 |---|---|---|
@@ -74,7 +74,7 @@ python -m unittest spec.demo.test_full_demo -v
 ## CDS.log 增量（cdslog_demo.py）
 
 `CdsLogIncrementReader` 只持有 `path + cursor`；`SkillLogEmitter` 模拟底层
-`VB-BEGIN → 本次日志 → VB-END → flush → end_offset`（**历史演示口径**；正式标准已改为 offset 定界、不写 marker，见[日志返回设计标准](../design-concepts/底层与中层/日志返回设计标准.md)）；`DemoSkillExecutor` 把
+`VB-BEGIN → 本次日志 → VB-END → flush → end_offset`（**历史演示口径**；正式标准已改为 offset 定界、不写 marker，见[日志返回设计标准](../design-concepts/底层/6-日志返回设计标准.md)）；`DemoSkillExecutor` 把
 裁剪后的增量挂到 `SkillResult.log`。过滤顺序：
 
 ```text

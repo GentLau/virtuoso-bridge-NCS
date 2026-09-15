@@ -38,21 +38,21 @@ NORMATIVE = [
     "design-concepts/总览/1-四层整体架构与接口.md",
     "design-concepts/总览/本版范围与明确不支持.md",
     "design-concepts/总览/配置一览.md",
-    "design-concepts/底层与中层/多节点设计.md",
-    "design-concepts/底层与中层/多用户设计.md",
-    "design-concepts/底层与中层/2-并发设计.md",
-    "design-concepts/底层与中层/日志返回设计标准.md",
+    "design-concepts/中层/多节点设计.md",
+    "design-concepts/中层/多用户设计.md",
+    "design-concepts/中层/2-并发设计.md",
+    "design-concepts/底层/6-日志返回设计标准.md",
 ]
 
 # mechanism -> (owner file, patterns that may only appear in the owner)
 OWNED_PATTERNS = [
     ("endpoint canonical key", "design-concepts/总览/配置一览.md",
      [r"endpoint_key\s*=", r"canonical_json\s*="]),
-    ("channel 记账矩阵", "design-concepts/底层与中层/2-并发设计.md",
+    ("channel 记账矩阵", "design-concepts/中层/2-并发设计.md",
      [r"\|\s*动作\s*\|\s*线程预算\s*\|\s*channel 预算"]),
     ("CommandResult.kind 枚举", "design-concepts/总览/1-四层整体架构与接口.md",
      [r"(?:.*`kind=[a-z-]+`.*){3,}"]),
-    ("六步注册状态机", "design-concepts/底层与中层/多用户设计.md",
+    ("六步注册状态机", "design-concepts/中层/多用户设计.md",
      [r"\|\s*步\s*\|\s*预测目标"]),
     ("reservation 记录格式", "design-concepts/总览/配置一览.md",
      [r"registry\.reservation", r"\"local_port\":\s*6"]),

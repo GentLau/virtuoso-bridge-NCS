@@ -7,7 +7,7 @@
 > 方法：三名独立调查员并行取证后交叉核对——① 旧代码考古（`src_bak/` + git 历史），② 当前 Spec/实现审计，③ 需求与必要性分析。所有结论附证据引用。
 > 关联：`spec/design-concepts/总览/1-四层整体架构与接口.md`、`配置一览.md`、`多用户设计.md`、`doc/设计规格全量复审意见.md`（2026-09-14 版）
 >
-> **后续决定（2026-09-14）：本文 §5 推荐的"两 endpoint（virtuoso + work）"模型已被 SPEC-2026-09-14-r2 否决。最终决定为：保留 5 role（gui/daemon/command/file/spectre），bridge 只忠实投送、不判断 role 间拓扑关系，每个 role 独立配置文件根（全局默认 + 显式覆盖）。当前口径见 [design-concepts/底层与中层/多节点设计.md](../design-concepts/底层与中层/多节点设计.md)。**
+> **后续决定（2026-09-14）：本文 §5 推荐的"两 endpoint（virtuoso + work）"模型已被 SPEC-2026-09-14-r2 否决。最终决定为：保留 5 role（gui/daemon/command/file/spectre），bridge 只忠实投送、不判断 role 间拓扑关系，每个 role 独立配置文件根（全局默认 + 显式覆盖）。当前口径见 [design-concepts/中层/多节点设计.md](../design-concepts/中层/多节点设计.md)。**
 
 ## 0. 结论先行
 

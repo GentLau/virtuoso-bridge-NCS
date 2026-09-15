@@ -2,7 +2,7 @@
 
 > **Research / 非规范**：本文只提供背景与依据，**不得用于实现或验收**；各主题的唯一口径见 [Spec 索引](../README.md)。
 
-> 现状说明（2026-09-11）：本文是调研历史。正式实现采用 **offset 定界**（请求前后 `hiFlushLogFile`+`fileLength` 回传 `[start,end)`），**不向 CDS.log 写 VB-BEGIN/VB-END**；见[日志返回设计标准](../design-concepts/底层与中层/日志返回设计标准.md)。
+> 现状说明（2026-09-11）：本文是调研历史。正式实现采用 **offset 定界**（请求前后 `hiFlushLogFile`+`fileLength` 回传 `[start,end)`），**不向 CDS.log 写 VB-BEGIN/VB-END**；见[日志返回设计标准](../design-concepts/底层/6-日志返回设计标准.md)。
 
 
 > 调研日期：2026-09-04  
