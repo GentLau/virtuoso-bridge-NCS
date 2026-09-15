@@ -6,7 +6,7 @@
 > 版本：v1
 > 日期：2026-09-07
 > 状态：调查记录（面向重构的入门级技术背景整理），源自一次围绕「多线程 / 多用户 / SSH / 端口转发」的逐问逐答。
-> 关联：[多用户设计](../design-concepts/中层/多用户设计.md)、[并发处理设计](../design-concepts/中层/2-并发设计.md)、[三层整体架构设计](../design-concepts/总览/1-四层整体架构与接口.md)
+> 关联：[多用户设计](../design-concepts/中层/1-多用户与注册.md)、[并发处理设计](../design-concepts/中层/2-并发设计.md)、[三层整体架构设计](../design-concepts/总览/1-四层整体架构与接口.md)
 
 > 读者对象：有编程基础（尤其嵌入式/单片机背景）但未系统学过 Python 网络编程的工程师。本文不假设任何 Python 语法知识，但假设读者理解进程、文件、管道等 OS 基础概念。
 
@@ -315,9 +315,9 @@ channel     ← 每并发命令一个（受 MaxSessions / BoundedSemaphore 限�
 |---|---|
 | 单 daemon 串行 = TCP backlog 排队 | 2-并发设计.md §5「单通道串行的精确机制」 |
 | GIL 只串行化计算，不串行化等待 | 2-并发设计.md §4.1/4.2 |
-| daemon 是 CIW 的 `ipcBeginProcess` 子进程，CIW 活着 daemon 就活着 | 多用户设计.md §3.2.2 通道保活表 |
+| daemon 是 CIW 的 `ipcBeginProcess` 子进程，CIW 活着 daemon 就活着 | 1-多用户与注册.md §3.2.2 通道保活表 |
 | TCP 短连接（Skill 通道）微秒级不需池化；SSH 握手秒级必须池化 | 2-并发设计.md §7.1 session 连接池 |
-| token 不随 `-L` 转发层携带，只在应用层 JSON 里校验；转发层确认连对机器靠 host key 指纹 | 多用户设计.md §3.1/3.2.1（SSH host key 指纹 + daemon token 双层校验） |
+| token 不随 `-L` 转发层携带，只在应用层 JSON 里校验；转发层确认连对机器靠 host key 指纹 | 1-多用户与注册.md §3.1/3.2.1（SSH host key 指纹 + daemon token 双层校验） |
 | 进程隔离是并发地基，多进程 ≠ 并发手段 | 2-并发设计.md §3.1 / §8 |
 
 ### 遗留问题（供后续调查）

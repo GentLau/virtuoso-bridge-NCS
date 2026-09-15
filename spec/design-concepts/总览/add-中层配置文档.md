@@ -1,9 +1,10 @@
-# 配置一览
+# 中层配置文档
 
-> 版本：Draft v19
+> 版本：Draft v20
 > 日期：2026-09-14
-> 状态：已冻结（配置与注册输入的唯一规范源）
-> Supersedes：Draft v18（新增 role.<name>.max_sessions）；注册可提交参数目录见 §4，canonical 注册 API 见 §6。
+> 状态：已冻结（字段、默认值、探测写回与 reservation 的唯一规范源）
+> 定位：本文是[多用户与注册](../中层/1-多用户与注册.md)的**详细补充文档**——该文档讲六步注册、授权与要填参数，本文展开每个字段与规则
+> Supersedes：Draft v19（改名中层配置文档，作为多用户与注册的详细补充）；注册可提交参数目录见 §4，canonical 注册 API 见 §6。
 
 ## 1. 设计原则：配置跟随用户
 
@@ -61,7 +62,7 @@
 | `ssh.default.jump_host` | 各 role 缺省跳板主机 | 配置 | 可选 |
 | `ssh.default.jump_user` | 各 role 缺省跳板账号 | 配置 | 可选 |
 | `ssh.default.proxy` | 各 role 缺省 SOCKS5 第一跳 | 配置 | 可选 |
-| `root.default` | 各 role 文件根的**申请期基准**：role 未显式配 `root` 时，申请期以 `root.default/<role>` 计算，**探测后把最终绝对路径写回各 `role.*.root`，运行期不再依赖本字段**；`~` 与 `<userid>` 在**该 role 工作所在机器**上解释，与 mode 无关（唯一算法：[多用户设计 §12](../中层/3-路由设计.md)） | 配置 | 默认 `~/.virtuoso-bridge/<userid>`（申请期展示；持久化默认 `null`） |
+| `root.default` | 各 role 文件根的**申请期基准**：role 未显式配 `root` 时，申请期以 `root.default/<role>` 计算，**探测后把最终绝对路径写回各 `role.*.root`，运行期不再依赖本字段**；`~` 与 `<userid>` 在**该 role 工作所在机器**上解释，与 mode 无关（唯一算法：[多用户与注册 §12](../中层/3-路由设计.md)） | 配置 | 默认 `~/.virtuoso-bridge/<userid>`（申请期展示；持久化默认 `null`） |
 
 - fallback 是字段级而非整体覆盖；本版**不支持逐 role 显式禁用**全局 jump/proxy（空值一律视为继承，需要不同值就显式写该 role 的最终值）；
 - `mode=local` 的 role：其 `host/user/jump_host/jump_user/proxy` 不适用，**显式提交即参数错误**（拒绝注册）；`root` 取**该 role 工作所在机器**上运行中层的账号的路径，默认形状与 remote 相同（`~/.virtuoso-bridge/<userid>/<role>`）；
@@ -138,7 +139,7 @@ Spectre 执行主机，被 Spectre 命令执行（一次性命令，上层预留
   temp/ log/ artifact/
 ```
 
-daemon role 根下的固定目录（写死，不配置；根本身已含用户段，算法见[多用户设计 §12](../中层/3-路由设计.md)）：
+daemon role 根下的固定目录（写死，不配置；根本身已含用户段，算法见[多用户与注册 §12](../中层/3-路由设计.md)）：
 
 ```text
 <role.daemon.root>/
@@ -237,7 +238,7 @@ il/daemon 常量（部署生成，不配置）的类型：`RBDPath`=配置、`RB
 
 - 未知字段：**拒绝注册**（模型 `extra="forbid"`），不静默忽略；
 - 可选字段：**空字符串视为未提供**；`null` 与缺省等价，进入模型后统一为默认值；
-- 序列化：registry 持久化格式为 UTF-8 JSON、权限 `0600`、tmp + 原子替换（写锁语义见多用户设计 §11）。
+- 序列化：registry 持久化格式为 UTF-8 JSON、权限 `0600`、tmp + 原子替换（写锁语义见多用户与注册 §11）。
 
 ### 6.2 registry 条目 canonical schema（合法 JSON 示例）
 
@@ -295,7 +296,7 @@ il/daemon 常量（部署生成，不配置）的类型：`RBDPath`=配置、`RB
 
 | role.mode | 连接字段 host/user/jump/proxy | 该 role 的文件根 | 探测与 host-key |
 |---|---|---|---|
-| `local` | **不适用**；显式提交即参数错误 | `role.<name>.root`（缺省 `root.default/<role>`），在**该 role 工作所在机器**上解释；算法见[多用户设计 §12](../中层/3-路由设计.md) | 在客户端本机执行等价检查；无 SSH、无 host-key |
+| `local` | **不适用**；显式提交即参数错误 | `role.<name>.root`（缺省 `root.default/<role>`），在**该 role 工作所在机器**上解释；算法见[多用户与注册 §12](../中层/3-路由设计.md) | 在客户端本机执行等价检查；无 SSH、无 host-key |
 | `remote` | `host/user` 必填（可由 `ssh.default.*` 提供）；jump/proxy 可选 | 远端路径：`role.<name>.root`（缺省 `root.default/<role>`，`~` 由该 role 的 SSH 账号展开） | 通过 SSH 探测；业务 role（gui/daemon/command/file）指纹必检 ERROR，spectre 仅 WARNING |
 
 daemon 端口特例：`role.daemon.mode=remote` 时 `local_port` 是隧道本地端口（自动分配）；`mode=local` 时 `local_port = daemon_port`（直连）。

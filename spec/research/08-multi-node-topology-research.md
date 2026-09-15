@@ -5,7 +5,7 @@
 
 > 性质：Research（背景与决策依据，**不是规范**）
 > 方法：三名独立调查员并行取证后交叉核对——① 旧代码考古（`src_bak/` + git 历史），② 当前 Spec/实现审计，③ 需求与必要性分析。所有结论附证据引用。
-> 关联：`spec/design-concepts/总览/1-四层整体架构与接口.md`、`配置一览.md`、`多用户设计.md`、`doc/设计规格全量复审意见.md`（2026-09-14 版）
+> 关联：`spec/design-concepts/总览/1-四层整体架构与接口.md`、`add-中层配置文档.md`、`1-多用户与注册.md`、`doc/设计规格全量复审意见.md`（2026-09-14 版）
 >
 > **后续决定（2026-09-14）：本文 §5 推荐的"两 endpoint（virtuoso + work）"模型已被 SPEC-2026-09-14-r2 否决。最终决定为：保留 5 role（gui/daemon/command/file/spectre），bridge 只忠实投送、不判断 role 间拓扑关系，每个 role 独立配置文件根（全局默认 + 显式覆盖）。当前口径见 [design-concepts/中层/3-路由设计.md](../design-concepts/中层/3-路由设计.md)。**
 
@@ -125,8 +125,8 @@ spectre = spectre or legacy or daemon or deploy or GUI
 
 ### 3.1 现状（五 role）
 
-- 五个 role 均含 `host/user/jump_host/jump_user/proxy`；daemon 额外 `daemon_port/local_port`，spectre 额外 `bin`（`配置一览.md:35-54`）。
-- fallback 是**逐字段**的：role 有值用自己的，否则回退对应 `ssh.default.*`；`null`/空串 = 未提供（`配置一览.md:31,124,159,215,242-245`）。
+- 五个 role 均含 `host/user/jump_host/jump_user/proxy`；daemon 额外 `daemon_port/local_port`，spectre 额外 `bin`（`add-中层配置文档.md:35-54`）。
+- fallback 是**逐字段**的：role 有值用自己的，否则回退对应 `ssh.default.*`；`null`/空串 = 未提供（`add-中层配置文档.md:31,124,159,215,242-245`）。
 - 运行时消费：Skill→daemon、RunCommand→command、File→file；gui 与 spectre **只在注册期探测/记录**，无运行时入口（`src/transport/remote_roles.py:66-91`、`flow.py:242-349`、`middle.py:328-394`）。
 
 ### 3.2 物理约束 vs 策略选择
@@ -246,7 +246,7 @@ work（可选）       RunCommand + File（相对根仅当 work == virtuoso）
 - 旧代码：`src_bak/virtuoso_bridge/transport/remote_roles.py:18-33,74-93`；`transport/tunnel.py:184-189,208-215,234-251,285-292,836-850`；`env.py:56-63`；`daemon_guard.py:37-39,93-110`。
 - 旧 ADR / README：`git show e7ae05d:docs/adr/0001-explicit-remote-host-roles.md`；`git show e7ae05d:README.md`（split host 段）；`git show e7ae05d:CONTEXT.md`；`AGENTS.md:56-61,135-150,185-202`。
 - Cadence 文档：`C:\Users\user\Desktop\doc\skipcref\ipcskill_re_ipcBeginProcess.html:61-104`（hostName 语义）；`spectreref/chap2.html:805-819`（+mpshost/+mpssession 属 Spectre 交互，不是 daemon 启动）。
-- 当前规范：`spec/design-concepts/总览/配置一览.md:35-64,113-130,215-245`；`多用户设计.md:107-117,131,141-147,296`；`1-四层整体架构与接口.md:42,239-253,271,290`；`日志返回设计标准.md:26`；`本版范围与明确不支持.md:16,23`。
+- 当前规范：`spec/design-concepts/总览/add-中层配置文档.md:35-64,113-130,215-245`；`1-多用户与注册.md:107-117,131,141-147,296`；`1-四层整体架构与接口.md:42,239-253,271,290`；`日志返回设计标准.md:26`；`本版范围与明确不支持.md:16,23`。
 - 当前实现：`src/transport/registry.py:53-99`；`remote_roles.py:41-91`；`tunnel.py:81-140,157-247`；`middle.py:328-394`；`register/flow.py:242-349,370-386`。
 - 评审意见：`doc/设计规格全量复审意见.md:67-137,143-189,226-244`；`doc/验收审批意见.md`（2026-09-14）。
 - 测试证据：`doc/report/测试执行报告.md`、`并发专项-三环境随机混合.md`、`log契约-P1.md`、`复核测试计划.md:125-129`、`doc/测试覆盖报告.md:170-176`。
