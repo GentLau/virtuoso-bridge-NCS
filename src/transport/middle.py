@@ -586,7 +586,9 @@ class BusinessServer(Middle):
     def _local_upload(local_path: Path, remote_path: str, recursive: bool, root: str | None = None) -> CommandResult:
         try:
             src = Path(local_path)
-            dst = Path(remote_path)
+            # ``~`` expands on the machine that runs the role (spec 配置一览 §6.5);
+            # without this a local-mode upload creates a literal ``~`` directory
+            dst = Path(remote_path).expanduser()
             if not dst.is_absolute() and root:
                 dst = Path(root).expanduser() / dst
             if recursive:
@@ -605,7 +607,7 @@ class BusinessServer(Middle):
     @staticmethod
     def _local_download(remote_path: str, local_path: Path, recursive: bool, root: str | None = None) -> CommandResult:
         try:
-            src = Path(remote_path)
+            src = Path(remote_path).expanduser()
             if not src.is_absolute() and root:
                 src = Path(root).expanduser() / src
             local_path.parent.mkdir(parents=True, exist_ok=True)

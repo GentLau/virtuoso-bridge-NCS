@@ -68,13 +68,14 @@
 |---|---|---|
 | 五接口签名、返回与错误总则（含 `kind` 枚举、保留码） | [三层整体架构设计](design-concepts/总览/三层整体架构设计.md) §4 | 一句摘要 + 链接 |
 | 五接口 ↔ role 映射、role 职责、token↔主机边界、per-role 根算法 | [多节点设计](design-concepts/底层与中层/多节点设计.md) | 一句摘要 + 链接 |
+| 逐 role 探测矩阵、连接数量与复用拓扑 | [多节点设计](design-concepts/底层与中层/多节点设计.md) §4/§6 | 一句摘要 + 链接 |
 | 字段与默认值、per-role mode/字段回退、endpoint canonical key、reservation | [配置一览](design-concepts/总览/配置一览.md) | 一句摘要 + 链接 |
-| 六步注册状态机、探测/部署/连通性合同、注册 deadline、token 生命周期 | [多用户设计](design-concepts/底层与中层/多用户设计.md) | 一句摘要 + 链接 |
+| 六步注册状态机、注册 deadline、token 生命周期 | [多用户设计](design-concepts/底层与中层/多用户设计.md) | 一句摘要 + 链接 |
 | 并发形态、线程池/channel 记账矩阵、SSH 连接生命周期、建连重试 | [并发处理设计](design-concepts/底层与中层/并发处理设计.md) | 一句摘要 + 链接 |
 | CDS.log offset/frame/分级/限长/warning | [日志返回设计标准](design-concepts/底层与中层/日志返回设计标准.md) | 一句摘要 + 链接 |
 | 本版不做什么（非目标清单与遇到时的行为） | [本版范围与明确不支持](design-concepts/总览/本版范围与明确不支持.md) | 一句摘要 + 链接 |
 
-**Spec CI 检查词表**（出现在非 owner 文档的正文中即视为违规；标题/索引行/示例标注除外）：
+**Spec CI 检查词表**（只适用于 Normative/Informative 设计文档；已标注的 Research/Historical/Demo 不适用；标题/索引行/示例标注除外）：
 
 ```text
 三接口 / 三端口 / 三条数据流（子集示例标注除外）
@@ -90,7 +91,7 @@ CDS.log metadata frame 完整字节格式
 
 - **Release ID**：`SPEC-2026-09-14-r2`
 - **Normative 文件集**（7 份）：三层整体架构设计、本版范围与明确不支持、配置一览、多节点设计、多用户设计、并发处理设计、日志返回设计标准；
-- **Normative 内容哈希**：`65f0800947137a3290058d692dd595aaeb24bf7c39864a3aa26bc61142a08bee`
+- **Normative 内容哈希**：`cf1ab1efa5a86944a5f1e4b057236efe97b2a7e41b86a68379564ec27c18497d`
   - 算法：按相对路径排序，逐文件 SHA-256（**按 Git 提交内容计算，即 LF 行尾**；Windows 工作区受 `core.autocrlf` 影响的行尾差异不计入）的 `"<相对路径> <hex>"` 行以 LF 拼接，再取一次 SHA-256；
 - **基线 commit**：本 Release 段所在提交即基线（见 `git log -1 -- spec/`）；任何 Normative 文档变更必须同时更新本段哈希。
 
@@ -98,13 +99,13 @@ CDS.log metadata frame 完整字节格式
 
 | 文档 | 版本 | 状态 | Supersedes |
 |---|---|---|---|
-| 三层整体架构设计 | Draft v10 | Normative | Draft v9（§4.5 文件执行合同；接口→role 表索引化；投递后不重发） |
-| 多节点设计 | v7 | Normative | v6（token↔主机边界、根算法唯一化） |
-| 本版范围与明确不支持 | v6 | Normative | v5（split-host CDS.log 可观察合同收口） |
-| 配置一览 | Draft v17 | Normative | Draft v16（root 持久化唯一形态、reservation 时序与回收条件、22 端口校验） |
-| 多用户设计 | Draft v13 | Normative | Draft v12（invalid-token 唯一合同、缺省端口时序、路由表索引化、投递后不重发） |
-| 并发处理设计 | Draft v11 | Normative | Draft v10（重发规则指向架构 owner） |
-| 日志返回设计标准 | Draft v8 | Normative | Draft v7（split-host 后续方向收口到本文） |
+| 三层整体架构设计 | Draft v11 | Normative | Draft v10（token 语句、连接摘要与 CDS.log 边界指向 owner） |
+| 多节点设计 | v8 | Normative | v7（连接数量与复用拓扑唯一 owner、spectre 提交态） |
+| 本版范围与明确不支持 | v7 | Normative | v6（split-host 可观察合同统一为“不保证”） |
+| 配置一览 | Draft v18 | Normative | Draft v17（连接合同、config 读取边界、local daemon 联合端口、全局必填条件） |
+| 多用户设计 | Draft v14 | Normative | Draft v13（第一步必填引用、重试措辞、update 的 root 语义） |
+| 并发处理设计 | Draft v12 | Normative | Draft v11（重试 3 次总尝试、连接账本口径） |
+| 日志返回设计标准 | Draft v9 | Normative | Draft v8（split-host 可观察合同统一为“不保证”） |
 | 核心修改设计 | Draft v4 | Informative | Draft v3 |
 | 改动报告 / 代码梳理 | — | Historical | — |
 
