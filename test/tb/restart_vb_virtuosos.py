@@ -3,20 +3,21 @@ ramic_bridge_daemon files (listen backlog 128).  One instance per user dir."""
 from __future__ import annotations
 import os
 import subprocess, sys, time
+from _win import no_window  # noqa: E402  (hide Windows consoles for ssh/scp)
 
 HOST = "wsl-gent"
 DISPLAY = os.environ.get("VB_DISPLAY", ":10")
 USERS = [f"vb{n:02d}" for n in range(1, 58)]
 
 def ssh(cmd, timeout=120):
-    return subprocess.run(["ssh", HOST, cmd], capture_output=True, text=True, timeout=timeout)
+    return subprocess.run(["ssh", HOST, cmd], capture_output=True, text=True, timeout=timeout, **no_window())
 
 def start_one(user):
     cmd = (f"cd /home/Gent/project/{user} && DISPLAY={DISPLAY} nohup bash -lc "
            f"'source ~/.bashrc; virtuoso -log /home/Gent/project/{user}/CDS.log' "
            f"> /home/Gent/project/{user}/start.log 2>&1 < /dev/null &")
     try:
-        subprocess.run(["ssh", HOST, cmd], capture_output=True, text=True, timeout=15)
+        subprocess.run(["ssh", HOST, cmd], capture_output=True, text=True, timeout=15, **no_window())
     except subprocess.TimeoutExpired:
         pass
 

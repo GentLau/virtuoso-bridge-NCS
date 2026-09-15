@@ -2,6 +2,8 @@
 import argparse, base64, json, socket, subprocess, sys, tempfile, threading, time, urllib.error, urllib.request, uuid
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
+from _win import no_window  # noqa: E402  (hide Windows consoles for ssh/scp)
+
 from transport.registry import UserEntry, load_registry
 from transport.register.probe import allocate_local_port
 from transport.runtime_paths import set_working_dir, registry_path
@@ -11,7 +13,7 @@ from transport.middle import BusinessServer
 LOG = "/home/Gent/project/vb01/CDS.log"
 
 def ssh(cmd):
-    return subprocess.run(["ssh", "wsl-gent", cmd], capture_output=True, text=True, timeout=60)
+    return subprocess.run(["ssh", "wsl-gent", cmd], capture_output=True, text=True, timeout=60, **no_window())
 
 def fsize():
     return int(ssh(f"stat -c %s {LOG}").stdout.strip())

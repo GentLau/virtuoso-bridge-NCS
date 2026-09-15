@@ -9,6 +9,8 @@ import json, socket, subprocess, sys, tempfile, threading
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
+from _win import no_window  # noqa: E402  (hide Windows consoles for ssh/scp)
+
 from transport.middle import BusinessServer
 from transport.registry import UserEntry, load_registry
 from transport.runtime_paths import set_working_dir, registry_path
@@ -69,7 +71,7 @@ def main() -> int:
 
     m = BusinessServer(wd)
     local_host = socket.gethostname().lower()
-    vps_host = subprocess.run(["ssh", VPS, "hostname -f"], capture_output=True, text=True, timeout=20).stdout.strip().lower()
+    vps_host = subprocess.run(["ssh", VPS, "hostname -f"], capture_output=True, text=True, timeout=20, **no_window()).stdout.strip().lower()
     out = {"case": "T3", "client": "wsl-gent", "local_host": local_host, "vps_host": vps_host}
     errors = []
 

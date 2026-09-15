@@ -57,6 +57,11 @@ class RemoteClient:
         }
         self._runners: dict[str, SSHRunner] = {}
         self._one_shot_runners: dict[str, SSHRunner] = {}
+        # runner creation is a check-then-act: without this lock the first
+        # burst of concurrent calls creates one SSHRunner (=> transport +
+        # persistent shell + `ssh -N -L`) *per thread* (see the 2026-09-15
+        # process-storm regression test in test/unit/test_runner_single_flight.py)
+        self._runner_lock = threading.Lock()
         self._homes: dict[str | None, str] = {}
         self._home_lock = threading.Lock()
         self._serial_lock = threading.Lock()
@@ -66,23 +71,27 @@ class RemoteClient:
     # -- role runners --------------------------------------------------------
 
     def _runner(self, role: ResolvedRole) -> SSHRunner:
-        """One SSHRunner per resolved remote endpoint; shared by same key."""
+        """One SSHRunner per resolved remote endpoint (single-flight)."""
         assert role.mode == "remote", f"role {role.name} is local; no SSH runner"
         assert role.key is not None
         runner = self._runners.get(role.key)
         if runner is not None:
             return runner
-        jump_host = role.jump_host
-        if jump_host and _norm_host(jump_host) == _norm_host(role.host):
-            jump_host = None  # the target itself is the jump host
-        kwargs = self._runner_kwargs.copy()
-        kwargs.update(
-            host=role.host, user=role.user, jump_host=jump_host,
-            jump_user=role.jump_user, proxy_url=role.proxy,
-        )
-        runner = SSHRunner(**kwargs)
-        self._runners[role.key] = runner
-        return runner
+        with self._runner_lock:
+            runner = self._runners.get(role.key)
+            if runner is not None:
+                return runner
+            jump_host = role.jump_host
+            if jump_host and _norm_host(jump_host) == _norm_host(role.host):
+                jump_host = None  # the target itself is the jump host
+            kwargs = self._runner_kwargs.copy()
+            kwargs.update(
+                host=role.host, user=role.user, jump_host=jump_host,
+                jump_user=role.jump_user, proxy_url=role.proxy,
+            )
+            runner = SSHRunner(**kwargs)
+            self._runners[role.key] = runner
+            return runner
 
     def _one_shot_runner(self, role: ResolvedRole) -> SSHRunner:
         """Dedicated one-shot (non-persistent) runner for gui/spectre/parallel."""
@@ -94,18 +103,22 @@ class RemoteClient:
         runner = self._one_shot_runners.get(role.name)
         if runner is not None:
             return runner
-        jump_host = role.jump_host
-        if jump_host and _norm_host(jump_host) == _norm_host(role.host):
-            jump_host = None
-        kwargs = self._runner_kwargs.copy()
-        kwargs.update(
-            host=role.host, user=role.user, jump_host=jump_host,
-            jump_user=role.jump_user, proxy_url=role.proxy,
-            persistent_shell=False,  # 一次性命令，无常驻 shell
-        )
-        runner = SSHRunner(**kwargs)
-        self._one_shot_runners[role.name] = runner
-        return runner
+        with self._runner_lock:
+            runner = self._one_shot_runners.get(role.name)
+            if runner is not None:
+                return runner
+            jump_host = role.jump_host
+            if jump_host and _norm_host(jump_host) == _norm_host(role.host):
+                jump_host = None
+            kwargs = self._runner_kwargs.copy()
+            kwargs.update(
+                host=role.host, user=role.user, jump_host=jump_host,
+                jump_user=role.jump_user, proxy_url=role.proxy,
+                persistent_shell=False,  # 一次性命令，无常驻 shell
+            )
+            runner = SSHRunner(**kwargs)
+            self._one_shot_runners[role.name] = runner
+            return runner
 
     def remote_home(self, role: ResolvedRole) -> str:
         """Remote ``$HOME`` for the role's connection (single-flight, cached).

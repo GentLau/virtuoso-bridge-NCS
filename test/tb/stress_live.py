@@ -23,6 +23,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 from transport.register import RegistrationFlow, RegistrationRequest
 from transport.registry import load_registry
 from transport.runtime_paths import registry_path, set_working_dir
+from _win import no_window  # noqa: E402  (hide Windows consoles for ssh/scp)
 
 HOST = "wsl-gent"
 USER = "Gent"
@@ -33,7 +34,7 @@ def discover_daemon():
         out = subprocess.run(
             ["ssh", HOST, 'pgrep -fa "ramic_bridge_daemon_(3|27)\\.py"'],
             capture_output=True, text=True, timeout=20,
-        ).stdout
+        **no_window()).stdout
     except (OSError, subprocess.TimeoutExpired):
         return None, None
     found = []
@@ -63,7 +64,7 @@ def send_load(setup, token, port):
     proc = subprocess.Popen(
         ["ssh", "-N", "-L", "16599:127.0.0.1:%d" % port, HOST],
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-    )
+    **no_window())
     try:
         time.sleep(1.5)
         s = socket.create_connection(("127.0.0.1", 16599), timeout=25)

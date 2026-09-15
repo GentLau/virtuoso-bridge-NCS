@@ -17,6 +17,8 @@ import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
+from _win import no_window  # noqa: E402  (hide Windows consoles for ssh/scp)
+
 from transport.registry import UserEntry, load_registry
 from transport.register.probe import allocate_local_port
 from transport.runtime_paths import set_working_dir, registry_path
@@ -31,16 +33,16 @@ def main() -> int:
 
     # Split endpoints: the 1.6G vps OOM-kills a single 100-daemon process plus
     # 100 first-connect tunnels; 40 users stay on vps and 60 move to wsl-gent.
-    subprocess.run(["ssh", VPS, "pkill -f 'base-port 6900' || true"], capture_output=True, timeout=20)
-    subprocess.run(["ssh", "wsl-gent", "pkill -f 'base-port 6601' || true"], capture_output=True, timeout=20)
+    subprocess.run(["ssh", VPS, "pkill -f 'base-port 6900' || true"], capture_output=True, timeout=20, **no_window())
+    subprocess.run(["ssh", "wsl-gent", "pkill -f 'base-port 6601' || true"], capture_output=True, timeout=20, **no_window())
     time.sleep(1)
     subprocess.Popen(["ssh", VPS, "cd /root && setsid nohup python3 /root/fake_daemon_host.py "
                       "--base-port 6900 --count 40 --token-prefix p2a > /tmp/vb_p2.log 2>&1 < /dev/null &"],
-                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, **no_window())
     subprocess.Popen(["ssh", "wsl-gent", "cd /home/Gent/vb-ncs && setsid nohup "
                       ".venv/bin/python test/tb/fake_daemon_host.py --base-port 6601 --count 60 "
                       "--token-prefix p2b > /tmp/vb_p2_wsl.log 2>&1 < /dev/null &"],
-                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, **no_window())
     time.sleep(5)
 
     wd = set_working_dir(Path(tempfile.mkdtemp(prefix="vb-p2-")))

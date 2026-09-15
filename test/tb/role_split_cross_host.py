@@ -8,6 +8,8 @@ import json, sys, tempfile, time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
+from _win import no_window  # noqa: E402  (hide Windows consoles for ssh/scp)
+
 from transport.middle import BusinessServer
 from transport.registry import UserEntry, load_registry
 from transport.register.probe import allocate_local_port
@@ -47,7 +49,7 @@ def main() -> int:
     def _host(alias: str) -> str:
         return subprocess.run(
             ["ssh", alias, "hostname -f"], capture_output=True, text=True, timeout=20
-        ).stdout.strip().lower()
+        , **no_window()).stdout.strip().lower()
 
     wsl_host, vps_host = _host(WSL), _host(VPS)
     out["hostnames"] = {"wsl": wsl_host, "vps": vps_host}

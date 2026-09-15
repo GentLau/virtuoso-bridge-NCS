@@ -2,6 +2,8 @@
 import subprocess, sys, tempfile, time, uuid
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
+from _win import no_window  # noqa: E402  (hide Windows consoles for ssh/scp)
+
 from transport.middle import BusinessServer
 from transport.registry import UserEntry, load_registry
 from transport.register.probe import allocate_local_port
@@ -31,7 +33,7 @@ offm = build_entry("off")
 r3 = offm.execute_skill(f'progn(hiPrintToLogFile("{marker}") 1+1)', token="vb-vb01", timeout=60)
 print("off:", r3.status, r3.output, "log_empty=", r3.log == "")
 
-out = subprocess.run(["ssh","wsl-gent", f'grep -c "VB-BEGIN\\|VB-END" /home/Gent/project/vb01/CDS.log || true'], capture_output=True, text=True).stdout.strip()
+out = subprocess.run(["ssh","wsl-gent", f'grep -c "VB-BEGIN\\|VB-END" /home/Gent/project/vb01/CDS.log || true'], capture_output=True, text=True, **no_window()).stdout.strip()
 print("CDS.log bridge-marker count:", out)
 for m in [allm, offm]:
     for c in list(m._clients.values()):

@@ -8,6 +8,7 @@ flow can abort without writing anything to the registry.
 from __future__ import annotations
 
 import getpass
+import os
 import shlex
 import socket
 import subprocess
@@ -18,11 +19,24 @@ from pathlib import Path
 from transport.ssh import SSHRunner
 
 
+def _no_window_kwargs() -> dict:
+    """Hide the Windows console for external ssh/scp probes (CREATE_NO_WINDOW)."""
+    if os.name != "nt":
+        return {}
+    startupinfo = subprocess.STARTUPINFO()
+    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+    return {
+        "creationflags": subprocess.CREATE_NO_WINDOW,
+        "startupinfo": startupinfo,
+    }
+
+
 def _ssh_config_hostname(host: str) -> str | None:
     """Resolve a host alias through the local ssh config (``ssh -G``)."""
     try:
         out = subprocess.run(
-            ["ssh", "-G", host], capture_output=True, text=True, timeout=10
+            ["ssh", "-G", host], capture_output=True, text=True, timeout=10,
+        **_no_window_kwargs()
         ).stdout
     except (OSError, subprocess.TimeoutExpired):
         return None

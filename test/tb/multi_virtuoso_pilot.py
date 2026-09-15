@@ -20,6 +20,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
+from _win import no_window  # noqa: E402  (hide Windows consoles for ssh/scp)
+
 from transport.register import RegistrationFlow, RegistrationRequest
 from transport.registry import load_registry
 from transport.runtime_paths import registry_path, set_working_dir
@@ -31,7 +33,7 @@ MEM_MIN_FREE_GB = 2.0
 
 
 def ssh(cmd: str, timeout=120):
-    return subprocess.run(["ssh", HOST, cmd], capture_output=True, text=True, timeout=timeout)
+    return subprocess.run(["ssh", HOST, cmd], capture_output=True, text=True, timeout=timeout, **no_window())
 
 
 def free_gb() -> float:
@@ -60,7 +62,7 @@ def start_virtuoso(user: str):
         f"> /home/Gent/project/{user}/start.log 2>&1 < /dev/null &"
     )
     try:
-        subprocess.run(["ssh", HOST, cmd], capture_output=True, text=True, timeout=15)
+        subprocess.run(["ssh", HOST, cmd], capture_output=True, text=True, timeout=15, **no_window())
     except subprocess.TimeoutExpired:
         pass  # Windows ssh may linger even after the remote command returns
 

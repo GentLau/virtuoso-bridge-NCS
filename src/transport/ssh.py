@@ -321,6 +321,12 @@ class SSHRunner:
         self._tunnel_proc: subprocess.Popen[Any] | None = None
         self._tunnel_pid: int | None = None
         self._tunnel_using_external = False
+        # local port served by this runner (own process or a reused external
+        # one); without it the "reuse" case would look dead on every call and
+        # respawn a doomed ``ssh -L`` per request (observed process storm).
+        self._tunnel_local_port: int | None = None
+        self._tunnel_failures = 0
+        self._tunnel_next_try_at = 0.0
 
         self._paramiko_backend: Any | None = None
         if self._backend == "paramiko":
@@ -423,6 +429,14 @@ class SSHRunner:
                 raise subprocess.TimeoutExpired(cmd="port-forward", timeout=settle)
             settle = min(settle, remaining)
 
+        # failed recently: do not spawn another doomed ``ssh -L`` (process storm)
+        wait = self._tunnel_next_try_at - time.monotonic()
+        if wait > 0:
+            raise RuntimeError(
+                f"SSH tunnel to {self._host} is in backoff for another {wait:.1f}s "
+                f"after {self._tunnel_failures} failed attempt(s)"
+            )
+
         cmd: list[str] = [self._ssh_cmd]
         # A long-lived forward must own its own ssh process.  Attaching it to
         # a command-session ControlMaster makes the local listener disappear
@@ -486,6 +500,8 @@ class SSHRunner:
                         self._tunnel_proc = proc
                         self._tunnel_pid = proc.pid
                         self._tunnel_using_external = False
+                        self._tunnel_local_port = port
+                        self._tunnel_failures = 0
                         return proc
                     if proc.poll() is not None:
                         break
@@ -493,6 +509,8 @@ class SSHRunner:
                 if self.can_reach_port(port):
                     logger.info("Reusing existing tunnel at localhost:%d", port)
                     self._tunnel_using_external = True
+                    self._tunnel_local_port = port
+                    self._tunnel_failures = 0
                     return None
                 try:
                     proc.terminate()
@@ -517,6 +535,8 @@ class SSHRunner:
                 if attempt + 1 < attempts and self._transient_tunnel_error(stderr_tail):
                     time.sleep(0.3 * (attempt + 1))
                     continue
+                self._tunnel_failures += 1
+                self._tunnel_next_try_at = time.monotonic() + min(2 ** self._tunnel_failures, 30.0)
                 detail = f" (rc={rc})" if rc is not None else ""
                 raise RuntimeError(
                     f"SSH tunnel failed to start on Windows{detail}{stderr_tail}"
@@ -580,11 +600,16 @@ class SSHRunner:
         self._tunnel_proc = None
         self._tunnel_pid = None
         self._tunnel_using_external = False
+        self._tunnel_local_port = None
 
     @property
     def is_tunnel_alive(self) -> bool:
         if self._tunnel_proc is not None and self._tunnel_proc.poll() is None:
             return True
+        if self._tunnel_using_external and self._tunnel_local_port:
+            # reused listener owned by another process: reachability is the
+            # only liveness signal we have (we must never respawn in a loop)
+            return self.can_reach_port(self._tunnel_local_port)
         if self._tunnel_using_external and self._tunnel_pid:
             try:
                 os.kill(self._tunnel_pid, 0)

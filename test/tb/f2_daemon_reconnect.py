@@ -14,6 +14,8 @@ import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
+from _win import no_window  # noqa: E402  (hide Windows consoles for ssh/scp)
+
 from transport.middle import BusinessServer
 from transport.registry import UserEntry, load_registry
 from transport.register.probe import allocate_local_port
@@ -40,7 +42,7 @@ def main() -> int:
     def start_daemon():
         subprocess.Popen(["ssh", VPS, "cd /root && setsid nohup python3 /root/fake_daemon_host.py "
                           "--base-port 6888 --count 1 --token-prefix recon > /tmp/vb_f2.log 2>&1 < /dev/null &"],
-                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, **no_window())
         time.sleep(3)
 
     # ensure the daemon is up before the test sequence begins
@@ -70,7 +72,7 @@ def main() -> int:
     out["steps"].append(call("before_kill"))
     # kill the daemon (keep the tunnel alive)
     subprocess.run(["ssh", VPS, "pkill -f 'fake_daemon_host.py --base-port 6888'"],
-                   capture_output=True, text=True, timeout=20)
+                   capture_output=True, text=True, timeout=20, **no_window())
     time.sleep(1.5)
     out["steps"].append(call("after_kill"))
     # restart same port/token
