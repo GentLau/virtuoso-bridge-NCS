@@ -91,7 +91,7 @@ CDS.log metadata frame 完整字节格式
 
 - **Release ID**：`SPEC-2026-09-14-r2`
 - **Normative 文件集**（7 份）：三层整体架构设计、本版范围与明确不支持、配置一览、多节点设计、多用户设计、并发处理设计、日志返回设计标准；
-- **Normative 内容哈希**：`cf1ab1efa5a86944a5f1e4b057236efe97b2a7e41b86a68379564ec27c18497d`
+- **Normative 内容哈希**：`b56b518a54d02e9509ad99a30f23ef44f3094293f8470729a115ce2f220fc950`
   - 算法：按相对路径排序，逐文件 SHA-256（**按 Git 提交内容计算，即 LF 行尾**；Windows 工作区受 `core.autocrlf` 影响的行尾差异不计入）的 `"<相对路径> <hex>"` 行以 LF 拼接，再取一次 SHA-256；
 - **基线 commit**：本 Release 段所在提交即基线（见 `git log -1 -- spec/`）；任何 Normative 文档变更必须同时更新本段哈希。
 
@@ -99,7 +99,7 @@ CDS.log metadata frame 完整字节格式
 
 | 文档 | 版本 | 状态 | Supersedes |
 |---|---|---|---|
-| 三层整体架构设计 | Draft v11 | Normative | Draft v10（token 语句、连接摘要与 CDS.log 边界指向 owner） |
+| 三层整体架构设计 | Draft v12 | Normative | Draft v11（Skill 超时≠未投递、串行保证点） |
 | 多节点设计 | v8 | Normative | v7（连接数量与复用拓扑唯一 owner、spectre 提交态） |
 | 本版范围与明确不支持 | v7 | Normative | v6（split-host 可观察合同统一为“不保证”） |
 | 配置一览 | Draft v18 | Normative | Draft v17（连接合同、config 读取边界、local daemon 联合端口、全局必填条件） |
