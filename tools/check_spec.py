@@ -38,7 +38,7 @@ NORMATIVE = [
     "design-concepts/总览/1-四层整体架构与接口.md",
     "design-concepts/总览/本版范围与明确不支持.md",
     "design-concepts/总览/配置一览.md",
-    "design-concepts/中层/多节点设计.md",
+    "design-concepts/中层/3-路由设计.md",
     "design-concepts/中层/多用户设计.md",
     "design-concepts/中层/2-并发设计.md",
     "design-concepts/底层/6-日志返回设计标准.md",
