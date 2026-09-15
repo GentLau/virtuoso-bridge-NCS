@@ -125,7 +125,7 @@ class TestSSHOptionConstruction(unittest.TestCase):
         cfg = Path(tempfile.mkdtemp()) / "config"
         key = Path(tempfile.mkdtemp()) / "id_ed25519"
         r = SSHRunner(
-            "server", user="u", jump_host="jump", jump_user="ju",
+            "server", user="u", backend="openssh", jump_host="jump", jump_user="ju",
             ssh_config_path=cfg, ssh_key_path=key, control_master="force",
         )
         opts = r._common_ssh_options()
@@ -181,7 +181,7 @@ class TestOneShotRunCommand(unittest.TestCase):
         set_working_dir(self.wd)
 
     def test_success(self):
-        r = SSHRunner("server", user="u", persistent_shell=False, control_master="disable")
+        r = SSHRunner("server", user="u", backend="openssh", persistent_shell=False, control_master="disable")
         with mock.patch.object(ssh_mod.subprocess, "run") as run:
             run.return_value = mock.Mock(returncode=0, stdout=b"out\n", stderr=b"")
             res = r.run_command("echo hi")
@@ -189,7 +189,7 @@ class TestOneShotRunCommand(unittest.TestCase):
         self.assertTrue(run.called)
 
     def test_timeout_raises(self):
-        r = SSHRunner("server", user="u", persistent_shell=False, control_master="disable")
+        r = SSHRunner("server", user="u", backend="openssh", persistent_shell=False, control_master="disable")
         with mock.patch.object(ssh_mod.subprocess, "run", side_effect=subprocess.TimeoutExpired("ssh", 1)):
             with self.assertRaises(subprocess.TimeoutExpired):
                 r.run_command("echo hi", timeout=2)
@@ -207,7 +207,7 @@ class TestPortForwardLifecycle(unittest.TestCase):
         proc.poll.return_value = None
         proc.pid = 4242
         with mock.patch.object(ssh_mod.subprocess, "Popen", return_value=proc) as popen:
-            r = SSHRunner("server", user="u")
+            r = SSHRunner("server", user="u", backend="openssh")
             out = r.start_port_forward(65082, settle=0.1, remote_port=65081)
         self.assertIs(out, proc)
         cmd = popen.call_args[0][0]
@@ -462,7 +462,7 @@ class TestCloseTearsDownControlMaster(unittest.TestCase):
         set_working_dir(self.wd)
 
     def test_openssh_close_stops_master(self):
-        r = SSHRunner("server", user="u", control_master="force")
+        r = SSHRunner("server", user="u", backend="openssh", control_master="force")
         with mock.patch.object(ssh_mod.subprocess, "run") as run:
             r.close()
         self.assertTrue(run.called)

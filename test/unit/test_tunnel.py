@@ -114,6 +114,7 @@ class TestRemoteClientTunnel(unittest.TestCase):
     def test_parallel_openssh_uses_fresh_nonpersistent_runner(self) -> None:
         with mock.patch("transport.tunnel.SSHRunner", FakeRunner):
             entry = make_entry()
+            entry.ssh.backend = "openssh"   # covers the non-multiplexed path
             rc = RemoteClient(entry, resolve(entry), "alice")
             serial = rc.command_runner
             parallel = rc._one_shot_runner(rc.targets.command)

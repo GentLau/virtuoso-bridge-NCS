@@ -69,7 +69,7 @@ class RegistrationProbeError(RuntimeError):
     """A required probe failed; registration aborts without persisting."""
 
 
-STEP_BUDGET_SECONDS = 30.0
+STEP_BUDGET_SECONDS = 120.0  # one budget per registration step (same mechanism everywhere)
 
 
 class StepBudget:
@@ -240,6 +240,14 @@ def _apply_policies(request: RegistrationRequest, entry: UserEntry) -> None:
 
 
 def _new_runner(role: ResolvedRole, token: str) -> SSHRunner:
+    """One SSH session per target for the whole registration.
+
+    Registration runs 20+ small probes; paying a fresh SSH handshake for each
+    of them is what made a real (Windows → jump → wsl) registration take
+    minutes.  The runner therefore keeps one login shell per endpoint and
+    multiplexes nothing: ``control_master="disable"`` (OpenSSH multiplexing is
+    unavailable on Windows and useless here) + ``persistent_shell=True``.
+    """
     return SSHRunner(
         host=role.host,
         user=role.user,
@@ -247,6 +255,8 @@ def _new_runner(role: ResolvedRole, token: str) -> SSHRunner:
         jump_user=role.jump_user,
         proxy_url=role.proxy,
         control_identity=token,
+        control_master="disable",
+        persistent_shell=True,
     )
 
 
@@ -300,16 +310,17 @@ def _probe(
     targets = resolve(entry, user)
     warnings: list[str] = []
     runners: dict[str, SSHRunner] = {}
-    # One deadline per probe phase: a phase never restarts its own 30s window
-    # and all of its sub-steps (connect + smoke + root check) share it.  The
-    # five-role sweep is therefore bounded per role, not globally — a Windows
-    # client pays several seconds per SSH call, and a single 30s window for all
-    # five roles would make registration impossible on real sites.
+    role_runners: dict[str, SSHRunner] = {}
+    budget = StepBudget("step 3 (probe)")   # same mechanism as step 5
     reserved_ports = set(reserved_ports or ())
     reserved_local_ports = set(reserved_local_ports or ())
 
     def close_all():
-        for runner in runners.values():
+        seen_ids: set[int] = set()
+        for runner in list(runners.values()):
+            if id(runner) in seen_ids:
+                continue
+            seen_ids.add(id(runner))
             try:
                 runner.close()
             except Exception:
@@ -319,14 +330,19 @@ def _probe(
         for name in _ALL_ROLES:
             role = targets.role(name)
             entry_role = getattr(entry.roles, name)
-            budget = StepBudget(f"step 3 (probe {name})")
             if role.mode == "local":
                 entry_role.root = _local_role_checks(role)
                 continue
-            runner = _new_runner(role, token)
-            runners[name] = runner
-            if not runner.test_connection(budget.remaining(15.0)):
-                raise RegistrationProbeError(f"ssh unreachable for {name} role: {role.host}")
+            endpoint = endpoint_key(role.host, role.user, role.jump_host,
+                                    role.jump_user, role.proxy)
+            runner = runners.get(endpoint)
+            if runner is None:
+                # first role on this endpoint: pay the handshake once
+                runner = _new_runner(role, token)
+                runners[endpoint] = runner
+                if not runner.test_connection(budget.remaining(15.0)):
+                    raise RegistrationProbeError(f"ssh unreachable for {name} role: {role.host}")
+            role_runners[name] = runner
             fp = probes.host_key_fingerprint(role.host)
             if not fp:
                 if name == "spectre":
@@ -350,8 +366,7 @@ def _probe(
             else:
                 entry_role.root = _remote_role_checks(budgeted, role)
 
-        # daemon-specific environment probes (own phase budget)
-        budget = StepBudget("step 3 (daemon environment)")
+        # daemon-specific environment probes spend the same step budget
         daemon = targets.daemon
         python_major = 2 if sys.version_info.major == 2 else 3
         if daemon.mode == "local":
@@ -372,7 +387,7 @@ def _probe(
             entry.roles.daemon.daemon_port = daemon_port
             entry.roles.daemon.local_port = daemon_port
         else:
-            runner = _BudgetedRunner(runners["daemon"], budget)
+            runner = _BudgetedRunner(role_runners["daemon"], budget)
             python = probes.detect_remote_python(runner)
             if python is None:
                 raise RegistrationProbeError(
@@ -447,7 +462,7 @@ def _probe(
                 else:
                     warnings.append("no usable spectre found locally (non-blocking)")
         else:
-            raw_runner = runners.get("spectre")
+            raw_runner = role_runners.get("spectre")
             runner = _BudgetedRunner(raw_runner, budget) if raw_runner is not None else None
             if runner is not None:
                 if request.roles.spectre.bin:
