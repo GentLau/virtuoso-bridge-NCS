@@ -91,7 +91,7 @@ CDS.log metadata frame 完整字节格式
 
 - **Release ID**：`SPEC-2026-09-14-r2`
 - **Normative 文件集**（7 份）：三层整体架构设计、本版范围与明确不支持、配置一览、多节点设计、多用户设计、并发处理设计、日志返回设计标准；
-- **Normative 内容哈希**：`b56b518a54d02e9509ad99a30f23ef44f3094293f8470729a115ce2f220fc950`
+- **Normative 内容哈希**：`565e984d90d4aa211473d8562f5ae322d65e3163a066916e8b679c0605dd4c5e`
   - 算法：按相对路径排序，逐文件 SHA-256（**按 Git 提交内容计算，即 LF 行尾**；Windows 工作区受 `core.autocrlf` 影响的行尾差异不计入）的 `"<相对路径> <hex>"` 行以 LF 拼接，再取一次 SHA-256；
 - **基线 commit**：本 Release 段所在提交即基线（见 `git log -1 -- spec/`）；任何 Normative 文档变更必须同时更新本段哈希。
 
@@ -99,12 +99,12 @@ CDS.log metadata frame 完整字节格式
 
 | 文档 | 版本 | 状态 | Supersedes |
 |---|---|---|---|
-| 三层整体架构设计 | Draft v12 | Normative | Draft v11（Skill 超时≠未投递、串行保证点） |
+| 三层整体架构设计 | Draft v13 | Normative | Draft v12（Skill 投递前按 token 排队） |
 | 多节点设计 | v8 | Normative | v7（连接数量与复用拓扑唯一 owner、spectre 提交态） |
 | 本版范围与明确不支持 | v7 | Normative | v6（split-host 可观察合同统一为“不保证”） |
-| 配置一览 | Draft v18 | Normative | Draft v17（连接合同、config 读取边界、local daemon 联合端口、全局必填条件） |
+| 配置一览 | Draft v19 | Normative | Draft v18（新增 role.<name>.max_sessions） |
 | 多用户设计 | Draft v14 | Normative | Draft v13（第一步必填引用、重试措辞、update 的 root 语义） |
-| 并发处理设计 | Draft v12 | Normative | Draft v11（重试 3 次总尝试、连接账本口径） |
+| 并发处理设计 | Draft v13 | Normative | Draft v12（单连接上限配置化为 role.max_sessions） |
 | 日志返回设计标准 | Draft v9 | Normative | Draft v8（split-host 可观察合同统一为“不保证”） |
 | 核心修改设计 | Draft v4 | Informative | Draft v3 |
 | 改动报告 / 代码梳理 | — | Historical | — |

@@ -288,6 +288,7 @@ class BusinessServer(Middle):
         self._skill_clients: dict[str, SkillClient] = {}
         self._capacity: dict[str, threading.BoundedSemaphore] = {}
         self._local_locks: dict[str, threading.Lock] = {}
+        self._skill_gates: dict[str, threading.Lock] = {}
         self._local_sessions: dict[str, _LocalCommandSession] = {}
         self._lock = threading.Lock()
         # spec 资源盘点：进程退出不得留下隧道/常驻 shell（TB 与业务进程同样适用）
@@ -360,7 +361,13 @@ class BusinessServer(Middle):
                 self._skill_clients[token] = client
             return client
 
-    def _acquire(self, token: str, entry=None) -> bool:
+    def _acquire(self, token: str, entry=None) -> threading.BoundedSemaphore | None:
+        """Take one thread-pool slot; returns the semaphore to release later.
+
+        Returning the object (instead of re-looking it up on release) removes
+        the "release reads a dict that may be swapped/removed" race and keeps
+        acquire/release paired per call.
+        """
         if entry is None:
             entry = self._entry(token)
         with self._lock:
@@ -368,12 +375,28 @@ class BusinessServer(Middle):
             if sem is None:
                 sem = threading.BoundedSemaphore(entry.runtime.thread_pool_size)
                 self._capacity[token] = sem
-        return sem.acquire(blocking=False)
+        return sem if sem.acquire(blocking=False) else None
 
-    def _release(self, token: str) -> None:
-        sem = self._capacity.get(token)
+    @staticmethod
+    def _release(sem: threading.BoundedSemaphore | None) -> None:
         if sem is not None:
             sem.release()
+
+    def _skill_gate(self, token: str) -> threading.Lock:
+        """Per-token **delivery** gate for the Skill channel.
+
+        One CIW evaluates one SKILL at a time.  The gate is acquired *before*
+        the request leaves the client so that a request still waiting for its
+        turn can be withdrawn when the caller's deadline expires; without it
+        the request would already sit inside the daemon's kernel backlog and
+        would run later even though the client already reported a timeout.
+        """
+        with self._lock:
+            gate = self._skill_gates.get(token)
+            if gate is None:
+                gate = threading.Lock()
+                self._skill_gates[token] = gate
+            return gate
 
     def _local_lock(self, token: str) -> threading.Lock:
         """Per-token serial lock for the persistent local command session."""
@@ -395,19 +418,56 @@ class BusinessServer(Middle):
     # -- three interfaces -----------------------------------------------------
 
     def execute_skill(self, skill_code: str, timeout: float | None = None, *, token: str) -> VirtuosoResult:
-        acquired = False
-        deadline = time.monotonic() + _effective_timeout(timeout)
+        budget = _effective_timeout(timeout)
+        deadline = time.monotonic() + budget
+        sem = None
+        gate: threading.Lock | None = None
+        gate_held = False
         try:
             entry = self._entry(token)
-            if not self._acquire(token, entry):
+            sem = self._acquire(token, entry)
+            if sem is None:
                 return VirtuosoResult(status=ExecutionStatus.ERROR, errors=["thread pool exceeded"])
-            acquired = True
             user = self.registry.user_of(token) or token
             targets = self._targets(entry, user=user)
+
+            # client-side delivery queue: while waiting here nothing has been
+            # sent to the daemon, so a timeout can still be withdrawn
+            gate = self._skill_gate(token)
+            remaining = max(0.0, deadline - time.monotonic())
+            if not gate.acquire(timeout=remaining):
+                return VirtuosoResult(
+                    status=ExecutionStatus.ERROR,
+                    errors=[
+                        f"SKILL execution timed out waiting for the local delivery "
+                        f"slot after {budget:g}s; the request was not delivered"
+                    ],
+                    metadata={"delivery": "withdrawn", "queue_wait_s": budget},
+                )
+            gate_held = True
+
             if targets.daemon.mode == "remote":
                 self._remote(token).ensure_tunnel(deadline=deadline)
-            remaining = None if deadline is None else max(0.0, deadline - time.monotonic())
-            return self._skill(token).execute_skill(skill_code, timeout=remaining)
+            remaining = max(0.0, deadline - time.monotonic())
+            if remaining <= 0:
+                return VirtuosoResult(
+                    status=ExecutionStatus.ERROR,
+                    errors=[
+                        f"SKILL execution timed out after {budget:g}s before delivery; "
+                        f"the request was not delivered"
+                    ],
+                    metadata={"delivery": "withdrawn"},
+                )
+            result = self._skill(token).execute_skill(skill_code, timeout=remaining)
+            if not result.ok and any("timed out" in (e or "") for e in result.errors):
+                # the SKILL was already on the wire: it may still complete in
+                # the CIW, so the outcome is unknown rather than "failed"
+                result.metadata = {**result.metadata, "delivery": "delivered-unknown"}
+                result.warnings = list(result.warnings) + [
+                    "SKILL result unknown: request was delivered but no reply arrived; "
+                    "the CIW may still be executing it"
+                ]
+            return result
         except LookupError:
             return VirtuosoResult(status=ExecutionStatus.ERROR, errors=["invalid token"])
         except RemotePathError as exc:
@@ -427,17 +487,18 @@ class BusinessServer(Middle):
                 errors=[f"Daemon connection failed: {exc}"],
             )
         finally:
-            if acquired:
-                self._release(token)
+            if gate_held and gate is not None:
+                gate.release()
+            self._release(sem)
 
     def run_command(self, cmd: str, timeout: int | None = None, *, token: str, parallel: bool = False) -> CommandResult:
-        acquired = False
+        sem = None
         budget: float | None = None
         try:
             entry = self._entry(token)
-            if not self._acquire(token, entry):
+            sem = self._acquire(token, entry)
+            if sem is None:
                 return CommandResult(returncode=1, stdout="", stderr="thread pool exceeded", kind="rejected")
-            acquired = True
             user = self.registry.user_of(token) or token
             targets = self._targets(entry, user=user)
             budget = _effective_timeout(timeout)
@@ -478,17 +539,16 @@ class BusinessServer(Middle):
         except Exception as exc:  # noqa: BLE001 - mapped onto the kind contract
             return _error_result(exc, budget)
         finally:
-            if acquired:
-                self._release(token)
+            self._release(sem)
 
     def upload_file(self, local_path: Path, remote_path: str, timeout: int | None = None, *, token: str, recursive: bool = False) -> CommandResult:
-        acquired = False
+        sem = None
         budget = _effective_timeout(timeout)
         try:
             entry = self._entry(token)
-            if not self._acquire(token, entry):
+            sem = self._acquire(token, entry)
+            if sem is None:
                 return CommandResult(returncode=1, stdout="", stderr="thread pool exceeded", kind="rejected")
-            acquired = True
             user = self.registry.user_of(token) or token
             targets = self._targets(entry, user=user)
             if targets.file.mode == "local":
@@ -502,17 +562,16 @@ class BusinessServer(Middle):
         except Exception as exc:  # noqa: BLE001 - mapped onto the kind contract
             return _error_result(exc, budget)
         finally:
-            if acquired:
-                self._release(token)
+            self._release(sem)
 
     def download_file(self, remote_path: str, local_path: Path, timeout: int | None = None, *, token: str, recursive: bool = False) -> CommandResult:
-        acquired = False
+        sem = None
         budget = _effective_timeout(timeout)
         try:
             entry = self._entry(token)
-            if not self._acquire(token, entry):
+            sem = self._acquire(token, entry)
+            if sem is None:
                 return CommandResult(returncode=1, stdout="", stderr="thread pool exceeded", kind="rejected")
-            acquired = True
             user = self.registry.user_of(token) or token
             targets = self._targets(entry, user=user)
             if targets.file.mode == "local":
@@ -526,8 +585,7 @@ class BusinessServer(Middle):
         except Exception as exc:  # noqa: BLE001 - mapped onto the kind contract
             return _error_result(exc, budget)
         finally:
-            if acquired:
-                self._release(token)
+            self._release(sem)
 
     # -- one-shot role interfaces (gui / spectre) ------------------------------
 
@@ -540,13 +598,13 @@ class BusinessServer(Middle):
         return self._one_shot_role("spectre", cmd, timeout, token)
 
     def _one_shot_role(self, role_name: str, cmd: str, timeout: int | None, token: str) -> CommandResult:
-        acquired = False
+        sem = None
         budget = _effective_timeout(timeout)
         try:
             entry = self._entry(token)
-            if not self._acquire(token, entry):
+            sem = self._acquire(token, entry)
+            if sem is None:
                 return CommandResult(returncode=1, stdout="", stderr="thread pool exceeded", kind="rejected")
-            acquired = True
             user = self.registry.user_of(token) or token
             targets = self._targets(entry, user=user)
             role = targets.role(role_name)
@@ -560,8 +618,7 @@ class BusinessServer(Middle):
         except Exception as exc:  # noqa: BLE001 - mapped onto the kind contract
             return _error_result(exc, budget)
         finally:
-            if acquired:
-                self._release(token)
+            self._release(sem)
 
     # -- local-mode helpers ---------------------------------------------------
 
