@@ -10,12 +10,12 @@
 本目录不用文件 mtime 判优先级。冲突消解遵循以下确定性规则：
 
 1. **Normative（唯一规范源）**：只有下列文件是正式规范，且每个主题只有一个 owner；
-   - 分层/接口/错误总则：[三层整体架构设计](design-concepts/总览/三层整体架构设计.md)（第 4 节为接口唯一基线）
+   - 分层/接口/错误总则：[四层整体架构与接口](design-concepts/总览/1-四层整体架构与接口.md)（第 4 节为接口唯一基线）
    - 本版范围/非目标：[本版范围与明确不支持](design-concepts/总览/本版范围与明确不支持.md)
    - 配置与注册输入目录：[配置一览](design-concepts/总览/配置一览.md)
    - 多用户/注册/token：[多用户设计](design-concepts/底层与中层/多用户设计.md)
    - 多节点/5 role 拓扑：[多节点设计](design-concepts/底层与中层/多节点设计.md)
-   - 并发/SSH/线程池：[并发处理设计](design-concepts/底层与中层/并发处理设计.md)
+   - 并发/SSH/线程池：[并发设计](design-concepts/底层与中层/2-并发设计.md)
    - CDS.log 返回：[日志返回设计标准](design-concepts/底层与中层/日志返回设计标准.md)
 2. **Informative（只索引/摘要，不定义）**：[核心修改设计](design-concepts/总览/核心修改.md)、[demo](demo/README.md)。
 3. **Historical / Non-normative（历史对照，无规范效力）**：[改动报告](design-concepts/总览/改动报告.md)、[代码梳理](design-concepts/底层与中层/代码梳理.md) 及其中的“旧实现/双轨期/迁移阶段”描述；它们不得推翻 Normative。
@@ -26,9 +26,12 @@
 
 ## 目标
 
-本项目采用三层架构：
+本项目采用四层架构：
 
 ```text
+顶层（HTTPServer：API 入口）
+  └─ 接收请求 · 每任务一线程（未来可限流）
+
 上层（业务封装层）
   └─ 原理图 · 版图 · 测试平台 · Maestro · 库/符号 · 仿真 · 工具适配器
 
@@ -47,12 +50,12 @@
 
 | 类别 | 文件 | 内容 |
 |---|---|---|
-| Normative | [三层整体架构设计](design-concepts/总览/三层整体架构设计.md) | 分层、职责、接口唯一基线、错误总则 |
+| Normative | [四层整体架构与接口](design-concepts/总览/1-四层整体架构与接口.md) | 分层、职责、接口唯一基线、错误总则 |
 | Normative | [本版范围与明确不支持](design-concepts/总览/本版范围与明确不支持.md) | 本版不做什么的唯一口径（含遇到时的行为） |
 | Normative | [配置一览](design-concepts/总览/配置一览.md) | 全部配置 + 注册可提交参数目录 + 每用户隔离 |
 | Normative | [多节点设计](design-concepts/底层与中层/多节点设计.md) | 5 role 拓扑与职责、五接口与 role 的对应、逐 role 探测、部署与 endpoint |
 | Normative | [多用户设计](design-concepts/底层与中层/多用户设计.md) | 六步注册、token 寻址/校验、路由与授权 |
-| Normative | [并发处理设计](design-concepts/底层与中层/并发处理设计.md) | 并发与限流唯一口径：排队投递/直接开通道、三预算（线程/最大通道数/单目标点上限）、建连重试 |
+| Normative | [并发设计](design-concepts/底层与中层/2-并发设计.md) | 并发与限流唯一口径：排队投递/直接开通道、三预算（线程/最大通道数/单目标点上限）、建连重试 |
 | Normative | [日志返回设计标准](design-concepts/底层与中层/日志返回设计标准.md) | CDS.log 增量返回唯一口径（offset 定界、分级、限长） |
 | Informative | [核心修改设计](design-concepts/总览/核心修改.md) | 五项修改的索引/摘要，不重复定义 |
 | Historical | [改动报告](design-concepts/总览/改动报告.md) | 重构前对照与历史迁移，Non-normative |
@@ -66,12 +69,12 @@
 
 | 主题 | 唯一 owner | 其它文档允许出现的形态 |
 |---|---|---|
-| 五接口签名、返回与错误总则（含 `kind` 枚举、保留码） | [三层整体架构设计](design-concepts/总览/三层整体架构设计.md) §4 | 一句摘要 + 链接 |
+| 五接口签名、返回与错误总则（含 `kind` 枚举、保留码） | [四层整体架构与接口](design-concepts/总览/1-四层整体架构与接口.md) §4 | 一句摘要 + 链接 |
 | 五接口 ↔ role 映射、role 职责、token↔主机边界、per-role 根算法 | [多节点设计](design-concepts/底层与中层/多节点设计.md) | 一句摘要 + 链接 |
 | 逐 role 探测矩阵、连接数量与复用拓扑 | [多节点设计](design-concepts/底层与中层/多节点设计.md) §4/§6 | 一句摘要 + 链接 |
 | 字段与默认值、per-role mode/字段回退、endpoint canonical key、reservation | [配置一览](design-concepts/总览/配置一览.md) | 一句摘要 + 链接 |
 | 六步注册状态机、注册 deadline、token 生命周期 | [多用户设计](design-concepts/底层与中层/多用户设计.md) | 一句摘要 + 链接 |
-| 并发形态与排队语义、三预算与通道记账矩阵、连接生命周期、建连重试 | [并发处理设计](design-concepts/底层与中层/并发处理设计.md) | 一句摘要 + 链接 |
+| 并发形态与排队语义、三预算与通道记账矩阵、连接生命周期、建连重试 | [并发设计](design-concepts/底层与中层/2-并发设计.md) | 一句摘要 + 链接 |
 | CDS.log offset/frame/分级/限长/warning | [日志返回设计标准](design-concepts/底层与中层/日志返回设计标准.md) | 一句摘要 + 链接 |
 | 本版不做什么（非目标清单与遇到时的行为） | [本版范围与明确不支持](design-concepts/总览/本版范围与明确不支持.md) | 一句摘要 + 链接 |
 
@@ -90,8 +93,8 @@ CDS.log metadata frame 完整字节格式
 ## Release（本基线）
 
 - **Release ID**：`SPEC-2026-09-14-r2`
-- **Normative 文件集**（7 份）：三层整体架构设计、本版范围与明确不支持、配置一览、多节点设计、多用户设计、并发处理设计、日志返回设计标准；
-- **Normative 内容哈希**：`c3f11d63a1d09842e0a1788284dbbec031f03a2975c838c6360bb04479195704`
+- **Normative 文件集**（7 份）：四层整体架构与接口、本版范围与明确不支持、配置一览、多节点设计、多用户设计、并发设计、日志返回设计标准；
+- **Normative 内容哈希**：`d6d8cbfd1b0ac1515a9e312fc131ce7d3edf4d5f3dedfe74f702cc98deead87a`
   - 算法：按相对路径排序，逐文件 SHA-256（**按 Git 提交内容计算，即 LF 行尾**；Windows 工作区受 `core.autocrlf` 影响的行尾差异不计入）的 `"<相对路径> <hex>"` 行以 LF 拼接，再取一次 SHA-256；
 - **基线 commit**：本 Release 段所在提交即基线（见 `git log -1 -- spec/`）；任何 Normative 文档变更必须同时更新本段哈希。
 
@@ -99,12 +102,12 @@ CDS.log metadata frame 完整字节格式
 
 | 文档 | 版本 | 状态 | Supersedes |
 |---|---|---|---|
-| 三层整体架构设计 | Draft v13 | Normative | Draft v12（Skill 投递前按 token 排队） |
+| 四层整体架构与接口 | Draft v14 | Normative | Draft v13（四层化：新增顶层 HTTPServer） |
 | 多节点设计 | v8 | Normative | v7（连接数量与复用拓扑唯一 owner、spectre 提交态） |
 | 本版范围与明确不支持 | v7 | Normative | v6（split-host 可观察合同统一为“不保证”） |
 | 配置一览 | Draft v19 | Normative | Draft v18（新增 role.<name>.max_sessions） |
 | 多用户设计 | Draft v14 | Normative | Draft v13（第一步必填引用、重试措辞、update 的 root 语义） |
-| 并发处理设计 | Draft v14 | Normative | Draft v13（限流三字段与排队/并行模型重写） |
+| 并发设计 | Draft v14 | Normative | Draft v13（限流三字段与排队/并行模型重写） |
 | 日志返回设计标准 | Draft v9 | Normative | Draft v8（split-host 可观察合同统一为“不保证”） |
 | 核心修改设计 | Draft v4 | Informative | Draft v3 |
 | 改动报告 / 代码梳理 | — | Historical | — |
@@ -122,7 +125,7 @@ CDS.log metadata frame 完整字节格式
 3. 上层不读 `VB_*`/`.env`、不判断 local/SSH、不创建 SSH/socket，也不解析 STX/NAK/RS 协议。
 4. 上层使用逻辑 `ServerPath`；实际 host/jump/role/tunnel 由中层按 registry 路由解析。
 5. 所有调用采用端到端 deadline；中层子阶段只继承剩余预算。
-6. 命令非零退出码是结构化结果；transport 失败、超时、路径不可见、结果未知必须可区分（见三层架构 §4.4 错误总则）。
+6. 命令非零退出码是结构化结果；transport 失败、超时、路径不可见、结果未知必须可区分（见四层架构 §4.4 错误总则）。
 7. token 是对称共享授权票：部署注入 il/daemon，CIW load 时目视确认；缺失/不匹配一律 NAK 且 SKILL 零接触。
 8. 不保留旧项目兼容：`profile`/`VB_*`/`.env` 已删除，双轨期已结束；新用户只走六步注册。
 

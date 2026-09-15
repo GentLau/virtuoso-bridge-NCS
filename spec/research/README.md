@@ -2,7 +2,7 @@
 
 > 调研日期：2026-09-04（Asia/Shanghai）  
 > 项目：`virtuoso-bridge-NCS`  
-> 关联规范：[spec/design-concepts/总览/三层整体架构设计.md](../design-concepts/总览/三层整体架构设计.md)
+> 关联规范：[spec/design-concepts/总览/1-四层整体架构与接口.md](../design-concepts/总览/1-四层整体架构与接口.md)
 > 范围：Virtuoso/DFII/OpenAccess 数据模型、原理图与 testbench 编辑、Maestro/ADE/Spectre 日志，以及本项目重构的关键技术点。
 
 > **Research / 非规范**：本目录只提供背景知识与决策依据，**不得用于实现或验收**。

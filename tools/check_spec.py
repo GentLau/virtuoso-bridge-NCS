@@ -35,12 +35,12 @@ SPEC = REPO / "spec"
 README = SPEC / "README.md"
 
 NORMATIVE = [
-    "design-concepts/总览/三层整体架构设计.md",
+    "design-concepts/总览/1-四层整体架构与接口.md",
     "design-concepts/总览/本版范围与明确不支持.md",
     "design-concepts/总览/配置一览.md",
     "design-concepts/底层与中层/多节点设计.md",
     "design-concepts/底层与中层/多用户设计.md",
-    "design-concepts/底层与中层/并发处理设计.md",
+    "design-concepts/底层与中层/2-并发设计.md",
     "design-concepts/底层与中层/日志返回设计标准.md",
 ]
 
@@ -48,9 +48,9 @@ NORMATIVE = [
 OWNED_PATTERNS = [
     ("endpoint canonical key", "design-concepts/总览/配置一览.md",
      [r"endpoint_key\s*=", r"canonical_json\s*="]),
-    ("channel 记账矩阵", "design-concepts/底层与中层/并发处理设计.md",
+    ("channel 记账矩阵", "design-concepts/底层与中层/2-并发设计.md",
      [r"\|\s*动作\s*\|\s*线程预算\s*\|\s*channel 预算"]),
-    ("CommandResult.kind 枚举", "design-concepts/总览/三层整体架构设计.md",
+    ("CommandResult.kind 枚举", "design-concepts/总览/1-四层整体架构与接口.md",
      [r"(?:.*`kind=[a-z-]+`.*){3,}"]),
     ("六步注册状态机", "design-concepts/底层与中层/多用户设计.md",
      [r"\|\s*步\s*\|\s*预测目标"]),
@@ -112,7 +112,7 @@ def check_manifest(failures: list[str]) -> None:
             failures.append(f"{rel}: missing '> 版本：' header")
             continue
         header = m.group(1).strip()
-        name = Path(rel).stem
+        name = re.sub(r"^\d+-", "", Path(rel).stem)
         if name not in rows:
             failures.append(f"{rel}: no manifest row named {name!r}")
             continue
@@ -162,11 +162,11 @@ def check_banned(failures: list[str]) -> None:
             for pat in patterns:
                 owner_of.setdefault(pat, owner)
         for i, line in enumerate(text.splitlines(), 1):
-            if rel != "design-concepts/总览/三层整体架构设计.md" and line.count("`kind=") >= 3:
+            if rel != "design-concepts/总览/1-四层整体架构与接口.md" and line.count("`kind=") >= 3:
                 hits += 1
                 failures.append(
                     f"{rel}:{i}: CommandResult.kind 枚举只允许出现在 "
-                    f"design-concepts/总览/三层整体架构设计.md"
+                    f"design-concepts/总览/1-四层整体架构与接口.md"
                 )
             for word in BANNED_LITERALS:
                 if word in line and BANNED_EXCEPTION not in line:
