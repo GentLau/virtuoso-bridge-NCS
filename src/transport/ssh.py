@@ -1486,6 +1486,9 @@ class SSHRunner:
 
     def close(self) -> None:
         """Release any persistent SSH resources held by this runner."""
+        # a runner owns its port-forward: without this the tunnel outlives the
+        # process that created it (orphan ``ssh -N -L`` seen after TB runs)
+        self.stop_port_forward()
         if self._paramiko_backend is not None:
             self._paramiko_backend.close()
         with self._shell_lock:

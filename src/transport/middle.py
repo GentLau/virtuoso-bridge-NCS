@@ -5,6 +5,7 @@ Upper layer talks only to this object; token is a per-call parameter.
 
 from __future__ import annotations
 
+import atexit
 import logging
 import os
 import shlex
@@ -289,6 +290,26 @@ class BusinessServer(Middle):
         self._local_locks: dict[str, threading.Lock] = {}
         self._local_sessions: dict[str, _LocalCommandSession] = {}
         self._lock = threading.Lock()
+        # spec 资源盘点：进程退出不得留下隧道/常驻 shell（TB 与业务进程同样适用）
+        atexit.register(self.close)
+
+    def close(self) -> None:
+        """Release every per-token client (tunnels + shells) exactly once."""
+        with self._lock:
+            clients = list(self._clients.values())
+            self._clients.clear()
+            sessions = list(self._local_sessions.values())
+            self._local_sessions.clear()
+        for client in clients:
+            try:
+                client.close()
+            except Exception:  # noqa: BLE001 - best effort on shutdown
+                logger.debug("closing client failed", exc_info=True)
+        for session in sessions:
+            try:
+                session.close()
+            except Exception:  # noqa: BLE001
+                logger.debug("closing local session failed", exc_info=True)
 
     # -- per-token state -----------------------------------------------------
 
