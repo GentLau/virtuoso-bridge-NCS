@@ -1,8 +1,12 @@
-"""隧道生命周期契约（BUG-1 回归）：外部复用、退避、close 拆隧道、ControlPath 命名。"""
+"""隧道生命周期契约：两个 OS 分支都必须登记端口/退避（BUG-1 及同类残留回归）。
+
+关键点（评审指出过）：测试必须走**代码路径**，不能手工往对象里注入
+``_tunnel_local_port`` 之类的状态，否则测的是“修复后的状态”而不是“修复后的代码”。
+这里通过伪造 ``Popen`` + ``can_reach_port`` 真实调用 ``start_port_forward``。
+"""
 
 import os
 import sys
-import tempfile
 import time
 import unittest
 from pathlib import Path
@@ -14,11 +18,30 @@ from transport import ssh as ssh_mod
 from transport.ssh import SSHRunner
 
 
+class FakeStream:
+    def readable(self):
+        return True
+
+    def read(self):
+        return b""
+
+
 class FakePopen:
-    def __init__(self, *args, **kwargs):
+    """可配置的假隧道进程：alive=False 表示 ssh 立刻退出（如端口被占用）。"""
+
+    instances = 0
+
+    def __init__(self, cmd=None, alive=True, stderr=None, **kwargs):
+        FakePopen.instances += 1
         self.pid = 4242
-        self.returncode = 0            # 立即退出（模拟 ExitOnForwardFailure 绑定失败）
+        self.cmd = cmd
+        self.alive = alive
+        self.returncode = None if alive else 1
+        # real callers pass stderr=subprocess.PIPE (an int); only a stream-like
+        # object is useful to the code under test
+        self.stderr = stderr if hasattr(stderr, "readable") else FakeStream()
         self.terminated = False
+        self.killed = False
 
     def poll(self):
         return self.returncode
@@ -27,50 +50,89 @@ class FakePopen:
         self.terminated = True
 
     def kill(self):
-        self.terminated = True
+        self.killed = True
+        self.returncode = -9
 
     def wait(self, timeout=None):
         return self.returncode
 
 
-class TestTunnelReuse(unittest.TestCase):
-    def test_external_listener_counts_as_alive(self):
-        """修复 BUG-1：复用外部监听时，端口可达即视为隧道存活（不再每请求重开）。"""
-        runner = SSHRunner(host="server-a", user="u", backend="openssh", persistent_shell=False)
-        runner._tunnel_using_external = True
-        runner._tunnel_local_port = 65081
-        runner._tunnel_pid = None
-        with mock.patch.object(SSHRunner, "can_reach_port", staticmethod(lambda port: True)):
-            self.assertTrue(runner.is_tunnel_alive)
-        with mock.patch.object(SSHRunner, "can_reach_port", staticmethod(lambda port: False)):
-            self.assertFalse(runner.is_tunnel_alive)
+def runner():
+    return SSHRunner(host="server-a", user="u", backend="openssh", persistent_shell=False)
 
 
-class TestTunnelBackoff(unittest.TestCase):
-    def test_failure_sets_backoff_and_second_call_fast_fails(self):
-        if os.name != "nt":
-            self.skipTest("Windows-only tunnel start path")
-        runner = SSHRunner(host="server-a", user="u", backend="openssh", persistent_shell=False)
-        with mock.patch.object(ssh_mod.subprocess, "Popen", FakePopen), \
-             mock.patch.object(SSHRunner, "can_reach_port", staticmethod(lambda port: False)):
+class TunnelPathMixin:
+    """在 POSIX / Windows 两个分支上跑同一组断言。"""
+
+    platform = "nt"
+
+    def setUp(self):
+        FakePopen.instances = 0
+        self._plat_patch = mock.patch.object(ssh_mod, "_IS_WINDOWS", self.platform == "nt")
+        self._plat_patch.start()
+        self.addCleanup(self._plat_patch.stop)
+
+    def _start(self, r, alive=True, port_reachable=False, settle=0.05):
+        with mock.patch.object(ssh_mod.subprocess, "Popen",
+                               side_effect=lambda cmd, **kw: FakePopen(cmd, alive=alive, **kw)), \
+             mock.patch.object(SSHRunner, "can_reach_port",
+                               staticmethod(lambda port: port_reachable)):
+            return r.start_port_forward(65081, remote_port=65103, settle=settle)
+
+    def test_own_process_records_port_and_is_alive(self):
+        r = runner()
+        # Windows 分支靠 can_reach_port 判定成功；POSIX 分支只要求进程还活着
+        proc = self._start(r, alive=True, port_reachable=(self.platform == "nt"))
+        self.assertIsNotNone(proc)
+        self.assertEqual(r._tunnel_local_port, 65081)
+        self.assertFalse(r._tunnel_using_external)
+        self.assertTrue(r.is_tunnel_alive)
+        self.assertEqual(r._tunnel_failures, 0)
+
+    def test_external_listener_is_recorded_and_alive(self):
+        """复用别人的监听：必须记录端口，否则每个请求都会重开隧道（BUG-1）。"""
+        r = runner()
+        result = self._start(r, alive=False, port_reachable=True)
+        if self.platform == "nt":
+            self.assertIsNone(result)
+        self.assertTrue(r._tunnel_using_external)
+        self.assertEqual(r._tunnel_local_port, 65081)
+        with mock.patch.object(SSHRunner, "can_reach_port", staticmethod(lambda p: True)):
+            self.assertTrue(r.is_tunnel_alive)
+
+    def test_failure_sets_backoff_and_next_call_fast_fails(self):
+        r = runner()
+        with self.assertRaises(RuntimeError):
+            self._start(r, alive=False, port_reachable=False)
+        self.assertEqual(r._tunnel_failures, 1)
+        self.assertGreater(r._tunnel_next_try_at, time.monotonic())
+        # 退避期内不得再 spawn
+        with mock.patch.object(ssh_mod.subprocess, "Popen") as popen:
             with self.assertRaises(RuntimeError):
-                runner.start_port_forward(65081, remote_port=65103)
-            self.assertEqual(runner._tunnel_failures, 1)
-            self.assertGreater(runner._tunnel_next_try_at, time.monotonic())
-            # 退避期内不得再 spawn 进程
-            with mock.patch.object(ssh_mod.subprocess, "Popen") as popen2:
-                with self.assertRaises(RuntimeError):
-                    runner.start_port_forward(65081, remote_port=65103)
-                popen2.assert_not_called()
+                r.start_port_forward(65081, remote_port=65103, settle=0.05)
+            popen.assert_not_called()
 
-    def test_close_stops_own_tunnel(self):
-        runner = SSHRunner(host="server-a", user="u", backend="openssh", persistent_shell=False)
-        stopped = []
-        # instance-level stub: a class-level mock would also catch __del__ of
-        # unrelated runners collected during the test (test isolation)
-        runner.stop_port_forward = lambda: stopped.append(True)
-        runner.close()
-        self.assertGreaterEqual(len(stopped), 1)
+
+class TestPosixBranch(TunnelPathMixin, unittest.TestCase):
+    platform = "posix"
+
+
+class TestWindowsBranch(TunnelPathMixin, unittest.TestCase):
+    platform = "nt"
+
+
+class TestCloseTearsDownTunnel(unittest.TestCase):
+    def test_close_terminates_own_tunnel_process(self):
+        r = runner()
+        proc = FakePopen(alive=True)
+        r._tunnel_proc = proc
+        r._tunnel_pid = proc.pid
+        r._tunnel_local_port = 65081
+        with mock.patch.object(ssh_mod.os, "kill") as kill, \
+             mock.patch.object(ssh_mod.os, "name", "posix"):
+            r.close()
+        self.assertTrue(kill.called, "close() 必须向自己的隧道进程发信号")
+        self.assertIsNone(r._tunnel_local_port)
 
 
 class TestControlPathNamespace(unittest.TestCase):
@@ -78,11 +140,11 @@ class TestControlPathNamespace(unittest.TestCase):
         a = ssh_mod._short_control_path("server-a", "u", None, "tok-1")
         b = ssh_mod._short_control_path("server-a", "u", None, "tok-1")
         c = ssh_mod._short_control_path("server-a", "u", None, "tok-2")
-        self.assertEqual(a, b)          # 同进程同 token 稳定
-        self.assertNotEqual(a, c)       # 不同 token 不共享
+        self.assertEqual(a, b)
+        self.assertNotEqual(a, c)
         with mock.patch.object(os, "getpid", return_value=os.getpid() + 1):
             d = ssh_mod._short_control_path("server-a", "u", None, "tok-1")
-        self.assertNotEqual(a, d)       # 进程分量：避免复用被 kill 进程遗留的 master
+        self.assertNotEqual(a, d)
 
 
 if __name__ == "__main__":

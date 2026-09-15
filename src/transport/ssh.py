@@ -66,6 +66,10 @@ def _setup_command_log() -> None:
     if root.level == logging.NOTSET or root.level > logging.DEBUG:
         root.setLevel(logging.DEBUG)
 
+#: platform predicate kept as a module constant so tests can exercise both
+#: tunnel branches without monkey-patching ``os.name`` globally
+_IS_WINDOWS = os.name == "nt"
+
 _INTERPRETER_SHUTTING_DOWN = False
 
 def _mark_interpreter_shutdown() -> None:
@@ -402,6 +406,30 @@ class SSHRunner:
             for fragment in ("banner", "connection closed", "unknown port", "reset")
         )
 
+    def _note_tunnel_ready(self, port: int, proc: subprocess.Popen[Any] | None = None) -> None:
+        """Record a usable forward (own process or an external listener).
+
+        Both OS branches must go through this: forgetting ``_tunnel_local_port``
+        is exactly the BUG-1 defect (the runner looked dead on every call and
+        respawned ``ssh -L`` for every request).
+        """
+        self._tunnel_local_port = port
+        self._tunnel_failures = 0
+        self._tunnel_next_try_at = 0.0
+        if proc is None:
+            self._tunnel_using_external = True
+        else:
+            self._tunnel_proc = proc
+            self._tunnel_pid = proc.pid
+            self._tunnel_using_external = False
+
+    def _note_tunnel_failure(self) -> float:
+        """Count a failed start and return the time at which retrying is allowed."""
+        self._tunnel_failures += 1
+        delay = min(2 ** self._tunnel_failures, 30.0)
+        self._tunnel_next_try_at = time.monotonic() + delay
+        return self._tunnel_next_try_at
+
     def _start_port_forward_locked(
         self,
         port: int,
@@ -463,7 +491,7 @@ class SSHRunner:
         if self._verbose:
             print(f"[cmd] {' '.join(cmd)}", flush=True)
 
-        if os.name == "nt":
+        if _IS_WINDOWS:
             # Retry handshakes the remote sshd dropped mid-banner under a
             # burst of per-user tunnel starts (MaxStartups).  The gate in
             # start_port_forward already spreads them out; a small number of
@@ -496,21 +524,19 @@ class SSHRunner:
                 jh_settle = max(settle, 30.0) if self._jump_host else max(settle, 10.0)
                 deadline = time.monotonic() + jh_settle
                 while time.monotonic() < deadline:
-                    if self.can_reach_port(port):
-                        self._tunnel_proc = proc
-                        self._tunnel_pid = proc.pid
-                        self._tunnel_using_external = False
-                        self._tunnel_local_port = port
-                        self._tunnel_failures = 0
-                        return proc
+                    # Check our own process FIRST: if the port is already served
+                    # by somebody else our ``ssh -L`` exits immediately, and
+                    # treating that dead process as "our tunnel" would look
+                    # dead on every later call (BUG-1, second trigger order).
                     if proc.poll() is not None:
                         break
+                    if self.can_reach_port(port):
+                        self._note_tunnel_ready(port, proc)
+                        return proc
                     time.sleep(0.1)
                 if self.can_reach_port(port):
                     logger.info("Reusing existing tunnel at localhost:%d", port)
-                    self._tunnel_using_external = True
-                    self._tunnel_local_port = port
-                    self._tunnel_failures = 0
+                    self._note_tunnel_ready(port)
                     return None
                 try:
                     proc.terminate()
@@ -535,8 +561,7 @@ class SSHRunner:
                 if attempt + 1 < attempts and self._transient_tunnel_error(stderr_tail):
                     time.sleep(0.3 * (attempt + 1))
                     continue
-                self._tunnel_failures += 1
-                self._tunnel_next_try_at = time.monotonic() + min(2 ** self._tunnel_failures, 30.0)
+                self._note_tunnel_failure()
                 detail = f" (rc={rc})" if rc is not None else ""
                 raise RuntimeError(
                     f"SSH tunnel failed to start on Windows{detail}{stderr_tail}"
@@ -573,15 +598,18 @@ class SSHRunner:
             # A different, already-running forward may own the local port.
             if self.can_reach_port(port):
                 logger.info("Port forward active at localhost:%d (external process)", port)
-                self._tunnel_using_external = True
+                self._note_tunnel_ready(port)
                 return None
             if "address already in use" in err_msg.lower():
                 logger.info("Reusing existing tunnel at localhost:%d", port)
-                self._tunnel_using_external = True
+                self._note_tunnel_ready(port)
                 return None
-            return proc  # failed — caller inspects poll/stderr
-        self._tunnel_proc = proc
-        self._tunnel_pid = proc.pid
+            self._note_tunnel_failure()
+            raise RuntimeError(
+                "SSH tunnel failed to start"
+                + (f" | {err_msg.strip()}" if err_msg.strip() else "")
+            )
+        self._note_tunnel_ready(port, proc)
         return proc  # running
 
     def stop_port_forward(self) -> None:
