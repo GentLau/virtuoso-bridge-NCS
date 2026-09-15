@@ -49,7 +49,7 @@ class RemoteClient:
             "timeout": 600,
             "connect_timeout": int(entry.runtime.connect_timeout),
             "persistent_shell": True,
-            "backend": entry.ssh.backend or "openssh",
+            "backend": entry.ssh.backend or "paramiko",
             "max_sessions": entry.runtime.channel_budget or 10,
             "control_master": entry.ssh.control_master or "auto",
             "tool_override": entry.ssh.tool_override or None,
@@ -87,7 +87,7 @@ class RemoteClient:
     def _one_shot_runner(self, role: ResolvedRole) -> SSHRunner:
         """Dedicated one-shot (non-persistent) runner for gui/spectre/parallel."""
         assert role.mode == "remote", f"role {role.name} is local; no SSH runner"
-        if (self.entry.ssh.backend or "openssh").lower() == "paramiko":
+        if (self.entry.ssh.backend or "paramiko").lower() == "paramiko":
             # Paramiko multiplexes a session per call; the regular runner is
             # already parallel, so no second connection/runner is needed.
             return self._runner(role)

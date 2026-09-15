@@ -163,7 +163,7 @@ class SshDefaults(BaseModel):
 
 class Ssh(BaseModel):
     default: SshDefaults = Field(default_factory=SshDefaults)
-    backend: Literal["openssh", "paramiko"] = "openssh"
+    backend: Literal["openssh", "paramiko"] = "paramiko"
     control_master: str = "auto"
     tool_override: dict[str, str] = Field(default_factory=dict)
 

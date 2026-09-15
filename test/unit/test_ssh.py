@@ -67,7 +67,7 @@ class TestSSHRunnerConstruction(unittest.TestCase):
 
     def test_defaults(self):
         r = SSHRunner("server-a")
-        self.assertEqual(r.backend, "openssh")
+        self.assertEqual(r.backend, "paramiko")   # project default
         self.assertEqual(r.max_sessions, 10)
         self.assertEqual(r.host, "server-a")
         self.assertIsNone(r.user)
@@ -79,7 +79,7 @@ class TestSSHRunnerConstruction(unittest.TestCase):
         os.environ["VB_SSH_MAX_SESSIONS"] = "99"
         try:
             r = SSHRunner("server-a")
-            self.assertEqual(r.backend, "openssh")
+            self.assertEqual(r.backend, "paramiko")
             self.assertEqual(r.max_sessions, 10)
             self.assertIsNone(r._proxy_url)
         finally:

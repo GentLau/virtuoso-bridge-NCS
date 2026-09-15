@@ -256,7 +256,7 @@ class SSHRunner:
         self._connect_timeout = connect_timeout
         self._verbose = verbose
 
-        selected_backend = (backend or "openssh").strip().lower()
+        selected_backend = (backend or "paramiko").strip().lower()
         if selected_backend not in ("openssh", "paramiko"):
             raise ValueError(
                 f"Unsupported SSH backend {selected_backend!r}; expected 'openssh' or 'paramiko'."
