@@ -1,3 +1,4 @@
+# 非规范（historical demo）：不得用于实现或验收；唯一口径见 spec/README.md
 # -*- coding: utf-8 -*-
 """从命令行依次运行当前 demo：完整业务 + CDS.log 增量。"""
 from __future__ import annotations

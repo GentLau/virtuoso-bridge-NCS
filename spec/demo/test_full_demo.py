@@ -1,3 +1,4 @@
+# 非规范（historical demo）：不得用于实现或验收；唯一口径见 spec/README.md
 # -*- coding: utf-8 -*-
 """完整业务 demo（full_demo.py）的验收单元。"""
 from __future__ import annotations

@@ -1,3 +1,4 @@
+# 非规范（historical demo）：不得用于实现或验收；唯一口径见 spec/README.md
 # -*- coding: utf-8 -*-
 """完整业务 demo：注册 + token 路由 + 单用户并行（收拢版）。
 

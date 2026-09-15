@@ -60,7 +60,9 @@
 | Research | [research/README.md](research/README.md) | Virtuoso/TB/日志/并发背景调研 |
 | Demo | [demo/README.md](demo/README.md) | 脱钩最小验证（Informative，不复刻正式口径） |
 
-## 主题 owner 表（唯一定义处）
+## 主题 owner 表（唯一定义处，兼作冲突矩阵）
+
+下表即**冲突矩阵**：每行机制的唯一 owner 与索引位置；非 owner 位置出现完整定义即违反（由 `tools/check_spec.py` 的 owner 规则检查）。
 
 | 主题 | 唯一 owner | 其它文档允许出现的形态 |
 |---|---|---|
@@ -88,7 +90,7 @@ CDS.log metadata frame 完整字节格式
 
 - **Release ID**：`SPEC-2026-09-14-r2`
 - **Normative 文件集**（7 份）：三层整体架构设计、本版范围与明确不支持、配置一览、多节点设计、多用户设计、并发处理设计、日志返回设计标准；
-- **Normative 内容哈希**：`1f8bab90690252879d40ddd04c5315ce16d1e90e53a65b2bb2364fde77f39573`
+- **Normative 内容哈希**：`7afefaeba303300c67dd1981c040f81daa2fed476a7e9b6b2d19031955d056e1`
   - 算法：按相对路径排序，逐文件 SHA-256（**按 Git 提交内容计算，即 LF 行尾**；Windows 工作区受 `core.autocrlf` 影响的行尾差异不计入）的 `"<相对路径> <hex>"` 行以 LF 拼接，再取一次 SHA-256；
 - **基线 commit**：本 Release 段所在提交即基线（见 `git log -1 -- spec/`）；任何 Normative 文档变更必须同时更新本段哈希。
 
@@ -96,13 +98,13 @@ CDS.log metadata frame 完整字节格式
 
 | 文档 | 版本 | 状态 | Supersedes |
 |---|---|---|---|
-| 三层整体架构设计 | Draft v9 | Normative | Draft v8（五接口口径收口：五数据流、五接口 deadline 表、去重复定义） |
+| 三层整体架构设计 | Draft v10 | Normative | Draft v9（§4.5 文件执行合同；接口→role 表索引化；投递后不重发） |
 | 多节点设计 | v7 | Normative | v6（token↔主机边界、根算法唯一化） |
-| 本版范围与明确不支持 | v5 | Normative | v4（新增跨机 daemon 启动非目标） |
-| 配置一览 | Draft v16 | Normative | Draft v15（reservation 跨平台模型与唯一性作用域、root 定义索引化） |
-| 多用户设计 | Draft v12 | Normative | Draft v11（六步预测目标/失败合同、注册 deadline、resolver 复用口径） |
-| 并发处理设计 | Draft v10 | Normative | Draft v9（channel 记账矩阵、local role 预算口径） |
-| 日志返回设计标准 | Draft v7 | Normative | Draft v6（split-host 边界索引） |
+| 本版范围与明确不支持 | v6 | Normative | v5（split-host CDS.log 可观察合同收口） |
+| 配置一览 | Draft v17 | Normative | Draft v16（root 持久化唯一形态、reservation 时序与回收条件、22 端口校验） |
+| 多用户设计 | Draft v13 | Normative | Draft v12（invalid-token 唯一合同、缺省端口时序、路由表索引化、投递后不重发） |
+| 并发处理设计 | Draft v11 | Normative | Draft v10（重发规则指向架构 owner） |
+| 日志返回设计标准 | Draft v8 | Normative | Draft v7（split-host 后续方向收口到本文） |
 | 核心修改设计 | Draft v4 | Informative | Draft v3 |
 | 改动报告 / 代码梳理 | — | Historical | — |
 
