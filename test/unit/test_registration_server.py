@@ -202,6 +202,82 @@ class TestRegistrationServer(unittest.TestCase):
         self.assertEqual(status, 400)
         self.assertEqual(self.registry.get("erin").model_dump(), before)
 
+    # -- spec r2: per-role overrides, port scope, reservation -----------------
+
+    def test_apply_accepts_per_role_overrides(self):
+        """role.<name>.mode / root 可通过 HTTP 提交（spec 配置一览 §2.3）。"""
+        port = _free_port()
+        local_port = _free_port()
+        status, raw = self.srv.request("POST", "/api/register", {
+            "user": "dave", "mode": "local",
+            "roles": {
+                "daemon": {"daemon_port": port},
+                "spectre": {"bin": sys.executable},
+                "file": {"root": "/tmp/vb-dave-file"},
+                "command": {"mode": "local"},
+            },
+        })
+        self.assertEqual(status, 200)
+        data = json.loads(raw)
+        self.assertEqual(data["stage"], "deployed")
+        roles = data["entry"]["roles"]
+        # 注册会把本地 root 回写成展开后的绝对路径（spec：注册后存绝对路径）
+        self.assertTrue(roles["file"]["root"].endswith("vb-dave-file"), roles["file"]["root"])
+        self.assertEqual(roles["command"]["mode"], "local")
+        del local_port
+
+    def test_per_role_local_rejects_connection_fields(self):
+        """mode=local 的 role 提交 host/user 必须是参数错误（拒绝注册）。"""
+        port = _free_port()
+        status, raw = self.srv.request("POST", "/api/register", {
+            "user": "erin", "mode": "remote",
+            "ssh": {"default": {"host": "server-a", "user": "alice"}},
+            "roles": {"daemon": {"daemon_port": port}, "command": {"mode": "local", "host": "server-a"}},
+        })
+        self.assertEqual(status, 400)
+        self.assertIn("invalid request", json.loads(raw)["error"])
+
+    def test_daemon_port_conflict_is_scoped_to_host(self):
+        """同主机同端口冲突；不同主机同号允许（配置一览 §6.4）。"""
+        port = _free_port()
+        # 直接走本地校验：同主机同端口必须报冲突，不同主机同号必须放行
+        from transport.register.flow import validate_local
+        from transport.register.models import RegistrationRequest
+        from transport.registry import UserEntry
+
+        entry = UserEntry(token="tok-a", mode="remote")
+        entry.roles.daemon.host = "host-a"
+        entry.roles.daemon.daemon_port = port
+        self.registry.register("gina", entry)
+
+        same_host = RegistrationRequest(
+            mode="remote", user="henry", token="tok-b",
+            ssh={"default": {"host": "host-a", "user": "u"}},
+            roles={"daemon": {"daemon_port": port}},
+        )
+        self.assertTrue(any("daemon port" in e for e in validate_local(self.registry, same_host)))
+
+        other_host = same_host.model_copy(deep=True)
+        other_host.user = "iris"
+        other_host.token = "tok-c"
+        other_host.ssh.default.host = "host-b"
+        self.assertEqual(
+            [e for e in validate_local(self.registry, other_host) if "daemon port" in e], []
+        )
+
+    def test_duplicate_token_rejected(self):
+        port = _free_port()
+        entry = UserEntry(token="dup-token", mode="local")
+        entry.roles.daemon.daemon_port = port
+        self.registry.register("judy", entry)
+        status, raw = self.srv.request("POST", "/api/register", {
+            "user": "karl", "mode": "local", "token": "dup-token",
+            "roles": {"daemon": {"daemon_port": _free_port()}, "spectre": {"bin": sys.executable}},
+        })
+        data = json.loads(raw)
+        self.assertTrue(status == 400 or data.get("stage") == "failed", (status, data))
+        self.assertIn("token", json.dumps(data))
+
     def test_delete_unknown_user(self):
         status, raw = self.srv.request("DELETE", "/api/user/ghost", None)
         self.assertEqual(status, 404)

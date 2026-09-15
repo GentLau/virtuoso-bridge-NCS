@@ -1523,7 +1523,70 @@ button,input,select {
                 <div class="field" data-remote-only><label for="local_port">本地转发端口 <span class="optional">自动分配</span></label><input id="local_port" name="local_port" type="number" min="1" max="65535" inputmode="numeric" placeholder="留空自动选择"><p class="field-help">仅远程模式使用，需在当前机器可用。</p></div>
                 <div class="field" style="grid-column:1/-1"><label for="scratch_root">部署根目录 <span class="optional">缺省 ~/.virtuoso-bridge</span></label><input id="scratch_root" name="scratch_root" placeholder="~/.virtuoso-bridge" spellcheck="false"><p class="field-help">分离拓扑时，此目录必须同时对部署主机、GUI 主机和 daemon 主机可见。</p></div>
               </div>
-              <details class="advanced"><summary>高级策略配置（可选）</summary><div class="advanced-body">
+              <details class="advanced" id="roleOverrides">
+              <summary>各 role 覆盖（可选，留空 = 继承全局）</summary>
+              <div class="advanced-body">
+                <p class="field-help">按 <code>role.&lt;name&gt;.&lt;field&gt;</code> 逐字段覆盖全局默认；<code>mode=local</code> 的 role 不得再填 host/user/jump（本地直连，会报参数错误）。daemon 的端口用上面的「Daemon 端口/本地端口」，spectre 的可执行文件用上面的 spectre bin。</p>
+                <div class="table-scroll">
+                  <table class="role-table">
+                    <thead><tr><th>role</th><th>mode</th><th>host</th><th>user</th><th>jump_host</th><th>root</th></tr></thead>
+                    <tbody>
+                  <tr>
+                    <th scope="row">gui</th>
+                    <td><select id="role_gui_mode" name="role_gui_mode">
+                      <option value="">继承</option><option value="remote">remote</option><option value="local">local</option>
+                    </select></td>
+                    <td><input id="role_gui_host" name="role_gui_host" placeholder="继承" spellcheck="false"></td>
+                    <td><input id="role_gui_user" name="role_gui_user" placeholder="继承" spellcheck="false"></td>
+                    <td><input id="role_gui_jump_host" name="role_gui_jump_host" placeholder="继承" spellcheck="false"></td>
+                    <td><input id="role_gui_root" name="role_gui_root" placeholder="继承 root.default/&lt;role&gt;" spellcheck="false"></td>
+                  </tr>
+                  <tr>
+                    <th scope="row">daemon</th>
+                    <td><select id="role_daemon_mode" name="role_daemon_mode">
+                      <option value="">继承</option><option value="remote">remote</option><option value="local">local</option>
+                    </select></td>
+                    <td><input id="role_daemon_host" name="role_daemon_host" placeholder="继承" spellcheck="false"></td>
+                    <td><input id="role_daemon_user" name="role_daemon_user" placeholder="继承" spellcheck="false"></td>
+                    <td><input id="role_daemon_jump_host" name="role_daemon_jump_host" placeholder="继承" spellcheck="false"></td>
+                    <td><input id="role_daemon_root" name="role_daemon_root" placeholder="继承 root.default/&lt;role&gt;" spellcheck="false"></td>
+                  </tr>
+                  <tr>
+                    <th scope="row">command</th>
+                    <td><select id="role_command_mode" name="role_command_mode">
+                      <option value="">继承</option><option value="remote">remote</option><option value="local">local</option>
+                    </select></td>
+                    <td><input id="role_command_host" name="role_command_host" placeholder="继承" spellcheck="false"></td>
+                    <td><input id="role_command_user" name="role_command_user" placeholder="继承" spellcheck="false"></td>
+                    <td><input id="role_command_jump_host" name="role_command_jump_host" placeholder="继承" spellcheck="false"></td>
+                    <td><input id="role_command_root" name="role_command_root" placeholder="继承 root.default/&lt;role&gt;" spellcheck="false"></td>
+                  </tr>
+                  <tr>
+                    <th scope="row">file</th>
+                    <td><select id="role_file_mode" name="role_file_mode">
+                      <option value="">继承</option><option value="remote">remote</option><option value="local">local</option>
+                    </select></td>
+                    <td><input id="role_file_host" name="role_file_host" placeholder="继承" spellcheck="false"></td>
+                    <td><input id="role_file_user" name="role_file_user" placeholder="继承" spellcheck="false"></td>
+                    <td><input id="role_file_jump_host" name="role_file_jump_host" placeholder="继承" spellcheck="false"></td>
+                    <td><input id="role_file_root" name="role_file_root" placeholder="继承 root.default/&lt;role&gt;" spellcheck="false"></td>
+                  </tr>
+                  <tr>
+                    <th scope="row">spectre</th>
+                    <td><select id="role_spectre_mode" name="role_spectre_mode">
+                      <option value="">继承</option><option value="remote">remote</option><option value="local">local</option>
+                    </select></td>
+                    <td><input id="role_spectre_host" name="role_spectre_host" placeholder="继承" spellcheck="false"></td>
+                    <td><input id="role_spectre_user" name="role_spectre_user" placeholder="继承" spellcheck="false"></td>
+                    <td><input id="role_spectre_jump_host" name="role_spectre_jump_host" placeholder="继承" spellcheck="false"></td>
+                    <td><input id="role_spectre_root" name="role_spectre_root" placeholder="继承 root.default/&lt;role&gt;" spellcheck="false"></td>
+                  </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </details>
+            <details class="advanced"><summary>高级策略配置（可选）</summary><div class="advanced-body">
                 <div class="advanced-group" data-remote-only><h3>SSH 策略</h3><div class="fields two">
                   <div class="field"><label for="ssh_backend">SSH 后端</label><select id="ssh_backend" name="ssh_backend"><option value="">默认 openssh</option><option value="openssh">OpenSSH</option><option value="paramiko">Paramiko</option></select></div>
                   <div class="field"><label for="channel_budget">Channel 预算</label><input id="channel_budget" name="channel_budget" type="number" min="1" inputmode="numeric" placeholder="默认 10"></div>
@@ -1785,7 +1848,18 @@ function collectPayload() {
   if (flat.local_port !== undefined) daemon.local_port = flat.local_port;
   const spectre = ep(flat.spectre_host, null, null, null, null);
   if (flat.spectre_bin) spectre.bin = flat.spectre_bin;
-  payload.roles = {gui: {}, daemon: daemon, command: {}, file: {}, spectre: spectre};
+  const roles = {gui: {}, daemon: daemon, command: {}, file: {}, spectre: spectre};
+  ['gui', 'daemon', 'command', 'file', 'spectre'].forEach(function(name) {
+    const prefix = 'role_' + name + '_';
+    const role = roles[name];
+    Object.keys(flat).forEach(function(key) {
+      if (key.indexOf(prefix) !== 0) return;
+      const field = key.slice(prefix.length);
+      if (['mode', 'host', 'user', 'jump_host', 'jump_user', 'proxy', 'root'].indexOf(field) < 0) return;
+      role[field] = flat[key]
+    })
+  });
+  payload.roles = roles;
   ['ssh_backend', 'ssh_control_master', 'ssh_tool_override', 'thread_pool_size',
    'channel_budget', 'connect_timeout', 'log_level', 'log_max_bytes'
   ].forEach(function(key) {
@@ -1929,6 +2003,14 @@ function validateApplication() {
     if (!byId('host').value.trim()) byId('host').setCustomValidity('远程模式需要目标 SSH 主机。');
     if (!byId('ssh_user').value.trim()) byId('ssh_user').setCustomValidity('远程模式需要 SSH 用户。')
   }
+  ['gui', 'daemon', 'command', 'file', 'spectre'].forEach(function(name) {
+    const mode = (byId('role_' + name + '_mode') || {}).value;
+    if (mode !== 'local') return;
+    ['host', 'user', 'jump_host'].forEach(function(field) {
+      const node = byId('role_' + name + '_' + field);
+      if (node && node.value.trim()) node.setCustomValidity('mode=local 的 role 不能填写 ' + field);
+    })
+  });
   form.classList.add('was-validated');
   if (!form.checkValidity()) {
     form.reportValidity();
