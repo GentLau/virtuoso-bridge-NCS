@@ -43,6 +43,15 @@ class Handler(BaseHTTPRequestHandler):
             return
         middle: BusinessServer = self.server.middle
         try:
+            if path == "/api/shutdown":
+                # graceful stop: release per-token clients (tunnels + shells)
+                # before the harness terminates this process (TerminateProcess
+                # would skip atexit and leave orphan ``ssh -N -L`` behind)
+                middle.close()
+                self._send(200, {"ok": True})
+                import threading as _threading
+                _threading.Thread(target=self.server.shutdown, daemon=True).start()
+                return
             if path == "/api/skill":
                 r = middle.execute_skill(
                     body.get("skill", ""),

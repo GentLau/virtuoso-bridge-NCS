@@ -390,6 +390,11 @@ def main():
     }
     print(json.dumps(summary, ensure_ascii=False))
     server_log.close()
+    # graceful shutdown first: it releases tunnels/shells (spec 资源盘点)
+    try:
+        post(base, "/api/shutdown", {}, timeout=10)
+    except Exception:  # noqa: BLE001 - best effort
+        pass
     server_proc.terminate()
     try:
         server_proc.wait(timeout=10)
