@@ -4,8 +4,8 @@
   "user": "vbsixlocal",
   "token": "vb-six-local",
   "host": "wsl-gent",
-  "daemon_port": 59243,
-  "http_port": 59244,
+  "daemon_port": 64679,
+  "http_port": 64680,
   "work_dir": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\reg-six-local",
   "steps": [
     {
@@ -107,8 +107,8 @@
         },
         "roles": {
           "daemon": {
-            "daemon_port": 59243,
-            "local_port": 59243
+            "daemon_port": 64679,
+            "local_port": 64679
           }
         },
         "log_level": "off",
@@ -194,8 +194,8 @@
               "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\reg-six-local\\remote-root\\daemon",
               "expected_fingerprint": null,
               "max_sessions": 10,
-              "daemon_port": 59243,
-              "local_port": 59243,
+              "daemon_port": 64679,
+              "local_port": 64679,
               "python": "C:\\Users\\user\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
               "expected_hostname": "DESKTOP-F143LSD",
               "expected_user": "user"
@@ -305,8 +305,8 @@
               "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\reg-six-local\\remote-root\\daemon",
               "expected_fingerprint": null,
               "max_sessions": 10,
-              "daemon_port": 59243,
-              "local_port": 59243,
+              "daemon_port": 64679,
+              "local_port": 64679,
               "python": "C:\\Users\\user\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
               "expected_hostname": "DESKTOP-F143LSD",
               "expected_user": "user"
@@ -414,8 +414,8 @@
               "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\reg-six-local\\remote-root\\daemon",
               "expected_fingerprint": null,
               "max_sessions": 10,
-              "daemon_port": 59243,
-              "local_port": 59243,
+              "daemon_port": 64679,
+              "local_port": 64679,
               "python": "C:\\Users\\user\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
               "expected_hostname": "DESKTOP-F143LSD",
               "expected_user": "user"
@@ -464,7 +464,7 @@
             "log_level": "off",
             "log_max_bytes": 65536
           },
-          "registered_at": 1789553854
+          "registered_at": 1789554419
         },
         "report": {
           "command_ok": true,
@@ -526,8 +526,8 @@
               "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\reg-six-local\\remote-root\\daemon",
               "expected_fingerprint": null,
               "max_sessions": 10,
-              "daemon_port": 59243,
-              "local_port": 59243,
+              "daemon_port": 64679,
+              "local_port": 64679,
               "python": "C:\\Users\\user\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
               "expected_hostname": "DESKTOP-F143LSD",
               "expected_user": "user"
@@ -576,7 +576,7 @@
             "log_level": "off",
             "log_max_bytes": 65536
           },
-          "registered_at": 1789553854
+          "registered_at": 1789554419
         }
       }
     },
@@ -631,8 +631,8 @@
                   "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\reg-six-local\\remote-root\\daemon",
                   "expected_fingerprint": null,
                   "max_sessions": 10,
-                  "daemon_port": 59243,
-                  "local_port": 59243,
+                  "daemon_port": 64679,
+                  "local_port": 64679,
                   "python": "C:\\Users\\user\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
                   "expected_hostname": "DESKTOP-F143LSD",
                   "expected_user": "user"
@@ -681,7 +681,7 @@
                 "log_level": "off",
                 "log_max_bytes": 65536
               },
-              "registered_at": 1789553854
+              "registered_at": 1789554419
             }
           }
         ]
@@ -736,8 +736,8 @@
               "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\reg-six-local\\remote-root\\daemon",
               "expected_fingerprint": null,
               "max_sessions": 10,
-              "daemon_port": 59243,
-              "local_port": 59243,
+              "daemon_port": 64679,
+              "local_port": 64679,
               "python": "C:\\Users\\user\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
               "expected_hostname": "DESKTOP-F143LSD",
               "expected_user": "user"
@@ -786,7 +786,7 @@
             "log_level": "off",
             "log_max_bytes": 65536
           },
-          "registered_at": 1789553854
+          "registered_at": 1789554419
         }
       }
     },
@@ -836,8 +836,8 @@
             "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\reg-six-local\\remote-root\\daemon",
             "expected_fingerprint": null,
             "max_sessions": 10,
-            "daemon_port": 59243,
-            "local_port": 59243,
+            "daemon_port": 64679,
+            "local_port": 64679,
             "python": "C:\\Users\\user\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
             "expected_hostname": "DESKTOP-F143LSD",
             "expected_user": "user"
@@ -886,7 +886,7 @@
           "log_level": "off",
           "log_max_bytes": 65536
         },
-        "registered_at": 1789553854
+        "registered_at": 1789554419
       },
       "response": {
         "user": "vbsixlocal",
@@ -932,8 +932,8 @@
               "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\reg-six-local\\remote-root\\daemon",
               "expected_fingerprint": null,
               "max_sessions": 10,
-              "daemon_port": 59243,
-              "local_port": 59243,
+              "daemon_port": 64679,
+              "local_port": 64679,
               "python": "C:\\Users\\user\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
               "expected_hostname": "DESKTOP-F143LSD",
               "expected_user": "user"
@@ -982,7 +982,7 @@
             "log_level": "off",
             "log_max_bytes": 65536
           },
-          "registered_at": 1789553854
+          "registered_at": 1789554419
         }
       }
     },
@@ -1009,8 +1009,8 @@
         },
         "roles": {
           "daemon": {
-            "daemon_port": 59258,
-            "local_port": 59258
+            "daemon_port": 54865,
+            "local_port": 54865
           }
         },
         "log_level": "off",
@@ -1043,5 +1043,5 @@
       }
     }
   ],
-  "elapsed_s": 1.452999999979511
+  "elapsed_s": 1.4369999999180436
 }
