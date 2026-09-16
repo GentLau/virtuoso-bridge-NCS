@@ -23,6 +23,7 @@ def main() -> int:
     ap.add_argument("--token-prefix", default="fake")
     ap.add_argument("--host", default="wsl-gent")
     ap.add_argument("--ssh-user", default="Gent")
+    ap.add_argument("--remote-root-base", default="/home/Gent/.virtuoso-bridge-stress")
     ap.add_argument("--work-dir", default=None)
     args = ap.parse_args()
     wd = Path(args.work_dir) if args.work_dir else Path(tempfile.mkdtemp(prefix="vb-remote-stress-"))
@@ -33,7 +34,7 @@ def main() -> int:
         e = UserEntry(token=token, mode="remote")
         e.ssh.default.host = args.host; e.ssh.default.user = args.ssh_user; e.ssh.backend = "paramiko"; e.runtime.thread_pool_size = 8
         for name in ("gui", "daemon", "command", "file", "spectre"):
-            r = getattr(e.roles, name); r.host = args.host; r.user = args.ssh_user; r.root = f"/home/{args.ssh_user}/.virtuoso-bridge-stress/{user}/{name}"
+            r = getattr(e.roles, name); r.host = args.host; r.user = args.ssh_user; r.root = f"{args.remote_root_base.rstrip('/')}/{user}/{name}"
         e.roles.daemon.daemon_port = args.base_port + i; e.roles.daemon.local_port = args.local_port_base + i; e.roles.daemon.python = "/usr/bin/python3"; e.cdslog.log_level = "off"
         reg.register(user, e)
         p = wd / f"in-{i}.bin"; p.write_bytes(token.encode() * 512); users.append((user, token, p))

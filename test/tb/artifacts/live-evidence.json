@@ -1,0 +1,23 @@
+{
+  "date": "2026-09-16",
+  "environment": {
+    "windows": "DESKTOP-F143LSD",
+    "wsl": "GLIS-DESKTOP (20 vCPU / 16GB)",
+    "vps": "iZz1iwzbaf5hy6Z (2 vCPU / 1.6GB, low-concurrency only)"
+  },
+  "stress": {
+    "local_100": {"users": 100, "ops": 800, "ok": 800, "retries": 0, "errors": 0, "elapsed_s": 112.19288992881775},
+    "remote_100": {"users": 100, "max_workers": 30, "ok": 100, "retries": 0, "errors": 0, "elapsed_s": 33.84198212623596, "ssh_processes_before": 2, "ssh_processes_after": 2},
+    "vps_remote_2": {"users": 2, "max_workers": 2, "ok": 2, "retries": 0, "errors": 0, "elapsed_s": 4.3106923065185555}
+  },
+  "log_delta": {
+    "level": "all",
+    "before": 3860,
+    "after": 3907,
+    "result_log": "\\o log-verify-a5885e2c92064552ac66b66f393cf034\n",
+    "file_delta": "\\o log-verify-a5885e2c92064552ac66b66f393cf034\n",
+    "exact_match": true,
+    "off_file_change": false,
+    "off_result_log": ""
+  }
+}
