@@ -356,20 +356,57 @@ def install_staged_path(plan: TarDownloadPlan) -> None:
     install_staged_item(plan.stage_path, plan.staged_item, plan.local_path)
 
 
+def _replaceable_in_place(staged_item: Path, local_path: Path) -> bool:
+    """True when a single ``os.replace`` can install ``staged_item``.
+
+    Regular files (and symlinks) are replaced atomically by ``os.replace`` on
+    POSIX *and* on Windows, so no backup/restore window is needed.  Directories
+    cannot be replaced in place portably (Windows refuses a non-empty target),
+    so those keep the staged backup dance.
+    """
+    try:
+        if staged_item.is_dir():
+            return False
+        if local_path.is_dir() and not local_path.is_symlink():
+            return False
+    except OSError:
+        return False
+    return True
+
+
 def install_staged_item(
-    stage_path: Path,
+    stage_path: Path | None,
     staged_item: Path,
     local_path: Path,
 ) -> None:
-    """Atomically install one staged item, then retire the previous target."""
+    """Atomically install one staged item, then retire the previous target.
+
+    A regular file target is installed with **one** ``os.replace``, so a crash
+    while installing can never leave the target missing or half-written.
+    ``stage_path`` is the private staging directory to retire afterwards; it is
+    ``None`` when the caller stages the item itself (local in-place transfers)
+    and therefore owns its cleanup.
+    """
+    target_exists = local_path.exists() or local_path.is_symlink()
+    if not target_exists or _replaceable_in_place(staged_item, local_path):
+        try:
+            os.replace(staged_item, local_path)
+        except Exception:
+            if stage_path is not None:
+                discard_stage(stage_path)
+            raise
+        if stage_path is not None:
+            discard_stage(stage_path)
+        return
+
     backup_path: Path | None = None
     try:
-        if local_path.exists() or local_path.is_symlink():
-            backup_path = local_path.parent / f".vbbak-{uuid.uuid4().hex}"
-            local_path.rename(backup_path)
+        backup_path = local_path.parent / f".vbbak-{uuid.uuid4().hex}"
+        local_path.rename(backup_path)
         staged_item.rename(local_path)
     except Exception:
-        discard_stage(stage_path)
+        if stage_path is not None:
+            discard_stage(stage_path)
         if (
             backup_path is not None
             and not (local_path.exists() or local_path.is_symlink())
@@ -391,7 +428,8 @@ def install_staged_item(
                     backup_path,
                     exc,
                 )
-        discard_stage(stage_path)
+        if stage_path is not None:
+            discard_stage(stage_path)
 
 
 def discard_stage(stage_path: Path) -> None:

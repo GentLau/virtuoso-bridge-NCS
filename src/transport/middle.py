@@ -26,11 +26,69 @@ from transport.roles import ResolvedTargets, resolve
 from transport.runtime_paths import registry_path, set_working_dir
 from transport.skill_client import SkillClient
 from transport.ssh import UnknownEffectError
+from transport.transfer import install_staged_item
 from transport.tunnel import RemoteClient
 
 logger = logging.getLogger(__name__)
 
 _DEFAULT_TIMEOUT = 30.0  # spec: timeout=None -> 30s for all five interfaces
+
+# Local transfers stream in bounded chunks so the call deadline is observed
+# even when the disk is slow; a single shutil.copy2 cannot be interrupted.
+_TRANSFER_CHUNK = 1024 * 1024
+
+
+class _DeadlineExceeded(Exception):
+    """A local transfer ran past the budget of its interface call."""
+
+
+def _copy_file_with_deadline(src: Path, dst: Path, deadline: float | None) -> None:
+    """Stream-copy one file, checking the budget between chunks."""
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    with src.open("rb") as source, dst.open("wb") as target:
+        while True:
+            if deadline is not None and time.monotonic() >= deadline:
+                raise _DeadlineExceeded
+            chunk = source.read(_TRANSFER_CHUNK)
+            if not chunk:
+                break
+            target.write(chunk)
+    try:
+        shutil.copystat(src, dst)
+    except OSError:  # best effort; content is already correct
+        pass
+
+
+def _copy_tree_with_deadline(src: Path, dst: Path, deadline: float | None) -> None:
+    """Recursive copy that checks the budget for every directory entry."""
+    stack: list[tuple[Path, Path]] = [(src, dst)]
+    while stack:
+        if deadline is not None and time.monotonic() >= deadline:
+            raise _DeadlineExceeded
+        current_src, current_dst = stack.pop()
+        current_dst.mkdir(parents=True, exist_ok=True)
+        try:
+            current_dst.chmod(current_src.stat().st_mode & 0o777)
+        except OSError:
+            pass
+        with os.scandir(current_src) as entries:
+            for entry in entries:
+                if deadline is not None and time.monotonic() >= deadline:
+                    raise _DeadlineExceeded
+                entry_src = Path(entry.path)
+                entry_dst = current_dst / entry.name
+                if entry.is_dir(follow_symlinks=True):
+                    stack.append((entry_src, entry_dst))
+                else:
+                    _copy_file_with_deadline(entry_src, entry_dst, deadline)
+
+
+def _copy_into_with_deadline(src: Path, dst: Path, deadline: float | None) -> None:
+    """Copy a file or a whole tree, honouring ``deadline``."""
+    if src.is_dir():
+        _copy_tree_with_deadline(src, dst, deadline)
+    else:
+        _copy_file_with_deadline(src, dst, deadline)
 
 # Reserved diagnostic prefixes (spec: 三层架构 §4.4).  Upper layers may match
 # on them; the text after the prefix is diagnostic detail only.
@@ -585,7 +643,10 @@ class BusinessServer(Middle):
             user = self.registry.user_of(token) or token
             targets = self._targets(entry, user=user)
             if targets.file.mode == "local":
-                return self._local_upload(local_path, remote_path, recursive, root=targets.file.root)
+                return self._local_upload(
+                    local_path, remote_path, recursive,
+                    root=targets.file.root, budget=budget,
+                )
             return self._remote(token).upload_file(
                 Path(local_path), remote_path,
                 timeout=budget, recursive=recursive,
@@ -608,7 +669,10 @@ class BusinessServer(Middle):
             user = self.registry.user_of(token) or token
             targets = self._targets(entry, user=user)
             if targets.file.mode == "local":
-                return self._local_download(remote_path, local_path, recursive, root=targets.file.root)
+                return self._local_download(
+                    remote_path, local_path, recursive,
+                    root=targets.file.root, budget=budget,
+                )
             return self._remote(token).download_file(
                 remote_path, Path(local_path),
                 timeout=budget, recursive=recursive,
@@ -694,28 +758,29 @@ class BusinessServer(Middle):
 
     @staticmethod
     def _install_staged(stage: Path, target: Path) -> None:
-        backup = None
-        try:
-            if target.exists() or target.is_symlink():
-                backup = target.parent / f".vbbak-{uuid.uuid4().hex}"
-                target.replace(backup)
-            stage.replace(target)
-        except Exception:
-            if backup is not None and not (target.exists() or target.is_symlink()):
-                backup.replace(target)
-            raise
-        else:
-            if backup is not None:
-                BusinessServer._remove_path(backup)
+        """Install a staged item with the shared crash-safe replace.
+
+        Regular files are installed with a single atomic ``os.replace`` (no
+        window in which the previous target is missing); directory targets keep
+        the backup dance and are cleaned up here.
+        """
+        install_staged_item(None, stage, target)
 
     @staticmethod
-    def _local_upload(local_path: Path, remote_path: str, recursive: bool, root: str | None = None) -> CommandResult:
+    def _local_upload(
+        local_path: Path,
+        remote_path: str,
+        recursive: bool,
+        root: str | None = None,
+        budget: float | None = None,
+    ) -> CommandResult:
         src = Path(local_path)
         dst = Path(remote_path).expanduser()
         if not dst.is_absolute() and root:
             dst = Path(root).expanduser() / dst
         if not src.exists() and not src.is_symlink():
             return CommandResult(1, "", f"VB-PATH-NOT-VISIBLE: {src}", kind="path")
+        deadline = None if budget is None else time.monotonic() + budget
         try:
             dst.parent.mkdir(parents=True, exist_ok=True)
             if recursive:
@@ -725,7 +790,7 @@ class BusinessServer(Middle):
                     )
                 stage = dst.parent / f".vbtmp-{uuid.uuid4().hex}"
                 try:
-                    shutil.copytree(src, stage, symlinks=False)
+                    _copy_tree_with_deadline(src, stage, deadline)
                     BusinessServer._install_staged(stage, dst)
                 finally:
                     BusinessServer._remove_path(stage)
@@ -736,7 +801,7 @@ class BusinessServer(Middle):
                 )
             stage = dst.parent / f".vbtmp-{uuid.uuid4().hex}"
             try:
-                shutil.copy2(src, stage)
+                _copy_file_with_deadline(src, stage, deadline)
                 if BusinessServer._sha256_file(src) != BusinessServer._sha256_file(stage):
                     return CommandResult(
                         1, "", "sha256 mismatch", kind="checksum"
@@ -745,17 +810,28 @@ class BusinessServer(Middle):
             finally:
                 BusinessServer._remove_path(stage)
             return CommandResult(0, str(dst), "", kind="command")
+        except _DeadlineExceeded:
+            return CommandResult(
+                124, "", BusinessServer._timeout_detail(budget), kind="timeout"
+            )
         except OSError as exc:
             return CommandResult(1, "", f"VB-PATH-NOT-VISIBLE: {exc}", kind="path")
 
     @staticmethod
-    def _local_download(remote_path: str, local_path: Path, recursive: bool, root: str | None = None) -> CommandResult:
+    def _local_download(
+        remote_path: str,
+        local_path: Path,
+        recursive: bool,
+        root: str | None = None,
+        budget: float | None = None,
+    ) -> CommandResult:
         src = Path(remote_path).expanduser()
         if not src.is_absolute() and root:
             src = Path(root).expanduser() / src
         dst = Path(local_path)
         if not src.exists() and not src.is_symlink():
             return CommandResult(1, "", f"VB-PATH-NOT-VISIBLE: {src}", kind="path")
+        deadline = None if budget is None else time.monotonic() + budget
         try:
             dst.parent.mkdir(parents=True, exist_ok=True)
             if recursive:
@@ -765,7 +841,7 @@ class BusinessServer(Middle):
                     )
                 stage = dst.parent / f".vbtmp-{uuid.uuid4().hex}"
                 try:
-                    shutil.copytree(src, stage, symlinks=False)
+                    _copy_tree_with_deadline(src, stage, deadline)
                     BusinessServer._install_staged(stage, dst)
                 finally:
                     BusinessServer._remove_path(stage)
@@ -776,7 +852,7 @@ class BusinessServer(Middle):
                 )
             stage = dst.parent / f".vbtmp-{uuid.uuid4().hex}"
             try:
-                shutil.copy2(src, stage)
+                _copy_file_with_deadline(src, stage, deadline)
                 if BusinessServer._sha256_file(src) != BusinessServer._sha256_file(stage):
                     return CommandResult(
                         1, "", "sha256 mismatch", kind="checksum"
@@ -785,8 +861,18 @@ class BusinessServer(Middle):
             finally:
                 BusinessServer._remove_path(stage)
             return CommandResult(0, str(dst), "", kind="command")
+        except _DeadlineExceeded:
+            return CommandResult(
+                124, "", BusinessServer._timeout_detail(budget), kind="timeout"
+            )
         except OSError as exc:
             return CommandResult(1, "", f"VB-PATH-NOT-VISIBLE: {exc}", kind="path")
+
+    @staticmethod
+    def _timeout_detail(budget: float | None) -> str:
+        if budget is None:
+            return "transfer timed out"
+        return f"command timed out after {budget:g}s"
 
 
 __all__ = ["BusinessServer"]

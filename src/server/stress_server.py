@@ -87,6 +87,24 @@ class Handler(BaseHTTPRequestHandler):
                 )
                 self._send(200, {"returncode": c.returncode, "stdout": c.stdout, "stderr": c.stderr})
                 return
+            if path == "/api/gui":
+                c = middle.run_gui_command(
+                    body.get("cmd", ""),
+                    timeout=body.get("timeout"),
+                    token=body["token"],
+                )
+                self._send(200, {"returncode": c.returncode, "stdout": c.stdout,
+                                 "stderr": c.stderr, "kind": c.kind})
+                return
+            if path == "/api/spectre":
+                c = middle.run_spectre_command(
+                    body.get("cmd", ""),
+                    timeout=body.get("timeout"),
+                    token=body["token"],
+                )
+                self._send(200, {"returncode": c.returncode, "stdout": c.stdout,
+                                 "stderr": c.stderr, "kind": c.kind})
+                return
             if path == "/api/composite":
                 token = body["token"]
                 seq = str(body.get("seq", "0"))

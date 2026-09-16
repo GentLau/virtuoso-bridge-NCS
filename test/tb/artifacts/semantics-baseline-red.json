@@ -1,0 +1,31 @@
+{
+  "ok": false,
+  "failed": 5,
+  "results": {
+    "install-crash-safety": {
+      "status": "fail",
+      "error": "ProbeFailure: crash between the two renames lost the existing target (leftovers=['.vbbak-ae4b7b89b0a148b087eb4083b82ac9f3'])",
+      "elapsed_s": 1.4059999999590218
+    },
+    "local-download-timeout": {
+      "status": "fail",
+      "error": "ProbeFailure: download (recursive=False) ignored the budget: kind='command' rc=0 stderr=''",
+      "elapsed_s": 0.1720000000204891
+    },
+    "local-file-timeout": {
+      "status": "fail",
+      "error": "ProbeFailure: upload (recursive=False) ignored the budget: kind='command' rc=0 stderr=''",
+      "elapsed_s": 0.2029999999795109
+    },
+    "local-tree-timeout": {
+      "status": "fail",
+      "error": "ProbeFailure: upload (recursive=True) ignored the budget: kind='command' rc=0 stderr=''",
+      "elapsed_s": 0.07800000009592623
+    },
+    "registry-cross-process": {
+      "status": "fail",
+      "error": "ProbeFailure: user0: rc=1 Traceback (most recent call last):\n  File \"C:\\Users\\user\\AppData\\Local\\Temp\\vb-reg-xproc-3ci_44ap\\child.py\", line 16, in <module>\n    registry.register(user, entry)\n  File \"C:\\Users\\user\\Desktop\\repos_Github\\_vb-red-baseline\\src\\transport\\registry.py\", line 360, in register\n    self._save_payload_locked(\n  File \"C:\\Users\\user\\Desktop\\repos_Github\\_vb-red-baseline\\src\\transport\\registry.py\", line 310, in _save_payload_locked\n    with file_lock(self.path):\n         ^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\user\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\contextlib.py\", line 137, in __enter__\n    return next(self.gen)\n           ^^^^^^^^^^^^^^\n  File \"C:\\Users\\user\\Desktop\\repos_Github\\_vb-red-baseline\\src\\transport\\registry.py\", line 74, in file_lock\n    os.write(fd, b\"0\")  # keep a byte so msvcrt can lock a real region\n    ^^^^^^^^^^^^^^^^^^\nPermissionError: [Errno 13] Permission denied; user1: rc=1 Traceback (most recent call last):\n  File \"C:\\Users\\user\\AppData\\Local\\Temp\\vb-reg-xproc-3ci_44ap\\child.py\", line 16, in <module>\n    registry.register(user, entry)\n  File \"C:\\Users\\user\\Desktop\\repos_Github\\_vb-red-baseline\\src\\transport\\registry.py\", line 360, in register\n    self._save_payload_locked(\n  File \"C:\\Users\\user\\Desktop\\repos_Github\\_vb-red-baseline\\src\\transport\\registry.py\", line 310, in _save_payload_locked\n    with file_lock(self.path):\n         ^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\user\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\contextlib.py\", line 137, in __enter__\n    return next(self.gen)\n           ^^^^^^^^^^^^^^\n  File \"C:\\Users\\user\\Desktop\\repos_Github\\_vb-red-baseline\\src\\transport\\registry.py\", line 74, in file_lock\n    os.write(fd, b\"0\")  # keep a byte so msvcrt can lock a real region\n    ^^^^^^^^^^^^^^^^^^\nPermissionError: [Errno 13] Permission denied",
+      "elapsed_s": 1.9839999999385327
+    }
+  }
+}

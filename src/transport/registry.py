@@ -60,24 +60,44 @@ def canonical_host(value: str | None) -> str:
 
 
 @contextmanager
-def file_lock(path: Path):
+def file_lock(path: Path, *, timeout: float = 30.0):
     """Short-lived cross-process exclusive lock on ``path``.
 
     POSIX uses ``fcntl.flock``; Windows (no ``flock``) uses ``msvcrt.locking``
     on the first byte, which is the documented equivalent for "one writer at
     a time" semantics (配置一览 §6.4).
+
+    Two details are load-bearing:
+
+    * the sidecar ``*.lock`` file is created once and **never unlinked**.  A
+      lock file removed while another process still holds it lets two later
+      writers lock *different inodes*, which silently destroys mutual
+      exclusion;
+    * both backends acquire **non-blocking and retry** until ``timeout``, so a
+      stuck holder surfaces as an ``OSError`` instead of hanging registration
+      forever.  The lock byte is never written after creation (Windows refuses
+      writes into a byte range another process has locked).
     """
     lock_path = Path(path).with_suffix(Path(path).suffix + ".lock")
     lock_path.parent.mkdir(parents=True, exist_ok=True)
     fd = os.open(lock_path, os.O_RDWR | os.O_CREAT, 0o600)
     try:
-        os.write(fd, b"0")  # keep a byte so msvcrt can lock a real region
-        os.lseek(fd, 0, os.SEEK_SET)
-        if fcntl is not None:
-            fcntl.flock(fd, fcntl.LOCK_EX)
-        else:  # pragma: no cover - Windows
-            import msvcrt
-            msvcrt.locking(fd, msvcrt.LK_LOCK, 1)
+        deadline = time.monotonic() + timeout
+        while True:
+            try:
+                if fcntl is not None:
+                    fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                else:  # pragma: no cover - Windows
+                    import msvcrt
+                    os.lseek(fd, 0, os.SEEK_SET)
+                    msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
+                break
+            except OSError:
+                if time.monotonic() >= deadline:
+                    raise OSError(
+                        f"timed out after {timeout:g}s waiting for lock {lock_path}"
+                    ) from None
+                time.sleep(0.02)
         try:
             yield
         finally:
@@ -86,16 +106,12 @@ def file_lock(path: Path):
             else:  # pragma: no cover - Windows
                 import msvcrt as _m
                 os.lseek(fd, 0, os.SEEK_SET)
-                _m.locking(fd, _m.LK_UNLCK, 1)
+                try:
+                    _m.locking(fd, _m.LK_UNLCK, 1)
+                except OSError:
+                    pass
     finally:
         os.close(fd)
-        # Best-effort cleanup: the lock is a short-lived implementation detail,
-        # not part of the registry contract.  If another process still has the
-        # sidecar open, Windows refuses the unlink and it remains harmless.
-        try:
-            os.unlink(lock_path)
-        except OSError:
-            pass
 
 
 class RegistryError(Exception):
@@ -272,51 +288,98 @@ class Registry:
         with self._lock:
             if self._loaded:
                 return self
-            if self.path.is_file():
-                raw = json.loads(self.path.read_text(encoding="utf-8"))
-                users = raw if isinstance(raw, dict) else {}
-                self._entries = {
-                    str(name): UserEntry.model_validate(value)
-                    for name, value in users.items()
-                }
-                self._rebuild_token_index_locked()
+            self._entries = self._read_disk_entries_locked()
+            self._rebuild_token_index_locked()
             self._loaded = True
             return self
 
-    def _lookup_name_locked(self, user: str) -> str:
+    def _read_disk_entries_locked(self) -> dict[str, UserEntry]:
+        """Parse ``registry.json`` into entries (empty when absent).
+
+        On-disk payloads for users whose configuration is unchanged keep the
+        in-memory ``UserEntry`` object, so callers that hold a reference (and
+        ``by_token`` identity checks) stay valid across a re-read.
+        """
+        if not self.path.is_file():
+            return {}
+        raw = json.loads(self.path.read_text(encoding="utf-8"))
+        users = raw if isinstance(raw, dict) else {}
+        entries = {
+            str(name): UserEntry.model_validate(value)
+            for name, value in users.items()
+        }
+        for name, entry in entries.items():
+            memory = self._entries.get(name)
+            if memory is not None and memory.model_dump() == entry.model_dump():
+                entries[name] = memory
+        return entries
+
+    @staticmethod
+    def _lookup_name_in(entries: dict[str, UserEntry], user: str) -> str:
+        """User key inside ``entries`` (case-insensitive on Windows)."""
         name = str(user)
         if os.name != "nt":
             return name
         folded = name.casefold()
-        for existing in self._entries:
+        for existing in entries:
             if existing.casefold() == folded:
                 return existing
         return name
 
-    def _rebuild_token_index_locked(self) -> None:
-        self._token_index = {}
-        for name, entry in self._entries.items():
-            if entry.token in self._token_index:
-                other = self._token_index[entry.token]
+    def _lookup_name_locked(self, user: str) -> str:
+        return self._lookup_name_in(self._entries, user)
+
+    @staticmethod
+    def _index_of(entries: dict[str, UserEntry]) -> dict[str, str]:
+        """Build the token index, refusing a duplicated token."""
+        index: dict[str, str] = {}
+        for name, entry in entries.items():
+            holder = index.get(entry.token)
+            if holder is not None:
                 raise RegistryError(
                     f"registry is corrupt: token {entry.token!r} is shared by "
-                    f"users {other!r} and {name!r}"
+                    f"users {holder!r} and {name!r}"
                 )
-            self._token_index[entry.token] = name
+            index[entry.token] = name
+        return index
+
+    def _rebuild_token_index_locked(self) -> None:
+        self._token_index = self._index_of(self._entries)
 
     def _save_payload_locked(self, payload: dict) -> None:
+        """Write ``payload`` atomically.
+
+        The caller **must** already hold :func:`file_lock` on ``self.path``:
+        the lock spans the read-modify-write, not just this write.
+        """
         self.path.parent.mkdir(parents=True, exist_ok=True)
         tmp = self.path.with_suffix(".json.tmp")
+        tmp.write_text(
+            json.dumps(payload, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        try:
+            tmp.chmod(0o600)
+        except OSError:
+            pass  # Windows filesystems have no POSIX mode
+        tmp.replace(self.path)
+
+    def _mutate_locked(self, mutate) -> None:
+        """Cross-process read-modify-write of the registry file.
+
+        Each setup-phase mutation re-reads the file *inside* the OS lock, so a
+        concurrent registration by another process cannot be overwritten with
+        a stale in-memory snapshot (配置一览 §6.4, 多用户与注册).
+        """
         with file_lock(self.path):
-            tmp.write_text(
-                json.dumps(payload, ensure_ascii=False, indent=2),
-                encoding="utf-8",
+            entries = self._read_disk_entries_locked()
+            mutate(entries)
+            index = self._index_of(entries)
+            self._save_payload_locked(
+                {n: e.model_dump() for n, e in entries.items()}
             )
-            try:
-                tmp.chmod(0o600)
-            except OSError:
-                pass  # Windows filesystems have no POSIX mode
-            tmp.replace(self.path)
+        self._entries = entries
+        self._token_index = index
 
     def register(self, user: str, entry: UserEntry, *, overwrite: bool = False) -> None:
         """Verify and atomically commit one user entry (setup-phase write)."""
@@ -326,60 +389,38 @@ class Registry:
             if entry.registered_at is None:
                 entry.registered_at = int(time.time())
             requested_name = validate_user_name(str(user))
-            # On Windows user lookup is case-insensitive. Overwrite must
-            # replace the existing key, not create a second case variant.
-            name = self._lookup_name_locked(requested_name)
-            previous = self._entries.get(name)
-            if previous is not None and not overwrite:
-                raise UserAlreadyRegisteredError(
-                    f"user {name!r} is already registered; "
-                    f"use overwrite=True to replace it"
-                )
-            holder = self._token_index.get(entry.token)
-            if holder is not None and holder != name:
-                raise TokenConflictError(
-                    f"token {entry.token!r} already belongs to user {holder!r}"
-                )
-            if previous is not None and previous.token != entry.token:
-                # persist first; only commit memory after the replace succeeds
-                new_entries = dict(self._entries)
-                new_entries[name] = entry
-                new_index = dict(self._token_index)
-                new_index.pop(previous.token, None)
-                new_index[entry.token] = name
-                self._save_payload_locked(
-                    {n: e.model_dump() for n, e in new_entries.items()}
-                )
-                self._entries = new_entries
-                self._token_index = new_index
-                return
-            new_entries = dict(self._entries)
-            new_entries[name] = entry
-            new_index = dict(self._token_index)
-            new_index[entry.token] = name
-            self._save_payload_locked(
-                {n: e.model_dump() for n, e in new_entries.items()}
-            )
-            self._entries = new_entries
-            self._token_index = new_index
+
+            def mutate(entries: dict[str, UserEntry]) -> None:
+                # On Windows user lookup is case-insensitive. Overwrite must
+                # replace the existing key, not create a second case variant.
+                name = self._lookup_name_in(entries, requested_name)
+                previous = entries.get(name)
+                if previous is not None and not overwrite:
+                    raise UserAlreadyRegisteredError(
+                        f"user {name!r} is already registered; "
+                        f"use overwrite=True to replace it"
+                    )
+                index = self._index_of(entries)
+                if previous is not None:
+                    index.pop(previous.token, None)  # slot is being replaced
+                holder = index.get(entry.token)
+                if holder is not None and holder != name:
+                    raise TokenConflictError(
+                        f"token {entry.token!r} already belongs to user {holder!r}"
+                    )
+                entries[name] = entry
+
+            self._mutate_locked(mutate)
 
     def remove(self, user: str) -> None:
         """Remove one user and its token mapping (setup-phase write)."""
         with self._lock:
             if not self._loaded:
                 raise RuntimeError("registry not loaded; call load() once at startup")
-            name = self._lookup_name_locked(user)
-            previous = self._entries.get(name)
-            if previous is not None:
-                new_entries = dict(self._entries)
-                new_entries.pop(name, None)
-                new_index = dict(self._token_index)
-                new_index.pop(previous.token, None)
-                self._save_payload_locked(
-                    {n: e.model_dump() for n, e in new_entries.items()}
-                )
-                self._entries = new_entries
-                self._token_index = new_index
+            def mutate(entries: dict[str, UserEntry]) -> None:
+                entries.pop(self._lookup_name_in(entries, user), None)
+
+            self._mutate_locked(mutate)
 
     def get(self, user: str) -> UserEntry | None:
         return self._entries.get(self._lookup_name_locked(user))

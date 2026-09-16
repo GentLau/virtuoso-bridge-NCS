@@ -76,9 +76,13 @@ procedure(RBIpcDataHandler(ipcId data)
     let((result lp lo_start lo_end frames log_on)
     when(RBEcho printf("[RAMIC Bridge (%L)] receive:%L\n" ipcId data))
     lp = "" lo_start = 0 lo_end = 0
-    ; the daemon prefixes the per-request directive into data itself;
-    ; inspect data text so the FIRST log request already captures start
-    log_on = index(data "RBDLogOn=t ") != nil
+    ; the daemon prefixes the per-request directive into data itself, so the
+    ; FIRST log request already captures the start offset.  Read the flag from
+    ; that *prefix* only: scanning the whole payload would let user SKILL text
+    ; containing "RBDLogOn=t " switch log capture on even though the daemon said
+    ; RBDLogOn=nil, which breaks "off = 完全不取日志" (extra flush/fileLength/
+    ; meta frame) and desyncs the frame pipe.
+    log_on = equal(substring(data 1 11) "RBDLogOn=t ")
     when(log_on
         errset(hiFlushLogFile())
         errset(progn(lp = hiGetLogFileName() lo_start = fileLength(lp)))

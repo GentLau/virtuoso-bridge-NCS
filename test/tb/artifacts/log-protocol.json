@@ -1,0 +1,75 @@
+{
+  "ok": true,
+  "failed": 0,
+  "results": {
+    "all-reads-meta": {
+      "status": "pass",
+      "detail": {
+        "log": "line-1\nline-2\n",
+        "value": "2"
+      },
+      "elapsed_s": 0.06199999991804361
+    },
+    "degrade-and-truncate": {
+      "status": "pass",
+      "detail": {
+        "degraded_log": "\\e err-line\n[log auto-degraded: error-only due to log_max_bytes]",
+        "truncated_len": 184,
+        "truncated_body_bytes": 64
+      },
+      "elapsed_s": 0.01600000006146729
+    },
+    "error-first-frame": {
+      "status": "pass",
+      "detail": {
+        "error": "boom",
+        "log": ""
+      },
+      "elapsed_s": 0.015999999945051968
+    },
+    "level-filter": {
+      "status": "pass",
+      "detail": {
+        "all": "plain-info\n\\w warn-line\n\\e error-line\n",
+        "warn": "\\w warn-line\n\\e error-line",
+        "error": "\\e error-line"
+      },
+      "elapsed_s": 0.015000000013969839
+    },
+    "off-reads-one-frame": {
+      "status": "pass",
+      "detail": {
+        "directive": "RBDLogOn=nil",
+        "unread_bytes": 31,
+        "log": ""
+      },
+      "elapsed_s": 0.0
+    },
+    "rotation-truncation": {
+      "status": "pass",
+      "detail": {
+        "log": "rotated-content\n"
+      },
+      "elapsed_s": 0.01600000006146729
+    },
+    "second-frame-timeout": {
+      "status": "pass",
+      "detail": {
+        "warnings": [
+          "CDS.log unavailable: CDS.log path unavailable"
+        ],
+        "elapsed_s": 0.406
+      },
+      "elapsed_s": 0.4059999999590218
+    },
+    "unreadable-log": {
+      "status": "pass",
+      "detail": {
+        "warnings": [
+          "CDS.log unavailable: CDS.log unreadable"
+        ]
+      },
+      "elapsed_s": 0.015999999945051968
+    }
+  }
+}

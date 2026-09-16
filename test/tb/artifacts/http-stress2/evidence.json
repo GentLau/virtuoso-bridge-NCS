@@ -1,0 +1,114 @@
+{
+  "ok": true,
+  "tokens": [
+    "vb-http-local",
+    "vb-vblog"
+  ],
+  "workers_per_token": 6,
+  "rounds_per_worker": 4,
+  "requests": 48,
+  "failed": 0,
+  "elapsed_s": 11.015,
+  "per_kind": {
+    "skill": {
+      "total": 7,
+      "ok": 7,
+      "retries": 0,
+      "rejections": 0,
+      "max_s": 2.922
+    },
+    "download": {
+      "total": 11,
+      "ok": 11,
+      "retries": 0,
+      "rejections": 0,
+      "max_s": 2.969
+    },
+    "gui": {
+      "total": 9,
+      "ok": 9,
+      "retries": 0,
+      "rejections": 0,
+      "max_s": 2.657
+    },
+    "spectre": {
+      "total": 5,
+      "ok": 5,
+      "retries": 0,
+      "rejections": 0,
+      "max_s": 2.437
+    },
+    "upload": {
+      "total": 7,
+      "ok": 7,
+      "retries": 0,
+      "rejections": 0,
+      "max_s": 3.031
+    },
+    "command": {
+      "total": 9,
+      "ok": 9,
+      "retries": 0,
+      "rejections": 0,
+      "max_s": 2.579
+    }
+  },
+  "failures": [],
+  "samples": [
+    {
+      "token": "vb-http-local",
+      "worker": 5,
+      "kind": "skill",
+      "marker": "VB-ski-9f9087b878",
+      "attempts": 1,
+      "rejections": 0,
+      "ok": true,
+      "detail": "stub-daemon (skill returns fixed 2)",
+      "elapsed_s": 0.093
+    },
+    {
+      "token": "vb-http-local",
+      "worker": 5,
+      "kind": "skill",
+      "marker": "VB-ski-f035d69013",
+      "attempts": 1,
+      "rejections": 0,
+      "ok": true,
+      "detail": "stub-daemon (skill returns fixed 2)",
+      "elapsed_s": 0.031
+    },
+    {
+      "token": "vb-http-local",
+      "worker": 1,
+      "kind": "download",
+      "marker": "VB-dow-aca4fce377",
+      "attempts": 1,
+      "rejections": 0,
+      "ok": true,
+      "detail": "",
+      "elapsed_s": 0.063
+    },
+    {
+      "token": "vb-http-local",
+      "worker": 2,
+      "kind": "download",
+      "marker": "VB-dow-4838ff2dc3",
+      "attempts": 1,
+      "rejections": 0,
+      "ok": true,
+      "detail": "",
+      "elapsed_s": 0.063
+    },
+    {
+      "token": "vb-http-local",
+      "worker": 4,
+      "kind": "gui",
+      "marker": "VB-gui-5330c36053",
+      "attempts": 1,
+      "rejections": 0,
+      "ok": true,
+      "detail": "",
+      "elapsed_s": 0.094
+    }
+  ]
+}

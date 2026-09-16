@@ -245,7 +245,12 @@ class RegistrationHandler(BaseHTTPRequestHandler):
             node[path[-1]] = value
         fields = deep_merge(fields, translated)
 
-        allowed = {"mode", "ssh", "root", "roles", "runtime", "cdslog"}
+        # ``GET /api/user/<user>`` returns a full entry, so the update endpoint
+        # must accept that same shape back: ``token`` is read-only but valid
+        # (a *changed* token is refused below) and ``registered_at`` is
+        # server-managed, never user-writable.
+        allowed = {"mode", "ssh", "root", "roles", "runtime", "cdslog",
+                   "token", "registered_at"}
         unknown = set(fields) - allowed
         if unknown:
             self._send_json(
@@ -253,6 +258,11 @@ class RegistrationHandler(BaseHTTPRequestHandler):
                 {"error": "invalid update", "detail": f"unknown fields: {sorted(unknown)}"},
             )
             return
+
+        if "token" in fields and fields.pop("token") != entry.token:
+            self._send_json(400, {"error": "token is immutable; remove and re-register"})
+            return
+        fields.pop("registered_at", None)
 
         candidate_data = deep_merge(entry.model_dump(), fields)
         try:

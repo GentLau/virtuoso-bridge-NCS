@@ -1,0 +1,68 @@
+{
+  "ok": true,
+  "failed": 0,
+  "results": {
+    "install-crash-safety": {
+      "status": "pass",
+      "detail": {
+        "target_content": "NEW",
+        "leftovers": [],
+        "marker": "crashed-after-first-rename"
+      },
+      "elapsed_s": 0.8290000000270084
+    },
+    "local-download-timeout": {
+      "status": "pass",
+      "detail": {
+        "kind": "timeout",
+        "returncode": 124,
+        "stderr": "command timed out after 0.2s",
+        "clock_calls": 6,
+        "partial_target": false
+      },
+      "elapsed_s": 0.062000000034458935
+    },
+    "local-file-timeout": {
+      "status": "pass",
+      "detail": {
+        "kind": "timeout",
+        "returncode": 124,
+        "stderr": "command timed out after 0.2s",
+        "clock_calls": 6,
+        "partial_target": false
+      },
+      "elapsed_s": 0.030999999959021807
+    },
+    "local-tree-timeout": {
+      "status": "pass",
+      "detail": {
+        "kind": "timeout",
+        "returncode": 124,
+        "stderr": "command timed out after 0.2s",
+        "clock_calls": 6,
+        "partial_target": false
+      },
+      "elapsed_s": 0.0470000000204891
+    },
+    "registry-cross-process": {
+      "status": "pass",
+      "detail": {
+        "users": [
+          "seed",
+          "user0",
+          "user1",
+          "user2",
+          "user3"
+        ],
+        "tokens": [
+          "tok-seed",
+          "tok-user0",
+          "tok-user1",
+          "tok-user2",
+          "tok-user3"
+        ]
+      },
+      "elapsed_s": 1.297000000020489
+    }
+  }
+}
