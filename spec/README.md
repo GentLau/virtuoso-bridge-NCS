@@ -1,9 +1,9 @@
 # virtuoso-bridge-NCS Spec
 
-> 版本：Release `SPEC-2026-09-14-r2`（送审修订版）
-> 日期：2026-09-14
+> 版本：Release `SPEC-2026-09-16-r3`（送审修订版）
+> 日期：2026-09-16
 > 状态：Normative 基线（取代 r1）
-> Supersedes：`SPEC-2026-09-14-r1`（五接口口径收口、token↔主机边界、root 唯一算法、注册失败合同、预算与 deadline 矩阵、reservation 跨平台模型、去重索引化）
+> Supersedes：`SPEC-2026-09-14-r2`（按 2026-09-15/16 两轮复审意见收口：hash/checker 治理对齐、max_sessions 按 endpoint、Skill 超时合同、探测矩阵按 role mode 条件化、reservation 内存化、新增 Informative 整体流程示例）
 
 ## 0. 版本治理（替代“文件修改时间优先”）
 
@@ -67,9 +67,8 @@
 | 主题 | 唯一 owner | 其它文档允许出现的形态 |
 |---|---|---|
 | 五接口签名、返回与错误总则（含 `kind` 枚举、保留码） | [四层整体架构与接口](design-concepts/总览/1-四层整体架构与接口.md) §4 | 一句摘要 + 链接 |
-| 五接口 ↔ role 映射、role 职责、token↔主机边界、连接复用拓扑 | [路由设计](design-concepts/中层/3-路由设计.md) §1.1/§2–§4 | 一句摘要 + 链接 |
+| 五接口 ↔ role 映射、role 职责、token↔主机边界、连接数量与复用拓扑 | [路由设计](design-concepts/中层/3-路由设计.md) §1.1–§4 | 一句摘要 + 链接 |
 | 逐 role 探测流程（何时探测、失败级别、何时提交）与部署/根算法 | [多用户与注册](design-concepts/中层/1-多用户与注册.md) §4 | 一句摘要 + 链接 |
-| 连接数量与复用拓扑 | [路由设计](design-concepts/中层/3-路由设计.md) §4 | 一句摘要 + 链接 |
 | 字段格式、默认值、候选/提交 schema、写回字段形态、endpoint key、reservation | [中层配置文档](design-concepts/中层/add-中层配置文档.md) | 一句摘要 + 链接 |
 | 六步注册状态机、注册 deadline、token 生命周期 | [多用户与注册](design-concepts/中层/1-多用户与注册.md) | 一句摘要 + 链接 |
 | 并发形态与排队语义、三预算与通道记账矩阵、连接生命周期、建连重试 | [并发设计](design-concepts/中层/2-并发设计.md) | 一句摘要 + 链接 |
@@ -90,9 +89,9 @@ CDS.log metadata frame 完整字节格式
 
 ## Release（本基线）
 
-- **Release ID**：`SPEC-2026-09-14-r2`
+- **Release ID**：`SPEC-2026-09-16-r3`
 - **Normative 文件集**（7 份）：四层整体架构与接口、本版范围与明确不支持、中层配置文档、路由设计、多用户与注册、并发设计、日志返回设计标准；
-- **Normative 内容哈希**：`a7469f71420f18a1609162e9bd0d4e0e0f135d8188a71c1160873836bd59f71d`
+- **Normative 内容哈希**：`bcca7ca96a85f03d7fb6b95fb94dacab593eb4b13c79a360349b52de54af82a4`
   - 算法：路径为**相对 `spec/` 目录**并按路径排序；逐文件 SHA-256（**按 Git 提交内容计算，即 LF 行尾**；Windows 工作区受 `core.autocrlf` 影响的行尾差异不计入）；每行 `<相对路径> <hex>` 以 LF 拼接（**行间分隔、末行无尾 LF**），再取一次 SHA-256；
 - **基线 commit**：本 Release 段所在提交即基线（见 `git log -1 -- spec/`）；任何 Normative 文档变更必须同时更新本段哈希。
 
@@ -103,8 +102,8 @@ CDS.log metadata frame 完整字节格式
 | 四层整体架构与接口 | Draft v18 | Normative | Draft v17（建连超时/传输失败分界；§5.7 压缩为索引） |
 | 路由设计 | v14 | Normative | v13（单目标点上限口径改为按 endpoint） |
 | 本版范围与明确不支持 | v8 | Normative | v7（重组：按主题分组，补 CDS.log 跟随 GUI 不实现口径） |
-| 中层配置文档 | Draft v25 | Normative | Draft v21–v24（合并说明见文件头 Supersedes） |
-| 多用户与注册 | Draft v19 | Normative | Draft v18（探测矩阵按 role mode 条件化） |
+| 中层配置文档 | Draft v26 | Normative | Draft v21–v25（合并说明见文件头 Supersedes） |
+| 多用户与注册 | Draft v20 | Normative | Draft v19（reservation 分配/复核/释放细节改为索引 §6.4） |
 | 并发设计 | Draft v17 | Normative | Draft v16（max_sessions 计数与上限改为按 endpoint） |
 | 日志返回设计标准 | Draft v11 | Normative | Draft v10（非法日志参数拒绝文本；缺省字段防御性回退说明） |
 
