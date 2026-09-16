@@ -19,9 +19,12 @@ import argparse
 import base64
 import hashlib
 import json
+import os
 import random
 import socket
+import subprocess
 import sys
+import tempfile
 import threading
 import time
 import urllib.error
@@ -71,7 +74,11 @@ class _DaemonStub:
                 if request.get("token") != self.token:
                     conn.sendall(b"\x15" + json.dumps({"error": "invalid token", "log": ""}).encode() + b"\x1e")
                     continue
-                conn.sendall(b"\x02" + json.dumps({"value": "2", "log": ""}).encode() + b"\x1e")
+                # echo the requested expression so the caller can verify that
+                # this answer really belongs to this request
+                skill = str(request.get("skill", ""))
+                value = "2" if skill.strip() in ("1+1", "") else skill
+                conn.sendall(b"\x02" + json.dumps({"value": value, "log": ""}).encode() + b"\x1e")
             except Exception:  # noqa: BLE001
                 pass
             finally:
@@ -109,6 +116,49 @@ def post(base: str, path: str, payload: dict, timeout: float = 120.0):
         return json.loads(error.read().decode("utf-8") or "{}")
 
 
+def _ssh_process_count() -> int:
+    """Client-side ssh process count (the 2026-09 process-storm regression guard)."""
+    try:
+        if os.name == "nt":
+            out = subprocess.run(
+                ["tasklist", "/FI", "IMAGENAME eq ssh.exe", "/NH"],
+                capture_output=True, text=True, timeout=30,
+            )
+            return sum(
+                1 for line in out.stdout.splitlines()
+                if line.strip().lower().startswith("ssh.exe")
+            )
+        out = subprocess.run(["pgrep", "-c", "ssh"], capture_output=True, text=True,
+                             timeout=30)
+        return int((out.stdout or "0").strip() or 0)
+    except Exception:  # noqa: BLE001 - diagnostics only
+        return -1
+
+
+def _staging_leftovers() -> list[str]:
+    """Temp dirs that hold only staging payloads (the stress server's signature).
+
+    Matched by content, never by name alone, so unrelated ``/tmp/tmpXXXX`` dirs
+    from other tools are ignored.
+    """
+    root = Path(tempfile.gettempdir())
+    hits: list[str] = []
+    try:
+        candidates = list(root.glob("tmp*"))
+    except OSError:
+        return hits
+    for path in candidates:
+        if not path.is_dir():
+            continue
+        try:
+            names = {item.name for item in path.iterdir()}
+        except OSError:
+            continue
+        if names and names <= {"out.bin", "payload.bin"}:
+            hits.append(path.name)
+    return hits
+
+
 def is_rejected(response: dict) -> bool:
     """True only when the bridge actually refused for capacity reasons.
 
@@ -132,18 +182,24 @@ def verify(kind: str, marker: str, response: dict) -> tuple[bool, str]:
     if kind == "skill":
         if response.get("ok") and marker in (response.get("output") or ""):
             return True, ""
-        if response.get("ok"):
-            return True, "stub-daemon (skill returns fixed 2)"
-        return False, f"skill failed: {response}"
+        if response.get("post_error"):
+            return False, f"skill transport error: {response['post_error']}"
+        return False, f"skill answer did not belong to this request: {response}"
     if kind in ("command", "gui", "spectre"):
         out = response.get("stdout") or ""
         if response.get("returncode") == 0 and marker in out:
             return True, ""
         return False, f"{kind} failed: {response}"
     if kind == "upload":
-        if response.get("returncode") == 0:
+        # an upload only counts when the payload comes back byte-identical
+        declared = response.get("declared_sha256")
+        if (
+            response.get("returncode") == 0
+            and declared
+            and declared == response.get("expected_sha256") == response.get("verified_sha256")
+        ):
             return True, ""
-        return False, f"upload failed: {response}"
+        return False, f"upload failed or not verified: {response}"
     if kind == "download":
         if response.get("returncode") == 0 and response.get("sha256") == hashlib.sha256(
             json.dumps({"m": marker}).encode()
@@ -182,6 +238,7 @@ def worker(base: str, token: str, index: int, rounds: int, results: list,
         elif kind == "upload":
             body["content_b64"] = base64.b64encode(payload).decode()
             body["remote_path"] = remote
+            body["sha256"] = hashlib.sha256(payload).hexdigest()
         elif kind == "download":
             body["remote_path"] = remote
             body["content_b64"] = base64.b64encode(payload).decode()
@@ -297,6 +354,8 @@ def main() -> int:
         registry.register(args.remote_token, entry)
 
     middle = BusinessServer(work_dir)
+    staging_before = _staging_leftovers()
+    ssh_before = _ssh_process_count()
     stub = _DaemonStub(local_port, args.local_token)
     stub.start()
 
@@ -315,6 +374,7 @@ def main() -> int:
     lock = threading.Lock()
     started = time.monotonic()
     threads = []
+    expected = len(tokens) * args.workers * args.rounds
     try:
         for token in tokens:
             for index in range(args.workers):
@@ -327,6 +387,7 @@ def main() -> int:
             t.start()
         for t in threads:
             t.join(timeout=600)
+        alive = [t for t in threads if t.is_alive()]
     finally:
         server.shutdown()
         server.server_close()
@@ -334,6 +395,11 @@ def main() -> int:
         stub.stop()
 
     elapsed = time.monotonic() - started
+    # staging hygiene: the HTTP server must not leave per-request temp dirs
+    staging_root = work_dir / "stress-tmp"
+    leftover = sorted(item.name for item in staging_root.iterdir()) if staging_root.is_dir() else []
+    new_staging_dirs = sorted(set(_staging_leftovers()) - set(staging_before))
+    ssh_after = _ssh_process_count()
     per_kind: dict[str, dict] = {}
     for item in results:
         bucket = per_kind.setdefault(item["kind"], {"total": 0, "ok": 0, "retries": 0,
@@ -344,9 +410,23 @@ def main() -> int:
         bucket["rejections"] += item["rejections"]
         bucket["max_s"] = max(bucket["max_s"], item["elapsed_s"])
     failed = [item for item in results if not item["ok"]]
+    if alive:
+        failed.append({"kind": "worker-timeout", "ok": False,
+                       "detail": f"{len(alive)} worker threads still running"})
+    if len(results) != expected:
+        failed.append({"kind": "request-count", "ok": False,
+                       "detail": f"{len(results)} results for {expected} planned requests"})
+    ssh_budget = len(tokens) + 4  # one tunnel per token plus slack; a storm blows past this
+    if ssh_before >= 0 and ssh_after > ssh_before + ssh_budget:
+        failed.append({"kind": "ssh-process-storm", "ok": False,
+                       "detail": f"ssh processes {ssh_before} -> {ssh_after}"})
+    if (leftover or new_staging_dirs) and not failed:
+        failed = [{"kind": "temp-dir-hygiene", "ok": False,
+                   "detail": (f"{len(leftover)} staging dirs in {staging_root}; "
+                              f"{len(new_staging_dirs)} new system temp dirs")}]
     first_errors: dict[str, int] = {}
     for item in results:
-        if item["first_error"]:
+        if item.get("first_error"):
             key = f"{item['kind']}: {item['first_error'][:120]}"
             first_errors[key] = first_errors.get(key, 0) + 1
     evidence = {
@@ -356,10 +436,16 @@ def main() -> int:
         "rounds_per_worker": args.rounds,
         "max_attempts": args.max_attempts,
         "requests": len(results),
+        "planned_requests": expected,
         "failed": len(failed),
         "elapsed_s": round(elapsed, 3),
         "per_kind": per_kind,
         "failures": failed[:10],
+        "ssh_processes_before": ssh_before,
+        "ssh_processes_after": ssh_after,
+        "staging_root": str(staging_root),
+        "staging_leftovers": leftover[:10],
+        "new_system_temp_dirs": new_staging_dirs[:10],
         "first_errors": dict(sorted(first_errors.items(), key=lambda kv: -kv[1])[:10]),
         "samples": results[:5],
     }

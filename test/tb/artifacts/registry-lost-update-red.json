@@ -1,0 +1,14 @@
+{
+  "ok": false,
+  "failed": 1,
+  "results": {
+    "registry-cross-process": {
+      "status": "fail",
+      "error": "ProbeFailure: cross-process writes lost users ['user0', 'user2', 'user3']; file holds ['seed', 'user1']",
+      "elapsed_s": 0.12263341400830541
+    }
+  },
+  "env": "wsl-gent (POSIX flock path)",
+  "code_under_test": "src/transport/registry.py from commit 2da45b5 (pre read-modify-write fix)",
+  "tb": "test/tb/semantics_tb.py --case registry-cross-process"
+}

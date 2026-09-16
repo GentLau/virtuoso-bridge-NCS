@@ -16,10 +16,10 @@
 | # | 缺陷 | 红灯证据（TB） | 修复 | 绿灯证据 |
 |---|---|---|---|---|
 | 1 | 本地模式 `upload_file`/`download_file` 不消费 `timeout`：传输完成才返回，超时形同虚设 | `semantics_tb.py`：`local-file-timeout`/`local-tree-timeout`/`local-download-timeout` 3 用例全红 → `artifacts/semantics-baseline-red.json` | `middle.py` 改为分块流式拷贝 + 每块/每目录项检查 deadline；超时返回 `kind=timeout`、`returncode=124`，不留半成品 | `artifacts/semantics-green.json` |
-| 2 | registry 跨进程丢更新：两个进程各自 load→register→写回，后写覆盖先写 | `semantics_tb.py`：`registry-cross-process`（4 进程栅栏后并发写）→ 文件只剩 1 个新用户 | `registry.py` 改为**锁内读改写**（`_mutate_locked`）：锁内重读磁盘、合并、校验 token 唯一后再原子写 | 同上（4/4 用户均在盘上） |
+| 2 | registry 跨进程丢更新：两个进程各自 load→register→写回，后写覆盖先写 | `semantics_tb.py`：`registry-cross-process`（4 进程栅栏后并发写）；POSIX 红灯 `registry-lost-update-red.json`：*"cross-process writes lost users ['user0','user2','user3']"* | `registry.py` 改为**锁内读改写**（`_mutate_locked`）：锁内重读磁盘、合并、校验 token 唯一后再原子写 | 同上（4/4 用户均在盘上） |
 | 3 | `file_lock` 在 Windows 上向已被锁定的字节区间写入 → `PermissionError`；且 finally 中删除锁文件会破坏互斥（两个进程锁到不同 inode） | 同上（子进程报 `PermissionError: [Errno 13]`） | 锁文件只创建不删除；改为非阻塞重试 + 超时（不再写锁字节） | 同上 |
 | 4 | 安装暂存文件时崩溃会丢目标：先 `target→backup` 再 `stage→target`，两次 rename 之间进程死亡则目标路径为空 | `semantics_tb.py`：`install-crash-safety`（子进程在第一次 rename 后 `os._exit(9)`）→ 目标丢失、只剩 `.vbbak-*` | `transfer.py` 普通文件改为**单次 `os.replace`** 原子安装；目录才保留备份流程；`middle.py` 复用同一实现 | 同上（崩溃后目标仍在，内容为旧值或新值） |
-| 5 | IL 用子串嗅探判断日志开关：用户 SKILL 文本里出现 `RBDLogOn=t ` 就会在 `log_level=off` 时触发 flush/fileLength/第二帧（违反“off 完全不取日志”） | `log_matrix_real_tb.py`：`il-no-substring-sniff` 红 → `artifacts/log-matrix-real-red.json` | `ramic_bridge.il` 改为**只比较指令前缀**（`equal(substring(data 1 11) "RBDLogOn=t ")`） | `artifacts/log-matrix-real-green.json` |
+| 5 | IL 用子串嗅探判断日志开关：用户 SKILL 文本里出现 `RBDLogOn=t ` 就会在 `log_level=off` 时触发 flush/fileLength/第二帧（违反“off 完全不取日志”） | **源码级护栏**（不是行为红灯，见 §5.1）：`log_matrix_real_tb.py`：`il-log-flag-prefix-guard` | `ramic_bridge.il` 改为**只比较指令前缀**（`equal(substring(data 1 11) "RBDLogOn=t ")`） | `artifacts/log-matrix-real-green.json` |
 | 6 | 一次性通道（`run_gui_command`/`run_spectre_command`/一次性命令/文件传输/SFTP）在建通道被 sshd 拒绝时直接把 `kind=transport` 抛给调用方：突发超过服务端 `MaxSessions` 时 42/72 失败 | `one_shot_burst_tb.py`（24 并发 × 3 轮）→ `artifacts/one-shot-burst-red.json` | `paramiko_backend.py` 新增 `_open_session_channel`：≤3 次尝试 + 指数退避，仅重试“未产生副作用”的通道打开；所有 session-channel 站点统一走它 | `artifacts/one-shot-burst-green.json`（72/72） |
 
 附带修复（同样由 TB 检出）：
@@ -54,7 +54,7 @@
 | `semantics_tb.py` | 本地文件 deadline、registry 跨进程、崩溃安全、`role_facts` 只读契约 | 任意平台 | `semantics-*-red/green.json`、`role-facts-baseline-red.json` |
 | `daemon_log_protocol_tb.py` | daemon 侧日志契约：off/分级/轮转/读不到/降级/截断/第二帧超时/错误帧/监听循环；py3 与 py27 双跑 | 任意平台（脚本化 CIW） | `log-protocol.json`（18 用例） |
 | `log_matrix_real_tb.py` | 真机 CDS.log：增量字节一致、off 源头、桥零注入、IL 前缀护栏 | Windows → wsl-gent | `log-matrix-real-*.json` |
-| `registration_http_six_step_tb.py` | 真实 HTTP 六步注册（含步骤 6 落盘、读回、更新、删除、乱序拒绝）；远端模式 1–4 步走真 SSH | Windows（+ wsl-gent） | `reg-six-local/evidence.json`、`reg-six-remote/evidence.json` |
+| `registration_http_six_step_tb.py` | 真实 HTTP 六步注册（含步骤 6 落盘、读回、更新、删除、乱序拒绝）；远端模式 1–4 步走真 SSH | Windows（+ wsl-gent） | `reg-six-local/evidence.json`（本地 1–6）、`reg-six-remote-14/evidence.json`（远端 1–4）、`reg-six-remote/evidence.json`（远端 1–6） |
 | `http_mixed_stress_tb.py` | 五接口 + 组合服务（upload→skill→command→download）HTTP 并发，随机顺序、随机延时、重试计数 | Windows / WSL 客户端 | `http-stress2/evidence.json`、`http-stress-wsl-client.json`、`http-stress-sat/evidence.json` |
 | `one_shot_burst_tb.py` | 一次性通道突发（超过服务端 `MaxSessions`）不得把 transport 错误暴露给调用方 | Windows → wsl-gent | `one-shot-burst-red/green.json` |
 | `_daemon_harness.py` | 脚本化 CIW 的公共夹具（同时兼容 py3 的 `.buffer` 与 py2.7 的文本流 API） | 任意平台 | — |
@@ -66,11 +66,12 @@
 - **WSL 客户端**：同一 TB、同一工作量 72/72（`http-stress-wsl-client.json`），
   说明客户端所在操作系统不影响投递语义。
 - **饱和场景**：把本地 token 线程池压到 4、并发 24，仍 144/144 最终拿到正确应答；
-  过程中记录 216 次**结构化**拒绝（`thread pool exceeded` / `channel budget exceeded` /
-  `role max_sessions exceeded`），无进程崩溃、无请求丢失、无跨用户串扰
-  （`http-stress-sat/evidence.json`）。
-- **资源盘点**：Windows 侧 ssh 进程数不随请求线性增长；WSL 侧 fake daemon、
-  `/tmp/vb-six-*` 临时目录在 TB 结束时全部回收。
+  过程中记录大量**结构化**拒绝（`thread pool exceeded` / `channel budget exceeded` /
+  `role max_sessions exceeded`，具体次数以 artifact 为准），无进程崩溃、无请求丢失、
+  无跨用户串扰（`http-stress-sat/evidence.json`）。
+- **资源盘点（已落 artifact）**：混合压力 TB 记录 `ssh_processes_before/after` 与
+  `staging_leftovers` / `new_system_temp_dirs`；Windows 72 请求为 `2 → 2`，饱和 144 请求为
+  `2 → 2`，WSL 客户端 72 请求为 `5 → 5`，三者暂存目录残留均为 0。
 
 ## 5. 复算命令
 
@@ -90,9 +91,9 @@ python test/tb/one_shot_burst_tb.py --work-dir test/tb/artifacts/one-shot-burst 
 # 注册六步（本地全流程 / 远端 1–4 步）
 python test/tb/registration_http_six_step_tb.py --work-dir test/tb/artifacts/reg-six-local `
   --user vbsixlocal --local-mode --token vb-six-local --out test/tb/artifacts/reg-six-local/evidence.json
-python test/tb/registration_http_six_step_tb.py --work-dir test/tb/artifacts/reg-six-remote `
+python test/tb/registration_http_six_step_tb.py --work-dir test/tb/artifacts/reg-six-remote-14 `
   --user vbsixremote --daemon-port 65133 --root /home/Gent/.virtuoso-bridge/vbsixremote `
-  --stop-after-deploy --out test/tb/artifacts/reg-six-remote/evidence.json
+  --stop-after-deploy --out test/tb/artifacts/reg-six-remote-14/evidence.json
 
 # HTTP 混合压力（Windows 客户端）
 python test/tb/http_mixed_stress_tb.py --work-dir test/tb/artifacts/http-stress2 `
@@ -103,6 +104,18 @@ python test/tb/http_mixed_stress_tb.py --work-dir test/tb/artifacts/http-stress2
 # 合并覆盖率
 powershell -NoProfile -File test/tb/run_coverage.ps1
 ```
+
+## 5.1 证据性质说明（评审须知）
+
+- **行为红灯**：缺陷 1、2、3、4、6 都由 TB 复现出真实行为差异（丢失更新 / 超时被忽略 /
+  崩溃丢目标 / transport 错误外泄）。
+- **源码级护栏**：缺陷 5 的 IL 日志开关**无法从客户端行为观测**——被误导时 IL 只是多做
+  一次 CIW 侧 flush/fileLength 并多发一帧，而该帧会被 daemon 丢弃（`off-sentinel-payload`
+  在修复前后都通过）。因此这条不变量以“源码前缀比较护栏”固定，并在 artifact 中标
+  `kind=static-source-guard`；任何引用都不得把它写成行为红灯。
+- **真机日志分级/降级/轮转**：Cadence 日志落盘异步，真机侧只稳定断言“增量字节一致 /
+  off 不返回 / 桥零注入”；分级、降级提示、轮转、读不到、第二帧超时由
+  `daemon_log_protocol_tb.py` 在 daemon 真实代码路径上确定性覆盖，两者不互相替代。
 
 ## 6. 仍未闭合 / 需评审知悉
 

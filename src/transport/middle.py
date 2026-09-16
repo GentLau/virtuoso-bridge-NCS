@@ -22,8 +22,8 @@ from pyapi.models import (
     CommandResult,
     ExecutionStatus,
     Middle,
-    RoleFacts,
-    RoleFactsResult,
+    QueryResult,
+    RoleQuery,
     VirtuosoResult,
 )
 from transport.budgets import CapacityExceeded
@@ -693,31 +693,30 @@ class BusinessServer(Middle):
 
     # -- read-only companion query (spec §4.2) ---------------------------------
 
-    def role_facts(self, token: str) -> RoleFactsResult:
-        """Resolved role parameters for one token (read-only, no side effects).
+    def query(self, token: str) -> QueryResult:
+        """Return the per-role ``root``/``bin`` facts for one token.
 
-        Companion of the five business interfaces: it neither connects nor
-        caches nor writes — the upper layer uses it to build paths and to pick
-        the probed spectre binary.  An unknown token is a structured failure,
-        never an exception.
+        Read-only: it answers from the in-memory registry snapshot, never
+        connects, never caches, never writes, and does not touch the three
+        budgets or the delivery queues.  Topology fields are deliberately not
+        exposed.  An unknown token is a structured failure:
+        ``{"status": "error", "errors": ["invalid token"]}``.
         """
         entry = self.registry.by_token(token)
         if entry is None:
-            return RoleFactsResult(ok=False, error="invalid token")
+            return QueryResult(
+                status=ExecutionStatus.ERROR, errors=["invalid token"]
+            )
         user = self.registry.user_of(token) or token
         targets = self._targets(entry, user=user)
-        roles: dict[str, RoleFacts] = {}
+        roles: dict[str, RoleQuery] = {}
         for name in ("gui", "daemon", "command", "file", "spectre"):
-            role = targets.role(name)
             configured = getattr(entry.roles, name)
-            roles[name] = RoleFacts(
-                mode=role.mode,
-                host=role.host if role.mode == "remote" else None,
-                user=role.user if role.mode == "remote" else None,
-                root=role.root,
+            roles[name] = RoleQuery(
+                root=targets.role(name).root,
                 bin=getattr(configured, "bin", None) if name == "spectre" else None,
             )
-        return RoleFactsResult(ok=True, roles=roles)
+        return QueryResult(status=ExecutionStatus.SUCCESS, roles=roles)
 
     # -- one-shot role interfaces (gui / spectre) ------------------------------
 

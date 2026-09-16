@@ -85,6 +85,7 @@ def main() -> int:
     server = BusinessServer(work_dir)
     results: list[dict] = []
     lock = threading.Lock()
+    started_workers = 0
 
     def one(index: int, kind: str) -> None:
         marker = f"OSB-{kind}-{uuid.uuid4().hex[:10]}"
@@ -106,6 +107,7 @@ def main() -> int:
                 "elapsed_s": round(time.monotonic() - started, 3),
             })
 
+    alive: list[threading.Thread] = []
     try:
         for _round in range(args.rounds):
             threads = []
@@ -116,16 +118,25 @@ def main() -> int:
                 thread.start()
             for thread in threads:
                 thread.join(timeout=300)
+            alive.extend(thread for thread in threads if thread.is_alive())
     finally:
         server.close()
 
+    planned_calls = args.workers * args.rounds
     failed = [item for item in results if not item["ok"]]
     transport_failures = [item for item in failed if item["kind_field"] == "transport"]
+    if alive:
+        failed.append({"kind": "worker-timeout", "ok": False,
+                       "detail": f"{len(alive)} one-shot workers still running"})
+    if len(results) != planned_calls:
+        failed.append({"kind": "request-count", "ok": False,
+                       "detail": f"{len(results)} answers for {planned_calls} planned calls"})
     evidence = {
         "ok": not failed,
         "workers": args.workers,
         "rounds": args.rounds,
         "requests": len(results),
+        "planned_requests": planned_calls,
         "failed": len(failed),
         "transport_failures": len(transport_failures),
         "by_kind": {

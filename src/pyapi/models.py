@@ -64,27 +64,27 @@ class CommandResult(NamedTuple):
     kind: str = "command"
 
 
-class RoleFacts(BaseModel):
-    """Resolved parameters of one role (spec: 四层整体架构与接口 §4.2).
+class RoleQuery(BaseModel):
+    """Parameter facts of one role (spec §4.2).
 
-    Read-only companion of the five business interfaces: the upper layer uses
-    ``root``/``bin`` instead of hard-coding absolute paths.  It never carries
-    business semantics.
+    Deliberately limited to ``root``/``bin``: the upper layer must not be able
+    to infer topology (mode/host/user/jump/proxy) from this query.
     """
 
-    mode: str
-    host: str | None = None
-    user: str | None = None
     root: str | None = None
     bin: str | None = None
 
 
-class RoleFactsResult(BaseModel):
-    """Structured answer of ``role_facts``; unknown token is a failure, not an exception."""
+class QueryResult(BaseModel):
+    """Answer of ``middle.query(token)``.
 
-    ok: bool
-    roles: dict[str, RoleFacts] = Field(default_factory=dict)
-    error: str | None = None
+    ``status`` is ``success``/``error``; an unknown token is a structured
+    failure (``errors=["invalid token"]``) and never an exception.
+    """
+
+    status: ExecutionStatus
+    roles: dict[str, RoleQuery] = Field(default_factory=dict)
+    errors: list[str] = Field(default_factory=list)
 
 
 class SimulationResult(BaseModel):
@@ -151,14 +151,15 @@ class Middle(Protocol):
     ) -> CommandResult: ...
 
     #: Companion read-only query (spec §4.2) — not a sixth business interface:
-    #: it never sends, executes or transfers anything.
-    def role_facts(self, token: str) -> "RoleFactsResult": ...
+    #: it never sends, executes or transfers anything, and never consumes the
+    #: three budgets or a queue slot.
+    def query(self, token: str) -> "QueryResult": ...
 
 
 __all__ = [
     "CommandResult",
-    "RoleFacts",
-    "RoleFactsResult",
+    "QueryResult",
+    "RoleQuery",
     "ExecutionStatus",
     "Middle",
     "SimulationResult",

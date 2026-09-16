@@ -1,0 +1,33 @@
+{
+  "steps": [
+    {
+      "name": "skill",
+      "ok": true,
+      "output": "3"
+    },
+    {
+      "name": "command",
+      "ok": true,
+      "kind": "command"
+    },
+    {
+      "name": "file",
+      "ok": true,
+      "up": "command",
+      "down": "command"
+    },
+    {
+      "name": "gui",
+      "ok": true,
+      "kind": "command"
+    },
+    {
+      "name": "spectre",
+      "ok": true,
+      "kind": "command"
+    }
+  ],
+  "ok": true,
+  "token": "vb-vb11",
+  "work_dir": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\reg-vb11"
+}

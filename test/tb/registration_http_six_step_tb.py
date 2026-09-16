@@ -276,6 +276,8 @@ def main() -> int:
 
     work_dir = Path(args.work_dir).resolve()
     work_dir.mkdir(parents=True, exist_ok=True)
+    if not args.out:
+        args.out = str(work_dir / "evidence.json")
     set_working_dir(work_dir)
     registry = load_registry(registry_path())
 
@@ -337,6 +339,7 @@ def main() -> int:
                       "stage": body.get("stage")})
         if status != 200 or body.get("stage") != "validated":
             raise ProbeFailure(f"step 2 failed: {body}")
+        assert_no_registry_write("step 2")
 
         # -- step 3: probe --------------------------------------------------
         status, body = http.call("POST", f"/api/register/{args.user}/probe")
@@ -424,16 +427,25 @@ def main() -> int:
 
         # -- negative: verify before deploy must fail, never write ----------
         bad_user = args.user + "bad"
-        status, _ = http.call(
+        bad_port = free_port()
+        status, body = http.call(
             "POST", "/api/register/apply",
             request_payload(bad_user, token + "-x", args.host, args.ssh_user, root,
-                            port, local=args.local_mode),
+                            bad_port, local=args.local_mode),
         )
+        if status != 200 or body.get("stage") != "applied":
+            raise ProbeFailure(f"negative-case apply did not reach 'applied': {body}")
         status, body = http.call("POST", f"/api/register/{bad_user}/verify")
+        errors = " ".join(body.get("errors") or [])
         steps.append({"action": "verify-before-deploy", "status": status,
                       "stage": body.get("stage"), "errors": body.get("errors")})
         if body.get("stage") != "failed":
             raise ProbeFailure(f"out-of-order verify was accepted: {body}")
+        if "order" not in errors.lower() and "deployed" not in errors.lower():
+            raise ProbeFailure(
+                f"failure does not describe the step-order violation: {body}"
+            )
+        assert_no_registry_write("out-of-order verify")
         on_disk = json.loads(registry_path().read_text(encoding="utf-8"))
         if bad_user in on_disk:
             raise ProbeFailure("failed registration still reached the registry")

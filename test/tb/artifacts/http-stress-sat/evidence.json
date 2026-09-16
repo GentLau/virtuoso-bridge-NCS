@@ -8,125 +8,129 @@
   "rounds_per_worker": 3,
   "max_attempts": 60,
   "requests": 144,
+  "planned_requests": 144,
   "failed": 0,
-  "elapsed_s": 21.437,
+  "elapsed_s": 27.891,
   "per_kind": {
-    "spectre": {
+    "command": {
       "total": 20,
       "ok": 20,
-      "retries": 27,
-      "rejections": 25,
-      "max_s": 6.375
-    },
-    "gui": {
-      "total": 24,
-      "ok": 24,
-      "retries": 18,
-      "rejections": 18,
-      "max_s": 5.422
+      "retries": 49,
+      "rejections": 49,
+      "max_s": 6.469
     },
     "skill": {
       "total": 20,
       "ok": 20,
-      "retries": 27,
-      "rejections": 27,
-      "max_s": 10.0
-    },
-    "composite": {
-      "total": 20,
-      "ok": 20,
       "retries": 30,
-      "rejections": 29,
-      "max_s": 15.578
+      "rejections": 30,
+      "max_s": 8.75
     },
-    "command": {
+    "gui": {
+      "total": 24,
+      "ok": 24,
+      "retries": 45,
+      "rejections": 45,
+      "max_s": 5.172
+    },
+    "spectre": {
       "total": 20,
       "ok": 20,
-      "retries": 29,
-      "rejections": 29,
-      "max_s": 6.75
+      "retries": 28,
+      "rejections": 28,
+      "max_s": 7.125
     },
     "upload": {
       "total": 18,
       "ok": 18,
-      "retries": 47,
-      "rejections": 46,
-      "max_s": 8.047
+      "retries": 54,
+      "rejections": 54,
+      "max_s": 8.141
     },
     "download": {
       "total": 22,
       "ok": 22,
-      "retries": 42,
-      "rejections": 42,
-      "max_s": 10.031
+      "retries": 53,
+      "rejections": 53,
+      "max_s": 11.625
+    },
+    "composite": {
+      "total": 20,
+      "ok": 20,
+      "retries": 53,
+      "rejections": 52,
+      "max_s": 19.156
     }
   },
   "failures": [],
+  "ssh_processes_before": 2,
+  "ssh_processes_after": 2,
+  "staging_root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\http-stress-sat\\stress-tmp",
+  "staging_leftovers": [],
+  "new_system_temp_dirs": [],
   "first_errors": {
-    "spectre: kind=transport detail=spectre failed: {'returncode': 255, 'stdout': '', 'stderr': \"VB-TRANSPORT: ChannelException(2, 'Co": 2,
-    "upload: kind=transport detail=upload failed: {'returncode': 255, 'stderr': \"VB-TRANSPORT: ChannelException(2, 'Connect failed')\"": 1,
-    "composite: kind=None detail=composite failed: {'upload_rc': 255, 'upload_stderr': \"VB-TRANSPORT: ChannelException(2, 'Connect faile": 1
+    "composite: kind=None detail=composite failed: {'upload_rc': 0, 'upload_stderr': '', 'upload_kind': 'command', 'skill_ok': False, 's": 1
   },
   "samples": [
     {
       "token": "vb-http-local",
-      "worker": 23,
-      "kind": "spectre",
-      "marker": "VB-spe-f639694c4b",
+      "worker": 13,
+      "kind": "command",
+      "marker": "VB-com-940ad7c829",
       "attempts": 1,
       "rejections": 0,
       "ok": true,
       "detail": "",
       "first_error": "",
-      "elapsed_s": 0.407
-    },
-    {
-      "token": "vb-http-local",
-      "worker": 11,
-      "kind": "gui",
-      "marker": "VB-gui-2149508e45",
-      "attempts": 1,
-      "rejections": 0,
-      "ok": true,
-      "detail": "",
-      "first_error": "",
-      "elapsed_s": 0.313
+      "elapsed_s": 0.484
     },
     {
       "token": "vb-http-local",
       "worker": 21,
       "kind": "skill",
-      "marker": "VB-ski-a03fe56040",
-      "attempts": 2,
-      "rejections": 1,
+      "marker": "VB-ski-208a1fcdad",
+      "attempts": 1,
+      "rejections": 0,
       "ok": true,
-      "detail": "stub-daemon (skill returns fixed 2)",
+      "detail": "",
       "first_error": "",
-      "elapsed_s": 0.437
+      "elapsed_s": 0.578
+    },
+    {
+      "token": "vb-http-local",
+      "worker": 11,
+      "kind": "gui",
+      "marker": "VB-gui-85e57a1863",
+      "attempts": 1,
+      "rejections": 0,
+      "ok": true,
+      "detail": "",
+      "first_error": "",
+      "elapsed_s": 0.516
     },
     {
       "token": "vb-http-local",
       "worker": 22,
       "kind": "skill",
-      "marker": "VB-ski-14fbe413d1",
+      "marker": "VB-ski-caf51de7e6",
       "attempts": 2,
       "rejections": 1,
       "ok": true,
-      "detail": "stub-daemon (skill returns fixed 2)",
+      "detail": "",
       "first_error": "",
-      "elapsed_s": 0.469
+      "elapsed_s": 0.344
     },
     {
       "token": "vb-http-local",
-      "worker": 5,
-      "kind": "skill",
-      "marker": "VB-ski-b7b84507a7",
-      "attempts": 2,
-      "rejections": 1,
+      "worker": 23,
+      "kind": "spectre",
+      "marker": "VB-spe-5331379a53",
+      "attempts": 1,
+      "rejections": 0,
       "ok": true,
-      "detail": "stub-daemon (skill returns fixed 2)",
+      "detail": "",
       "first_error": "",
-      "elapsed_s": 1.093
+      "elapsed_s": 0.64
     }
   ]
 }

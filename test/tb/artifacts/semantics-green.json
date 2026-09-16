@@ -9,7 +9,7 @@
         "leftovers": [],
         "marker": "crashed-after-first-rename"
       },
-      "elapsed_s": 0.8599999999860302
+      "elapsed_s": 0.9070000000065193
     },
     "local-download-timeout": {
       "status": "pass",
@@ -20,7 +20,7 @@
         "clock_calls": 6,
         "partial_target": false
       },
-      "elapsed_s": 0.0470000000204891
+      "elapsed_s": 0.03100000007543713
     },
     "local-file-timeout": {
       "status": "pass",
@@ -31,7 +31,7 @@
         "clock_calls": 6,
         "partial_target": false
       },
-      "elapsed_s": 0.030999999959021807
+      "elapsed_s": 0.046999999904073775
     },
     "local-tree-timeout": {
       "status": "pass",
@@ -43,6 +43,46 @@
         "partial_target": false
       },
       "elapsed_s": 0.03100000007543713
+    },
+    "query-isolation": {
+      "status": "pass",
+      "detail": {
+        "alpha_root": "/srv/alpha/daemon",
+        "beta_root": "/srv/beta/daemon"
+      },
+      "elapsed_s": 0.030999999959021807
+    },
+    "query-no-budget": {
+      "status": "pass",
+      "detail": {
+        "elapsed_s": 0.0,
+        "ok": true
+      },
+      "elapsed_s": 0.01600000006146729
+    },
+    "query-shape": {
+      "status": "pass",
+      "detail": {
+        "roles": [
+          "command",
+          "daemon",
+          "file",
+          "gui",
+          "spectre"
+        ],
+        "spectre_bin": "/cadence/bin/spectre"
+      },
+      "elapsed_s": 0.030999999959021807
+    },
+    "query-unknown-token": {
+      "status": "pass",
+      "detail": {
+        "status": "error",
+        "errors": [
+          "invalid token"
+        ]
+      },
+      "elapsed_s": 0.015999999945051968
     },
     "registry-cross-process": {
       "status": "pass",
@@ -62,36 +102,7 @@
           "tok-user3"
         ]
       },
-      "elapsed_s": 1.3439999999245629
-    },
-    "role-facts-isolation": {
-      "status": "pass",
-      "detail": {
-        "alpha": "server-a",
-        "beta": "server-b"
-      },
-      "elapsed_s": 0.015000000013969839
-    },
-    "role-facts-shape": {
-      "status": "pass",
-      "detail": {
-        "roles": [
-          "command",
-          "daemon",
-          "file",
-          "gui",
-          "spectre"
-        ],
-        "spectre_bin": "/cadence/bin/spectre"
-      },
-      "elapsed_s": 0.01600000006146729
-    },
-    "role-facts-unknown-token": {
-      "status": "pass",
-      "detail": {
-        "error": "invalid token"
-      },
-      "elapsed_s": 0.015999999945051968
+      "elapsed_s": 1.312000000034459
     }
   }
 }

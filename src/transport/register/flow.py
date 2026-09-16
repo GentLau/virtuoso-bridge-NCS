@@ -978,6 +978,17 @@ class RegistrationFlow:
         if self.state is not None and self.state.stage == "committed":
             return self.state
         if self.state is None or self.state.entry is None:
+            stage = self.state.stage if self.state else None
+            if stage in ("applied", "validated", "probed"):
+                # a known, pre-deploy stage: this is an order violation, and the
+                # caller needs to know what is missing (not a generic "nothing
+                # in progress", which hides lost state)
+                self.state.stage = "failed"
+                self.state.errors = [
+                    f"step order violation: verify requires stage 'deployed', "
+                    f"got {stage!r}"
+                ]
+                return self.state
             self.state = RegistrationState(
                 user=self.state.user if self.state else "", stage="failed",
                 errors=["no registration in progress"],

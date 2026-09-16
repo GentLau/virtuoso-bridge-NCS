@@ -38,6 +38,28 @@ class ProbeFailure(AssertionError):
     pass
 
 
+_TEMP_DIRS: list[Path] = []
+
+
+def temp_dir(prefix: str) -> Path:
+    """Per-case temp dir, removed by ``cleanup_temp_dirs`` at the end of the run."""
+    path = Path(tempfile.mkdtemp(prefix=prefix))
+    _TEMP_DIRS.append(path)
+    return path
+
+
+def cleanup_temp_dirs() -> int:
+    import shutil
+
+    removed = 0
+    for path in _TEMP_DIRS:
+        if path.exists():
+            shutil.rmtree(path, ignore_errors=True)
+            removed += 1
+    _TEMP_DIRS.clear()
+    return removed
+
+
 def make_remote_entry(token: str = "tok", *, max_sessions: int = 10) -> UserEntry:
     e = UserEntry(token=token, mode="remote")
     e.ssh.default.host = "server-a"
@@ -268,7 +290,7 @@ def case_daemon_log_protocol():
 
 def case_runtime_cache_invalidation():
     """A live BusinessServer must not keep a stale token cache after overwrite."""
-    wd = Path(tempfile.mkdtemp(prefix="vb-fault-cache-"))
+    wd = temp_dir("vb-fault-cache-")
     set_working_dir(wd)
     reg = load_registry()
     first = make_remote_entry("tok-cache")
@@ -301,7 +323,7 @@ class BlockingSkillClient:
 
 def case_skill_capacity_fields():
     """r3: Skill capacity rejection lives in errors, never a kind field."""
-    wd = Path(tempfile.mkdtemp(prefix="vb-fault-cap-"))
+    wd = temp_dir("vb-fault-cap-")
     set_working_dir(wd)
     reg = load_registry()
     entry = UserEntry(token="tok-cap", mode="local")
@@ -333,7 +355,7 @@ def case_skill_capacity_fields():
 
 def case_skill_queue_before_delivery():
     """r3: queued Skill timeout is withdrawn before delivery."""
-    wd = Path(tempfile.mkdtemp(prefix="vb-fault-queue-"))
+    wd = temp_dir("vb-fault-queue-")
     set_working_dir(wd)
     reg = load_registry()
     entry = UserEntry(token="tok-queue", mode="local")
@@ -365,7 +387,7 @@ def case_windows_casefold_overwrite():
     """Windows case-insensitive overwrite must replace, not duplicate, the user."""
     import transport.registry as registry_mod
 
-    wd = Path(tempfile.mkdtemp(prefix="vb-fault-casefold-"))
+    wd = temp_dir("vb-fault-casefold-")
     reg = Registry(wd / "registry.json").load()
     a = make_remote_entry("tok-a")
     b = make_remote_entry("tok-b")
@@ -405,7 +427,10 @@ def main() -> int:
             failed += 1
             results[name] = {"status": "fail", "error": f"{type(exc).__name__}: {exc}"}
         results[name]["elapsed_s"] = time.monotonic() - started
-    print(json.dumps({"ok": failed == 0, "failed": failed, "results": results}, ensure_ascii=False, indent=2))
+    cleaned = cleanup_temp_dirs()
+    print(json.dumps({"ok": failed == 0, "failed": failed,
+                      "temp_dirs_removed": cleaned, "results": results},
+                     ensure_ascii=False, indent=2))
     return 1 if failed else 0
 
 

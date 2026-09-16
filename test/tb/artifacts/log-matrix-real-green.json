@@ -3,11 +3,13 @@
   "failed": 0,
   "skipped": 0,
   "results": {
-    "il-no-substring-sniff": {
+    "il-log-flag-prefix-guard": {
       "status": "pass",
       "detail": {
         "guard": "prefix-compare",
-        "banned_pattern": "absent"
+        "banned_pattern": "absent",
+        "kind": "static-source-guard",
+        "note": "not a behavioural red case; see off-sentinel-payload"
       },
       "elapsed_s": 0.0
     },
@@ -15,7 +17,7 @@
       "status": "pass",
       "detail": {
         "bytes": 19,
-        "file_offset": 25022,
+        "file_offset": 52325,
         "window_identical": true,
         "attempts": [
           {
@@ -26,14 +28,14 @@
           }
         ]
       },
-      "elapsed_s": 12.608999999938533
+      "elapsed_s": 13.108999999938533
     },
     "no-bridge-injection": {
       "status": "pass",
       "detail": {
         "injected_lines": 0
       },
-      "elapsed_s": 1.797000000020489
+      "elapsed_s": 1.8290000000270084
     },
     "off-sentinel-payload": {
       "status": "pass",
@@ -42,7 +44,7 @@
         "sentinel_log": "",
         "follow_up_output": "2"
       },
-      "elapsed_s": 6.280999999959022
+      "elapsed_s": 7.359000000054948
     },
     "off-source-cut": {
       "status": "pass",
@@ -50,7 +52,7 @@
         "log_grew": 3040,
         "off_log_len": 0
       },
-      "elapsed_s": 16.125
+      "elapsed_s": 16.218999999924563
     },
     "skill-baseline": {
       "status": "pass",
@@ -58,7 +60,7 @@
         "output": "2",
         "log_len": 0
       },
-      "elapsed_s": 3.219000000040978
+      "elapsed_s": 3.202999999979511
     }
   }
 }

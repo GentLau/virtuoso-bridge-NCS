@@ -25,6 +25,7 @@ import subprocess
 import sys
 import tempfile
 import textwrap
+import threading
 import time
 from pathlib import Path
 from unittest import mock
@@ -49,6 +50,28 @@ class ProbeFailure(AssertionError):
     pass
 
 
+_TEMP_DIRS: list[Path] = []
+
+
+def temp_dir(prefix: str) -> Path:
+    """Per-case temp dir, removed by ``cleanup_temp_dirs`` at the end of the run."""
+    path = Path(tempfile.mkdtemp(prefix=prefix))
+    _TEMP_DIRS.append(path)
+    return path
+
+
+def cleanup_temp_dirs() -> int:
+    import shutil
+
+    removed = 0
+    for path in _TEMP_DIRS:
+        if path.exists():
+            shutil.rmtree(path, ignore_errors=True)
+            removed += 1
+    _TEMP_DIRS.clear()
+    return removed
+
+
 class StepClock:
     """Deterministic clock: every call advances a fixed number of seconds.
 
@@ -71,7 +94,7 @@ class StepClock:
 
 
 def local_server(token: str, *, root: Path | None = None) -> tuple[BusinessServer, Path]:
-    wd = Path(tempfile.mkdtemp(prefix="vb-sem-"))
+    wd = temp_dir("vb-sem-")
     set_working_dir(wd)
     registry = load_registry()
     entry = UserEntry(token=token, mode="local")
@@ -167,7 +190,7 @@ CHILD_REGISTRY = textwrap.dedent(
 
 
 def case_registry_cross_process() -> dict:
-    wd = Path(tempfile.mkdtemp(prefix="vb-reg-xproc-"))
+    wd = temp_dir("vb-reg-xproc-")
     reg_path = wd / "registry.json"
     seed = Registry(reg_path).load()
     seed.register("seed", UserEntry(token="tok-seed", mode="remote"))
@@ -248,7 +271,7 @@ CHILD_INSTALL = textwrap.dedent(
 
 
 def case_install_crash_safety() -> dict:
-    wd = Path(tempfile.mkdtemp(prefix="vb-install-crash-"))
+    wd = temp_dir("vb-install-crash-")
     target = wd / "target.bin"
     target.write_text("OLD", encoding="utf-8")
     stage = wd / ".vbtmp-crash"
@@ -281,8 +304,23 @@ def case_install_crash_safety() -> dict:
     }
 
 
+class _BlockingSkillClient:
+    """Skill client that occupies its slot until released (budget tests)."""
+
+    def __init__(self) -> None:
+        self.started = threading.Event()
+        self.release = threading.Event()
+
+    def execute_skill(self, code, timeout=None):
+        from pyapi.models import ExecutionStatus, VirtuosoResult
+
+        self.started.set()
+        self.release.wait(10)
+        return VirtuosoResult(status=ExecutionStatus.SUCCESS, output="2")
+
+
 def _facts_server() -> tuple[BusinessServer, Path]:
-    wd = Path(tempfile.mkdtemp(prefix="vb-facts-"))
+    wd = temp_dir("vb-facts-")
     set_working_dir(wd)
     registry = load_registry()
     for name, host, root, bin_path in (
@@ -302,73 +340,111 @@ def _facts_server() -> tuple[BusinessServer, Path]:
     return BusinessServer(wd), wd
 
 
-def case_role_facts_shape() -> dict:
-    """spec §4.2：role_facts 返回五个 role 的已解析参数，且只读、无副作用。"""
+def case_query_shape() -> dict:
+    """spec §4.2（v21）：query 只返回 root/bin，不含任何拓扑字段。"""
     server, wd = _facts_server()
     try:
-        facts_before = (wd / "registry.json").read_bytes()
-        facts = server.role_facts("tok-alpha")
-        if not facts.ok:
-            raise ProbeFailure(f"role_facts failed for a known token: {facts}")
-        roles = facts.roles
+        snapshot = (wd / "registry.json").read_bytes()
+        result = server.query("tok-alpha")
+        if str(result.status) not in ("success", "ExecutionStatus.SUCCESS"):
+            raise ProbeFailure(f"query failed for a known token: {result}")
+        roles = result.roles
         if set(roles) != {"gui", "daemon", "command", "file", "spectre"}:
-            raise ProbeFailure(f"role_facts must return the five roles: {sorted(roles)}")
-        for name, role in roles.items():
-            if role.mode != "remote":
-                raise ProbeFailure(f"{name}.mode wrong: {role.mode}")
-            if role.host != "server-a" or role.user != "alpha":
-                raise ProbeFailure(f"{name} endpoint leaked: {role.host}/{role.user}")
-            if role.root != f"/srv/alpha/{name}":
-                raise ProbeFailure(f"{name}.root wrong: {role.root}")
+            raise ProbeFailure(f"query must return the five roles: {sorted(roles)}")
+        dumped = result.model_dump(mode="json")
+        for name, role in dumped["roles"].items():
+            if set(role) != {"root", "bin"}:
+                raise ProbeFailure(
+                    f"{name} exposed fields outside root/bin: {sorted(role)}"
+                )
+            if role["root"] != f"/srv/alpha/{name}":
+                raise ProbeFailure(f"{name}.root wrong: {role['root']}")
             expected_bin = "/cadence/bin/spectre" if name == "spectre" else None
-            if role.bin != expected_bin:
-                raise ProbeFailure(f"{name}.bin wrong: {role.bin!r}")
-        if (wd / "registry.json").read_bytes() != facts_before:
-            raise ProbeFailure("role_facts wrote the registry (must be read-only)")
+            if role["bin"] != expected_bin:
+                raise ProbeFailure(f"{name}.bin wrong: {role['bin']!r}")
+        for banned in ("mode", "host", "user", "jump_host", "proxy"):
+            if banned in json.dumps(dumped):
+                raise ProbeFailure(f"query leaked topology field {banned!r}")
+        if (wd / "registry.json").read_bytes() != snapshot:
+            raise ProbeFailure("query wrote the registry (must be read-only)")
         if server._clients or server._skill_clients:
-            raise ProbeFailure("role_facts opened a transport client (must not connect)")
+            raise ProbeFailure("query opened a transport client (must not connect)")
         return {"roles": sorted(roles), "spectre_bin": roles["spectre"].bin}
     finally:
         server.close()
 
 
-def case_role_facts_unknown_token() -> dict:
-    """未知 token 必须是结构化失败，不抛异常（spec §4.2）。"""
+def case_query_unknown_token() -> dict:
+    """未知 token 返回 {"status":"error","errors":["invalid token"]}，不抛异常。"""
     server, _wd = _facts_server()
     try:
         try:
-            result = server.role_facts("tok-does-not-exist")
+            result = server.query("tok-does-not-exist")
         except Exception as exc:  # noqa: BLE001 - any raise violates the contract
             raise ProbeFailure(f"unknown token raised {type(exc).__name__}: {exc}") from exc
-        if result.ok or result.error != "invalid token" or result.roles:
-            raise ProbeFailure(f"unknown token was not a structured failure: {result}")
-        return {"error": result.error}
+        dumped = result.model_dump(mode="json")
+        if dumped.get("status") != "error" or dumped.get("errors") != ["invalid token"]:
+            raise ProbeFailure(f"unknown token shape wrong: {dumped}")
+        if dumped.get("roles"):
+            raise ProbeFailure(f"failed query returned roles: {dumped}")
+        return {"status": dumped["status"], "errors": dumped["errors"]}
     finally:
         server.close()
 
 
-def case_role_facts_isolation() -> dict:
-    """role_facts 按 token 隔离：A 的查询不得泄露 B 的目标。"""
+def case_query_isolation() -> dict:
+    """query 按 token 隔离：A 的查询不得泄露 B 的 root/bin。"""
     server, _wd = _facts_server()
     try:
-        alpha = server.role_facts("tok-alpha")
-        beta = server.role_facts("tok-beta")
-        if alpha.roles["daemon"].host == beta.roles["daemon"].host:
-            raise ProbeFailure("role_facts leaked another token's endpoint")
+        alpha = server.query("tok-alpha")
+        beta = server.query("tok-beta")
         if alpha.roles["daemon"].root == beta.roles["daemon"].root:
-            raise ProbeFailure("role_facts leaked another token's root")
-        return {
-            "alpha": alpha.roles["daemon"].host,
-            "beta": beta.roles["daemon"].host,
-        }
+            raise ProbeFailure("query leaked another token's root")
+        if beta.roles["spectre"].bin is not None:
+            raise ProbeFailure(f"beta has no spectre bin: {beta.roles['spectre'].bin!r}")
+        return {"alpha_root": alpha.roles["daemon"].root,
+                "beta_root": beta.roles["daemon"].root}
+    finally:
+        server.close()
+
+
+def case_query_no_budget() -> dict:
+    """只读查询不占三类预算、不进队列：线程池被占满时仍立即返回。"""
+    wd = temp_dir("vb-query-budget-")
+    set_working_dir(wd)
+    registry = load_registry()
+    entry = UserEntry(token="tok-query", mode="local")
+    entry.runtime.thread_pool_size = 1
+    registry.register("alice", entry)
+    server = BusinessServer(wd)
+    client = _BlockingSkillClient()
+    try:
+        with mock.patch.object(BusinessServer, "_skill", lambda self, token: client):
+            holder = threading.Thread(
+                target=lambda: server.execute_skill("1+1", timeout=5, token="tok-query")
+            )
+            holder.start()
+            if not client.started.wait(2):
+                raise ProbeFailure("could not occupy the only thread-pool slot")
+            started = time.monotonic()
+            result = server.query("tok-query")
+            elapsed = time.monotonic() - started
+            client.release.set()
+            holder.join(timeout=5)
+        if str(result.status) not in ("success", "ExecutionStatus.SUCCESS"):
+            raise ProbeFailure(f"query was refused while the pool was busy: {result}")
+        if elapsed > 0.5:
+            raise ProbeFailure(f"query waited for the thread pool ({elapsed:.3f}s)")
+        return {"elapsed_s": round(elapsed, 4), "ok": True}
     finally:
         server.close()
 
 
 CASES = {
-    "role-facts-shape": case_role_facts_shape,
-    "role-facts-unknown-token": case_role_facts_unknown_token,
-    "role-facts-isolation": case_role_facts_isolation,
+    "query-shape": case_query_shape,
+    "query-unknown-token": case_query_unknown_token,
+    "query-isolation": case_query_isolation,
+    "query-no-budget": case_query_no_budget,
     "local-file-timeout": case_local_file_timeout,
     "local-tree-timeout": case_local_tree_timeout,
     "local-download-timeout": case_local_download_timeout,
@@ -393,7 +469,9 @@ def main() -> int:
             failed += 1
             results[name] = {"status": "fail", "error": f"{type(exc).__name__}: {exc}"}
         results[name]["elapsed_s"] = time.monotonic() - started
-    payload = {"ok": failed == 0, "failed": failed, "results": results}
+    cleaned = cleanup_temp_dirs()
+    payload = {"ok": failed == 0, "failed": failed, "temp_dirs_removed": cleaned,
+               "results": results}
     text = json.dumps(payload, ensure_ascii=False, indent=2)
     if args.out:
         Path(args.out).write_text(text + "\n", encoding="utf-8")

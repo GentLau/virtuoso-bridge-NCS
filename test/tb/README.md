@@ -32,7 +32,21 @@
 | `stress_client.py` | `server.stress_server` HTTP 压测客户端 | 任意 |
 | `log_file_verify.py`、`p1_log_live.py` | 返回 log 与 CDS.log 字节区间比对 | WSL/真机 daemon |
 
-> 历史 TB（如 `p2_extreme_gradient.py`、`multienv_*`、`stress_multiuser*`）保留作历史资产；执行前必须按当前 spec 重新核对 registry schema、reservation 语义和靶机资源上限，不能把旧脚本的默认参数直接视为当前验收结论。
+## 准出集合 vs 历史资产
+
+**准出集合（送审结论只引用这些）**：`run_coverage.ps1` 中出现的 TB ——
+`fault_injection_tb.py`、`semantics_tb.py`、`daemon_log_protocol_tb.py`、
+`registration_http_six_step_tb.py`（本地 1–6 / 远端 1–4）、`http_mixed_stress_tb.py`、
+`cov_remote_real.py`、`cov_registration_real.py`、`log_matrix_real_tb.py`、
+`one_shot_burst_tb.py`，以及它们的 artifact（`test/tb/artifacts/`）。
+
+**历史资产（不作为本轮准出依据）**：`p2_extreme_gradient.py`、`multienv_*`、
+`stress_multiuser*`、`client_equiv.py`（C1 等价性原型，工作目录固定在 `/tmp`，
+已被 `http_mixed_stress_tb.py` 的 Windows/WSL 双客户端用例取代）、
+`composite_stress.py`、`log_file_verify.py`、`p1_log_live.py`、`f1_connect_burst.py`、
+`f2_daemon_reconnect.py`、`multi_virtuoso_pilot.py` 等。它们可复跑，但执行前必须按当前
+spec 重新核对 registry schema、reservation 语义与靶机资源上限，旧脚本的默认参数不能
+直接当作当前验收结论。
 
 ## 运行示例
 
@@ -59,6 +73,18 @@ python test/tb/http_mixed_stress_tb.py --work-dir test/tb/artifacts/http-stress2
   --remote-token vb-vblog --remote-daemon-port 65121 `
   --remote-root /home/Gent/.virtuoso-bridge/vblog --workers 6 --rounds 6
 ```
+
+## 证据链与自检
+
+- 覆盖率一键复算脚本在任一步骤返回非零时**立即中止**（`$PSNativeCommandUseErrorActionPreference`
+  + `Invoke-Step` 的 `$LASTEXITCODE` 检查），避免红 TB 产出“假绿”覆盖率。
+- 每个 TB 自己写 artifact；报告中的结论只允许引用这些 artifact，且：
+  - `log_matrix_real_tb.py` 拿不到真机增量窗口时**判失败**（不是可跳过项）；
+  - `http_mixed_stress_tb.py` / `one_shot_burst_tb.py` 校验“计划请求数 == 实际应答数”、
+    线程存活、暂存目录残留与客户端 ssh 进程数；
+  - `http_mixed_stress_tb.py` 的 Skill 必须回带本次 marker、上传必须经下载回读比对 sha256；
+  - `log_matrix_real_tb.py` 的 `il-log-flag-prefix-guard` 是**源码级护栏**，报告中不得
+    当作行为红灯引用。
 
 ## 资源盘点
 

@@ -18,7 +18,9 @@ def main() -> int:
     parser.add_argument("--port", type=int, default=65112)
     parser.add_argument("--host", default="wsl-gent")
     parser.add_argument("--ssh-user", default="Gent")
+    parser.add_argument("--out", default="")
     args = parser.parse_args()
+    out = Path(args.out) if args.out else Path(args.work_dir).resolve() / "cov-registration-evidence.json"
 
     wd = Path(args.work_dir).resolve()
     wd.mkdir(parents=True, exist_ok=True)
@@ -30,7 +32,11 @@ def main() -> int:
         ssh={"default": {"host": args.host, "user": args.ssh_user}},
         roles={"daemon": {"daemon_port": args.port}},
     ))
-    print(json.dumps({
+    evidence = {
+        "ok": state.stage == "deployed" and not (wd / "registry.json").exists(),
+        "token": args.token,
+        "user": args.user,
+        "work_dir": str(wd),
         "stage": state.stage,
         "step": state.step,
         "errors": state.errors,
@@ -38,7 +44,10 @@ def main() -> int:
         "setup_path": state.setup_path,
         "registry_written": (wd / "registry.json").exists(),
         "reservation_file": (wd / "registry.reservation").exists(),
-    }, ensure_ascii=False))
+    }
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(evidence, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    print(json.dumps(evidence, ensure_ascii=False))
     return 0 if state.stage == "deployed" and not (wd / "registry.json").exists() else 2
 
 

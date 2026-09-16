@@ -1,0 +1,26 @@
+{
+  "ok": false,
+  "failed": 4,
+  "results": {
+    "query-shape": {
+      "status": "fail",
+      "error": "AttributeError: 'BusinessServer' object has no attribute 'query'",
+      "elapsed_s": 0.046999999904073775
+    },
+    "query-unknown-token": {
+      "status": "fail",
+      "error": "ProbeFailure: unknown token raised AttributeError: 'BusinessServer' object has no attribute 'query'",
+      "elapsed_s": 0.015000000013969839
+    },
+    "query-isolation": {
+      "status": "fail",
+      "error": "AttributeError: 'BusinessServer' object has no attribute 'query'",
+      "elapsed_s": 0.03200000000651926
+    },
+    "query-no-budget": {
+      "status": "fail",
+      "error": "NameError: name 'threading' is not defined",
+      "elapsed_s": 0.03100000007543713
+    }
+  }
+}

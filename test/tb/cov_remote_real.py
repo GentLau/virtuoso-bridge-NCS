@@ -18,10 +18,12 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--work-dir", required=True)
     parser.add_argument("--token", default="vb-vb11")
+    parser.add_argument("--out", default="")
     args = parser.parse_args()
     wd = Path(args.work_dir).resolve()
+    out = Path(args.out) if args.out else wd / "cov-remote-real-evidence.json"
     server = BusinessServer(wd)
-    temp = Path(tempfile.mkdtemp(prefix="vb-cov-remote-"))
+    temp = tempfile.TemporaryDirectory(prefix="vb-cov-remote-")
     result = {"steps": []}
     try:
         skill = server.execute_skill("1+2", token=args.token)
@@ -34,15 +36,16 @@ def main() -> int:
         if cmd.returncode != 0:
             return 2
 
-        src = temp / "in.bin"
+        temp_path = Path(temp.name)
+        src = temp_path / "in.bin"
         payload = b"coverage-real-remote" * 2048
         src.write_bytes(payload)
         up = server.upload_file(src, "cov/in.bin", token=args.token)
-        down = server.download_file("cov/in.bin", temp / "out.bin", token=args.token)
+        down = server.download_file("cov/in.bin", temp_path / "out.bin", token=args.token)
         digest_ok = (
             up.returncode == 0
             and down.returncode == 0
-            and hashlib.sha256((temp / "out.bin").read_bytes()).digest()
+            and hashlib.sha256((temp_path / "out.bin").read_bytes()).digest()
             == hashlib.sha256(payload).digest()
         )
         result["steps"].append({"name": "file", "ok": digest_ok, "up": up.kind, "down": down.kind})
@@ -57,7 +60,12 @@ def main() -> int:
             return 2
     finally:
         server.close()
+        temp.cleanup()
     result["ok"] = all(step["ok"] for step in result["steps"])
+    result["token"] = args.token
+    result["work_dir"] = str(wd)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(result, ensure_ascii=False))
     return 0 if result["ok"] else 2
 

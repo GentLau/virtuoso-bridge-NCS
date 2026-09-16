@@ -205,13 +205,11 @@ def case_increment_bytes(env: Env) -> dict:
             "window_identical": attempts[-1]["window_identical"],
             "attempts": attempts,
         }
-    return {
-        "skipped": (
-            "CDS.log 落盘时序导致窗口为空（真机 CIW 侧异步刷新）；"
-            "逐字节契约由 daemon_log_protocol_tb.py 确定性覆盖"
-        ),
-        "attempts": attempts,
-    }
+    raise ProbeFailure(
+        "CDS.log delta window stayed empty after 4 attempts: the byte-identity "
+        "contract is NOT demonstrated by this run (attempts: "
+        f"{attempts}); daemon_log_protocol_tb.py only covers the daemon side"
+    )
 
 
 def case_off_source_cut(env: Env) -> dict:
@@ -240,12 +238,13 @@ def case_off_source_cut(env: Env) -> dict:
     return {"log_grew": after - before, "off_log_len": len(result.log)}
 
 
-def case_il_no_substring_sniff() -> dict:
-    """静态护栏：IL 必须从指令前缀读日志开关，不得扫描用户文本。
+def case_il_log_flag_prefix_guard() -> dict:
+    """静态源码护栏（**不是行为红灯**）：IL 只能从指令前缀读日志开关。
 
-    Client-side observation cannot see the CIW-side flush, so the invariant
-    "off = 不做任何日志动作" is pinned at the source level: the flag may only
-    be read from the directive prefix the daemon itself writes.
+    为什么是静态的：`log_level=off` 时 IL 若被用户文本误导，只会多做一次
+    CIW 侧 flush/fileLength 并多发一帧；该帧被 daemon 丢弃，客户端不可观察
+    （见 `off-sentinel-payload` 用例）。因此“off = 不做任何日志动作”这条
+    设计不变量用源码护栏固定，报告中必须标明其性质。
     """
     il = (SRC / "bridge" / "resources" / "ramic_bridge.il").read_text(encoding="utf-8")
     banned = "index(data \"RBDLogOn=t \")"
@@ -257,7 +256,12 @@ def case_il_no_substring_sniff() -> dict:
     wanted = 'equal(substring(data 1 11) "RBDLogOn=t ")'
     if wanted not in il:
         raise ProbeFailure(f"IL does not read the log flag from the prefix: {wanted}")
-    return {"guard": "prefix-compare", "banned_pattern": "absent"}
+    return {
+        "guard": "prefix-compare",
+        "banned_pattern": "absent",
+        "kind": "static-source-guard",
+        "note": "not a behavioural red case; see off-sentinel-payload",
+    }
 
 
 def case_no_bridge_injection(env: Env) -> dict:
@@ -278,7 +282,7 @@ CASES = {
     "off-source-cut": case_off_source_cut,
     "increment-bytes": case_increment_bytes,
     "no-bridge-injection": case_no_bridge_injection,
-    "il-no-substring-sniff": case_il_no_substring_sniff,
+    "il-log-flag-prefix-guard": case_il_log_flag_prefix_guard,
 }
 
 
@@ -309,7 +313,7 @@ def main() -> int:
             started = time.monotonic()
             try:
                 case = CASES[name]
-                detail = case() if name == "il-no-substring-sniff" else case(env)
+                detail = case() if name == "il-log-flag-prefix-guard" else case(env)
                 if isinstance(detail, dict) and "skipped" in detail:
                     skipped += 1
                     results[name] = {"status": "skip", "detail": detail}
