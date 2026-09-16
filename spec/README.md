@@ -97,7 +97,7 @@ CDS.log metadata frame 完整字节格式
 
 - **Release ID**：`SPEC-2026-09-16-r3`
 - **Normative 文件集**（9 份）：四层整体架构与接口、本版范围与明确不支持、中层配置文档、路由设计、多用户与注册、并发设计、日志返回设计标准、顶层：HTTP 入口与业务调度、上层：业务包与插件化；
-- **Normative 内容哈希**：`0bcc83270b94be155ee7590056f6225deebb1fb1c80667843e2add27f0fc45df`
+- **Normative 内容哈希**：`84bf8090d69f82bf47254bcda1605af98e2abbcfa3952457ca281174744b68b4`
   - 算法：路径为**相对 `spec/` 目录**并按路径排序；逐文件 SHA-256（**按 Git 提交内容计算，即 LF 行尾**；Windows 工作区受 `core.autocrlf` 影响的行尾差异不计入）；每行 `<相对路径> <hex>` 以 LF 拼接（**行间分隔、末行无尾 LF**），再取一次 SHA-256；
 - **基线 commit**：本 Release 段所在提交即基线（见 `git log -1 -- spec/`）；任何 Normative 文档变更必须同时更新本段哈希。
 
@@ -105,14 +105,14 @@ CDS.log metadata frame 完整字节格式
 
 | 文档 | 版本 | 状态 | Supersedes |
 |---|---|---|---|
-| 四层整体架构与接口 | Draft v21 | Normative | Draft v20（查询改名 query、范围 root/bin；业务接口计数口径统一） |
+| 四层整体架构与接口 | Draft v22 | Normative | Draft v21（顶层↔上层机制契约表述；query 签名与 deadline 例外；边界表去重） |
 | 路由设计 | v16 | Normative | v15（业务接口计数口径：5 业务接口 + 只读查询 query） |
 | 本版范围与明确不支持 | v9 | Normative | v8（业务接口计数口径：5 业务接口 + 只读查询 query） |
 | 中层配置文档 | Draft v27 | Normative | Draft v21–v26（合并说明见文件头 Supersedes） |
 | 多用户与注册 | Draft v20 | Normative | Draft v19（reservation 分配/复核/释放细节改为索引 §6.4） |
 | 并发设计 | Draft v19 | Normative | Draft v18（只读查询 query 不占三类预算、不进队列） |
-| 顶层 | Draft v5 | Normative | Draft v4（五接口口径改五业务接口，另有只读查询 query） |
-| 上层 | Draft v5 | Normative | Draft v4（只读查询命名为 query，范围 root/bin；五接口口径改五业务接口） |
+| 顶层 | Draft v6 | Normative | Draft v5（明确结构校验与领域校验的 HTTP 映射分界） |
+| 上层 | Draft v6 | Normative | Draft v5（deadline 由包内自行调度；重试边界明确；插件注册索引顶层） |
 | 日志返回设计标准 | Draft v12 | Normative | Draft v11（等待队列留在中层投递前） |
 
 > 版本链规则：每份文档的文件头 `版本 / 日期 / Supersedes` 必须与本表一致；版本号只递增，跳号必须在 `Supersedes` 中说明合并了哪些版本。
@@ -127,7 +127,7 @@ CDS.log metadata frame 完整字节格式
 2. 底层 daemon 只处理 `Skill`；命令、文件、GUI 命令、Spectre 命令全部由中层执行。
 3. 上层不读 `VB_*`/`.env`、不判断 local/SSH、不创建 SSH/socket，也不解析 STX/NAK/RS 协议。
 4. 上层使用逻辑 `ServerPath`；实际 host/jump/role/tunnel 由中层按 registry 路由解析。
-5. 所有调用采用端到端 deadline；中层子阶段只继承剩余预算。
+5. 五个业务接口调用采用端到端 deadline；中层子阶段只继承剩余预算（`query` 无 timeout）。
 6. 命令非零退出码是结构化结果；transport 失败、超时、路径不可见、结果未知必须可区分（见四层架构 §4.4 错误总则）。
 7. token 是对称共享授权票：部署注入 il/daemon，CIW load 时目视确认；缺失/不匹配一律 NAK 且 SKILL 零接触。
 8. 不保留旧项目兼容：`profile`/`VB_*`/`.env` 已删除，双轨期已结束；新用户只走六步注册。
