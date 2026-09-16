@@ -9,7 +9,7 @@
         "leftovers": [],
         "marker": "crashed-after-first-rename"
       },
-      "elapsed_s": 0.8290000000270084
+      "elapsed_s": 0.8599999999860302
     },
     "local-download-timeout": {
       "status": "pass",
@@ -20,7 +20,7 @@
         "clock_calls": 6,
         "partial_target": false
       },
-      "elapsed_s": 0.062000000034458935
+      "elapsed_s": 0.0470000000204891
     },
     "local-file-timeout": {
       "status": "pass",
@@ -42,7 +42,7 @@
         "clock_calls": 6,
         "partial_target": false
       },
-      "elapsed_s": 0.0470000000204891
+      "elapsed_s": 0.03100000007543713
     },
     "registry-cross-process": {
       "status": "pass",
@@ -62,7 +62,36 @@
           "tok-user3"
         ]
       },
-      "elapsed_s": 1.297000000020489
+      "elapsed_s": 1.3439999999245629
+    },
+    "role-facts-isolation": {
+      "status": "pass",
+      "detail": {
+        "alpha": "server-a",
+        "beta": "server-b"
+      },
+      "elapsed_s": 0.015000000013969839
+    },
+    "role-facts-shape": {
+      "status": "pass",
+      "detail": {
+        "roles": [
+          "command",
+          "daemon",
+          "file",
+          "gui",
+          "spectre"
+        ],
+        "spectre_bin": "/cadence/bin/spectre"
+      },
+      "elapsed_s": 0.01600000006146729
+    },
+    "role-facts-unknown-token": {
+      "status": "pass",
+      "detail": {
+        "error": "invalid token"
+      },
+      "elapsed_s": 0.015999999945051968
     }
   }
 }

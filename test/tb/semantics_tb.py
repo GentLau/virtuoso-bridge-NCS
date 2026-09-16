@@ -281,7 +281,94 @@ def case_install_crash_safety() -> dict:
     }
 
 
+def _facts_server() -> tuple[BusinessServer, Path]:
+    wd = Path(tempfile.mkdtemp(prefix="vb-facts-"))
+    set_working_dir(wd)
+    registry = load_registry()
+    for name, host, root, bin_path in (
+        ("alpha", "server-a", "/srv/alpha", "/cadence/bin/spectre"),
+        ("beta", "server-b", "/srv/beta", None),
+    ):
+        entry = UserEntry(token=f"tok-{name}", mode="remote")
+        entry.ssh.default.host = host
+        entry.ssh.default.user = name
+        for role_name in ("gui", "daemon", "command", "file", "spectre"):
+            role = getattr(entry.roles, role_name)
+            role.host = host
+            role.user = name
+            role.root = f"{root}/{role_name}"
+        entry.roles.spectre.bin = bin_path
+        registry.register(name, entry)
+    return BusinessServer(wd), wd
+
+
+def case_role_facts_shape() -> dict:
+    """spec §4.2：role_facts 返回五个 role 的已解析参数，且只读、无副作用。"""
+    server, wd = _facts_server()
+    try:
+        facts_before = (wd / "registry.json").read_bytes()
+        facts = server.role_facts("tok-alpha")
+        if not facts.ok:
+            raise ProbeFailure(f"role_facts failed for a known token: {facts}")
+        roles = facts.roles
+        if set(roles) != {"gui", "daemon", "command", "file", "spectre"}:
+            raise ProbeFailure(f"role_facts must return the five roles: {sorted(roles)}")
+        for name, role in roles.items():
+            if role.mode != "remote":
+                raise ProbeFailure(f"{name}.mode wrong: {role.mode}")
+            if role.host != "server-a" or role.user != "alpha":
+                raise ProbeFailure(f"{name} endpoint leaked: {role.host}/{role.user}")
+            if role.root != f"/srv/alpha/{name}":
+                raise ProbeFailure(f"{name}.root wrong: {role.root}")
+            expected_bin = "/cadence/bin/spectre" if name == "spectre" else None
+            if role.bin != expected_bin:
+                raise ProbeFailure(f"{name}.bin wrong: {role.bin!r}")
+        if (wd / "registry.json").read_bytes() != facts_before:
+            raise ProbeFailure("role_facts wrote the registry (must be read-only)")
+        if server._clients or server._skill_clients:
+            raise ProbeFailure("role_facts opened a transport client (must not connect)")
+        return {"roles": sorted(roles), "spectre_bin": roles["spectre"].bin}
+    finally:
+        server.close()
+
+
+def case_role_facts_unknown_token() -> dict:
+    """未知 token 必须是结构化失败，不抛异常（spec §4.2）。"""
+    server, _wd = _facts_server()
+    try:
+        try:
+            result = server.role_facts("tok-does-not-exist")
+        except Exception as exc:  # noqa: BLE001 - any raise violates the contract
+            raise ProbeFailure(f"unknown token raised {type(exc).__name__}: {exc}") from exc
+        if result.ok or result.error != "invalid token" or result.roles:
+            raise ProbeFailure(f"unknown token was not a structured failure: {result}")
+        return {"error": result.error}
+    finally:
+        server.close()
+
+
+def case_role_facts_isolation() -> dict:
+    """role_facts 按 token 隔离：A 的查询不得泄露 B 的目标。"""
+    server, _wd = _facts_server()
+    try:
+        alpha = server.role_facts("tok-alpha")
+        beta = server.role_facts("tok-beta")
+        if alpha.roles["daemon"].host == beta.roles["daemon"].host:
+            raise ProbeFailure("role_facts leaked another token's endpoint")
+        if alpha.roles["daemon"].root == beta.roles["daemon"].root:
+            raise ProbeFailure("role_facts leaked another token's root")
+        return {
+            "alpha": alpha.roles["daemon"].host,
+            "beta": beta.roles["daemon"].host,
+        }
+    finally:
+        server.close()
+
+
 CASES = {
+    "role-facts-shape": case_role_facts_shape,
+    "role-facts-unknown-token": case_role_facts_unknown_token,
+    "role-facts-isolation": case_role_facts_isolation,
     "local-file-timeout": case_local_file_timeout,
     "local-tree-timeout": case_local_tree_timeout,
     "local-download-timeout": case_local_download_timeout,

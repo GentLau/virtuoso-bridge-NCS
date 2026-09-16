@@ -18,7 +18,14 @@ import time
 import uuid
 from pathlib import Path
 
-from pyapi.models import CommandResult, ExecutionStatus, Middle, VirtuosoResult
+from pyapi.models import (
+    CommandResult,
+    ExecutionStatus,
+    Middle,
+    RoleFacts,
+    RoleFactsResult,
+    VirtuosoResult,
+)
 from transport.budgets import CapacityExceeded
 from transport.remote_paths import RemotePathError
 from transport.registry import Registry, load_registry
@@ -683,6 +690,34 @@ class BusinessServer(Middle):
             return _error_result(exc, budget)
         finally:
             self._release(sem)
+
+    # -- read-only companion query (spec §4.2) ---------------------------------
+
+    def role_facts(self, token: str) -> RoleFactsResult:
+        """Resolved role parameters for one token (read-only, no side effects).
+
+        Companion of the five business interfaces: it neither connects nor
+        caches nor writes — the upper layer uses it to build paths and to pick
+        the probed spectre binary.  An unknown token is a structured failure,
+        never an exception.
+        """
+        entry = self.registry.by_token(token)
+        if entry is None:
+            return RoleFactsResult(ok=False, error="invalid token")
+        user = self.registry.user_of(token) or token
+        targets = self._targets(entry, user=user)
+        roles: dict[str, RoleFacts] = {}
+        for name in ("gui", "daemon", "command", "file", "spectre"):
+            role = targets.role(name)
+            configured = getattr(entry.roles, name)
+            roles[name] = RoleFacts(
+                mode=role.mode,
+                host=role.host if role.mode == "remote" else None,
+                user=role.user if role.mode == "remote" else None,
+                root=role.root,
+                bin=getattr(configured, "bin", None) if name == "spectre" else None,
+            )
+        return RoleFactsResult(ok=True, roles=roles)
 
     # -- one-shot role interfaces (gui / spectre) ------------------------------
 

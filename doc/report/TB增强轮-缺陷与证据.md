@@ -35,11 +35,23 @@
 - `server/stress_server.py`：五接口响应缺 `kind` 字段，调用方无法区分“容量拒绝/传输错误”；
   已补齐，并新增 `/api/gui`、`/api/spectre` 一次性接口（`http-stress2/evidence.json`）。
 
+## 2.1 规格变更带来的新接口（spec v20）
+
+评审期间 spec 升级到 Draft v20，新增 **§4.2 `middle.role_facts(token)` 只读查询接口**
+（原 §4.2–§4.5 顺延）。该接口在代码基线中不存在，按“先红后绿”处理：
+
+| 项 | 内容 |
+|---|---|
+| 红 | `semantics_tb.py` 三个用例 `role-facts-shape` / `role-facts-unknown-token` / `role-facts-isolation` 全部失败：`AttributeError: 'BusinessServer' object has no attribute 'role_facts'`；证据 `artifacts/role-facts-baseline-red.json` |
+| 实现 | `pyapi/models.py` 新增 `RoleFacts` / `RoleFactsResult`；`BusinessServer.role_facts` 只读返回五个 role 的 `mode/host/user/root/bin`，未知 token 返回 `ok=False, error="invalid token"`，不建连接、不写注册表、不缓存 |
+| 绿 | `artifacts/semantics-green.json`（8 用例全绿，含 3 个 role_facts 用例） |
+| 文档 | `doc/接口调用指南.md` v3 新增 §1.1 与 §3.2 |
+
 ## 3. 本轮新增 TB
 
 | TB | 覆盖 | 环境 | 证据 |
 |---|---|---|---|
-| `semantics_tb.py` | 本地文件 deadline、registry 跨进程、崩溃安全 | 任意平台 | `semantics-*-red/green.json` |
+| `semantics_tb.py` | 本地文件 deadline、registry 跨进程、崩溃安全、`role_facts` 只读契约 | 任意平台 | `semantics-*-red/green.json`、`role-facts-baseline-red.json` |
 | `daemon_log_protocol_tb.py` | daemon 侧日志契约：off/分级/轮转/读不到/降级/截断/第二帧超时/错误帧/监听循环；py3 与 py27 双跑 | 任意平台（脚本化 CIW） | `log-protocol.json`（18 用例） |
 | `log_matrix_real_tb.py` | 真机 CDS.log：增量字节一致、off 源头、桥零注入、IL 前缀护栏 | Windows → wsl-gent | `log-matrix-real-*.json` |
 | `registration_http_six_step_tb.py` | 真实 HTTP 六步注册（含步骤 6 落盘、读回、更新、删除、乱序拒绝）；远端模式 1–4 步走真 SSH | Windows（+ wsl-gent） | `reg-six-local/evidence.json`、`reg-six-remote/evidence.json` |

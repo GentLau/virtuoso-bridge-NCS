@@ -1,0 +1,19 @@
+{
+  "ok": false,
+  "note": "spec Draft v20 §4.2 requires middle.role_facts(token); baseline has no such attribute",
+  "failed": 3,
+  "results": {
+    "role-facts-shape": {
+      "status": "fail",
+      "error": "AttributeError: 'BusinessServer' object has no attribute 'role_facts'"
+    },
+    "role-facts-unknown-token": {
+      "status": "fail",
+      "error": "ProbeFailure: unknown token raised AttributeError"
+    },
+    "role-facts-isolation": {
+      "status": "fail",
+      "error": "AttributeError: 'BusinessServer' object has no attribute 'role_facts'"
+    }
+  }
+}
