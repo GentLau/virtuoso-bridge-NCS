@@ -325,8 +325,11 @@ class Registry:
                 raise RuntimeError("registry not loaded; call load() once at startup")
             if entry.registered_at is None:
                 entry.registered_at = int(time.time())
-            name = validate_user_name(str(user))
-            previous = self._entries.get(self._lookup_name_locked(name))
+            requested_name = validate_user_name(str(user))
+            # On Windows user lookup is case-insensitive. Overwrite must
+            # replace the existing key, not create a second case variant.
+            name = self._lookup_name_locked(requested_name)
+            previous = self._entries.get(name)
             if previous is not None and not overwrite:
                 raise UserAlreadyRegisteredError(
                     f"user {name!r} is already registered; "

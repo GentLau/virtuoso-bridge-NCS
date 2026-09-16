@@ -763,7 +763,7 @@ class SSHRunner:
                 command,
                 timeout=budget.remaining(command),
             )
-            return CommandResult(returncode=rc, stdout=stdout, stderr=stderr)
+            return self._result_from_rc(rc, stdout, stderr)
         return self._run_command_once(command, _budget=budget)
 
     def run_one_shot(self, command: str, timeout: float | None = None) -> CommandResult:
@@ -773,8 +773,24 @@ class SSHRunner:
             rc, stdout, stderr = self._paramiko_backend.run_command(
                 command, timeout=budget.remaining(command)
             )
-            return CommandResult(returncode=rc, stdout=stdout, stderr=stderr)
+            return self._result_from_rc(rc, stdout, stderr)
         return self._run_command_once(command, _budget=budget)
+
+    @staticmethod
+    def _result_from_rc(rc: int, stdout: str, stderr: str) -> CommandResult:
+        """Preserve bridge error kinds when a backend returns rc text."""
+        text = _as_text(stderr).strip()
+        if text.startswith("VB-TRANSPORT:"):
+            kind = "transport"
+        elif text.startswith("VB-PATH-NOT-VISIBLE:"):
+            kind = "path"
+        elif text.startswith("VB-UNKNOWN-EFFECT:"):
+            kind = "unknown-effect"
+        elif "sha256 mismatch" in text:
+            kind = "checksum"
+        else:
+            kind = "command"
+        return CommandResult(returncode=int(rc), stdout=_as_text(stdout), stderr=_as_text(stderr), kind=kind)
 
     def _print_cmd(self, cmd: list[str]) -> None:
         logger.info("[local] %s", " ".join(cmd))
@@ -1040,7 +1056,7 @@ class SSHRunner:
                 text_bytes,
                 timeout=budget.remaining(remote_path),
             )
-            return CommandResult(returncode=rc, stdout=stdout, stderr=stderr)
+            return self._result_from_rc(rc, stdout, stderr)
         if self._persistent_shell_enabled:
             try:
                 return self._run_via_persistent_shell_with_retry(
@@ -1080,7 +1096,7 @@ class SSHRunner:
             logger.warning("SSH text upload failed (rc=%d): %s", rc, err_text)
         else:
             logger.debug("Text upload completed successfully")
-        return CommandResult(returncode=rc, stdout=_as_text(out), stderr=_as_text(err))
+        return self._result_from_rc(rc, _as_text(out), _as_text(err))
 
     def download(
         self,
@@ -1107,7 +1123,7 @@ class SSHRunner:
                 plan,
                 timeout=budget.remaining(remote_path),
             )
-            return CommandResult(returncode=rc, stdout=stdout, stderr=stderr)
+            return self._result_from_rc(rc, stdout, stderr)
 
         logger.debug("Downloading via scp %s:%s -> %s", self._host, remote_path, local_path)
 
@@ -1151,7 +1167,7 @@ class SSHRunner:
                 plan.local_path,
             )
             logger.debug("Download completed successfully")
-        return CommandResult(returncode=rc, stdout=_as_text(out), stderr=_as_text(err))
+        return self._result_from_rc(rc, _as_text(out), _as_text(err))
 
     def _download_via_tar(
         self,
@@ -1172,7 +1188,7 @@ class SSHRunner:
                 plan,
                 timeout=budget.remaining(remote_path),
             )
-            return CommandResult(returncode=rc, stdout=stdout, stderr=stderr)
+            return self._result_from_rc(rc, stdout, stderr)
         return self._execute_openssh_download_plan(plan, budget)
 
     def _execute_tar_upload_plans(
@@ -1186,7 +1202,7 @@ class SSHRunner:
                     plan,
                     timeout=budget.remaining(plan.remote_command),
                 )
-                result = CommandResult(rc, stdout, stderr)
+                result = self._result_from_rc(rc, stdout, stderr)
             else:
                 result = self._execute_openssh_upload_plan(plan, budget)
             if result.returncode != 0:
@@ -1279,7 +1295,7 @@ class SSHRunner:
             budget=budget,
             command=plan.remote_command,
         )
-        return CommandResult(rc, _as_text(stdout), _as_text(stderr))
+        return self._result_from_rc(rc, _as_text(stdout), _as_text(stderr))
 
     def _execute_openssh_download_plan(
         self,
@@ -1773,7 +1789,7 @@ class SSHRunner:
 
         stdout = self._decode_b64_text(stdout_b64)
         stderr = self._decode_b64_text(stderr_b64)
-        return CommandResult(returncode=rc, stdout=stdout, stderr=stderr)
+        return self._result_from_rc(rc, stdout, stderr)
 
     @staticmethod
     def _decode_b64_text(payload: str | None) -> str:
@@ -1793,6 +1809,14 @@ class SSHRunner:
     ) -> None:
         proc = self._shell_proc
         reader = self._shell_reader
+        # ParamikoShellProcess owns a session-gate permit.  It must be closed
+        # even when the underlying channel has already reached EOF, otherwise
+        # repeated shell deaths permanently leak max_sessions permits.
+        if proc is not None and hasattr(proc, "close"):
+            try:
+                proc.close()
+            except Exception:  # noqa: BLE001 - best effort release
+                pass
         if proc is not None and proc.poll() is None:
             logger.info("Terminating persistent SSH shell for %s", self._host)
             try:

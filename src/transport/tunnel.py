@@ -74,6 +74,7 @@ class RemoteClient:
                 self.budgets.set_endpoint_limit(role.key, role.max_sessions)
         self._tunnel_lease = None
         self._persistent_leases: dict[str, object] = {}
+        self._persistent_lease_lock = threading.Lock()
         self._tunnel_lock = threading.Lock()
 
     # -- role runners --------------------------------------------------------
@@ -154,11 +155,12 @@ class RemoteClient:
         if not getattr(runner, "persistent_shell_enabled", False):
             return self._acquire_channel(role), False
         key = f"command:{role.key or role.name}"
-        lease = self._persistent_leases.get(key)
-        if lease is None:
-            lease = self._acquire_channel(role)
-            self._persistent_leases[key] = lease
-        return lease, True
+        with self._persistent_lease_lock:
+            lease = self._persistent_leases.get(key)
+            if lease is None:
+                lease = self._acquire_channel(role)
+                self._persistent_leases[key] = lease
+            return lease, True
 
     def _run_internal_one_shot(self, role: ResolvedRole, cmd: str, timeout: float):
         lease = self._acquire_channel(role)

@@ -1,0 +1,36 @@
+{
+  "ok": false,
+  "failed": 6,
+  "results": {
+    "daemon-log-protocol": {
+      "status": "fail",
+      "error": "ProbeFailure: missing log_level did not default OFF: b'RBDLogOn=t let(((__vb_r 1+1)) hiFlush() __vb_r)\\n'",
+      "elapsed_s": 0.0779999999795109
+    },
+    "dead-shell-close": {
+      "status": "fail",
+      "error": "ProbeFailure: dead shell was not closed; session permit would leak",
+      "elapsed_s": 0.0940000000409782
+    },
+    "lease-race": {
+      "status": "fail",
+      "error": "ProbeFailure: lease race: errors=[\"CapacityExceeded('channel budget exceeded')\", \"CapacityExceeded('channel budget exceeded')\", \"CapacityExceeded('channel budget exceeded')\", \"CapacityExceeded('channel budget exceeded')\", \"CapacityExceeded('channel budget exceeded')\", \"CapacityExceeded('channel budget exceeded')\"], returned=10, channels_in_use=10, persistent_leases=1",
+      "elapsed_s": 0.045999999972991645
+    },
+    "runtime-cache-invalidation": {
+      "status": "fail",
+      "error": "ProbeFailure: BusinessServer reuses stale RemoteClient after registry overwrite",
+      "elapsed_s": 0.01600000006146729
+    },
+    "transport-kind": {
+      "status": "fail",
+      "error": "ProbeFailure: transport failure classified as kind='command', rc=255",
+      "elapsed_s": 0.6089999999385327
+    },
+    "windows-casefold-overwrite": {
+      "status": "fail",
+      "error": "ProbeFailure: case-insensitive overwrite left duplicate users: ['Alice', 'alice']",
+      "elapsed_s": 0.01600000006146729
+    }
+  }
+}

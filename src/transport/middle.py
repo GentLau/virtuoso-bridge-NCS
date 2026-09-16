@@ -291,13 +291,29 @@ class BusinessServer(Middle):
         self.registry: Registry = load_registry(registry_path())
         self._clients: dict[str, RemoteClient] = {}
         self._skill_clients: dict[str, SkillClient] = {}
+        self._skill_entries: dict[str, UserEntry] = {}
         self._capacity: dict[str, threading.BoundedSemaphore] = {}
         self._local_locks: dict[str, threading.Lock] = {}
         self._skill_gates: dict[str, threading.Lock] = {}
         self._local_sessions: dict[str, _LocalCommandSession] = {}
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
         # spec 资源盘点：进程退出不得留下隧道/常驻 shell（TB 与业务进程同样适用）
         atexit.register(self.close)
+
+    def invalidate_token(self, token: str) -> None:
+        """Close and forget cached runtime resources for one token."""
+        with self._lock:
+            client = self._clients.pop(token, None)
+            self._skill_clients.pop(token, None)
+            self._skill_entries.pop(token, None)
+            session = self._local_sessions.pop(token, None)
+            self._capacity.pop(token, None)
+        for resource in (client, session):
+            if resource is not None:
+                try:
+                    resource.close()
+                except Exception:  # noqa: BLE001
+                    logger.debug("invalidating token %s failed", token, exc_info=True)
 
     def close(self) -> None:
         """Release every per-token client (tunnels + shells) exactly once."""
@@ -306,6 +322,9 @@ class BusinessServer(Middle):
             self._clients.clear()
             sessions = list(self._local_sessions.values())
             self._local_sessions.clear()
+            self._skill_clients.clear()
+            self._skill_entries.clear()
+            self._capacity.clear()
         for client in clients:
             try:
                 client.close()
@@ -329,25 +348,46 @@ class BusinessServer(Middle):
         return resolve(entry, user=user)
 
     def _remote(self, token: str) -> RemoteClient:
+        try:
+            entry = self._entry(token)
+        except LookupError:
+            self.invalidate_token(token)
+            raise
+        stale = None
         with self._lock:
             client = self._clients.get(token)
+            if client is not None and client.entry is not entry:
+                stale = client
+                client = None
+                self._clients.pop(token, None)
             if client is None:
-                entry = self._entry(token)
                 user = self.registry.user_of(token) or token
                 client = RemoteClient(entry, self._targets(entry, user=user), user)
                 self._clients[token] = client
-                # Never replace a semaphore that _acquire() may already hold.
                 self._capacity.setdefault(
                     token,
                     threading.BoundedSemaphore(entry.runtime.thread_pool_size),
                 )
-            return client
+        if stale is not None:
+            try:
+                stale.close()
+            except Exception:  # noqa: BLE001
+                logger.debug("closing stale client for %s failed", token, exc_info=True)
+        return client
 
     def _skill(self, token: str) -> SkillClient:
+        try:
+            entry = self._entry(token)
+        except LookupError:
+            self.invalidate_token(token)
+            raise
         with self._lock:
             client = self._skill_clients.get(token)
+            if client is not None and self._skill_entries.get(token) is not entry:
+                self._skill_clients.pop(token, None)
+                self._skill_entries.pop(token, None)
+                client = None
             if client is None:
-                entry = self._entry(token)
                 user = self.registry.user_of(token) or token
                 targets = self._targets(entry, user=user)
                 port = (
@@ -364,6 +404,7 @@ class BusinessServer(Middle):
                     log_max_bytes=entry.cdslog.log_max_bytes,
                 )
                 self._skill_clients[token] = client
+                self._skill_entries[token] = entry
             return client
 
     def _acquire(self, token: str, entry=None) -> threading.BoundedSemaphore | None:

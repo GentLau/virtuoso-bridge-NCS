@@ -1,0 +1,11 @@
+{
+  "ok": false,
+  "failed": 1,
+  "results": {
+    "runtime-cache-invalidation": {
+      "status": "fail",
+      "error": "ProbeFailure: BusinessServer reuses stale RemoteClient after registry overwrite",
+      "elapsed_s": 0.0470000000204891
+    }
+  }
+}

@@ -39,6 +39,15 @@ python test/tb/cov_registration_real.py `
 - WSL local：100 用户 × 8 个混合操作 = 800/800 成功；fake daemon 6801–6900。
 - Windows→WSL remote：100 用户，每用户五接口链；100/100 成功；压测前后 Windows `ssh.exe` 基线不增长。
 
+## 故障注入 TB
+
+```powershell
+$env:PYTHONPATH='src'
+python test/tb/fault_injection_tb.py
+```
+
+覆盖首次并发 lease、shell permit 释放、Paramiko transport kind、daemon 日志缺省/非法参数、token 缓存失效和 Windows casefold overwrite；红灯/绿灯原始结果保存在 `test/tb/artifacts/`。
+
 ## 覆盖率
 
 ```powershell
@@ -52,7 +61,7 @@ python -m coverage run --source=src --append test/tb/cov_registration_real.py `
 python -m coverage report -m
 ```
 
-最新结果：**合并覆盖率 81%**（5668 statements / 1088 missed）；完整解释见 `doc/测试覆盖报告.md`，真机场景与未覆盖项见 `doc/report/五接口三环境真机测试报告.md`。
+最新结果：**合并覆盖率 80%**（5749 statements / 1142 missed）；完整解释见 `doc/测试覆盖报告.md`，真机场景与未覆盖项见 `doc/report/五接口三环境真机测试报告.md`。
 
 ## 计划与报告
 

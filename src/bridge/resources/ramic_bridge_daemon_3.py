@@ -272,13 +272,24 @@ def handle_connection(conn):
         skill_code = req.get("skill", "")
         timeout_seconds = float(req.get("timeout", 30.0))
         token = req.get("token")
-        log_level = req.get("log_level", "all")
-        log_max_bytes = int(req.get("log_max_bytes", 65536))
-        log_on = log_level != "off"
 
         if not DAEMON_TOKEN or token != DAEMON_TOKEN:
             _safe_sendall(conn, NAK + json.dumps({"error": "invalid token", "log": ""}).encode("utf-8") + RS)
             return
+
+        log_level = req.get("log_level", "off")
+        if log_level not in ("off", "all", "warn", "error"):
+            _safe_sendall(conn, NAK + json.dumps({"error": "invalid log_level", "log": ""}).encode("utf-8") + RS)
+            return
+        try:
+            log_max_bytes = int(req.get("log_max_bytes", 65536))
+        except (TypeError, ValueError):
+            _safe_sendall(conn, NAK + json.dumps({"error": "invalid log_max_bytes", "log": ""}).encode("utf-8") + RS)
+            return
+        if log_max_bytes < 1:
+            _safe_sendall(conn, NAK + json.dumps({"error": "invalid log_max_bytes", "log": ""}).encode("utf-8") + RS)
+            return
+        log_on = log_level != "off"
 
         _timeout_flag = False
         while True:

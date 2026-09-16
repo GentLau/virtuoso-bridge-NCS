@@ -14,6 +14,7 @@
 |---|---|---|
 | `cov_remote_real.py` | Windows→WSL 真机五接口 coverage TB | Windows + wsl-gent real daemon |
 | `cov_registration_real.py` | 真机注册第 1–4 步；验证前五步本地零落盘 | Windows + wsl-gent |
+| `fault_injection_tb.py` | 故障注入：租约竞态、shell permit、错误 kind、日志协议、缓存失效、Windows casefold | 本地/CI，可接真机 |
 | `fake_daemon_host.py` | 协议级 fake daemon 群；本轮 6801–6900 共 100 个 | wsl-gent |
 | `multi_virtuoso_pilot.py` | 多真实 Virtuoso + 注册的前置脚本（路径需按最新 per-role root 核对） | wsl-gent |
 | `smoke_user.py` | 单用户五接口/耗时探针 | wsl-gent |
