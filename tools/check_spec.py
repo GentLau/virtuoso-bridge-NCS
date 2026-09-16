@@ -7,7 +7,7 @@ Runs with the standard library only so CI needs no extra dependencies:
 
 Checks
 ------
-1. Normative hash   — recompute the 7-file aggregate from the *committed*
+1. Normative hash   — recompute the 9-file aggregate from the *committed*
                       content (LF, i.e. ``git show :<path>``) and compare it
                       with the value documented in ``spec/README.md``.
 2. Manifest versions— each doc header ``版本：`` matches the Manifest table.
@@ -42,6 +42,8 @@ NORMATIVE = [
     "design-concepts/中层/1-多用户与注册.md",
     "design-concepts/中层/2-并发设计.md",
     "design-concepts/底层/6-日志返回设计标准.md",
+    "design-concepts/顶层/1-顶层.md",
+    "design-concepts/上层/1-上层.md",
 ]
 
 # mechanism -> (owner file, patterns that may only appear in the owner)
@@ -52,6 +54,8 @@ OWNED_PATTERNS = [
      [r"\|\s*动作\s*\|\s*线程预算\s*\|\s*channel 预算"]),
     ("CommandResult.kind 枚举", "design-concepts/总览/1-四层整体架构与接口.md",
      [r"(?:.*`kind=[a-z-]+`.*){3,}"]),
+    ("query 返回字段", "design-concepts/总览/1-四层整体架构与接口.md",
+     [r"middle\.query\("]),
     ("六步注册状态机", "design-concepts/中层/1-多用户与注册.md",
      [r"\|\s*步\s*\|\s*预测目标"]),
     ("reservation 记录格式", "design-concepts/中层/add-中层配置文档.md",

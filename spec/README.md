@@ -17,6 +17,8 @@
    - 多节点/5 role 拓扑：[路由设计](design-concepts/中层/3-路由设计.md)
    - 并发/SSH/线程池：[并发设计](design-concepts/中层/2-并发设计.md)
    - CDS.log 返回：[日志返回设计标准](design-concepts/底层/6-日志返回设计标准.md)
+   - 顶层入口与业务调度：[顶层：HTTP 入口与业务调度](design-concepts/顶层/1-顶层.md)
+   - 上层业务包与插件化：[上层：业务包与插件化](design-concepts/上层/1-上层.md)
 2. **Informative（只索引/摘要，不定义）**：[整体流程示例](design-concepts/总览/2-整体流程示例.md)、[demo](demo/README.md)。
 3. **Research**：[research](research/README.md)，仅作背景知识。
 4. 主题冲突时只认其 Normative owner；其余副本若与 owner 不一致，一律以 owner 为准。
@@ -52,10 +54,12 @@
 | Normative | [四层整体架构与接口](design-concepts/总览/1-四层整体架构与接口.md) | 分层、职责、接口唯一基线、错误总则 |
 | Normative | [本版范围与明确不支持](design-concepts/总览/add-本版范围与明确不支持.md) | 本版不做什么的唯一口径（每项含本版口径） |
 | Normative | [中层配置文档](design-concepts/中层/add-中层配置文档.md) | 字段目录唯一 owner（字段/默认值/探测写回/注册表 schema）+ reservation + endpoint key |
-| Normative | [路由设计](design-concepts/中层/3-路由设计.md) | 5 role 拓扑与职责、五接口与 role 的对应、token↔主机边界、endpoint 与连接复用 |
+| Normative | [路由设计](design-concepts/中层/3-路由设计.md) | 5 role 拓扑与职责、五业务接口与 role 的对应、token↔主机边界、endpoint 与连接复用 |
 | Normative | [多用户与注册](design-concepts/中层/1-多用户与注册.md) | 六步注册、token 寻址/校验、路由与授权 |
 | Normative | [并发设计](design-concepts/中层/2-并发设计.md) | 并发与限流唯一口径：排队投递/直接开通道、三预算（线程/最大通道数/单目标点上限）、建连重试 |
 | Normative | [日志返回设计标准](design-concepts/底层/6-日志返回设计标准.md) | CDS.log 增量返回唯一口径（offset 定界、分级、限长） |
+| Normative | [顶层：HTTP 入口与业务调度](design-concepts/顶层/1-顶层.md) | 顶层职责、插件注册表、业务调度、响应壳与错误分界 |
+| Normative | [上层：业务包与插件化](design-concepts/上层/1-上层.md) | 业务包形态、注册、禁止事项、开发规范与检查清单 |
 | Research | [research/README.md](research/README.md) | Virtuoso/TB/日志/并发背景调研 |
 | Informative | [整体流程示例](design-concepts/总览/2-整体流程示例.md) | 一次请求从顶层到中层再到返回的完整流程示例（不定义机制） |
 | Demo | [demo/README.md](demo/README.md) | 脱钩最小验证（Informative，不复刻正式口径） |
@@ -66,13 +70,15 @@
 
 | 主题 | 唯一 owner | 其它文档允许出现的形态 |
 |---|---|---|
-| 五接口签名、返回与错误总则（含 `kind` 枚举、保留码） | [四层整体架构与接口](design-concepts/总览/1-四层整体架构与接口.md) §4 | 一句摘要 + 链接 |
+| 五业务接口签名、返回与错误总则（含 `kind` 枚举、保留码、`query` 查询） | [四层整体架构与接口](design-concepts/总览/1-四层整体架构与接口.md) §4 | 一句摘要 + 链接 |
 | 五接口 ↔ role 映射、role 职责、token↔主机边界、连接数量与复用拓扑 | [路由设计](design-concepts/中层/3-路由设计.md) §2.1–§4 | 一句摘要 + 链接 |
 | 逐 role 探测流程（何时探测、失败级别、何时提交）与部署/根算法 | [多用户与注册](design-concepts/中层/1-多用户与注册.md) §4 | 一句摘要 + 链接 |
 | 字段格式、默认值、候选/提交 schema、写回字段形态、endpoint key、reservation | [中层配置文档](design-concepts/中层/add-中层配置文档.md) | 一句摘要 + 链接 |
 | 六步注册状态机、注册 deadline、token 生命周期 | [多用户与注册](design-concepts/中层/1-多用户与注册.md) | 一句摘要 + 链接 |
 | 并发形态与排队语义、三预算与通道记账矩阵、连接生命周期、建连重试 | [并发设计](design-concepts/中层/2-并发设计.md) | 一句摘要 + 链接 |
 | CDS.log offset/frame/分级/限长/warning | [日志返回设计标准](design-concepts/底层/6-日志返回设计标准.md) | 一句摘要 + 链接 |
+| 顶层 HTTP 入口、业务调度与响应壳 | [顶层：HTTP 入口与业务调度](design-concepts/顶层/1-顶层.md) | 一句摘要 + 链接 |
+| 业务包形态、插件注册、上层开发规范 | [上层：业务包与插件化](design-concepts/上层/1-上层.md) | 一句摘要 + 链接 |
 | 本版不做什么（非目标清单与遇到时的行为） | [本版范围与明确不支持](design-concepts/总览/add-本版范围与明确不支持.md) | 一句摘要 + 链接 |
 
 **Spec CI 检查词表**（只适用于 Normative 设计文档；Informative/Research/Historical/Demo 不适用；标题/索引行/示例标注除外）：
@@ -90,8 +96,8 @@ CDS.log metadata frame 完整字节格式
 ## Release（本基线）
 
 - **Release ID**：`SPEC-2026-09-16-r3`
-- **Normative 文件集**（7 份）：四层整体架构与接口、本版范围与明确不支持、中层配置文档、路由设计、多用户与注册、并发设计、日志返回设计标准；
-- **Normative 内容哈希**：`55288ec8d803e474f2791ec371e09c36d8fafe7ee36473954936488d8cc54977`
+- **Normative 文件集**（9 份）：四层整体架构与接口、本版范围与明确不支持、中层配置文档、路由设计、多用户与注册、并发设计、日志返回设计标准、顶层：HTTP 入口与业务调度、上层：业务包与插件化；
+- **Normative 内容哈希**：`0bcc83270b94be155ee7590056f6225deebb1fb1c80667843e2add27f0fc45df`
   - 算法：路径为**相对 `spec/` 目录**并按路径排序；逐文件 SHA-256（**按 Git 提交内容计算，即 LF 行尾**；Windows 工作区受 `core.autocrlf` 影响的行尾差异不计入）；每行 `<相对路径> <hex>` 以 LF 拼接（**行间分隔、末行无尾 LF**），再取一次 SHA-256；
 - **基线 commit**：本 Release 段所在提交即基线（见 `git log -1 -- spec/`）；任何 Normative 文档变更必须同时更新本段哈希。
 
@@ -99,12 +105,14 @@ CDS.log metadata frame 完整字节格式
 
 | 文档 | 版本 | 状态 | Supersedes |
 |---|---|---|---|
-| 四层整体架构与接口 | Draft v19 | Normative | Draft v18（daemon 队列口径与并发 owner 对齐；§5.8 重试细节索引化） |
-| 路由设计 | v15 | Normative | v14（容量拒绝结果字段索引接口 owner；token 边界编号改 §2.1） |
-| 本版范围与明确不支持 | v8 | Normative | v7（重组：按主题分组，补 CDS.log 跟随 GUI 不实现口径） |
+| 四层整体架构与接口 | Draft v21 | Normative | Draft v20（查询改名 query、范围 root/bin；业务接口计数口径统一） |
+| 路由设计 | v16 | Normative | v15（业务接口计数口径：5 业务接口 + 只读查询 query） |
+| 本版范围与明确不支持 | v9 | Normative | v8（业务接口计数口径：5 业务接口 + 只读查询 query） |
 | 中层配置文档 | Draft v27 | Normative | Draft v21–v26（合并说明见文件头 Supersedes） |
 | 多用户与注册 | Draft v20 | Normative | Draft v19（reservation 分配/复核/释放细节改为索引 §6.4） |
-| 并发设计 | Draft v18 | Normative | Draft v17（容量拒绝结果字段索引接口 owner） |
+| 并发设计 | Draft v19 | Normative | Draft v18（只读查询 query 不占三类预算、不进队列） |
+| 顶层 | Draft v5 | Normative | Draft v4（五接口口径改五业务接口，另有只读查询 query） |
+| 上层 | Draft v5 | Normative | Draft v4（只读查询命名为 query，范围 root/bin；五接口口径改五业务接口） |
 | 日志返回设计标准 | Draft v12 | Normative | Draft v11（等待队列留在中层投递前） |
 
 > 版本链规则：每份文档的文件头 `版本 / 日期 / Supersedes` 必须与本表一致；版本号只递增，跳号必须在 `Supersedes` 中说明合并了哪些版本。
@@ -115,7 +123,7 @@ CDS.log metadata frame 完整字节格式
 
 ## 本版已经决定的事项
 
-1. 中层对上只承诺五个**操作接口**：`Skill`、`RunCommand`、`File`、`GUI 命令`、`Spectre 命令`；`token` 是每次调用的必填关键字参数。
+1. 中层对上承诺五个**业务操作接口**（`Skill`、`RunCommand`、`File`、`GUI 命令`、`Spectre 命令`）与一个只读查询 `query`（见[四层架构 §4.2](design-concepts/总览/1-四层整体架构与接口.md)）；`token` 是每次调用的必填关键字参数。
 2. 底层 daemon 只处理 `Skill`；命令、文件、GUI 命令、Spectre 命令全部由中层执行。
 3. 上层不读 `VB_*`/`.env`、不判断 local/SSH、不创建 SSH/socket，也不解析 STX/NAK/RS 协议。
 4. 上层使用逻辑 `ServerPath`；实际 host/jump/role/tunnel 由中层按 registry 路由解析。
