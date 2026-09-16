@@ -304,10 +304,12 @@ class Registry:
             return {}
         raw = json.loads(self.path.read_text(encoding="utf-8"))
         users = raw if isinstance(raw, dict) else {}
-        entries = {
-            str(name): UserEntry.model_validate(value)
-            for name, value in users.items()
-        }
+        entries = {}
+        for name, value in users.items():
+            # a hand-edited registry must not smuggle path separators or other
+            # unsafe keys into role roots / on-disk paths
+            validate_user_name(str(name))
+            entries[str(name)] = UserEntry.model_validate(value)
         for name, entry in entries.items():
             memory = self._entries.get(name)
             if memory is not None and memory.model_dump() == entry.model_dump():

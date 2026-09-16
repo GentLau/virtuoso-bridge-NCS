@@ -35,23 +35,54 @@
 - `server/stress_server.py`：五接口响应缺 `kind` 字段，调用方无法区分“容量拒绝/传输错误”；
   已补齐，并新增 `/api/gui`、`/api/spectre` 一次性接口（`http-stress2/evidence.json`）。
 
-## 2.1 规格变更带来的新接口（spec v20）
+## 2.1 规格变更带来的新接口（只读 query）
 
-评审期间 spec 升级到 Draft v20，新增 **§4.2 `middle.role_facts(token)` 只读查询接口**
-（原 §4.2–§4.5 顺延）。该接口在代码基线中不存在，按“先红后绿”处理：
+评审期间 spec 升级，新增 **§4.2 `middle.query(token)` 只读查询**（旧稿曾叫
+`role_facts`，v21 起统一为 `query`，v23 进一步限定范围为 `root`/`bin` 且不得返回
+任何拓扑字段）。该接口在代码基线中不存在，按“先红后绿”处理：
 
 | 项 | 内容 |
 |---|---|
-| 红 | `semantics_tb.py` 三个用例 `role-facts-shape` / `role-facts-unknown-token` / `role-facts-isolation` 全部失败：`AttributeError: 'BusinessServer' object has no attribute 'role_facts'`；证据 `artifacts/role-facts-baseline-red.json` |
-| 实现 | `pyapi/models.py` 新增 `RoleFacts` / `RoleFactsResult`；`BusinessServer.role_facts` 只读返回五个 role 的 `mode/host/user/root/bin`，未知 token 返回 `ok=False, error="invalid token"`，不建连接、不写注册表、不缓存 |
-| 绿 | `artifacts/semantics-green.json`（8 用例全绿，含 3 个 role_facts 用例） |
-| 文档 | `doc/接口调用指南.md` v3 新增 §1.1 与 §3.2 |
+| 红 | `semantics_tb.py` 四个用例 `query-shape` / `query-unknown-token` / `query-isolation` / `query-no-budget` 全部失败（基线无该方法）；证据 `artifacts/query-baseline-red.json` |
+| 实现 | `pyapi/models.py` 新增 `RoleQuery(root, bin)` / `QueryResult(status, roles, errors)`；`BusinessServer.query` 只读返回五个 role 的 `root`/`bin`，未知 token 返回 `status="error"` + `errors=["invalid token"]`，不建连接、不写注册表、不缓存、不占三类预算（有专门用例占满线程池后仍立即返回） |
+| 绿 | `artifacts/semantics-green.json`（全部用例通过，含 4 个 query 用例） |
+| 文档 | `doc/接口调用指南.md` §1.1 / §3.2（只写 `root`/`bin`，不写拓扑字段） |
+
+## 2.2 子评审（代码 / 测试 / spec 一致性）追加修复
+
+三个只读子评审（代码、测试与证据、spec 一致性）在 2026-09-16 晚给出结论，确认的问题按下表修复：
+
+| # | 缺陷（评审结论） | 红灯证据 | 修复 | 绿灯 |
+|---|---|---|---|---|
+| 7 | **Skill 在已投递后重发**：`skill_client` 把 connect→send→recv 放在同一次 try 中，RST 后整段重试；实测同一条非幂等 SKILL 被投递 10–15 次 | `skill-delivery-baseline-red.json`（`deliveries=10`） | 区分“建连前失败”（≤3 次重试）与“已投递后失败”（绝不重发，按结果未知返回固定文案 `SKILL execution timed out`） | `semantics-green.json`（`deliveries=1`） |
+| 8 | Skill 建连没有消费 `runtime.connect_timeout` 子预算 | — | `SkillClient` 新增 `connect_timeout`，`middle` 传入 `entry.runtime.connect_timeout`；`connect` 只用 `min(剩余预算, 子预算)` | 单元/真机回归 |
+| 9 | SSH/SCP “文件不存在”被判成 `kind=command`（本地路径场景是 `path`） | — | `_result_from_rc` 识别 `no such file or directory` / `cannot stat` / `open failed` → `kind=path` | 单元回归 |
+| 10 | 注册第 5 步失败后不可重试（与 spec “可重试第五步”冲突） | 六步 TB 新增“第 5 步失败→修复环境→再 verify” | `RegistrationFlow.verify` 允许 stage=failed 且候选 entry 仍在时重跑连通性测试 | `reg-six-local/evidence.json` |
+| 11 | 第 5 步缺少 daemon user 与 `expected_user` 的比对（spec 要求 WARNING） | — | IL 解析/写入 `user=`，两个 daemon 的 banner 带上执行账号；`flow.identity_warnings()` 比对 host/user | 单元 + 真机注册（无 warning 为匹配） |
+| 12 | `user update` 放行了白名单外的 `mode` | — | 白名单去掉 `mode`；六步 TB 增加“提交 mode 必须 400”负例 | `reg-six-local/evidence.json` |
+| 13 | daemon watchdog 文案不是冻结文案 | 集成测试（原断言 `TimeoutError`） | watchdog 帧改为 `SKILL execution timed out`，并剥掉帧尾 RS，客户端拿到的就是冻结文案 | `test/integration/test_daemon_handler.py` |
+| 14 | registry 载入不校验 user key（手写 `../evil` 可进内存并参与落盘路径拼接） | — | `load()` 对每个 key 调用 `validate_user_name` | 单元回归 |
+| 15 | 压力 TB 会重试**所有**失败（包括 transport/未知影响/真实命令失败），可能掩盖非幂等缺陷 | — | 只对容量拒绝（线程/通道/max_sessions、含 Skill 容量拒绝与回读校验被拒）重试；其它失败立即记录 | `http-stress-sat/evidence.json`（144/144 最终应答，失败立即暴露） |
+
+### 2.2.1 已记录、本轮不修（附理由）
+
+| 项 | 现状 | 为什么不本轮修 |
+|---|---|---|
+| 本地一次性命令超时只杀 shell、子进程继续（Windows/POSIX 皆然） | `subprocess.run(shell=True, timeout=…)` | 需要进程组/Job Object 级别的实现与跨平台测试矩阵，属于独立改造；本轮已在报告中标注为已知风险，调用方超时后不得盲目重试 |
+| 远端常驻 shell “协议错误重试”可能重放已执行的命令 | `ssh.py` 5 类错误统一重试 | 需要重新设计“是否已投递”的判定与协议层错误分类；本轮先记录，避免引入未经验证的重试语义 |
+| 注册 HTTP 层未按用户串行（并发 verify / verify 中 delete 竞态） | `registration_server.py` 只在 dict 上加锁 | 注册是低并发流程（spec 明确不设跨进程租约）；本轮记录为已知竞态，修法（per-user 锁 + 第 6 步前复核 stage）留待后续 |
+| IL→daemon 帧未转义（返回值含 RS 会截断） | `ramic_bridge.il` `%L` 原样进帧 | 属协议格式变更，需要 daemon/IL 同步升级与真机矩阵；本轮记录 |
+| Skill 超时后残留帧可能计入下一条请求 | daemon 一次性 drain | 需要更强的请求关联机制（spec 本版不做 request_id）；本轮记录 |
+| OpenSSH 后端 `rc=255` 判成 transport | `ssh.py` | 需区分“ssh 自身失败”与“远端命令返回 255”，需要真实 OpenSSH 真机矩阵 |
+| 本地 shell banner 卡死会阻塞整个中层（构造时持 `_lock`） | `middle.py` | 需要把 shell 启动移出全局锁并加超时；属并发重构，本轮记录 |
+| 目录目标安装仍是备份式替换（崩溃窗口） | `transfer.py` 目录分支 | 文件已改为单次 `os.replace`；目录在 Windows 上无法原地原子替换，需要恢复策略设计 |
+| `test/计划/*` 中部分用例没有门禁 TB（拓扑/等价性/运维等） | — | 见 `test/tb/README.md` §准出集合：本轮明确哪些计划项未纳入准出，避免“文档里的 TB”与门禁不一致 |
 
 ## 3. 本轮新增 TB
 
 | TB | 覆盖 | 环境 | 证据 |
 |---|---|---|---|
-| `semantics_tb.py` | 本地文件 deadline、registry 跨进程、崩溃安全、`role_facts` 只读契约 | 任意平台 | `semantics-*-red/green.json`、`role-facts-baseline-red.json` |
+| `semantics_tb.py` | 本地/远端 Skill 交付纪律、本地文件 deadline、registry 跨进程、崩溃安全、只读 `query` 契约 | 任意平台 | `semantics-*-red/green.json`、`query-baseline-red.json`、`skill-delivery-baseline-red.json` |
 | `daemon_log_protocol_tb.py` | daemon 侧日志契约：off/分级/轮转/读不到/降级/截断/第二帧超时/错误帧/监听循环；py3 与 py27 双跑 | 任意平台（脚本化 CIW） | `log-protocol.json`（18 用例） |
 | `log_matrix_real_tb.py` | 真机 CDS.log：增量字节一致、off 源头、桥零注入、IL 前缀护栏 | Windows → wsl-gent | `log-matrix-real-*.json` |
 | `registration_http_six_step_tb.py` | 真实 HTTP 六步注册（含步骤 6 落盘、读回、更新、删除、乱序拒绝）；远端模式 1–4 步走真 SSH | Windows（+ wsl-gent） | `reg-six-local/evidence.json`（本地 1–6）、`reg-six-remote-14/evidence.json`（远端 1–4）、`reg-six-remote/evidence.json`（远端 1–6） |

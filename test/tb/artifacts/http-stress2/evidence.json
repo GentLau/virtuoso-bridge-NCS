@@ -10,56 +10,56 @@
   "requests": 72,
   "planned_requests": 72,
   "failed": 0,
-  "elapsed_s": 23.485,
+  "elapsed_s": 23.406,
   "per_kind": {
     "skill": {
       "total": 9,
       "ok": 9,
       "retries": 0,
       "rejections": 0,
-      "max_s": 3.187
-    },
-    "download": {
-      "total": 14,
-      "ok": 14,
-      "retries": 0,
-      "rejections": 0,
-      "max_s": 4.75
-    },
-    "upload": {
-      "total": 10,
-      "ok": 10,
-      "retries": 0,
-      "rejections": 0,
-      "max_s": 5.484
+      "max_s": 3.281
     },
     "gui": {
       "total": 9,
       "ok": 9,
       "retries": 0,
       "rejections": 0,
-      "max_s": 2.875
+      "max_s": 3.156
+    },
+    "download": {
+      "total": 14,
+      "ok": 14,
+      "retries": 0,
+      "rejections": 0,
+      "max_s": 4.891
+    },
+    "upload": {
+      "total": 10,
+      "ok": 10,
+      "retries": 0,
+      "rejections": 0,
+      "max_s": 5.687
     },
     "command": {
       "total": 14,
       "ok": 14,
       "retries": 0,
       "rejections": 0,
-      "max_s": 2.938
+      "max_s": 3.234
     },
     "spectre": {
       "total": 4,
       "ok": 4,
       "retries": 0,
       "rejections": 0,
-      "max_s": 2.891
+      "max_s": 3.171
     },
     "composite": {
       "total": 12,
       "ok": 12,
       "retries": 0,
       "rejections": 0,
-      "max_s": 8.156
+      "max_s": 8.5
     }
   },
   "failures": [],
@@ -74,61 +74,61 @@
       "token": "vb-http-local",
       "worker": 5,
       "kind": "skill",
-      "marker": "VB-ski-7798e8a9f4",
-      "attempts": 1,
-      "rejections": 0,
-      "ok": true,
-      "detail": "",
-      "first_error": "",
-      "elapsed_s": 0.094
-    },
-    {
-      "token": "vb-http-local",
-      "worker": 5,
-      "kind": "skill",
-      "marker": "VB-ski-b8036fb415",
-      "attempts": 1,
-      "rejections": 0,
-      "ok": true,
-      "detail": "",
-      "first_error": "",
-      "elapsed_s": 0.015
-    },
-    {
-      "token": "vb-http-local",
-      "worker": 1,
-      "kind": "download",
-      "marker": "VB-dow-d0cfb7b26c",
-      "attempts": 1,
-      "rejections": 0,
-      "ok": true,
-      "detail": "",
-      "first_error": "",
-      "elapsed_s": 0.094
-    },
-    {
-      "token": "vb-http-local",
-      "worker": 5,
-      "kind": "upload",
-      "marker": "VB-upl-a7f783e768",
-      "attempts": 1,
-      "rejections": 0,
-      "ok": true,
-      "detail": "",
-      "first_error": "",
-      "elapsed_s": 0.047
-    },
-    {
-      "token": "vb-http-local",
-      "worker": 2,
-      "kind": "download",
-      "marker": "VB-dow-0616fd3ee9",
+      "marker": "VB-ski-1bc9e853b5",
       "attempts": 1,
       "rejections": 0,
       "ok": true,
       "detail": "",
       "first_error": "",
       "elapsed_s": 0.109
+    },
+    {
+      "token": "vb-http-local",
+      "worker": 5,
+      "kind": "skill",
+      "marker": "VB-ski-6e3a489768",
+      "attempts": 1,
+      "rejections": 0,
+      "ok": true,
+      "detail": "",
+      "first_error": "",
+      "elapsed_s": 0.016
+    },
+    {
+      "token": "vb-http-local",
+      "worker": 4,
+      "kind": "gui",
+      "marker": "VB-gui-7f17ea40c7",
+      "attempts": 1,
+      "rejections": 0,
+      "ok": true,
+      "detail": "",
+      "first_error": "",
+      "elapsed_s": 0.109
+    },
+    {
+      "token": "vb-http-local",
+      "worker": 1,
+      "kind": "download",
+      "marker": "VB-dow-e5fa84b1c1",
+      "attempts": 1,
+      "rejections": 0,
+      "ok": true,
+      "detail": "",
+      "first_error": "",
+      "elapsed_s": 0.109
+    },
+    {
+      "token": "vb-http-local",
+      "worker": 2,
+      "kind": "download",
+      "marker": "VB-dow-7e4f70b4c9",
+      "attempts": 1,
+      "rejections": 0,
+      "ok": true,
+      "detail": "",
+      "first_error": "",
+      "elapsed_s": 0.14
     }
   ]
 }

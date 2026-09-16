@@ -1,0 +1,12 @@
+{
+  "ok": false,
+  "failed": 1,
+  "temp_dirs_removed": 0,
+  "results": {
+    "skill-no-retry-after-delivery": {
+      "status": "fail",
+      "error": "ProbeFailure: Skill request was delivered 10 times after a post-delivery failure (must never be resent)",
+      "elapsed_s": 2.0
+    }
+  }
+}

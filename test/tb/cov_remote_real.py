@@ -9,6 +9,7 @@ import argparse
 import hashlib
 import json
 import tempfile
+import uuid
 from pathlib import Path
 
 from transport.middle import BusinessServer
@@ -25,15 +26,24 @@ def main() -> int:
     server = BusinessServer(wd)
     temp = tempfile.TemporaryDirectory(prefix="vb-cov-remote-")
     result = {"steps": []}
+    exit_code = 0
     try:
-        skill = server.execute_skill("1+2", token=args.token)
-        result["steps"].append({"name": "skill", "ok": skill.ok, "output": skill.output})
-        if not skill.ok:
+        skill_marker = f"cov-skill-{uuid.uuid4().hex[:10]}"
+        skill = server.execute_skill(f'strcat("{skill_marker}")', token=args.token)
+        result["steps"].append({"name": "skill",
+                                "ok": skill.ok and skill_marker in (skill.output or ""),
+                                "output": skill.output})
+        if not (skill.ok and skill_marker in (skill.output or "")):
+            exit_code = 2
             return 2
 
-        cmd = server.run_command("echo cov-ok", token=args.token)
-        result["steps"].append({"name": "command", "ok": cmd.returncode == 0, "kind": cmd.kind})
-        if cmd.returncode != 0:
+        cmd_marker = f"cov-cmd-{uuid.uuid4().hex[:10]}"
+        cmd = server.run_command(f"echo {cmd_marker}", token=args.token)
+        cmd_ok = cmd.returncode == 0 and cmd_marker in (cmd.stdout or "")
+        result["steps"].append({"name": "command", "ok": cmd_ok, "kind": cmd.kind,
+                                "stdout": (cmd.stdout or "")[:80]})
+        if not cmd_ok:
+            exit_code = 2
             return 2
 
         temp_path = Path(temp.name)
@@ -50,22 +60,31 @@ def main() -> int:
         )
         result["steps"].append({"name": "file", "ok": digest_ok, "up": up.kind, "down": down.kind})
         if not digest_ok:
+            exit_code = 2
             return 2
 
-        gui = server.run_gui_command("echo cov-gui", token=args.token)
-        spec = server.run_spectre_command("echo cov-spectre", token=args.token)
-        result["steps"].append({"name": "gui", "ok": gui.returncode == 0, "kind": gui.kind})
-        result["steps"].append({"name": "spectre", "ok": spec.returncode == 0, "kind": spec.kind})
-        if gui.returncode != 0 or spec.returncode != 0:
+        gui_marker = f"cov-gui-{uuid.uuid4().hex[:10]}"
+        spec_marker = f"cov-spectre-{uuid.uuid4().hex[:10]}"
+        gui = server.run_gui_command(f"echo {gui_marker}", token=args.token)
+        spec = server.run_spectre_command(f"echo {spec_marker}", token=args.token)
+        gui_ok = gui.returncode == 0 and gui_marker in (gui.stdout or "")
+        spec_ok = spec.returncode == 0 and spec_marker in (spec.stdout or "")
+        result["steps"].append({"name": "gui", "ok": gui_ok, "kind": gui.kind,
+                                "stdout": (gui.stdout or "")[:80]})
+        result["steps"].append({"name": "spectre", "ok": spec_ok, "kind": spec.kind,
+                                "stdout": (spec.stdout or "")[:80]})
+        if not (gui_ok and spec_ok):
+            exit_code = 2
             return 2
     finally:
         server.close()
         temp.cleanup()
-    result["ok"] = all(step["ok"] for step in result["steps"])
-    result["token"] = args.token
-    result["work_dir"] = str(wd)
-    out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        result["ok"] = all(step["ok"] for step in result["steps"]) and not exit_code
+        result["token"] = args.token
+        result["work_dir"] = str(wd)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n",
+                       encoding="utf-8")
     print(json.dumps(result, ensure_ascii=False))
     return 0 if result["ok"] else 2
 

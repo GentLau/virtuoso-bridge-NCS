@@ -15,8 +15,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import shutil
 import socket
 import subprocess
+import tempfile
 import sys
 import threading
 import time
@@ -282,12 +284,17 @@ def main() -> int:
     registry = load_registry(registry_path())
 
     prefix = f"vbsix{uuid.uuid4().hex[:6]}"
+    local_root_tmp: Path | None = None
     if args.local_mode:
         token = args.token or f"{prefix}-00"
         port = args.daemon_port or free_port()
         local_daemon = LocalFakeDaemon(port, token)
         daemon = None
-        root = args.root or str(work_dir / "remote-root")
+        if not args.root:
+            # deployed files are throw-away evidence: keep them out of the
+            # artifact dir and remove them when the run finishes
+            local_root_tmp = Path(tempfile.mkdtemp(prefix="vb-six-root-"))
+        root = args.root or str(local_root_tmp)
     else:
         local_daemon = None
         daemon = FakeDaemon(args.host, args.daemon_port, prefix)
@@ -364,6 +371,19 @@ def main() -> int:
         setup_path = body.get("setup_path") or ""
         if not setup_path.endswith("virtuoso_setup.il"):
             raise ProbeFailure(f"step 4 returned no setup path: {setup_path!r}")
+        # deploy must have put real files on the target, not just a path string
+        if args.local_mode:
+            if not Path(setup_path).is_file():
+                raise ProbeFailure(f"step 4 did not write the setup file: {setup_path}")
+        else:
+            probe = subprocess.run(
+                ["ssh", args.host, f"test -f {setup_path} && echo present"],
+                capture_output=True, text=True, timeout=60, **no_window(),
+            )
+            if probe.returncode != 0 or "present" not in probe.stdout:
+                raise ProbeFailure(
+                    f"step 4 did not create {setup_path} on {args.host}: {probe.stderr.strip()}"
+                )
         assert_no_registry_write("step 4")
 
         # -- step 5 + 6: connectivity then the single durable write ---------
@@ -405,16 +425,25 @@ def main() -> int:
         steps.append({"action": "list-users", "status": status,
                       "count": len(body.get("users", []))})
 
-        updated = body = None
         status, current = http.call("GET", f"/api/user/{args.user}")
         entry = current.get("entry") or {}
         entry.setdefault("runtime", {})["thread_pool_size"] = 12
+        # spec 多用户与注册 §5: ``mode`` is fixed at registration time and is
+        # not part of the update whitelist, so a GET round-trip omits it.
+        entry.pop("mode", None)
         status, body = http.call("POST", f"/api/user/{args.user}/update", entry)
         steps.append({"action": "update", "status": status,
                       "thread_pool_size": (body.get("entry", {}).get("runtime") or {})
                       .get("thread_pool_size")})
         if status != 200 or (body.get("entry", {}).get("runtime") or {}).get("thread_pool_size") != 12:
             raise ProbeFailure(f"update failed: {body}")
+
+        status, body = http.call("POST", f"/api/user/{args.user}/update",
+                                 {"mode": {"default": "remote"}})
+        steps.append({"action": "update-rejects-mode", "status": status,
+                      "detail": body.get("detail")})
+        if status != 400 or "mode" not in json.dumps(body):
+            raise ProbeFailure(f"mode must not be updatable: {body}")
 
         status, body = http.call("DELETE", f"/api/user/{args.user}")
         steps.append({"action": "delete", "status": status, "removed": body.get("removed")})
@@ -462,6 +491,8 @@ def main() -> int:
                 local_daemon.stop()
         except Exception:  # noqa: BLE001
             pass
+        if local_root_tmp is not None:
+            shutil.rmtree(local_root_tmp, ignore_errors=True)
         server.shutdown()
         server.server_close()
 

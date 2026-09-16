@@ -110,7 +110,7 @@ def _read_frame() -> bytes:
             ch = sys.stdin.buffer.read(1)
             if not ch:
                 if _timeout_flag:
-                    return b"\x15TimeoutError\x1e"
+                    return b"\x15SKILL execution timed out\x1e"
                 time.sleep(0.001)
                 continue
             if ch[0] in (STX[0], NAK[0]):
@@ -119,18 +119,18 @@ def _read_frame() -> bytes:
         except IOError as e:
             if e.errno in (errno.EAGAIN, errno.EWOULDBLOCK):
                 if _timeout_flag:
-                    return b"\x15TimeoutError\x1e"
+                    return b"\x15SKILL execution timed out\x1e"
                 time.sleep(0.001)
                 continue
             raise
         if _timeout_flag:
-            return b"\x15TimeoutError\x1e"
+            return b"\x15SKILL execution timed out\x1e"
     while True:
         try:
             ch = sys.stdin.buffer.read(1)
             if not ch:
                 if _timeout_flag:
-                    return b"\x15TimeoutError\x1e"
+                    return b"\x15SKILL execution timed out\x1e"
                 time.sleep(0.001)
                 continue
             if ch[0] == RS[0]:
@@ -139,12 +139,12 @@ def _read_frame() -> bytes:
         except IOError as e:
             if e.errno in (errno.EAGAIN, errno.EWOULDBLOCK):
                 if _timeout_flag:
-                    return b"\x15TimeoutError\x1e"
+                    return b"\x15SKILL execution timed out\x1e"
                 time.sleep(0.001)
                 continue
             raise
         if _timeout_flag:
-            return b"\x15TimeoutError\x1e"
+            return b"\x15SKILL execution timed out\x1e"
     return bytes(out)
 
 
@@ -319,7 +319,7 @@ def handle_connection(conn):
         frame1 = _read_frame()
 
         status_byte = frame1[:1]
-        value_payload = frame1[1:].decode("utf-8", errors="replace")
+        value_payload = frame1[1:].decode("utf-8", errors="replace").rstrip("\x1e")
         ok = status_byte == STX
 
         log_text = ""
@@ -410,7 +410,15 @@ def start_server():
                 ip = socket.gethostbyname(hn)
             except Exception:
                 ip = ""
-        sys.stderr.write(f"[RB-banner] pid={os.getpid()} bind={HOST}:{PORT} host={hn} ip={ip or 'unknown'}\n")
+        try:
+            import getpass
+            banner_user = getpass.getuser()
+        except Exception:  # noqa: BLE001 - identity is best effort
+            banner_user = ""
+        sys.stderr.write(
+            f"[RB-banner] pid={os.getpid()} bind={HOST}:{PORT} host={hn} "
+            f"ip={ip or 'unknown'} user={banner_user}\n"
+        )
         sys.stderr.flush()
         while True:
             conn, _addr = s.accept()

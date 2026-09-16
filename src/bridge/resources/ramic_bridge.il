@@ -31,6 +31,7 @@ unless(boundp('RBStderrBuf) RBStderrBuf = "")
 unless(boundp('RBLastPid) RBLastPid = nil)
 unless(boundp('RBLastBind) RBLastBind = "")
 unless(boundp('RBLastHost) RBLastHost = "")
+unless(boundp('RBLastUser) RBLastUser = "")
 unless(boundp('RBLastIP) RBLastIP = "")
 
 ; Daemon-reported runtime stats (counter / errors / uptime in seconds).
@@ -48,8 +49,8 @@ procedure(RBWriteIdentity()
             let((port)
                 port = outfile(RBIdentityPath)
                 when(port
-                    fprintf(port "host=%s\nip=%s\npid=%L\nbind=%s\n"
-                        RBLastHost RBLastIP RBLastPid RBLastBind)
+                    fprintf(port "host=%s\nip=%s\npid=%L\nbind=%s\nuser=%s\n"
+                        RBLastHost RBLastIP RBLastPid RBLastBind RBLastUser)
                     close(port)))))
 )
 
@@ -152,6 +153,8 @@ procedure(RBIpcErrHandler(ipcId data)
                     RBLastBind = substring(tok 6))
                 when(strlen(tok) > 5 && equal(substring(tok 1 5) "host=")
                     RBLastHost = substring(tok 6))
+                when(strlen(tok) > 5 && equal(substring(tok 1 5) "user=")
+                    RBLastUser = substring(tok 6))
                 when(strlen(tok) > 3 && equal(substring(tok 1 3) "ip=")
                     RBLastIP = substring(tok 4)))
             RBWriteIdentity()

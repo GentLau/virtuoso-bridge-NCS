@@ -129,14 +129,14 @@ def _read_frame():
     while True:
         b = _read_byte()
         if b is None:
-            return _B(NAK) + b"TimeoutError" + _B(RS)
+            return _B(NAK) + b"SKILL execution timed out" + _B(RS)
         if b in (STX, NAK):
             out.append(b)
             break
     while True:
         b = _read_byte()
         if b is None:
-            return _B(NAK) + b"TimeoutError" + _B(RS)
+            return _B(NAK) + b"SKILL execution timed out" + _B(RS)
         if b == RS:
             break
         out.append(b)
@@ -310,7 +310,7 @@ def handle_connection(conn):
         frame1 = _read_frame()
 
         status_byte = frame1[0] if isinstance(frame1[0], int) else ord(frame1[0])
-        value_payload = frame1[1:].decode("utf-8", "replace")
+        value_payload = frame1[1:].decode("utf-8", "replace").rstrip("\x1e")
         ok = status_byte == STX
 
         log_text = ""
@@ -402,7 +402,12 @@ def start_server():
             ip = socket.gethostbyname(hn)
         except Exception:
             ip = ""
-    sys.stderr.write("[RB-banner] pid=%d bind=%s:%d host=%s ip=%s\n" % (os.getpid(), HOST, PORT, hn, ip or "unknown"))
+    try:
+        import getpass
+        banner_user = getpass.getuser()
+    except Exception:
+        banner_user = ""
+    sys.stderr.write("[RB-banner] pid=%d bind=%s:%d host=%s ip=%s user=%s\n" % (os.getpid(), HOST, PORT, hn, ip or "unknown", banner_user))
     sys.stderr.flush()
     while True:
         conn, _addr = s.accept()

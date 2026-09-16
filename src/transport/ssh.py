@@ -788,6 +788,18 @@ class SSHRunner:
             kind = "unknown-effect"
         elif "sha256 mismatch" in text:
             kind = "checksum"
+        elif any(
+            marker in text.lower()
+            for marker in (
+                "no such file or directory",
+                "cannot stat",
+                "failed to open file",
+                "open failed",
+            )
+        ):
+            # SSH/SCP/tar no-such-file diagnostics are path failures, not
+            # command failures (spec §4.5)
+            kind = "path"
         else:
             kind = "command"
         return CommandResult(returncode=int(rc), stdout=_as_text(stdout), stderr=_as_text(stderr), kind=kind)

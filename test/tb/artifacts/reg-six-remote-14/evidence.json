@@ -2,10 +2,10 @@
   "ok": true,
   "phase": "1-4 (remote)",
   "user": "vbsixremote",
-  "token": "vbsix142a57-00",
+  "token": "vbsix027bca-00",
   "host": "wsl-gent",
   "daemon_port": 65133,
-  "http_port": 54869,
+  "http_port": 64708,
   "work_dir": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\reg-six-remote-14",
   "steps": [
     {
@@ -48,7 +48,7 @@
       "status": 200,
       "request": {
         "user": "vbsixremote",
-        "token": "vbsix142a57-00",
+        "token": "vbsix027bca-00",
         "mode": "remote",
         "ssh": {
           "default": {
@@ -62,7 +62,7 @@
         "roles": {
           "daemon": {
             "daemon_port": 65133,
-            "local_port": 54870,
+            "local_port": 64709,
             "root": "/home/Gent/.virtuoso-bridge/vbsixremote"
           }
         },
@@ -74,7 +74,7 @@
         "user": "vbsixremote",
         "stage": "applied",
         "step": 1,
-        "token": "vbsix142a57-00",
+        "token": "vbsix027bca-00",
         "errors": [],
         "warnings": []
       }
@@ -88,7 +88,7 @@
         "user": "vbsixremote",
         "stage": "validated",
         "step": 2,
-        "token": "vbsix142a57-00",
+        "token": "vbsix027bca-00",
         "errors": [],
         "warnings": []
       }
@@ -102,11 +102,11 @@
         "user": "vbsixremote",
         "stage": "probed",
         "step": 3,
-        "token": "vbsix142a57-00",
+        "token": "vbsix027bca-00",
         "errors": [],
         "warnings": [],
         "entry": {
-          "token": "vbsix142a57-00",
+          "token": "vbsix027bca-00",
           "mode": {
             "default": "remote"
           },
@@ -148,7 +148,7 @@
               "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
               "max_sessions": 10,
               "daemon_port": 65133,
-              "local_port": 54870,
+              "local_port": 64709,
               "python": "/opt/eda/cadence/IC618/tools.lnx86/python/64bit/bin/python3",
               "expected_hostname": "GLIS-DESKTOP.localdomain",
               "expected_user": "Gent"
@@ -210,12 +210,12 @@
         "user": "vbsixremote",
         "stage": "deployed",
         "step": 4,
-        "token": "vbsix142a57-00",
+        "token": "vbsix027bca-00",
         "errors": [],
         "warnings": [],
         "setup_path": "/home/Gent/.virtuoso-bridge/vbsixremote/setup/virtuoso_setup.il",
         "entry": {
-          "token": "vbsix142a57-00",
+          "token": "vbsix027bca-00",
           "mode": {
             "default": "remote"
           },
@@ -257,7 +257,7 @@
               "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
               "max_sessions": 10,
               "daemon_port": 65133,
-              "local_port": 54870,
+              "local_port": 64709,
               "python": "/opt/eda/cadence/IC618/tools.lnx86/python/64bit/bin/python3",
               "expected_hostname": "GLIS-DESKTOP.localdomain",
               "expected_user": "Gent"
@@ -311,5 +311,5 @@
       }
     }
   ],
-  "elapsed_s": 20.031000000075437
+  "elapsed_s": 18.140999999945052
 }

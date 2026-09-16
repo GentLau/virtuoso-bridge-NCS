@@ -621,7 +621,42 @@ def _short_host_match(a: str | None, b: str | None) -> bool:
     return a.strip().split(".")[0].lower() == b.strip().split(".")[0].lower()
 
 
-def _banner_hostname(entry: UserEntry, user: str, budget: StepBudget | None = None) -> str | None:
+def identity_warnings(
+    identity_text: str, expected_hostname: str | None, expected_user: str | None
+) -> list[str]:
+    """Compare the daemon identity file with the expected baselines.
+
+    spec 多用户与注册 §3.1 步 5：banner hostname / daemon user 与 ``expected_*``
+    不一致只记 WARNING，不阻断注册。
+    """
+    values: dict[str, str] = {}
+    for line in identity_text.splitlines():
+        if "=" in line:
+            key, _, value = line.partition("=")
+            values[key.strip()] = value.strip()
+    warnings: list[str] = []
+    host = values.get("host") or None
+    if host and expected_hostname and not _short_host_match(host, expected_hostname):
+        warnings.append(
+            f"daemon banner host {host!r} differs from expected {expected_hostname!r}"
+        )
+    actual_user = values.get("user") or None
+    if actual_user and expected_user and actual_user != expected_user:
+        warnings.append(
+            f"daemon user {actual_user!r} differs from expected {expected_user!r}"
+        )
+    return warnings
+
+
+def identity_user(identity_text: str) -> str | None:
+    """Daemon user recorded in the identity file (``user=`` line)."""
+    for line in identity_text.splitlines():
+        if line.startswith("user="):
+            return line[len("user="):].strip() or None
+    return None
+
+
+def _identity_text(entry: UserEntry, user: str, budget: StepBudget | None = None) -> str | None:
     targets = resolve_candidate(entry, user)
     path = identity_path(user, targets.daemon.root)
     try:
@@ -636,11 +671,21 @@ def _banner_hostname(entry: UserEntry, user: str, budget: StepBudget | None = No
             finally:
                 runner.close()
             text = result.stdout if result.returncode == 0 else ""
-        for line in text.splitlines():
-            if line.startswith("host="):
-                return line[len("host="):].strip() or None
+        return text or None
     except (OSError, RuntimeError):
         return None
+
+
+def _banner_hostname(
+    entry: UserEntry,
+    user: str,
+    budget: StepBudget | None = None,
+    identity_text: str | None = None,
+) -> str | None:
+    text = identity_text if identity_text is not None else _identity_text(entry, user, budget=budget) or ""
+    for line in text.splitlines():
+        if line.startswith("host="):
+            return line[len("host="):].strip() or None
     return None
 
 
@@ -742,6 +787,14 @@ def test_connectivity(entry: UserEntry, user: str) -> ConnectivityReport:
         warnings.append(
             f"daemon banner host {banner!r} differs from expected {expected_hostname!r}"
         )
+    expected_user = entry.roles.daemon.expected_user
+    if expected_user:
+        # only pay for a second identity read when a user baseline exists
+        actual_user = identity_user(_identity_text(entry, user, budget=budget) or "")
+        if actual_user and actual_user != expected_user:
+            warnings.append(
+                f"daemon user {actual_user!r} differs from expected {expected_user!r}"
+            )
 
     return ConnectivityReport(
         token=token,
@@ -994,13 +1047,19 @@ class RegistrationFlow:
                 errors=["no registration in progress"],
             )
             return self.state
-        if self.state.stage != "deployed":
+        if self.state.stage not in ("deployed", "failed"):
+            stage = self.state.stage
             self.state.stage = "failed"
             self.state.errors = [
-                f"step order violation: verify requires stage 'deployed', "
-                f"got {self.state.stage!r}"
+                f"step order violation: verify requires stage 'deployed', got {stage!r}"
             ]
             return self.state
+        if self.state.stage == "failed" and self.state.entry is None:
+            self.state.errors = ["no registration in progress"]
+            return self.state
+        # spec 多用户与注册 §3.1: the connectivity test is retryable — a failed
+        # step 5 keeps the candidate entry, so a fixed environment can simply
+        # POST /verify again.
 
         state = self.state
         state.step = 5
@@ -1042,6 +1101,8 @@ def register_user(registry: Registry, **fields) -> RegistrationState:
 
 __all__ = [
     "RegistrationFlow",
+    "identity_user",
+    "identity_warnings",
     "RegistrationProbeError",
     "deploy_user",
     "probe_user",

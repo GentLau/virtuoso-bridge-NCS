@@ -4,8 +4,8 @@
   "user": "vbsixlocal",
   "token": "vb-six-local",
   "host": "wsl-gent",
-  "daemon_port": 64679,
-  "http_port": 64680,
+  "daemon_port": 64687,
+  "http_port": 64688,
   "work_dir": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\reg-six-local",
   "steps": [
     {
@@ -34,7 +34,7 @@
       "action": "deploy",
       "status": 200,
       "stage": "deployed",
-      "setup_path": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\reg-six-local\\remote-root\\daemon/setup/virtuoso_setup.il"
+      "setup_path": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-svlhic53\\daemon/setup/virtuoso_setup.il"
     },
     {
       "step": 5,
@@ -76,6 +76,11 @@
       "thread_pool_size": 12
     },
     {
+      "action": "update-rejects-mode",
+      "status": 400,
+      "detail": "unknown fields: ['mode']"
+    },
+    {
       "action": "delete",
       "status": 200,
       "removed": true
@@ -103,12 +108,12 @@
         "token": "vb-six-local",
         "mode": "local",
         "root": {
-          "default": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\reg-six-local\\remote-root"
+          "default": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-svlhic53"
         },
         "roles": {
           "daemon": {
-            "daemon_port": 64679,
-            "local_port": 64679
+            "daemon_port": 64687,
+            "local_port": 64687
           }
         },
         "log_level": "off",
@@ -180,7 +185,7 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\reg-six-local\\remote-root\\gui",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-svlhic53\\gui",
               "expected_fingerprint": null,
               "max_sessions": 10
             },
@@ -191,11 +196,11 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\reg-six-local\\remote-root\\daemon",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-svlhic53\\daemon",
               "expected_fingerprint": null,
               "max_sessions": 10,
-              "daemon_port": 64679,
-              "local_port": 64679,
+              "daemon_port": 64687,
+              "local_port": 64687,
               "python": "C:\\Users\\user\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
               "expected_hostname": "DESKTOP-F143LSD",
               "expected_user": "user"
@@ -207,7 +212,7 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\reg-six-local\\remote-root\\command",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-svlhic53\\command",
               "expected_fingerprint": null,
               "max_sessions": 10
             },
@@ -218,7 +223,7 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\reg-six-local\\remote-root\\file",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-svlhic53\\file",
               "expected_fingerprint": null,
               "max_sessions": 10
             },
@@ -229,7 +234,7 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\reg-six-local\\remote-root\\spectre",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-svlhic53\\spectre",
               "expected_fingerprint": null,
               "max_sessions": 10,
               "bin": null
@@ -262,7 +267,7 @@
         "warnings": [
           "no usable spectre found locally (non-blocking)"
         ],
-        "setup_path": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\reg-six-local\\remote-root\\daemon/setup/virtuoso_setup.il",
+        "setup_path": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-svlhic53\\daemon/setup/virtuoso_setup.il",
         "entry": {
           "token": "vb-six-local",
           "mode": {
@@ -291,7 +296,7 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\reg-six-local\\remote-root\\gui",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-svlhic53\\gui",
               "expected_fingerprint": null,
               "max_sessions": 10
             },
@@ -302,11 +307,11 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\reg-six-local\\remote-root\\daemon",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-svlhic53\\daemon",
               "expected_fingerprint": null,
               "max_sessions": 10,
-              "daemon_port": 64679,
-              "local_port": 64679,
+              "daemon_port": 64687,
+              "local_port": 64687,
               "python": "C:\\Users\\user\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
               "expected_hostname": "DESKTOP-F143LSD",
               "expected_user": "user"
@@ -318,7 +323,7 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\reg-six-local\\remote-root\\command",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-svlhic53\\command",
               "expected_fingerprint": null,
               "max_sessions": 10
             },
@@ -329,7 +334,7 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\reg-six-local\\remote-root\\file",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-svlhic53\\file",
               "expected_fingerprint": null,
               "max_sessions": 10
             },
@@ -340,7 +345,7 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\reg-six-local\\remote-root\\spectre",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-svlhic53\\spectre",
               "expected_fingerprint": null,
               "max_sessions": 10,
               "bin": null
@@ -371,7 +376,7 @@
         "token": "vb-six-local",
         "errors": [],
         "warnings": [],
-        "setup_path": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\reg-six-local\\remote-root\\daemon/setup/virtuoso_setup.il",
+        "setup_path": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-svlhic53\\daemon/setup/virtuoso_setup.il",
         "entry": {
           "token": "vb-six-local",
           "mode": {
@@ -400,7 +405,7 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\reg-six-local\\remote-root\\gui",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-svlhic53\\gui",
               "expected_fingerprint": null,
               "max_sessions": 10
             },
@@ -411,11 +416,11 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\reg-six-local\\remote-root\\daemon",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-svlhic53\\daemon",
               "expected_fingerprint": null,
               "max_sessions": 10,
-              "daemon_port": 64679,
-              "local_port": 64679,
+              "daemon_port": 64687,
+              "local_port": 64687,
               "python": "C:\\Users\\user\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
               "expected_hostname": "DESKTOP-F143LSD",
               "expected_user": "user"
@@ -427,7 +432,7 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\reg-six-local\\remote-root\\command",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-svlhic53\\command",
               "expected_fingerprint": null,
               "max_sessions": 10
             },
@@ -438,7 +443,7 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\reg-six-local\\remote-root\\file",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-svlhic53\\file",
               "expected_fingerprint": null,
               "max_sessions": 10
             },
@@ -449,7 +454,7 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\reg-six-local\\remote-root\\spectre",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-svlhic53\\spectre",
               "expected_fingerprint": null,
               "max_sessions": 10,
               "bin": null
@@ -464,7 +469,7 @@
             "log_level": "off",
             "log_max_bytes": 65536
           },
-          "registered_at": 1789554419
+          "registered_at": 1789560739
         },
         "report": {
           "command_ok": true,
@@ -512,7 +517,7 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\reg-six-local\\remote-root\\gui",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-svlhic53\\gui",
               "expected_fingerprint": null,
               "max_sessions": 10
             },
@@ -523,11 +528,11 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\reg-six-local\\remote-root\\daemon",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-svlhic53\\daemon",
               "expected_fingerprint": null,
               "max_sessions": 10,
-              "daemon_port": 64679,
-              "local_port": 64679,
+              "daemon_port": 64687,
+              "local_port": 64687,
               "python": "C:\\Users\\user\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
               "expected_hostname": "DESKTOP-F143LSD",
               "expected_user": "user"
@@ -539,7 +544,7 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\reg-six-local\\remote-root\\command",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-svlhic53\\command",
               "expected_fingerprint": null,
               "max_sessions": 10
             },
@@ -550,7 +555,7 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\reg-six-local\\remote-root\\file",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-svlhic53\\file",
               "expected_fingerprint": null,
               "max_sessions": 10
             },
@@ -561,7 +566,7 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\reg-six-local\\remote-root\\spectre",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-svlhic53\\spectre",
               "expected_fingerprint": null,
               "max_sessions": 10,
               "bin": null
@@ -576,7 +581,7 @@
             "log_level": "off",
             "log_max_bytes": 65536
           },
-          "registered_at": 1789554419
+          "registered_at": 1789560739
         }
       }
     },
@@ -617,7 +622,7 @@
                   "jump_host": null,
                   "jump_user": null,
                   "proxy": null,
-                  "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\reg-six-local\\remote-root\\gui",
+                  "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-svlhic53\\gui",
                   "expected_fingerprint": null,
                   "max_sessions": 10
                 },
@@ -628,11 +633,11 @@
                   "jump_host": null,
                   "jump_user": null,
                   "proxy": null,
-                  "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\reg-six-local\\remote-root\\daemon",
+                  "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-svlhic53\\daemon",
                   "expected_fingerprint": null,
                   "max_sessions": 10,
-                  "daemon_port": 64679,
-                  "local_port": 64679,
+                  "daemon_port": 64687,
+                  "local_port": 64687,
                   "python": "C:\\Users\\user\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
                   "expected_hostname": "DESKTOP-F143LSD",
                   "expected_user": "user"
@@ -644,7 +649,7 @@
                   "jump_host": null,
                   "jump_user": null,
                   "proxy": null,
-                  "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\reg-six-local\\remote-root\\command",
+                  "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-svlhic53\\command",
                   "expected_fingerprint": null,
                   "max_sessions": 10
                 },
@@ -655,7 +660,7 @@
                   "jump_host": null,
                   "jump_user": null,
                   "proxy": null,
-                  "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\reg-six-local\\remote-root\\file",
+                  "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-svlhic53\\file",
                   "expected_fingerprint": null,
                   "max_sessions": 10
                 },
@@ -666,7 +671,7 @@
                   "jump_host": null,
                   "jump_user": null,
                   "proxy": null,
-                  "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\reg-six-local\\remote-root\\spectre",
+                  "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-svlhic53\\spectre",
                   "expected_fingerprint": null,
                   "max_sessions": 10,
                   "bin": null
@@ -681,7 +686,7 @@
                 "log_level": "off",
                 "log_max_bytes": 65536
               },
-              "registered_at": 1789554419
+              "registered_at": 1789560739
             }
           }
         ]
@@ -696,9 +701,6 @@
         "user": "vbsixlocal",
         "entry": {
           "token": "vb-six-local",
-          "mode": {
-            "default": "local"
-          },
           "ssh": {
             "default": {
               "host": null,
@@ -722,7 +724,7 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\reg-six-local\\remote-root\\gui",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-svlhic53\\gui",
               "expected_fingerprint": null,
               "max_sessions": 10
             },
@@ -733,11 +735,11 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\reg-six-local\\remote-root\\daemon",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-svlhic53\\daemon",
               "expected_fingerprint": null,
               "max_sessions": 10,
-              "daemon_port": 64679,
-              "local_port": 64679,
+              "daemon_port": 64687,
+              "local_port": 64687,
               "python": "C:\\Users\\user\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
               "expected_hostname": "DESKTOP-F143LSD",
               "expected_user": "user"
@@ -749,7 +751,7 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\reg-six-local\\remote-root\\command",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-svlhic53\\command",
               "expected_fingerprint": null,
               "max_sessions": 10
             },
@@ -760,7 +762,7 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\reg-six-local\\remote-root\\file",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-svlhic53\\file",
               "expected_fingerprint": null,
               "max_sessions": 10
             },
@@ -771,7 +773,7 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\reg-six-local\\remote-root\\spectre",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-svlhic53\\spectre",
               "expected_fingerprint": null,
               "max_sessions": 10,
               "bin": null
@@ -786,7 +788,7 @@
             "log_level": "off",
             "log_max_bytes": 65536
           },
-          "registered_at": 1789554419
+          "registered_at": 1789560739
         }
       }
     },
@@ -796,9 +798,6 @@
       "status": 200,
       "request": {
         "token": "vb-six-local",
-        "mode": {
-          "default": "local"
-        },
         "ssh": {
           "default": {
             "host": null,
@@ -822,7 +821,7 @@
             "jump_host": null,
             "jump_user": null,
             "proxy": null,
-            "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\reg-six-local\\remote-root\\gui",
+            "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-svlhic53\\gui",
             "expected_fingerprint": null,
             "max_sessions": 10
           },
@@ -833,11 +832,11 @@
             "jump_host": null,
             "jump_user": null,
             "proxy": null,
-            "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\reg-six-local\\remote-root\\daemon",
+            "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-svlhic53\\daemon",
             "expected_fingerprint": null,
             "max_sessions": 10,
-            "daemon_port": 64679,
-            "local_port": 64679,
+            "daemon_port": 64687,
+            "local_port": 64687,
             "python": "C:\\Users\\user\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
             "expected_hostname": "DESKTOP-F143LSD",
             "expected_user": "user"
@@ -849,7 +848,7 @@
             "jump_host": null,
             "jump_user": null,
             "proxy": null,
-            "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\reg-six-local\\remote-root\\command",
+            "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-svlhic53\\command",
             "expected_fingerprint": null,
             "max_sessions": 10
           },
@@ -860,7 +859,7 @@
             "jump_host": null,
             "jump_user": null,
             "proxy": null,
-            "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\reg-six-local\\remote-root\\file",
+            "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-svlhic53\\file",
             "expected_fingerprint": null,
             "max_sessions": 10
           },
@@ -871,7 +870,7 @@
             "jump_host": null,
             "jump_user": null,
             "proxy": null,
-            "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\reg-six-local\\remote-root\\spectre",
+            "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-svlhic53\\spectre",
             "expected_fingerprint": null,
             "max_sessions": 10,
             "bin": null
@@ -886,7 +885,7 @@
           "log_level": "off",
           "log_max_bytes": 65536
         },
-        "registered_at": 1789554419
+        "registered_at": 1789560739
       },
       "response": {
         "user": "vbsixlocal",
@@ -918,7 +917,7 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\reg-six-local\\remote-root\\gui",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-svlhic53\\gui",
               "expected_fingerprint": null,
               "max_sessions": 10
             },
@@ -929,11 +928,11 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\reg-six-local\\remote-root\\daemon",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-svlhic53\\daemon",
               "expected_fingerprint": null,
               "max_sessions": 10,
-              "daemon_port": 64679,
-              "local_port": 64679,
+              "daemon_port": 64687,
+              "local_port": 64687,
               "python": "C:\\Users\\user\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
               "expected_hostname": "DESKTOP-F143LSD",
               "expected_user": "user"
@@ -945,7 +944,7 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\reg-six-local\\remote-root\\command",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-svlhic53\\command",
               "expected_fingerprint": null,
               "max_sessions": 10
             },
@@ -956,7 +955,7 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\reg-six-local\\remote-root\\file",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-svlhic53\\file",
               "expected_fingerprint": null,
               "max_sessions": 10
             },
@@ -967,7 +966,7 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\reg-six-local\\remote-root\\spectre",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-svlhic53\\spectre",
               "expected_fingerprint": null,
               "max_sessions": 10,
               "bin": null
@@ -982,8 +981,22 @@
             "log_level": "off",
             "log_max_bytes": 65536
           },
-          "registered_at": 1789554419
+          "registered_at": 1789560739
         }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/user/vbsixlocal/update",
+      "status": 400,
+      "request": {
+        "mode": {
+          "default": "remote"
+        }
+      },
+      "response": {
+        "error": "invalid update",
+        "detail": "unknown fields: ['mode']"
       }
     },
     {
@@ -1005,12 +1018,12 @@
         "token": "vb-six-local-x",
         "mode": "local",
         "root": {
-          "default": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\reg-six-local\\remote-root"
+          "default": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-svlhic53"
         },
         "roles": {
           "daemon": {
-            "daemon_port": 54865,
-            "local_port": 54865
+            "daemon_port": 64703,
+            "local_port": 64703
           }
         },
         "log_level": "off",
@@ -1043,5 +1056,5 @@
       }
     }
   ],
-  "elapsed_s": 1.4369999999180436
+  "elapsed_s": 1.547000000020489
 }

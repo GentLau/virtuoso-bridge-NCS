@@ -219,7 +219,6 @@ class RegistrationHandler(BaseHTTPRequestHandler):
         # Flat convenience names retained for the registration page and old
         # scripts; nested registry names remain the canonical transport.
         flat_map = {
-            "mode_default": ("mode", "default"),
             "root_default": ("root", "default"),
             "ssh_backend": ("ssh", "backend"),
             "ssh_control_master": ("ssh", "control_master"),
@@ -249,7 +248,11 @@ class RegistrationHandler(BaseHTTPRequestHandler):
         # must accept that same shape back: ``token`` is read-only but valid
         # (a *changed* token is refused below) and ``registered_at`` is
         # server-managed, never user-writable.
-        allowed = {"mode", "ssh", "root", "roles", "runtime", "cdslog",
+        # spec 多用户与注册 §5: ssh.* / root.default / role.* / runtime.* /
+        # cdslog.* / expected_* are the writable fields -- ``mode`` is fixed at
+        # registration time.  ``token``/``registered_at`` are accepted so the
+        # entry returned by GET can be posted back (read-only, validated).
+        allowed = {"ssh", "root", "roles", "runtime", "cdslog",
                    "token", "registered_at"}
         unknown = set(fields) - allowed
         if unknown:

@@ -238,6 +238,10 @@ def case_registry_cross_process() -> dict:
         raise ProbeFailure(
             f"cross-process writes lost users {missing}; file holds {sorted(on_disk)}"
         )
+    if "seed" not in on_disk:
+        raise ProbeFailure(
+            f"cross-process writes dropped the pre-existing user; file holds {sorted(on_disk)}"
+        )
     tokens = {value.get("token") for value in on_disk.values()}
     if len(tokens) != len(on_disk):
         raise ProbeFailure(f"token index corrupted after concurrent writes: {sorted(on_disk)}")
@@ -440,7 +444,82 @@ def case_query_no_budget() -> dict:
         server.close()
 
 
+def case_skill_no_retry_after_delivery() -> dict:
+    """已投递的 Skill 绝不能重发（spec：重试只发生在未产生副作用的阶段）。"""
+    import socket as _socket
+
+    deliveries: list[bytes] = []
+    listener = _socket.socket()
+    listener.setsockopt(_socket.SOL_SOCKET, _socket.SO_REUSEADDR, 1)
+    listener.bind(("127.0.0.1", 0))
+    listener.listen(16)
+    port = listener.getsockname()[1]
+    stop = threading.Event()
+
+    def serve() -> None:
+        listener.settimeout(0.5)
+        while not stop.is_set():
+            try:
+                conn, _ = listener.accept()
+            except (_socket.timeout, OSError):
+                continue
+            try:
+                raw = b""
+                while True:
+                    chunk = conn.recv(65536)
+                    if not chunk:
+                        break
+                    raw += chunk
+                deliveries.append(raw)
+                # the request has been delivered: kill the connection without
+                # answering, mimicking a daemon crash right after execution
+                conn.setsockopt(_socket.SOL_SOCKET, _socket.SO_LINGER,
+                                b"\x01\x00\x00\x00\x00\x00\x00\x00")
+            except OSError:
+                pass
+            finally:
+                try:
+                    conn.close()
+                except OSError:
+                    pass
+
+    thread = threading.Thread(target=serve, daemon=True)
+    thread.start()
+    try:
+        from transport.skill_client import SkillClient
+
+        client = SkillClient(host="127.0.0.1", port=port, timeout=5.0, token="tok")
+        started = time.monotonic()
+        result = client.execute_skill("1+2", timeout=2.0)
+        elapsed = time.monotonic() - started
+    finally:
+        stop.set()
+        try:
+            listener.close()
+        except OSError:
+            pass
+        thread.join(timeout=3)
+
+    if len(deliveries) > 1:
+        raise ProbeFailure(
+            f"Skill request was delivered {len(deliveries)} times after a "
+            "post-delivery failure (must never be resent)"
+        )
+    if len(deliveries) == 0:
+        raise ProbeFailure("the fake daemon never received the request")
+    if result.ok:
+        raise ProbeFailure(f"crash after delivery reported success: {result}")
+    if result.errors != ["SKILL execution timed out"]:
+        raise ProbeFailure(
+            "post-delivery failure must use the frozen timeout wording: "
+            f"{result.errors}"
+        )
+    return {"deliveries": len(deliveries), "errors": result.errors,
+            "elapsed_s": round(elapsed, 3)}
+
+
 CASES = {
+    "skill-no-retry-after-delivery": case_skill_no_retry_after_delivery,
     "query-shape": case_query_shape,
     "query-unknown-token": case_query_unknown_token,
     "query-isolation": case_query_isolation,

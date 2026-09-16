@@ -467,6 +467,7 @@ class BusinessServer(Middle):
                     token=token,
                     log_level=entry.cdslog.log_level,
                     log_max_bytes=entry.cdslog.log_max_bytes,
+                    connect_timeout=entry.runtime.connect_timeout,
                 )
                 self._skill_clients[token] = client
                 self._skill_entries[token] = entry

@@ -82,6 +82,7 @@ class Handler(BaseHTTPRequestHandler):
                         timeout=body.get("timeout"), token=body["token"],
                     )
                     verified = None
+                    verify_rejected = False
                     if c.returncode == 0:
                         # one-to-one evidence: read the file back and compare
                         with self._staging("verify.bin") as back:
@@ -91,11 +92,19 @@ class Handler(BaseHTTPRequestHandler):
                             )
                             if back_result.returncode == 0 and back.exists():
                                 verified = hashlib.sha256(back.read_bytes()).hexdigest()
+                            else:
+                                # a capacity refusal during verification is not an
+                                # upload failure: the caller may retry safely
+                                verify_rejected = (
+                                    getattr(back_result, "kind", "") == "rejected"
+                                    or "exceeded" in (back_result.stderr or "")
+                                )
                 self._send(200, {
                     "returncode": c.returncode, "stderr": c.stderr, "kind": c.kind,
                     "declared_sha256": body.get("sha256", ""),
                     "expected_sha256": hashlib.sha256(raw).hexdigest(),
                     "verified_sha256": verified,
+                    "verify_rejected": verify_rejected,
                 })
                 return
             if path == "/api/download":
@@ -174,8 +183,15 @@ class Handler(BaseHTTPRequestHandler):
                 sha_ok = back.exists() and hashlib.sha256(back.read_bytes()).hexdigest() == hashlib.sha256(payload).hexdigest()
                 staging.cleanup()
                 stages = (up, cm, dn)
-                rejected = any(
-                    getattr(stage, "kind", "") == "rejected" for stage in stages
+                # Skill capacity refusals surface as errors (spec: no ``kind``
+                # field on Skill results), so they must be counted separately —
+                # otherwise a busy thread pool looks like a hard failure.
+                skill_rejected = (not sk.ok) and any(
+                    "exceeded" in str(item) for item in (sk.errors or [])
+                )
+                rejected = (
+                    any(getattr(stage, "kind", "") == "rejected" for stage in stages)
+                    or skill_rejected
                 )
                 self._send(200, {
                     "upload_rc": up.returncode,
@@ -194,6 +210,7 @@ class Handler(BaseHTTPRequestHandler):
                     "download_kind": dn.kind,
                     "sha_ok": sha_ok,
                     "rejected": rejected,
+                    "skill_rejected": skill_rejected,
                     "ok": up.returncode == 0 and sk.ok and cm.returncode == 0 and dn.returncode == 0 and sha_ok,
                 })
                 return

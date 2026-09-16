@@ -165,7 +165,7 @@ def is_rejected(response: dict) -> bool:
     (The composite response carries a boolean ``rejected`` field, so a plain
     substring search over the JSON would treat every composite as a refusal.)
     """
-    if response.get("rejected") is True:
+    if response.get("rejected") is True or response.get("verify_rejected") is True:
         return True
     if response.get("kind") == "rejected":
         return True
@@ -280,7 +280,10 @@ def worker(base: str, token: str, index: int, rounds: int, results: list,
                 break
             if not first_error:
                 first_error = f"kind={response.get('kind')} detail={detail}"[:300]
-            time.sleep(min(0.05 * attempts, 0.5))
+            # spec: only capacity rejections are retryable.  A transport error,
+            # unknown effect, checksum mismatch or real command failure must NOT
+            # be retried blindly (non-idempotent commands would run twice).
+            break
         elapsed = time.monotonic() - started
         with lock:
             results.append({

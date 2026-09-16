@@ -56,15 +56,17 @@ class TestNewMiddle(unittest.TestCase):
 
         server = BusinessServer(self.wd)
         r = server.run_command("echo vb-ok", token="tok-1")
-        if sys.platform == "win32":
-            self.assertIn(r.stdout, ("", "vb-ok", "vb-ok\r\n", "vb-ok\n"))
-        else:
-            self.assertEqual(r.stdout.strip(), "vb-ok")
-        self.assertEqual(r.returncode, 0)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("vb-ok", r.stdout)
 
-        up = server.upload_file(Path(__file__), "/tmp/uploaded_copy.txt", token="tok-1")
-        # local mode ignores the POSIX-looking path on Windows; use a tmp local path instead
-        self.assertIn(up.returncode, (0, 1))
+        # the previous assertion accepted "0 or 1" (i.e. also plain failure);
+        # upload a real temp file to a path under the work dir instead
+        src = Path(self.wd) / "upload_src.txt"
+        src.write_text("payload", encoding="utf-8")
+        dst = Path(self.wd) / "upload_dst.txt"
+        up = server.upload_file(src, str(dst), token="tok-1")
+        self.assertEqual(up.returncode, 0, up.stderr)
+        self.assertEqual(dst.read_text(encoding="utf-8"), "payload")
 
 
 if __name__ == "__main__":

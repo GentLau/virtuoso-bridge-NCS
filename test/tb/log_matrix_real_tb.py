@@ -199,16 +199,21 @@ def case_increment_bytes(env: Env) -> dict:
             raise ProbeFailure(
                 f"window did not contain the injected marker: {returned[:120]!r}"
             )
+        if not attempts[-1]["window_identical"]:
+            # a contiguous sub-slice is not the contract: the delta must be
+            # exactly the file interval produced by this request.  Retry while
+            # the CIW's asynchronous log flush catches up.
+            continue
         return {
             "bytes": len(returned),
             "file_offset": offset,
-            "window_identical": attempts[-1]["window_identical"],
+            "window_identical": True,
             "attempts": attempts,
         }
     raise ProbeFailure(
-        "CDS.log delta window stayed empty after 4 attempts: the byte-identity "
-        "contract is NOT demonstrated by this run (attempts: "
-        f"{attempts}); daemon_log_protocol_tb.py only covers the daemon side"
+        "CDS.log delta window did not match byte-for-byte within 4 attempts "
+        f"(attempts: {attempts}); daemon_log_protocol_tb.py only covers the "
+        "daemon side"
     )
 
 
@@ -269,6 +274,10 @@ def case_no_bridge_injection(env: Env) -> dict:
     result = env.ssh(
         f"grep -c -E 'VB-BEGIN|VB-END|RBDLogDelta' {env.cds_log} || true"
     )
+    if result.returncode != 0:
+        raise ProbeFailure(
+            f"cannot inspect CDS.log for injected markers: {result.stderr!r}"
+        )
     count = (result.stdout or "").strip().splitlines()
     injected = int(count[-1]) if count and count[-1].isdigit() else 0
     if injected:
@@ -307,25 +316,20 @@ def main() -> int:
     selected = args.case or sorted(CASES)
     results = {}
     failed = 0
-    skipped = 0
     try:
         for name in selected:
             started = time.monotonic()
             try:
                 case = CASES[name]
                 detail = case() if name == "il-log-flag-prefix-guard" else case(env)
-                if isinstance(detail, dict) and "skipped" in detail:
-                    skipped += 1
-                    results[name] = {"status": "skip", "detail": detail}
-                else:
-                    results[name] = {"status": "pass", "detail": detail}
+                results[name] = {"status": "pass", "detail": detail}
             except Exception as exc:  # noqa: BLE001
                 failed += 1
                 results[name] = {"status": "fail", "error": f"{type(exc).__name__}: {exc}"}
             results[name]["elapsed_s"] = time.monotonic() - started
     finally:
         env.close()
-    payload = {"ok": failed == 0, "failed": failed, "skipped": skipped, "results": results}
+    payload = {"ok": failed == 0, "failed": failed, "results": results}
     text = json.dumps(payload, ensure_ascii=False, indent=2)
     if args.out:
         Path(args.out).write_text(text + "\n", encoding="utf-8")

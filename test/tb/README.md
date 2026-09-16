@@ -36,9 +36,19 @@
 
 **准出集合（送审结论只引用这些）**：`run_coverage.ps1` 中出现的 TB ——
 `fault_injection_tb.py`、`semantics_tb.py`、`daemon_log_protocol_tb.py`、
-`registration_http_six_step_tb.py`（本地 1–6 / 远端 1–4）、`http_mixed_stress_tb.py`、
-`cov_remote_real.py`、`cov_registration_real.py`、`log_matrix_real_tb.py`、
-`one_shot_burst_tb.py`，以及它们的 artifact（`test/tb/artifacts/`）。
+`registration_http_six_step_tb.py`（本地 1–6 / 远端 1–4）、`http_mixed_stress_tb.py`（Windows 客户端；
+`-IncludeExtended` 追加 WSL 客户端与饱和档）、`cov_remote_real.py`、`cov_registration_real.py`、
+`log_matrix_real_tb.py`、`one_shot_burst_tb.py`，以及它们的 artifact（`test/tb/artifacts/`）。
+
+一键运行：
+
+```powershell
+# 准出（含 WSL 客户端等价性与饱和档；需要 ssh 别名 wsl-gent 与 WSL venv）
+powershell -NoProfile -File test/tb/run_coverage.ps1 -IncludeExtended
+```
+
+> 共享工作区里若存在其他人尚未完成、无法收集的测试文件，可用
+> `-SkipTests <path,...>` 临时排除；**送审运行不得带该参数**。
 
 **历史资产（不作为本轮准出依据）**：`p2_extreme_gradient.py`、`multienv_*`、
 `stress_multiuser*`、`client_equiv.py`（C1 等价性原型，工作目录固定在 `/tmp`，
@@ -84,7 +94,10 @@ python test/tb/http_mixed_stress_tb.py --work-dir test/tb/artifacts/http-stress2
     线程存活、暂存目录残留与客户端 ssh 进程数；
   - `http_mixed_stress_tb.py` 的 Skill 必须回带本次 marker、上传必须经下载回读比对 sha256；
   - `log_matrix_real_tb.py` 的 `il-log-flag-prefix-guard` 是**源码级护栏**，报告中不得
-    当作行为红灯引用。
+    当作行为红灯引用；
+  - `daemon_log_protocol_tb.py` 里的 `py27:` 前缀表示“用当前 CPython 3 执行
+    `ramic_bridge_daemon_27.py` 源码做协议 parity”，**不是**真实 Python 2.7 运行
+    （环境无 python2，已在报告中标 PENDING）。
 
 ## 资源盘点
 

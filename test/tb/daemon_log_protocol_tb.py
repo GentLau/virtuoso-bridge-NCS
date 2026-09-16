@@ -318,7 +318,16 @@ def main() -> int:
                 failed += 1
                 results[key] = {"status": "fail", "error": f"{type(exc).__name__}: {exc}"}
             results[key]["elapsed_s"] = time.monotonic() - started
-    payload = {"ok": failed == 0, "failed": failed, "results": results}
+    payload = {
+        "ok": failed == 0,
+        "failed": failed,
+        "variant_note": (
+            "py27 keys mean 'ramic_bridge_daemon_27.py source executed under "
+            "CPython 3' (protocol parity).  A real Python 2.7 run is PENDING: "
+            "the test environment has no python2 interpreter."
+        ),
+        "results": results,
+    }
     text = json.dumps(payload, ensure_ascii=False, indent=2)
     if args.out:
         Path(args.out).write_text(text + "\n", encoding="utf-8")

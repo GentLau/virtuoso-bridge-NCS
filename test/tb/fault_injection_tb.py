@@ -415,6 +415,7 @@ CASES = {
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--case", choices=sorted(CASES), action="append", default=[])
+    ap.add_argument("--out", default="")
     args = ap.parse_args()
     selected = args.case or sorted(CASES)
     results = {}
@@ -428,9 +429,13 @@ def main() -> int:
             results[name] = {"status": "fail", "error": f"{type(exc).__name__}: {exc}"}
         results[name]["elapsed_s"] = time.monotonic() - started
     cleaned = cleanup_temp_dirs()
-    print(json.dumps({"ok": failed == 0, "failed": failed,
-                      "temp_dirs_removed": cleaned, "results": results},
-                     ensure_ascii=False, indent=2))
+    payload = {"ok": failed == 0, "failed": failed,
+               "temp_dirs_removed": cleaned, "results": results}
+    text = json.dumps(payload, ensure_ascii=False, indent=2)
+    if args.out:
+        Path(args.out).parent.mkdir(parents=True, exist_ok=True)
+        Path(args.out).write_text(text + "\n", encoding="utf-8")
+    print(text)
     return 1 if failed else 0
 
 

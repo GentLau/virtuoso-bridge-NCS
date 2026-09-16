@@ -10,56 +10,56 @@
   "requests": 144,
   "planned_requests": 144,
   "failed": 0,
-  "elapsed_s": 27.891,
+  "elapsed_s": 27.75,
   "per_kind": {
-    "command": {
-      "total": 20,
-      "ok": 20,
-      "retries": 49,
-      "rejections": 49,
-      "max_s": 6.469
-    },
-    "skill": {
-      "total": 20,
-      "ok": 20,
-      "retries": 30,
-      "rejections": 30,
-      "max_s": 8.75
-    },
-    "gui": {
-      "total": 24,
-      "ok": 24,
-      "retries": 45,
-      "rejections": 45,
-      "max_s": 5.172
-    },
     "spectre": {
       "total": 20,
       "ok": 20,
       "retries": 28,
       "rejections": 28,
-      "max_s": 7.125
+      "max_s": 8.25
+    },
+    "gui": {
+      "total": 24,
+      "ok": 24,
+      "retries": 83,
+      "rejections": 83,
+      "max_s": 8.719
+    },
+    "command": {
+      "total": 20,
+      "ok": 20,
+      "retries": 41,
+      "rejections": 41,
+      "max_s": 7.203
+    },
+    "skill": {
+      "total": 20,
+      "ok": 20,
+      "retries": 32,
+      "rejections": 32,
+      "max_s": 8.891
     },
     "upload": {
       "total": 18,
       "ok": 18,
       "retries": 54,
       "rejections": 54,
-      "max_s": 8.141
-    },
-    "download": {
-      "total": 22,
-      "ok": 22,
-      "retries": 53,
-      "rejections": 53,
-      "max_s": 11.625
+      "max_s": 12.219
     },
     "composite": {
       "total": 20,
       "ok": 20,
-      "retries": 53,
-      "rejections": 52,
-      "max_s": 19.156
+      "retries": 71,
+      "rejections": 71,
+      "max_s": 20.641
+    },
+    "download": {
+      "total": 22,
+      "ok": 22,
+      "retries": 47,
+      "rejections": 47,
+      "max_s": 9.515
     }
   },
   "failures": [],
@@ -68,69 +68,67 @@
   "staging_root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\http-stress-sat\\stress-tmp",
   "staging_leftovers": [],
   "new_system_temp_dirs": [],
-  "first_errors": {
-    "composite: kind=None detail=composite failed: {'upload_rc': 0, 'upload_stderr': '', 'upload_kind': 'command', 'skill_ok': False, 's": 1
-  },
+  "first_errors": {},
   "samples": [
     {
       "token": "vb-http-local",
-      "worker": 13,
-      "kind": "command",
-      "marker": "VB-com-940ad7c829",
+      "worker": 23,
+      "kind": "spectre",
+      "marker": "VB-spe-1bf4aab6d1",
       "attempts": 1,
       "rejections": 0,
       "ok": true,
       "detail": "",
       "first_error": "",
-      "elapsed_s": 0.484
+      "elapsed_s": 0.937
+    },
+    {
+      "token": "vb-http-local",
+      "worker": 3,
+      "kind": "gui",
+      "marker": "VB-gui-3e5b5dfa15",
+      "attempts": 1,
+      "rejections": 0,
+      "ok": true,
+      "detail": "",
+      "first_error": "",
+      "elapsed_s": 0.812
+    },
+    {
+      "token": "vb-http-local",
+      "worker": 13,
+      "kind": "command",
+      "marker": "VB-com-b6754a39b1",
+      "attempts": 1,
+      "rejections": 0,
+      "ok": true,
+      "detail": "",
+      "first_error": "",
+      "elapsed_s": 1.234
     },
     {
       "token": "vb-http-local",
       "worker": 21,
       "kind": "skill",
-      "marker": "VB-ski-208a1fcdad",
+      "marker": "VB-ski-33b4d6e1ab",
       "attempts": 1,
       "rejections": 0,
       "ok": true,
       "detail": "",
       "first_error": "",
-      "elapsed_s": 0.578
+      "elapsed_s": 0.266
     },
     {
       "token": "vb-http-local",
-      "worker": 11,
-      "kind": "gui",
-      "marker": "VB-gui-85e57a1863",
-      "attempts": 1,
-      "rejections": 0,
-      "ok": true,
-      "detail": "",
-      "first_error": "",
-      "elapsed_s": 0.516
-    },
-    {
-      "token": "vb-http-local",
-      "worker": 22,
+      "worker": 19,
       "kind": "skill",
-      "marker": "VB-ski-caf51de7e6",
-      "attempts": 2,
-      "rejections": 1,
-      "ok": true,
-      "detail": "",
-      "first_error": "",
-      "elapsed_s": 0.344
-    },
-    {
-      "token": "vb-http-local",
-      "worker": 23,
-      "kind": "spectre",
-      "marker": "VB-spe-5331379a53",
+      "marker": "VB-ski-0c5320a693",
       "attempts": 1,
       "rejections": 0,
       "ok": true,
       "detail": "",
       "first_error": "",
-      "elapsed_s": 0.64
+      "elapsed_s": 1.172
     }
   ]
 }

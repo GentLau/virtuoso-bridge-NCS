@@ -122,7 +122,17 @@ class TestProbeHelpers(unittest.TestCase):
 
     def test_detect_local_spectre_returns_path_or_none(self) -> None:
         from transport.register import probe as probes
-        self.assertTrue(probes.detect_local_spectre() is None or isinstance(probes.detect_local_spectre(), str))
+
+        detected = probes.detect_local_spectre()
+        # the previous "None or isinstance(str)" assertion accepted any string;
+        # require a real executable path when something is returned
+        if detected is not None:
+            self.assertIsInstance(detected, str)
+            self.assertTrue(detected.strip(), detected)
+            self.assertTrue(
+                detected.endswith("spectre") or "spectre" in Path(detected).name,
+                f"unexpected spectre probe result: {detected!r}",
+            )
 
 
 if __name__ == "__main__":

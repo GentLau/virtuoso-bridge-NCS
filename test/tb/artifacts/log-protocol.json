@@ -1,6 +1,7 @@
 {
   "ok": true,
   "failed": 0,
+  "variant_note": "py27 keys mean 'ramic_bridge_daemon_27.py source executed under CPython 3' (protocol parity).  A real Python 2.7 run is PENDING: the test environment has no python2 interpreter.",
   "results": {
     "py27:all-reads-meta": {
       "status": "pass",
@@ -8,7 +9,7 @@
         "log": "line-1\nline-2\n",
         "value": "2"
       },
-      "elapsed_s": 0.062000000034458935
+      "elapsed_s": 0.03200000000651926
     },
     "py27:degrade-and-truncate": {
       "status": "pass",
@@ -17,7 +18,7 @@
         "truncated_len": 184,
         "truncated_body_bytes": 64
       },
-      "elapsed_s": 0.03200000000651926
+      "elapsed_s": 0.015000000013969839
     },
     "py27:error-first-frame": {
       "status": "pass",
@@ -34,7 +35,7 @@
         "warn": "\\w warn-line\n\\e error-line",
         "error": "\\e error-line"
       },
-      "elapsed_s": 0.015000000013969839
+      "elapsed_s": 0.01600000006146729
     },
     "py27:off-reads-one-frame": {
       "status": "pass",
@@ -43,14 +44,14 @@
         "unread_bytes": 31,
         "log": ""
       },
-      "elapsed_s": 0.015999999945051968
+      "elapsed_s": 0.0
     },
     "py27:rotation-truncation": {
       "status": "pass",
       "detail": {
         "log": "rotated-content\n"
       },
-      "elapsed_s": 0.015000000013969839
+      "elapsed_s": 0.015999999945051968
     },
     "py27:second-frame-timeout": {
       "status": "pass",
@@ -58,18 +59,18 @@
         "warnings": [
           "CDS.log unavailable: CDS.log path unavailable"
         ],
-        "elapsed_s": 0.407
+        "elapsed_s": 0.406
       },
-      "elapsed_s": 0.40700000000651926
+      "elapsed_s": 0.4059999999590218
     },
     "py27:server-loop": {
       "status": "pass",
       "detail": {
-        "port": 62721,
+        "port": 64683,
         "response": "\u0015{\"error\": \"JSONDecodeError: Expecting property name enclose",
         "errors": 1
       },
-      "elapsed_s": 0.015000000013969839
+      "elapsed_s": 0.03100000007543713
     },
     "py27:unreadable-log": {
       "status": "pass",
@@ -86,7 +87,7 @@
         "log": "line-1\nline-2\n",
         "value": "2"
       },
-      "elapsed_s": 0.01600000006146729
+      "elapsed_s": 0.015999999945051968
     },
     "py3:degrade-and-truncate": {
       "status": "pass",
@@ -95,7 +96,7 @@
         "truncated_len": 184,
         "truncated_body_bytes": 64
       },
-      "elapsed_s": 0.015999999945051968
+      "elapsed_s": 0.015000000013969839
     },
     "py3:error-first-frame": {
       "status": "pass",
@@ -103,7 +104,7 @@
         "error": "boom",
         "log": ""
       },
-      "elapsed_s": 0.015000000013969839
+      "elapsed_s": 0.01600000006146729
     },
     "py3:level-filter": {
       "status": "pass",
@@ -112,7 +113,7 @@
         "warn": "\\w warn-line\n\\e error-line",
         "error": "\\e error-line"
       },
-      "elapsed_s": 0.015999999945051968
+      "elapsed_s": 0.0
     },
     "py3:off-reads-one-frame": {
       "status": "pass",
@@ -121,14 +122,14 @@
         "unread_bytes": 31,
         "log": ""
       },
-      "elapsed_s": 0.0
+      "elapsed_s": 0.015999999945051968
     },
     "py3:rotation-truncation": {
       "status": "pass",
       "detail": {
         "log": "rotated-content\n"
       },
-      "elapsed_s": 0.015000000013969839
+      "elapsed_s": 0.0
     },
     "py3:second-frame-timeout": {
       "status": "pass",
@@ -136,14 +137,14 @@
         "warnings": [
           "CDS.log unavailable: CDS.log path unavailable"
         ],
-        "elapsed_s": 0.422
+        "elapsed_s": 0.421
       },
-      "elapsed_s": 0.4220000000204891
+      "elapsed_s": 0.42099999997299165
     },
     "py3:server-loop": {
       "status": "pass",
       "detail": {
-        "port": 62723,
+        "port": 64685,
         "response": "\u0015{\"error\": \"JSONDecodeError: Expecting property name enclose",
         "errors": 1
       },
@@ -156,7 +157,7 @@
           "CDS.log unavailable: CDS.log unreadable"
         ]
       },
-      "elapsed_s": 0.0
+      "elapsed_s": 0.01600000006146729
     }
   }
 }

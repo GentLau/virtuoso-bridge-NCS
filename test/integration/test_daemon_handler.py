@@ -160,7 +160,8 @@ class TestDaemonHandler(DaemonHandlerTestBase):
         a.close()
         raw = b"".join(chunks)
         self.assertTrue(raw.startswith(NAK), raw)
-        self.assertIn("TimeoutError", raw.decode())
+        # spec: every Skill timeout surfaces as the frozen wording
+        self.assertIn("SKILL execution timed out", raw.decode())
 
     def test_json_decode_error(self):
         a, b = socket.socketpair()
