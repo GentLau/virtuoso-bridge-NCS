@@ -276,6 +276,22 @@ def _copy_stream(
             pass
 
 
+def _is_channel_open_failure(exc: BaseException) -> bool:
+    """True for a refused SSH session-channel open (retryable, no side effect).
+
+    paramiko raises ``ChannelException(2, "Connect failed")`` on some paths and
+    a plain ``SSHException("Unable to open channel.")`` on others (5.x), so the
+    message is part of the contract.  ``"Timeout opening channel."`` is a
+    deadline expiry and is *not* retried here.
+    """
+    text = str(exc)
+    if "Connect failed" in text or "Unable to open channel" in text:
+        return True
+    if exc.__class__.__name__ == "ChannelException":
+        return getattr(exc, "code", None) == 2  # SSH_OPEN_CONNECT_FAILED
+    return False
+
+
 class ParamikoSessionBackend:
     """Share one authenticated target transport across concurrent SSH calls.
 
@@ -1026,6 +1042,33 @@ class ParamikoSessionBackend:
         except ValueError:
             pass
 
+    @staticmethod
+    def _open_session_channel(transport, deadline: "_Deadline", label: object):
+        """Open one SSH session channel, retrying a refused open.
+
+        sshd refuses ``CHANNEL_OPEN`` when a connection is already at its
+        ``MaxSessions`` limit (``ChannelException(2, "Connect failed")`` /
+        "Unable to open channel").  No bytes have reached the remote command at
+        that point, so the spec's "retry only pre-side-effect transport phases"
+        rule applies: retry a few times inside the same deadline instead of
+        surfacing a transport error the caller would have to retry itself.
+        """
+        # A burst longer than the server's per-connection MaxSessions frees
+        # slots as the earlier one-shot commands finish, so back off
+        # exponentially inside the caller's deadline instead of hammering.
+        attempts = 3
+        last_error: Exception | None = None
+        for attempt in range(attempts):
+            try:
+                return transport.open_session(timeout=deadline.remaining(label))
+            except Exception as exc:  # noqa: BLE001 - re-raised when not retryable
+                last_error = exc
+                if not _is_channel_open_failure(exc) or attempt + 1 >= attempts:
+                    raise
+                delay = min(0.3 * (3 ** attempt), 2.5)
+                time.sleep(min(delay, max(deadline.remaining(label) - 0.05, 0.0)))
+        raise last_error  # pragma: no cover - the loop returns or raises
+
     def open_shell(self, timeout: float) -> ParamikoShellProcess:
         """Open one persistent ``sh -l -s`` channel and hold a session slot."""
         deadline = _Deadline.start(timeout)
@@ -1035,7 +1078,7 @@ class ParamikoSessionBackend:
             raise subprocess.TimeoutExpired("paramiko-shell", timeout)
         try:
             transport = self._target_transport()
-            channel = transport.open_session(timeout=deadline.remaining("shell"))
+            channel = self._open_session_channel(transport, deadline, "shell")
             channel.settimeout(None)
             channel.exec_command("sh -l -s")
             stdin = channel.makefile_stdin("wb", -1)
@@ -1092,7 +1135,7 @@ class ParamikoSessionBackend:
         deadline = _Deadline.start(timeout)
         try:
             with self._session_lease(deadline, command) as transport:
-                channel = transport.open_session(timeout=deadline.remaining(command))
+                channel = self._open_session_channel(transport, deadline, command)
                 try:
                     channel.settimeout(deadline.remaining(command))
                     channel.exec_command("sh -l")
@@ -1203,8 +1246,8 @@ class ParamikoSessionBackend:
         failures: "queue.Queue[BaseException]" = queue.Queue()
         try:
             with self._session_lease(deadline, plan.remote_command) as transport:
-                channel = transport.open_session(
-                    timeout=deadline.remaining(plan.remote_command)
+                channel = self._open_session_channel(
+                    transport, deadline, plan.remote_command
                 )
                 try:
                     channel.settimeout(deadline.remaining(plan.remote_command))
@@ -1305,8 +1348,8 @@ class ParamikoSessionBackend:
         plan.stage_path.mkdir(parents=True)
         try:
             with self._session_lease(deadline, plan.remote_command) as transport:
-                channel = transport.open_session(
-                    timeout=deadline.remaining(plan.remote_command)
+                channel = self._open_session_channel(
+                    transport, deadline, plan.remote_command
                 )
                 try:
                     channel.settimeout(deadline.remaining(plan.remote_command))
@@ -1410,7 +1453,7 @@ class ParamikoSessionBackend:
     @contextmanager
     def _sftp(self, deadline: _Deadline, command: object) -> Iterator[Any]:
         with self._session_lease(deadline, command) as transport:
-            channel = transport.open_session(timeout=deadline.remaining(command))
+            channel = self._open_session_channel(transport, deadline, command)
             try:
                 channel.settimeout(deadline.remaining(command))
                 channel.invoke_subsystem("sftp")
@@ -1433,8 +1476,8 @@ class ParamikoSessionBackend:
         deadline = _Deadline.start(timeout)
         try:
             with self._session_lease(deadline, plan.remote_command) as transport:
-                channel = transport.open_session(
-                    timeout=deadline.remaining(plan.remote_command)
+                channel = self._open_session_channel(
+                    transport, deadline, plan.remote_command
                 )
                 try:
                     channel.settimeout(deadline.remaining(plan.remote_command))

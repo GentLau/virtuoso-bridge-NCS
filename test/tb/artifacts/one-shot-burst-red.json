@@ -1,0 +1,100 @@
+{
+  "ok": false,
+  "workers": 24,
+  "rounds": 3,
+  "requests": 72,
+  "failed": 42,
+  "transport_failures": 42,
+  "by_kind": {
+    "gui": {
+      "total": 36,
+      "ok": 15
+    },
+    "spectre": {
+      "total": 36,
+      "ok": 15
+    }
+  },
+  "failures": [
+    {
+      "kind": "gui",
+      "marker": "OSB-gui-861a5df2ff",
+      "returncode": 255,
+      "kind_field": "transport",
+      "stdout": "",
+      "stderr": "VB-TRANSPORT: ChannelException(2, 'Connect failed')",
+      "ok": false,
+      "elapsed_s": 2.078
+    },
+    {
+      "kind": "spectre",
+      "marker": "OSB-spectre-e1a2b4aca0",
+      "returncode": 255,
+      "kind_field": "transport",
+      "stdout": "",
+      "stderr": "VB-TRANSPORT: Unable to open channel.",
+      "ok": false,
+      "elapsed_s": 2.078
+    },
+    {
+      "kind": "spectre",
+      "marker": "OSB-spectre-4e7d0ffbd3",
+      "returncode": 255,
+      "kind_field": "transport",
+      "stdout": "",
+      "stderr": "VB-TRANSPORT: ChannelException(2, 'Connect failed')",
+      "ok": false,
+      "elapsed_s": 2.078
+    },
+    {
+      "kind": "gui",
+      "marker": "OSB-gui-0cf659c8f3",
+      "returncode": 255,
+      "kind_field": "transport",
+      "stdout": "",
+      "stderr": "VB-TRANSPORT: Unable to open channel.",
+      "ok": false,
+      "elapsed_s": 2.078
+    },
+    {
+      "kind": "spectre",
+      "marker": "OSB-spectre-3a7b74bf1c",
+      "returncode": 255,
+      "kind_field": "transport",
+      "stdout": "",
+      "stderr": "VB-TRANSPORT: ChannelException(2, 'Connect failed')",
+      "ok": false,
+      "elapsed_s": 2.078
+    },
+    {
+      "kind": "gui",
+      "marker": "OSB-gui-4b0307d5dd",
+      "returncode": 255,
+      "kind_field": "transport",
+      "stdout": "",
+      "stderr": "VB-TRANSPORT: Unable to open channel.",
+      "ok": false,
+      "elapsed_s": 2.078
+    },
+    {
+      "kind": "gui",
+      "marker": "OSB-gui-15bb7cdabe",
+      "returncode": 255,
+      "kind_field": "transport",
+      "stdout": "",
+      "stderr": "VB-TRANSPORT: ChannelException(2, 'Connect failed')",
+      "ok": false,
+      "elapsed_s": 2.078
+    },
+    {
+      "kind": "gui",
+      "marker": "OSB-gui-d7613859c5",
+      "returncode": 255,
+      "kind_field": "transport",
+      "stdout": "",
+      "stderr": "VB-TRANSPORT: ChannelException(2, 'Connect failed')",
+      "ok": false,
+      "elapsed_s": 2.078
+    }
+  ]
+}

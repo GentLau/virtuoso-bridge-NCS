@@ -1,0 +1,19 @@
+{
+  "ok": true,
+  "workers": 24,
+  "rounds": 3,
+  "requests": 72,
+  "failed": 0,
+  "transport_failures": 0,
+  "by_kind": {
+    "gui": {
+      "total": 36,
+      "ok": 36
+    },
+    "spectre": {
+      "total": 36,
+      "ok": 36
+    }
+  },
+  "failures": []
+}

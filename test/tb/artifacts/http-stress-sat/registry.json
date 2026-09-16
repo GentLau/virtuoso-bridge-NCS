@@ -27,7 +27,7 @@
         "jump_host": null,
         "jump_user": null,
         "proxy": null,
-        "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\http-stress2\\local-root\\gui",
+        "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\http-stress-sat\\local-root\\gui",
         "expected_fingerprint": null,
         "max_sessions": 10
       },
@@ -38,11 +38,11 @@
         "jump_host": null,
         "jump_user": null,
         "proxy": null,
-        "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\http-stress2\\local-root",
+        "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\http-stress-sat\\local-root",
         "expected_fingerprint": null,
         "max_sessions": 10,
-        "daemon_port": 64991,
-        "local_port": 64991,
+        "daemon_port": 62887,
+        "local_port": 62887,
         "python": null,
         "expected_hostname": null,
         "expected_user": null
@@ -54,7 +54,7 @@
         "jump_host": null,
         "jump_user": null,
         "proxy": null,
-        "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\http-stress2\\local-root\\command",
+        "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\http-stress-sat\\local-root\\command",
         "expected_fingerprint": null,
         "max_sessions": 10
       },
@@ -65,7 +65,7 @@
         "jump_host": null,
         "jump_user": null,
         "proxy": null,
-        "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\http-stress2\\local-root\\file",
+        "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\http-stress-sat\\local-root\\file",
         "expected_fingerprint": null,
         "max_sessions": 10
       },
@@ -76,14 +76,14 @@
         "jump_host": null,
         "jump_user": null,
         "proxy": null,
-        "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\http-stress2\\local-root\\spectre",
+        "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\http-stress-sat\\local-root\\spectre",
         "expected_fingerprint": null,
         "max_sessions": 10,
         "bin": null
       }
     },
     "runtime": {
-      "thread_pool_size": 32,
+      "thread_pool_size": 4,
       "channel_budget": 10,
       "connect_timeout": 15.0
     },
@@ -91,7 +91,7 @@
       "log_level": "all",
       "log_max_bytes": 65536
     },
-    "registered_at": 1789551558
+    "registered_at": 1789550986
   },
   "vb-vblog": {
     "token": "vb-vblog",
@@ -136,7 +136,7 @@
         "expected_fingerprint": null,
         "max_sessions": 10,
         "daemon_port": 65121,
-        "local_port": 55471,
+        "local_port": 63920,
         "python": null,
         "expected_hostname": null,
         "expected_user": null
@@ -185,6 +185,6 @@
       "log_level": "off",
       "log_max_bytes": 65536
     },
-    "registered_at": 1789549657
+    "registered_at": 1789550826
   }
 }

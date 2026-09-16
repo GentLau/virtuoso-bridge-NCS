@@ -26,7 +26,11 @@ NAK = b"\x15"
 RS = b"\x1e"
 US = b"\x1f"
 
-DAEMON_PATH = SRC / "bridge" / "resources" / "ramic_bridge_daemon_3.py"
+DAEMON_FILES = {
+    "py3": SRC / "bridge" / "resources" / "ramic_bridge_daemon_3.py",
+    "py27": SRC / "bridge" / "resources" / "ramic_bridge_daemon_27.py",
+}
+DAEMON_PATH = DAEMON_FILES["py3"]
 
 
 class BytesBuffer:
@@ -66,8 +70,28 @@ class BytesBuffer:
 
 
 class FakeStream:
+    """Stream stand-in for both daemon variants.
+
+    ``ramic_bridge_daemon_3.py`` uses ``sys.stdin.buffer`` / ``sys.stdout.buffer``
+    (bytes API); ``ramic_bridge_daemon_27.py`` uses the text-level
+    ``sys.stdin.read(1)`` (whose result it feeds to ``ord``) and
+    ``sys.stdout.write(bytes)``.  Providing both shapes keeps one harness for
+    the whole log/protocol matrix.
+    """
+
     def __init__(self, data: bytes = b"", gate=None) -> None:
         self.buffer = BytesBuffer(data, gate=gate)
+
+    def read(self, size: int = -1) -> str:
+        return self.buffer.read(size).decode("utf-8", "replace")
+
+    def write(self, data) -> int:
+        if isinstance(data, str):
+            data = data.encode("utf-8")
+        return self.buffer.write(data)
+
+    def flush(self) -> None:  # pragma: no cover - nothing buffered
+        return None
 
 
 class FakeConn:
@@ -92,9 +116,13 @@ class FakeConn:
         self.closed = True
 
 
-def load_daemon(name: str, token: str = "tok"):
-    """Import ``ramic_bridge_daemon_3.py`` as an isolated module."""
-    spec = importlib.util.spec_from_file_location(name, DAEMON_PATH)
+def load_daemon(name: str, token: str = "tok", path: Path | str | None = None):
+    """Import one daemon variant as an isolated module.
+
+    ``path`` selects the variant (``py3`` runs CPython 3, ``py27`` is the
+    Python-2.7-compatible file); both share the same wire protocol.
+    """
+    spec = importlib.util.spec_from_file_location(name, path or DAEMON_PATH)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     module.DAEMON_TOKEN = token
@@ -154,6 +182,7 @@ def meta_frame(path: str | None, start: int, end: int) -> bytes:
 
 __all__ = [
     "BytesBuffer",
+    "DAEMON_FILES",
     "DAEMON_PATH",
     "FakeConn",
     "FakeStream",

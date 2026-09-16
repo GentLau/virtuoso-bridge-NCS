@@ -65,7 +65,8 @@ class Handler(BaseHTTPRequestHandler):
                 tmp = Path(tempfile.mkdtemp()) / "payload.bin"
                 tmp.write_bytes(raw)
                 c = middle.upload_file(tmp, body.get("remote_path", ""), timeout=body.get("timeout"), token=body["token"])
-                self._send(200, {"returncode": c.returncode, "stderr": c.stderr})
+                self._send(200, {"returncode": c.returncode, "stderr": c.stderr,
+                                 "kind": c.kind})
                 return
             if path == "/api/download":
                 tmp = Path(tempfile.mkdtemp()) / "out.bin"
@@ -76,6 +77,7 @@ class Handler(BaseHTTPRequestHandler):
                     "stderr": c.stderr,
                     "sha256": hashlib.sha256(data).hexdigest(),
                     "size": len(data),
+                    "kind": c.kind,
                 })
                 return
             if path == "/api/command":
@@ -85,7 +87,8 @@ class Handler(BaseHTTPRequestHandler):
                     token=body["token"],
                     parallel=bool(body.get("parallel", False)),
                 )
-                self._send(200, {"returncode": c.returncode, "stdout": c.stdout, "stderr": c.stderr})
+                self._send(200, {"returncode": c.returncode, "stdout": c.stdout,
+                                 "stderr": c.stderr, "kind": c.kind})
                 return
             if path == "/api/gui":
                 c = middle.run_gui_command(

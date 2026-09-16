@@ -15,7 +15,7 @@
       "status": "pass",
       "detail": {
         "bytes": 19,
-        "file_offset": 6820,
+        "file_offset": 25022,
         "window_identical": true,
         "attempts": [
           {
@@ -26,14 +26,14 @@
           }
         ]
       },
-      "elapsed_s": 12.077999999979511
+      "elapsed_s": 12.608999999938533
     },
     "no-bridge-injection": {
       "status": "pass",
       "detail": {
         "injected_lines": 0
       },
-      "elapsed_s": 1.827999999979511
+      "elapsed_s": 1.797000000020489
     },
     "off-sentinel-payload": {
       "status": "pass",
@@ -42,7 +42,7 @@
         "sentinel_log": "",
         "follow_up_output": "2"
       },
-      "elapsed_s": 6.219000000040978
+      "elapsed_s": 6.280999999959022
     },
     "off-source-cut": {
       "status": "pass",
@@ -50,7 +50,7 @@
         "log_grew": 3040,
         "off_log_len": 0
       },
-      "elapsed_s": 16.483999999938533
+      "elapsed_s": 16.125
     },
     "skill-baseline": {
       "status": "pass",
@@ -58,7 +58,7 @@
         "output": "2",
         "log_len": 0
       },
-      "elapsed_s": 3.125
+      "elapsed_s": 3.219000000040978
     }
   }
 }

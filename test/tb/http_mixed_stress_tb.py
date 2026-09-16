@@ -109,6 +109,24 @@ def post(base: str, path: str, payload: dict, timeout: float = 120.0):
         return json.loads(error.read().decode("utf-8") or "{}")
 
 
+def is_rejected(response: dict) -> bool:
+    """True only when the bridge actually refused for capacity reasons.
+
+    (The composite response carries a boolean ``rejected`` field, so a plain
+    substring search over the JSON would treat every composite as a refusal.)
+    """
+    if response.get("rejected") is True:
+        return True
+    if response.get("kind") == "rejected":
+        return True
+    errors = response.get("errors")
+    if isinstance(errors, list) and any(
+        "exceeded" in str(item) or "max_sessions" in str(item) for item in errors
+    ):
+        return True
+    return False
+
+
 def verify(kind: str, marker: str, response: dict) -> tuple[bool, str]:
     """One-to-one check: did this response belong to this request?"""
     if kind == "skill":
@@ -132,12 +150,19 @@ def verify(kind: str, marker: str, response: dict) -> tuple[bool, str]:
         ).hexdigest():
             return True, ""
         return False, f"download mismatch: {response}"
+    if kind == "composite":
+        # one business-shaped call: upload -> skill -> command -> download,
+        # with the sha256 round-trip checked inside the server
+        if response.get("ok") and response.get("sha_ok"):
+            return True, ""
+        return False, f"composite failed: {response}"
     return False, f"unknown kind {kind}"
 
 
-def worker(base: str, token: str, index: int, rounds: int, results: list, lock: threading.Lock) -> None:
+def worker(base: str, token: str, index: int, rounds: int, results: list,
+           lock: threading.Lock, max_attempts: int) -> None:
     rng = random.Random(f"{token}-{index}")
-    kinds = ["skill", "command", "upload", "download", "gui", "spectre"]
+    kinds = ["skill", "command", "upload", "download", "gui", "spectre", "composite"]
     for _ in range(rounds):
         kind = rng.choice(kinds)
         marker = f"VB-{kind[:3]}-{uuid.uuid4().hex[:10]}"
@@ -160,6 +185,11 @@ def worker(base: str, token: str, index: int, rounds: int, results: list, lock: 
         elif kind == "download":
             body["remote_path"] = remote
             body["content_b64"] = base64.b64encode(payload).decode()
+        elif kind == "composite":
+            # the composite handler derives a sleep from the last two digits,
+            # so the sequence must be numeric (zero padded)
+            body["seq"] = f"{rng.randint(0, 9999):04d}"
+            body["delay_ms"] = rng.choice([0, 5, 20, 50])
 
         time.sleep(rng.random() * 0.15)
         attempts = 0
@@ -167,7 +197,8 @@ def worker(base: str, token: str, index: int, rounds: int, results: list, lock: 
         started = time.monotonic()
         ok = False
         detail = ""
-        while attempts < 12:
+        first_error = ""
+        while attempts < max_attempts:
             attempts += 1
             if kind == "download":
                 up = post(base, "/api/upload", {
@@ -176,17 +207,23 @@ def worker(base: str, token: str, index: int, rounds: int, results: list, lock: 
                 })
                 if up.get("returncode") != 0:
                     detail = f"prepare upload failed: {up}"
-                    time.sleep(0.05)
+                    rejections += 1
+                    time.sleep(min(0.05 * attempts, 0.5))
                     continue
             response = post(base, path, body)
-            if "rejected" in json.dumps(response):
+            if is_rejected(response):
+                # admission control said "too much at once": back off and try
+                # again — the contract is that a request is eventually
+                # answered, not that it is never refused
                 rejections += 1
-                time.sleep(0.05)
+                time.sleep(min(0.05 * attempts, 0.5))
                 continue
             ok, detail = verify(kind, marker, response)
             if ok:
                 break
-            time.sleep(0.05)
+            if not first_error:
+                first_error = f"kind={response.get('kind')} detail={detail}"[:300]
+            time.sleep(min(0.05 * attempts, 0.5))
         elapsed = time.monotonic() - started
         with lock:
             results.append({
@@ -198,6 +235,7 @@ def worker(base: str, token: str, index: int, rounds: int, results: list, lock: 
                 "rejections": rejections,
                 "ok": ok,
                 "detail": detail,
+                "first_error": first_error,
                 "elapsed_s": round(elapsed, 3),
             })
 
@@ -212,6 +250,10 @@ def main() -> int:
     parser.add_argument("--remote-root", default="/home/Gent/.virtuoso-bridge/vblog")
     parser.add_argument("--local-token", default="vb-http-local")
     parser.add_argument("--workers", type=int, default=6)
+    parser.add_argument("--local-pool", type=int, default=32,
+                        help="local token thread pool (lower it to force rejections)")
+    parser.add_argument("--max-attempts", type=int, default=12,
+                        help="retry cap per request (raise it for saturation runs)")
     parser.add_argument("--rounds", type=int, default=3)
     parser.add_argument("--out", default="")
     args = parser.parse_args()
@@ -229,6 +271,7 @@ def main() -> int:
         probe.bind(("127.0.0.1", 0))
         local_port = probe.getsockname()[1]
     entry = UserEntry(token=args.local_token, mode="local")
+    entry.runtime.thread_pool_size = args.local_pool
     entry.roles.daemon.daemon_port = local_port
     entry.roles.daemon.local_port = local_port
     entry.roles.daemon.root = str(local_root)
@@ -276,7 +319,9 @@ def main() -> int:
         for token in tokens:
             for index in range(args.workers):
                 threads.append(threading.Thread(
-                    target=worker, args=(base, token, index, args.rounds, results, lock)
+                    target=worker,
+                    args=(base, token, index, args.rounds, results, lock,
+                          args.max_attempts),
                 ))
         for t in threads:
             t.start()
@@ -292,23 +337,30 @@ def main() -> int:
     per_kind: dict[str, dict] = {}
     for item in results:
         bucket = per_kind.setdefault(item["kind"], {"total": 0, "ok": 0, "retries": 0,
-                                                      "rejections": 0, "max_s": 0.0})
+                                                     "rejections": 0, "max_s": 0.0})
         bucket["total"] += 1
         bucket["ok"] += 1 if item["ok"] else 0
         bucket["retries"] += item["attempts"] - 1
         bucket["rejections"] += item["rejections"]
         bucket["max_s"] = max(bucket["max_s"], item["elapsed_s"])
     failed = [item for item in results if not item["ok"]]
+    first_errors: dict[str, int] = {}
+    for item in results:
+        if item["first_error"]:
+            key = f"{item['kind']}: {item['first_error'][:120]}"
+            first_errors[key] = first_errors.get(key, 0) + 1
     evidence = {
         "ok": not failed,
         "tokens": tokens,
         "workers_per_token": args.workers,
         "rounds_per_worker": args.rounds,
+        "max_attempts": args.max_attempts,
         "requests": len(results),
         "failed": len(failed),
         "elapsed_s": round(elapsed, 3),
         "per_kind": per_kind,
         "failures": failed[:10],
+        "first_errors": dict(sorted(first_errors.items(), key=lambda kv: -kv[1])[:10]),
         "samples": results[:5],
     }
     text = json.dumps(evidence, ensure_ascii=False, indent=2)

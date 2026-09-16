@@ -23,6 +23,7 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from _daemon_harness import (  # noqa: E402
+    DAEMON_FILES,
     NAK,
     RS,
     STX,
@@ -47,9 +48,8 @@ def _request(**overrides) -> dict:
     return payload
 
 
-def case_off_reads_one_frame() -> dict:
+def case_off_reads_one_frame(daemon) -> dict:
     """off = 源头掐断：不发日志指令、不读第二帧、不看文件。"""
-    daemon = load_daemon("log_off")
     frame1 = value_frame("2")
     trailing = meta_frame("/definitely/not/read.log", 0, 10)
     ciw_out, sent, unread, parsed = run_request(
@@ -69,9 +69,8 @@ def case_off_reads_one_frame() -> dict:
     return {"directive": "RBDLogOn=nil", "unread_bytes": len(unread), "log": ""}
 
 
-def case_all_reads_meta_and_returns_bytes() -> dict:
+def case_all_reads_meta_and_returns_bytes(daemon) -> dict:
     """all + 增量未超限：返回的 log 与文件区间逐字节一致。"""
-    daemon = load_daemon("log_all")
     with tempfile.TemporaryDirectory() as tmp:
         log = Path(tmp) / "CDS.log"
         log.write_bytes(b"line-1\nline-2\n")
@@ -86,9 +85,8 @@ def case_all_reads_meta_and_returns_bytes() -> dict:
     return {"log": parsed["log"], "value": parsed.get("value")}
 
 
-def case_second_frame_timeout() -> dict:
+def case_second_frame_timeout(daemon) -> dict:
     """第二帧超时：第一帧结果优先返回 + 固定 warning，不判 Skill 失败。"""
-    daemon = load_daemon("log_timeout")
     started = time.monotonic()
     _ciw_out, sent, _unread, parsed = run_request(
         daemon, _request(timeout=0.4, log_level="all"), value_frame("2")
@@ -108,9 +106,8 @@ def case_second_frame_timeout() -> dict:
     return {"warnings": warnings, "elapsed_s": round(elapsed, 3)}
 
 
-def case_rotation_truncation() -> dict:
+def case_rotation_truncation(daemon) -> dict:
     """轮转/截断：size < start 时从 0 读，可读多少算多少。"""
-    daemon = load_daemon("log_rotate")
     with tempfile.TemporaryDirectory() as tmp:
         log = Path(tmp) / "CDS.log"
         log.write_bytes(b"rotated-content\n")
@@ -128,9 +125,8 @@ def case_rotation_truncation() -> dict:
     return {"log": parsed["log"]}
 
 
-def case_unreadable_log() -> dict:
+def case_unreadable_log(daemon) -> dict:
     """读不到日志：固定 warning 文案 + Skill 结果照常返回。"""
-    daemon = load_daemon("log_missing")
     missing = Path(tempfile.gettempdir()) / "vb-absent-CDS.log"
     if missing.exists():
         missing.unlink()
@@ -150,9 +146,8 @@ def case_unreadable_log() -> dict:
     return {"warnings": warnings}
 
 
-def case_level_filter() -> dict:
+def case_level_filter(daemon) -> dict:
     """分级过滤：all/warn/error 三档按行首 \\e / \\w 判定。"""
-    daemon = load_daemon("log_levels")
     text = "plain-info\n\\w warn-line\n\\e error-line\n"
     with tempfile.TemporaryDirectory() as tmp:
         log = Path(tmp) / "CDS.log"
@@ -173,9 +168,8 @@ def case_level_filter() -> dict:
     return result
 
 
-def case_degrade_and_truncate() -> dict:
+def case_degrade_and_truncate(daemon) -> dict:
     """限长：先降级到 error，再头截断，并各带一句提示（提示不占预算）。"""
-    daemon = load_daemon("log_degrade")
     with tempfile.TemporaryDirectory() as tmp:
         log = Path(tmp) / "CDS.log"
         long_info = "i" * 400 + "\n"
@@ -214,9 +208,8 @@ def case_degrade_and_truncate() -> dict:
     }
 
 
-def case_error_first_frame_propagates() -> dict:
+def case_error_first_frame_propagates(daemon) -> dict:
     """SKILL 报错帧：NAK 透传，且不影响日志字段。"""
-    daemon = load_daemon("log_nak")
     with tempfile.TemporaryDirectory() as tmp:
         log = Path(tmp) / "CDS.log"
         log.write_bytes(b"delta\n")
@@ -233,6 +226,63 @@ def case_error_first_frame_propagates() -> dict:
     return {"error": parsed["error"], "log": parsed["log"]}
 
 
+def case_server_loop(daemon) -> dict:
+    """真实监听循环：accept/失败 JSON/响应/统计（覆盖 start_server）。"""
+    import socket as _socket
+    import threading as _threading
+
+    created = []
+
+    class RecordingSocket(_socket.socket):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            created.append(self)
+
+    real_socket = daemon.socket.socket
+    real_argv = daemon.sys.argv
+    with _socket.socket() as probe:
+        probe.bind(("127.0.0.1", 0))
+        port = probe.getsockname()[1]
+    errors = []
+
+    def run():
+        try:
+            daemon.start_server()
+        except Exception as exc:  # noqa: BLE001 - expected on shutdown
+            errors.append(repr(exc))
+
+    try:
+        daemon.socket.socket = RecordingSocket
+        daemon.sys.argv = ["daemon", "127.0.0.1", str(port), "tok"]
+        thread = _threading.Thread(target=run, daemon=True)
+        thread.start()
+        deadline = time.monotonic() + 10
+        response = b""
+        while time.monotonic() < deadline:
+            try:
+                with _socket.create_connection(("127.0.0.1", port), timeout=2) as conn:
+                    conn.sendall(b"{not json")
+                    conn.shutdown(_socket.SHUT_WR)
+                    response = conn.recv(65536)
+                break
+            except OSError:
+                time.sleep(0.1)
+        if not response.startswith(NAK) or b"JSONDecodeError" not in response:
+            raise ProbeFailure(f"server loop did not NAK a bad payload: {response[:80]!r}")
+        if daemon._RB_ERRORS < 1:
+            raise ProbeFailure("server loop did not account the protocol error")
+    finally:
+        for sock in created:
+            try:
+                sock.close()
+            except OSError:
+                pass
+        daemon.socket.socket = real_socket
+        daemon.sys.argv = real_argv
+    return {"port": port, "response": response[:60].decode("utf-8", "replace"),
+            "errors": daemon._RB_ERRORS}
+
+
 CASES = {
     "off-reads-one-frame": case_off_reads_one_frame,
     "all-reads-meta": case_all_reads_meta_and_returns_bytes,
@@ -242,25 +292,32 @@ CASES = {
     "level-filter": case_level_filter,
     "degrade-and-truncate": case_degrade_and_truncate,
     "error-first-frame": case_error_first_frame_propagates,
+    "server-loop": case_server_loop,
 }
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--case", choices=sorted(CASES), action="append", default=[])
+    parser.add_argument("--variant", choices=sorted(DAEMON_FILES), action="append", default=[])
     parser.add_argument("--out", default="")
     args = parser.parse_args()
     selected = args.case or sorted(CASES)
+    variants = args.variant or sorted(DAEMON_FILES)
     results = {}
     failed = 0
-    for name in selected:
-        started = time.monotonic()
-        try:
-            results[name] = {"status": "pass", "detail": CASES[name]()}
-        except Exception as exc:  # noqa: BLE001
-            failed += 1
-            results[name] = {"status": "fail", "error": f"{type(exc).__name__}: {exc}"}
-        results[name]["elapsed_s"] = time.monotonic() - started
+    for variant in variants:
+        for name in selected:
+            key = f"{variant}:{name}"
+            started = time.monotonic()
+            try:
+                daemon = load_daemon(f"{variant}_{name}", "tok", DAEMON_FILES[variant])
+                daemon._RB_ERRORS = 0
+                results[key] = {"status": "pass", "detail": CASES[name](daemon)}
+            except Exception as exc:  # noqa: BLE001
+                failed += 1
+                results[key] = {"status": "fail", "error": f"{type(exc).__name__}: {exc}"}
+            results[key]["elapsed_s"] = time.monotonic() - started
     payload = {"ok": failed == 0, "failed": failed, "results": results}
     text = json.dumps(payload, ensure_ascii=False, indent=2)
     if args.out:
