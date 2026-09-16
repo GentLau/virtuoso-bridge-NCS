@@ -1,9 +1,9 @@
 # 中层配置文档
 
-> 版本：Draft v26
+> 版本：Draft v27
 > 日期：2026-09-15
 > 状态：Normative（字段目录、默认值、探测写回、注册表 schema、reservation 与 endpoint key 的唯一规范源）
-> Supersedes：Draft v21–v25（v21 字段目录重组、修正远端注册表表述；v22 探测/root 流程与 schema 分界、reservation 改内存候选；v23 max_sessions 改按 endpoint；v24 指纹例外明确、schema 示例标注、同 endpoint 指纹一致、端口分配自由度；v25 定位改为字段/schema 补充、明确 root 非自动探测）
+> Supersedes：Draft v21–v26（v21 字段目录重组；v22 探测/root 分界、reservation 内存化；v23 max_sessions 按 endpoint；v24 指纹例外与示例标注；v25 定位与 root 类型；v26 local role 指纹省略/null 显式化）
 > 定位：本文是[多用户与注册](1-多用户与注册.md)的**字段与 schema 详细补充**——六步状态机、授权与要填参数归[多用户与注册](1-多用户与注册.md)，本文提供各步所需字段、默认值、探测写回、注册表 schema、reservation 与 endpoint key。
 
 ## 1. 总述
@@ -47,7 +47,7 @@
 | `role.<name>.host/user/jump_host/jump_user/proxy` | 该 role 登录主机/账号/跳板/代理；`local` role 提交即参数错误 | 配置 | 回退 §2.5 全局默认（remote 需可解析） |
 | `role.<name>.root` | 该 role 文件根；申请期缺省 `root.default/<role>`，探测后为最终绝对路径 | 配置 | 可选（探测写回，见 §6.2） |
 | `role.<name>.max_sessions` | 该 role 解析到的 endpoint 的并发通道上限（配置在 role、生效在 endpoint；多 role 同 endpoint 取最小值；`local` 不适用） | 配置 | 默认 `10` |
-| `role.<name>.expected_fingerprint` | 该 role endpoint 的 host-key 指纹比对基准（业务 role 必检；spectre 例外，见 §3） | 校验 | 探测写入 |
+| `role.<name>.expected_fingerprint` | 该 role endpoint 的 host-key 指纹比对基准（业务 role 必检；spectre 例外，见 §3）；`mode=local` 无 endpoint，省略或为 `null` | 校验 | 探测写入 |
 
 ### 2.4 role 特有字段
 
