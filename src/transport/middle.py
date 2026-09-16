@@ -6,6 +6,7 @@ Upper layer talks only to this object; token is a per-call parameter.
 from __future__ import annotations
 
 import atexit
+import hashlib
 import logging
 import os
 import shlex
@@ -14,12 +15,14 @@ import subprocess
 import tempfile
 import threading
 import time
+import uuid
 from pathlib import Path
 
 from pyapi.models import CommandResult, ExecutionStatus, Middle, VirtuosoResult
+from transport.budgets import CapacityExceeded
 from transport.remote_paths import RemotePathError
 from transport.registry import Registry, load_registry
-from transport.remote_roles import ResolvedTargets, resolve
+from transport.roles import ResolvedTargets, resolve
 from transport.runtime_paths import registry_path, set_working_dir
 from transport.skill_client import SkillClient
 from transport.ssh import UnknownEffectError
@@ -46,6 +49,8 @@ def _error_result(exc: BaseException, budget: float | None = None) -> CommandRes
     Timeouts keep the bridge reserved code 124, transport failures 255; the
     only place a real command's exit code is exposed is ``kind="command"``.
     """
+    if isinstance(exc, CapacityExceeded):
+        return CommandResult(1, "", exc.message, kind="rejected")
     if isinstance(exc, (subprocess.TimeoutExpired, TimeoutError)):
         detail = (
             f"command timed out after {float(budget):g}s"
@@ -436,13 +441,11 @@ class BusinessServer(Middle):
             gate = self._skill_gate(token)
             remaining = max(0.0, deadline - time.monotonic())
             if not gate.acquire(timeout=remaining):
+                # The delivery state is deliberately not observable: spec v17
+                # makes every external Skill timeout look like "result unknown".
                 return VirtuosoResult(
                     status=ExecutionStatus.ERROR,
-                    errors=[
-                        f"SKILL execution timed out waiting for the local delivery "
-                        f"slot after {budget:g}s; the request was not delivered"
-                    ],
-                    metadata={"delivery": "withdrawn", "queue_wait_s": budget},
+                    errors=["SKILL execution timed out"],
                 )
             gate_held = True
 
@@ -452,32 +455,21 @@ class BusinessServer(Middle):
             if remaining <= 0:
                 return VirtuosoResult(
                     status=ExecutionStatus.ERROR,
-                    errors=[
-                        f"SKILL execution timed out after {budget:g}s before delivery; "
-                        f"the request was not delivered"
-                    ],
-                    metadata={"delivery": "withdrawn"},
+                    errors=["SKILL execution timed out"],
                 )
-            result = self._skill(token).execute_skill(skill_code, timeout=remaining)
-            if not result.ok and any("timed out" in (e or "") for e in result.errors):
-                # the SKILL was already on the wire: it may still complete in
-                # the CIW, so the outcome is unknown rather than "failed"
-                result.metadata = {**result.metadata, "delivery": "delivered-unknown"}
-                result.warnings = list(result.warnings) + [
-                    "SKILL result unknown: request was delivered but no reply arrived; "
-                    "the CIW may still be executing it"
-                ]
-            return result
+            return self._skill(token).execute_skill(skill_code, timeout=remaining)
         except LookupError:
             return VirtuosoResult(status=ExecutionStatus.ERROR, errors=["invalid token"])
+        except CapacityExceeded as exc:
+            return VirtuosoResult(status=ExecutionStatus.ERROR, errors=[exc.message])
         except RemotePathError as exc:
             return VirtuosoResult(
                 status=ExecutionStatus.ERROR, errors=[f"{_VB_PATH}{exc}"]
             )
-        except (subprocess.TimeoutExpired, TimeoutError) as exc:
+        except (subprocess.TimeoutExpired, TimeoutError):
             return VirtuosoResult(
                 status=ExecutionStatus.ERROR,
-                errors=[f"SKILL execution timed out ({exc})"],
+                errors=["SKILL execution timed out"],
             )
         except Exception as exc:  # noqa: BLE001
             # transport/tunnel setup failure (e.g. a cold sshd handshake drop);
@@ -640,41 +632,120 @@ class BusinessServer(Middle):
             return CommandResult(returncode=1, stdout="", stderr=str(exc), kind="path")
 
     @staticmethod
-    def _local_upload(local_path: Path, remote_path: str, recursive: bool, root: str | None = None) -> CommandResult:
+    def _sha256_file(path: Path) -> str:
+        digest = hashlib.sha256()
+        with path.open("rb") as fh:
+            for chunk in iter(lambda: fh.read(1024 * 1024), b""):
+                digest.update(chunk)
+        return digest.hexdigest()
+
+    @staticmethod
+    def _remove_path(path: Path) -> None:
+        if not path.exists() and not path.is_symlink():
+            return
+        if path.is_dir() and not path.is_symlink():
+            shutil.rmtree(path, ignore_errors=True)
+        else:
+            try:
+                path.unlink()
+            except OSError:
+                pass
+
+    @staticmethod
+    def _install_staged(stage: Path, target: Path) -> None:
+        backup = None
         try:
-            src = Path(local_path)
-            # ``~`` expands on the machine that runs the role (spec 配置一览 §6.5);
-            # without this a local-mode upload creates a literal ``~`` directory
-            dst = Path(remote_path).expanduser()
-            if not dst.is_absolute() and root:
-                dst = Path(root).expanduser() / dst
+            if target.exists() or target.is_symlink():
+                backup = target.parent / f".vbbak-{uuid.uuid4().hex}"
+                target.replace(backup)
+            stage.replace(target)
+        except Exception:
+            if backup is not None and not (target.exists() or target.is_symlink()):
+                backup.replace(target)
+            raise
+        else:
+            if backup is not None:
+                BusinessServer._remove_path(backup)
+
+    @staticmethod
+    def _local_upload(local_path: Path, remote_path: str, recursive: bool, root: str | None = None) -> CommandResult:
+        src = Path(local_path)
+        dst = Path(remote_path).expanduser()
+        if not dst.is_absolute() and root:
+            dst = Path(root).expanduser() / dst
+        if not src.exists() and not src.is_symlink():
+            return CommandResult(1, "", f"VB-PATH-NOT-VISIBLE: {src}", kind="path")
+        try:
+            dst.parent.mkdir(parents=True, exist_ok=True)
             if recursive:
                 if not src.is_dir():
-                    return CommandResult(1, "", f"recursive upload requires a directory: {src}")
-                shutil.copytree(src, dst, dirs_exist_ok=True)
-            else:
-                if src.is_dir():
-                    return CommandResult(1, "", f"directory upload requires recursive=True: {src}")
-                dst.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(src, dst)
-            return CommandResult(0, str(dst), "")
+                    return CommandResult(
+                        1, "", f"recursive upload requires a directory: {src}", kind="path"
+                    )
+                stage = dst.parent / f".vbtmp-{uuid.uuid4().hex}"
+                try:
+                    shutil.copytree(src, stage, symlinks=False)
+                    BusinessServer._install_staged(stage, dst)
+                finally:
+                    BusinessServer._remove_path(stage)
+                return CommandResult(0, str(dst), "", kind="command")
+            if src.is_dir():
+                return CommandResult(
+                    1, "", f"directory upload requires recursive=True: {src}", kind="path"
+                )
+            stage = dst.parent / f".vbtmp-{uuid.uuid4().hex}"
+            try:
+                shutil.copy2(src, stage)
+                if BusinessServer._sha256_file(src) != BusinessServer._sha256_file(stage):
+                    return CommandResult(
+                        1, "", "sha256 mismatch", kind="checksum"
+                    )
+                BusinessServer._install_staged(stage, dst)
+            finally:
+                BusinessServer._remove_path(stage)
+            return CommandResult(0, str(dst), "", kind="command")
         except OSError as exc:
-            return CommandResult(1, "", str(exc))
+            return CommandResult(1, "", f"VB-PATH-NOT-VISIBLE: {exc}", kind="path")
 
     @staticmethod
     def _local_download(remote_path: str, local_path: Path, recursive: bool, root: str | None = None) -> CommandResult:
+        src = Path(remote_path).expanduser()
+        if not src.is_absolute() and root:
+            src = Path(root).expanduser() / src
+        dst = Path(local_path)
+        if not src.exists() and not src.is_symlink():
+            return CommandResult(1, "", f"VB-PATH-NOT-VISIBLE: {src}", kind="path")
         try:
-            src = Path(remote_path).expanduser()
-            if not src.is_absolute() and root:
-                src = Path(root).expanduser() / src
-            local_path.parent.mkdir(parents=True, exist_ok=True)
+            dst.parent.mkdir(parents=True, exist_ok=True)
             if recursive:
-                shutil.copytree(src, local_path, dirs_exist_ok=True)
-            else:
-                shutil.copy2(src, local_path)
-            return CommandResult(0, str(local_path), "")
+                if not src.is_dir():
+                    return CommandResult(
+                        1, "", f"recursive download requires a directory: {src}", kind="path"
+                    )
+                stage = dst.parent / f".vbtmp-{uuid.uuid4().hex}"
+                try:
+                    shutil.copytree(src, stage, symlinks=False)
+                    BusinessServer._install_staged(stage, dst)
+                finally:
+                    BusinessServer._remove_path(stage)
+                return CommandResult(0, str(dst), "", kind="command")
+            if src.is_dir():
+                return CommandResult(
+                    1, "", f"directory download requires recursive=True: {src}", kind="path"
+                )
+            stage = dst.parent / f".vbtmp-{uuid.uuid4().hex}"
+            try:
+                shutil.copy2(src, stage)
+                if BusinessServer._sha256_file(src) != BusinessServer._sha256_file(stage):
+                    return CommandResult(
+                        1, "", "sha256 mismatch", kind="checksum"
+                    )
+                BusinessServer._install_staged(stage, dst)
+            finally:
+                BusinessServer._remove_path(stage)
+            return CommandResult(0, str(dst), "", kind="command")
         except OSError as exc:
-            return CommandResult(1, "", str(exc))
+            return CommandResult(1, "", f"VB-PATH-NOT-VISIBLE: {exc}", kind="path")
 
 
 __all__ = ["BusinessServer"]

@@ -39,6 +39,10 @@ class FakeRunner:
     def close(self):
         self.calls.append(("close", (), {}))
 
+    def run_one_shot(self, cmd, timeout=None):
+        self.calls.append(("run_one_shot", (cmd, timeout), {}))
+        return self.run_command(cmd, timeout=timeout)
+
     def run_command(self, cmd, timeout=None):
         self.calls.append(("run_command", (cmd, timeout), {}))
         if cmd in self.command_results:
@@ -66,6 +70,8 @@ class FakeRunner:
 
 def make_entry(**kwargs):
     entry = UserEntry(token="tok-1", mode="remote")
+    entry.ssh.default.host = kwargs.get("skill_host", "daemon-a")
+    entry.ssh.default.user = "alice"
     entry.roles.daemon.host = kwargs.get("skill_host", "daemon-a")
     entry.roles.daemon.daemon_port = 65081
     entry.roles.daemon.local_port = 65082
@@ -147,9 +153,11 @@ class TestRemoteClientTransport(unittest.TestCase):
             client = RemoteClient(entry, resolve(entry), "alice")
             # one-shot channels (digest check) reuse the role runner here
             client._one_shot_runner = client._runner
-            client._channel_sem.acquire()  # exhaust the budget
+            lease = client.budgets.try_acquire_channel(
+                endpoint_key="file", role_name="file", role_max_sessions=1
+            )  # exhaust the token-wide budget
             res = client.run_command("echo hi", parallel=True)
-            client._channel_sem.release()
+            lease.release()
         self.assertEqual(res.returncode, 1)
         self.assertIn("channel budget exceeded", res.stderr)
 
@@ -185,7 +193,17 @@ class TestRemoteClientEdges(unittest.TestCase):
 
     def test_ensure_tunnel_local_is_noop(self):
         entry = make_entry()
+        entry.ssh.default.host = None
+        entry.ssh.default.user = None
+        for role_name in ("gui", "daemon", "command", "file", "spectre"):
+            role = getattr(entry.roles, role_name)
+            role.host = None
+            role.user = None
+            role.jump_host = None
+            role.jump_user = None
+            role.proxy = None
         entry.mode = "local"
+        entry.roles.daemon.local_port = entry.roles.daemon.daemon_port
         from unittest import mock
         with mock.patch("transport.tunnel.SSHRunner", FakeRunner):
             client = RemoteClient(entry, resolve(entry), "alice")
@@ -224,9 +242,11 @@ class TestRemoteClientEdges(unittest.TestCase):
             client = RemoteClient(entry, resolve(entry), "alice")
             # one-shot channels (digest check) reuse the role runner here
             client._one_shot_runner = client._runner
-            client._channel_sem.acquire()
+            lease = client.budgets.try_acquire_channel(
+                endpoint_key="file", role_name="file", role_max_sessions=1
+            )
             res = client.upload_file(Path(tempfile.mkdtemp()) / "p.bin", "/remote/p.bin")
-            client._channel_sem.release()
+            lease.release()
         self.assertIn("channel budget exceeded", res.stderr)
 
     def test_download_budget_exceeded(self):
@@ -236,9 +256,11 @@ class TestRemoteClientEdges(unittest.TestCase):
             client = RemoteClient(entry, resolve(entry), "alice")
             # one-shot channels (digest check) reuse the role runner here
             client._one_shot_runner = client._runner
-            client._channel_sem.acquire()
+            lease = client.budgets.try_acquire_channel(
+                endpoint_key="file", role_name="file", role_max_sessions=1
+            )
             res = client.download_file("/remote/p.bin", Path(tempfile.mkdtemp()) / "p.bin")
-            client._channel_sem.release()
+            lease.release()
         self.assertIn("channel budget exceeded", res.stderr)
 
     def test_download_failure_propagates(self):
@@ -259,7 +281,7 @@ class TestRemoteClientEdges(unittest.TestCase):
             client = RemoteClient(entry, resolve(entry), "alice")
             # one-shot channels (digest check) reuse the role runner here
             client._one_shot_runner = client._runner
-            client.file_runner.run_command = lambda *a, **k: CommandResult(1, "", "sha boom")
+            client.file_runner.run_one_shot = lambda *a, **k: CommandResult(1, "", "sha boom")
             res = client._verify("/remote/p.bin", b"abc")
         self.assertIn("sha boom", res.stderr)
 
@@ -270,7 +292,7 @@ class TestRemoteClientEdges(unittest.TestCase):
             client = RemoteClient(entry, resolve(entry), "alice")
             # one-shot channels (digest check) reuse the role runner here
             client._one_shot_runner = client._runner
-            client.file_runner.run_command = lambda *a, **k: CommandResult(0, "deadbeef  /remote/p.bin", "")
+            client.file_runner.run_one_shot = lambda *a, **k: CommandResult(0, "deadbeef  /remote/p.bin", "")
             res = client._verify("/remote/p.bin", b"abc")
         self.assertEqual(res.returncode, 1)
         self.assertIn("sha256 mismatch", res.stderr)

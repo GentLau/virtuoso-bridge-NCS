@@ -1,37 +1,48 @@
 # Testbench（test/tb/）
 
-**这里是可执行的真实环境 Testbench（TB），不是 pytest 用例。** 它们需要真机环境（本机 / wsl-gent / vps）才能运行，
-pytest 用 `test_*.py` 命名收集，这些文件不以下划线测试名开头，因此**不会被 `pytest` 自动收集**（设计如此）。
+这里是可执行的真机/压力 Testbench，不会被 pytest 自动收集。测试目标、期望值和结果见 `test/计划/` 与 `doc/report/`。
 
-约定：
+## 环境约定
 
-- TB 只做"跑真环境 + 收集证据"，判定标准与期望值写在 `doc/report/` 的对应报告里；
-- TB 的公共前置（注册表、fake daemon、多 Virtuoso）由 fixtures 脚本准备，不重复实现；
-- 需要 host 别名 `wsl-gent`（真实 Virtuoso）与 `vps`（无 Virtuoso，跑 fake daemon）；
-- 运行前先同步代码：`tar -czf /tmp/src.tgz -C . src test && scp /tmp/src.tgz wsl-gent:/tmp/`（TB 在 `test/tb/`，路径按 `test/tb/xxx.py` 调用）。
+- `wsl-gent`：首选真实 Virtuoso 与压力靶机（20 vCPU / 约 16GB）。
+- VPS：弱机（2 vCPU / 约 1.6GB），只允许低并发 fake daemon；**禁止用作 100 用户高压靶机**。
+- Windows 本机：主客户端与注册 Server；执行大规模测试时必须隐藏 ssh/子进程控制台，并在结束后做进程盘点。
 
-| TB | 覆盖内容 | 需要环境 |
+## 本轮使用/新增的 TB
+
+| TB | 覆盖内容 | 环境 |
 |---|---|---|
-| `unit` 之外的**场景级/并发级** TB ↓ | | |
-| `smoke_user.py` | 单用户五个接口逐阶段计时（skill/command/upload/download） | wsl-gent |
-| `role_split_cross_host.py` | T2：五 role 跨主机投送（daemon/gui 在 wsl，command/file/spectre 在 vps） | wsl-gent + vps |
-| `role_mixed_mode.py` | T3：同一 token 内 local/remote 混合（客户端在 wsl-gent） | wsl-gent + vps |
-| `composite_stress.py` | 组合服务压测（上传→skill→命令→下载），Windows/wsl 两种客户端拓扑 | 本机或 wsl-gent + vps |
-| `multienv_mixed.py` | 单客户端混合多用户（6 真实 wsl + 10 vps fake） | 本机 + wsl-gent + vps |
-| `multienv_random.py` | 三环境随机混合并发（请求乱序、拒绝即重试） | 本机 + wsl-gent + vps |
-| `client_equiv.py` | C1：同一业务序列在 Windows 与 Linux 客户端上等价 | 本机 + wsl-gent + vps |
-| `stress_live.py` | 单用户真实 daemon 压力（100 命令 / 30 skill / 上传下载） | wsl-gent |
-| `stress_multiuser.py` | 100 用户路由压测（fake daemon 群） | vps |
-| `stress_multiuser_real.py` | 多真实 daemon 并发路由（用 `multi_virtuoso_pilot.py` 建的表） | wsl-gent |
-| `p1_log_live.py` | CDS.log 增量契约（offset/分级/限长）真机验证 | wsl-gent |
-| `log_file_verify.py` | 逐请求把返回的 `log` 与真实 CDS.log 字节区间比对 | wsl-gent |
-| `p2_extreme_gradient.py` | 弱 vps 极端梯度（100 fake 用户、并发 400/500/600） | vps |
-| `f1_connect_burst.py` | 冷启动建连突发（MaxStartups 场景，30 个新 token 同时建隧道） | vps |
-| `f2_daemon_reconnect.py` | daemon 被杀 → 结构化 transport 错误 → 重启重连 | vps |
-| fixtures ↓ | | |
-| `fake_daemon_host.py` | 协议级 fake daemon 群（无 Virtuoso 的远端模拟） | vps |
-| `stress_client.py` | `server.stress_server` 的 HTTP 压测客户端（并发/重试/统计） | 任意 |
-| `multi_virtuoso_pilot.py` | 在 wsl-gent 拉起 N 个真实 Virtuoso + 注册用户（批量前置） | wsl-gent |
-| `restart_vb_virtuosos.py` | 重启 vbNN 实例以加载新 daemon 文件 | wsl-gent |
+| `cov_remote_real.py` | Windows→WSL 真机五接口 coverage TB | Windows + wsl-gent real daemon |
+| `cov_registration_real.py` | 真机注册第 1–4 步；验证前五步本地零落盘 | Windows + wsl-gent |
+| `fake_daemon_host.py` | 协议级 fake daemon 群；本轮 6801–6900 共 100 个 | wsl-gent |
+| `multi_virtuoso_pilot.py` | 多真实 Virtuoso + 注册的前置脚本（路径需按最新 per-role root 核对） | wsl-gent |
+| `smoke_user.py` | 单用户五接口/耗时探针 | wsl-gent |
+| `log_file_verify.py` | 返回 log 与 CDS.log 字节区间比对 | WSL/真机 daemon |
+| `p1_log_live.py` | CDS.log 增量、分级、限长真机契约 | wsl-gent |
+| `composite_stress.py` | 上传→Skill→命令→下载组合服务 | Windows/WSL |
+| `stress_client.py` | `server.stress_server` HTTP 压测客户端 | 任意 |
+| `f1_connect_burst.py` | 冷启动建连突发（低并发参数） | 强客户端 + WSL |
+| `f2_daemon_reconnect.py` | daemon 重启后的结构化错误与恢复 | WSL |
 
-> 历史说明：这些 TB 原先散落在 `scripts/`；按项目约定（TB 属于 `test/`）统一收拢到本目录。
+> 历史 TB（如 `p2_extreme_gradient.py`、`multienv_*`、`stress_multiuser*`）保留作历史资产；执行前必须按当前 spec 重新核对 registry schema、reservation 语义和靶机资源上限，不能把旧脚本的默认参数直接视为当前验收结论。
+
+## 运行示例
+
+```powershell
+# 真机五接口（需 vb11 registry）
+$env:PYTHONPATH='src'
+python test/tb/cov_remote_real.py `
+  --work-dir test/tb/artifacts/reg-vb11 --token vb-vb11
+
+# 真机注册 1–4 步
+python test/tb/cov_registration_real.py `
+  --work-dir test/tb/artifacts/cov-registration --user covreg --token cov-token --port 65112
+```
+
+## 资源盘点
+
+每轮至少检查：
+
+- Windows：`ssh.exe` 数量不随请求数增长；无 `conhost` 累积；无 `-N -L` 孤儿隧道。
+- WSL：目标端口释放；无孤儿 daemon；文件/临时目录符合预期；内存回落。
+- 注册：本地无 `registry.reservation`；失败路径无半成品 registry。

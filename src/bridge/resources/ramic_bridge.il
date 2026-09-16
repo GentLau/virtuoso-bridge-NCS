@@ -78,7 +78,7 @@ procedure(RBIpcDataHandler(ipcId data)
     lp = "" lo_start = 0 lo_end = 0
     ; the daemon prefixes the per-request directive into data itself;
     ; inspect data text so the FIRST log request already captures start
-    log_on = index(data "RBDLogOn=t") != nil
+    log_on = index(data "RBDLogOn=t ") != nil
     when(log_on
         errset(hiFlushLogFile())
         errset(progn(lp = hiGetLogFileName() lo_start = fileLength(lp)))

@@ -61,6 +61,8 @@ class FakeRunner:
 
 def make_entry(*, skill_host="daemon-a", command_host="daemon-a", file_host="daemon-a") -> UserEntry:
     entry = UserEntry(token="tok-1", mode="remote")
+    entry.ssh.default.host = skill_host
+    entry.ssh.default.user = "alice"
     entry.roles.daemon.host = skill_host
     entry.roles.daemon.daemon_port = 65081
     entry.roles.daemon.local_port = 65082

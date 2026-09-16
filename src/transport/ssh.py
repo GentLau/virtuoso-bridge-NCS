@@ -298,7 +298,7 @@ class SSHRunner:
         # neither of those risk factors is present, i.e. direct connection
         # with mux off.
         if self._backend == "paramiko":
-            self._persistent_shell_enabled = False
+            self._persistent_shell_enabled = persistent_shell
         elif os.name == "nt":
             self._persistent_shell_enabled = (
                 persistent_shell
@@ -724,13 +724,6 @@ class SSHRunner:
     def run_command(self, command: str, timeout: float | None = None) -> CommandResult:
         """Execute a command on the remote host via SSH."""
         budget = _TimeoutBudget.start(timeout, self._timeout)
-        if self._paramiko_backend is not None:
-            logger.info("[server] %s", command)
-            rc, stdout, stderr = self._paramiko_backend.run_command(
-                command,
-                timeout=budget.remaining(command),
-            )
-            return CommandResult(returncode=rc, stdout=stdout, stderr=stderr)
         if self._persistent_shell_enabled:
             try:
                 return self._run_via_persistent_shell_with_retry(
@@ -764,6 +757,23 @@ class SSHRunner:
             except Exception as exc:  # noqa: BLE001
                 self._log_persistent_shell_fallback("Persistent SSH shell failed", exc)
 
+        if self._paramiko_backend is not None:
+            logger.info("[server] %s", command)
+            rc, stdout, stderr = self._paramiko_backend.run_command(
+                command,
+                timeout=budget.remaining(command),
+            )
+            return CommandResult(returncode=rc, stdout=stdout, stderr=stderr)
+        return self._run_command_once(command, _budget=budget)
+
+    def run_one_shot(self, command: str, timeout: float | None = None) -> CommandResult:
+        """Run one command on a fresh exec channel without a persistent shell."""
+        budget = _TimeoutBudget.start(timeout, self._timeout)
+        if self._paramiko_backend is not None:
+            rc, stdout, stderr = self._paramiko_backend.run_command(
+                command, timeout=budget.remaining(command)
+            )
+            return CommandResult(returncode=rc, stdout=stdout, stderr=stderr)
         return self._run_command_once(command, _budget=budget)
 
     def _print_cmd(self, cmd: list[str]) -> None:
@@ -1406,22 +1416,28 @@ class SSHRunner:
                 return
 
             self._close_persistent_shell_locked(_budget=budget)
-            cmd = self._build_ssh_base() + ["sh", "-l", "-s"]
-            logger.info("Starting persistent SSH shell: %s", " ".join(cmd))
-            self._print_cmd(cmd)
-            budget.remaining(cmd)
-            proc = subprocess.Popen(
-                cmd,
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=False,
-                bufsize=0,
-                **_windows_no_window_kwargs(),
-            )
-            if proc.stdin is None or proc.stdout is None:
-                proc.terminate()
-                raise RuntimeError("Failed to allocate pipes for persistent SSH shell.")
+            if self._paramiko_backend is not None:
+                logger.info("Starting persistent Paramiko shell for %s", self._host)
+                proc = self._paramiko_backend.open_shell(
+                    budget.remaining("paramiko-shell")
+                )
+            else:
+                cmd = self._build_ssh_base() + ["sh", "-l", "-s"]
+                logger.info("Starting persistent SSH shell: %s", " ".join(cmd))
+                self._print_cmd(cmd)
+                budget.remaining(cmd)
+                proc = subprocess.Popen(
+                    cmd,
+                    stdin=subprocess.PIPE,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    text=False,
+                    bufsize=0,
+                    **_windows_no_window_kwargs(),
+                )
+                if proc.stdin is None or proc.stdout is None:
+                    proc.terminate()
+                    raise RuntimeError("Failed to allocate pipes for persistent SSH shell.")
 
             self._shell_proc = proc
             self._shell_queue = queue.Queue()
@@ -1517,10 +1533,10 @@ class SSHRunner:
         # a runner owns its port-forward: without this the tunnel outlives the
         # process that created it (orphan ``ssh -N -L`` seen after TB runs)
         self.stop_port_forward()
-        if self._paramiko_backend is not None:
-            self._paramiko_backend.close()
         with self._shell_lock:
             self._close_persistent_shell_locked()
+        if self._paramiko_backend is not None:
+            self._paramiko_backend.close()
         self._stop_control_master()
 
     def __del__(self) -> None:
@@ -1782,7 +1798,7 @@ class SSHRunner:
             try:
                 if proc.stdin is not None:
                     proc.stdin.close()
-            except OSError:
+            except Exception:  # noqa: BLE001 - Paramiko/OS pipe close
                 pass
             proc.terminate()
             wait_timeout = 5.0 if _budget is None else min(5.0, _budget.available())
@@ -1796,7 +1812,7 @@ class SSHRunner:
         if proc is not None and proc.stdout is not None:
             try:
                 proc.stdout.close()
-            except OSError:
+            except Exception:  # noqa: BLE001 - Paramiko/OS pipe close
                 pass
         if reader is not None and reader.is_alive():
             join_timeout = 1.0 if _budget is None else min(1.0, _budget.available())

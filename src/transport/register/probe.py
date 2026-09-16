@@ -46,6 +46,24 @@ def _ssh_config_hostname(host: str) -> str | None:
     return None
 
 
+def ssh_port_is_22(host: str) -> bool:
+    """Resolve an SSH alias and enforce the spec's fixed port-22 rule."""
+    try:
+        out = subprocess.run(
+            ["ssh", "-G", host], capture_output=True, text=True, timeout=10,
+            **_no_window_kwargs()
+        ).stdout
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    for line in out.splitlines():
+        if line.startswith("port "):
+            try:
+                return int(line.split(None, 1)[1].strip()) == 22
+            except (IndexError, ValueError):
+                return False
+    return True
+
+
 def _fingerprint_from_key_lines(lines: list[str]) -> str | None:
     tmp_path: Path | None = None
     try:
@@ -66,6 +84,22 @@ def _fingerprint_from_key_lines(lines: list[str]) -> str | None:
                 tmp_path.unlink()
             except OSError:
                 pass
+
+
+def scan_host_key_fingerprint(host: str, port: int = 22) -> str | None:
+    """Fetch a key directly for the explicit-fingerprint first-trust path."""
+    try:
+        found = subprocess.run(
+            ["ssh-keyscan", "-p", str(port), host],
+            capture_output=True, text=True, timeout=10,
+        ).stdout
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    key_lines = [
+        line for line in found.splitlines()
+        if "ssh-" in line and not line.startswith("#")
+    ]
+    return _fingerprint_from_key_lines(key_lines) if key_lines else None
 
 
 def host_key_fingerprint(host: str, port: int = 22) -> str | None:
@@ -143,6 +177,40 @@ def detect_remote_spectre(runner: SSHRunner) -> str | None:
 def detect_local_spectre() -> str | None:
     import shutil
     return shutil.which("spectre")
+
+
+def remote_python_major(runner: SSHRunner, python_cmd: str) -> int | None:
+    """Validate an explicitly supplied remote interpreter and return its major."""
+    quoted = shlex.quote(python_cmd)
+    r = runner.run_command(
+        f"{quoted} -c 'import sys; print(sys.version_info[0])'", timeout=10
+    )
+    if r.returncode != 0:
+        return None
+    try:
+        value = int((r.stdout or "").strip().splitlines()[-1])
+    except (IndexError, ValueError):
+        return None
+    return value if value in (2, 3) else None
+
+
+def local_python_major(python_cmd: str) -> int | None:
+    """Validate an explicitly supplied local interpreter and return its major."""
+    try:
+        r = subprocess.run(
+            [python_cmd, "-c", "import sys; print(sys.version_info[0])"],
+            capture_output=True, text=True, timeout=10,
+            **_no_window_kwargs(),
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if r.returncode != 0:
+        return None
+    try:
+        value = int(r.stdout.strip().splitlines()[-1])
+    except (IndexError, ValueError):
+        return None
+    return value if value in (2, 3) else None
 
 
 def detect_remote_python(runner: SSHRunner) -> tuple[str, int] | None:
@@ -321,6 +389,10 @@ def local_path_writable(path: str | Path) -> bool:
 
 
 __all__ = [
+    "local_python_major",
+    "remote_python_major",
+    "scan_host_key_fingerprint",
+    "ssh_port_is_22",
     "allocate_local_port",
     "allocate_remote_port",
     "detect_local_spectre",

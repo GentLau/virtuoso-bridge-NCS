@@ -1529,7 +1529,7 @@ button,input,select {
                 <p class="field-help">按 <code>role.&lt;name&gt;.&lt;field&gt;</code> 逐字段覆盖全局默认；<code>mode=local</code> 的 role 不得再填 host/user/jump（本地直连，会报参数错误）。daemon 的端口用上面的「Daemon 端口/本地端口」，spectre 的可执行文件用上面的 spectre bin。</p>
                 <div class="table-scroll">
                   <table class="role-table">
-                    <thead><tr><th>role</th><th>mode</th><th>host</th><th>user</th><th>jump_host</th><th>root</th></tr></thead>
+                    <thead><tr><th>role</th><th>mode</th><th>host</th><th>user</th><th>jump_host</th><th>root</th><th>max_sessions</th></tr></thead>
                     <tbody>
                   <tr>
                     <th scope="row">gui</th>
@@ -1540,6 +1540,7 @@ button,input,select {
                     <td><input id="role_gui_user" name="role_gui_user" placeholder="继承" spellcheck="false"></td>
                     <td><input id="role_gui_jump_host" name="role_gui_jump_host" placeholder="继承" spellcheck="false"></td>
                     <td><input id="role_gui_root" name="role_gui_root" placeholder="继承 root.default/&lt;role&gt;" spellcheck="false"></td>
+                    <td><input id="role_gui_max_sessions" name="role_gui_max_sessions" type="number" min="1" inputmode="numeric" placeholder="默认 10"></td>
                   </tr>
                   <tr>
                     <th scope="row">daemon</th>
@@ -1550,6 +1551,7 @@ button,input,select {
                     <td><input id="role_daemon_user" name="role_daemon_user" placeholder="继承" spellcheck="false"></td>
                     <td><input id="role_daemon_jump_host" name="role_daemon_jump_host" placeholder="继承" spellcheck="false"></td>
                     <td><input id="role_daemon_root" name="role_daemon_root" placeholder="继承 root.default/&lt;role&gt;" spellcheck="false"></td>
+                    <td><input id="role_daemon_max_sessions" name="role_daemon_max_sessions" type="number" min="1" inputmode="numeric" placeholder="默认 10"></td>
                   </tr>
                   <tr>
                     <th scope="row">command</th>
@@ -1560,6 +1562,7 @@ button,input,select {
                     <td><input id="role_command_user" name="role_command_user" placeholder="继承" spellcheck="false"></td>
                     <td><input id="role_command_jump_host" name="role_command_jump_host" placeholder="继承" spellcheck="false"></td>
                     <td><input id="role_command_root" name="role_command_root" placeholder="继承 root.default/&lt;role&gt;" spellcheck="false"></td>
+                    <td><input id="role_command_max_sessions" name="role_command_max_sessions" type="number" min="1" inputmode="numeric" placeholder="默认 10"></td>
                   </tr>
                   <tr>
                     <th scope="row">file</th>
@@ -1570,6 +1573,7 @@ button,input,select {
                     <td><input id="role_file_user" name="role_file_user" placeholder="继承" spellcheck="false"></td>
                     <td><input id="role_file_jump_host" name="role_file_jump_host" placeholder="继承" spellcheck="false"></td>
                     <td><input id="role_file_root" name="role_file_root" placeholder="继承 root.default/&lt;role&gt;" spellcheck="false"></td>
+                    <td><input id="role_file_max_sessions" name="role_file_max_sessions" type="number" min="1" inputmode="numeric" placeholder="默认 10"></td>
                   </tr>
                   <tr>
                     <th scope="row">spectre</th>
@@ -1580,6 +1584,7 @@ button,input,select {
                     <td><input id="role_spectre_user" name="role_spectre_user" placeholder="继承" spellcheck="false"></td>
                     <td><input id="role_spectre_jump_host" name="role_spectre_jump_host" placeholder="继承" spellcheck="false"></td>
                     <td><input id="role_spectre_root" name="role_spectre_root" placeholder="继承 root.default/&lt;role&gt;" spellcheck="false"></td>
+                    <td><input id="role_spectre_max_sessions" name="role_spectre_max_sessions" type="number" min="1" inputmode="numeric" placeholder="默认 10"></td>
                   </tr>
                     </tbody>
                   </table>
@@ -1588,8 +1593,7 @@ button,input,select {
             </details>
             <details class="advanced"><summary>高级策略配置（可选）</summary><div class="advanced-body">
                 <div class="advanced-group" data-remote-only><h3>SSH 策略</h3><div class="fields two">
-                  <div class="field"><label for="ssh_backend">SSH 后端</label><select id="ssh_backend" name="ssh_backend"><option value="">默认 openssh</option><option value="openssh">OpenSSH</option><option value="paramiko">Paramiko</option></select></div>
-                  <div class="field"><label for="channel_budget">Channel 预算</label><input id="channel_budget" name="channel_budget" type="number" min="1" inputmode="numeric" placeholder="默认 10"></div>
+                  <div class="field"><label for="ssh_backend">SSH 后端</label><select id="ssh_backend" name="ssh_backend"><option value="">默认 paramiko</option><option value="openssh">OpenSSH</option><option value="paramiko">Paramiko</option></select></div>
                   <div class="field"><label for="ssh_control_master">ControlMaster 策略</label><select id="ssh_control_master" name="ssh_control_master"><option value="">默认 auto</option><option value="auto">auto</option><option value="force">force</option><option value="disable">disable</option></select></div>
                   <div class="field"><label for="ssh_proxy">SOCKS5 代理</label><input id="ssh_proxy" name="ssh_proxy" placeholder="socks5://127.0.0.1:1080" spellcheck="false"></div>
                 </div></div>
@@ -1659,7 +1663,7 @@ const STEPS = [{
   detail: '成功后唯一持久化点'
 }];
 const NUMERIC_FIELDS = ['daemon_port', 'local_port', 'channel_budget', 'connect_timeout',
-  'thread_pool_size', 'channel_budget', 'log_max_bytes'
+  'thread_pool_size', 'log_max_bytes'
 ];
 const LOCAL_HOSTS = ['localhost', '127.0.0.1', '::1'];
 const ACTIVE_USER_KEY = 'vb.registration.activeUser';
@@ -1855,8 +1859,8 @@ function collectPayload() {
     Object.keys(flat).forEach(function(key) {
       if (key.indexOf(prefix) !== 0) return;
       const field = key.slice(prefix.length);
-      if (['mode', 'host', 'user', 'jump_host', 'jump_user', 'proxy', 'root'].indexOf(field) < 0) return;
-      role[field] = flat[key]
+      if (['mode', 'host', 'user', 'jump_host', 'jump_user', 'proxy', 'root', 'max_sessions'].indexOf(field) < 0) return;
+      role[field] = field === 'max_sessions' ? Number(flat[key]) : flat[key]
     })
   });
   payload.roles = roles;

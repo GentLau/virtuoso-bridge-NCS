@@ -11,7 +11,6 @@ import importlib.resources
 import logging
 import os
 import shlex
-import shutil
 from pathlib import Path
 
 from transport import remote_paths
@@ -56,24 +55,18 @@ def deploy_files(
         identity=str(identity_dst),
     )
 
-    user_dir = remote_paths.user_dir(user, scratch_root)
-
     if local:
-        try:
-            for d in (ramic, setup_dir, status):
-                Path(d).mkdir(parents=True, exist_ok=True)
-                try:
-                    os.chmod(d, 0o700)
-                except OSError:
-                    pass
-            for src_name, dst in daemon_variants:
-                src = importlib.resources.files("bridge.resources") / src_name
-                Path(dst).write_bytes(src.read_bytes())
-            Path(il_dst).write_bytes(il_src.read_bytes())
-            Path(setup_dst).write_text(setup, encoding="utf-8")
-        except Exception:
-            shutil.rmtree(user_dir, ignore_errors=True)
-            raise
+        for d in (ramic, setup_dir, status):
+            Path(d).mkdir(parents=True, exist_ok=True)
+            try:
+                os.chmod(d, 0o700)
+            except OSError:
+                pass
+        for src_name, dst in daemon_variants:
+            src = importlib.resources.files("bridge.resources") / src_name
+            Path(dst).write_bytes(src.read_bytes())
+        Path(il_dst).write_bytes(il_src.read_bytes())
+        Path(setup_dst).write_text(setup, encoding="utf-8")
         return str(setup_dst)
 
     if runner is None:
@@ -87,28 +80,20 @@ def deploy_files(
     if result.returncode != 0:
         raise RuntimeError(f"deploy mkdir failed: {result.stderr.strip()}")
 
-    try:
-        for src_name, dst in daemon_variants:
-            src = importlib.resources.files("bridge.resources") / src_name
-            text = src.read_text(encoding="utf-8")
-            result = runner.upload_text(text, str(dst))
-            if result.returncode != 0:
-                raise RuntimeError(f"deploy failed for {dst}: {result.stderr.strip()}")
-
-        result = runner.upload_text(il_src.read_text(encoding="utf-8"), str(il_dst))
+    for src_name, dst in daemon_variants:
+        src = importlib.resources.files("bridge.resources") / src_name
+        text = src.read_text(encoding="utf-8")
+        result = runner.upload_text(text, str(dst))
         if result.returncode != 0:
-            raise RuntimeError(f"deploy failed for {il_dst}: {result.stderr.strip()}")
+            raise RuntimeError(f"deploy failed for {dst}: {result.stderr.strip()}")
 
-        result = runner.upload_text(setup, str(setup_dst))
-        if result.returncode != 0:
-            raise RuntimeError(f"deploy setup failed: {result.stderr.strip()}")
-    except Exception:
-        # rollback: never leave a half-written user directory behind
-        try:
-            runner.run_command(f"rm -rf {shlex.quote(user_dir)}")
-        except Exception:
-            pass
-        raise
+    result = runner.upload_text(il_src.read_text(encoding="utf-8"), str(il_dst))
+    if result.returncode != 0:
+        raise RuntimeError(f"deploy failed for {il_dst}: {result.stderr.strip()}")
+
+    result = runner.upload_text(setup, str(setup_dst))
+    if result.returncode != 0:
+        raise RuntimeError(f"deploy setup failed: {result.stderr.strip()}")
     return str(setup_dst)
 
 

@@ -49,6 +49,8 @@ class TestRunnerCloseStopsTunnel(unittest.TestCase):
     def test_close_stops_port_forward(self):
         with mock.patch("transport.tunnel.SSHRunner", FakeRunner):
             entry = UserEntry(token="tok-x", mode="remote")
+            entry.ssh.default.host = "server-a"
+            entry.ssh.default.user = "u"
             entry.roles.command.host = "server-a"
             entry.roles.command.user = "u"
             entry.roles.daemon.host = "server-a"
@@ -68,6 +70,8 @@ class TestBusinessServerClose(unittest.TestCase):
         set_working_dir(wd)
         registry = load_registry(registry_path())
         entry = UserEntry(token="tok-c", mode="remote")
+        entry.ssh.default.host = "server-a"
+        entry.ssh.default.user = "u"
         entry.roles.command.host = "server-a"
         entry.roles.command.user = "u"
         entry.roles.daemon.host = "server-a"

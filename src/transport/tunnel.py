@@ -20,7 +20,8 @@ from pyapi.models import CommandResult
 from transport.deploy import deploy_files
 from transport.registry import UserEntry
 from transport.remote_paths import RemotePathError
-from transport.remote_roles import ResolvedRole, ResolvedTargets
+from transport.budgets import CapacityExceeded, TokenBudgets
+from transport.roles import ResolvedRole, ResolvedTargets
 from transport.ssh import SSHRunner
 
 logger = logging.getLogger(__name__)
@@ -58,14 +59,21 @@ class RemoteClient:
         self._runners: dict[str, SSHRunner] = {}
         self._one_shot_runners: dict[str, SSHRunner] = {}
         # runner creation is a check-then-act: without this lock the first
-        # burst of concurrent calls creates one SSHRunner (=> transport +
-        # persistent shell + `ssh -N -L`) *per thread* (see the 2026-09-15
-        # process-storm regression test in test/unit/test_runner_single_flight.py)
+        # burst of concurrent calls creates one SSHRunner per thread.
         self._runner_lock = threading.Lock()
         self._homes: dict[str | None, str] = {}
         self._home_lock = threading.Lock()
         self._serial_lock = threading.Lock()
-        self._channel_sem = threading.BoundedSemaphore(entry.runtime.channel_budget)
+        self.budgets = TokenBudgets(
+            thread_pool_size=entry.runtime.thread_pool_size,
+            channel_budget=entry.runtime.channel_budget,
+        )
+        for role_name in ("gui", "daemon", "command", "file", "spectre"):
+            role = targets.role(role_name)
+            if role.mode == "remote" and role.key:
+                self.budgets.set_endpoint_limit(role.key, role.max_sessions)
+        self._tunnel_lease = None
+        self._persistent_leases: dict[str, object] = {}
         self._tunnel_lock = threading.Lock()
 
     # -- role runners --------------------------------------------------------
@@ -88,6 +96,7 @@ class RemoteClient:
             kwargs.update(
                 host=role.host, user=role.user, jump_host=jump_host,
                 jump_user=role.jump_user, proxy_url=role.proxy,
+                max_sessions=self.budgets.endpoint_limit(role.key),
             )
             runner = SSHRunner(**kwargs)
             self._runners[role.key] = runner
@@ -114,11 +123,49 @@ class RemoteClient:
             kwargs.update(
                 host=role.host, user=role.user, jump_host=jump_host,
                 jump_user=role.jump_user, proxy_url=role.proxy,
+                max_sessions=self.budgets.endpoint_limit(role.key),
                 persistent_shell=False,  # 一次性命令，无常驻 shell
             )
             runner = SSHRunner(**kwargs)
             self._one_shot_runners[role.name] = runner
             return runner
+
+    def _channel_denial(self, role: ResolvedRole) -> str:
+        return self.budgets.denial_reason(role.key or role.name)
+
+    def _acquire_channel(self, role: ResolvedRole):
+        lease = self.budgets.try_acquire_channel(
+            endpoint_key=role.key or role.name,
+            role_name=role.name,
+            role_max_sessions=role.max_sessions,
+        )
+        if lease is None:
+            raise CapacityExceeded(role.name, self._channel_denial(role))
+        return lease
+
+    def _acquire_command_channel(self, role: ResolvedRole):
+        """Return (lease, persistent).
+
+        The OpenSSH backend may keep one long-lived shell per command endpoint;
+        that shell owns a channel for its whole life.  Paramiko opens a fresh
+        session per call and therefore needs a per-call lease.
+        """
+        runner = self.command_runner
+        if not getattr(runner, "persistent_shell_enabled", False):
+            return self._acquire_channel(role), False
+        key = f"command:{role.key or role.name}"
+        lease = self._persistent_leases.get(key)
+        if lease is None:
+            lease = self._acquire_channel(role)
+            self._persistent_leases[key] = lease
+        return lease, True
+
+    def _run_internal_one_shot(self, role: ResolvedRole, cmd: str, timeout: float):
+        lease = self._acquire_channel(role)
+        try:
+            return self._one_shot_runner(role).run_one_shot(cmd, timeout=timeout)
+        finally:
+            lease.release()
 
     def remote_home(self, role: ResolvedRole) -> str:
         """Remote ``$HOME`` for the role's connection (single-flight, cached).
@@ -138,8 +185,8 @@ class RemoteClient:
                 return cached
             detail = ""
             try:
-                result = self._one_shot_runner(role).run_command(
-                    'printf "%s" "$HOME"', timeout=15
+                result = self._run_internal_one_shot(
+                    role, 'printf "%s" "$HOME"', 15
                 )
                 cached = result.stdout.strip() if result.returncode == 0 else ""
                 if not cached:
@@ -213,11 +260,20 @@ class RemoteClient:
         with self._tunnel_lock:
             if runner.is_tunnel_alive:
                 return
-            runner.start_port_forward(
-                self.targets.local_port,
-                remote_port=self.targets.daemon_port,
-                deadline=deadline,
-            )
+            if self._tunnel_lease is not None:
+                self._tunnel_lease.release()
+                self._tunnel_lease = None
+            lease = self._acquire_channel(self.targets.daemon)
+            try:
+                runner.start_port_forward(
+                    self.targets.local_port,
+                    remote_port=self.targets.daemon_port,
+                    deadline=deadline,
+                )
+            except Exception:
+                lease.release()
+                raise
+            self._tunnel_lease = lease
 
     def close(self) -> None:
         runners = list(self._runners.values()) + list(self._one_shot_runners.values())
@@ -228,6 +284,12 @@ class RemoteClient:
             seen.add(id(runner))
             runner.stop_port_forward()
             runner.close()
+        if self._tunnel_lease is not None:
+            self._tunnel_lease.release()
+            self._tunnel_lease = None
+        for lease in list(self._persistent_leases.values()):
+            lease.release()
+        self._persistent_leases.clear()
 
     # -- command -------------------------------------------------------------
 
@@ -237,52 +299,56 @@ class RemoteClient:
         timeout: int | None = None,
         parallel: bool = False,
     ) -> CommandResult:
-        if parallel:
-            if not self._channel_sem.acquire(blocking=False):
-                return CommandResult(
-                    returncode=1, stdout="", stderr="channel budget exceeded",
-                    kind="rejected",
-                )
-            try:
-                return self._one_shot_runner(self.targets.command).run_command(
+        role = self.targets.command
+        try:
+            if parallel:
+                lease = self._acquire_channel(role)
+                persistent = False
+            else:
+                lease, persistent = self._acquire_command_channel(role)
+        except CapacityExceeded as exc:
+            return CommandResult(1, "", exc.message, kind="rejected")
+        try:
+            if parallel:
+                return self._one_shot_runner(role).run_one_shot(
                     cmd, timeout=timeout
                 )
-            finally:
-                self._channel_sem.release()
-        if timeout is None:
-            with self._serial_lock:
-                return self.command_runner.run_command(cmd, timeout=timeout)
-        started = time.monotonic()
-        if not self._serial_lock.acquire(timeout=max(0.0, float(timeout))):
-            return CommandResult(
-                returncode=124, stdout="",
-                stderr=f"command timed out waiting for the serial command slot after {timeout}s",
-                kind="timeout",
-            )
-        try:
-            remaining = float(timeout) - (time.monotonic() - started)
-            if remaining <= 0:
+            if timeout is None:
+                with self._serial_lock:
+                    return self.command_runner.run_command(cmd, timeout=None)
+            started = time.monotonic()
+            if not self._serial_lock.acquire(timeout=max(0.0, float(timeout))):
                 return CommandResult(
                     returncode=124, stdout="",
                     stderr=f"command timed out waiting for the serial command slot after {timeout}s",
                     kind="timeout",
                 )
-            return self.command_runner.run_command(cmd, timeout=remaining)
+            try:
+                remaining = float(timeout) - (time.monotonic() - started)
+                if remaining <= 0:
+                    return CommandResult(
+                        returncode=124, stdout="",
+                        stderr=f"command timed out waiting for the serial command slot after {timeout}s",
+                        kind="timeout",
+                    )
+                return self.command_runner.run_command(cmd, timeout=remaining)
+            finally:
+                self._serial_lock.release()
         finally:
-            self._serial_lock.release()
+            if not persistent:
+                lease.release()
 
     def run_one_shot(self, role_name: str, cmd: str, timeout: int | None = None) -> CommandResult:
         """One-shot command on gui/spectre; occupies the token channel budget."""
         role = self.targets.role(role_name)
-        if not self._channel_sem.acquire(blocking=False):
-            return CommandResult(
-                returncode=1, stdout="", stderr="channel budget exceeded",
-                kind="rejected",
-            )
         try:
-            return self._one_shot_runner(role).run_command(cmd, timeout=timeout)
+            lease = self._acquire_channel(role)
+        except CapacityExceeded as exc:
+            return CommandResult(1, "", exc.message, kind="rejected")
+        try:
+            return self._one_shot_runner(role).run_one_shot(cmd, timeout=timeout)
         finally:
-            self._channel_sem.release()
+            lease.release()
 
     # -- file (runner already stages + atomically installs; we add digest) -----
 
@@ -293,15 +359,15 @@ class RemoteClient:
         timeout: int | None = None,
         recursive: bool = False,
     ) -> CommandResult:
-        if not self._channel_sem.acquire(blocking=False):
-            return CommandResult(
-                returncode=1, stdout="", stderr="channel budget exceeded",
-                kind="rejected",
-            )
+        role = self.targets.file
+        try:
+            lease = self._acquire_channel(role)
+        except CapacityExceeded as exc:
+            return CommandResult(1, "", exc.message, kind="rejected")
         deadline = time.monotonic() + float(timeout) if timeout else None
         try:
             local_path = Path(local_path)
-            remote_path = self.resolve_remote_path(self.targets.file, remote_path)
+            remote_path = self.resolve_remote_path(role, remote_path)
             if recursive:
                 if not local_path.is_dir():
                     return CommandResult(
@@ -321,7 +387,7 @@ class RemoteClient:
                 return up
             return self._verify(remote_path, local_path.read_bytes(), deadline=deadline)
         finally:
-            self._channel_sem.release()
+            lease.release()
 
     def download_file(
         self,
@@ -330,15 +396,15 @@ class RemoteClient:
         timeout: int | None = None,
         recursive: bool = False,
     ) -> CommandResult:
-        if not self._channel_sem.acquire(blocking=False):
-            return CommandResult(
-                returncode=1, stdout="", stderr="channel budget exceeded",
-                kind="rejected",
-            )
+        role = self.targets.file
+        try:
+            lease = self._acquire_channel(role)
+        except CapacityExceeded as exc:
+            return CommandResult(1, "", exc.message, kind="rejected")
         deadline = time.monotonic() + float(timeout) if timeout else None
         try:
             local_path = Path(local_path)
-            remote_path = self.resolve_remote_path(self.targets.file, remote_path)
+            remote_path = self.resolve_remote_path(role, remote_path)
             if recursive:
                 return self.file_runner.download(
                     remote_path, local_path, recursive=True, timeout=timeout
@@ -350,7 +416,7 @@ class RemoteClient:
                 return dl
             return self._verify(remote_path, local_path.read_bytes(), deadline=deadline)
         finally:
-            self._channel_sem.release()
+            lease.release()
 
     def _verify(
         self, remote_path: str, local_bytes: bytes, deadline: float | None = None
@@ -372,7 +438,7 @@ class RemoteClient:
                     stderr="digest verification skipped: request deadline exhausted",
                     kind="timeout",
                 )
-        check = self._one_shot_runner(self.targets.file).run_command(
+        check = self._one_shot_runner(self.targets.file).run_one_shot(
             f"sha256sum {shlex.quote(remote_path)}", timeout=budget
         )
         if check.returncode != 0:

@@ -85,7 +85,7 @@ class SkillClient:
             except OSError as exc:
                 return VirtuosoResult(
                     status=ExecutionStatus.ERROR,
-                    errors=[f"Socket error: {exc}"],
+                    errors=[f"Daemon connection failed: {exc}"],
                     execution_time=time.monotonic() - start,
                 )
 

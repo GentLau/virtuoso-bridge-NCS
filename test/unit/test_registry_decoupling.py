@@ -74,10 +74,8 @@ class TestRegistryCommitPolicy(unittest.TestCase):
     def test_load_rejects_duplicate_tokens(self) -> None:
         registry_path().write_text(
             json.dumps({
-                "users": {
-                    "alice": UserEntry(token="tok-a", mode="remote").model_dump(),
-                    "bob": UserEntry(token="tok-a", mode="remote").model_dump(),
-                }
+                "alice": UserEntry(token="tok-a", mode="remote").model_dump(),
+                "bob": UserEntry(token="tok-a", mode="remote").model_dump(),
             }),
             encoding="utf-8",
         )
@@ -137,7 +135,7 @@ class TestRuntimeFacadePurity(unittest.TestCase):
         reg.register("alice", UserEntry(token="tok-1", mode="local"))
         server = BusinessServer(self.wd)  # load once from disk
         # mutate disk behind the loaded registry's back
-        registry_path().write_text(json.dumps({"users": {}}), encoding="utf-8")
+        registry_path().write_text(json.dumps({}), encoding="utf-8")
         self.assertIsNotNone(server.registry.by_token("tok-1"))
 
 

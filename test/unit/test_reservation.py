@@ -72,24 +72,11 @@ class TestReservationTable(unittest.TestCase):
         self.assertEqual(table.update(updated), [])
         self.assertEqual([r.local_port for r in table.records()], [65100])
 
-    def test_stale_record_is_reclaimed(self):
+    def test_reservation_is_memory_only(self):
         table = _table()
-        table.reserve(_record())
-        raw = json.loads(table.path.read_text(encoding="utf-8"))
-        raw[0]["updated_at_epoch"] = time.time() - 10_000  # older than STALE_AFTER
-        table.path.write_text(json.dumps(raw), encoding="utf-8")
-        self.assertEqual(table.records(), [])
-        self.assertEqual(table.reserve(_record(user="bob", token="t2")), [])
-
-    def test_dead_pid_record_is_reclaimed(self):
-        table = _table()
-        table.reserve(_record())
-        raw = json.loads(table.path.read_text(encoding="utf-8"))
-        raw[0]["pid"] = 999_999_999  # not a live pid
-        raw[0]["updated_at_epoch"] = time.time()
-        table.path.write_text(json.dumps(raw), encoding="utf-8")
-        with mock.patch("transport.register.reservation._pid_alive", return_value=False):
-            self.assertEqual(table.records(), [])
+        self.assertEqual(table.reserve(_record()), [])
+        self.assertFalse(table.path.exists())
+        self.assertEqual([r.user for r in table.records()], ["alice"])
 
 
 class TestStepBudget(unittest.TestCase):

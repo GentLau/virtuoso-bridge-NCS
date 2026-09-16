@@ -1,1 +1,1 @@
-"""Bottom-layer resources (daemon + SKILL bridge)."""
+"""Resource package for the Virtuoso side bridge."""

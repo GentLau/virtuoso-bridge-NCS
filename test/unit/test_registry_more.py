@@ -61,7 +61,7 @@ class TestRegistryMore(unittest.TestCase):
             load_registry(registry_path())
 
     def test_entry_without_mode_rejected_on_load(self):
-        registry_path().write_text(json.dumps({"users": {"alice": {"token": "t"}}}), encoding="utf-8")
+        registry_path().write_text(json.dumps({"alice": {"token": "t"}}), encoding="utf-8")
         with self.assertRaises(ValidationError):
             load_registry(registry_path())
 

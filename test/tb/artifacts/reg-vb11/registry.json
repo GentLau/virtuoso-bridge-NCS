@@ -1,0 +1,96 @@
+{
+  "vb11": {
+    "token": "vb-vb11",
+    "mode": {
+      "default": "remote"
+    },
+    "ssh": {
+      "default": {
+        "host": "wsl-gent",
+        "user": "Gent",
+        "jump_host": null,
+        "jump_user": null,
+        "proxy": null
+      },
+      "backend": "paramiko",
+      "control_master": "auto",
+      "tool_override": {}
+    },
+    "root": {
+      "default": null
+    },
+    "roles": {
+      "gui": {
+        "mode": null,
+        "host": null,
+        "user": null,
+        "jump_host": null,
+        "jump_user": null,
+        "proxy": null,
+        "root": "/home/Gent/.virtuoso-bridge/vb11/gui",
+        "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
+        "max_sessions": 10
+      },
+      "daemon": {
+        "mode": null,
+        "host": null,
+        "user": null,
+        "jump_host": null,
+        "jump_user": null,
+        "proxy": null,
+        "root": "/home/Gent/.virtuoso-bridge/vb11/daemon",
+        "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
+        "max_sessions": 10,
+        "daemon_port": 65111,
+        "local_port": 65082,
+        "python": "/opt/eda/cadence/IC618/tools.lnx86/python/64bit/bin/python3",
+        "expected_hostname": "GLIS-DESKTOP",
+        "expected_user": "Gent"
+      },
+      "command": {
+        "mode": null,
+        "host": null,
+        "user": null,
+        "jump_host": null,
+        "jump_user": null,
+        "proxy": null,
+        "root": "/home/Gent/.virtuoso-bridge/vb11/command",
+        "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
+        "max_sessions": 10
+      },
+      "file": {
+        "mode": null,
+        "host": null,
+        "user": null,
+        "jump_host": null,
+        "jump_user": null,
+        "proxy": null,
+        "root": "/home/Gent/.virtuoso-bridge/vb11/file",
+        "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
+        "max_sessions": 10
+      },
+      "spectre": {
+        "mode": null,
+        "host": null,
+        "user": null,
+        "jump_host": null,
+        "jump_user": null,
+        "proxy": null,
+        "root": "/home/Gent/.virtuoso-bridge/vb11/spectre",
+        "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
+        "max_sessions": 10,
+        "bin": "/opt/eda/cadence/SPECTRE241/bin/spectre"
+      }
+    },
+    "runtime": {
+      "thread_pool_size": 32,
+      "channel_budget": 10,
+      "connect_timeout": 15.0
+    },
+    "cdslog": {
+      "log_level": "all",
+      "log_max_bytes": 65536
+    },
+    "registered_at": 1789532719
+  }
+}

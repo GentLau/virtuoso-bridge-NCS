@@ -16,6 +16,8 @@ from transport.runtime_paths import registry_path, set_working_dir
 
 def make_remote_entry(token="tok-1"):
     entry = UserEntry(token=token, mode="remote")
+    entry.ssh.default.host = "daemon-a"
+    entry.ssh.default.user = "alice"
     entry.roles.daemon.host = "daemon-a"
     entry.roles.daemon.daemon_port = 65081
     entry.roles.daemon.local_port = 65082

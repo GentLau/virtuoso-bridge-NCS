@@ -20,6 +20,7 @@ Lifecycle contract:
 from __future__ import annotations
 
 import hashlib
+import ipaddress
 import json
 import os
 import threading
@@ -35,6 +36,7 @@ except ImportError:  # pragma: no cover - Windows
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
+from transport.validation import validate_user_name
 
 from transport.runtime_paths import registry_path
 
@@ -49,6 +51,11 @@ def canonical_host(value: str | None) -> str:
     text = (value or "").strip().lower().rstrip(".")
     if len(text) >= 2 and text.startswith("[") and text.endswith("]"):
         text = text[1:-1]
+    if ":" in text:
+        try:
+            text = str(ipaddress.ip_address(text))
+        except ValueError:
+            pass
     return text
 
 
@@ -82,6 +89,13 @@ def file_lock(path: Path):
                 _m.locking(fd, _m.LK_UNLCK, 1)
     finally:
         os.close(fd)
+        # Best-effort cleanup: the lock is a short-lived implementation detail,
+        # not part of the registry contract.  If another process still has the
+        # sidecar open, Windows refuses the unlink and it remains harmless.
+        try:
+            os.unlink(lock_path)
+        except OSError:
+            pass
 
 
 class RegistryError(Exception):
@@ -105,6 +119,8 @@ class RoleConfig(BaseModel):
     verification baselines, not user configuration.
     """
 
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
     mode: Literal["local", "remote"] | None = None
     host: str | None = None
     user: str | None = None
@@ -113,6 +129,7 @@ class RoleConfig(BaseModel):
     proxy: str | None = None
     root: str | None = None
     expected_fingerprint: str | None = None
+    max_sessions: int = Field(default=10, ge=1)
 
 
 class DaemonRoleConfig(RoleConfig):
@@ -130,6 +147,8 @@ class SpectreRoleConfig(RoleConfig):
 
 
 class Roles(BaseModel):
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
     """The five role configurations; container key in registry.json is ``roles``."""
 
     gui: RoleConfig = Field(default_factory=RoleConfig)
@@ -140,18 +159,24 @@ class Roles(BaseModel):
 
 
 class ModeConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
     """Global mode default (required, no default value)."""
 
     default: Literal["local", "remote"]
 
 
 class RootConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
     """Global file-root default; ``None`` means ``~/.virtuoso-bridge/<user>``."""
 
     default: str | None = None
 
 
 class SshDefaults(BaseModel):
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
     """Global SSH fallback consumed by every remote role field left unset."""
 
     host: str | None = None
@@ -162,19 +187,25 @@ class SshDefaults(BaseModel):
 
 
 class Ssh(BaseModel):
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
     default: SshDefaults = Field(default_factory=SshDefaults)
     backend: Literal["openssh", "paramiko"] = "paramiko"
-    control_master: str = "auto"
+    control_master: Literal["auto", "force", "disable"] = "auto"
     tool_override: dict[str, str] = Field(default_factory=dict)
 
 
 class Runtime(BaseModel):
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
     thread_pool_size: int = Field(default=32, ge=1)
     channel_budget: int = Field(default=10, ge=1)
     connect_timeout: float = Field(default=15.0, gt=0)
 
 
 class CdsLog(BaseModel):
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
     log_level: Literal["off", "all", "warn", "error"] = "all"
     log_max_bytes: int = Field(default=65536, ge=1)
 
@@ -184,6 +215,8 @@ class UserEntry(BaseModel):
 
     token: str = Field(min_length=1, max_length=64, pattern=r"^[A-Za-z0-9._-]+$")
     # mode.default is required; a bare string is accepted as shorthand.
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
     mode: ModeConfig | Literal["local", "remote"]
     ssh: Ssh = Field(default_factory=Ssh)
     root: RootConfig = Field(default_factory=RootConfig)
@@ -192,10 +225,36 @@ class UserEntry(BaseModel):
     cdslog: CdsLog = Field(default_factory=CdsLog)
     registered_at: int | None = None  # unix seconds; set at the step-6 commit
 
+    @model_validator(mode="before")
+    @classmethod
+    def _empty_to_none(cls, data):
+        def normalize(value):
+            if isinstance(value, dict):
+                return {key: normalize(item) for key, item in value.items()}
+            if isinstance(value, list):
+                return [normalize(item) for item in value]
+            if isinstance(value, str) and value.strip() == "":
+                return None
+            return value
+
+        return normalize(data)
+
     @model_validator(mode="after")
     def _normalize_mode(self):
         if isinstance(self.mode, str):
             object.__setattr__(self, "mode", ModeConfig(default=self.mode))
+        return self
+
+    @model_validator(mode="after")
+    def _validate_local_roles(self):
+        for name in ("gui", "daemon", "command", "file", "spectre"):
+            role = getattr(self.roles, name)
+            if (role.mode or self.mode.default) == "local":
+                if any((role.host, role.user, role.jump_host,
+                        role.jump_user, role.proxy)):
+                    raise ValueError(
+                        f"role {name} is local: host/user/jump_host/jump_user/proxy must be empty"
+                    )
         return self
 
 class Registry:
@@ -215,7 +274,7 @@ class Registry:
                 return self
             if self.path.is_file():
                 raw = json.loads(self.path.read_text(encoding="utf-8"))
-                users = raw.get("users", {}) if isinstance(raw, dict) else {}
+                users = raw if isinstance(raw, dict) else {}
                 self._entries = {
                     str(name): UserEntry.model_validate(value)
                     for name, value in users.items()
@@ -223,6 +282,16 @@ class Registry:
                 self._rebuild_token_index_locked()
             self._loaded = True
             return self
+
+    def _lookup_name_locked(self, user: str) -> str:
+        name = str(user)
+        if os.name != "nt":
+            return name
+        folded = name.casefold()
+        for existing in self._entries:
+            if existing.casefold() == folded:
+                return existing
+        return name
 
     def _rebuild_token_index_locked(self) -> None:
         self._token_index = {}
@@ -256,8 +325,8 @@ class Registry:
                 raise RuntimeError("registry not loaded; call load() once at startup")
             if entry.registered_at is None:
                 entry.registered_at = int(time.time())
-            name = str(user)
-            previous = self._entries.get(name)
+            name = validate_user_name(str(user))
+            previous = self._entries.get(self._lookup_name_locked(name))
             if previous is not None and not overwrite:
                 raise UserAlreadyRegisteredError(
                     f"user {name!r} is already registered; "
@@ -276,7 +345,7 @@ class Registry:
                 new_index.pop(previous.token, None)
                 new_index[entry.token] = name
                 self._save_payload_locked(
-                    {"users": {n: e.model_dump() for n, e in new_entries.items()}}
+                    {n: e.model_dump() for n, e in new_entries.items()}
                 )
                 self._entries = new_entries
                 self._token_index = new_index
@@ -286,7 +355,7 @@ class Registry:
             new_index = dict(self._token_index)
             new_index[entry.token] = name
             self._save_payload_locked(
-                {"users": {n: e.model_dump() for n, e in new_entries.items()}}
+                {n: e.model_dump() for n, e in new_entries.items()}
             )
             self._entries = new_entries
             self._token_index = new_index
@@ -296,7 +365,7 @@ class Registry:
         with self._lock:
             if not self._loaded:
                 raise RuntimeError("registry not loaded; call load() once at startup")
-            name = str(user)
+            name = self._lookup_name_locked(user)
             previous = self._entries.get(name)
             if previous is not None:
                 new_entries = dict(self._entries)
@@ -304,13 +373,13 @@ class Registry:
                 new_index = dict(self._token_index)
                 new_index.pop(previous.token, None)
                 self._save_payload_locked(
-                    {"users": {n: e.model_dump() for n, e in new_entries.items()}}
+                    {n: e.model_dump() for n, e in new_entries.items()}
                 )
                 self._entries = new_entries
                 self._token_index = new_index
 
     def get(self, user: str) -> UserEntry | None:
-        return self._entries.get(str(user))
+        return self._entries.get(self._lookup_name_locked(user))
 
     def by_token(self, token: str) -> UserEntry | None:
         """O(1) token lookup against the in-memory index."""

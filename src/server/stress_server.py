@@ -100,8 +100,12 @@ class Handler(BaseHTTPRequestHandler):
                 payload = (token + seq).encode() * 2048
                 src = Path(tempfile.mkdtemp()) / "p.bin"
                 src.write_bytes(payload)
-                from transport.remote_roles import resolve as _resolve
-                remote = f"{_resolve(entry, token_owner).file.root}/composite-{token_owner}-{seq}.bin"
+                file_root = (
+                    entry.roles.file.root
+                    or entry.roles.daemon.root
+                    or f"~/.virtuoso-bridge/{token_owner}/file"
+                )
+                remote = f"{file_root.rstrip('/')}/composite-{token_owner}-{seq}.bin"
                 up = middle.upload_file(src, remote, token=token)
                 _time.sleep(delay_ms / 1000.0)
                 sk = middle.execute_skill("RBDToken", token=token)

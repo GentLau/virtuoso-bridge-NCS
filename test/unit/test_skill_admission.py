@@ -1,4 +1,4 @@
-"""Skill 投递闸门（发现 1）：客户端排队 → 超时可撤回；投递后超时标记结果未知。"""
+"""Skill 投递闸门：排队、串行；对外超时统一为结果未知（spec v17）。"""
 
 import sys
 import tempfile
@@ -80,10 +80,8 @@ class TestWithdrawnWhileQueued(SkillAdmissionBase):
             first.join(timeout=5)
 
         self.assertEqual(second.status, ExecutionStatus.ERROR)
-        self.assertTrue(
-            any("was not delivered" in e for e in second.errors), second.errors
-        )
-        self.assertEqual(second.metadata.get("delivery"), "withdrawn")
+        self.assertEqual(second.errors, ["SKILL execution timed out"])
+        self.assertEqual(second.metadata, {})
         self.assertLess(elapsed, 1.0, "超时应发生在队列等待阶段")
         self.assertEqual(len(client.calls), 1, "被撤回的请求绝不能投递")
         self.assertEqual(client.calls[0][0], "1+1")
@@ -106,15 +104,16 @@ class TestWithdrawnWhileQueued(SkillAdmissionBase):
 
 
 class TestDeliveredTimeout(SkillAdmissionBase):
-    def test_delivered_timeout_is_marked_unknown(self):
+    def test_delivered_timeout_is_not_observably_distinguished(self):
         timed_out = VirtuosoResult(
             status=ExecutionStatus.ERROR, errors=["SKILL execution timed out"]
         )
         client = RecordingSkillClient(result=timed_out)
         with mock.patch.object(BusinessServer, "_skill", lambda self, token: client):
             res = self.server.execute_skill("1+1", timeout=1, token="tok-skill")
-        self.assertEqual(res.metadata.get("delivery"), "delivered-unknown")
-        self.assertTrue(any("result unknown" in w for w in res.warnings), res.warnings)
+        self.assertEqual(res.errors, ["SKILL execution timed out"])
+        self.assertEqual(res.metadata, {})
+        self.assertEqual(res.warnings, [])
 
     def test_gate_is_released_after_completion(self):
         client = RecordingSkillClient(delay=0.1)

@@ -26,7 +26,8 @@ from urllib.parse import unquote, urlparse
 from pydantic import ValidationError
 
 from transport.register import RegistrationFlow, RegistrationRequest
-from transport.registry import Registry, load_registry
+from transport.register.reservation import ReservationTable
+from transport.registry import Registry, UserEntry, load_registry
 from transport.runtime_paths import registry_path, set_working_dir
 
 _PAGE = files("server").joinpath("registration_page.html").read_text(encoding="utf-8")
@@ -96,6 +97,22 @@ class RegistrationHandler(BaseHTTPRequestHandler):
         if path == "/":
             self._send_html(200, _PAGE)
             return
+        if path == "/api/users":
+            self._send_json(200, {
+                "users": [
+                    {"user": name, "entry": entry.model_dump()}
+                    for name, entry in self.server.registry.entries()
+                ]
+            })
+            return
+        if path.startswith("/api/user/"):
+            user = unquote(path[len("/api/user/"):].rstrip("/"))
+            entry = self.server.registry.get(user)
+            if entry is None:
+                self._send_json(404, {"error": "unknown user", "user": user})
+            else:
+                self._send_json(200, {"user": user, "entry": entry.model_dump()})
+            return
         if path.startswith("/api/register/"):
             user = unquote(path[len("/api/register/"):].rstrip("/"))
             flow = self._flow(user)
@@ -152,7 +169,14 @@ class RegistrationHandler(BaseHTTPRequestHandler):
         request = self._parse_request()
         if request is None:
             return
-        flow = RegistrationFlow(self.server.registry)  # type: ignore[attr-defined]
+        with self.server.flow_lock:  # type: ignore[attr-defined]
+            previous = self.server.flows.get(request.user)  # type: ignore[attr-defined]
+        if previous is not None:
+            previous.cancel()
+            self._store(previous, request.user)
+        flow = RegistrationFlow(
+            self.server.registry, self.server.reservations
+        )  # type: ignore[attr-defined]
         state = flow.start(request) if granular else flow.apply(request)
         self._store(flow, request.user)
         self._send_json(200, self._state_payload(state))
@@ -161,6 +185,10 @@ class RegistrationHandler(BaseHTTPRequestHandler):
         if self.server.registry.get(user) is None:
             self._send_json(404, {"error": "unknown user", "user": user})
             return
+        flow = self._flow(user)
+        if flow is not None:
+            flow.cancel()
+        self.server.reservations.release(user)
         self.server.registry.remove(user)
         with self.server.flow_lock:
             self.server.flows.pop(user, None)
@@ -176,36 +204,66 @@ class RegistrationHandler(BaseHTTPRequestHandler):
         except (json.JSONDecodeError, UnicodeDecodeError):
             self._send_json(400, {"error": "invalid JSON body"})
             return
-        direct = {
-            "mode_default": "mode.default",
-            "root_default": "root.default",
-            "ssh_backend": "ssh.backend",
-            "ssh_control_master": "ssh.control_master",
-            "ssh_proxy": "ssh.default.proxy",
-            "thread_pool_size": "runtime.thread_pool_size",
-            "channel_budget": "runtime.channel_budget",
-            "connect_timeout": "runtime.connect_timeout",
-            "log_level": "cdslog.log_level",
-            "log_max_bytes": "cdslog.log_max_bytes",
-            "daemon_python": "roles.daemon.python",
-            "spectre_host": "roles.spectre.host",
-            "spectre_bin": "roles.spectre.bin",
+        if not isinstance(fields, dict):
+            self._send_json(400, {"error": "update body must be an object"})
+            return
+        def deep_merge(base, patch):
+            out = dict(base)
+            for key, value in patch.items():
+                if isinstance(value, dict) and isinstance(out.get(key), dict):
+                    out[key] = deep_merge(out[key], value)
+                else:
+                    out[key] = value
+            return out
+
+        # Flat convenience names retained for the registration page and old
+        # scripts; nested registry names remain the canonical transport.
+        flat_map = {
+            "mode_default": ("mode", "default"),
+            "root_default": ("root", "default"),
+            "ssh_backend": ("ssh", "backend"),
+            "ssh_control_master": ("ssh", "control_master"),
+            "ssh_proxy": ("ssh", "default", "proxy"),
+            "thread_pool_size": ("runtime", "thread_pool_size"),
+            "channel_budget": ("runtime", "channel_budget"),
+            "connect_timeout": ("runtime", "connect_timeout"),
+            "log_level": ("cdslog", "log_level"),
+            "log_max_bytes": ("cdslog", "log_max_bytes"),
+            "daemon_python": ("roles", "daemon", "python"),
+            "spectre_host": ("roles", "spectre", "host"),
+            "spectre_bin": ("roles", "spectre", "bin"),
         }
-        # transactional: mutate a deep copy; the live entry changes only after
-        # register(overwrite=True) persists the replacement successfully
-        candidate = entry.model_copy(deep=True)
+        translated: dict = {}
+        for key in list(fields):
+            path = flat_map.get(key)
+            if path is None:
+                continue
+            value = fields.pop(key)
+            node = translated
+            for part in path[:-1]:
+                node = node.setdefault(part, {})
+            node[path[-1]] = value
+        fields = deep_merge(fields, translated)
+
+        allowed = {"mode", "ssh", "root", "roles", "runtime", "cdslog"}
+        unknown = set(fields) - allowed
+        if unknown:
+            self._send_json(
+                400,
+                {"error": "invalid update", "detail": f"unknown fields: {sorted(unknown)}"},
+            )
+            return
+
+        candidate_data = deep_merge(entry.model_dump(), fields)
         try:
-            for key, target in direct.items():
-                if key not in fields:
-                    continue
-                segments = target.split(".")
-                obj = candidate
-                for segment in segments[:-1]:
-                    obj = getattr(obj, segment)
-                attr = segments[-1]
-                setattr(obj, attr, fields[key])
-            # re-validate the whole candidate so bad values can never pollute
-            candidate = type(candidate).model_validate(candidate.model_dump())
+            candidate = UserEntry.model_validate(candidate_data)
+        except Exception as exc:  # noqa: BLE001
+            self._send_json(400, {"error": "invalid update", "detail": str(exc)})
+            return
+        if candidate.token != entry.token:
+            self._send_json(400, {"error": "token is immutable; remove and re-register"})
+            return
+        try:
             self.server.registry.register(user, candidate, overwrite=True)
         except Exception as exc:  # noqa: BLE001
             self._send_json(400, {"error": "invalid update", "detail": str(exc)})
@@ -231,6 +289,7 @@ class RegistrationServer(ThreadingHTTPServer):
     def __init__(self, server_address, registry: Registry) -> None:
         super().__init__(server_address, RegistrationHandler)
         self.registry = registry
+        self.reservations = ReservationTable()
         self.flows: dict[str, RegistrationFlow] = {}
         self.flow_lock = threading.Lock()
 

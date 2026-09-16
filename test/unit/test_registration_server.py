@@ -187,7 +187,12 @@ class TestRegistrationServer(unittest.TestCase):
         self.registry.register("dave", UserEntry(token="tok-dave", mode="local"))
         status, raw = self.srv.request(
             "POST", "/api/user/dave/update",
-            {"spectre_host": "spectre-a", "spectre_bin": "/opt/spectre", "root_default": "/work/dave"},
+            {
+                "spectre_host": "spectre-a",
+                "spectre_bin": "/opt/spectre",
+                "root_default": "/work/dave",
+                "roles": {"spectre": {"mode": "remote"}},
+            },
         )
         self.assertEqual(status, 200, raw)
         entry = self.registry.get("dave")

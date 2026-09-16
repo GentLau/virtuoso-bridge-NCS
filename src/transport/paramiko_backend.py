@@ -49,6 +49,62 @@ class _Deadline:
         return remaining
 
 
+class ParamikoShellProcess:
+    """Subprocess-like wrapper around a long-lived Paramiko shell channel."""
+
+    def __init__(self, channel: Any, stdin: Any, stdout: Any, backend: "ParamikoSessionBackend") -> None:
+        self.channel = channel
+        self.stdin = stdin
+        self.stdout = stdout
+        self._backend = backend
+        self._closed = False
+        self._lock = threading.Lock()
+
+    def poll(self) -> int | None:
+        if self.channel.exit_status_ready():
+            try:
+                return self.channel.recv_exit_status()
+            except Exception:  # noqa: BLE001 - closed channel
+                return 255
+        return None
+
+    def wait(self, timeout: float | None = None) -> int:
+        if timeout is None:
+            return self.channel.recv_exit_status()
+        deadline = time.monotonic() + float(timeout)
+        while time.monotonic() < deadline:
+            status = self.poll()
+            if status is not None:
+                return status
+            time.sleep(0.02)
+        raise subprocess.TimeoutExpired("paramiko-shell", timeout)
+
+    def terminate(self) -> None:
+        self.close()
+
+    def kill(self) -> None:
+        self.close()
+
+    def close(self) -> None:
+        with self._lock:
+            if self._closed:
+                return
+            self._closed = True
+        try:
+            self.stdin.close()
+        except Exception:  # noqa: BLE001
+            pass
+        try:
+            self.stdout.close()
+        except Exception:  # noqa: BLE001
+            pass
+        try:
+            self.channel.close()
+        except Exception:  # noqa: BLE001
+            pass
+        self._backend._release_shell_gate()
+
+
 @dataclass(frozen=True)
 class _Endpoint:
     host_alias: str
@@ -963,6 +1019,31 @@ class ParamikoSessionBackend:
         if transport is None:
             raise OSError("Paramiko target transport is unavailable")
         return transport
+
+    def _release_shell_gate(self) -> None:
+        try:
+            self._session_gate.release()
+        except ValueError:
+            pass
+
+    def open_shell(self, timeout: float) -> ParamikoShellProcess:
+        """Open one persistent ``sh -l -s`` channel and hold a session slot."""
+        deadline = _Deadline.start(timeout)
+        self.ensure_connected(deadline.remaining("shell"))
+        acquired = self._session_gate.acquire(timeout=deadline.remaining("shell"))
+        if not acquired:
+            raise subprocess.TimeoutExpired("paramiko-shell", timeout)
+        try:
+            transport = self._target_transport()
+            channel = transport.open_session(timeout=deadline.remaining("shell"))
+            channel.settimeout(None)
+            channel.exec_command("sh -l -s")
+            stdin = channel.makefile_stdin("wb", -1)
+            stdout = channel.makefile("rb", -1)
+            return ParamikoShellProcess(channel, stdin, stdout, self)
+        except Exception:
+            self._release_shell_gate()
+            raise
 
     @contextmanager
     def _session_lease(self, deadline: _Deadline, command: object) -> Iterator[Any]:

@@ -55,6 +55,8 @@ class FakeRemote:
 
 def remote_entry():
     entry = UserEntry(token="tok-c", mode="remote")
+    entry.ssh.default.host = "daemon-a"
+    entry.ssh.default.user = "alice"
     for name in ("gui", "daemon", "command", "file", "spectre"):
         role = getattr(entry.roles, name)
         role.host = "server-a"

@@ -34,6 +34,24 @@ def _probe_run(cmd, timeout=None):
     return CommandResult(0, "", "")
 
 
+
+def complete_remote_entry(token="tok-1"):
+    entry = UserEntry(token=token, mode="remote")
+    entry.ssh.default.host = "server-a"
+    entry.ssh.default.user = "alice"
+    entry.roles.daemon.daemon_port = 65081
+    entry.roles.daemon.local_port = 65082
+    entry.roles.daemon.python = "/usr/bin/python3"
+    entry.roles.daemon.expected_hostname = "server-a"
+    entry.roles.daemon.expected_user = "alice"
+    for name in ("gui", "daemon", "command", "file", "spectre"):
+        role = getattr(entry.roles, name)
+        role.root = f"/home/alice/.virtuoso-bridge/alice/{name}"
+        role.expected_fingerprint = "SHA256:test"
+    entry.roles.spectre.bin = "/opt/spectre"
+    return entry
+
+
 def remote_request(**kwargs):
     return RegistrationRequest(
         mode="remote", user="alice", token="tok-1",
@@ -98,7 +116,8 @@ class TestFlowApply(unittest.TestCase):
         self.assertIn("boom", state.errors)
 
     def test_deploy_failure_stops_flow(self):
-        with mock.patch("transport.register.flow.probe_user", return_value=ProbeResult(UserEntry(token="tok-1", mode="remote"), 3)), \
+        with mock.patch("transport.register.flow.probe_user", return_value=ProbeResult(complete_remote_entry(), 3)), \
+             mock.patch.object(RegistrationFlow, "_recheck_ports_before_deploy", lambda self, state, budget: None), \
              mock.patch("transport.register.flow.deploy_user", side_effect=RuntimeError("deploy boom")):
             state = RegistrationFlow(self.reg).apply(remote_request())
         self.assertEqual(state.stage, "failed")
@@ -107,6 +126,7 @@ class TestFlowApply(unittest.TestCase):
     def test_happy_apply_reaches_deployed(self):
         entry = UserEntry(token="tok-1", mode="remote")
         with mock.patch("transport.register.flow.probe_user", return_value=ProbeResult(entry, 3)), \
+             mock.patch.object(RegistrationFlow, "_recheck_ports_before_deploy", lambda self, state, budget: None), \
              mock.patch("transport.register.flow.deploy_user", return_value="/home/alice/setup.il"):
             state = RegistrationFlow(self.reg).apply(remote_request())
         self.assertEqual(state.stage, "deployed")
@@ -121,7 +141,8 @@ class TestFlowVerifyAndCommit(unittest.TestCase):
 
     def _deployed_flow(self):
         flow = RegistrationFlow(self.reg)
-        with mock.patch("transport.register.flow.probe_user", return_value=ProbeResult(UserEntry(token="tok-1", mode="remote"), 3)), \
+        with mock.patch("transport.register.flow.probe_user", return_value=ProbeResult(complete_remote_entry(), 3)), \
+             mock.patch.object(RegistrationFlow, "_recheck_ports_before_deploy", lambda self, state, budget: None), \
              mock.patch("transport.register.flow.deploy_user", return_value="/home/alice/setup.il"):
             flow.apply(remote_request())
         return flow
@@ -157,9 +178,10 @@ class TestRegisterUserOneShot(unittest.TestCase):
         self.reg = load_registry(registry_path())
 
     def test_committed_roundtrip(self):
-        entry = UserEntry(token="tok-1", mode="remote")
+        entry = complete_remote_entry()
         report = ConnectivityReport("tok-1", True, True, True)
         with mock.patch("transport.register.flow.probe_user", return_value=ProbeResult(entry, 3)), \
+             mock.patch.object(RegistrationFlow, "_recheck_ports_before_deploy", lambda self, state, budget: None), \
              mock.patch("transport.register.flow.deploy_user", return_value="/home/alice/setup.il"), \
              mock.patch("transport.register.flow.test_connectivity", return_value=report):
             state = register_user(

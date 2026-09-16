@@ -429,7 +429,7 @@ class TestEnsurePersistentShell(unittest.TestCase):
         set_working_dir(self.wd)
 
     def test_start_success(self):
-        r = SSHRunner("server", user="u")
+        r = SSHRunner("server", user="u", backend="openssh")
         r._persistent_shell_enabled = True
         proc = mock.Mock()
         proc.poll.return_value = None
@@ -442,7 +442,7 @@ class TestEnsurePersistentShell(unittest.TestCase):
         self.assertIs(r._shell_proc, proc)
 
     def test_start_probe_failure_raises(self):
-        r = SSHRunner("server", user="u")
+        r = SSHRunner("server", user="u", backend="openssh")
         r._persistent_shell_enabled = True
         proc = mock.Mock()
         proc.poll.return_value = None

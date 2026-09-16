@@ -15,6 +15,8 @@ from transport.remote_roles import resolve
 class TestFileRootFallback(unittest.TestCase):
     def test_file_root_is_the_single_bridge_workdir(self):
         entry = UserEntry(token="tok-123", mode="remote")
+        entry.ssh.default.host = "server"
+        entry.ssh.default.user = "alice"
         entry.roles.daemon.root = "~/.virtuoso-bridge/alice"
         entry.roles.daemon.host = "server"
         entry.roles.daemon.daemon_port = 65081

@@ -14,6 +14,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from transport.registry import UserEntry
+from transport.validation import validate_token, validate_user_name
 
 
 class RequestRole(BaseModel):
@@ -26,6 +27,7 @@ class RequestRole(BaseModel):
     jump_user: str | None = None
     proxy: str | None = None
     root: str | None = None
+    max_sessions: int | None = Field(default=None, ge=1)
     expected_fingerprint: str | None = None
 
 
@@ -102,6 +104,20 @@ class RegistrationRequest(BaseModel):
     log_level: Literal["off", "all", "warn", "error"] | None = None
     log_max_bytes: int | None = Field(default=None, ge=1)
 
+    @model_validator(mode="before")
+    @classmethod
+    def _empty_to_none(cls, data):
+        def normalize(value):
+            if isinstance(value, dict):
+                return {key: normalize(item) for key, item in value.items()}
+            if isinstance(value, list):
+                return [normalize(item) for item in value]
+            if isinstance(value, str) and value.strip() == "":
+                return None
+            return value
+
+        return normalize(data)
+
     @model_validator(mode="after")
     def _normalize_mode(self):
         if isinstance(self.mode, str):
@@ -110,9 +126,9 @@ class RegistrationRequest(BaseModel):
 
     @model_validator(mode="after")
     def _check_roles(self):
-        user = self.user or ""
-        if user.startswith(("/", "\\")) or "/" in user or "\\" in user or ".." in user:
-            raise ValueError("user must be a single path segment (no '/', '\\', '..', absolute path)")
+        validate_user_name(self.user)
+        if self.token is not None:
+            validate_token(self.token)
         for name in ("gui", "daemon", "command", "file", "spectre"):
             role = getattr(self.roles, name)
             role_mode = role.mode or self.mode.default
