@@ -1,10 +1,10 @@
 # 中层配置文档
 
-> 版本：Draft v27
+> 版本：Draft v28
 > 日期：2026-09-15
 > 状态：Normative（字段目录、默认值、探测写回、注册表 schema、reservation 与 endpoint key 的唯一规范源）
-> Supersedes：Draft v21–v26（v21 字段目录重组；v22 探测/root 分界、reservation 内存化；v23 max_sessions 按 endpoint；v24 指纹例外与示例标注；v25 定位与 root 类型；v26 local role 指纹省略/null 显式化）
-> 定位：本文是[多用户与注册](1-多用户与注册.md)的**字段与 schema 详细补充**——六步状态机、授权与要填参数归[多用户与注册](1-多用户与注册.md)，本文提供各步所需字段、默认值、探测写回、注册表 schema、reservation 与 endpoint key。
+> Supersedes：Draft v21–v27（v21 字段目录重组；v22 探测/root 分界、reservation 内存化；v23 max_sessions 按 endpoint；v24 指纹例外与示例标注；v25 定位与 root 类型；v26 local role 指纹显式化；v27 必填清单 owner 收归本文 §4）
+> 定位：本文是[多用户与注册](1-多用户与注册.md)的**字段与 schema 详细补充**——六步状态机与授权归[多用户与注册](1-多用户与注册.md)；本文是字段与必填清单 owner（§4），并提供默认值、探测写回、注册表 schema、reservation 与 endpoint key。
 
 ## 1. 总述
 
