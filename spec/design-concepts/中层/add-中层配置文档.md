@@ -1,382 +1,183 @@
 # 中层配置文档
 
-> 版本：Draft v20
-> 日期：2026-09-14
-> 状态：已冻结（字段、默认值、探测写回与 reservation 的唯一规范源）
-> 定位：本文是[多用户与注册](1-多用户与注册.md)的**详细补充文档**——该文档讲六步注册、授权与要填参数，本文展开每个字段与规则
-> Supersedes：Draft v19（改名中层配置文档，作为多用户与注册的详细补充）；注册可提交参数目录见 §4，canonical 注册 API 见 §6。
+> 版本：Draft v25
+> 日期：2026-09-15
+> 状态：Normative（字段目录、默认值、探测写回、注册表 schema、reservation 与 endpoint key 的唯一规范源）
+> Supersedes：Draft v21–v24（v21 字段目录重组、修正远端注册表表述；v22 探测/root 流程与 schema 分界、reservation 改内存候选；v23 max_sessions 改按 endpoint；v24 指纹例外明确、schema 示例标注、同 endpoint 指纹一致、端口分配自由度）
+> 定位：本文是[多用户与注册](1-多用户与注册.md)的**详细补充文档**——它讲六步注册、授权与要填参数，本文展开每个字段、默认值、探测写回、注册表 schema、reservation 与 endpoint key。
 
-## 1. 设计原则：配置跟随用户
+## 1. 总述
 
-- 本地只有一份 `registry.json`，`user` 为键，每个 user 一条独立条目；配置的另一半在该用户远端的部署目录。
-- 不预设变量值：值由用户提供、注册探测、端口分配、部署流程按需生成，满足需求即可。
-- **每个配置项都标注类型**：`配置` / `环境` / `校验`，三类处理规则见 §4.1。
-- 单个 user 的配置分四块：通用（token）、全局默认、五个 role、探测基准；**mode 属于各 role**（客户端可能就在其中某台主机上），**分类看字段在哪里被消费**——远端执行/运行消费的字段归远端，本地路由/比对消费的字段归本地。
-- 分层：上层只传 token；中层持注册表与运行时策略；底层用 il 常量 / daemon 参数。
-- 本地工作目录：启动时可显式传入；不传则用平台配置目录；不是配置项，子结构固定自动创建。
-- **双层语义**：每次调用携带的字段是 `token`、`timeout`、`parallel`、`recursive`（后两者只出现在命令/文件接口）；`cdslog.log_level` / `cdslog.log_max_bytes` 是每用户持久化配置，由中层在发出 daemon 请求时从 registry 填充。接口共 5 个，见[四层整体架构与接口 §4.1](../总览/1-四层整体架构与接口.md)。
+- **唯一 owner**：字段名/类型/默认值、注册表 schema（§6.1）、reservation（§6.4）、endpoint canonical key（§6.5）只在本文定义；其它文档只索引，不复制。
+- **配置跟随用户**：本地只有一份 `registry.json`，`user` 为键，每用户一条独立条目；**远端不放注册表**，远端只有该用户的部署文件（`ramic/`、`setup/`、`status/`，见 §6.3）。
+- **运行期只读内存快照**：启动时导入一次，此后不再读文件；生命周期见[多用户与注册 §5](1-多用户与注册.md)。
+- **双层语义**：每次调用携带 `token`（+接口自身参数，见[四层整体架构与接口 §4](../总览/1-四层整体架构与接口.md)）；`cdslog.*` 是每用户持久化配置，由中层填进 daemon 请求（见[日志返回设计标准 §6.1](../底层/6-日志返回设计标准.md)）。
+- **类型标注**：每个字段标 `配置 / 环境 / 校验`，处理规则见 §3。
+- **默认值约定**：标“默认 X”可省略；标“必填”必须写入。
 
-> 默认值约定：标“默认 X”可省略；标“必填”必须写入（通常由注册/部署自动生成）。
+## 2. 字段总表（唯一来源）
 
-## 2. 单个 user 的配置
+### 2.1 通用
 
-> 默认值约定：标“默认 X”可省略；标“必填”必须写入（通常由注册/部署自动生成）。
-> 本章分四层：**2.1 通用配置**、**2.2 策略配置**、**2.3 各 role 配置**（每个 role 自带连接字段、文件根与 `expected_*` 探测基准）；2.4 目录结构只约定、不是用户可提交配置。
-
-### 2.1 通用配置
-
-| 变量 | 作用 | 类型 | 默认值 |
+| 字段 | 作用 | 类型 | 默认/必填 |
 |---|---|---|---|
-| `token` | 每次调用携带的寻址与授权参数；每用户唯一，注册时生成，终生不变 | 配置 | 必填（注册时生成） |
+| `token` | 每次调用携带的寻址与授权参数；每用户唯一、终生不变（格式见 §5，生命周期见[多用户与注册 §1](1-多用户与注册.md)） | 配置 | 注册生成（未提交则自动生成） |
+| `user` | 人类可读 id + 路径名，非安全凭证 | 配置 | 必填（格式见 §5） |
 
-### 2.2 策略配置
+### 2.2 策略
 
-与具体 role / 主机无关的策略项：SSH 后端、连接复用、工具覆盖、并发预算与日志。
-
-| 变量 | 作用 | 类型 | 默认值 |
+| 字段 | 作用 | 类型 | 默认/必填 |
 |---|---|---|---|
-| `ssh.backend` | SSH 后端 openssh / paramiko。**默认 paramiko**：命令/文件/GUI/Spectre 在同一业务连接上多 channel 复用（不依赖 ControlMaster，Windows 亦有效）；**Skill 隧道由外部 OpenSSH `ssh -N -L` 承载**。连接数量与复用的唯一口径见[路由设计 §4](../中层/3-路由设计.md) | 配置 | 默认 `paramiko` |
-| `ssh.control_master` | openssh 后端的复用策略 auto/force/disable；复用边界是 token（ControlPath 含 token 不可逆 hash，多 endpoint 再分段），跨 token 不共享；paramiko 后端不适用 | 配置 | 默认 `auto` |
+| `ssh.backend` | SSH 后端 openssh / paramiko；默认 paramiko：同一业务连接上多 channel 复用；Skill 隧道由外部 OpenSSH `ssh -N -L` 承载 | 配置 | 默认 `paramiko` |
+| `ssh.control_master` | openssh 后端的复用策略 auto/force/disable；复用边界是 token，跨 token 不共享；paramiko 不适用 | 配置 | 默认 `auto` |
 | `ssh.tool_override` | 可选 ssh/scp/tar 工具路径覆盖 | 配置 | 可选 |
-| `runtime.thread_pool_size` | **每 token 一份**线程预算：在途请求上限（任何未完成动作——排队中/执行中/传输中——都占位，完成才释放）；超限返回 `thread pool exceeded` | 配置 | 默认 `32` |
-| `runtime.channel_budget` | **每 token 一份**：token 内所有 role/endpoint **已打开 SSH 通道总数**（开通道即占、关闭即释放）；占用明细见[并发设计 §3](../中层/2-并发设计.md) | 配置 | 默认 `10` |
-| `runtime.connect_timeout` | 连接建立超时（一次性配置） | 配置 | 默认 `15` 秒 |
-| `cdslog.log_level` | 返回日志级别 `off/all/warn/error`；`off` 从 IL 源头不 flush/不读文件/不注入输出 | 配置 | 默认 `all` |
-| `cdslog.log_max_bytes` | 单次日志内联长度上限；超限自动降级 error | 配置 | 默认 `65536` |
+| `runtime.thread_pool_size` | 线程预算：在途请求上限（任何未完成动作占位）；超限语义见[并发设计 §2](2-并发设计.md) | 配置 | 默认 `32` |
+| `runtime.channel_budget` | 最大通道数：token 内所有 endpoint 已打开 SSH 通道总数；超限语义见[并发设计 §2](2-并发设计.md) | 配置 | 默认 `10` |
+| `runtime.connect_timeout` | 连接建立超时（各步 deadline 的子预算，见[四层整体架构与接口 §5.8](../总览/1-四层整体架构与接口.md)） | 配置 | 默认 `15` 秒 |
+| `cdslog.log_level` | 返回日志级别 off/all/warn/error；off 从 IL 源头不读不注入 | 配置 | 默认 `all` |
+| `cdslog.log_max_bytes` | 单次日志内联长度上限，超限自动降级（规则见[日志返回设计标准 §5](../底层/6-日志返回设计标准.md)） | 配置 | 默认 `65536` |
 
-### 2.3 各 role 配置
+### 2.3 各 role 公共字段
 
-五个 role（gui / daemon / command / file / spectre）结构相同：**每个 role 各自有 `mode`**、连接字段 `host / user / jump_host / jump_user / proxy`、文件根 `root` 与 `max_sessions`（该 role 远端单连接并发 channel 上限，默认 10，`mode=local` 不适用）；`daemon` 额外 `daemon_port / local_port`，`spectre` 额外 `bin`。
+五个 role（`gui / daemon / command / file / spectre`）各有下列公共字段。role 的职责、接口对应与连接复用见[路由设计 §2–§4](3-路由设计.md)，本文只定义字段与默认值。
 
-`role.<name>.mode` 决定该 role 的投送方式：`local` = 客户端（中层）就在该 role 的目标主机上，直接本地执行、不经 SSH；`remote` = 经 SSH 投送到该 role 的 host/user。**不同 role 可以取不同 mode**（例如 daemon=local、command=remote）。role 的职责、探测矩阵与失败级别见[路由设计](../中层/3-路由设计.md)，本节只定义字段与默认值。
-
-#### 2.3.1 全局默认（所有 role 的兜底）
-
-每个 role 未显式配置的字段**逐字段回退**到这里：
-
-| 变量 | 作用 | 类型 | 默认值 |
+| 字段 | 作用 | 类型 | 默认/必填 |
 |---|---|---|---|
-| `mode.default` | 各 role 的缺省 mode（`local` / `remote`） | 配置 | **必填，无默认** |
-| `ssh.default.host` | 各 role 缺省 SSH 登录主机 | 配置 | 存在未在 role 级提供 `host` 的 remote role 时必填；local 不适用 |
-| `ssh.default.user` | 各 role 缺省 SSH 登录账号 | 配置 | 存在未在 role 级提供 `user` 的 remote role 时必填；local 不适用 |
-| `ssh.default.jump_host` | 各 role 缺省跳板主机 | 配置 | 可选 |
-| `ssh.default.jump_user` | 各 role 缺省跳板账号 | 配置 | 可选 |
-| `ssh.default.proxy` | 各 role 缺省 SOCKS5 第一跳 | 配置 | 可选 |
-| `root.default` | 各 role 文件根的**申请期基准**：role 未显式配 `root` 时，申请期以 `root.default/<role>` 计算，**探测后把最终绝对路径写回各 `role.*.root`，运行期不再依赖本字段**；`~` 与 `<userid>` 在**该 role 工作所在机器**上解释，与 mode 无关（唯一算法：[多用户与注册 §12](../中层/3-路由设计.md)） | 配置 | 默认 `~/.virtuoso-bridge/<userid>`（申请期展示；持久化默认 `null`） |
+| `role.<name>.mode` | 投送方式：`local` = 中层就在该 role 目标主机上直接本地执行、不经 SSH；`remote` = 经 SSH 投送；不同 role 可混合 | 配置 | 回退 `mode.default` |
+| `role.<name>.host/user/jump_host/jump_user/proxy` | 该 role 登录主机/账号/跳板/代理；`local` role 提交即参数错误 | 配置 | 回退 §2.5 全局默认（remote 需可解析） |
+| `role.<name>.root` | 该 role 文件根；申请期缺省 `root.default/<role>`，探测后为最终绝对路径 | 配置 | 可选（探测写回，见 §6.2） |
+| `role.<name>.max_sessions` | 该 role 解析到的 endpoint 的并发通道上限（配置在 role、生效在 endpoint；多 role 同 endpoint 取最小值；`local` 不适用） | 配置 | 默认 `10` |
+| `role.<name>.expected_fingerprint` | 该 role endpoint 的 host-key 指纹比对基准（业务 role 必检；spectre 例外，见 §3） | 校验 | 探测写入 |
 
-- fallback 是字段级而非整体覆盖；本版**不支持逐 role 显式禁用**全局 jump/proxy（空值一律视为继承，需要不同值就显式写该 role 的最终值）；
-- `mode=local` 的 role：其 `host/user/jump_host/jump_user/proxy` 不适用，**显式提交即参数错误**（拒绝注册）；`root` 取**该 role 工作所在机器**上运行中层的账号的路径，默认形状与 remote 相同（`~/.virtuoso-bridge/<userid>/<role>`）；
-- `mode=remote` 的 role：`host/user` 必填（可由全局默认提供），经 SSH 投送。
+### 2.4 role 特有字段
 
-#### 2.3.2 daemon 配置
-
-Skill 通道的 daemon 监听主机，同时是 bridge 文件的部署目标。
-
-| 字段 | 说明 | 类型 | 默认值 |
+| 字段 | 作用 | 类型 | 默认/必填 |
 |---|---|---|---|
-| `role.daemon.mode` | `local` / `remote` | 配置 | 回退 `mode.default` |
-| `role.daemon.host/user/jump_host/jump_user/proxy` | 连接字段（local 时不适用） | 配置 | 逐字段回退 §2.3.1 |
-| `role.daemon.root` | daemon 文件根；bridge 文件部署到 `<root>/{ramic,setup,status}` | 配置 | `root.default/daemon` |
-| `role.daemon.daemon_port` | daemon 监听端口，每用户分配不冲突 | 配置 | 必填（注册分配） |
-| `role.daemon.local_port` | `mode=remote` 时是隧道本地端口；`mode=local` 时必须 `= daemon_port`（直连） | 配置 | remote 自动分配；local `= daemon_port` |
-| `role.daemon.python` | daemon role 上的 python 解释器（用于部署/启动 daemon；`mode=local` 时是本机 python）；daemon 探测、daemon 消费 | 环境 | 必填（探测失败=注册失败） |
-| `role.daemon.expected_hostname` | daemon 主机名比对基准（注册探测写入） | 校验 | 必填（注册探测） |
-| `role.daemon.expected_user` | daemon 进程 Unix 账号比对基准（注册探测写入） | 校验 | 必填（注册探测） |
-| `role.daemon.expected_fingerprint` | 该 role endpoint 的 host-key 指纹（`mode=remote` 时注册探测写入） | 校验 | remote 必填（注册探测） |
+| `role.daemon.daemon_port` | daemon 监听端口，每用户分配不冲突 | 配置 | 缺省分配（见 §6.4） |
+| `role.daemon.local_port` | `remote` 时是隧道本地端口；`local` 时直连端口，必须 `= daemon_port` | 配置 | 缺省分配 |
+| `role.daemon.python` | daemon role 上的 python 解释器（部署/启动 daemon 消费；`local` 时即本机 python） | 环境 | 显式→校验，缺省→探测；失败=注册失败 |
+| `role.daemon.expected_hostname` | daemon 主机名比对基准 | 校验 | 探测写入 |
+| `role.daemon.expected_user` | daemon 进程账号比对基准 | 校验 | 探测写入 |
+| `role.spectre.bin` | spectre 可执行文件（显式→校验，缺省→探测；失败仅 warning） | 环境 | 可选 |
 
-#### 2.3.3 command 配置
+### 2.5 全局默认与字段回退
 
-通用命令执行主机（默认常驻 shell；`parallel=True` 走一次性 exec）。
-
-| 字段 | 说明 | 类型 | 默认值 |
+| 字段 | 作用 | 类型 | 默认/必填 |
 |---|---|---|---|
-| `role.command.mode` | `local` / `remote` | 配置 | 回退 `mode.default` |
-| `role.command.host/user/jump_host/jump_user/proxy` | 连接字段（local 时不适用） | 配置 | 逐字段回退 §2.3.1 |
-| `role.command.root` | 命令的初始工作目录与工作文件 | 配置 | `root.default/command` |
-| `role.command.expected_fingerprint` | 该 role endpoint 的 host-key 指纹（`mode=remote` 时注册探测写入） | 校验 | remote 必填（注册探测） |
+| `mode.default` | 各 role 缺省 mode（local/remote） | 配置 | **必填，无默认** |
+| `ssh.default.host/user` | 各 role 缺省登录主机/账号 | 配置 | 存在未在 role 级提供的 remote role 时必填 |
+| `ssh.default.jump_host/jump_user/proxy` | 各 role 缺省跳板/代理 | 配置 | 可选 |
+| `root.default` | 各 role 文件根的申请期基准；探测后写回各 `role.*.root`，运行期不依赖本字段 | 配置 | 默认 `~/.virtuoso-bridge/<userid>`（持久化 `null`） |
 
-#### 2.3.4 file 配置
+- 回退是**逐字段**的：role 有值用自己的，否则回退对应全局默认；`null`/空串 = 未提供；
+- 不支持逐 role 显式“禁用”全局 jump/proxy——需要不同值就显式写该 role 的最终值；
+- `root.default` 的完整展开算法（在哪台机器解释 `~`、`<role>` 拼接、探测后回写）见[多用户与注册 §4.2](1-多用户与注册.md)。
 
-文件传输目标主机（上传 / 下载）。
+### 2.6 固定目录结构（非配置项）
 
-| 字段 | 说明 | 类型 | 默认值 |
-|---|---|---|---|
-| `role.file.mode` | `local` / `remote` | 配置 | 回退 `mode.default` |
-| `role.file.host/user/jump_host/jump_user/proxy` | 连接字段（local 时不适用） | 配置 | 逐字段回退 §2.3.1 |
-| `role.file.root` | 上传 / 下载的默认落点 | 配置 | `root.default/file` |
-| `role.file.expected_fingerprint` | 该 role endpoint 的 host-key 指纹（`mode=remote` 时注册探测写入） | 校验 | remote 必填（注册探测） |
+- 本地工作目录不是注册字段（启动时传入，不传用实现默认）；子结构固定 `registry.json / temp/ / log/ / artifact/`，启动时自动创建；
+- 远端部署目录写死：`role.daemon.root` 下 `ramic/ / setup/ / status/`，部署规则见[多用户与注册 §4.2](1-多用户与注册.md)。
 
-#### 2.3.5 gui 配置
+## 3. 三类处理规则
 
-Virtuoso CIW / X11 主机，被 GUI 命令执行（一次性命令）消费。
-
-| 字段 | 说明 | 类型 | 默认值 |
-|---|---|---|---|
-| `role.gui.mode` | `local` / `remote` | 配置 | 回退 `mode.default` |
-| `role.gui.host/user/jump_host/jump_user/proxy` | 连接字段（local 时不适用） | 配置 | 逐字段回退 §2.3.1 |
-| `role.gui.root` | GUI 一次性命令的初始工作目录与工作文件 | 配置 | `root.default/gui` |
-| `role.gui.expected_fingerprint` | 该 role endpoint 的 host-key 指纹（`mode=remote` 时注册探测写入） | 校验 | remote 必填（注册探测） |
-
-#### 2.3.6 spectre 配置
-
-Spectre 执行主机，被 Spectre 命令执行（一次性命令，上层预留）消费。
-
-| 字段 | 说明 | 类型 | 默认值 |
-|---|---|---|---|
-| `role.spectre.mode` | `local` / `remote` | 配置 | 回退 `mode.default` |
-| `role.spectre.host/user/jump_host/jump_user/proxy` | 连接字段（local 时不适用） | 配置 | 逐字段回退 §2.3.1 |
-| `role.spectre.root` | Spectre 一次性命令的初始工作目录与工作文件 | 配置 | `root.default/spectre` |
-| `role.spectre.bin` | spectre 可执行文件；显式提供→校验，未提供→自动探测；**失败仅 warning、不阻断注册** | 环境 | 可选 |
-| `role.spectre.expected_fingerprint` | 该 role endpoint 的 host-key 指纹（`mode=remote` 且探测成功时写入；**失败不写、仅 WARNING**） | 校验 | 可选（失败不阻断） |
-
-### 2.4 目录结构
-
-本地工作目录（非配置项）：
-
-```text
-<工作目录>/
-  registry.json   ← 注册表（权限 0600）
-  temp/ log/ artifact/
-```
-
-daemon role 根下的固定目录（写死，不配置；根本身已含用户段，算法见[多用户与注册 §12](../中层/3-路由设计.md)）：
-
-```text
-<role.daemon.root>/
-  ramic/   ramic_bridge_daemon_3.py · ramic_bridge_daemon_27.py · ramic_bridge.il
-  setup/   virtuoso_setup.il
-  status/  daemon_identity.txt
-```
-
-il/daemon 常量（部署生成，不配置）的类型：`RBDPath`=配置、`RBPython`=环境（等于 `role.daemon.python`）、`RBPort`=配置、`RBIdentityPath`=配置、daemon `token`=配置、`bind`=配置（固定 `127.0.0.1`）、`RBLocal/RBEcho/RBDLog`=配置（默认 `nil`）。
-
-## 3. 每用户隔离清单
-
-| 资源 | 隔离方式 |
+| 类型 | 规则 |
 |---|---|
-| token | 每用户唯一 |
-| 端口 | 每用户注册表分配 |
-| SSH 连接 | 同一 token 内按 endpoint 去重复用；跨 token 不共用 |
-| 各 role 文件根 | `role.<name>.root`（缺省 `root.default/<role>`，`root.default` 默认 `~/.virtuoso-bridge/<userid>`）；role 之间互不共享、无互相可见要求 |
-| identity 文件 | 每用户一份 |
-| 线程池/channel 预算 | 每 token 独立 |
-| CDS.log 读取 | daemon 本地读；offset/frame/限长的唯一口径见[日志返回设计标准](../底层/6-日志返回设计标准.md) |
-| 文件空间 | 仅默认目录约定 + OS 账号权限，非安全沙箱 |
+| 配置 | 用户提供；只做格式/范围/查重校验，失败拒绝；无自动探测 |
+| 环境 | 默认自动探测；用户显式提供时校验，不可用报告并拒绝。唯一例外 spectre（失败级别与提交态见[多用户与注册 §4.1](1-多用户与注册.md)） |
+| 校验 | 探测写入各 role 的 `expected_*`，只用于比对、不参与业务；运行期不一致 WARNING。唯一例外：业务 role 的 host-key 指纹不匹配 = ERROR（含机器重装未确认），见[多用户与注册 §3.2/§5](1-多用户与注册.md) |
 
-## 4. 注册参数目录（唯一来源）
+探测动作本身（何时探测、逐 role 探测矩阵、失败级别）见[多用户与注册 §4](1-多用户与注册.md)，本文只定义字段类型规则。
 
-### 4.1 三种类型的处理规则
+## 4. 必填小结
 
-| 类型 | 处理规则 |
-|---|---|
-| **配置** | 由用户提供；只做格式/范围/查重校验，校验失败=拒绝申请；无“自动探测” |
-| **环境** | **默认自动探测**；用户显式提供时只做**校验**，不可用则报告用户该参数有问题并拒绝；探测结果供部署/运行使用。**唯一例外 spectre role**：其 SSH/指纹/root/`bin` 的探测失败仅 warning、不阻断注册（结果供 Spectre 命令执行接口使用；失败字段在提交态为 `null`），规则以 §4.2 为准 |
-| **校验** | 探测获得并记录到**对应 role 的 `expected_*` 字段**（如 `role.command.expected_fingerprint`），只用于后续比对、**不参与业务**；运行期不一致 → **WARNING，不阻断**。唯一例外：**业务 role（gui/daemon/command/file）**的 host-key 指纹属于安全身份校验，不匹配 → **ERROR（阻断）**；spectre role 指纹缺失/不匹配仅 WARNING |
+- 必填：`mode.default`、`user`；
+- 条件必填：每个 remote role 必须可解析目标（role 级 `host/user` 或 `ssh.default.*`）；
+- `token` 未提交时自动生成；`role.daemon.daemon_port/local_port` 缺省自动分配；
+- 其余按 §2 表；探测结果写入内存候选对象，第六步才落盘（见[多用户与注册 §3](1-多用户与注册.md)）。
 
-### 4.2 可提交参数
+## 5. 输入校验与首信任
 
-| 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| `mode.default` | 配置 | **是** | 各 role 的缺省 mode（`local` / `remote`）；显式提供，不推断 |
-| `role.{gui,daemon,command,file,spectre}.mode` | 配置 | 否 | role 单端 mode；缺省回退 `mode.default` |
-| `user`（`^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$`） | 配置 | 是 | 人类可读 id + 路径名，非安全凭证 |
-| `ssh.default.host` / `ssh.default.user` | 配置 | 存在未在 role 级提供 host/user 的 remote role 时必填 | remote role 缺省的登录主机/账号 |
-| `ssh.default.jump_host` / `ssh.default.jump_user` / `ssh.default.proxy` | 配置 | 否 | remote role 缺省的跳板/代理 |
-| `role.{gui,daemon,command,file,spectre}.host/user/jump_host/jump_user/proxy` | 配置 | 否 | role 单端连接；缺省回退 `ssh.default.*`；`mode=local` 的 role 不得提交（参数错误） |
-| `role.{gui,daemon,command,file,spectre}.max_sessions` | 配置 | 否 | 该 role 远端单连接并发 channel 上限（本地代理远端 sshd `MaxSessions` 环境能力）；默认 `10`；`mode=local` 不适用 |
-| `role.daemon.daemon_port` / `role.daemon.local_port` | 配置 | 否 | 缺省注册分配；daemon role 为 local 时 `local_port = daemon_port` |
-| `token` | 配置 | 否 | 缺省自动生成 `^[A-Za-z0-9._-]{1,64}$` |
-| `root.default` | 配置 | 否 | 各 role 文件根的申请期基准；持久化默认 `null` |
-| `role.{gui,daemon,command,file,spectre}.root` | 配置 | 否 | role 文件根；申请期缺省 = `root.default/<role>`，探测后为**最终绝对路径** |
-| `ssh.*` / `runtime.*` / `cdslog.*` | 配置 | 否 | 策略项，缺省见 §2.2 |
-| `role.<name>.expected_fingerprint`（显式指纹） | 校验 | 否 | 用户仅可为 remote role 显式提供指纹，校验后记录到该 role；endpoint key 算法见 §6.5 |
-| `role.daemon.python` | 环境 | 否 | 显式提供→校验；未提供→自动探测；**探测失败=注册失败** |
-| `role.spectre.bin` | 环境 | 否 | 显式提供→校验；未提供→自动探测；**失败仅 warning、不阻断注册** |
+- `user` 格式 `^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$`；禁止 `/`、`\`、`..`、绝对路径；Windows 大小写不敏感查重；拒绝保留设备名（CON/PRN/AUX/NUL/COM1–9/LPT1–9 及带扩展名）与结尾 `.`/空格；
+- `token` 格式 `^[A-Za-z0-9._-]{1,64}$`；碰撞重生成一次；轮换 = 删除用户重新注册；
+- `local` role 显式提交 `host/user/jump_host/jump_user/proxy` → 参数错误；
+- 未知字段拒绝（`extra=forbid`）；空串视为未提供；
+- host-key 首信任优先级：① known_hosts 匹配 → 记录；② 用户显式指纹 → 校验后记录；③ 两者皆无 → 注册失败；spectre 例外（缺失/失败仅 WARNING、指纹留空）；
+- registry 持久化 UTF-8、权限 `0600`、tmp + 原子替换。
 
-### 4.3 探测、校验、期望如何进入注册表
+## 6. 注册表 schema 与关键算法
 
-1. **探测方式随 role mode**：`mode=local` 的 role 在客户端本机执行等价检查；`mode=remote` 的 role 通过 SSH 执行。**环境探测结果**：`role.daemon.python` 在 **daemon role** 探测并写入**内存候选对象**（daemon 部署/启动消费；第六步才写 registry）；`role.spectre.bin` 在 **spectre role** 探测/校验，结果记录供 Spectre 命令执行接口消费、失败仅 warning；daemon 端口空闲与各 role 文件根可写性只是校验结论，不写入候选对象；`root.default` 是申请输入（持久化 `null`），**各 `role.*.root` 在探测后写回最终绝对路径**。
-2. **校验比对基准（分散在各 role）**：`role.<name>.expected_fingerprint`（仅 `mode=remote`）、`role.daemon.expected_hostname`、`role.daemon.expected_user` 由探测获得并记录，供第五步/运行期比对；**同 endpoint 被多个 remote role 共享时，各 role 的 `expected_fingerprint` 必须一致**（注册时校验，不一致即拒绝）；不一致按 §4.1 的 WARNING（host-key 例外 ERROR）处理，不参与业务。
-3. **系统配置**：`user`/`mode.default`/`role.*.mode`/`ssh.*`/`runtime.*`/`cdslog.*` 等只在第二步做约束校验，不探测、不比对。
-
-## 5. 输入安全与首信任（冻结）
-
-- `user`：字符集见 §4.2；禁止 `/`、`\`、`..`、绝对路径；部署前 containment 校验，越界即注册失败。
-- 跨平台路径规则：Windows 下 user 按**大小写不敏感**查重（`Alice` 与 `alice` 视为同一）；禁止保留设备名（`CON/PRN/AUX/NUL/COM1-9/LPT1-9`，含扩展名形式）与结尾 `.`/空格；路径规范化后冲突即拒绝注册。
-- `token`：字符集见 §4.2；存 registry（0600）与 il/daemon；ControlPath 只用其不可逆 hash；轮换=删除用户重新注册。
-- host-key 首信任优先级（不再依赖“首连即 TOFU”）：
-  1. known_hosts 已存在且匹配 → 记录该指纹作为比对基准；
-  2. 用户显式提供指纹 → 校验后记录；
-  3. 两者皆无 → 注册失败，提示用户带外确认后添加，再重试。
-  - **唯一例外：spectre role**。spectre 的 SSH/指纹缺失或失败只产生 WARNING、不阻断注册；该 role 的 `role.spectre.expected_fingerprint`/`root`/`bin` **留空**（显式提供且校验通过时才写入；提交态允许为 `null`）。其余四个 role（gui/daemon/command/file）不适用本例外。
-
-
-## 6. Canonical 注册 API / Schema 附录（冻结）
-
-### 6.1 注册请求 canonical 字段
-
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| `mode.default` | `local` / `remote` | 是 | 各 role 缺省 mode；显式提供，不推断 |
-| `role.{gui,daemon,command,file,spectre}.mode` | `local` / `remote` | 否 | role 单端 mode；缺省回退 `mode.default` |
-| `user` | string | 是 | §5 字符集与跨平台规则 |
-| `ssh.default.host` / `ssh.default.user` | string | 存在未在 role 级提供 host/user 的 remote role 时必填 | 五 role 缺省的登录主机/账号 |
-| `ssh.default.jump_host` / `ssh.default.jump_user` / `ssh.default.proxy` | string | 可选 | 五 role 缺省的跳板/代理 |
-| `role.{gui,daemon,command,file,spectre}.{host,user,jump_host,jump_user,proxy}` | string | 可选 | role 单端连接；缺省回退 `ssh.default.*`；`mode=local` 的 role 不得提交 |
-| `role.{gui,daemon,command,file,spectre}.max_sessions` | int | 可选 | 该 role 远端单连接并发 channel 上限；默认 `10`；`mode=local` 不适用 |
-| `root.default` | string | 可选 | 各 role 文件根的申请期基准；持久化默认 `null` |
-| `role.{gui,daemon,command,file,spectre}.root` | string | 可选（探测写回） | role 文件根；申请期缺省 = `root.default/<role>`，探测后为最终绝对路径 |
-| `role.daemon.daemon_port` / `role.daemon.local_port` | int | 可选 | 缺省自动分配 |
-| `token` | string | 可选 | 缺省自动生成 |
-| `role.daemon.python` | string | 可选（探测写入） | 显式提供 → 校验；缺省 → 探测；探测失败=注册失败 |
-| `role.spectre.bin` | string | 可选 | 显式提供 → 校验；缺省 → 探测；失败仅 warning、不阻断 |
-| `ssh.*` / `runtime.*` / `cdslog.*` | — | 可选 | 缺省见 §2 |
-| `role.<name>.expected_fingerprint` | string | 否（探测写入） | 仅 remote role；用户可显式提供指纹供校验后记录；endpoint key 见 §6.5 |
-| `role.daemon.expected_hostname` / `role.daemon.expected_user` | string | 否（探测写入） | daemon 比对基准 |
-
-硬规则（实现必须一致）：
-
-- 未知字段：**拒绝注册**（模型 `extra="forbid"`），不静默忽略；
-- 可选字段：**空字符串视为未提供**；`null` 与缺省等价，进入模型后统一为默认值；
-- 序列化：registry 持久化格式为 UTF-8 JSON、权限 `0600`、tmp + 原子替换（写锁语义见多用户与注册 §11）。
-
-### 6.2 registry 条目 canonical schema（合法 JSON 示例）
-
-以 `user` 为键、`token` 唯一；字段与 §2 一致。单主机 remote 示例（五个 role 全部缺省，最终解析到同一个 endpoint）：
+### 6.1 registry 条目 schema（示例）
 
 ```json
-{
-  "users": {
-    "alice": {
-      "token": "a3f9c2d4e5f60718293a4b5c6d7e8f90",
-      "mode": {"default": "remote"},
-      "ssh": {
-        "default": {"host": "server-a", "user": "ssh-user",
-                    "jump_host": null, "jump_user": null, "proxy": null},
-        "backend": "openssh", "control_master": "auto", "tool_override": {}
-      },
-      "root": {"default": null},
-      "roles": {
-        "gui":     {"mode": null, "host": null, "user": null, "jump_host": null, "jump_user": null,
-                    "proxy": null, "root": "/home/ssh-user/.virtuoso-bridge/alice/gui", "max_sessions": 10,
-                    "expected_fingerprint": "SHA256:RG8fY7m9O2Kp1Qx4sZ5n0Lw3eB6tVh8uJd9cIa7fGk0"},
-        "daemon":  {"mode": null, "host": null, "user": null, "jump_host": null, "jump_user": null,
-                    "proxy": null, "root": "/home/ssh-user/.virtuoso-bridge/alice/daemon", "daemon_port": 65081, "local_port": 65082, "max_sessions": 10,
-                    "python": "/opt/eda/cadence/tools.lnx86/python/64bit/bin/python3",
-                    "expected_fingerprint": "SHA256:RG8fY7m9O2Kp1Qx4sZ5n0Lw3eB6tVh8uJd9cIa7fGk0",
-                    "expected_hostname": "server-a",
-                    "expected_user": "ssh-user"},
-        "command": {"mode": null, "host": null, "user": null, "jump_host": null, "jump_user": null,
-                    "proxy": null, "root": "/home/ssh-user/.virtuoso-bridge/alice/command", "max_sessions": 10,
-                    "expected_fingerprint": "SHA256:RG8fY7m9O2Kp1Qx4sZ5n0Lw3eB6tVh8uJd9cIa7fGk0"},
-        "file":    {"mode": null, "host": null, "user": null, "jump_host": null, "jump_user": null,
-                    "proxy": null, "root": "/home/ssh-user/.virtuoso-bridge/alice/file", "max_sessions": 10,
-                    "expected_fingerprint": "SHA256:RG8fY7m9O2Kp1Qx4sZ5n0Lw3eB6tVh8uJd9cIa7fGk0"},
-        "spectre": {"mode": null, "host": null, "user": null, "jump_host": null, "jump_user": null,
-                    "proxy": null, "root": "/home/ssh-user/.virtuoso-bridge/alice/spectre", "max_sessions": 10, "bin": "/opt/eda/cadence/SPECTRE241/bin/spectre",
-                    "expected_fingerprint": "SHA256:RG8fY7m9O2Kp1Qx4sZ5n0Lw3eB6tVh8uJd9cIa7fGk0"}
-      },
-      "runtime": {"thread_pool_size": 32, "channel_budget": 10, "connect_timeout": 15.0},
-      "cdslog": {"log_level": "all", "log_max_bytes": 65536},
-      "registered_at": 1726051200
-    }
-  }
-}
+{"alice": {
+  "token": "a3f9c2…", "mode": {"default": "remote"},
+  "ssh": {"default": {"host": "server-a", "user": "ssh-user"}, "backend": "paramiko", "control_master": "auto"},
+  "root": {"default": null},
+  "roles": {
+    "gui":     {"root": "/home/ssh-user/.virtuoso-bridge/alice/gui", "max_sessions": 10,
+                "expected_fingerprint": "SHA256:…"},
+    "daemon":  {"root": "/home/ssh-user/.virtuoso-bridge/alice/daemon", "max_sessions": 10,
+                "daemon_port": 65081, "local_port": 65082, "python": "/usr/bin/python3",
+                "expected_fingerprint": "SHA256:…", "expected_hostname": "server-a", "expected_user": "ssh-user"},
+    "command": {"root": "/home/ssh-user/.virtuoso-bridge/alice/command", "max_sessions": 10, "expected_fingerprint": "SHA256:…"},
+    "file":    {"root": "/home/ssh-user/.virtuoso-bridge/alice/file", "max_sessions": 10, "expected_fingerprint": "SHA256:…"},
+    "spectre": {"root": "/home/ssh-user/.virtuoso-bridge/alice/spectre", "max_sessions": 10,
+                "bin": "/opt/eda/cadence/SPECTRE241/bin/spectre", "expected_fingerprint": "SHA256:…"}
+  },
+  "runtime": {"thread_pool_size": 32, "channel_budget": 10, "connect_timeout": 15.0},
+  "cdslog": {"log_level": "all", "log_max_bytes": 65536},
+  "registered_at": 1726051200
+}}
 ```
 
-- `mode.default = "remote"`、`role.*.mode` 全为 `null` → 五个 role 全部 remote；`role.*` 连接字段全为 `null` → 全部回退 `ssh.default.*`，五个 role 解析成同一 endpoint `["server-a","ssh-user","","",""]`（key 算法见 §6.5），因此五个 role 的 `expected_fingerprint` 是同一个值；**同 endpoint 的多份指纹必须一致**。
-- 各 `expected_*` 字段由注册探测写入（校验类型）；`mode=local` 的 role 没有 `expected_fingerprint`；spectre 探测失败时不写它的指纹、只留 WARNING。
-- 探测后**业务 role（gui/daemon/command/file）与探测成功的 spectre** 的 `role.*.root` 已写回最终绝对路径（示例 `/home/ssh-user/.virtuoso-bridge/alice/<role>`；spectre 探测失败时为 `null`），`root.default` 为 `null`；运行期不再由 `root.default` 推导目录。
-- `role.spectre.bin` 是 spectre role 的专有字段；供 Spectre 命令执行接口使用（上层未来封装仿真流程）。
-- `registered_at` 为注册流程生成的时间戳元数据，不属 §2 配置项，也不在 §6.1 可提交参数目录内。
+- 示例为提交态节选；role 未显式写出的 `mode`/连接字段按 §2.5 回退解析。
 
-### 6.3 per-role mode 兼容矩阵
+### 6.2 提交 schema 与写回口径
 
-**mode 是每个 role 独立的**；同一个账号可以混合（例：客户端就在 daemon 主机上 → `role.daemon.mode=local`，其余 role `remote`）。
+- 提交后的 registry：各 `role.*.root` 为**绝对路径**，`root.default` 为 `null`；运行期不推导；
+- `role.daemon.python`、各 `expected_*` 为提交字段；
+- spectre 探测失败时其 `root`/`expected_fingerprint`/`bin` 提交为 `null`；
+- 何时探测、何时写回、唯一写盘点见[多用户与注册 §3/§4](1-多用户与注册.md)；本节只约定提交后的字段形态；
+- `registered_at` 是注册流程生成的时间戳元数据，不属配置。
 
-| role.mode | 连接字段 host/user/jump/proxy | 该 role 的文件根 | 探测与 host-key |
-|---|---|---|---|
-| `local` | **不适用**；显式提交即参数错误 | `role.<name>.root`（缺省 `root.default/<role>`），在**该 role 工作所在机器**上解释；算法见[多用户与注册 §12](../中层/3-路由设计.md) | 在客户端本机执行等价检查；无 SSH、无 host-key |
-| `remote` | `host/user` 必填（可由 `ssh.default.*` 提供）；jump/proxy 可选 | 远端路径：`role.<name>.root`（缺省 `root.default/<role>`，`~` 由该 role 的 SSH 账号展开） | 通过 SSH 探测；业务 role（gui/daemon/command/file）指纹必检 ERROR，spectre 仅 WARNING |
+### 6.3 目录与部署约定（索引）
 
-daemon 端口特例：`role.daemon.mode=remote` 时 `local_port` 是隧道本地端口（自动分配）；`mode=local` 时 `local_port = daemon_port`（直连）。
+- bridge 文件只部署到 `role.daemon.root` 的 `ramic/`、`setup/`、`status/`；根算法与部署规则见[多用户与注册 §4](1-多用户与注册.md)；
+- 各 role 根互相独立，无共享/可见性要求（忠实投送原则见[路由设计 §1](3-路由设计.md)）。
 
-### 6.4 端口 reservation / TOCTOU（跨步骤 reservation，跨平台）
+### 6.4 端口 reservation（内存候选，唯一口径）
 
-**每个进行中的注册在第二~六步持有一条候选记录**，避免两个并发注册选中同一 token / daemon_port / local_port。
+**唯一性作用域**：`token`/`user` 全局；`daemon_port` 同一 daemon 目标主机（`mode=local` 时即本机）；`local_port` 本机。
 
-**唯一性作用域（唯一口径）**：
+**联合端口**：`mode=local` 时 `daemon_port` 与 `local_port` 是同一个候选端口——任一缺省由同一值生成并同步写入，显式双值必须相等。
 
-| 键 | 唯一性范围 | 说明 |
-|---|---|---|
-| `token` | 全局（本机 registry） | 一个 token 一个隔离域 |
-| `user` | 全局（本机 registry） | 注册表主键 |
-| `daemon_port` | **同一 daemon 目标主机** | 不同主机可以同号；查重的目的是"这个 daemon 在该主机上能否真的用起来"，不是通用查重 |
-| `local_port` | **本机** | 隧道本地端口，同一台调用机上不得重复 |
+**载体与残留**：候选只存**注册进程内存**，不产生 `registry.reservation` 等临时文件；第六步提交前零落盘，未完成六步即放弃全部候选（零残留）。
 
-- `mode=local` 时 `daemon_port` 与 `local_port` 是**同一个候选端口**：任一缺省都由同一值生成并同步写入记录；显式提供两个值时必须相等。
+**流程**：第二步在内存分配候选（缺省 `local_port` 本机预分配；缺省远端 `daemon_port` 第三步分配并回写）→ 第四步部署前复核端口占用、冲突重分配一次 → 第六步提交前 final re-check → 失败/取消/成功即释放候选。
 
-**载体与格式**：registry 目录下 `registry.reservation`（JSON 数组，UTF-8），每条记录：
+**并发**：注册为低并发流程，由注册服务进程内协调；不设跨进程租约与宽限回收。
 
-```json
-{"user": "alice", "token": "<opaque>", "daemon_host": "server-a", "daemon_user": "alice",
- "daemon_port": 65081, "local_host": "127.0.0.1", "local_port": 65082,
- "pid": 4242, "created_at": "2026-09-14T10:00:00+08:00", "updated_at": "2026-09-14T10:00:00+08:00"}
-```
+**分配算法**：具体算法与端口范围为实现自由度，合同只要求候选唯一且空闲。
 
-- **一个文件可同时记录多条候选**（并发注册 = 多条记录），不是"一个注册独占一把锁"；
-- **锁的粒度是文件**：读写该文件时短暂持有排他锁，写采用"读-改-写 + 原子替换（临时文件 + `os.replace`）"；
-- **跨平台**：POSIX 用 `fcntl.flock`；Windows 无 `flock` → 用 `msvcrt.locking`（或"同目录独占创建 `<file>.lock`"）实现等价互斥；两条路径都必须保证"读-改-写"互斥；
-- **等待用户 load 期间不持锁**：reservation 是"记录集合 + 短锁"，长时间等待（第四步→第五步之间）不占用 OS 锁，不阻塞其它注册。
-
-**流程**：
-
-1. **申请（第二步）**：写入候选记录（同锁内先校验 registry 与已有记录）。**申请可缺省端口**：缺省的 `local_port` 在锁内本机预分配并写入；缺省的远端 `daemon_port` 留空、待第三步分配；命中冲突即回退第一步；
-2. **可见性**：其他注册流程在第二步同时检查 registry 条目与该文件中的记录，命中即报冲突，不进入第三步；
-3. **TOCTOU 二次确认**：第三步在目标主机做 bind/占用探测（**缺省的 daemon_port 在此分配并在同一锁内回写候选**）；第四步部署前再次确认端口空闲，**冲突则自动重新分配并在同一锁内原子更新自己的记录**后重试一次，仍冲突即拒绝注册；
-4. **释放**：第六步 commit 成功、或注册失败/取消时删除自己的记录（同一锁内原子替换）；
-5. **崩溃与恢复**：记录带 `pid` 与时间戳。**回收条件 = `pid` 已失效且 `updated_at` 超过 `stale_after`（默认 15 分钟）**，两者同时成立才回收；等待用户 load 期间由注册交互**心跳续租**（刷新 `updated_at`，间隔小于宽限）。pid 被复用而误判存活是已知限制，由运维手动清理；
-6. **commit 冲突**：第六步写盘时若 token/端口已被占用，按 registry 写锁重新校验并拒绝，不留半成品。
-
-### 6.5 endpoint canonical key（版本化、无歧义）
+### 6.5 endpoint canonical key
 
 ```text
 endpoint_key = "v1:" + SHA256(canonical_json)
-canonical_json = json.dumps([host, user, jump_host, jump_user, proxy],
-                            ensure_ascii=True, separators=(",", ":"))
+canonical_json = json.dumps([host, user, jump_host, jump_user, proxy], ensure_ascii=True, separators=(",", ":"))
 ```
 
-规范化规则（**身份只看规范化后的字符串**）：
+- 规范化：`host/jump_host` strip→小写→去尾点（IPv6 压缩小写去方括号）；`user/jump_user` 只 strip；`proxy` 只 strip；空段 `""`；
+- 两条独立规则：① 字符串规范化决定“是否同一 endpoint”（`Server-A`、`server-a.` 同 endpoint，指纹必须一致）；② 不做名称解析（不查 DNS、不把 alias 与真实 hostname 合并）；`~/.ssh/config` 只用于 transport 解析与 22 端口校验，canonical key 只按规范化输入字符串计算；
+- 测试向量（必须逐条可测）：
 
-- `host` / `jump_host`：`strip` → 小写 → 去掉结尾 `.`；IPv6 写成标准压缩小写形式（`[::1]` 与 `::1` 视为同一值）；
-- `user` / `jump_user`：`strip`，其余原样；
-- `proxy`：`strip` 后取原字符串，不做 URL 归一化；
-- 全部空段用 `""`；`null` 与 `""` 等价。
+| # | host | user | jump_host | jump_user | proxy | key 尾段（前加 `v1:`） |
+|---|---|---|---|---|---|---|
+| 1 | `server-a` | `ssh-user` | — | — | — | `8c6325e8a41f89a4c29d81eb66db201c4414d33f87702607d23d43a1baf94b0b` |
+| 2 | ` Server-A. ` | `ssh-user` | — | — | — | 与 #1 相同 |
+| 3 | `server-a` | `SSH-User` | — | — | — | `40701d25d46c873daea45c841226ee0d6d6939209630d5f57459e55c98c2733b` |
+| 4 | `[::1]` | `u` | — | — | — | `0bd185aaa4fa1ce6bd5cbeea0a86f061567a632f3ad6bf6f5a8f36b79556526b` |
+| 5 | `server-a` | `u` | `bastion` | `jump-user` | — | `178df3e331df40f8d01408ff226fd22e6be04d8033db187f06bc64a5c3512391` |
+| 6 | `server-a` | `u` | — | — | `socks5://Proxy:1080` | `f410f0afc8f618e5230416eb191fa6fcdd5c8313828c2e4c4348eed8cfb33630` |
 
-**两条互不相关的规则，不得混写**：
-
-1. **字符串规范化**（上表）决定"两个写法是不是同一个 endpoint"：`Server-A`、`server-a.`、`server-a` 规范化后相同 → **同一个 endpoint**（`expected_fingerprint` 必须一致；连接数量与复用见[路由设计 §4](../中层/3-路由设计.md)）；
-2. **不做名称解析**：bridge 不查 DNS，也不把 alias 与真实 hostname 合并为同一 endpoint；`~/.ssh/config` 只用于 **transport 解析**（目标 host/port/jump 与 22 端口校验），canonical key 只按规范化后的输入字符串计算——`prod-alias` 与 `prod.example.com` 是两个 endpoint。
-
-测试向量（必须逐条可测）：
-
-| # | host | user | jump_host | jump_user | proxy | canonical_json | endpoint_key |
-|---|---|---|---|---|---|---|---|
-| 1 | `server-a` | `ssh-user` | — | — | — | `["server-a","ssh-user","","",""]` | `v1:8c6325e8a41f89a4c29d81eb66db201c4414d33f87702607d23d43a1baf94b0b` |
-| 2 | ` Server-A. ` | `ssh-user` | — | — | — | `["server-a","ssh-user","","",""]` | 与 #1 相同（大小写、尾点、空白被规范化） |
-| 3 | `server-a` | `SSH-User` | — | — | — | `["server-a","SSH-User","","",""]` | `v1:40701d25d46c873daea45c841226ee0d6d6939209630d5f57459e55c98c2733b`（与 #1 不同：user 大小写敏感） |
-| 4 | `[::1]` | `u` | — | — | — | `["::1","u","","",""]` | `v1:0bd185aaa4fa1ce6bd5cbeea0a86f061567a632f3ad6bf6f5a8f36b79556526b`（IPv6 去括号并压缩小写） |
-| 5 | `server-a` | `u` | `bastion` | `jump-user` | — | `["server-a","u","bastion","jump-user",""]` | `v1:178df3e331df40f8d01408ff226fd22e6be04d8033db187f06bc64a5c3512391`（jump 参与 key） |
-| 6 | `server-a` | `u` | — | — | `socks5://Proxy:1080` | `["server-a","u","","","socks5://Proxy:1080"]` | `v1:f410f0afc8f618e5230416eb191fa6fcdd5c8313828c2e4c4348eed8cfb33630`（proxy 原样：大小写敏感、不做默认端口归一化） |
-
-- 同 key = 同一 endpoint：共享该 token 的业务连接与 fingerprint 基准（拓扑 owner：[路由设计 §4](../中层/3-路由设计.md)）；不同 key 不共享；
-- 同 endpoint 被多个 remote role 共享时，各 role 的 `expected_fingerprint` 必须一致（不一致 → 注册 ERROR）；
-- key 变更（主机重装、账号改名、跳板调整）视为**新 endpoint**：其指纹按 §5 首信任流程重新建立，不自动迁移。
-
-本版显式约束（未支持的能力一律拒绝输入，不做静默等价）：
-
-- **SSH 端口固定 22**：注册阶段对解析后的目标/jump 实际端口校验为 22（SSH alias 中的 `Port`、跳转链目标同理），非 22 一律拒绝注册；端口因此不进入 key；
-- **proxy 语法固定 `socks5://host:port`**：按 `strip` 后的原文参与 key；
-- **jump host 的 host-key 不单独固定**：jump 属于 endpoint 身份的一部分，其 known_hosts 条目由系统 SSH 配置（`ssh-keygen -F <jump_host>`）提供；
-- **known_hosts 来源为系统默认**（用户 `~/.ssh/known_hosts` 与全局 known_hosts），不接受自定义 known_hosts 路径。
-
+- 同 key 同 endpoint：共享业务连接与 fingerprint 基准（拓扑见[路由设计 §4](3-路由设计.md)）；不同 key 不共享；key 变更视为新 endpoint，指纹按首信任重建；同 key 多 role 显式 `expected_fingerprint` 不一致 → 注册 ERROR；
+- 约束：SSH 端口固定 22（注册期校验目标/jump 解析端口，非 22 拒绝）；proxy 固定 `socks5://host:port`；jump 的 known_hosts 由系统 SSH 配置提供；不接受自定义 known_hosts 路径。

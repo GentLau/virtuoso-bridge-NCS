@@ -36,7 +36,7 @@ README = SPEC / "README.md"
 
 NORMATIVE = [
     "design-concepts/总览/1-四层整体架构与接口.md",
-    "design-concepts/总览/本版范围与明确不支持.md",
+    "design-concepts/总览/add-本版范围与明确不支持.md",
     "design-concepts/中层/add-中层配置文档.md",
     "design-concepts/中层/3-路由设计.md",
     "design-concepts/中层/1-多用户与注册.md",

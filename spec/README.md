@@ -11,18 +11,17 @@
 
 1. **Normative（唯一规范源）**：只有下列文件是正式规范，且每个主题只有一个 owner；
    - 分层/接口/错误总则：[四层整体架构与接口](design-concepts/总览/1-四层整体架构与接口.md)（第 4 节为接口唯一基线）
-   - 本版范围/非目标：[本版范围与明确不支持](design-concepts/总览/本版范围与明确不支持.md)
+   - 本版范围/非目标：[本版范围与明确不支持](design-concepts/总览/add-本版范围与明确不支持.md)
    - 配置与注册输入目录：[中层配置文档](design-concepts/中层/add-中层配置文档.md)
    - 多用户/注册/token：[多用户与注册](design-concepts/中层/1-多用户与注册.md)
    - 多节点/5 role 拓扑：[路由设计](design-concepts/中层/3-路由设计.md)
    - 并发/SSH/线程池：[并发设计](design-concepts/中层/2-并发设计.md)
    - CDS.log 返回：[日志返回设计标准](design-concepts/底层/6-日志返回设计标准.md)
-2. **Informative（只索引/摘要，不定义）**：[核心修改设计](design-concepts/总览/核心修改.md)、[demo](demo/README.md)。
-3. **Historical / Non-normative（历史对照，无规范效力）**：[改动报告](design-concepts/总览/改动报告.md)、[代码梳理](design-concepts/底层与中层/代码梳理.md) 及其中的“旧实现/双轨期/迁移阶段”描述；它们不得推翻 Normative。
-4. **Research**：[research](research/README.md)，仅作背景知识。
-5. 主题冲突时只认其 Normative owner；其余副本若与 owner 不一致，一律以 owner 为准。
-6. 版本变更必须记录 `Supersedes`（替换了哪份/哪节）。
-7. **非 owner 不得复制完整定义**：只有一句摘要 + 链接；完整算法/枚举/状态机/矩阵只允许出现在唯一 owner 中（见下节 owner 表）。
+2. **Informative（只索引/摘要，不定义）**：[整体流程示例](design-concepts/总览/2-整体流程示例.md)、[demo](demo/README.md)。
+3. **Research**：[research](research/README.md)，仅作背景知识。
+4. 主题冲突时只认其 Normative owner；其余副本若与 owner 不一致，一律以 owner 为准。
+5. 版本变更必须记录 `Supersedes`（替换了哪份/哪节）。
+6. **非 owner 不得复制完整定义**：只有一句摘要 + 链接；完整算法/枚举/状态机/矩阵只允许出现在唯一 owner 中（见下节 owner 表）。
 
 ## 目标
 
@@ -51,16 +50,14 @@
 | 类别 | 文件 | 内容 |
 |---|---|---|
 | Normative | [四层整体架构与接口](design-concepts/总览/1-四层整体架构与接口.md) | 分层、职责、接口唯一基线、错误总则 |
-| Normative | [本版范围与明确不支持](design-concepts/总览/本版范围与明确不支持.md) | 本版不做什么的唯一口径（含遇到时的行为） |
-| Normative | [中层配置文档](design-concepts/中层/add-中层配置文档.md) | 全部配置 + 注册可提交参数目录 + 每用户隔离 |
-| Normative | [路由设计](design-concepts/中层/3-路由设计.md) | 5 role 拓扑与职责、五接口与 role 的对应、逐 role 探测、部署与 endpoint |
+| Normative | [本版范围与明确不支持](design-concepts/总览/add-本版范围与明确不支持.md) | 本版不做什么的唯一口径（每项含本版口径） |
+| Normative | [中层配置文档](design-concepts/中层/add-中层配置文档.md) | 字段目录唯一 owner（字段/默认值/探测写回/注册表 schema）+ reservation + endpoint key |
+| Normative | [路由设计](design-concepts/中层/3-路由设计.md) | 5 role 拓扑与职责、五接口与 role 的对应、token↔主机边界、endpoint 与连接复用 |
 | Normative | [多用户与注册](design-concepts/中层/1-多用户与注册.md) | 六步注册、token 寻址/校验、路由与授权 |
 | Normative | [并发设计](design-concepts/中层/2-并发设计.md) | 并发与限流唯一口径：排队投递/直接开通道、三预算（线程/最大通道数/单目标点上限）、建连重试 |
 | Normative | [日志返回设计标准](design-concepts/底层/6-日志返回设计标准.md) | CDS.log 增量返回唯一口径（offset 定界、分级、限长） |
-| Informative | [核心修改设计](design-concepts/总览/核心修改.md) | 五项修改的索引/摘要，不重复定义 |
-| Historical | [改动报告](design-concepts/总览/改动报告.md) | 重构前对照与历史迁移，Non-normative |
-| Historical | [代码梳理](design-concepts/底层与中层/代码梳理.md) | 旧执行机制梳理，Non-normative |
 | Research | [research/README.md](research/README.md) | Virtuoso/TB/日志/并发背景调研 |
+| Informative | [整体流程示例](design-concepts/总览/2-整体流程示例.md) | 一次请求从顶层到中层再到返回的完整流程示例（不定义机制） |
 | Demo | [demo/README.md](demo/README.md) | 脱钩最小验证（Informative，不复刻正式口径） |
 
 ## 主题 owner 表（唯一定义处，兼作冲突矩阵）
@@ -70,16 +67,16 @@
 | 主题 | 唯一 owner | 其它文档允许出现的形态 |
 |---|---|---|
 | 五接口签名、返回与错误总则（含 `kind` 枚举、保留码） | [四层整体架构与接口](design-concepts/总览/1-四层整体架构与接口.md) §4 | 一句摘要 + 链接 |
-| 五接口 ↔ role 映射、role 职责、token↔主机边界、per-role 根算法 | [路由设计](design-concepts/中层/3-路由设计.md) | 一句摘要 + 链接 |
-| 逐 role 探测矩阵、部署与文件根 | [多用户与注册](design-concepts/中层/1-多用户与注册.md) §4 | 一句摘要 + 链接 |
+| 五接口 ↔ role 映射、role 职责、token↔主机边界、连接复用拓扑 | [路由设计](design-concepts/中层/3-路由设计.md) §1.1/§2–§4 | 一句摘要 + 链接 |
+| 逐 role 探测流程（何时探测、失败级别、何时提交）与部署/根算法 | [多用户与注册](design-concepts/中层/1-多用户与注册.md) §4 | 一句摘要 + 链接 |
 | 连接数量与复用拓扑 | [路由设计](design-concepts/中层/3-路由设计.md) §4 | 一句摘要 + 链接 |
-| 字段与默认值、per-role mode/字段回退、endpoint canonical key、reservation | [中层配置文档](design-concepts/中层/add-中层配置文档.md) | 一句摘要 + 链接 |
+| 字段格式、默认值、候选/提交 schema、写回字段形态、endpoint key、reservation | [中层配置文档](design-concepts/中层/add-中层配置文档.md) | 一句摘要 + 链接 |
 | 六步注册状态机、注册 deadline、token 生命周期 | [多用户与注册](design-concepts/中层/1-多用户与注册.md) | 一句摘要 + 链接 |
 | 并发形态与排队语义、三预算与通道记账矩阵、连接生命周期、建连重试 | [并发设计](design-concepts/中层/2-并发设计.md) | 一句摘要 + 链接 |
 | CDS.log offset/frame/分级/限长/warning | [日志返回设计标准](design-concepts/底层/6-日志返回设计标准.md) | 一句摘要 + 链接 |
-| 本版不做什么（非目标清单与遇到时的行为） | [本版范围与明确不支持](design-concepts/总览/本版范围与明确不支持.md) | 一句摘要 + 链接 |
+| 本版不做什么（非目标清单与遇到时的行为） | [本版范围与明确不支持](design-concepts/总览/add-本版范围与明确不支持.md) | 一句摘要 + 链接 |
 
-**Spec CI 检查词表**（只适用于 Normative/Informative 设计文档；已标注的 Research/Historical/Demo 不适用；标题/索引行/示例标注除外）：
+**Spec CI 检查词表**（只适用于 Normative 设计文档；Informative/Research/Historical/Demo 不适用；标题/索引行/示例标注除外）：
 
 ```text
 三接口 / 三端口 / 三条数据流（子集示例标注除外）
@@ -95,23 +92,21 @@ CDS.log metadata frame 完整字节格式
 
 - **Release ID**：`SPEC-2026-09-14-r2`
 - **Normative 文件集**（7 份）：四层整体架构与接口、本版范围与明确不支持、中层配置文档、路由设计、多用户与注册、并发设计、日志返回设计标准；
-- **Normative 内容哈希**：`83e5ca520ea35a777480d61cfed0daa3f2ef7ba2703525bc831a7de809c4a0db`
-  - 算法：按相对路径排序，逐文件 SHA-256（**按 Git 提交内容计算，即 LF 行尾**；Windows 工作区受 `core.autocrlf` 影响的行尾差异不计入）的 `"<相对路径> <hex>"` 行以 LF 拼接，再取一次 SHA-256；
+- **Normative 内容哈希**：`19877c28004f2415c1d6c49a29afc2bbd609beeda396fcc54d1fd86cc79a1455`
+  - 算法：路径为**相对 `spec/` 目录**并按路径排序；逐文件 SHA-256（**按 Git 提交内容计算，即 LF 行尾**；Windows 工作区受 `core.autocrlf` 影响的行尾差异不计入）；每行 `<相对路径> <hex>` 以 LF 拼接（**行间分隔、末行无尾 LF**），再取一次 SHA-256；
 - **基线 commit**：本 Release 段所在提交即基线（见 `git log -1 -- spec/`）；任何 Normative 文档变更必须同时更新本段哈希。
 
 ## 冻结 Manifest
 
 | 文档 | 版本 | 状态 | Supersedes |
 |---|---|---|---|
-| 四层整体架构与接口 | Draft v15 | Normative | Draft v14（rejected 行补 role max_sessions exceeded 文本） |
-| 路由设计 | v11 | Normative | v10（endpoint 复用原则表） |
-| 本版范围与明确不支持 | v7 | Normative | v6（split-host 可观察合同统一为“不保证”） |
-| 中层配置文档 | Draft v20 | Normative | Draft v19（改名中层配置文档，作为多用户与注册的详细补充） |
-| 多用户与注册 | Draft v16 | Normative | Draft v15（重写：精简为注册核心，删除旧机制对照与历史段落） |
-| 并发设计 | Draft v15 | Normative | Draft v14（三预算拒绝文本明确） |
-| 日志返回设计标准 | Draft v10 | Normative | Draft v9（off 缺省口径、in-flight 措辞） |
-| 核心修改设计 | Draft v4 | Informative | Draft v3 |
-| 改动报告 / 代码梳理 | — | Historical | — |
+| 四层整体架构与接口 | Draft v18 | Normative | Draft v17（建连超时/传输失败分界；§5.7 压缩为索引） |
+| 路由设计 | v14 | Normative | v13（单目标点上限口径改为按 endpoint） |
+| 本版范围与明确不支持 | v8 | Normative | v7（重组：按主题分组，补 CDS.log 跟随 GUI 不实现口径） |
+| 中层配置文档 | Draft v25 | Normative | Draft v21–v24（合并说明见文件头 Supersedes） |
+| 多用户与注册 | Draft v18 | Normative | Draft v17（各步独立 deadline 全覆盖；失败残留口径明确） |
+| 并发设计 | Draft v17 | Normative | Draft v16（max_sessions 计数与上限改为按 endpoint） |
+| 日志返回设计标准 | Draft v11 | Normative | Draft v10（非法日志参数拒绝文本；缺省字段防御性回退说明） |
 
 > 版本链规则：每份文档的文件头 `版本 / 日期 / Supersedes` 必须与本表一致；版本号只递增，跳号必须在 `Supersedes` 中说明合并了哪些版本。
 
@@ -132,7 +127,7 @@ CDS.log metadata frame 完整字节格式
 
 ## 本版明确不支持（非目标）
 
-完整清单与“遇到时的行为”唯一口径见[本版范围与明确不支持](design-concepts/总览/本版范围与明确不支持.md)。摘要：
+完整清单与本版口径的唯一定义见[本版范围与明确不支持](design-concepts/总览/add-本版范围与明确不支持.md)。摘要：
 
 - 不提供 `purpose`、Spectre 高层业务封装（只提供 Spectre 命令执行接口）、GUI 图形化业务封装（只提供 GUI 命令执行接口）、deploy 独立 role；
 - 不支持无 token 旧客户端/旧 il、`profile`/`VB_*`/`.env` 迁移、非对称签名；
