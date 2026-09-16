@@ -58,7 +58,7 @@
 | 8 | Skill 建连没有消费 `runtime.connect_timeout` 子预算 | — | `SkillClient` 新增 `connect_timeout`，`middle` 传入 `entry.runtime.connect_timeout`；`connect` 只用 `min(剩余预算, 子预算)` | 单元/真机回归 |
 | 9 | SSH/SCP “文件不存在”被判成 `kind=command`（本地路径场景是 `path`） | — | `_result_from_rc` 识别 `no such file or directory` / `cannot stat` / `open failed` → `kind=path` | 单元回归 |
 | 10 | 注册第 5 步失败后不可重试（与 spec “可重试第五步”冲突） | 六步 TB 新增“第 5 步失败→修复环境→再 verify” | `RegistrationFlow.verify` 允许 stage=failed 且候选 entry 仍在时重跑连通性测试 | `reg-six-local/evidence.json` |
-| 11 | 第 5 步缺少 daemon user 与 `expected_user` 的比对（spec 要求 WARNING） | — | IL 解析/写入 `user=`，两个 daemon 的 banner 带上执行账号；`flow.identity_warnings()` 比对 host/user | 单元 + 真机注册（无 warning 为匹配） |
+| 11 | 第 5 步缺少 daemon user 与 `expected_user` 的比对（spec 要求 WARNING） | — | IL 解析/写入 `user=`，两个 daemon 的 banner 带上执行账号；`flow.identity_warnings()` 比对 host/user | 单元 + 真机：重新部署并重启 `vblog` 后 identity 为 `host=GLIS-DESKTOP … user=Gent`（`user=` 已落盘），比对逻辑有单元覆盖 |
 | 12 | `user update` 放行了白名单外的 `mode` | — | 白名单去掉 `mode`；六步 TB 增加“提交 mode 必须 400”负例 | `reg-six-local/evidence.json` |
 | 13 | daemon watchdog 文案不是冻结文案 | 集成测试（原断言 `TimeoutError`） | watchdog 帧改为 `SKILL execution timed out`，并剥掉帧尾 RS，客户端拿到的就是冻结文案 | `test/integration/test_daemon_handler.py` |
 | 14 | registry 载入不校验 user key（手写 `../evil` 可进内存并参与落盘路径拼接） | — | `load()` 对每个 key 调用 `validate_user_name` | 单元回归 |
