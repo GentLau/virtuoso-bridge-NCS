@@ -26,6 +26,34 @@ class BusinessResult:
     error: str | None = None
 
 
+@dataclass(frozen=True)
+class Request:
+    """Structural request model for ``demo.pipeline.run`` (顶层 §3)."""
+
+    token: str
+    local_input: str
+    remote_input: str
+    skill_code: str
+    command: str
+    remote_output: str
+    local_output: str
+    timeout: float | None = None
+    recursive: bool = False
+
+
+OPERATION_NAME = "demo.pipeline.run"
+
+
+def _validate(request: Request) -> None:
+    for name in ("token", "local_input", "remote_input", "skill_code",
+                 "command", "remote_output", "local_output"):
+        value = getattr(request, name)
+        if not isinstance(value, str) or not value:
+            raise ValueError(f"{name} must be a non-empty string")
+    if request.timeout is not None and request.timeout <= 0:
+        raise ValueError("timeout must be positive or None")
+
+
 class FileSkillCommandFilePackage:
     def __init__(self, middle: Middle) -> None:
         self.middle = middle
@@ -74,4 +102,26 @@ class FileSkillCommandFilePackage:
         return BusinessResult(True, steps)
 
 
-__all__ = ["BusinessResult", "BusinessStep", "FileSkillCommandFilePackage"]
+    def run_request(self, request: Request) -> BusinessResult:
+        """Spec-shaped entry point: ``method(request) -> Result`` (上层 §2.2)."""
+        _validate(request)
+        return self.run(
+            token=request.token,
+            local_input=request.local_input,
+            remote_input=request.remote_input,
+            skill_code=request.skill_code,
+            command=request.command,
+            remote_output=request.remote_output,
+            local_output=request.local_output,
+            timeout=request.timeout,
+            recursive=request.recursive,
+        )
+
+
+__all__ = [
+    "BusinessResult",
+    "BusinessStep",
+    "FileSkillCommandFilePackage",
+    "OPERATION_NAME",
+    "Request",
+]

@@ -14,6 +14,34 @@ class ParallelProbeResult:
     ok: bool
     results: list[dict] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
+    steps: list[dict] = field(default_factory=list)
+    error: str | None = None
+
+
+@dataclass(frozen=True)
+class Request:
+    """Structural request model for ``demo.parallel.probe``."""
+
+    token: str
+    commands: list[str]
+    uploads: list[tuple[str, str]] | None = None
+    timeout: float | None = None
+    parallel: bool = True
+    max_workers: int | None = None
+
+
+OPERATION_NAME = "demo.parallel.probe"
+
+
+def _validate(request: Request) -> None:
+    if not isinstance(request.token, str) or not request.token:
+        raise ValueError("token must be a non-empty string")
+    if not isinstance(request.commands, list) or not all(
+        isinstance(item, str) for item in request.commands
+    ):
+        raise TypeError("commands must be a list of strings")
+    if request.max_workers is not None and request.max_workers < 1:
+        raise ValueError("max_workers must be >= 1")
 
 
 class ParallelProbePackage:
@@ -60,4 +88,25 @@ class ParallelProbePackage:
         return ParallelProbeResult(success, results, errors)
 
 
-__all__ = ["ParallelProbePackage", "ParallelProbeResult"]
+    def run_request(self, request: Request) -> ParallelProbeResult:
+        """Spec-shaped entry point: ``method(request) -> Result`` (上层 §2.2)."""
+        _validate(request)
+        result = self.run(
+            token=request.token,
+            commands=request.commands,
+            uploads=[(a, b) for a, b in (request.uploads or [])],
+            timeout=request.timeout,
+            parallel=request.parallel,
+            max_workers=request.max_workers,
+        )
+        result.steps = list(result.results)
+        result.error = "; ".join(result.errors) or None
+        return result
+
+
+__all__ = [
+    "OPERATION_NAME",
+    "ParallelProbePackage",
+    "ParallelProbeResult",
+    "Request",
+]

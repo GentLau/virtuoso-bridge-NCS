@@ -41,6 +41,7 @@ Invoke-Step 'offline suites' { python -m coverage run --source=src -m pytest tes
 Invoke-Step 'fault injection TB' { python -m coverage run --source=src --append test/tb/fault_injection_tb.py --out test/tb/artifacts/fault-injection-green.json | Out-Null }
 Invoke-Step 'semantics TB' { python -m coverage run --source=src --append test/tb/semantics_tb.py --out test/tb/artifacts/semantics-green.json | Out-Null }
 Invoke-Step 'daemon log protocol TB' { python -m coverage run --source=src --append test/tb/daemon_log_protocol_tb.py --out test/tb/artifacts/log-protocol.json | Out-Null }
+Invoke-Step 'top layer HTTP TB' { python -m coverage run --source=src --append test/tb/api_server_tb.py --out test/tb/artifacts/api-server.json | Out-Null }
 
 # ---- registration over the real HTTP API ----------------------------------------
 Invoke-Step 'registration 1-6 (local)' { python -m coverage run --source=src --append test/tb/registration_http_six_step_tb.py --work-dir test/tb/artifacts/reg-six-local --user vbsixlocal --local-mode --token vb-six-local --out test/tb/artifacts/reg-six-local/evidence.json | Out-Null }

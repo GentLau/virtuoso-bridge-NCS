@@ -1,0 +1,29 @@
+{
+  "ok": true,
+  "failed": 0,
+  "elapsed_s": 4.406,
+  "results": {
+    "operations": [
+      "demo.parallel.probe",
+      "demo.pipeline.run",
+      "test.boom",
+      "virtuoso.netlist.import"
+    ],
+    "structural": "400/404 as specified",
+    "pipeline": {
+      "steps": 4,
+      "echoed_token": false
+    },
+    "business_failure": "VB-PATH-NOT-VISIBLE: C:\\Users\\user\\AppData\\Local\\Temp\\vb-api",
+    "error_isolation": "500 then next request ok",
+    "concurrent": "8/8",
+    "dispatch_purity": "no transport/socket/subprocess imports",
+    "pool_limit": {
+      "max_inflight": 1024,
+      "tested_limit": 2,
+      "accepted": 2,
+      "refused_429": 3,
+      "recovered": true
+    }
+  }
+}

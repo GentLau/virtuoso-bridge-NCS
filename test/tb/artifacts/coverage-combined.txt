@@ -4,8 +4,11 @@ src\bridge\__init__.py                               4      1    75%   6
 src\bridge\resources\ramic_bridge_daemon_3.py      332     75    77%   41-43, 51-53, 79-80, 86-87, 90-91, 99-102, 119-125, 127, 132-135, 139-145, 147, 162-164, 186, 242, 247-248, 286-288, 299-300, 358-362, 370-371, 384-385, 390-394, 398-399, 408-412, 416-417, 427-429, 433
 src\bridge\resources\ramic_bridge_daemon_27.py     327     70    79%   44-46, 54-56, 73-74, 80-81, 87-88, 91-92, 100-103, 116-122, 139, 156-158, 172, 180, 233, 238-239, 273-274, 277-279, 281-282, 290-291, 349-353, 361-362, 375-376, 382-386, 390-391, 400-404, 408-409, 416-418, 422
 src\pyapi\models.py                                 58      1    98%   100
+src\pyapi\packages\file_skill_command_file.py       60      2    97%   52, 54
 src\pyapi\packages\netlist_import.py                52      2    96%   43, 86
-src\pyapi\packages\parallel_probe.py                32      2    94%   55-56
+src\pyapi\packages\parallel_probe.py                56      4    93%   38, 44, 83-84
+src\server\api_server.py                           106     28    74%   53-54, 57, 77, 112, 149-151, 161-190, 194
+src\server\dispatch.py                              89     15    83%   39-40, 52, 54, 63, 65, 74, 89, 98-101, 107, 123-124
 src\server\registration_server.py                  227     36    84%   112, 122-124, 132, 175-176, 200-201, 204-206, 208-209, 266-267, 277-278, 281-283, 311-326, 330
 src\server\stress_server.py                        146     23    84%   54-56, 160-161, 220-221, 241-257, 261
 src\transport\budgets.py                            97      3    97%   39, 42, 132
@@ -26,6 +29,6 @@ src\transport\ssh.py                              1028    309    70%   59-61, 77
 src\transport\transfer.py                          173     13    92%   137, 371-373, 407-416, 423-425
 src\transport\tunnel.py                            269     39    86%   37, 115, 122, 166-170, 180-210, 215, 220, 264, 266-267, 275-277, 285, 323, 331, 438
 ------------------------------------------------------------------------------
-TOTAL                                             6009   1071    82%
+TOTAL                                             6250   1118    82%
 
-10 files skipped due to complete coverage.
+9 files skipped due to complete coverage.
