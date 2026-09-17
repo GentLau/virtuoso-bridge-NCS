@@ -5,15 +5,15 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 from transport.middle import BusinessServer
-from transport.registry import UserEntry, load_registry
-from transport.register.probe import allocate_local_port
-from transport.runtime_paths import set_working_dir, registry_path
+from common.registry import UserEntry, load_registry
+from register.probe import allocate_local_port
+from common.paths import override_work_dir_for_tests, registry_path
 
 VPS = "vps"
 WSL = "wsl-gent"
 
 def main() -> int:
-    wd = set_working_dir(Path(tempfile.mkdtemp(prefix="vb-mixed-")))
+    wd = override_work_dir_for_tests(Path(tempfile.mkdtemp(prefix="vb-mixed-")))
     reg = load_registry(registry_path())
     users = []
     reserved = set()

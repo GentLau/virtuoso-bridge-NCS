@@ -27,13 +27,18 @@ from pyapi.models import (
     VirtuosoResult,
 )
 from transport.budgets import CapacityExceeded
-from transport.remote_paths import RemotePathError
-from transport.registry import Registry, load_registry
+from common.remote_paths import RemotePathError
+from common.registry import Registry, load_registry
 from transport.roles import ResolvedTargets, resolve
-from transport.runtime_paths import registry_path, set_working_dir
-from transport.skill_client import SkillClient
-from transport.ssh import UnknownEffectError
-from transport.transfer import install_staged_item
+from common.paths import (
+    command_log_file,
+    override_work_dir_for_tests,
+    registry_path,
+    temp_dir,
+)
+from common.skill_client import SkillClient
+from common.ssh import UnknownEffectError, configure_command_log
+from common.transfer import install_staged_item
 from transport.tunnel import RemoteClient
 
 logger = logging.getLogger(__name__)
@@ -141,7 +146,7 @@ class _LocalCommandSession:
     reads back after the shell finishes the command.
     """
 
-    def __init__(self, cwd: str | None = None) -> None:
+    def __init__(self, cwd: str | None = None, *, err_dir: Path | None = None) -> None:
         self._lock = threading.RLock()
         self._seq = 0
         self._proc = None
@@ -149,7 +154,12 @@ class _LocalCommandSession:
         self._dead = False
         self._eof = False
         self._current = None
-        self._err_dir = Path(tempfile.mkdtemp(prefix="vb_local_err_"))
+        # 错误临时文件也放在顶层注入的工作目录下（不再直接用系统 temp）
+        if err_dir is not None:
+            err_dir.mkdir(parents=True, exist_ok=True)
+            self._err_dir = Path(tempfile.mkdtemp(prefix="local_err_", dir=err_dir))
+        else:
+            self._err_dir = Path(tempfile.mkdtemp(prefix="vb_local_err_"))
         self._cwd = None
         if cwd:
             workdir = Path(cwd).expanduser()
@@ -352,7 +362,14 @@ class _LocalCommandSession:
 
 class BusinessServer(Middle):
     def __init__(self, work_dir: str | Path | None = None) -> None:
-        set_working_dir(work_dir)
+        """Work root comes from the ``common.paths`` base (entry initializes it).
+
+        ``work_dir`` is the test/tool convenience that switches the base to an
+        explicit directory; production callers pass nothing.
+        """
+        if work_dir is not None:
+            override_work_dir_for_tests(work_dir)
+        configure_command_log(command_log_file())
         self.registry: Registry = load_registry(registry_path())
         self._clients: dict[str, RemoteClient] = {}
         self._skill_clients: dict[str, SkillClient] = {}
@@ -523,7 +540,7 @@ class BusinessServer(Middle):
         with self._lock:
             session = self._local_sessions.get(token)
             if session is None:
-                session = _LocalCommandSession(cwd=cwd)
+                session = _LocalCommandSession(cwd=cwd, err_dir=temp_dir())
                 self._local_sessions[token] = session
             return session
 

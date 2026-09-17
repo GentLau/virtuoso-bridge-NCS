@@ -7,7 +7,7 @@ from unittest import mock
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from transport.budgets import TokenBudgets
-from transport.registry import UserEntry
+from common.registry import UserEntry
 from transport.roles import resolve
 from transport.tunnel import RemoteClient
 

@@ -25,7 +25,7 @@ from urllib.parse import unquote, urlparse
 
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[2]
-_PAGE = (_PROJECT_ROOT / "src" / "server" / "registration_page.html").read_text(encoding="utf-8")
+_PAGE = (_PROJECT_ROOT / "src" / "register" / "registration_page.html").read_text(encoding="utf-8")
 _PANEL = (Path(__file__).resolve().parent / "registration_mock_panel.html").read_text(encoding="utf-8")
 
 SCENARIOS: dict[str, str] = {

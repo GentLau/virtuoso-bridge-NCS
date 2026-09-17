@@ -5,7 +5,7 @@ import sys
 import unittest
 from pathlib import Path
 
-PAGE = Path(__file__).resolve().parents[2] / "src" / "server" / "registration_page.html"
+PAGE = Path(__file__).resolve().parents[2] / "src" / "register" / "registration_page.html"
 ROLES = ("gui", "daemon", "command", "file", "spectre")
 FIELDS = ("mode", "host", "user", "jump_host", "root")
 

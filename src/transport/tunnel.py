@@ -17,12 +17,12 @@ import time
 from pathlib import Path
 
 from pyapi.models import CommandResult
-from transport.deploy import deploy_files
-from transport.registry import UserEntry
-from transport.remote_paths import RemotePathError
+from common.deploy import deploy_files
+from common.registry import UserEntry
+from common.remote_paths import RemotePathError
 from transport.budgets import CapacityExceeded, TokenBudgets
 from transport.roles import ResolvedRole, ResolvedTargets
-from transport.ssh import SSHRunner
+from common.ssh import SSHRunner
 
 logger = logging.getLogger(__name__)
 

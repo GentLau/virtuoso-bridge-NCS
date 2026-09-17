@@ -20,9 +20,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from transport.middle import BusinessServer
-from transport.register import RegistrationFlow, RegistrationRequest
-from transport.runtime_paths import set_working_dir
-from transport.ssh import SSHRunner
+from register import RegistrationFlow, RegistrationRequest
+from common.paths import override_work_dir_for_tests
+from common.ssh import SSHRunner
 
 HOST = "wsl-gent"
 USER = "Gent"
@@ -106,7 +106,7 @@ class TestLiveE2E(unittest.TestCase):
     @unittest.skipUnless(os.environ.get("VB_E2E") == "1", "set VB_E2E=1 to run live tests")
     def test_full_flow(self):
         token = "e2e-" + uuid.uuid4().hex[:8]
-        wd = set_working_dir(Path(tempfile.mkdtemp()))
+        wd = override_work_dir_for_tests(Path(tempfile.mkdtemp()))
         server = BusinessServer(wd)
 
         # 1-4. six-step registration: apply (validate + probe + deploy)

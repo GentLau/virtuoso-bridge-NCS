@@ -9,7 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
-from transport.registry import RoleConfig, UserEntry, endpoint_key
+from common.registry import RoleConfig, UserEntry, endpoint_key
 
 
 @dataclass(frozen=True)

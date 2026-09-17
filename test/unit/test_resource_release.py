@@ -9,8 +9,8 @@ from unittest import mock
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from transport.middle import BusinessServer
-from transport.registry import UserEntry, load_registry
-from transport.runtime_paths import registry_path, set_working_dir
+from common.registry import UserEntry, load_registry
+from common.paths import registry_path, override_work_dir_for_tests
 from transport.tunnel import RemoteClient
 from transport.remote_roles import resolve
 
@@ -67,7 +67,7 @@ class TestRunnerCloseStopsTunnel(unittest.TestCase):
 class TestBusinessServerClose(unittest.TestCase):
     def test_close_releases_clients_once(self):
         wd = Path(tempfile.mkdtemp())
-        set_working_dir(wd)
+        override_work_dir_for_tests(wd)
         registry = load_registry(registry_path())
         entry = UserEntry(token="tok-c", mode="remote")
         entry.ssh.default.host = "server-a"

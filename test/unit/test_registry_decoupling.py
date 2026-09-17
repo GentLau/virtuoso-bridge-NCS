@@ -17,15 +17,15 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from pyapi.models import CommandResult
 from transport.middle import BusinessServer
-from transport.register import RegistrationRequest, probe_user
-from transport.registry import (
+from register import RegistrationRequest, probe_user
+from common.registry import (
     RegistryError,
     TokenConflictError,
     UserAlreadyRegisteredError,
     UserEntry,
     load_registry,
 )
-from transport.runtime_paths import registry_path, set_working_dir
+from common.paths import registry_path, override_work_dir_for_tests
 
 
 class _FakeProbeRunner:
@@ -46,7 +46,7 @@ class _FakeProbeRunner:
 
 class TestRegistryCommitPolicy(unittest.TestCase):
     def setUp(self) -> None:
-        self.wd = set_working_dir(Path(tempfile.mkdtemp()))
+        self.wd = override_work_dir_for_tests(Path(tempfile.mkdtemp()))
         self.reg = load_registry(registry_path())
 
     def test_duplicate_user_rejected_without_overwrite(self) -> None:
@@ -85,7 +85,7 @@ class TestRegistryCommitPolicy(unittest.TestCase):
 
 class TestProbeNeverPersists(unittest.TestCase):
     def setUp(self) -> None:
-        self.wd = set_working_dir(Path(tempfile.mkdtemp()))
+        self.wd = override_work_dir_for_tests(Path(tempfile.mkdtemp()))
 
     def test_local_probe_does_not_touch_registry(self) -> None:
         result = probe_user(RegistrationRequest(user="alice", mode="local", roles={"spectre": {"bin": sys.executable}}), token="tok-1")
@@ -93,14 +93,14 @@ class TestProbeNeverPersists(unittest.TestCase):
         self.assertFalse(registry_path().exists())
 
     def test_remote_probe_returns_candidate_without_commit(self) -> None:
-        with mock.patch("transport.register.flow.SSHRunner", _FakeProbeRunner), \
-             mock.patch("transport.register.probe.detect_remote_python", return_value=("python3", 3)), \
-             mock.patch("transport.register.probe.allocate_remote_port", return_value=65081), \
-             mock.patch("transport.register.probe.remote_hostname", return_value="compute-a"), \
-             mock.patch("transport.register.probe.remote_user", return_value="alice"), \
-             mock.patch("transport.register.probe.remote_user_exists", return_value=True), \
-             mock.patch("transport.register.probe.remote_path_writable", return_value=True), \
-             mock.patch("transport.register.probe.host_key_fingerprint", return_value="SHA256:abc"):
+        with mock.patch("register.flow.SSHRunner", _FakeProbeRunner), \
+             mock.patch("register.probe.detect_remote_python", return_value=("python3", 3)), \
+             mock.patch("register.probe.allocate_remote_port", return_value=65081), \
+             mock.patch("register.probe.remote_hostname", return_value="compute-a"), \
+             mock.patch("register.probe.remote_user", return_value="alice"), \
+             mock.patch("register.probe.remote_user_exists", return_value=True), \
+             mock.patch("register.probe.remote_path_writable", return_value=True), \
+             mock.patch("register.probe.host_key_fingerprint", return_value="SHA256:abc"):
             result = probe_user(
                 RegistrationRequest(mode="remote", user="alice", ssh={"default": {"host": "compute-a", "user": "alice"}}),
                 token="tok-1",
@@ -112,7 +112,7 @@ class TestProbeNeverPersists(unittest.TestCase):
 
 class TestRuntimeFacadePurity(unittest.TestCase):
     def setUp(self) -> None:
-        self.wd = set_working_dir(Path(tempfile.mkdtemp()))
+        self.wd = override_work_dir_for_tests(Path(tempfile.mkdtemp()))
 
     def test_business_server_has_no_setup_phase_methods(self) -> None:
         server = BusinessServer(self.wd)

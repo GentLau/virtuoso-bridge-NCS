@@ -5,9 +5,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from transport.registry import UserEntry
+from common.registry import UserEntry
 from transport.roles import fingerprint_conflicts, resolve
-from transport.validation import validate_token, validate_user_name
+from common.validation import validate_token, validate_user_name
 
 
 class TestValidation(unittest.TestCase):

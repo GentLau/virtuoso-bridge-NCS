@@ -21,11 +21,27 @@ from typing import Any
 
 from server import dispatch as dispatch_module
 from server.dispatch import dispatch
+from common.paths import init_work_dir, server_config_path
 
 
-#: Top-layer overall thread-pool size.  Provisional value for this version; it
-#: becomes a configuration item later (see 接口调用指南 §1.2).
+#: Top-layer overall thread-pool size when ``server.json`` does not set
+#: ``business_thread_pool_size`` (spec 顶层补充 §5 owns the config file).
 DEFAULT_MAX_INFLIGHT = 1024
+
+#: Global config snapshot file (startup import once; PUT /api/config writes it).
+CONFIG_FILENAME = "server.json"
+
+
+def load_business_thread_pool_size(config_path: Path) -> int:
+    """Read the business pool size from the config snapshot, once at startup."""
+    try:
+        data = json.loads(config_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return DEFAULT_MAX_INFLIGHT
+    value = data.get("business_thread_pool_size")
+    if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+        return DEFAULT_MAX_INFLIGHT
+    return value
 
 #: Fixed over-limit answer: the request was *not* accepted; the caller may retry.
 BUSY_ERROR = "server thread pool exceeded (max {limit} in-flight), please retry"
@@ -62,14 +78,34 @@ class ApiHandler(BaseHTTPRequestHandler):
 
     # -- routes ----------------------------------------------------------------
     def do_GET(self) -> None:  # noqa: N802
-        if self.path.split("?")[0] == "/api/operations":
-            # operational metadata only: what this process can dispatch
+        path = self.path.split("?")[0]
+        server = self.server  # type: ignore[assignment]
+        if path == "/health":
+            self._send(200, {
+                "ok": True,
+                "data": {"status": "ok", "face": "business",
+                         "operations": len(dispatch_module.operations()),
+                         "in_flight": server.in_flight(),
+                         "max_inflight": server.max_inflight},
+                "error": None,
+            })
+            return
+        if path == "/help":
+            # 端点清单与用法说明（顶层补充 §4）
             self._send(200, {
                 "ok": True,
                 "data": {
+                    "face": "business",
+                    "endpoints": ["POST /api/operation", "GET /health", "GET /help"],
                     "operations": dispatch_module.operations(),
                     "package_load_errors": dispatch_module.PACKAGE_LOAD_ERRORS,
-                    "max_inflight": self.server.max_inflight,  # type: ignore[attr-defined]
+                    "max_inflight": server.max_inflight,
+                    "usage": {
+                        "method": "POST",
+                        "path": "/api/operation",
+                        "body": {"operation": "<业务操作名>", "token": "<个人 token>",
+                                 "…": "业务字段"},
+                    },
                 },
                 "error": None,
             })
@@ -77,6 +113,9 @@ class ApiHandler(BaseHTTPRequestHandler):
         self._send(404, {"ok": False, "data": None, "error": "not found"})
 
     def do_POST(self) -> None:  # noqa: N802
+        if self.path.split("?")[0] != "/api/operation":
+            self._send(404, {"ok": False, "data": None, "error": "not found"})
+            return
         ok, payload = self._read_json()
         if not ok:
             self._send(400, {"ok": False, "data": None, "error": "invalid JSON body"})
@@ -124,6 +163,10 @@ class ApiServer(ThreadingHTTPServer):
         except ValueError:  # pragma: no cover - release without acquire
             pass
 
+    def in_flight(self) -> int:
+        """Currently occupied pool slots (operational metadata for /health)."""
+        return self.max_inflight - self._slots._value  # type: ignore[attr-defined]
+
 
 #: Explicit package table (顶层 §2.1 / 上层 §4.1): one row per business *package*;
 #: ``(module, package class, operation metadata attr)``.  The operation entries
@@ -132,6 +175,8 @@ class ApiServer(ThreadingHTTPServer):
 PACKAGES = (
     ("pyapi.packages.basic", "Package", "OPERATIONS"),
     ("pyapi.packages.demo", "Package", "OPERATIONS"),
+    ("pyapi.packages.gui", "Package", "OPERATIONS"),
+    ("pyapi.packages.cellview", "Package", "OPERATIONS"),
 )
 
 
@@ -159,15 +204,21 @@ def build_server(host: str, port: int, middle, *,
     return ApiServer((host, port), middle, max_inflight=max_inflight)
 
 
+def build_middle(work_dir: str | None = None):
+    """Assembly helper: initialize the shared base once, then build the middle."""
+    from transport.middle import BusinessServer
+
+    init_work_dir(work_dir)
+    return BusinessServer()
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description="virtuoso-bridge top layer (HTTP)")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8126)
     parser.add_argument("--work-dir", default=None,
-                        help="directory holding registry.json (assembly only)")
-    parser.add_argument("--max-inflight", type=int, default=DEFAULT_MAX_INFLIGHT,
-                        help="top-layer overall thread-pool size (provisional, "
-                             f"default {DEFAULT_MAX_INFLIGHT})")
+                        help="directory holding registry.json + server.json "
+                             "(assembly only)")
     args = parser.parse_args(argv)
 
     errors = register_packages()
@@ -177,12 +228,15 @@ def main(argv: list[str] | None = None) -> None:
     # process assembly: the only place that knows about the middle layer
     from transport.middle import BusinessServer
 
-    middle = BusinessServer(args.work_dir)
-    server = build_server(args.host, args.port, middle,
-                          max_inflight=args.max_inflight)
-    print(f"virtuoso-bridge API: http://{args.host}:{args.port}  "
+    # 本机路径由顶层解析一次，注入中层（中层不再自己决定工作目录）
+    init_work_dir(args.work_dir)          # 进程级环境：入口初始化一次
+    middle = BusinessServer()
+    # global config snapshot: imported once at startup, never read per request
+    pool_size = load_business_thread_pool_size(server_config_path())
+    server = build_server(args.host, args.port, middle, max_inflight=pool_size)
+    print(f"virtuoso-bridge API (business): http://{args.host}:{args.port}  "
           f"({len(dispatch_module.operations())} operations, "
-          f"max_inflight={args.max_inflight})")
+          f"business_thread_pool_size={pool_size})")
     try:
         server.serve_forever()
     except KeyboardInterrupt:

@@ -22,9 +22,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from _win import no_window  # noqa: E402  (hide Windows consoles for ssh/scp)
 
-from transport.register import RegistrationFlow, RegistrationRequest
-from transport.registry import load_registry
-from transport.runtime_paths import registry_path, set_working_dir
+from register import RegistrationFlow, RegistrationRequest
+from common.registry import load_registry
+from common.paths import registry_path, override_work_dir_for_tests
 
 HOST = "wsl-gent"
 SSH_USER = "Gent"
@@ -93,7 +93,7 @@ def main(argv=None):
     args = parser.parse_args(argv)
 
     wd = Path(args.work_dir) if args.work_dir else Path(tempfile.mkdtemp())
-    set_working_dir(wd)
+    override_work_dir_for_tests(wd)
     if args.clean:
         ssh("pkill -f 'project/vb0[0-9]' 2>/dev/null; pkill -f 'virtuoso-bridge/vb0[0-9]' 2>/dev/null; sleep 2; echo cleaned")
     registry = load_registry(registry_path())

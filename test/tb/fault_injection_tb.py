@@ -25,10 +25,10 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from transport.registry import Registry, UserEntry, load_registry  # noqa: E402
+from common.registry import Registry, UserEntry, load_registry  # noqa: E402
 from transport.roles import resolve  # noqa: E402
-from transport.runtime_paths import registry_path, set_working_dir  # noqa: E402
-from transport.ssh import SSHRunner  # noqa: E402
+from common.paths import registry_path, override_work_dir_for_tests  # noqa: E402
+from common.ssh import SSHRunner  # noqa: E402
 from transport.tunnel import RemoteClient  # noqa: E402
 from transport.middle import BusinessServer  # noqa: E402
 from pyapi.models import ExecutionStatus, VirtuosoResult  # noqa: E402
@@ -291,8 +291,8 @@ def case_daemon_log_protocol():
 def case_runtime_cache_invalidation():
     """A live BusinessServer must not keep a stale token cache after overwrite."""
     wd = temp_dir("vb-fault-cache-")
-    set_working_dir(wd)
-    reg = load_registry()
+    override_work_dir_for_tests(wd)
+    reg = load_registry(registry_path())
     first = make_remote_entry("tok-cache")
     reg.register("alice", first)
     server = BusinessServer(wd)
@@ -324,8 +324,8 @@ class BlockingSkillClient:
 def case_skill_capacity_fields():
     """r3: Skill capacity rejection lives in errors, never a kind field."""
     wd = temp_dir("vb-fault-cap-")
-    set_working_dir(wd)
-    reg = load_registry()
+    override_work_dir_for_tests(wd)
+    reg = load_registry(registry_path())
     entry = UserEntry(token="tok-cap", mode="local")
     entry.runtime.thread_pool_size = 1
     reg.register("alice", entry)
@@ -356,8 +356,8 @@ def case_skill_capacity_fields():
 def case_skill_queue_before_delivery():
     """r3: queued Skill timeout is withdrawn before delivery."""
     wd = temp_dir("vb-fault-queue-")
-    set_working_dir(wd)
-    reg = load_registry()
+    override_work_dir_for_tests(wd)
+    reg = load_registry(registry_path())
     entry = UserEntry(token="tok-queue", mode="local")
     entry.runtime.thread_pool_size = 2
     reg.register("alice", entry)
@@ -385,7 +385,7 @@ def case_skill_queue_before_delivery():
 
 def case_windows_casefold_overwrite():
     """Windows case-insensitive overwrite must replace, not duplicate, the user."""
-    import transport.registry as registry_mod
+    import common.registry as registry_mod
 
     wd = temp_dir("vb-fault-casefold-")
     reg = Registry(wd / "registry.json").load()

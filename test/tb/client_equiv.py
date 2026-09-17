@@ -7,9 +7,9 @@ _root = Path(__file__).resolve().parents[2]
 if (_root / "src").is_dir():
     sys.path.insert(0, str(_root / "src"))
 from transport.middle import BusinessServer
-from transport.registry import UserEntry, load_registry
-from transport.register.probe import allocate_local_port
-from transport.runtime_paths import set_working_dir, registry_path
+from common.registry import UserEntry, load_registry
+from register.probe import allocate_local_port
+from common.paths import override_work_dir_for_tests, registry_path
 
 VPS = "vps"
 
@@ -22,7 +22,7 @@ def main():
     ap.add_argument("--concurrency", type=int, default=32)
     args = ap.parse_args()
 
-    wd = set_working_dir(Path(tempfile.mkdtemp(prefix="vb-equiv-")))
+    wd = override_work_dir_for_tests(Path(tempfile.mkdtemp(prefix="vb-equiv-")))
     reg = load_registry(registry_path())
     users = []
     reserved = set()

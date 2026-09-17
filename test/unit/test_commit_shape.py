@@ -6,8 +6,8 @@ from pydantic import ValidationError
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from transport.registry import UserEntry
-from transport.register.candidate import validate_commit_shape
+from common.registry import UserEntry
+from register.candidate import validate_commit_shape
 
 
 def local_entry():

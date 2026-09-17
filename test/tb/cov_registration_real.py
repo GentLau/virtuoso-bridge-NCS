@@ -5,9 +5,9 @@ import argparse
 import json
 from pathlib import Path
 
-from transport.register import RegistrationFlow, RegistrationRequest
-from transport.registry import load_registry
-from transport.runtime_paths import set_working_dir
+from register import RegistrationFlow, RegistrationRequest
+from common.registry import load_registry
+from common.paths import registry_path, override_work_dir_for_tests  # noqa: E402
 
 
 def main() -> int:
@@ -24,8 +24,8 @@ def main() -> int:
 
     wd = Path(args.work_dir).resolve()
     wd.mkdir(parents=True, exist_ok=True)
-    set_working_dir(wd)
-    registry = load_registry()
+    override_work_dir_for_tests(wd)
+    registry = load_registry(registry_path())
     flow = RegistrationFlow(registry)
     state = flow.apply(RegistrationRequest(
         mode="remote", user=args.user, token=args.token,

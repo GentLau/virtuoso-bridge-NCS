@@ -20,9 +20,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from transport.register import RegistrationFlow, RegistrationRequest
-from transport.registry import load_registry
-from transport.runtime_paths import registry_path, set_working_dir
+from register import RegistrationFlow, RegistrationRequest
+from common.registry import load_registry
+from common.paths import registry_path, override_work_dir_for_tests
 from _win import no_window  # noqa: E402  (hide Windows consoles for ssh/scp)
 
 HOST = "wsl-gent"
@@ -96,7 +96,7 @@ def send_load(setup, token, port):
 def main():
     token = "stress-" + uuid.uuid4().hex[:8]
     wd = Path(tempfile.mkdtemp())
-    set_working_dir(wd)
+    override_work_dir_for_tests(wd)
     registry = load_registry(registry_path())
 
     flow = RegistrationFlow(registry)

@@ -38,13 +38,15 @@ if str(SRC) not in sys.path:
 from server import dispatch as dispatch_module  # noqa: E402
 from server.api_server import (  # noqa: E402
     BUSY_ERROR,
+    CONFIG_FILENAME,
     DEFAULT_MAX_INFLIGHT,
     build_server,
+    load_business_thread_pool_size,
     register_packages,
 )
 from transport.middle import BusinessServer  # noqa: E402
-from transport.registry import UserEntry, load_registry  # noqa: E402
-from transport.runtime_paths import set_working_dir  # noqa: E402
+from common.registry import UserEntry, load_registry  # noqa: E402
+from common.paths import registry_path, override_work_dir_for_tests  # noqa: E402
 
 
 class ProbeFailure(AssertionError):
@@ -116,7 +118,7 @@ def _free_port() -> int:
         return probe.getsockname()[1]
 
 
-def _post(base: str, payload, *, raw: bytes | None = None, path: str = "/"):
+def _post(base: str, payload, *, raw: bytes | None = None, path: str = "/api/operation"):
     data = raw if raw is not None else json.dumps(payload).encode("utf-8")
     request = urllib.request.Request(
         base + path, data=data, method="POST",
@@ -135,8 +137,8 @@ def main() -> int:
     args = parser.parse_args()
 
     work_dir = Path(tempfile.mkdtemp(prefix="vb-api-tb-"))
-    set_working_dir(work_dir)
-    registry = load_registry()
+    override_work_dir_for_tests(work_dir)
+    registry = load_registry(registry_path())
     token = f"tok-api-{uuid.uuid4().hex[:8]}"
     daemon_port = _free_port()
     entry = UserEntry(token=token, mode="local")
@@ -154,6 +156,20 @@ def main() -> int:
     errors = register_packages()
     if errors:
         raise ProbeFailure(f"packages failed to load: {errors}")
+
+    # spec 守卫（顶层 §2.4 / 上层 §2.2）：业务包构造只允许接收一个 Middle
+    seen_ctor_args: list[tuple] = []
+
+    class _CtorGuardPackage:
+        def __init__(self, *args) -> None:
+            seen_ctor_args.append(args)
+
+        def run(self, _request):
+            return {"ok": True, "steps": [{"name": "ctor", "ok": True,
+                                           "detail": {"argc": len(seen_ctor_args[-1])}}],
+                    "error": None, "argc": len(seen_ctor_args[-1])}
+
+    dispatch_module.register_operation("test.ctor", _CtorGuardPackage, "run", dict)
 
     # a test-only operation that raises an unexpected error (5xx path)
     class _BoomPackage:
@@ -173,9 +189,15 @@ def main() -> int:
     results: dict[str, object] = {}
     started = time.monotonic()
     try:
-        # -- operations listing ------------------------------------------------
-        with urllib.request.urlopen(base + "/api/operations", timeout=30) as response:
+        # -- health / help（业务端口运维端点，顶层补充 §4）---------------------
+        with urllib.request.urlopen(base + "/health", timeout=30) as response:
+            health = json.loads(response.read().decode("utf-8"))
+        if response.status != 200 or health["data"]["face"] != "business":
+            raise ProbeFailure(f"business /health failed: {health}")
+        with urllib.request.urlopen(base + "/help", timeout=30) as response:
             listing = json.loads(response.read().decode("utf-8"))
+        if "POST /api/operation" not in listing["data"]["endpoints"]:
+            raise ProbeFailure(f"business /help lacks the operation endpoint: {listing}")
         ops = set(listing["data"]["operations"])
         required = {
             "basic.skill.execute", "basic.command.run", "basic.file.upload",
@@ -206,7 +228,11 @@ def main() -> int:
         status, body = _post(base, {"operation": "basic.command.run", "token": token})
         if status != 400:
             raise ProbeFailure(f"basic.command.run without cmd must be 400: {status} {body}")
-        results["structural"] = "400/404 as specified"
+        status, body = _post(base, {"operation": "basic.command.run", "token": token,
+                                    "cmd": "echo x"}, path="/")
+        if status != 404:
+            raise ProbeFailure(f"business port must only serve /api/operation: {status} {body}")
+        results["structural"] = "400/404 as specified (path isolation)"
 
         # -- basic package: six direct middle passthroughs ----------------------
         marker = f"BASIC-{uuid.uuid4().hex[:8]}"
@@ -355,9 +381,40 @@ def main() -> int:
         else:
             raise ProbeFailure("duplicate operation registration was accepted")
 
-        # -- top-layer overall pool: over-limit is refused immediately (429) ----
+        # -- global config snapshot: business_thread_pool_size from server.json --
         if DEFAULT_MAX_INFLIGHT != 1024:
-            raise ProbeFailure(f"provisional pool size drifted: {DEFAULT_MAX_INFLIGHT}")
+            raise ProbeFailure(f"provisional default drifted: {DEFAULT_MAX_INFLIGHT}")
+        config_path = work_dir / CONFIG_FILENAME
+        config_path.write_text(json.dumps({"business_thread_pool_size": 7}),
+                               encoding="utf-8")
+        if load_business_thread_pool_size(config_path) != 7:
+            raise ProbeFailure("server.json business_thread_pool_size was not honoured")
+        config_path.write_text(json.dumps({"business_thread_pool_size": 0}),
+                               encoding="utf-8")
+        if load_business_thread_pool_size(config_path) != DEFAULT_MAX_INFLIGHT:
+            raise ProbeFailure("invalid pool size must fall back to the default")
+        config_path.write_text("{not json", encoding="utf-8")
+        if load_business_thread_pool_size(config_path) != DEFAULT_MAX_INFLIGHT:
+            raise ProbeFailure("broken server.json must fall back to the default")
+        results["config_snapshot"] = {
+            "file": CONFIG_FILENAME,
+            "honoured": 7,
+            "fallback": DEFAULT_MAX_INFLIGHT,
+        }
+
+        # -- spec 守卫：dispatch 只把 Middle 传给业务包（顶层 §2.4 / 上层 §2.2）---
+        status, body = _post(base, {"operation": "test.ctor", "token": token})
+        if status != 200 or body.get("ok") is not True:
+            raise ProbeFailure(f"constructor guard package failed: {status} {body}")
+        if body["data"].get("argc") != 1:
+            raise ProbeFailure(
+                f"business package must be constructed with Middle only: argc="
+                f"{body['data'].get('argc')}"
+            )
+        first_arg = seen_ctor_args[-1][0]
+        if not hasattr(first_arg, "execute_skill"):
+            raise ProbeFailure("the single constructor argument is not the Middle")
+        results["ctor_contract"] = {"arguments": 1, "argument": type(first_arg).__name__}
 
         class _SlowPackage:
             def __init__(self, _middle) -> None:

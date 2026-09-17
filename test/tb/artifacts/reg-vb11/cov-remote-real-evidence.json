@@ -3,13 +3,13 @@
     {
       "name": "skill",
       "ok": true,
-      "output": "\"cov-skill-49e6e3e3a4\""
+      "output": "\"cov-skill-e61b0750d4\""
     },
     {
       "name": "command",
       "ok": true,
       "kind": "command",
-      "stdout": "cov-cmd-9b3dd2348e\n"
+      "stdout": "cov-cmd-3aba30f8e0\n"
     },
     {
       "name": "file",
@@ -21,13 +21,13 @@
       "name": "gui",
       "ok": true,
       "kind": "command",
-      "stdout": "cov-gui-7bb580d9ea\n"
+      "stdout": "cov-gui-913c3befad\n"
     },
     {
       "name": "spectre",
       "ok": true,
       "kind": "command",
-      "stdout": "cov-spectre-17e3bb701a\n"
+      "stdout": "cov-spectre-6e247c797e\n"
     }
   ],
   "ok": true,

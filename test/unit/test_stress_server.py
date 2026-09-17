@@ -14,8 +14,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from transport.middle import BusinessServer
-from transport.registry import UserEntry, load_registry
-from transport.runtime_paths import registry_path, set_working_dir
+from common.registry import UserEntry, load_registry
+from common.paths import registry_path, override_work_dir_for_tests
 from server.stress_server import StressServer
 
 
@@ -58,7 +58,7 @@ class FakeDaemon:
 class TestStressServer(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.wd = set_working_dir(Path(tempfile.mkdtemp()))
+        cls.wd = override_work_dir_for_tests(Path(tempfile.mkdtemp()))
         daemon = FakeDaemon("tok-1")
         registry = load_registry(registry_path())
         entry = UserEntry(token="tok-1", mode="local")

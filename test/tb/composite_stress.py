@@ -27,9 +27,9 @@ _src = Path(__file__).resolve().parents[2] / "src"
 if _src.is_dir():
     sys.path.insert(0, str(_src))
 
-from transport.registry import UserEntry, load_registry
-from transport.register.probe import allocate_local_port
-from transport.runtime_paths import set_working_dir, registry_path
+from common.registry import UserEntry, load_registry
+from register.probe import allocate_local_port
+from common.paths import override_work_dir_for_tests, registry_path
 
 SPECTRE = "/opt/eda/cadence/SPECTRE241/bin/spectre"
 WSL_ROOT = "/home/Gent/.virtuoso-bridge"
@@ -120,7 +120,7 @@ def main():
                     help="file that receives the stress server's stdout/stderr")
     args = ap.parse_args()
 
-    wd = set_working_dir(Path(tempfile.mkdtemp(prefix="vb-comp-")))
+    wd = override_work_dir_for_tests(Path(tempfile.mkdtemp(prefix="vb-comp-")))
     reg = load_registry(registry_path())
     users = []
     reserved = set()
@@ -139,7 +139,7 @@ def main():
             users.append((user, token, "fake"))
     else:
         # wsl client: 4 local real users + 4 vps fake users
-        from transport.register import RegistrationFlow, RegistrationRequest
+        from register import RegistrationFlow, RegistrationRequest
         for n in range(4):
             user, token, port = f"lc{n:02d}", f"l-lc{n:02d}", 65411 + n
             flow = RegistrationFlow(reg)

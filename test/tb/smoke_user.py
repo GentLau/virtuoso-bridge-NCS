@@ -22,10 +22,10 @@ from pathlib import Path
 _src = Path(__file__).resolve().parents[2] / "src"
 sys.path.insert(0, str(_src))
 
-from transport.registry import UserEntry, load_registry  # noqa: E402
-from transport.register.probe import allocate_local_port  # noqa: E402
+from common.registry import UserEntry, load_registry  # noqa: E402
+from register.probe import allocate_local_port  # noqa: E402
 from transport.middle import BusinessServer  # noqa: E402
-from transport.runtime_paths import registry_path, set_working_dir  # noqa: E402
+from common.paths import registry_path, override_work_dir_for_tests  # noqa: E402
 
 
 def main():
@@ -42,7 +42,7 @@ def main():
     args = ap.parse_args()
 
     token = args.token or f"smoke-{args.user}"
-    wd = set_working_dir(Path(tempfile.mkdtemp(prefix="vb-smoke-")))
+    wd = override_work_dir_for_tests(Path(tempfile.mkdtemp(prefix="vb-smoke-")))
     reg = load_registry(registry_path())
     entry = UserEntry(token=token, mode=args.mode)
     entry.roles.daemon.daemon_port = args.daemon_port

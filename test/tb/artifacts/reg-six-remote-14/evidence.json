@@ -2,10 +2,10 @@
   "ok": true,
   "phase": "1-4 (remote)",
   "user": "vbsixremote",
-  "token": "vbsixd5a0fb-00",
+  "token": "vbsixec56c2-00",
   "host": "wsl-gent",
   "daemon_port": 65133,
-  "http_port": 60851,
+  "http_port": 63066,
   "work_dir": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\reg-six-remote-14",
   "steps": [
     {
@@ -13,7 +13,15 @@
       "action": "apply",
       "status": 200,
       "stage": "applied",
-      "step_field": 1
+      "step_field": 1,
+      "token_returned": true
+    },
+    {
+      "action": "verify-before-deploy",
+      "status": 400,
+      "error": "step order violation",
+      "current_stage": "applied",
+      "expected": "deployed"
     },
     {
       "step": 2,
@@ -44,11 +52,11 @@
   "http_trail": [
     {
       "method": "POST",
-      "path": "/api/register/apply",
+      "path": "/api/register",
       "status": 200,
       "request": {
-        "user": "vbsixremote",
-        "token": "vbsixd5a0fb-00",
+        "action": "apply",
+        "token": "vbsixec56c2-00",
         "mode": "remote",
         "ssh": {
           "default": {
@@ -62,51 +70,100 @@
         "roles": {
           "daemon": {
             "daemon_port": 65133,
-            "local_port": 60852,
+            "local_port": 63067,
             "root": "/home/Gent/.virtuoso-bridge/vbsixremote"
           }
         },
         "log_level": "off",
         "thread_pool_size": 8,
-        "channel_budget": 8
+        "channel_budget": 8,
+        "user": "vbsixremote"
       },
       "response": {
         "user": "vbsixremote",
         "stage": "applied",
         "step": 1,
-        "token": "vbsixd5a0fb-00",
+        "token": "vbsixec56c2-00",
         "errors": [],
         "warnings": []
       }
     },
     {
       "method": "POST",
-      "path": "/api/register/vbsixremote/validate",
+      "path": "/api/register",
+      "status": 400,
+      "request": {
+        "user": "vbsixremote",
+        "action": "verify",
+        "token": "vbsixec56c2-00"
+      },
+      "response": {
+        "error": "step order violation",
+        "current_stage": "applied",
+        "expected": "deployed"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/register",
+      "status": 400,
+      "request": {
+        "user": "vbsixremote",
+        "action": "validate"
+      },
+      "response": {
+        "error": "invalid token"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/register",
+      "status": 400,
+      "request": {
+        "user": "vbsixremote",
+        "action": "validate",
+        "token": "not-the-session-token"
+      },
+      "response": {
+        "error": "invalid token"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/register",
       "status": 200,
-      "request": null,
+      "request": {
+        "user": "vbsixremote",
+        "action": "validate",
+        "token": "vbsixec56c2-00"
+      },
       "response": {
         "user": "vbsixremote",
         "stage": "validated",
         "step": 2,
-        "token": "vbsixd5a0fb-00",
+        "token": "vbsixec56c2-00",
         "errors": [],
         "warnings": []
       }
     },
     {
       "method": "POST",
-      "path": "/api/register/vbsixremote/probe",
+      "path": "/api/register",
       "status": 200,
-      "request": null,
+      "request": {
+        "user": "vbsixremote",
+        "action": "probe",
+        "token": "vbsixec56c2-00"
+      },
       "response": {
         "user": "vbsixremote",
         "stage": "probed",
         "step": 3,
-        "token": "vbsixd5a0fb-00",
+        "token": "vbsixec56c2-00",
         "errors": [],
         "warnings": [],
         "entry": {
-          "token": "vbsixd5a0fb-00",
+          "token": "vbsixec56c2-00",
           "mode": {
             "default": "remote"
           },
@@ -148,7 +205,7 @@
               "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
               "max_sessions": 10,
               "daemon_port": 65133,
-              "local_port": 60852,
+              "local_port": 63067,
               "python": "/opt/eda/cadence/IC618/tools.lnx86/python/64bit/bin/python3",
               "expected_hostname": "GLIS-DESKTOP.localdomain",
               "expected_user": "Gent"
@@ -203,19 +260,23 @@
     },
     {
       "method": "POST",
-      "path": "/api/register/vbsixremote/deploy",
+      "path": "/api/register",
       "status": 200,
-      "request": null,
+      "request": {
+        "user": "vbsixremote",
+        "action": "deploy",
+        "token": "vbsixec56c2-00"
+      },
       "response": {
         "user": "vbsixremote",
         "stage": "deployed",
         "step": 4,
-        "token": "vbsixd5a0fb-00",
+        "token": "vbsixec56c2-00",
         "errors": [],
         "warnings": [],
         "setup_path": "/home/Gent/.virtuoso-bridge/vbsixremote/setup/virtuoso_setup.il",
         "entry": {
-          "token": "vbsixd5a0fb-00",
+          "token": "vbsixec56c2-00",
           "mode": {
             "default": "remote"
           },
@@ -257,7 +318,7 @@
               "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
               "max_sessions": 10,
               "daemon_port": 65133,
-              "local_port": 60852,
+              "local_port": 63067,
               "python": "/opt/eda/cadence/IC618/tools.lnx86/python/64bit/bin/python3",
               "expected_hostname": "GLIS-DESKTOP.localdomain",
               "expected_user": "Gent"
@@ -311,5 +372,5 @@
       }
     }
   ],
-  "elapsed_s": 18.43700000003446
+  "elapsed_s": 18.811999999918044
 }

@@ -4,9 +4,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 from _win import no_window  # noqa: E402  (hide Windows consoles for ssh/scp)
 
-from transport.registry import UserEntry, load_registry
-from transport.register.probe import allocate_local_port
-from transport.runtime_paths import set_working_dir, registry_path
+from common.registry import UserEntry, load_registry
+from register.probe import allocate_local_port
+from common.paths import override_work_dir_for_tests, registry_path
 from server.stress_server import StressServer
 from transport.middle import BusinessServer
 
@@ -35,7 +35,7 @@ def main():
     ap.add_argument("--requests", type=int, default=12)
     args = ap.parse_args()
 
-    wd = set_working_dir(Path(tempfile.mkdtemp(prefix="vb-logver-")))
+    wd = override_work_dir_for_tests(Path(tempfile.mkdtemp(prefix="vb-logver-")))
     reg = load_registry(registry_path())
     e = UserEntry(token="vb-vb01", mode="remote")
     e.roles.daemon.host = "wsl-gent"; e.roles.daemon.daemon_port = 65101

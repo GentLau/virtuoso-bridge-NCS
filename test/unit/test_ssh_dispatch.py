@@ -9,8 +9,8 @@ from unittest import mock
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from pyapi.models import CommandResult
-from transport import ssh as ssh_mod
-from transport.ssh import SSHRunner, UnknownEffectError
+from common import ssh as ssh_mod
+from common.ssh import SSHRunner, UnknownEffectError
 
 
 def openssh_runner(**kw):

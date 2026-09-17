@@ -14,9 +14,9 @@ from unittest import mock
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from pyapi.models import CommandResult
-from transport.registry import UserEntry
+from common.registry import UserEntry
 from transport.remote_roles import resolve
-from transport.runtime_paths import set_working_dir
+from common.paths import override_work_dir_for_tests
 from transport.tunnel import RemoteClient
 
 
@@ -77,7 +77,7 @@ def make_entry(*, skill_host="daemon-a", command_host="daemon-a", file_host="dae
 
 class TestRemoteClientTunnel(unittest.TestCase):
     def setUp(self) -> None:
-        set_working_dir(Path(tempfile.mkdtemp()))
+        override_work_dir_for_tests(Path(tempfile.mkdtemp()))
         FakeRunner.instances.clear()
 
     def test_ensure_tunnel_passes_remote_port_kwarg(self) -> None:
@@ -152,14 +152,14 @@ class TestRemoteClientTunnel(unittest.TestCase):
 
 class TestSSHRunnerParamikoBackend(unittest.TestCase):
     def setUp(self) -> None:
-        set_working_dir(Path(tempfile.mkdtemp()))
+        override_work_dir_for_tests(Path(tempfile.mkdtemp()))
 
     def test_paramiko_backend_constructs(self) -> None:
         try:
             import paramiko  # noqa: F401
         except ImportError:
             self.skipTest("paramiko not installed")
-        from transport.ssh import SSHRunner
+        from common.ssh import SSHRunner
 
         runner = SSHRunner("127.0.0.1", user="u", backend="paramiko", connect_timeout=5)
         try:
@@ -169,7 +169,7 @@ class TestSSHRunnerParamikoBackend(unittest.TestCase):
             runner.close()
 
     def test_unsupported_backend_rejected(self) -> None:
-        from transport.ssh import SSHRunner
+        from common.ssh import SSHRunner
 
         with self.assertRaises(ValueError):
             SSHRunner("127.0.0.1", backend="bogus")

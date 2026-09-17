@@ -11,10 +11,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from pyapi.models import CommandResult, VirtuosoResult, ExecutionStatus
 from transport.middle import BusinessServer
-from transport.registry import UserEntry, load_registry
-from transport.remote_paths import RemotePathError
-from transport.runtime_paths import registry_path, set_working_dir
-from transport.ssh import UnknownEffectError
+from common.registry import UserEntry, load_registry
+from common.remote_paths import RemotePathError
+from common.paths import registry_path, override_work_dir_for_tests
+from common.ssh import UnknownEffectError
 
 
 class FakeRemote:
@@ -69,7 +69,7 @@ def remote_entry():
 class MiddleContractBase(unittest.TestCase):
     def setUp(self):
         wd = Path(tempfile.mkdtemp())
-        set_working_dir(wd)
+        override_work_dir_for_tests(wd)
         registry = load_registry(registry_path())
         registry.register("alice", remote_entry())
         self.server = BusinessServer(wd)

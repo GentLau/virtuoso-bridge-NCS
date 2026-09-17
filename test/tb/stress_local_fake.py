@@ -12,8 +12,8 @@ import time
 from pathlib import Path
 
 from transport.middle import BusinessServer
-from transport.registry import UserEntry, load_registry
-from transport.runtime_paths import set_working_dir
+from common.registry import UserEntry, load_registry
+from common.paths import registry_path, override_work_dir_for_tests  # noqa: E402
 
 
 def main() -> int:
@@ -26,8 +26,8 @@ def main() -> int:
     ap.add_argument("--work-dir", default=None)
     args = ap.parse_args()
     wd = Path(args.work_dir) if args.work_dir else Path(tempfile.mkdtemp(prefix="vb-local-stress-"))
-    set_working_dir(wd)
-    reg = load_registry()
+    override_work_dir_for_tests(wd)
+    reg = load_registry(registry_path())
     users = []
     for i in range(args.users):
         user = f"fu{i:03d}"

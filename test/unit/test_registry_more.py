@@ -10,13 +10,13 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from pydantic import ValidationError
-from transport.registry import Registry, UserEntry, load_registry
-from transport.runtime_paths import registry_path, set_working_dir
+from common.registry import Registry, UserEntry, load_registry
+from common.paths import registry_path, override_work_dir_for_tests
 
 
 class TestRegistryMore(unittest.TestCase):
     def setUp(self):
-        self.wd = set_working_dir(Path(tempfile.mkdtemp()))
+        self.wd = override_work_dir_for_tests(Path(tempfile.mkdtemp()))
 
     def test_register_auto_timestamps_and_persists(self):
         reg = load_registry(registry_path())

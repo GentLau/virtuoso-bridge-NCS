@@ -8,7 +8,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from transport.registry import UserEntry, canonical_host, endpoint_key
+from common.registry import UserEntry, canonical_host, endpoint_key
 from transport.remote_roles import resolve
 
 

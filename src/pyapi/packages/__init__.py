@@ -2,9 +2,11 @@
 
 每个业务包一个文件；顶层在 ``server/api_server.PACKAGES`` 里显式登记。
 """
-from pyapi.packages import basic, demo
+from pyapi.packages import basic, cellview, demo, gui
 from pyapi.packages.basic import Package as BasicPackage
+from pyapi.packages.cellview import Package as CellviewPackage
 from pyapi.packages.demo import Package as DemoPackage
+from pyapi.packages.gui import Package as GuiPackage
 from pyapi.packages.file_skill_command_file import FileSkillCommandFilePackage
 from pyapi.packages.netlist_import import (
     OPERATION_NAME as NETLIST_IMPORT_OPERATION,
@@ -16,7 +18,9 @@ from pyapi.packages.parallel_probe import ParallelProbePackage
 
 __all__ = [
     "BasicPackage",
+    "CellviewPackage",
     "DemoPackage",
+    "GuiPackage",
     "FileSkillCommandFilePackage",
     "NETLIST_IMPORT_OPERATION",
     "NetlistImportPackage",
@@ -24,5 +28,7 @@ __all__ = [
     "NetlistImportResult",
     "ParallelProbePackage",
     "basic",
+    "cellview",
     "demo",
+    "gui",
 ]

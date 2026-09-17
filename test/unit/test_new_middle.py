@@ -6,16 +6,16 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from transport.middle import BusinessServer
-from transport.registry import UserEntry, load_registry
-from transport.remote_paths import daemon_path, identity_path, il_path, setup_il_path, user_dir
+from common.registry import UserEntry, load_registry
+from common.remote_paths import daemon_path, identity_path, il_path, setup_il_path, user_dir
 from transport.remote_roles import resolve
-from transport.runtime_paths import registry_path, set_working_dir
-from transport.setup import generate_setup_il
+from common.paths import registry_path, override_work_dir_for_tests
+from common.setup import generate_setup_il
 
 
 class TestNewMiddle(unittest.TestCase):
     def setUp(self):
-        self.wd = set_working_dir(Path(tempfile.mkdtemp()))
+        self.wd = override_work_dir_for_tests(Path(tempfile.mkdtemp()))
 
     def test_remote_paths_structure(self):
         root = "/tmp/root/alice"
@@ -35,7 +35,7 @@ class TestNewMiddle(unittest.TestCase):
         self.assertNotIn("setShellEnvVar", text)
 
     def test_route_defaults(self):
-        from transport.registry import SshDefaults
+        from common.registry import SshDefaults
         entry = UserEntry(token="tok-1", mode="remote")
         entry.ssh.default = SshDefaults(host="daemon-a", user="alice")
         entry.roles.daemon.daemon_port = 65081

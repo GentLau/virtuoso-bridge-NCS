@@ -79,7 +79,8 @@ class QueryResult(BaseModel):
     """Answer of ``middle.query(token)``.
 
     ``status`` is ``success``/``error``; an unknown token is a structured
-    failure (``errors=["invalid token"]``) and never an exception.
+    failure (``errors=["invalid token"]``) and never an exception.  只返回 role 的
+    ``root``/``bin``：本机路径不属于中层的查询范围（spec 总览 §4.2）。
     """
 
     status: ExecutionStatus

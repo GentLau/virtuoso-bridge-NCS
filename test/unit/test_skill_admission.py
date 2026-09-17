@@ -12,8 +12,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from pyapi.models import ExecutionStatus, VirtuosoResult
 from transport.middle import BusinessServer
-from transport.registry import UserEntry, load_registry
-from transport.runtime_paths import registry_path, set_working_dir
+from common.registry import UserEntry, load_registry
+from common.paths import registry_path, override_work_dir_for_tests
 
 
 class RecordingSkillClient:
@@ -48,7 +48,7 @@ class SkillAdmissionBase(unittest.TestCase):
 
     def setUp(self):
         wd = Path(tempfile.mkdtemp())
-        set_working_dir(wd)
+        override_work_dir_for_tests(wd)
         self.registry = load_registry(registry_path())
         entry = UserEntry(token="tok-skill", mode="local")
         entry.runtime.thread_pool_size = type(self).pool_size

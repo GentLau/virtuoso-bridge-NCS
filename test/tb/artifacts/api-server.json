@@ -1,7 +1,7 @@
 {
   "ok": true,
   "failed": 0,
-  "elapsed_s": 4.594,
+  "elapsed_s": 4.25,
   "results": {
     "operations": [
       "basic.command.run",
@@ -13,9 +13,36 @@
       "demo.parallel.probe",
       "demo.pipeline.run",
       "test.boom",
+      "test.ctor",
+      "virtuoso.cellview.cat.add_cell",
+      "virtuoso.cellview.cat.create",
+      "virtuoso.cellview.cat.delete",
+      "virtuoso.cellview.cat.list",
+      "virtuoso.cellview.cat.remove_cell",
+      "virtuoso.cellview.cat.rename",
+      "virtuoso.cellview.cell.copy",
+      "virtuoso.cellview.cell.delete",
+      "virtuoso.cellview.cell.list",
+      "virtuoso.cellview.cell.rename",
+      "virtuoso.cellview.lib.bind",
+      "virtuoso.cellview.lib.copy",
+      "virtuoso.cellview.lib.create",
+      "virtuoso.cellview.lib.delete",
+      "virtuoso.cellview.lib.get",
+      "virtuoso.cellview.lib.list",
+      "virtuoso.cellview.lib.rename",
+      "virtuoso.cellview.view.copy",
+      "virtuoso.cellview.view.create",
+      "virtuoso.cellview.view.delete",
+      "virtuoso.cellview.view.list",
+      "virtuoso.cellview.view.rename",
+      "virtuoso.gui.auto_dismiss",
+      "virtuoso.gui.list_windows",
+      "virtuoso.gui.screenshot",
+      "virtuoso.gui.send_key",
       "virtuoso.netlist.import"
     ],
-    "structural": "400/404 as specified",
+    "structural": "400/404 as specified (path isolation)",
     "basic_package": "skill/command/upload/download/gui/spectre ok",
     "pipeline": {
       "steps": 4,
@@ -27,6 +54,15 @@
     "dispatch_purity": "no transport/socket/subprocess imports",
     "package_metadata": "basic(6) + demo(3) operations declared",
     "duplicate_registration": "startup error: operation 'demo.pipeline.run' is already registered",
+    "config_snapshot": {
+      "file": "server.json",
+      "honoured": 7,
+      "fallback": 1024
+    },
+    "ctor_contract": {
+      "arguments": 1,
+      "argument": "BusinessServer"
+    },
     "pool_limit": {
       "max_inflight": 1024,
       "tested_limit": 2,

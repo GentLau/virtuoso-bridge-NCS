@@ -244,9 +244,9 @@ def main(argv=None):
     parser.add_argument("--work-dir", default=None)
     args = parser.parse_args(argv)
 
-    from transport.runtime_paths import set_working_dir
-    set_working_dir(args.work_dir)
-    middle = BusinessServer(args.work_dir)
+    from common.paths import init_work_dir
+    init_work_dir(args.work_dir)
+    middle = BusinessServer()
     server = StressServer((args.host, args.port), middle)
     print(f"stress server: http://{args.host}:{args.port}", flush=True)
     try:

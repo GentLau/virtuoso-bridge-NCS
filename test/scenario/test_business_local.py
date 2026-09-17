@@ -25,8 +25,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from transport.middle import BusinessServer
-from transport.registry import UserEntry, load_registry
-from transport.runtime_paths import registry_path, set_working_dir
+from common.registry import UserEntry, load_registry
+from common.paths import registry_path, override_work_dir_for_tests
 
 STX = "\x02"
 NAK = "\x15"
@@ -107,7 +107,7 @@ def _entry(token: str, daemon: FakeDaemon) -> UserEntry:
 
 class TestBusinessLocal(unittest.TestCase):
     def setUp(self) -> None:
-        self.wd = set_working_dir(Path(tempfile.mkdtemp()))
+        self.wd = override_work_dir_for_tests(Path(tempfile.mkdtemp()))
         self.daemon = FakeDaemon("tok-a")
         self.registry = load_registry(registry_path())
         self.registry.register("alice", _entry("tok-a", self.daemon))
@@ -279,7 +279,7 @@ class TestBusinessMultiUserLocal(unittest.TestCase):
 
     def test_mixed_concurrency_retries_until_all_succeed(self):
         users = 20
-        wd = set_working_dir(Path(tempfile.mkdtemp()))
+        wd = override_work_dir_for_tests(Path(tempfile.mkdtemp()))
         registry = load_registry(registry_path())
         daemons = []
         try:

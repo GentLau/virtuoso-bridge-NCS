@@ -10,7 +10,7 @@ from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from transport.register.flow import (
+from register.flow import (
     RegistrationFlow,
     RegistrationProbeError,
     StepBudget,
@@ -18,10 +18,10 @@ from transport.register.flow import (
     validate_final,
     validate_local,
 )
-from transport.register.models import RegistrationRequest
-from transport.register.reservation import Reservation, ReservationTable
-from transport.registry import UserEntry, load_registry
-from transport.runtime_paths import registry_path, set_working_dir
+from register.models import RegistrationRequest
+from register.reservation import Reservation, ReservationTable
+from common.registry import UserEntry, load_registry
+from common.paths import registry_path, override_work_dir_for_tests
 
 
 def _table():
@@ -102,7 +102,7 @@ class TestDaemonScope(unittest.TestCase):
 
 class TestFlowReservationLifecycle(unittest.TestCase):
     def setUp(self):
-        self.wd = set_working_dir(Path(tempfile.mkdtemp()))
+        self.wd = override_work_dir_for_tests(Path(tempfile.mkdtemp()))
         self.registry = load_registry(registry_path())
         self.table = ReservationTable(self.wd / "registry.reservation")
         self.flow = RegistrationFlow(self.registry, self.table)
@@ -136,7 +136,7 @@ class TestFlowReservationLifecycle(unittest.TestCase):
     def test_failed_probe_releases_reservation(self):
         state = self.flow.start(self._request())
         self.flow.validate()
-        with mock.patch("transport.register.flow.probe_user",
+        with mock.patch("register.flow.probe_user",
                         side_effect=RegistrationProbeError("probe boom")):
             state = self.flow.probe()
         self.assertEqual(state.stage, "failed")

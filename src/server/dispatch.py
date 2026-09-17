@@ -78,11 +78,21 @@ def jsonable(value: Any) -> Any:
 
 
 def _result_ok(result: Any) -> bool:
+    if isinstance(result, Mapping):
+        return bool(result.get("ok"))
     ok = getattr(result, "ok", None)
     return bool(ok) if ok is not None else False
 
 
 def _result_error(result: Any) -> str | None:
+    if isinstance(result, Mapping):
+        error = result.get("error")
+        if error:
+            return str(error)
+        errors = result.get("errors")
+        if errors:
+            return "; ".join(str(item) for item in errors)
+        return None
     error = getattr(result, "error", None)
     if error:
         return str(error)
@@ -104,7 +114,10 @@ def build_request(spec: OperationSpec, payload: Mapping[str, Any], token: str) -
 
 
 def dispatch(middle: Middle, payload: Mapping[str, Any]) -> tuple[int, dict[str, Any]]:
-    """Run one operation and return ``(http_status, body)`` per 顶层 §3."""
+    """Run one operation and return ``(http_status, body)`` per 顶层 §3.
+
+    业务包构造只接收 ``Middle``（顶层 §2.4 / 上层 §2.2 的唯一口径）。
+    """
     if not isinstance(payload, Mapping):
         return 400, {"ok": False, "data": None, "error": "request body must be an object"}
 
@@ -126,7 +139,7 @@ def dispatch(middle: Middle, payload: Mapping[str, Any]) -> tuple[int, dict[str,
         return exc.status, {"ok": False, "data": None, "error": str(exc)}
 
     try:
-        package = spec.package(middle)          # 业务包只接受一个 Middle
+        package = spec.package(middle)
         method = getattr(package, spec.method)
         result = method(request)
     except (TypeError, ValueError) as exc:

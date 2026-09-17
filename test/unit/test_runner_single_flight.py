@@ -16,9 +16,9 @@ from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from transport.registry import UserEntry
+from common.registry import UserEntry
 from transport.remote_roles import resolve
-from transport.runtime_paths import set_working_dir
+from common.paths import override_work_dir_for_tests
 from transport.tunnel import RemoteClient
 
 THREADS = 16
@@ -69,7 +69,7 @@ def make_entry(backend="paramiko"):
 
 class TestRunnerSingleFlight(unittest.TestCase):
     def setUp(self):
-        set_working_dir(Path(tempfile.mkdtemp()))
+        override_work_dir_for_tests(Path(tempfile.mkdtemp()))
         CountingRunner.instances = 0
 
     def _hammer(self, fn):

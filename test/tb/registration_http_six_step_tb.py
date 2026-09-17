@@ -1,6 +1,6 @@
 """Six-step registration over the real HTTP API (artifact-producing TB).
 
-Drives ``server.registration_server`` exactly as the registration page does:
+Drives ``register.server`` exactly as the registration page does:
 apply -> validate -> probe -> deploy -> verify (+ step 6 durable write), then
 reads back, updates and deletes the user.  Steps 3/4 go to a real SSH host
 (``wsl-gent``); step 5's Skill smoke runs against a protocol-compatible fake
@@ -32,9 +32,9 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from server.registration_server import RegistrationServer  # noqa: E402
-from transport.registry import load_registry  # noqa: E402
-from transport.runtime_paths import registry_path, set_working_dir  # noqa: E402
+from register.server import RegistrationServer  # noqa: E402
+from common.registry import load_registry  # noqa: E402
+from common.paths import registry_path, override_work_dir_for_tests  # noqa: E402
 
 try:
     from _win import no_window  # type: ignore
@@ -57,6 +57,11 @@ def free_port() -> int:
         return sock.getsockname()[1]
 
 
+#: admin token of the control plane (服务端只存其 SHA-256 哈希；这里用同一份预置值)
+ADMIN_TOKEN = "V-9-ZM32KpykwpNXyMnmSTUTFB2o_jJVfG0-D_Vd_JA"
+ADMIN_HEADERS = {"Authorization": "Bearer " + ADMIN_TOKEN}
+
+
 class Http:
     """Minimal JSON client plus the raw evidence trail for the report."""
 
@@ -64,13 +69,13 @@ class Http:
         self.base = base
         self.trail: list[dict] = []
 
-    def call(self, method: str, path: str, payload: dict | None = None) -> tuple[int, dict]:
+    def call(self, method: str, path: str, payload: dict | None = None,
+             headers: dict | None = None) -> tuple[int, dict]:
         data = None if payload is None else json.dumps(payload).encode("utf-8")
+        merged = {"Content-Type": "application/json"}
+        merged.update(headers or {})
         request = urllib.request.Request(
-            self.base + path,
-            data=data,
-            method=method,
-            headers={"Content-Type": "application/json"},
+            self.base + path, data=data, method=method, headers=merged,
         )
         try:
             with urllib.request.urlopen(request, timeout=180) as response:
@@ -280,7 +285,7 @@ def main() -> int:
     work_dir.mkdir(parents=True, exist_ok=True)
     if not args.out:
         args.out = str(work_dir / "evidence.json")
-    set_working_dir(work_dir)
+    override_work_dir_for_tests(work_dir)
     registry = load_registry(registry_path())
 
     prefix = f"vbsix{uuid.uuid4().hex[:6]}"
@@ -320,7 +325,8 @@ def main() -> int:
     started = time.monotonic()
     # keep the TB re-runnable: remove a user left behind by a previous run
     if registry.get(args.user) is not None:
-        status, body = http.call("DELETE", f"/api/user/{args.user}")
+        status, body = http.call("DELETE", f"/api/user/{args.user}",
+                                 headers=ADMIN_HEADERS)
         steps.append({"action": "pre-cleanup", "status": status,
                       "removed": body.get("removed")})
         if status != 200:
@@ -328,20 +334,51 @@ def main() -> int:
     registry_before = registry_snapshot()
     ok = True
     try:
-        # -- step 1: apply -------------------------------------------------
-        status, body = http.call(
-            "POST", "/api/register/apply",
-            request_payload(args.user, token, args.host, args.ssh_user, root,
-                            port, local=args.local_mode),
-        )
+        # -- step 1: apply（命令端点，返回会话 token）-------------------------
+        apply_body = {"action": "apply", "user": args.user,
+                      **request_payload(args.user, token, args.host, args.ssh_user,
+                                        root, port, local=args.local_mode)}
+        apply_body.pop("user", None)
+        apply_body["user"] = args.user
+        status, body = http.call("POST", "/api/register", apply_body)
         steps.append({"step": 1, "action": "apply", "status": status,
-                      "stage": body.get("stage"), "step_field": body.get("step")})
+                      "stage": body.get("stage"), "step_field": body.get("step"),
+                      "token_returned": bool(body.get("token"))})
         if status != 200 or body.get("stage") != "applied":
             raise ProbeFailure(f"step 1 failed: {body}")
+        session_token = body.get("token")
+        if not session_token:
+            raise ProbeFailure("apply did not return the session token")
         assert_no_registry_write("step 1")
 
+        # -- 非法顺序与 token 校验（不改变状态） ----------------------------
+        status, body = http.call("POST", "/api/register",
+                                 {"user": args.user, "action": "verify",
+                                  "token": session_token})
+        steps.append({"action": "verify-before-deploy", "status": status,
+                      "error": body.get("error"),
+                      "current_stage": body.get("current_stage"),
+                      "expected": body.get("expected")})
+        if status != 400 or body.get("error") != "step order violation":
+            raise ProbeFailure(f"out-of-order verify must be 4xx: {status} {body}")
+        if body.get("current_stage") != "applied":
+            raise ProbeFailure(f"order violation must report current stage: {body}")
+
+        status, body = http.call("POST", "/api/register",
+                                 {"user": args.user, "action": "validate"})
+        if status != 400 or body.get("error") != "invalid token":
+            raise ProbeFailure(f"missing session token must be 4xx: {status} {body}")
+        status, body = http.call("POST", "/api/register",
+                                 {"user": args.user, "action": "validate",
+                                  "token": "not-the-session-token"})
+        if status != 400 or body.get("error") != "invalid token":
+            raise ProbeFailure(f"wrong session token must be 4xx: {status} {body}")
+        assert_no_registry_write("token rejected")
+
         # -- step 2: local validation --------------------------------------
-        status, body = http.call("POST", f"/api/register/{args.user}/validate")
+        status, body = http.call("POST", "/api/register",
+                                 {"user": args.user, "action": "validate",
+                                  "token": session_token})
         steps.append({"step": 2, "action": "validate", "status": status,
                       "stage": body.get("stage")})
         if status != 200 or body.get("stage") != "validated":
@@ -349,7 +386,9 @@ def main() -> int:
         assert_no_registry_write("step 2")
 
         # -- step 3: probe --------------------------------------------------
-        status, body = http.call("POST", f"/api/register/{args.user}/probe")
+        status, body = http.call("POST", "/api/register",
+                                 {"user": args.user, "action": "probe",
+                                  "token": session_token})
         steps.append({"step": 3, "action": "probe", "status": status,
                       "stage": body.get("stage"),
                       "daemon_python": (body.get("entry") or {}).get("roles", {})
@@ -363,7 +402,9 @@ def main() -> int:
         assert_no_registry_write("step 3")
 
         # -- step 4: deploy -------------------------------------------------
-        status, body = http.call("POST", f"/api/register/{args.user}/deploy")
+        status, body = http.call("POST", "/api/register",
+                                 {"user": args.user, "action": "deploy",
+                                  "token": session_token})
         steps.append({"step": 4, "action": "deploy", "status": status,
                       "stage": body.get("stage"), "setup_path": body.get("setup_path")})
         if status != 200 or body.get("stage") != "deployed":
@@ -398,40 +439,64 @@ def main() -> int:
             local_daemon.start()
         if daemon is not None:
             daemon.start()
-        status, body = http.call("POST", f"/api/register/{args.user}/verify")
+        status, body = http.call("POST", "/api/register",
+                                 {"user": args.user, "action": "verify",
+                                  "token": session_token})
         steps.append({"step": 5, "action": "verify", "status": status,
                       "stage": body.get("stage"), "step_field": body.get("step"),
                       "report": body.get("report"), "errors": body.get("errors")})
-        if status != 200 or body.get("stage") != "committed" or body.get("step") != 6:
-            raise ProbeFailure(f"step 5/6 failed: {body}")
+        if status != 200 or body.get("stage") != "verified" or body.get("step") != 5:
+            raise ProbeFailure(f"step 5 failed: {body}")
         report = body.get("report") or {}
         if not (report.get("command_ok") and report.get("skill_ok") and report.get("token_ok")):
             raise ProbeFailure(f"connectivity report incomplete: {report}")
+        # 第五步只报告，不落盘；第六步必须显式 commit
+        assert_no_registry_write("step 5 (verified)")
+        if registry_path().exists() and args.user in json.loads(
+            registry_path().read_text(encoding="utf-8")
+        ):
+            raise ProbeFailure("step 5 wrote the registry (step 6 owns the write)")
+
+        status, body = http.call("POST", "/api/register",
+                                 {"user": args.user, "action": "commit",
+                                  "token": session_token})
+        steps.append({"step": 6, "action": "commit", "status": status,
+                      "stage": body.get("stage"), "step_field": body.get("step")})
+        if status != 200 or body.get("stage") != "committed" or body.get("step") != 6:
+            raise ProbeFailure(f"step 6 (commit) failed: {body}")
         on_disk = json.loads(registry_path().read_text(encoding="utf-8"))
         if args.user not in on_disk:
             raise ProbeFailure("step 6 did not persist the user")
-        steps.append({"step": 6, "action": "registry-write", "users": sorted(on_disk)})
+        steps.append({"action": "registry-write", "users": sorted(on_disk)})
 
-        # -- read back / update / delete ------------------------------------
+        # -- read back / update / delete（管理端点：需管理员，响应脱敏 token）----
         status, body = http.call("GET", f"/api/user/{args.user}")
-        steps.append({"action": "read-back", "status": status,
-                      "token_matches": body.get("entry", {}).get("token") == token})
-        if status != 200 or body.get("entry", {}).get("token") != token:
-            raise ProbeFailure(f"read-back failed: {body}")
+        steps.append({"action": "read-back-without-admin", "status": status})
+        if status != 401:
+            raise ProbeFailure(f"management endpoint must require admin: {status} {body}")
 
-        status, body = http.call("GET", "/api/users")
+        status, body = http.call("GET", f"/api/user/{args.user}", headers=ADMIN_HEADERS)
+        entry = body.get("entry") or {}
+        steps.append({"action": "read-back", "status": status,
+                      "token_redacted": "token" not in entry})
+        if status != 200 or "token" in entry:
+            raise ProbeFailure(f"read-back failed or leaked the token: {body}")
+
+        status, body = http.call("GET", "/api/users", headers=ADMIN_HEADERS)
         if status != 200 or args.user not in [u["user"] for u in body.get("users", [])]:
             raise ProbeFailure(f"user listing missed the new user: {body}")
         steps.append({"action": "list-users", "status": status,
                       "count": len(body.get("users", []))})
 
-        status, current = http.call("GET", f"/api/user/{args.user}")
+        status, current = http.call("GET", f"/api/user/{args.user}",
+                                    headers=ADMIN_HEADERS)
         entry = current.get("entry") or {}
         entry.setdefault("runtime", {})["thread_pool_size"] = 12
         # spec 多用户与注册 §5: ``mode`` is fixed at registration time and is
         # not part of the update whitelist, so a GET round-trip omits it.
         entry.pop("mode", None)
-        status, body = http.call("POST", f"/api/user/{args.user}/update", entry)
+        status, body = http.call("POST", f"/api/user/{args.user}/update", entry,
+                                 headers=ADMIN_HEADERS)
         steps.append({"action": "update", "status": status,
                       "thread_pool_size": (body.get("entry", {}).get("runtime") or {})
                       .get("thread_pool_size")})
@@ -439,13 +504,14 @@ def main() -> int:
             raise ProbeFailure(f"update failed: {body}")
 
         status, body = http.call("POST", f"/api/user/{args.user}/update",
-                                 {"mode": {"default": "remote"}})
+                                 {"mode": {"default": "remote"}}, headers=ADMIN_HEADERS)
         steps.append({"action": "update-rejects-mode", "status": status,
                       "detail": body.get("detail")})
         if status != 400 or "mode" not in json.dumps(body):
             raise ProbeFailure(f"mode must not be updatable: {body}")
 
-        status, body = http.call("DELETE", f"/api/user/{args.user}")
+        status, body = http.call("DELETE", f"/api/user/{args.user}",
+                                 headers=ADMIN_HEADERS)
         steps.append({"action": "delete", "status": status, "removed": body.get("removed")})
         if status != 200 or not body.get("removed"):
             raise ProbeFailure(f"delete failed: {body}")
@@ -457,23 +523,26 @@ def main() -> int:
         # -- negative: verify before deploy must fail, never write ----------
         bad_user = args.user + "bad"
         bad_port = free_port()
-        status, body = http.call(
-            "POST", "/api/register/apply",
-            request_payload(bad_user, token + "-x", args.host, args.ssh_user, root,
-                            bad_port, local=args.local_mode),
-        )
+        bad_body = {"action": "apply", "user": bad_user,
+                    **request_payload(bad_user, token + "-x", args.host,
+                                      args.ssh_user, root, bad_port,
+                                      local=args.local_mode)}
+        bad_body["user"] = bad_user
+        status, body = http.call("POST", "/api/register", bad_body)
         if status != 200 or body.get("stage") != "applied":
             raise ProbeFailure(f"negative-case apply did not reach 'applied': {body}")
-        status, body = http.call("POST", f"/api/register/{bad_user}/verify")
-        errors = " ".join(body.get("errors") or [])
+        bad_session = body.get("token")
+        status, body = http.call("POST", "/api/register",
+                                 {"user": bad_user, "action": "verify",
+                                  "token": bad_session})
         steps.append({"action": "verify-before-deploy", "status": status,
-                      "stage": body.get("stage"), "errors": body.get("errors")})
-        if body.get("stage") != "failed":
-            raise ProbeFailure(f"out-of-order verify was accepted: {body}")
-        if "order" not in errors.lower() and "deployed" not in errors.lower():
-            raise ProbeFailure(
-                f"failure does not describe the step-order violation: {body}"
-            )
+                      "error": body.get("error"),
+                      "current_stage": body.get("current_stage"),
+                      "expected": body.get("expected")})
+        if status != 400 or body.get("error") != "step order violation":
+            raise ProbeFailure(f"out-of-order verify must be 4xx: {status} {body}")
+        if body.get("current_stage") != "applied" or body.get("expected") != "deployed":
+            raise ProbeFailure(f"order violation lacks stage context: {body}")
         assert_no_registry_write("out-of-order verify")
         on_disk = json.loads(registry_path().read_text(encoding="utf-8"))
         if bad_user in on_disk:

@@ -8,7 +8,7 @@ from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from transport import paramiko_backend as pb
+from common import paramiko_backend as pb
 
 
 class TestSocks5Parsing(unittest.TestCase):

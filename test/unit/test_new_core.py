@@ -12,20 +12,20 @@ from bridge.resources.ramic_bridge_daemon_3 import (
     filter_delta,
 )
 from pyapi.models import ExecutionStatus
-from transport.registry import UserEntry, load_registry
-from transport.runtime_paths import (
+from common.registry import UserEntry, load_registry
+from common.paths import (
     artifact_dir,
     log_dir,
     registry_path,
-    set_working_dir,
+    override_work_dir_for_tests,
     temp_dir,
 )
-from transport.skill_client import SkillClient
+from common.skill_client import SkillClient
 
 
 class TestFoundations(unittest.TestCase):
     def setUp(self):
-        self.wd = set_working_dir(Path(tempfile.mkdtemp()))
+        self.wd = override_work_dir_for_tests(Path(tempfile.mkdtemp()))
 
     def test_working_dir_subdirs(self):
         self.assertEqual(temp_dir().name, "temp")
@@ -77,7 +77,7 @@ class TestSkillClientMore(unittest.TestCase):
         import socket as sock
         import time as _time
         with self.assertRaises(sock.timeout):
-            from transport.skill_client import _remaining_timeout
+            from common.skill_client import _remaining_timeout
             _remaining_timeout(_time.monotonic() - 1)
 
     def test_execute_skill_immediate_timeout(self):

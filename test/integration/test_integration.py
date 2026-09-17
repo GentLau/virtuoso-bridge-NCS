@@ -19,8 +19,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from pyapi.models import ExecutionStatus
 from transport.middle import BusinessServer
-from transport.registry import UserEntry, load_registry
-from transport.runtime_paths import registry_path, set_working_dir
+from common.registry import UserEntry, load_registry
+from common.paths import registry_path, override_work_dir_for_tests
 
 STX = "\x02"
 NAK = "\x15"
@@ -70,7 +70,7 @@ class FakeDaemon:
 
 class TestIntegration(unittest.TestCase):
     def test_skill_end_to_end_fake_daemon(self):
-        wd = set_working_dir(Path(tempfile.mkdtemp()))
+        wd = override_work_dir_for_tests(Path(tempfile.mkdtemp()))
         fake = FakeDaemon(token="tok-1")
         try:
             reg = load_registry(registry_path())
@@ -93,7 +93,7 @@ class TestIntegration(unittest.TestCase):
 
     def test_thread_capacity(self):
         import os
-        wd = set_working_dir(Path(tempfile.mkdtemp()))
+        wd = override_work_dir_for_tests(Path(tempfile.mkdtemp()))
         reg = load_registry(registry_path())
         entry = UserEntry(token="tok-1", mode="local")
         entry.runtime.thread_pool_size = 1
@@ -109,7 +109,7 @@ class TestIntegration(unittest.TestCase):
         holder.join()
 
     def test_parallel_local(self):
-        wd = set_working_dir(Path(tempfile.mkdtemp()))
+        wd = override_work_dir_for_tests(Path(tempfile.mkdtemp()))
         reg = load_registry(registry_path())
         entry = UserEntry(token="tok-1", mode="local")
         entry.runtime.thread_pool_size = 4

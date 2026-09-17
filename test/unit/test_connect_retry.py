@@ -12,7 +12,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from transport.paramiko_backend import ParamikoSessionBackend
+from common.paramiko_backend import ParamikoSessionBackend
 
 
 class _BannerDropSocket:

@@ -13,8 +13,8 @@ from unittest import mock
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from pyapi.models import CommandResult
-from transport import ssh as ssh_mod
-from transport.ssh import (
+from common import ssh as ssh_mod
+from common.ssh import (
     SSHRunner,
     _as_text,
     _derive_tool,
@@ -62,8 +62,8 @@ class TestPureHelpers(unittest.TestCase):
 class TestSSHRunnerConstruction(unittest.TestCase):
     def setUp(self):
         self.wd = Path(tempfile.mkdtemp())
-        from transport.runtime_paths import set_working_dir
-        set_working_dir(self.wd)
+        from common.paths import override_work_dir_for_tests
+        override_work_dir_for_tests(self.wd)
 
     def test_defaults(self):
         r = SSHRunner("server-a")
@@ -109,8 +109,8 @@ class TestSSHRunnerConstruction(unittest.TestCase):
 class TestSSHOptionConstruction(unittest.TestCase):
     def setUp(self):
         self.wd = Path(tempfile.mkdtemp())
-        from transport.runtime_paths import set_working_dir
-        set_working_dir(self.wd)
+        from common.paths import override_work_dir_for_tests
+        override_work_dir_for_tests(self.wd)
 
     def test_common_options_disable_cm(self):
         r = SSHRunner("server", user="u", connect_timeout=7, control_master="disable")
@@ -177,8 +177,8 @@ class TestSSHOptionConstruction(unittest.TestCase):
 class TestOneShotRunCommand(unittest.TestCase):
     def setUp(self):
         self.wd = Path(tempfile.mkdtemp())
-        from transport.runtime_paths import set_working_dir
-        set_working_dir(self.wd)
+        from common.paths import override_work_dir_for_tests
+        override_work_dir_for_tests(self.wd)
 
     def test_success(self):
         r = SSHRunner("server", user="u", backend="openssh", persistent_shell=False, control_master="disable")
@@ -198,8 +198,8 @@ class TestOneShotRunCommand(unittest.TestCase):
 class TestPortForwardLifecycle(unittest.TestCase):
     def setUp(self):
         self.wd = Path(tempfile.mkdtemp())
-        from transport.runtime_paths import set_working_dir
-        set_working_dir(self.wd)
+        from common.paths import override_work_dir_for_tests
+        override_work_dir_for_tests(self.wd)
 
     @mock.patch.object(SSHRunner, "can_reach_port", return_value=True)
     def test_start_port_forward_builds_command(self, _reach):
@@ -235,8 +235,8 @@ class TestPortForwardLifecycle(unittest.TestCase):
 class TestRetryAndFallback(unittest.TestCase):
     def setUp(self):
         self.wd = Path(tempfile.mkdtemp())
-        from transport.runtime_paths import set_working_dir
-        set_working_dir(self.wd)
+        from common.paths import override_work_dir_for_tests
+        override_work_dir_for_tests(self.wd)
 
     def test_cm_fallback_disables_and_retries(self):
         r = SSHRunner("server", control_master="auto")
@@ -285,8 +285,8 @@ class TestRetryAndFallback(unittest.TestCase):
 class TestRunRemoteTask(unittest.TestCase):
     def setUp(self):
         self.wd = Path(tempfile.mkdtemp())
-        from transport.runtime_paths import set_working_dir
-        set_working_dir(self.wd)
+        from common.paths import override_work_dir_for_tests
+        override_work_dir_for_tests(self.wd)
 
     def test_missing_local_file(self):
         runner = mock.Mock()
@@ -337,8 +337,8 @@ class TestRunRemoteTask(unittest.TestCase):
 class TestPersistentShellMechanics(unittest.TestCase):
     def setUp(self):
         self.wd = Path(tempfile.mkdtemp())
-        from transport.runtime_paths import set_working_dir
-        set_working_dir(self.wd)
+        from common.paths import override_work_dir_for_tests
+        override_work_dir_for_tests(self.wd)
 
     def test_pump_shell_output(self):
         import queue
@@ -425,8 +425,8 @@ class TestPersistentShellMechanics(unittest.TestCase):
 class TestEnsurePersistentShell(unittest.TestCase):
     def setUp(self):
         self.wd = Path(tempfile.mkdtemp())
-        from transport.runtime_paths import set_working_dir
-        set_working_dir(self.wd)
+        from common.paths import override_work_dir_for_tests
+        override_work_dir_for_tests(self.wd)
 
     def test_start_success(self):
         r = SSHRunner("server", user="u", backend="openssh")
@@ -458,8 +458,8 @@ class TestEnsurePersistentShell(unittest.TestCase):
 class TestCloseTearsDownControlMaster(unittest.TestCase):
     def setUp(self):
         self.wd = Path(tempfile.mkdtemp())
-        from transport.runtime_paths import set_working_dir
-        set_working_dir(self.wd)
+        from common.paths import override_work_dir_for_tests
+        override_work_dir_for_tests(self.wd)
 
     def test_openssh_close_stops_master(self):
         r = SSHRunner("server", user="u", backend="openssh", control_master="force")

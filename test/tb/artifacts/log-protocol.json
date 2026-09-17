@@ -44,14 +44,14 @@
         "unread_bytes": 31,
         "log": ""
       },
-      "elapsed_s": 0.015999999945051968
+      "elapsed_s": 0.0
     },
     "py27:rotation-truncation": {
       "status": "pass",
       "detail": {
         "log": "rotated-content\n"
       },
-      "elapsed_s": 0.015000000013969839
+      "elapsed_s": 0.015999999945051968
     },
     "py27:second-frame-timeout": {
       "status": "pass",
@@ -61,12 +61,12 @@
         ],
         "elapsed_s": 0.406
       },
-      "elapsed_s": 0.4059999999590218
+      "elapsed_s": 0.42099999997299165
     },
     "py27:server-loop": {
       "status": "pass",
       "detail": {
-        "port": 56337,
+        "port": 56886,
         "response": "\u0015{\"error\": \"JSONDecodeError: Expecting property name enclose",
         "errors": 1
       },
@@ -96,7 +96,7 @@
         "truncated_len": 184,
         "truncated_body_bytes": 64
       },
-      "elapsed_s": 0.01600000006146729
+      "elapsed_s": 0.0
     },
     "py3:error-first-frame": {
       "status": "pass",
@@ -104,7 +104,7 @@
         "error": "boom",
         "log": ""
       },
-      "elapsed_s": 0.0
+      "elapsed_s": 0.01600000006146729
     },
     "py3:level-filter": {
       "status": "pass",
@@ -144,11 +144,11 @@
     "py3:server-loop": {
       "status": "pass",
       "detail": {
-        "port": 56340,
+        "port": 56888,
         "response": "\u0015{\"error\": \"JSONDecodeError: Expecting property name enclose",
         "errors": 1
       },
-      "elapsed_s": 0.01600000006146729
+      "elapsed_s": 0.0
     },
     "py3:unreadable-log": {
       "status": "pass",
@@ -157,7 +157,7 @@
           "CDS.log unavailable: CDS.log unreadable"
         ]
       },
-      "elapsed_s": 0.0
+      "elapsed_s": 0.01600000006146729
     }
   }
 }

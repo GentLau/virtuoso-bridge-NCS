@@ -8,8 +8,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from transport import paramiko_backend as pb
-from transport.paramiko_backend import (
+from common import paramiko_backend as pb
+from common.paramiko_backend import (
     ParamikoSessionBackend,
     _Deadline,
     _Socks5Proxy,
@@ -227,7 +227,7 @@ class TestBackendExecutionPaths(unittest.TestCase):
             raise RuntimeError("upload boom")
             yield
         with __import__("unittest").mock.patch.object(self.backend, "_session_lease", broken):
-            from transport.transfer import build_text_upload_plan
+            from common.transfer import build_text_upload_plan
             plan = build_text_upload_plan("/tmp/x.txt", b"abc")
             rc, out, err = self.backend.upload_text(plan, b"abc", timeout=5)
         self.assertEqual(rc, 255)
@@ -235,7 +235,7 @@ class TestBackendExecutionPaths(unittest.TestCase):
 
     def test_download_file_success(self):
         from unittest import mock
-        from transport.transfer import build_file_download_plan
+        from common.transfer import build_file_download_plan
         target = Path(tempfile.mkdtemp()) / "out.bin"
         plan = build_file_download_plan("/remote/out.bin", target)
 
@@ -255,7 +255,7 @@ class TestBackendExecutionPaths(unittest.TestCase):
 
     def test_download_file_error_discards_stage(self):
         from unittest import mock
-        from transport.transfer import build_file_download_plan
+        from common.transfer import build_file_download_plan
         target = Path(tempfile.mkdtemp()) / "out.bin"
         plan = build_file_download_plan("/remote/out.bin", target)
 

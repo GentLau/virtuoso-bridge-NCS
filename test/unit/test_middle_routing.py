@@ -10,8 +10,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from pyapi.models import CommandResult, ExecutionStatus, VirtuosoResult
 from transport.middle import BusinessServer
-from transport.registry import UserEntry, load_registry
-from transport.runtime_paths import registry_path, set_working_dir
+from common.registry import UserEntry, load_registry
+from common.paths import registry_path, override_work_dir_for_tests
 
 
 def make_remote_entry(token="tok-1"):
@@ -64,7 +64,7 @@ class FakeSkillClient:
 
 class TestBusinessServerRouting(unittest.TestCase):
     def setUp(self):
-        self.wd = set_working_dir(Path(tempfile.mkdtemp()))
+        self.wd = override_work_dir_for_tests(Path(tempfile.mkdtemp()))
         self.reg = load_registry(registry_path())
         FakeRemoteClient.instances.clear()
         FakeSkillClient.instances.clear()
@@ -134,7 +134,7 @@ class TestBusinessServerRouting(unittest.TestCase):
 
 class TestMiddleErrorAndLocalPaths(unittest.TestCase):
     def setUp(self):
-        self.wd = set_working_dir(Path(tempfile.mkdtemp()))
+        self.wd = override_work_dir_for_tests(Path(tempfile.mkdtemp()))
         self.server = BusinessServer(self.wd)
 
     def test_run_command_unknown_token(self):

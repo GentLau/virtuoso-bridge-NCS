@@ -11,10 +11,11 @@ from unittest import mock
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from pyapi.models import CommandResult, ExecutionStatus, SimulationResult, VirtuosoResult
-from transport import remote_paths, runtime_paths
-from transport.registry import load_registry
-from transport.runtime_paths import registry_path, set_working_dir
-from transport.skill_client import STX, NAK, RS, SkillClient
+from common import paths as runtime_paths
+from common import remote_paths
+from common.registry import load_registry
+from common.paths import registry_path, override_work_dir_for_tests
+from common.skill_client import STX, NAK, RS, SkillClient
 
 
 class TestResultModels(unittest.TestCase):
@@ -42,8 +43,8 @@ class TestResultModels(unittest.TestCase):
 
 class TestRuntimePaths(unittest.TestCase):
     def test_explicit_working_dir(self):
-        wd = set_working_dir(Path(tempfile.mkdtemp()))
-        self.assertEqual(runtime_paths.working_dir(), wd)
+        wd = override_work_dir_for_tests(Path(tempfile.mkdtemp()))
+        self.assertEqual(runtime_paths.work_root(), wd)
         self.assertEqual(registry_path(), wd / "registry.json")
         self.assertTrue(runtime_paths.temp_dir().is_dir())
         self.assertTrue(runtime_paths.log_dir().is_dir())
@@ -53,7 +54,7 @@ class TestRuntimePaths(unittest.TestCase):
     def test_windows_appdata_default(self):
         with mock.patch.object(runtime_paths.os, "name", "nt"), \
              mock.patch.object(runtime_paths.os, "environ", {"APPDATA": "C:/Users/u/AppData/Roaming"}):
-            result = runtime_paths.default_working_dir()
+            result = runtime_paths.default_work_dir()
         self.assertEqual(str(result).replace("\\", "/"), "C:/Users/u/AppData/Roaming/virtuoso_bridge")
 
     @unittest.skipIf(sys.platform == "win32", "POSIX path defaults require a POSIX host")
@@ -62,12 +63,12 @@ class TestRuntimePaths(unittest.TestCase):
         with mock.patch.object(runtime_paths.os, "name", "posix"), \
              mock.patch.object(runtime_paths.sys, "platform", "darwin"), \
              mock.patch.object(runtime_paths.Path, "home", return_value=Path("/Users/u")):
-            self.assertEqual(runtime_paths.default_working_dir(), Path("/Users/u/Library/Application Support/virtuoso_bridge"))
+            self.assertEqual(runtime_paths.default_work_dir(), Path("/Users/u/Library/Application Support/virtuoso_bridge"))
         with mock.patch.object(runtime_paths.os, "name", "posix"), \
              mock.patch.object(runtime_paths.sys, "platform", "linux"), \
              mock.patch.object(runtime_paths.Path, "home", return_value=Path("/home/u")), \
              mock.patch.object(runtime_paths.os, "environ", {"XDG_CONFIG_HOME": "/etc/xdg"}):
-            self.assertEqual(runtime_paths.default_working_dir(), Path("/etc/xdg/virtuoso_bridge"))
+            self.assertEqual(runtime_paths.default_work_dir(), Path("/etc/xdg/virtuoso_bridge"))
 
 
 class TestRemotePaths(unittest.TestCase):

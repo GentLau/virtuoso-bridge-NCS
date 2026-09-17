@@ -9,8 +9,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from transport import transfer
-from transport.transfer import (
+from common import transfer
+from common.transfer import (
     TextUploadPlan,
     _remote_bash_command,
     build_file_download_plan,
@@ -158,7 +158,7 @@ class TestStagedInstall(unittest.TestCase):
         self.assertEqual(target.read_text(encoding="utf-8"), "old")
 
     def test_install_staged_path_wrapper(self):
-        from transport.transfer import TarDownloadPlan
+        from common.transfer import TarDownloadPlan
         target = self.root / "final"
         target.write_text("old", encoding="utf-8")
         plan = TarDownloadPlan(

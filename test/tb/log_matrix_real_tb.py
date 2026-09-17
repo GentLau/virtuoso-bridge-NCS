@@ -27,8 +27,8 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from transport.middle import BusinessServer  # noqa: E402
-from transport.registry import UserEntry, load_registry  # noqa: E402
-from transport.runtime_paths import set_working_dir  # noqa: E402
+from common.registry import UserEntry, load_registry  # noqa: E402
+from common.paths import registry_path, override_work_dir_for_tests  # noqa: E402
 
 try:  # Windows: keep ssh/scp console windows hidden
     from _win import no_window  # type: ignore
@@ -46,8 +46,8 @@ class Env:
         self.args = args
         self.work_dir = Path(args.work_dir).resolve()
         self.work_dir.mkdir(parents=True, exist_ok=True)
-        set_working_dir(self.work_dir)
-        registry = load_registry()
+        override_work_dir_for_tests(self.work_dir)
+        registry = load_registry(registry_path())
         self.token = args.token
         if registry.get(args.user) is None:
             entry = UserEntry(token=args.token, mode="remote")

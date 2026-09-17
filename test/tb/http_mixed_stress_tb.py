@@ -322,7 +322,7 @@ def main() -> int:
     work_dir.mkdir(parents=True, exist_ok=True)
     local_root = work_dir / "local-root"
     registry = BusinessServer(work_dir).registry  # loads registry.json once
-    from transport.registry import UserEntry
+    from common.registry import UserEntry
 
     # always (re)allocate the stub port: reusing a port recorded by an earlier
     # run can silently collide on Windows, where SO_REUSEADDR allows a second

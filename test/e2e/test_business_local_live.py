@@ -26,9 +26,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from transport.middle import BusinessServer
-from transport.register import RegistrationFlow, RegistrationRequest
-from transport.registry import load_registry
-from transport.runtime_paths import registry_path, set_working_dir
+from register import RegistrationFlow, RegistrationRequest
+from common.registry import load_registry
+from common.paths import registry_path, override_work_dir_for_tests
 
 DISPLAY = os.environ.get("VB_LOCAL_DISPLAY", ":10")
 PROJECT_ROOT = Path(os.environ.get("VB_LOCAL_PROJECT_ROOT", "/home/Gent/project"))
@@ -52,7 +52,7 @@ class TestBusinessLocalLive(unittest.TestCase):
             raise unittest.SkipTest("local live tests must run on the Virtuoso host")
         cls.users_n = int(os.environ.get("VB_LOCAL_USERS", "4"))
         port_base = int(os.environ.get("VB_LOCAL_PORT_BASE", "65401"))
-        cls.wd = set_working_dir(Path(tempfile.mkdtemp(prefix="vb-local-")))
+        cls.wd = override_work_dir_for_tests(Path(tempfile.mkdtemp(prefix="vb-local-")))
         registry = load_registry(registry_path())
 
         cls.users: list[tuple[str, str, int]] = []

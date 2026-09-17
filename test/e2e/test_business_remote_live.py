@@ -22,9 +22,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from transport.middle import BusinessServer
-from transport.register.probe import allocate_local_port
-from transport.registry import UserEntry, load_registry
-from transport.runtime_paths import registry_path, set_working_dir
+from register.probe import allocate_local_port
+from common.registry import UserEntry, load_registry
+from common.paths import registry_path, override_work_dir_for_tests
 
 HOST = "wsl-gent"
 USER = "Gent"
@@ -85,7 +85,7 @@ class TestBusinessRemoteLive(unittest.TestCase):
             raise unittest.SkipTest("no live bridge daemons found")
         limit = int(os.environ.get("VB_E2E_USERS") or len(daemons))
         cls.daemons = daemons[:limit]
-        cls.wd = set_working_dir(Path(tempfile.mkdtemp()))
+        cls.wd = override_work_dir_for_tests(Path(tempfile.mkdtemp()))
         registry = load_registry(registry_path())
         reserved: set[int] = set()
         for username, token, port in cls.daemons:

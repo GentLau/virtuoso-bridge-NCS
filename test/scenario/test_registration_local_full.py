@@ -11,9 +11,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from transport.middle import BusinessServer
-from transport.register import RegistrationFlow, RegistrationRequest
-from transport.registry import load_registry
-from transport.runtime_paths import registry_path, set_working_dir
+from register import RegistrationFlow, RegistrationRequest
+from common.registry import load_registry
+from common.paths import registry_path, override_work_dir_for_tests
 
 
 class FakeDaemon:
@@ -65,7 +65,7 @@ class FakeDaemon:
 
 class TestLocalRegistrationScenario(unittest.TestCase):
     def test_six_step_registration_then_business_use(self):
-        wd = set_working_dir(Path(tempfile.mkdtemp()))
+        wd = override_work_dir_for_tests(Path(tempfile.mkdtemp()))
         root = Path(tempfile.mkdtemp())
         # Registration probes the port BEFORE the daemon exists: the daemon
         # binds it later, between deploy (step 4) and verify (step 5).
@@ -89,10 +89,13 @@ class TestLocalRegistrationScenario(unittest.TestCase):
 
             daemon.serve(port)  # daemon comes up after the files are deployed
             state = flow.verify()
-            self.assertEqual(state.stage, "committed", str(state.errors) + str(state.report))
+            # 第五步只报告；注册表由用户显式确认后的第六步写入
+            self.assertEqual(state.stage, "verified", str(state.errors) + str(state.report))
             self.assertTrue(state.report.command_ok)
             self.assertTrue(state.report.skill_ok)
             self.assertTrue(state.report.token_ok)
+            state = flow.commit()
+            self.assertEqual(state.stage, "committed", str(state.errors))
 
             server = BusinessServer(wd)
             r = server.execute_skill("1+1", token="tok-local")

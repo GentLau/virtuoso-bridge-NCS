@@ -36,8 +36,8 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from transport.middle import BusinessServer  # noqa: E402
-from transport.registry import Registry, UserEntry, load_registry  # noqa: E402
-from transport.runtime_paths import set_working_dir  # noqa: E402
+from common.registry import Registry, UserEntry, load_registry  # noqa: E402
+from common.paths import registry_path, override_work_dir_for_tests  # noqa: E402
 
 try:  # Windows: never pop a console for child processes
     from _win import no_window  # type: ignore
@@ -95,8 +95,8 @@ class StepClock:
 
 def local_server(token: str, *, root: Path | None = None) -> tuple[BusinessServer, Path]:
     wd = temp_dir("vb-sem-")
-    set_working_dir(wd)
-    registry = load_registry()
+    override_work_dir_for_tests(wd)
+    registry = load_registry(registry_path())
     entry = UserEntry(token=token, mode="local")
     if root is not None:
         entry.roles.file.root = str(root)
@@ -172,7 +172,7 @@ CHILD_REGISTRY = textwrap.dedent(
     import sys, time
     from pathlib import Path
     sys.path.insert(0, sys.argv[1])
-    from transport.registry import UserEntry, load_registry
+    from common.registry import UserEntry, load_registry
 
     _, src, reg_path, user, token, ready, gate, done = sys.argv
     registry = load_registry(Path(reg_path))
@@ -325,8 +325,8 @@ class _BlockingSkillClient:
 
 def _facts_server() -> tuple[BusinessServer, Path]:
     wd = temp_dir("vb-facts-")
-    set_working_dir(wd)
-    registry = load_registry()
+    override_work_dir_for_tests(wd)
+    registry = load_registry(registry_path())
     for name, host, root, bin_path in (
         ("alpha", "server-a", "/srv/alpha", "/cadence/bin/spectre"),
         ("beta", "server-b", "/srv/beta", None),
@@ -367,8 +367,12 @@ def case_query_shape() -> dict:
             if role["bin"] != expected_bin:
                 raise ProbeFailure(f"{name}.bin wrong: {role['bin']!r}")
         for banned in ("mode", "host", "user", "jump_host", "proxy"):
-            if banned in json.dumps(dumped):
+            # 只扫 roles 段：local 段是路径事实，路径文本里出现 "user" 属正常
+            if banned in json.dumps(dumped["roles"]):
                 raise ProbeFailure(f"query leaked topology field {banned!r}")
+        # 本机路径不从中层查询：query 只返回 role 的 root/bin（顶层用路径端口供货）
+        if "local" in dumped:
+            raise ProbeFailure("query must not expose local paths (top layer owns them)")
         if (wd / "registry.json").read_bytes() != snapshot:
             raise ProbeFailure("query wrote the registry (must be read-only)")
         if server._clients or server._skill_clients:
@@ -415,8 +419,8 @@ def case_query_isolation() -> dict:
 def case_query_no_budget() -> dict:
     """只读查询不占三类预算、不进队列：线程池被占满时仍立即返回。"""
     wd = temp_dir("vb-query-budget-")
-    set_working_dir(wd)
-    registry = load_registry()
+    override_work_dir_for_tests(wd)
+    registry = load_registry(registry_path())
     entry = UserEntry(token="tok-query", mode="local")
     entry.runtime.thread_pool_size = 1
     registry.register("alice", entry)
@@ -486,7 +490,7 @@ def case_skill_no_retry_after_delivery() -> dict:
     thread = threading.Thread(target=serve, daemon=True)
     thread.start()
     try:
-        from transport.skill_client import SkillClient
+        from common.skill_client import SkillClient
 
         client = SkillClient(host="127.0.0.1", port=port, timeout=5.0, token="tok")
         started = time.monotonic()

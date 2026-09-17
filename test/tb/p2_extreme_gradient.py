@@ -19,9 +19,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 from _win import no_window  # noqa: E402  (hide Windows consoles for ssh/scp)
 
-from transport.registry import UserEntry, load_registry
-from transport.register.probe import allocate_local_port
-from transport.runtime_paths import set_working_dir, registry_path
+from common.registry import UserEntry, load_registry
+from register.probe import allocate_local_port
+from common.paths import override_work_dir_for_tests, registry_path
 
 VPS = "vps"
 
@@ -45,7 +45,7 @@ def main() -> int:
                      stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, **no_window())
     time.sleep(5)
 
-    wd = set_working_dir(Path(tempfile.mkdtemp(prefix="vb-p2-")))
+    wd = override_work_dir_for_tests(Path(tempfile.mkdtemp(prefix="vb-p2-")))
     reg = load_registry(registry_path())
     tokens, roots, reserved = [], [], set()
     for n in range(args.users):

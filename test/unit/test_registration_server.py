@@ -15,9 +15,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from server.registration_server import RegistrationServer, _ADMIN_TOKEN_HASH
-from transport.registry import UserEntry, load_registry
-from transport.runtime_paths import registry_path, set_working_dir
+from register.server import RegistrationServer, _ADMIN_TOKEN_HASH
+from common.registry import UserEntry, load_registry
+from common.paths import registry_path, override_work_dir_for_tests
 
 
 # 内置管理员 token 的明文（验收/测试用；服务端只存 SHA-256 哈希）
@@ -63,7 +63,7 @@ class _ServerThread:
 
 class TestRegistrationServer(unittest.TestCase):
     def setUp(self):
-        self.wd = set_working_dir(Path(tempfile.mkdtemp()))
+        self.wd = override_work_dir_for_tests(Path(tempfile.mkdtemp()))
         self.registry = load_registry(registry_path())
         self.srv = _ServerThread(self.registry)
 
@@ -257,9 +257,9 @@ class TestRegistrationServer(unittest.TestCase):
         """同主机同端口冲突；不同主机同号允许（配置一览 §6.4）。"""
         port = _free_port()
         # 直接走本地校验：同主机同端口必须报冲突，不同主机同号必须放行
-        from transport.register.flow import validate_local
-        from transport.register.models import RegistrationRequest
-        from transport.registry import UserEntry
+        from register.flow import validate_local
+        from register.models import RegistrationRequest
+        from common.registry import UserEntry
 
         entry = UserEntry(token="tok-a", mode="remote")
         entry.roles.daemon.host = "host-a"

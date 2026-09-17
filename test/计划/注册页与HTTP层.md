@@ -1,6 +1,6 @@
 # 注册页与 HTTP 层
 
-> 覆盖目标：`src/server/registration_server.py`、`src/server/registration_page.html`、
+> 覆盖目标：`src/register/server.py`、`src/register/registration_page.html`、
 > `test/frontend_tb/`（Mock Testbench）。判据：页面提交的 payload 与 spec 契约一致，服务端拒绝语义正确。
 
 ### 1. 页面 payload 形状

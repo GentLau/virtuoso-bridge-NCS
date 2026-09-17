@@ -37,6 +37,7 @@ class Package:
     """demo 领域：把参考/示例类业务操作收进一个业务包。"""
 
     def __init__(self, middle: Middle) -> None:
+        self.middle = middle
         self._pipeline = FileSkillCommandFilePackage(middle)
         self._probe = ParallelProbePackage(middle)
         self._netlist = NetlistPackage(middle)
