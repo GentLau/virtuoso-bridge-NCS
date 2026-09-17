@@ -363,6 +363,27 @@ class TestRegistrationServer(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertEqual(json.loads(raw)["business_thread_pool_size"], 8)
 
+    def test_config_persisted_and_loaded_once(self):
+        # 写入后 server.json 原子落盘
+        self.srv.request("PUT", "/api/config",
+                         {"business_thread_pool_size": 8}, _admin_auth())
+        cfg_path = Path(registry_path()).parent / "server.json"
+        self.assertTrue(cfg_path.exists())
+        self.assertEqual(json.loads(cfg_path.read_text(encoding="utf-8"))["business_thread_pool_size"], 8)
+        # 启动导入一次：新 server 直接从文件读到 8
+        second = _ServerThread(self.registry)
+        try:
+            status, raw = second.request("GET", "/api/config", None, _admin_auth())
+            self.assertEqual(status, 200)
+            self.assertEqual(json.loads(raw)["business_thread_pool_size"], 8)
+        finally:
+            second.close()
+
+    def test_config_unknown_key_rejected(self):
+        status, raw = self.srv.request("PUT", "/api/config",
+                                       {"bogus": 1}, _admin_auth())
+        self.assertEqual(status, 400)
+
 
 if __name__ == "__main__":
     unittest.main()

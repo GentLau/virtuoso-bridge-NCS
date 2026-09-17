@@ -20,8 +20,11 @@ import argparse
 import hashlib
 import hmac
 import json
+import os
+import tempfile
 from importlib.resources import files
 import threading
+from pathlib import Path
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import unquote, urlparse
 
@@ -351,7 +354,12 @@ class RegistrationHandler(BaseHTTPRequestHandler):
             if not isinstance(body, dict):
                 self._send_json(400, {"error": "invalid config body"})
                 return
+            unknown = set(body) - set(self.server.config)
+            if unknown:
+                self._send_json(400, {"error": "unknown config keys", "detail": sorted(unknown)})
+                return
             self.server.config.update(body)
+            self.server.save_config()
             self._send_json(200, self.server.config)
             return
         self._send_json(404, {"error": "not found"})
@@ -370,7 +378,32 @@ class RegistrationServer(ThreadingHTTPServer):
         self.reservations = ReservationTable()
         self.flows: dict[str, RegistrationFlow] = {}
         self.flow_lock = threading.Lock()
-        self.config: dict = {"business_thread_pool_size": None}
+        self.config_path = registry_path().parent / "server.json"
+        self.config: dict = self.load_config()
+
+    def load_config(self) -> dict:
+        """启动时导入一次到内存快照；运行期不再读文件。"""
+        try:
+            data = json.loads(self.config_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return {"business_thread_pool_size": None}
+        return {"business_thread_pool_size": data.get("business_thread_pool_size")}
+
+    def save_config(self) -> None:
+        """配置变更的手动写回：临时文件 + 原子替换，不频繁 IO。"""
+        self.config_path.parent.mkdir(parents=True, exist_ok=True)
+        fd, tmp = tempfile.mkstemp(dir=str(self.config_path.parent), prefix="server-", suffix=".tmp")
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as fh:
+                json.dump(self.config, fh, ensure_ascii=False, indent=2)
+                fh.write("\n")
+            os.replace(tmp, self.config_path)
+        except Exception:
+            try:
+                os.unlink(tmp)
+            except OSError:
+                pass
+            raise
 
 
 def main(argv: list[str] | None = None) -> None:
