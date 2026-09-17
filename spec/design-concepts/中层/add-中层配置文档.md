@@ -1,9 +1,9 @@
 # 中层配置文档
 
-> 版本：Draft v28
+> 版本：Draft v29
 > 日期：2026-09-15
 > 状态：Normative（字段目录、默认值、探测写回、注册表 schema、reservation 与 endpoint key 的唯一规范源）
-> Supersedes：Draft v21–v27（v21 字段目录重组；v22 探测/root 分界、reservation 内存化；v23 max_sessions 按 endpoint；v24 指纹例外与示例标注；v25 定位与 root 类型；v26 local role 指纹显式化；v27 必填清单 owner 收归本文 §4）
+> Supersedes：Draft v21–v28（v21–v27 同前；v28 固定目录补充 server.json）
 > 定位：本文是[多用户与注册](1-多用户与注册.md)的**字段与 schema 详细补充**——六步状态机与授权归[多用户与注册](1-多用户与注册.md)；本文是字段与必填清单 owner（§4），并提供默认值、探测写回、注册表 schema、reservation 与 endpoint key。
 
 ## 1. 总述
@@ -75,7 +75,7 @@
 
 ### 2.6 固定目录结构（非配置项）
 
-- 本地工作目录不是注册字段（启动时传入，不传用实现默认）；子结构固定 `registry.json / temp/ / log/ / artifact/`，启动时自动创建；
+- 本地工作目录不是注册字段（启动时传入，不传用实现默认）；子结构固定 `registry.json / server.json / temp/ / log/ / artifact/`，启动时自动创建（`server.json` 见[顶层补充 §5](../顶层/add-控制面与业务面.md)）；
 - 远端部署目录写死：`role.daemon.root` 下 `ramic/ / setup/ / status/`，部署规则见[多用户与注册 §4.2](1-多用户与注册.md)。
 
 ## 3. 三类处理规则
