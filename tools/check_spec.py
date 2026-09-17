@@ -43,6 +43,7 @@ NORMATIVE = [
     "design-concepts/中层/2-并发设计.md",
     "design-concepts/底层/6-日志返回设计标准.md",
     "design-concepts/顶层/1-顶层.md",
+    "design-concepts/顶层/add-控制面与业务面.md",
     "design-concepts/上层/1-上层.md",
 ]
 
