@@ -9,7 +9,7 @@
         "log": "line-1\nline-2\n",
         "value": "2"
       },
-      "elapsed_s": 0.015000000013969839
+      "elapsed_s": 0.030999999959021807
     },
     "py27:degrade-and-truncate": {
       "status": "pass",
@@ -44,14 +44,14 @@
         "unread_bytes": 31,
         "log": ""
       },
-      "elapsed_s": 0.0
+      "elapsed_s": 0.015000000013969839
     },
     "py27:rotation-truncation": {
       "status": "pass",
       "detail": {
         "log": "rotated-content\n"
       },
-      "elapsed_s": 0.015000000013969839
+      "elapsed_s": 0.01600000006146729
     },
     "py27:second-frame-timeout": {
       "status": "pass",
@@ -66,11 +66,11 @@
     "py27:server-loop": {
       "status": "pass",
       "detail": {
-        "port": 53672,
+        "port": 58706,
         "response": "\u0015{\"error\": \"JSONDecodeError: Expecting property name enclose",
         "errors": 1
       },
-      "elapsed_s": 0.03200000000651926
+      "elapsed_s": 0.015999999945051968
     },
     "py27:unreadable-log": {
       "status": "pass",
@@ -137,18 +137,18 @@
         "warnings": [
           "CDS.log unavailable: CDS.log path unavailable"
         ],
-        "elapsed_s": 0.406
+        "elapsed_s": 0.407
       },
-      "elapsed_s": 0.4059999999590218
+      "elapsed_s": 0.40700000000651926
     },
     "py3:server-loop": {
       "status": "pass",
       "detail": {
-        "port": 50815,
+        "port": 58708,
         "response": "\u0015{\"error\": \"JSONDecodeError: Expecting property name enclose",
         "errors": 1
       },
-      "elapsed_s": 0.0
+      "elapsed_s": 0.015000000013969839
     },
     "py3:unreadable-log": {
       "status": "pass",

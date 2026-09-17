@@ -10,56 +10,56 @@
   "requests": 144,
   "planned_requests": 144,
   "failed": 0,
-  "elapsed_s": 25.188,
+  "elapsed_s": 29.297,
   "per_kind": {
+    "gui": {
+      "total": 24,
+      "ok": 24,
+      "retries": 46,
+      "rejections": 46,
+      "max_s": 8.625
+    },
     "command": {
       "total": 20,
       "ok": 20,
-      "retries": 25,
-      "rejections": 25,
-      "max_s": 5.907
+      "retries": 46,
+      "rejections": 46,
+      "max_s": 7.484
     },
     "spectre": {
       "total": 20,
       "ok": 20,
-      "retries": 53,
-      "rejections": 53,
-      "max_s": 8.5
-    },
-    "gui": {
-      "total": 24,
-      "ok": 24,
-      "retries": 51,
-      "rejections": 51,
-      "max_s": 5.625
+      "retries": 80,
+      "rejections": 80,
+      "max_s": 9.969
     },
     "skill": {
       "total": 20,
       "ok": 20,
-      "retries": 38,
-      "rejections": 38,
-      "max_s": 8.391
-    },
-    "upload": {
-      "total": 18,
-      "ok": 18,
-      "retries": 63,
-      "rejections": 63,
-      "max_s": 10.516
-    },
-    "composite": {
-      "total": 20,
-      "ok": 20,
-      "retries": 49,
-      "rejections": 49,
-      "max_s": 19.156
+      "retries": 43,
+      "rejections": 43,
+      "max_s": 10.187
     },
     "download": {
       "total": 22,
       "ok": 22,
-      "retries": 75,
-      "rejections": 75,
-      "max_s": 12.203
+      "retries": 44,
+      "rejections": 44,
+      "max_s": 9.812
+    },
+    "upload": {
+      "total": 18,
+      "ok": 18,
+      "retries": 47,
+      "rejections": 47,
+      "max_s": 8.735
+    },
+    "composite": {
+      "total": 20,
+      "ok": 20,
+      "retries": 71,
+      "rejections": 71,
+      "max_s": 24.5
     }
   },
   "failures": [],
@@ -72,63 +72,63 @@
   "samples": [
     {
       "token": "vb-http-local",
-      "worker": 13,
-      "kind": "command",
-      "marker": "VB-com-b1dd8dcefc",
-      "attempts": 1,
-      "rejections": 0,
-      "ok": true,
-      "detail": "",
-      "first_error": "",
-      "elapsed_s": 0.719
-    },
-    {
-      "token": "vb-http-local",
-      "worker": 7,
-      "kind": "spectre",
-      "marker": "VB-spe-0788c2b27f",
-      "attempts": 1,
-      "rejections": 0,
-      "ok": true,
-      "detail": "",
-      "first_error": "",
-      "elapsed_s": 0.39
-    },
-    {
-      "token": "vb-http-local",
       "worker": 3,
       "kind": "gui",
-      "marker": "VB-gui-78188ce91a",
+      "marker": "VB-gui-e2907b81fc",
       "attempts": 1,
       "rejections": 0,
       "ok": true,
       "detail": "",
       "first_error": "",
-      "elapsed_s": 0.422
+      "elapsed_s": 0.438
     },
     {
       "token": "vb-http-local",
-      "worker": 21,
-      "kind": "skill",
-      "marker": "VB-ski-3bda81cfc9",
-      "attempts": 2,
-      "rejections": 1,
+      "worker": 13,
+      "kind": "command",
+      "marker": "VB-com-a8bff35deb",
+      "attempts": 1,
+      "rejections": 0,
       "ok": true,
       "detail": "",
       "first_error": "",
-      "elapsed_s": 0.797
+      "elapsed_s": 0.672
     },
     {
       "token": "vb-http-local",
-      "worker": 5,
-      "kind": "skill",
-      "marker": "VB-ski-5d37813717",
-      "attempts": 2,
-      "rejections": 1,
+      "worker": 14,
+      "kind": "gui",
+      "marker": "VB-gui-8cd7a57923",
+      "attempts": 1,
+      "rejections": 0,
       "ok": true,
       "detail": "",
       "first_error": "",
-      "elapsed_s": 0.735
+      "elapsed_s": 0.593
+    },
+    {
+      "token": "vb-http-local",
+      "worker": 23,
+      "kind": "spectre",
+      "marker": "VB-spe-d8382ab6a1",
+      "attempts": 1,
+      "rejections": 0,
+      "ok": true,
+      "detail": "",
+      "first_error": "",
+      "elapsed_s": 0.641
+    },
+    {
+      "token": "vb-http-local",
+      "worker": 11,
+      "kind": "gui",
+      "marker": "VB-gui-8e5dfee1dd",
+      "attempts": 1,
+      "rejections": 0,
+      "ok": true,
+      "detail": "",
+      "first_error": "",
+      "elapsed_s": 0.609
     }
   ]
 }

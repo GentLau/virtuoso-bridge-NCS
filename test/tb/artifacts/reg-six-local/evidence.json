@@ -4,8 +4,8 @@
   "user": "vbsixlocal",
   "token": "vb-six-local",
   "host": "wsl-gent",
-  "daemon_port": 51364,
-  "http_port": 51365,
+  "daemon_port": 58740,
+  "http_port": 58741,
   "work_dir": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\reg-six-local",
   "steps": [
     {
@@ -34,7 +34,7 @@
       "action": "deploy",
       "status": 200,
       "stage": "deployed",
-      "setup_path": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-ufnkiylp\\daemon/setup/virtuoso_setup.il"
+      "setup_path": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-lu18e60q\\daemon/setup/virtuoso_setup.il"
     },
     {
       "step": 5,
@@ -108,12 +108,12 @@
         "token": "vb-six-local",
         "mode": "local",
         "root": {
-          "default": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-ufnkiylp"
+          "default": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-lu18e60q"
         },
         "roles": {
           "daemon": {
-            "daemon_port": 51364,
-            "local_port": 51364
+            "daemon_port": 58740,
+            "local_port": 58740
           }
         },
         "log_level": "off",
@@ -185,7 +185,7 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-ufnkiylp\\gui",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-lu18e60q\\gui",
               "expected_fingerprint": null,
               "max_sessions": 10
             },
@@ -196,11 +196,11 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-ufnkiylp\\daemon",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-lu18e60q\\daemon",
               "expected_fingerprint": null,
               "max_sessions": 10,
-              "daemon_port": 51364,
-              "local_port": 51364,
+              "daemon_port": 58740,
+              "local_port": 58740,
               "python": "C:\\Users\\user\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
               "expected_hostname": "DESKTOP-F143LSD",
               "expected_user": "user"
@@ -212,7 +212,7 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-ufnkiylp\\command",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-lu18e60q\\command",
               "expected_fingerprint": null,
               "max_sessions": 10
             },
@@ -223,7 +223,7 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-ufnkiylp\\file",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-lu18e60q\\file",
               "expected_fingerprint": null,
               "max_sessions": 10
             },
@@ -234,7 +234,7 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-ufnkiylp\\spectre",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-lu18e60q\\spectre",
               "expected_fingerprint": null,
               "max_sessions": 10,
               "bin": null
@@ -267,7 +267,7 @@
         "warnings": [
           "no usable spectre found locally (non-blocking)"
         ],
-        "setup_path": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-ufnkiylp\\daemon/setup/virtuoso_setup.il",
+        "setup_path": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-lu18e60q\\daemon/setup/virtuoso_setup.il",
         "entry": {
           "token": "vb-six-local",
           "mode": {
@@ -296,7 +296,7 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-ufnkiylp\\gui",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-lu18e60q\\gui",
               "expected_fingerprint": null,
               "max_sessions": 10
             },
@@ -307,11 +307,11 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-ufnkiylp\\daemon",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-lu18e60q\\daemon",
               "expected_fingerprint": null,
               "max_sessions": 10,
-              "daemon_port": 51364,
-              "local_port": 51364,
+              "daemon_port": 58740,
+              "local_port": 58740,
               "python": "C:\\Users\\user\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
               "expected_hostname": "DESKTOP-F143LSD",
               "expected_user": "user"
@@ -323,7 +323,7 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-ufnkiylp\\command",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-lu18e60q\\command",
               "expected_fingerprint": null,
               "max_sessions": 10
             },
@@ -334,7 +334,7 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-ufnkiylp\\file",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-lu18e60q\\file",
               "expected_fingerprint": null,
               "max_sessions": 10
             },
@@ -345,7 +345,7 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-ufnkiylp\\spectre",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-lu18e60q\\spectre",
               "expected_fingerprint": null,
               "max_sessions": 10,
               "bin": null
@@ -376,7 +376,7 @@
         "token": "vb-six-local",
         "errors": [],
         "warnings": [],
-        "setup_path": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-ufnkiylp\\daemon/setup/virtuoso_setup.il",
+        "setup_path": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-lu18e60q\\daemon/setup/virtuoso_setup.il",
         "entry": {
           "token": "vb-six-local",
           "mode": {
@@ -405,7 +405,7 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-ufnkiylp\\gui",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-lu18e60q\\gui",
               "expected_fingerprint": null,
               "max_sessions": 10
             },
@@ -416,11 +416,11 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-ufnkiylp\\daemon",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-lu18e60q\\daemon",
               "expected_fingerprint": null,
               "max_sessions": 10,
-              "daemon_port": 51364,
-              "local_port": 51364,
+              "daemon_port": 58740,
+              "local_port": 58740,
               "python": "C:\\Users\\user\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
               "expected_hostname": "DESKTOP-F143LSD",
               "expected_user": "user"
@@ -432,7 +432,7 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-ufnkiylp\\command",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-lu18e60q\\command",
               "expected_fingerprint": null,
               "max_sessions": 10
             },
@@ -443,7 +443,7 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-ufnkiylp\\file",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-lu18e60q\\file",
               "expected_fingerprint": null,
               "max_sessions": 10
             },
@@ -454,7 +454,7 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-ufnkiylp\\spectre",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-lu18e60q\\spectre",
               "expected_fingerprint": null,
               "max_sessions": 10,
               "bin": null
@@ -469,7 +469,7 @@
             "log_level": "off",
             "log_max_bytes": 65536
           },
-          "registered_at": 1789618700
+          "registered_at": 1789619541
         },
         "report": {
           "command_ok": true,
@@ -517,7 +517,7 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-ufnkiylp\\gui",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-lu18e60q\\gui",
               "expected_fingerprint": null,
               "max_sessions": 10
             },
@@ -528,11 +528,11 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-ufnkiylp\\daemon",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-lu18e60q\\daemon",
               "expected_fingerprint": null,
               "max_sessions": 10,
-              "daemon_port": 51364,
-              "local_port": 51364,
+              "daemon_port": 58740,
+              "local_port": 58740,
               "python": "C:\\Users\\user\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
               "expected_hostname": "DESKTOP-F143LSD",
               "expected_user": "user"
@@ -544,7 +544,7 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-ufnkiylp\\command",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-lu18e60q\\command",
               "expected_fingerprint": null,
               "max_sessions": 10
             },
@@ -555,7 +555,7 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-ufnkiylp\\file",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-lu18e60q\\file",
               "expected_fingerprint": null,
               "max_sessions": 10
             },
@@ -566,7 +566,7 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-ufnkiylp\\spectre",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-lu18e60q\\spectre",
               "expected_fingerprint": null,
               "max_sessions": 10,
               "bin": null
@@ -581,7 +581,7 @@
             "log_level": "off",
             "log_max_bytes": 65536
           },
-          "registered_at": 1789618700
+          "registered_at": 1789619541
         }
       }
     },
@@ -622,7 +622,7 @@
                   "jump_host": null,
                   "jump_user": null,
                   "proxy": null,
-                  "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-ufnkiylp\\gui",
+                  "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-lu18e60q\\gui",
                   "expected_fingerprint": null,
                   "max_sessions": 10
                 },
@@ -633,11 +633,11 @@
                   "jump_host": null,
                   "jump_user": null,
                   "proxy": null,
-                  "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-ufnkiylp\\daemon",
+                  "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-lu18e60q\\daemon",
                   "expected_fingerprint": null,
                   "max_sessions": 10,
-                  "daemon_port": 51364,
-                  "local_port": 51364,
+                  "daemon_port": 58740,
+                  "local_port": 58740,
                   "python": "C:\\Users\\user\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
                   "expected_hostname": "DESKTOP-F143LSD",
                   "expected_user": "user"
@@ -649,7 +649,7 @@
                   "jump_host": null,
                   "jump_user": null,
                   "proxy": null,
-                  "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-ufnkiylp\\command",
+                  "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-lu18e60q\\command",
                   "expected_fingerprint": null,
                   "max_sessions": 10
                 },
@@ -660,7 +660,7 @@
                   "jump_host": null,
                   "jump_user": null,
                   "proxy": null,
-                  "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-ufnkiylp\\file",
+                  "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-lu18e60q\\file",
                   "expected_fingerprint": null,
                   "max_sessions": 10
                 },
@@ -671,7 +671,7 @@
                   "jump_host": null,
                   "jump_user": null,
                   "proxy": null,
-                  "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-ufnkiylp\\spectre",
+                  "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-lu18e60q\\spectre",
                   "expected_fingerprint": null,
                   "max_sessions": 10,
                   "bin": null
@@ -686,7 +686,7 @@
                 "log_level": "off",
                 "log_max_bytes": 65536
               },
-              "registered_at": 1789618700
+              "registered_at": 1789619541
             }
           }
         ]
@@ -724,7 +724,7 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-ufnkiylp\\gui",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-lu18e60q\\gui",
               "expected_fingerprint": null,
               "max_sessions": 10
             },
@@ -735,11 +735,11 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-ufnkiylp\\daemon",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-lu18e60q\\daemon",
               "expected_fingerprint": null,
               "max_sessions": 10,
-              "daemon_port": 51364,
-              "local_port": 51364,
+              "daemon_port": 58740,
+              "local_port": 58740,
               "python": "C:\\Users\\user\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
               "expected_hostname": "DESKTOP-F143LSD",
               "expected_user": "user"
@@ -751,7 +751,7 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-ufnkiylp\\command",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-lu18e60q\\command",
               "expected_fingerprint": null,
               "max_sessions": 10
             },
@@ -762,7 +762,7 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-ufnkiylp\\file",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-lu18e60q\\file",
               "expected_fingerprint": null,
               "max_sessions": 10
             },
@@ -773,7 +773,7 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-ufnkiylp\\spectre",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-lu18e60q\\spectre",
               "expected_fingerprint": null,
               "max_sessions": 10,
               "bin": null
@@ -788,7 +788,7 @@
             "log_level": "off",
             "log_max_bytes": 65536
           },
-          "registered_at": 1789618700
+          "registered_at": 1789619541
         }
       }
     },
@@ -821,7 +821,7 @@
             "jump_host": null,
             "jump_user": null,
             "proxy": null,
-            "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-ufnkiylp\\gui",
+            "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-lu18e60q\\gui",
             "expected_fingerprint": null,
             "max_sessions": 10
           },
@@ -832,11 +832,11 @@
             "jump_host": null,
             "jump_user": null,
             "proxy": null,
-            "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-ufnkiylp\\daemon",
+            "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-lu18e60q\\daemon",
             "expected_fingerprint": null,
             "max_sessions": 10,
-            "daemon_port": 51364,
-            "local_port": 51364,
+            "daemon_port": 58740,
+            "local_port": 58740,
             "python": "C:\\Users\\user\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
             "expected_hostname": "DESKTOP-F143LSD",
             "expected_user": "user"
@@ -848,7 +848,7 @@
             "jump_host": null,
             "jump_user": null,
             "proxy": null,
-            "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-ufnkiylp\\command",
+            "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-lu18e60q\\command",
             "expected_fingerprint": null,
             "max_sessions": 10
           },
@@ -859,7 +859,7 @@
             "jump_host": null,
             "jump_user": null,
             "proxy": null,
-            "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-ufnkiylp\\file",
+            "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-lu18e60q\\file",
             "expected_fingerprint": null,
             "max_sessions": 10
           },
@@ -870,7 +870,7 @@
             "jump_host": null,
             "jump_user": null,
             "proxy": null,
-            "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-ufnkiylp\\spectre",
+            "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-lu18e60q\\spectre",
             "expected_fingerprint": null,
             "max_sessions": 10,
             "bin": null
@@ -885,7 +885,7 @@
           "log_level": "off",
           "log_max_bytes": 65536
         },
-        "registered_at": 1789618700
+        "registered_at": 1789619541
       },
       "response": {
         "user": "vbsixlocal",
@@ -917,7 +917,7 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-ufnkiylp\\gui",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-lu18e60q\\gui",
               "expected_fingerprint": null,
               "max_sessions": 10
             },
@@ -928,11 +928,11 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-ufnkiylp\\daemon",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-lu18e60q\\daemon",
               "expected_fingerprint": null,
               "max_sessions": 10,
-              "daemon_port": 51364,
-              "local_port": 51364,
+              "daemon_port": 58740,
+              "local_port": 58740,
               "python": "C:\\Users\\user\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
               "expected_hostname": "DESKTOP-F143LSD",
               "expected_user": "user"
@@ -944,7 +944,7 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-ufnkiylp\\command",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-lu18e60q\\command",
               "expected_fingerprint": null,
               "max_sessions": 10
             },
@@ -955,7 +955,7 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-ufnkiylp\\file",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-lu18e60q\\file",
               "expected_fingerprint": null,
               "max_sessions": 10
             },
@@ -966,7 +966,7 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
-              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-ufnkiylp\\spectre",
+              "root": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-lu18e60q\\spectre",
               "expected_fingerprint": null,
               "max_sessions": 10,
               "bin": null
@@ -981,7 +981,7 @@
             "log_level": "off",
             "log_max_bytes": 65536
           },
-          "registered_at": 1789618700
+          "registered_at": 1789619541
         }
       }
     },
@@ -1018,12 +1018,12 @@
         "token": "vb-six-local-x",
         "mode": "local",
         "root": {
-          "default": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-ufnkiylp"
+          "default": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-six-root-lu18e60q"
         },
         "roles": {
           "daemon": {
-            "daemon_port": 51381,
-            "local_port": 51381
+            "daemon_port": 58756,
+            "local_port": 58756
           }
         },
         "log_level": "off",
@@ -1056,5 +1056,5 @@
       }
     }
   ],
-  "elapsed_s": 1.5
+  "elapsed_s": 1.5320000000065193
 }

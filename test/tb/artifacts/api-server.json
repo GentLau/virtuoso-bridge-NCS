@@ -1,7 +1,7 @@
 {
   "ok": true,
   "failed": 0,
-  "elapsed_s": 4.406,
+  "elapsed_s": 4.422,
   "results": {
     "operations": [
       "demo.parallel.probe",
@@ -18,6 +18,8 @@
     "error_isolation": "500 then next request ok",
     "concurrent": "8/8",
     "dispatch_purity": "no transport/socket/subprocess imports",
+    "package_metadata": "Package + OPERATIONS exported",
+    "duplicate_registration": "startup error: operation 'demo.pipeline.run' is already registered",
     "pool_limit": {
       "max_inflight": 1024,
       "tested_limit": 2,

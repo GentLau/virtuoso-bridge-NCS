@@ -104,8 +104,14 @@ class ParallelProbePackage:
         return result
 
 
+#: spec 上层 §4.2: every package exports ``Package`` + its operation metadata
+Package = ParallelProbePackage
+OPERATIONS = ((OPERATION_NAME, "run_request", Request, ParallelProbeResult),)
+
 __all__ = [
+    "OPERATIONS",
     "OPERATION_NAME",
+    "Package",
     "ParallelProbePackage",
     "ParallelProbeResult",
     "Request",

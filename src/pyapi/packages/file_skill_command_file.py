@@ -118,10 +118,16 @@ class FileSkillCommandFilePackage:
         )
 
 
+#: spec 上层 §4.2: every package exports ``Package`` + its operation metadata
+Package = FileSkillCommandFilePackage
+OPERATIONS = ((OPERATION_NAME, "run_request", Request, BusinessResult),)
+
 __all__ = [
     "BusinessResult",
     "BusinessStep",
     "FileSkillCommandFilePackage",
+    "OPERATIONS",
     "OPERATION_NAME",
+    "Package",
     "Request",
 ]

@@ -285,6 +285,31 @@ def main() -> int:
             raise ProbeFailure(f"dispatch module imports transport code: {banned}")
         results["dispatch_purity"] = "no transport/socket/subprocess imports"
 
+        # -- spec 上层 §4.2: every package exports Package + OPERATIONS ----------
+        for module_name, operation in (
+            ("pyapi.packages.netlist_import", "virtuoso.netlist.import"),
+            ("pyapi.packages.file_skill_command_file", "demo.pipeline.run"),
+            ("pyapi.packages.parallel_probe", "demo.parallel.probe"),
+        ):
+            module = __import__(module_name, fromlist=["*"])
+            if not hasattr(module, "Package") or not hasattr(module, "OPERATIONS"):
+                raise ProbeFailure(f"{module_name} lacks Package/OPERATIONS metadata")
+            if module.OPERATIONS[0][0] != operation:
+                raise ProbeFailure(
+                    f"{module_name} operation metadata mismatch: {module.OPERATIONS[0][0]}"
+                )
+        results["package_metadata"] = "Package + OPERATIONS exported"
+
+        # duplicate operation registration must be a startup error (顶层 §2.1)
+        try:
+            dispatch_module.register_operation(
+                "demo.pipeline.run", object, "run", dict
+            )
+        except ValueError as exc:
+            results["duplicate_registration"] = f"startup error: {exc}"
+        else:
+            raise ProbeFailure("duplicate operation registration was accepted")
+
         # -- top-layer overall pool: over-limit is refused immediately (429) ----
         if DEFAULT_MAX_INFLIGHT != 1024:
             raise ProbeFailure(f"provisional pool size drifted: {DEFAULT_MAX_INFLIGHT}")

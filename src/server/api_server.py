@@ -145,10 +145,13 @@ def register_packages() -> dict[str, str]:
             module = __import__(module_name, fromlist=["*"])
             package = getattr(module, class_name)
             request_model = getattr(module, request_attr)
-            dispatch_module.register_operation(operation, package, method, request_model)
         except Exception as exc:  # noqa: BLE001 - only this package is disabled
             errors[operation] = f"{type(exc).__name__}: {exc}"
             dispatch_module.PACKAGE_LOAD_ERRORS[operation] = errors[operation]
+            continue
+        # duplicate operation names are a startup error (顶层 §2.1), not a
+        # "package unavailable" case
+        dispatch_module.register_operation(operation, package, method, request_model)
     return errors
 
 
