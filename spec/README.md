@@ -115,7 +115,7 @@ CDS.log metadata frame 完整字节格式
 | 多用户与注册 | Draft v23 | Normative | Draft v22（修改类路径用 user 定位，token 作校验凭证） |
 | 并发设计 | Draft v20 | Normative | Draft v19（重试决策单元术语统一为业务操作） |
 | 顶层 | Draft v12 | Normative | Draft v11（索引新增端点补充） |
-| 控制面与业务面 | Draft v8 | Normative | Draft v7（apply 起返回 token，后续 action 必须携带并校验） |
+| 控制面与业务面 | Draft v10 | Normative | Draft v9（管理权限改为管理员私钥签名 + 预置公钥验签） |
 | 上层 | Draft v12 | Normative | Draft v11（加载失败=未加载；步骤重试边界；自描述元数据口径） |
 | 日志返回设计标准 | Draft v12 | Normative | Draft v11（等待队列留在中层投递前） |
 
