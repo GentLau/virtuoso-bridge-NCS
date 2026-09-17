@@ -1,9 +1,9 @@
 # 顶层补充：控制面与业务面
 
-> 版本：Draft v5
+> 版本：Draft v6
 > 日期：2026-09-17
 > 状态：Normative（顶层 HTTP 端点清单与端口划分的唯一口径）
-> Supersedes：Draft v4（修改类路径用 user 定位，token 作校验凭证）
+> Supersedes：Draft v5（业务端点 /api/run 改名 /api/operation）
 > 定位：本文是[顶层](1-顶层.md)的端点补充——[顶层](1-顶层.md)定义顶层职责、调度与响应壳；本文定义顶层开哪些端口、哪些方法、支持哪些请求。注册语义见[多用户与注册 §3/§5](../中层/1-多用户与注册.md)。
 
 ## 1. 双面双端口
@@ -60,7 +60,7 @@
 
 | 方法 | 路径 | 用途 |
 |---|---|---|
-| POST | `/api/run` | 业务调度：`{operation, token, 业务字段}` → 查注册表 → 构造 Request → 调用对应方法 → 响应壳 |
+| POST | `/api/operation` | 业务调度：`{operation, token, 业务字段}` → 查注册表 → 构造 Request → 调用对应方法 → 响应壳 |
 | GET | `/health` | 存活探针（运维用） |
 
 - 业务端口只做 operation 调度，不开注册/管理/配置端点；`query` 是上层↔中层接口，不是 HTTP 端点；
