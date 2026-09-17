@@ -1,8 +1,9 @@
 # 顶层补充：控制面与业务面
 
-> 版本：Draft v1
+> 版本：Draft v3
 > 日期：2026-09-17
 > 状态：Normative（顶层 HTTP 端点清单与端口划分的唯一口径）
+> Supersedes：Draft v2（第五步与第六步分离：verify 只校验，commit 显式写盘）
 > 定位：本文是[顶层](1-顶层.md)的端点补充——[顶层](1-顶层.md)定义顶层职责、调度与响应壳；本文定义顶层开哪些端口、哪些方法、支持哪些请求。注册语义见[多用户与注册 §3/§5](../中层/1-多用户与注册.md)。
 
 ## 1. 双面双端口
@@ -30,7 +31,8 @@
 | POST | `/api/register/<user>/validate` | ②本地校验 |
 | POST | `/api/register/<user>/probe` | ③探测 |
 | POST | `/api/register/<user>/deploy` | ④部署 |
-| POST | `/api/register/<user>/verify` | ⑤连通性 + ⑥写注册表（唯一写盘点） |
+| POST | `/api/register/<user>/verify` | ⑤连通性（只校验、不落盘） |
+| POST | `/api/register/<user>/commit` | ⑥写注册表（用户显式确认后调用，唯一写盘点） |
 | POST | `/api/register` | ①–④ 一步便捷（等价 apply→deploy） |
 
 **用户管理**（语义见[多用户与注册 §5](../中层/1-多用户与注册.md)）
@@ -39,8 +41,8 @@
 |---|---|---|
 | GET | `/api/users` | 用户列表 |
 | GET | `/api/user/<user>` | 读取用户条目 |
-| POST | `/api/user/<user>/update` | 修改（白名单字段；token 不可变） |
-| DELETE | `/api/user/<user>` | 删除（本机解绑 ≠ 远端吊销） |
+| POST | `/api/user/<token>/update` | 修改条目（白名单字段；token 定位并校验） |
+| DELETE | `/api/user/<token>` | 删除条目（token 定位并校验；本机解绑 ≠ 远端吊销） |
 
 **全局配置**（边界见 §4）
 
@@ -48,6 +50,7 @@
 |---|---|---|
 | GET / PUT | `/api/config` | 监听地址/端口、业务线程池上限等进程级参数 |
 
+- **修改类（update/delete）一律以 `token` 为定位键**：请求必须携带目标 token，服务端校验其存在且匹配后才修改；`user` 仅是可读路径名，不作为修改授权凭证；
 - 控制端口成功返回 JSON（或 HTML 页面）；失败 4xx + `{"error": …}`（可选 `detail`）；注册各步结果含 `warnings`（见[多用户与注册 §3.2](../中层/1-多用户与注册.md)）；
 - 控制端口不运行业务操作。
 
