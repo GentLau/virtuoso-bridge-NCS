@@ -15,9 +15,17 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from server.registration_server import RegistrationServer
+from server.registration_server import RegistrationServer, _ADMIN_TOKEN_HASH
 from transport.registry import UserEntry, load_registry
 from transport.runtime_paths import registry_path, set_working_dir
+
+
+# 内置管理员 token 的明文（验收/测试用；服务端只存 SHA-256 哈希）
+_ADMIN_TOKEN = "V-9-ZM32KpykwpNXyMnmSTUTFB2o_jJVfG0-D_Vd_JA"
+
+
+def _admin_auth():
+    return {"Authorization": "Bearer " + _ADMIN_TOKEN}
 
 
 def _free_port() -> int:
@@ -40,11 +48,13 @@ class _ServerThread:
         self.server.server_close()
         self.thread.join(timeout=3)
 
-    def request(self, method, path, body=None):
+    def request(self, method, path, body=None, headers=None):
         conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=10)
         payload = None if body is None else json.dumps(body)
-        headers = {} if payload is None else {"Content-Type": "application/json"}
-        conn.request(method, path, payload, headers)
+        merged = dict(headers or {})
+        if payload is not None and "Content-Type" not in merged:
+            merged["Content-Type"] = "application/json"
+        conn.request(method, path, payload, merged)
         resp = conn.getresponse()
         raw = resp.read().decode("utf-8")
         conn.close()
@@ -170,14 +180,14 @@ class TestRegistrationServer(unittest.TestCase):
 
     def test_delete_user(self):
         self.registry.register("carol", UserEntry(token="tok-del", mode="local"))
-        status, raw = self.srv.request("DELETE", "/api/user/carol", None)
+        status, raw = self.srv.request("DELETE", "/api/user/carol", None, _admin_auth())
         self.assertEqual(status, 200)
         self.assertTrue(json.loads(raw)["removed"])
         self.assertIsNone(self.registry.get("carol"))
 
     def test_update_user(self):
         self.registry.register("carol", UserEntry(token="tok-upd", mode="local"))
-        status, raw = self.srv.request("POST", "/api/user/carol/update", {"log_level": "error", "thread_pool_size": 16})
+        status, raw = self.srv.request("POST", "/api/user/carol/update", {"log_level": "error", "thread_pool_size": 16}, _admin_auth())
         self.assertEqual(status, 200)
         entry = self.registry.get("carol")
         self.assertEqual(entry.cdslog.log_level, "error")
@@ -193,6 +203,7 @@ class TestRegistrationServer(unittest.TestCase):
                 "root_default": "/work/dave",
                 "roles": {"spectre": {"mode": "remote"}},
             },
+            _admin_auth(),
         )
         self.assertEqual(status, 200, raw)
         entry = self.registry.get("dave")
@@ -203,7 +214,7 @@ class TestRegistrationServer(unittest.TestCase):
     def test_update_invalid_value_keeps_old_entry(self):
         self.registry.register("erin", UserEntry(token="tok-erin", mode="local"))
         before = self.registry.get("erin").model_dump()
-        status, raw = self.srv.request("POST", "/api/user/erin/update", {"log_level": "bogus"})
+        status, raw = self.srv.request("POST", "/api/user/erin/update", {"log_level": "bogus"}, _admin_auth())
         self.assertEqual(status, 400)
         self.assertEqual(self.registry.get("erin").model_dump(), before)
 
@@ -302,8 +313,55 @@ class TestRegistrationServer(unittest.TestCase):
         self.assertIsNone(self.registry.get("mike"), "失败注册不得落盘")
 
     def test_delete_unknown_user(self):
-        status, raw = self.srv.request("DELETE", "/api/user/ghost", None)
+        status, raw = self.srv.request("DELETE", "/api/user/ghost", None, _admin_auth())
         self.assertEqual(status, 404)
+
+    # -- 管理权限与脱敏（技术支持验收 4 条） -------------------------------
+
+    def test_personal_token_rejected_on_admin_endpoint(self):
+        self.registry.register("carol", UserEntry(token="tok-personal", mode="local"))
+        status, raw = self.srv.request(
+            "GET", "/api/users", None,
+            {"Authorization": "Bearer tok-personal"},
+        )
+        self.assertEqual(status, 401)
+
+    def test_users_response_redacts_token(self):
+        self.registry.register("carol", UserEntry(token="tok-redact", mode="local"))
+        status, raw = self.srv.request("GET", "/api/users", None, _admin_auth())
+        self.assertEqual(status, 200)
+        self.assertNotIn("tok-redact", raw)
+        self.assertNotIn('"token"', raw)
+
+    def test_update_body_with_token_field_rejected(self):
+        self.registry.register("carol", UserEntry(token="tok-upd2", mode="local"))
+        status, raw = self.srv.request(
+            "POST", "/api/user/carol/update",
+            {"token": "tok-upd2", "log_level": "error"},
+            _admin_auth(),
+        )
+        self.assertEqual(status, 400)
+
+    def test_credentials_never_logged(self):
+        import contextlib
+        import io as _io
+        buf = _io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            self.srv.request("GET", "/api/users", None,
+                             {"Authorization": "Bearer " + _ADMIN_TOKEN})
+            self.srv.request("GET", "/api/users", None,
+                             {"Authorization": "Bearer wrong"})
+        logged = buf.getvalue()
+        self.assertNotIn(_ADMIN_TOKEN, logged)
+
+    def test_config_admin_only(self):
+        status, raw = self.srv.request("GET", "/api/config")
+        self.assertEqual(status, 401)
+        status, raw = self.srv.request("PUT", "/api/config",
+                                       {"business_thread_pool_size": 8},
+                                       _admin_auth())
+        self.assertEqual(status, 200)
+        self.assertEqual(json.loads(raw)["business_thread_pool_size"], 8)
 
 
 if __name__ == "__main__":

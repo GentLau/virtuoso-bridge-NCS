@@ -17,6 +17,8 @@ State is kept in memory only; the single durable write is the step-6 commit.
 from __future__ import annotations
 
 import argparse
+import hashlib
+import hmac
 import json
 from importlib.resources import files
 import threading
@@ -31,6 +33,9 @@ from transport.registry import Registry, UserEntry, load_registry
 from transport.runtime_paths import registry_path, set_working_dir
 
 _PAGE = files("server").joinpath("registration_page.html").read_text(encoding="utf-8")
+
+# 内置单管理员 token 的 SHA-256 哈希（原文离线保管，不写死在代码里）。
+_ADMIN_TOKEN_HASH = "db84f807b2bc4af3c4aa7ee220862433438a3d1ee22be3705568a9e7a26b7771"
 
 
 class RegistrationHandler(BaseHTTPRequestHandler):
@@ -90,6 +95,24 @@ class RegistrationHandler(BaseHTTPRequestHandler):
             }
         return payload
 
+    def _require_admin(self) -> bool:
+        """内置单管理员 token 校验：只比对 SHA-256 哈希，凭据不进日志。"""
+        header = self.headers.get("Authorization", "")
+        presented = header.removeprefix("Bearer ").strip() if header else ""
+        digest = hashlib.sha256(presented.encode("utf-8")).hexdigest() if presented else ""
+        ok = bool(presented) and hmac.compare_digest(digest, _ADMIN_TOKEN_HASH)
+        if not ok:
+            self._send_json(401, {"error": "unauthorized"})
+            return False
+        self.log_message("admin authorized")
+        return True
+
+    @staticmethod
+    def _redacted(entry) -> dict:
+        data = entry.model_dump()
+        data.pop("token", None)
+        return data
+
     # -- routing --------------------------------------------------------------
 
     def do_GET(self) -> None:  # noqa: N802
@@ -97,21 +120,42 @@ class RegistrationHandler(BaseHTTPRequestHandler):
         if path == "/":
             self._send_html(200, _PAGE)
             return
+        if path == "/health":
+            self._send_json(200, {"status": "ok"})
+            return
+        if path == "/help":
+            self._send_json(200, {"endpoints": [
+                "GET /", "GET /health", "GET /help",
+                "POST /api/register", "GET /api/register/<user>",
+                "GET /api/users", "GET /api/user/<user>",
+                "POST /api/user/<user>/update", "DELETE /api/user/<user>",
+                "GET /api/config", "PUT /api/config",
+            ]})
+            return
+        if path == "/api/config":
+            if not self._require_admin():
+                return
+            self._send_json(200, self.server.config)
+            return
         if path == "/api/users":
+            if not self._require_admin():
+                return
             self._send_json(200, {
                 "users": [
-                    {"user": name, "entry": entry.model_dump()}
+                    {"user": name, "entry": self._redacted(entry)}
                     for name, entry in self.server.registry.entries()
                 ]
             })
             return
         if path.startswith("/api/user/"):
+            if not self._require_admin():
+                return
             user = unquote(path[len("/api/user/"):].rstrip("/"))
             entry = self.server.registry.get(user)
             if entry is None:
                 self._send_json(404, {"error": "unknown user", "user": user})
             else:
-                self._send_json(200, {"user": user, "entry": entry.model_dump()})
+                self._send_json(200, {"user": user, "entry": self._redacted(entry)})
             return
         if path.startswith("/api/register/"):
             user = unquote(path[len("/api/register/"):].rstrip("/"))
@@ -126,6 +170,8 @@ class RegistrationHandler(BaseHTTPRequestHandler):
     def do_DELETE(self) -> None:  # noqa: N802
         path = urlparse(self.path).path
         if path.startswith("/api/user/"):
+            if not self._require_admin():
+                return
             user = unquote(path[len("/api/user/"):].rstrip("/"))
             self._handle_delete(user)
             return
@@ -134,6 +180,8 @@ class RegistrationHandler(BaseHTTPRequestHandler):
     def do_POST(self) -> None:  # noqa: N802
         path = urlparse(self.path).path
         if path.startswith("/api/user/") and path.endswith("/update"):
+            if not self._require_admin():
+                return
             user = unquote(path[len("/api/user/"):-len("/update")])
             self._handle_update(user)
             return
@@ -253,7 +301,10 @@ class RegistrationHandler(BaseHTTPRequestHandler):
         # registration time.  ``token``/``registered_at`` are accepted so the
         # entry returned by GET can be posted back (read-only, validated).
         allowed = {"ssh", "root", "roles", "runtime", "cdslog",
-                   "token", "registered_at"}
+                   "registered_at"}
+        if "token" in fields:
+            self._send_json(400, {"error": "token must not be provided in update body"})
+            return
         unknown = set(fields) - allowed
         if unknown:
             self._send_json(
@@ -291,6 +342,20 @@ class RegistrationHandler(BaseHTTPRequestHandler):
         state = getattr(flow, action)()
         self._send_json(200, self._state_payload(state))
 
+    def do_PUT(self) -> None:  # noqa: N802
+        path = urlparse(self.path).path
+        if path == "/api/config":
+            if not self._require_admin():
+                return
+            body = self._read_json()
+            if not isinstance(body, dict):
+                self._send_json(400, {"error": "invalid config body"})
+                return
+            self.server.config.update(body)
+            self._send_json(200, self.server.config)
+            return
+        self._send_json(404, {"error": "not found"})
+
     def log_message(self, format: str, *args) -> None:  # noqa: A002
         print(f"[registration] {self.address_string()} - {format % args}")
 
@@ -305,6 +370,7 @@ class RegistrationServer(ThreadingHTTPServer):
         self.reservations = ReservationTable()
         self.flows: dict[str, RegistrationFlow] = {}
         self.flow_lock = threading.Lock()
+        self.config: dict = {"business_thread_pool_size": None}
 
 
 def main(argv: list[str] | None = None) -> None:
