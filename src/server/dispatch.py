@@ -63,6 +63,8 @@ def jsonable(value: Any) -> Any:
         return value.value
     if isinstance(value, Path):
         return str(value)
+    if hasattr(value, "model_dump") and callable(value.model_dump):  # pydantic
+        return jsonable(value.model_dump(mode="json"))
     if dataclasses.is_dataclass(value) and not isinstance(value, type):
         return {field.name: jsonable(getattr(value, field.name))
                 for field in dataclasses.fields(value)}

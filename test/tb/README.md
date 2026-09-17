@@ -17,7 +17,7 @@
 | TB | 覆盖内容 | 环境 |
 |---|---|---|
 | `run_coverage.ps1` | 合并覆盖率一键复算（离线 + 离线 TB + HTTP TB + 真机 TB） | Windows |
-| `api_server_tb.py` | 顶层 HTTP：注册表/调度/响应壳、4xx/2xx/5xx 分界、错误隔离、并发、token 不回显、dispatch 纯净性、整体线程池 429 拒绝与恢复 | Windows/任意平台 |
+| `api_server_tb.py` | 顶层 HTTP：注册表/调度/响应壳、basic 六操作直通、4xx/2xx/5xx 分界、错误隔离、并发、token 不回显、dispatch 纯净性、整体线程池 429 拒绝与恢复 | Windows/任意平台 |
 | `semantics_tb.py` | 本地文件接口 deadline、registry 跨进程读改写、安装崩溃安全 | 任意平台 |
 | `daemon_log_protocol_tb.py` | daemon 日志协议矩阵（off/分级/轮转/读不到/降级/截断/第二帧超时/错误帧/监听循环），py3+py27 双跑 | 任意平台 |
 | `_daemon_harness.py` | 脚本化 CIW 夹具（兼容 py3 `.buffer` 与 py2.7 文本流） | 任意平台 |

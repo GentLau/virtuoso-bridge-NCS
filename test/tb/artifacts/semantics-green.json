@@ -10,7 +10,7 @@
         "leftovers": [],
         "marker": "crashed-after-first-rename"
       },
-      "elapsed_s": 0.8900000000139698
+      "elapsed_s": 0.9529999999795109
     },
     "local-download-timeout": {
       "status": "pass",
@@ -21,7 +21,7 @@
         "clock_calls": 6,
         "partial_target": false
       },
-      "elapsed_s": 0.06300000008195639
+      "elapsed_s": 0.0470000000204891
     },
     "local-file-timeout": {
       "status": "pass",
@@ -32,7 +32,7 @@
         "clock_calls": 6,
         "partial_target": false
       },
-      "elapsed_s": 0.046999999904073775
+      "elapsed_s": 0.030999999959021807
     },
     "local-tree-timeout": {
       "status": "pass",
@@ -43,7 +43,7 @@
         "clock_calls": 6,
         "partial_target": false
       },
-      "elapsed_s": 0.03100000007543713
+      "elapsed_s": 0.0470000000204891
     },
     "query-isolation": {
       "status": "pass",
@@ -103,7 +103,7 @@
           "tok-user3"
         ]
       },
-      "elapsed_s": 1.202999999979511
+      "elapsed_s": 1.3599999999860302
     },
     "skill-no-retry-after-delivery": {
       "status": "pass",
@@ -112,9 +112,9 @@
         "errors": [
           "SKILL execution timed out"
         ],
-        "elapsed_s": 0.016
+        "elapsed_s": 0.0
       },
-      "elapsed_s": 0.01600000006146729
+      "elapsed_s": 0.0
     }
   }
 }

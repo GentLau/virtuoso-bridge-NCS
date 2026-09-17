@@ -1,15 +1,22 @@
 {
   "ok": true,
   "failed": 0,
-  "elapsed_s": 4.422,
+  "elapsed_s": 4.594,
   "results": {
     "operations": [
+      "basic.command.run",
+      "basic.file.download",
+      "basic.file.upload",
+      "basic.gui.run",
+      "basic.skill.execute",
+      "basic.spectre.run",
       "demo.parallel.probe",
       "demo.pipeline.run",
       "test.boom",
       "virtuoso.netlist.import"
     ],
     "structural": "400/404 as specified",
+    "basic_package": "skill/command/upload/download/gui/spectre ok",
     "pipeline": {
       "steps": 4,
       "echoed_token": false
@@ -18,7 +25,7 @@
     "error_isolation": "500 then next request ok",
     "concurrent": "8/8",
     "dispatch_purity": "no transport/socket/subprocess imports",
-    "package_metadata": "Package + OPERATIONS exported",
+    "package_metadata": "basic(6) + demo(3) operations declared",
     "duplicate_registration": "startup error: operation 'demo.pipeline.run' is already registered",
     "pool_limit": {
       "max_inflight": 1024,

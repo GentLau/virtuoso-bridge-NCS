@@ -125,33 +125,32 @@ class ApiServer(ThreadingHTTPServer):
             pass
 
 
-#: Explicit operation table (顶层 §2.1): one row per business operation.
-#: ``operation -> (module, package class, method, request model attr)``.
+#: Explicit package table (顶层 §2.1 / 上层 §4.1): one row per business *package*;
+#: ``(module, package class, operation metadata attr)``.  The operation entries
+#: themselves live in the package (``OPERATIONS``), because the registration unit
+#: is the package and the entries are per business operation.
 PACKAGES = (
-    ("virtuoso.netlist.import", "pyapi.packages.netlist_import", "Package",
-     "run", "Request"),
-    ("demo.pipeline.run", "pyapi.packages.file_skill_command_file",
-     "FileSkillCommandFilePackage", "run_request", "Request"),
-    ("demo.parallel.probe", "pyapi.packages.parallel_probe",
-     "ParallelProbePackage", "run_request", "Request"),
+    ("pyapi.packages.basic", "Package", "OPERATIONS"),
+    ("pyapi.packages.demo", "Package", "OPERATIONS"),
 )
 
 
 def register_packages() -> dict[str, str]:
     """Build the dispatch registry once, isolating per-package load failures."""
     errors: dict[str, str] = {}
-    for operation, module_name, class_name, method, request_attr in PACKAGES:
+    for module_name, class_name, operations_attr in PACKAGES:
         try:
             module = __import__(module_name, fromlist=["*"])
             package = getattr(module, class_name)
-            request_model = getattr(module, request_attr)
+            operations = getattr(module, operations_attr)
         except Exception as exc:  # noqa: BLE001 - only this package is disabled
-            errors[operation] = f"{type(exc).__name__}: {exc}"
-            dispatch_module.PACKAGE_LOAD_ERRORS[operation] = errors[operation]
+            errors[module_name] = f"{type(exc).__name__}: {exc}"
+            dispatch_module.PACKAGE_LOAD_ERRORS[module_name] = errors[module_name]
             continue
-        # duplicate operation names are a startup error (顶层 §2.1), not a
-        # "package unavailable" case
-        dispatch_module.register_operation(operation, package, method, request_model)
+        for operation, method, request_model, _result in operations:
+            # duplicate operation names are a startup error (顶层 §2.1), not a
+            # "package unavailable" case
+            dispatch_module.register_operation(operation, package, method, request_model)
     return errors
 
 

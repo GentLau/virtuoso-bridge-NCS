@@ -176,10 +176,15 @@ def main() -> int:
         # -- operations listing ------------------------------------------------
         with urllib.request.urlopen(base + "/api/operations", timeout=30) as response:
             listing = json.loads(response.read().decode("utf-8"))
-        ops = listing["data"]["operations"]
-        if not {"demo.pipeline.run", "demo.parallel.probe", "virtuoso.netlist.import"} <= set(ops):
-            raise ProbeFailure(f"operations listing incomplete: {ops}")
-        results["operations"] = ops
+        ops = set(listing["data"]["operations"])
+        required = {
+            "basic.skill.execute", "basic.command.run", "basic.file.upload",
+            "basic.file.download", "basic.gui.run", "basic.spectre.run",
+            "demo.pipeline.run", "demo.parallel.probe", "virtuoso.netlist.import",
+        }
+        if not required <= ops:
+            raise ProbeFailure(f"operations listing incomplete: {sorted(required - ops)}")
+        results["operations"] = sorted(ops)
 
         # -- structural failures (4xx) ----------------------------------------
         status, body = _post(base, None, raw=b"{not json")
@@ -198,7 +203,46 @@ def main() -> int:
                                     "commands": "not-a-list"})
         if status != 400:
             raise ProbeFailure(f"bad field type must be 400: {status} {body}")
+        status, body = _post(base, {"operation": "basic.command.run", "token": token})
+        if status != 400:
+            raise ProbeFailure(f"basic.command.run without cmd must be 400: {status} {body}")
         results["structural"] = "400/404 as specified"
+
+        # -- basic package: six direct middle passthroughs ----------------------
+        marker = f"BASIC-{uuid.uuid4().hex[:8]}"
+
+        status, body = _post(base, {"operation": "basic.command.run", "token": token,
+                                    "cmd": f"echo {marker}"})
+        if status != 200 or body.get("ok") is not True or marker not in str(body["data"]):
+            raise ProbeFailure(f"basic.command.run failed: {status} {json.dumps(body)[:200]}")
+
+        status, body = _post(base, {"operation": "basic.skill.execute", "token": token,
+                                    "skill_code": f'strcat("{marker}")'})
+        skill_data = body.get("data") or {}
+        if status != 200 or body.get("ok") is not True or marker not in json.dumps(skill_data):
+            raise ProbeFailure(f"basic.skill.execute failed: {status} {json.dumps(body)[:200]}")
+
+        basic_src = work_dir / "basic_in.txt"
+        basic_src.write_text(f"payload-{marker}", encoding="utf-8")
+        basic_dst = work_dir / "basic_out.txt"
+        remote = str(work_dir / "root" / "file" / f"{marker}.bin")
+        status, body = _post(base, {"operation": "basic.file.upload", "token": token,
+                                    "local_path": str(basic_src), "remote_path": remote})
+        if status != 200 or body.get("ok") is not True:
+            raise ProbeFailure(f"basic.file.upload failed: {status} {json.dumps(body)[:200]}")
+        status, body = _post(base, {"operation": "basic.file.download", "token": token,
+                                    "remote_path": remote, "local_path": str(basic_dst)})
+        if status != 200 or body.get("ok") is not True:
+            raise ProbeFailure(f"basic.file.download failed: {status} {json.dumps(body)[:200]}")
+        if basic_dst.read_text(encoding="utf-8") != f"payload-{marker}":
+            raise ProbeFailure("basic file round trip content mismatch")
+
+        for operation in ("basic.gui.run", "basic.spectre.run"):
+            status, body = _post(base, {"operation": operation, "token": token,
+                                        "cmd": f"echo {marker}"})
+            if status != 200 or body.get("ok") is not True or marker not in str(body["data"]):
+                raise ProbeFailure(f"{operation} failed: {status} {json.dumps(body)[:200]}")
+        results["basic_package"] = "skill/command/upload/download/gui/spectre ok"
 
         # -- business success over HTTP (upload -> skill -> command -> download)
         local_in = work_dir / "in.txt"
@@ -286,19 +330,20 @@ def main() -> int:
         results["dispatch_purity"] = "no transport/socket/subprocess imports"
 
         # -- spec 上层 §4.2: every package exports Package + OPERATIONS ----------
-        for module_name, operation in (
-            ("pyapi.packages.netlist_import", "virtuoso.netlist.import"),
-            ("pyapi.packages.file_skill_command_file", "demo.pipeline.run"),
-            ("pyapi.packages.parallel_probe", "demo.parallel.probe"),
+        for module_name, expected in (
+            ("pyapi.packages.basic", {
+                "basic.skill.execute", "basic.command.run", "basic.file.upload",
+                "basic.file.download", "basic.gui.run", "basic.spectre.run"}),
+            ("pyapi.packages.demo", {
+                "demo.pipeline.run", "demo.parallel.probe", "virtuoso.netlist.import"}),
         ):
             module = __import__(module_name, fromlist=["*"])
             if not hasattr(module, "Package") or not hasattr(module, "OPERATIONS"):
                 raise ProbeFailure(f"{module_name} lacks Package/OPERATIONS metadata")
-            if module.OPERATIONS[0][0] != operation:
-                raise ProbeFailure(
-                    f"{module_name} operation metadata mismatch: {module.OPERATIONS[0][0]}"
-                )
-        results["package_metadata"] = "Package + OPERATIONS exported"
+            declared = {entry[0] for entry in module.OPERATIONS}
+            if declared != expected:
+                raise ProbeFailure(f"{module_name} metadata mismatch: {sorted(declared)}")
+        results["package_metadata"] = "basic(6) + demo(3) operations declared"
 
         # duplicate operation registration must be a startup error (顶层 §2.1)
         try:
