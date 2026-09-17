@@ -1,9 +1,9 @@
 # 顶层补充：控制面与业务面
 
-> 版本：Draft v13
+> 版本：Draft v14
 > 日期：2026-09-17
 > 状态：Normative（顶层 HTTP 端点清单、端口划分与权限口径的唯一 owner）
-> Supersedes：Draft v12（config 端点用途与 §5 对齐）
+> Supersedes：Draft v13（权限口径、config 读写语义、跨进程生效、管理哈希供给、cancel action 收口）
 > 定位：本文是[顶层](1-顶层.md)的端点补充——[顶层](1-顶层.md)定义顶层职责、调度与响应壳；本文定义顶层开哪些端口、哪些方法、支持哪些请求、每个端点需要什么权限。注册语义见[多用户与注册 §3/§5](../中层/1-多用户与注册.md)。
 
 ## 1. 双面双端口
@@ -21,7 +21,7 @@
 |---|---|---|
 | 无权限 | 任何人可调用 | — |
 | 会话 token | 该注册会话自己的 token（`apply` 返回） | 请求携带并校验 |
-| 个人 token | 目标 user 自己的 token（注册表条目） | 请求携带并校验 |
+| 个人 token | 目标 user 自己的 token（注册表条目） | 请求携带；结构校验在顶层，合法性与路由由中层判定 |
 | 管理权限 | 管理员身份 | 本版 = 内置单管理员 token：服务端只存其 **SHA-256 哈希**（不存原文），比较用 `hmac.compare_digest`；私钥签名方案标为**后续版本** |
 
 - 个人/会话 token 随请求传入：POST/DELETE 放请求体；GET 放 `token` 查询参数；
@@ -42,7 +42,7 @@
 
 | 方法 | 路径 | 用途 | 权限 |
 |---|---|---|---|
-| POST | `/api/register` | 注册命令：`{user, action, token?, 参数}`，`action` ∈ `apply / validate / probe / deploy / verify / commit` | `apply` 无权限；其余 action 会话 token |
+| POST | `/api/register` | 注册命令：`{user, action, token?, 参数}`，`action` ∈ `apply / validate / probe / deploy / verify / commit / cancel` | `apply` 无权限；其余 action 会话 token |
 | GET | `/api/register/<user>` | 查询进行中的注册状态 | 会话 token |
 
 状态机转移：
@@ -55,6 +55,7 @@
 | `deploy` | 刚 `probe` |
 | `verify` | 刚 `deploy`；或上一次 `verify` 失败（可原地重试） |
 | `commit` | 刚 `verify` 成功 |
+| `cancel` | 任意非 committed 的进行中会话 | 释放内存候选，不落盘
 
 - 非法 action/顺序 → 4xx `{"error": "step order violation", "current_stage": …, "expected": …}`，**不改变会话状态**；
 - `apply` 响应返回 `token`（用户显式提供则原样，缺省自动生成）；除 `apply` 外的 action 必须携带 `token`，服务端校验其与候选一致，缺失/不一致 → 4xx `invalid token`，**不改变会话状态**；
@@ -92,9 +93,11 @@
 
 ## 5. 全局配置与启动参数
 
-- 工作路径下除 `registry.json` 外，另存一份配置 JSON `server.json`；`GET/PUT /api/config` 读写该文件；
+- 工作路径下除 `registry.json` 外，另存一份配置 JSON `server.json`；`GET/PUT /api/config` 操作该配置：GET 读内存快照，PUT 更新快照并原子写回 `server.json`；
 - 当前 `server.json` 只有**一个参数**：`business_thread_pool_size`（业务 server 线程池大小）；
 - 控制/业务端口与工作路径由**启动参数**给定，不写入 `server.json`；
+- 控制/业务进程分离时，PUT 只影响控制进程的内存快照与 `server.json`；业务进程在启动时导入，变更生效需**重启业务进程**；
+- 管理员 token 哈希经**启动参数/环境变量**提供，不写入 `server.json`；原文不落配置、不进日志；
 - `server.json` **启动时导入一次到内存快照**，运行期不再读文件；配置变更由 `PUT /api/config` 手动触发并原子写回，其余时间零文件 IO；
 - `runtime.thread_pool_size` 是**每 token** 的注册表配置（唯一 owner 见[并发设计 §2](../中层/2-并发设计.md)），与本节的“全局线程池上限”不是一回事：前者是单用户预算，后者是顶层进程能力上限；两者独立，不互相替代。
 
