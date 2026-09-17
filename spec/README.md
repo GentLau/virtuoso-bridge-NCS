@@ -97,7 +97,7 @@ CDS.log metadata frame 完整字节格式
 
 - **Release ID**：`SPEC-2026-09-16-r3`
 - **Normative 文件集**（9 份）：四层整体架构与接口、本版范围与明确不支持、中层配置文档、路由设计、多用户与注册、并发设计、日志返回设计标准、顶层：HTTP 入口与业务调度、上层：业务包与插件化；
-- **Normative 内容哈希**：`f48b26e3e29e7084035b54579f9d0d7cd74b0b63c91cfadf8b7bd5c4a1d81727`
+- **Normative 内容哈希**：`34f03b8d4b0bff1591c567d95e3d5df2a5b3d2306294378d03471bea60483f40`
   - 算法：路径为**相对 `spec/` 目录**并按路径排序；逐文件 SHA-256（**按 Git 提交内容计算，即 LF 行尾**；Windows 工作区受 `core.autocrlf` 影响的行尾差异不计入）；每行 `<相对路径> <hex>` 以 LF 拼接（**行间分隔、末行无尾 LF**），再取一次 SHA-256；
 - **基线 commit**：本 Release 段所在提交即基线（见 `git log -1 -- spec/`）；任何 Normative 文档变更必须同时更新本段哈希。
 
@@ -105,17 +105,17 @@ CDS.log metadata frame 完整字节格式
 
 | 文档 | 版本 | 状态 | Supersedes |
 |---|---|---|---|
-| 四层整体架构与接口 | Draft v26 | Normative | Draft v25（重试决策单元术语统一为业务操作） |
+| 四层整体架构与接口 | Draft v27 | Normative | Draft v26（query 的 token 改为 keyword-only，与业务接口一致） |
 | 路由设计 | v17 | Normative | v16（spectre 表述：本版第 5 业务接口，编排留待后续） |
 | 本版范围与明确不支持 | v9 | Normative | v8（业务接口计数口径：5 业务接口 + 只读查询 query） |
 | 中层配置文档 | Draft v28 | Normative | Draft v21–v27（合并说明见文件头 Supersedes） |
 | 多用户与注册 | Draft v20 | Normative | Draft v19（reservation 分配/复核/释放细节改为索引 §6.4） |
 | 并发设计 | Draft v20 | Normative | Draft v19（重试决策单元术语统一为业务操作） |
-| 顶层 | Draft v10 | Normative | Draft v9（失败行 data 取值补明） |
-| 上层 | Draft v11 | Normative | Draft v10（决策单元术语统一为业务操作） |
+| 顶层 | Draft v11 | Normative | Draft v10（包加载失败视为未加载，按未知 operation 处理） |
+| 上层 | Draft v12 | Normative | Draft v11（加载失败=未加载；步骤重试边界；自描述元数据口径） |
 | 日志返回设计标准 | Draft v12 | Normative | Draft v11（等待队列留在中层投递前） |
 
-> 版本链规则：每份文档的文件头 `版本 / 日期 / Supersedes` 必须与本表一致；版本号只递增，跳号必须在 `Supersedes` 中说明合并了哪些版本。
+> 版本链规则：每份文档的文件头 `版本 / Supersedes` 必须与本表一致（日期由文件头记录，不入本表）；版本号只递增，跳号必须在 `Supersedes` 中说明合并了哪些版本。
 
 ## 独立 Demo
 
