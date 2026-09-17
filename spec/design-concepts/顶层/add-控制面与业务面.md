@@ -1,9 +1,9 @@
 # 顶层补充：控制面与业务面
 
-> 版本：Draft v6
+> 版本：Draft v7
 > 日期：2026-09-17
 > 状态：Normative（顶层 HTTP 端点清单与端口划分的唯一口径）
-> Supersedes：Draft v5（业务端点 /api/run 改名 /api/operation）
+> Supersedes：Draft v6（六步注册收敛为单命令端点，非法转移统一拒绝）
 > 定位：本文是[顶层](1-顶层.md)的端点补充——[顶层](1-顶层.md)定义顶层职责、调度与响应壳；本文定义顶层开哪些端口、哪些方法、支持哪些请求。注册语义见[多用户与注册 §3/§5](../中层/1-多用户与注册.md)。
 
 ## 1. 双面双端口
@@ -29,12 +29,21 @@
 
 | 方法 | 路径 | 用途 |
 |---|---|---|
-| POST | `/api/register/apply` | ①申请（构造内存候选） |
-| POST | `/api/register/<user>/validate` | ②本地校验 |
-| POST | `/api/register/<user>/probe` | ③探测 |
-| POST | `/api/register/<user>/deploy` | ④部署 |
-| POST | `/api/register/<user>/verify` | ⑤连通性（只校验、不落盘） |
-| POST | `/api/register/<user>/commit` | ⑥写注册表（用户显式确认后调用，唯一写盘点） |
+| POST | `/api/register` | 注册命令：`{user, action, 参数}`，`action` ∈ `apply / validate / probe / deploy / verify / commit` |
+
+状态机转移：
+
+| action | 合法前提 |
+|---|---|
+| `apply` | 无同名进行中会话 |
+| `validate` | 刚 `apply` |
+| `probe` | 刚 `validate` |
+| `deploy` | 刚 `probe` |
+| `verify` | 刚 `deploy`；或上一次 `verify` 失败（可原地重试） |
+| `commit` | 刚 `verify` 成功 |
+
+- 非法 action/顺序 → 4xx `{"error": "step order violation", "current_stage": …, "expected": …}`，**不改变会话状态**；
+- 六步由该命令端点逐个调用完成：`apply` 以 body 中的 `user` 建**内存候选**（尚未进注册表），后续 action 都以该 `user` 定位候选；`commit` 前 registry 不存在该 user，失败/取消则丢弃候选。
 
 **用户管理**（语义见[多用户与注册 §5](../中层/1-多用户与注册.md)）
 
@@ -53,7 +62,6 @@
 
 - 修改类（update/delete）路径以 `user` 定位，请求必须携带 `token`；服务端校验 token 与该条目一致后才修改，`token` 是修改凭证；
 - 控制端口成功返回 JSON（或 HTML 页面）；失败 4xx + `{"error": …}`（可选 `detail`）；注册各步结果含 `warnings`（见[多用户与注册 §3.2](../中层/1-多用户与注册.md)）；
-- 六步注册由 API 逐个调用完成：`apply` 以请求体中的 `user` 建立**内存候选**（尚未进注册表），后续步骤都以该 `user` 定位候选；`commit` 前 registry 不存在该 user，失败/取消则丢弃候选；
 - 控制端口不运行业务操作。
 
 ## 3. 业务端口端点
@@ -62,6 +70,7 @@
 |---|---|---|
 | POST | `/api/operation` | 业务调度：`{operation, token, 业务字段}` → 查注册表 → 构造 Request → 调用对应方法 → 响应壳 |
 | GET | `/health` | 存活探针（运维用） |
+| GET | `/help` | 端点清单与用法说明 |
 
 - 业务端口只做 operation 调度，不开注册/管理/配置端点；`query` 是上层↔中层接口，不是 HTTP 端点；
 - 调度顺序与响应壳的唯一口径见[顶层 §2/§3](1-顶层.md)。
