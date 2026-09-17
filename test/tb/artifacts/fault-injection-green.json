@@ -10,14 +10,14 @@
         "invalid_level": true,
         "invalid_max": true
       },
-      "elapsed_s": 0.06299999996554106
+      "elapsed_s": 0.0779999999795109
     },
     "dead-shell-close": {
       "status": "pass",
       "detail": {
         "dead_shell_closed": true
       },
-      "elapsed_s": 0.09299999999348074
+      "elapsed_s": 0.0779999999795109
     },
     "lease-race": {
       "status": "pass",
@@ -26,7 +26,7 @@
         "persistent_leases": 1,
         "threads": 16
       },
-      "elapsed_s": 0.03200000000651926
+      "elapsed_s": 0.0470000000204891
     },
     "runtime-cache-invalidation": {
       "status": "pass",
@@ -43,7 +43,7 @@
           "thread pool exceeded"
         ]
       },
-      "elapsed_s": 0.015000000013969839
+      "elapsed_s": 0.01600000006146729
     },
     "skill-queue-before-delivery": {
       "status": "pass",
@@ -53,7 +53,7 @@
         ],
         "metadata": {}
       },
-      "elapsed_s": 0.07900000002700835
+      "elapsed_s": 0.06199999991804361
     },
     "transport-kind": {
       "status": "pass",
@@ -61,7 +61,7 @@
         "kind": "transport",
         "returncode": 255
       },
-      "elapsed_s": 0.9679999999934807
+      "elapsed_s": 1.0160000000614673
     },
     "windows-casefold-overwrite": {
       "status": "pass",
@@ -70,7 +70,7 @@
           "Alice"
         ]
       },
-      "elapsed_s": 0.01600000006146729
+      "elapsed_s": 0.015999999945051968
     }
   }
 }

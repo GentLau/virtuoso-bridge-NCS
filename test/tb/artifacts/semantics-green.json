@@ -10,7 +10,7 @@
         "leftovers": [],
         "marker": "crashed-after-first-rename"
       },
-      "elapsed_s": 0.8120000000344589
+      "elapsed_s": 0.8900000000139698
     },
     "local-download-timeout": {
       "status": "pass",
@@ -21,7 +21,7 @@
         "clock_calls": 6,
         "partial_target": false
       },
-      "elapsed_s": 0.06299999996554106
+      "elapsed_s": 0.0470000000204891
     },
     "local-file-timeout": {
       "status": "pass",
@@ -32,7 +32,7 @@
         "clock_calls": 6,
         "partial_target": false
       },
-      "elapsed_s": 0.045999999972991645
+      "elapsed_s": 0.03200000000651926
     },
     "local-tree-timeout": {
       "status": "pass",
@@ -43,7 +43,7 @@
         "clock_calls": 6,
         "partial_target": false
       },
-      "elapsed_s": 0.03200000000651926
+      "elapsed_s": 0.045999999972991645
     },
     "query-isolation": {
       "status": "pass",
@@ -51,7 +51,7 @@
         "alpha_root": "/srv/alpha/daemon",
         "beta_root": "/srv/beta/daemon"
       },
-      "elapsed_s": 0.03100000007543713
+      "elapsed_s": 0.03200000000651926
     },
     "query-no-budget": {
       "status": "pass",
@@ -59,7 +59,7 @@
         "elapsed_s": 0.0,
         "ok": true
       },
-      "elapsed_s": 0.015999999945051968
+      "elapsed_s": 0.015000000013969839
     },
     "query-shape": {
       "status": "pass",
@@ -73,7 +73,7 @@
         ],
         "spectre_bin": "/cadence/bin/spectre"
       },
-      "elapsed_s": 0.015000000013969839
+      "elapsed_s": 0.01600000006146729
     },
     "query-unknown-token": {
       "status": "pass",
@@ -103,7 +103,7 @@
           "tok-user3"
         ]
       },
-      "elapsed_s": 1.172000000020489
+      "elapsed_s": 1.202999999979511
     },
     "skill-no-retry-after-delivery": {
       "status": "pass",

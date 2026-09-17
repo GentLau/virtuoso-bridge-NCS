@@ -41,8 +41,8 @@
         "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\http-stress-sat\\local-root",
         "expected_fingerprint": null,
         "max_sessions": 10,
-        "daemon_port": 52782,
-        "local_port": 52782,
+        "daemon_port": 61055,
+        "local_port": 61055,
         "python": null,
         "expected_hostname": null,
         "expected_user": null
@@ -91,7 +91,7 @@
       "log_level": "all",
       "log_max_bytes": 65536
     },
-    "registered_at": 1789560923
+    "registered_at": 1789614602
   },
   "vb-vblog": {
     "token": "vb-vblog",

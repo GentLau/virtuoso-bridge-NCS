@@ -10,61 +10,61 @@
   "requests": 72,
   "planned_requests": 72,
   "failed": 0,
-  "elapsed_s": 23.406,
+  "elapsed_s": 10.406,
   "per_kind": {
     "skill": {
       "total": 9,
       "ok": 9,
       "retries": 0,
       "rejections": 0,
-      "max_s": 3.281
+      "max_s": 1.797
     },
     "gui": {
       "total": 9,
       "ok": 9,
       "retries": 0,
       "rejections": 0,
-      "max_s": 3.156
+      "max_s": 2.172
     },
     "download": {
       "total": 14,
       "ok": 14,
       "retries": 0,
       "rejections": 0,
-      "max_s": 4.891
+      "max_s": 1.454
     },
     "upload": {
       "total": 10,
       "ok": 10,
       "retries": 0,
       "rejections": 0,
-      "max_s": 5.687
+      "max_s": 3.015
     },
     "command": {
       "total": 14,
       "ok": 14,
       "retries": 0,
       "rejections": 0,
-      "max_s": 3.234
+      "max_s": 2.25
     },
     "spectre": {
       "total": 4,
       "ok": 4,
       "retries": 0,
       "rejections": 0,
-      "max_s": 3.171
+      "max_s": 2.25
     },
     "composite": {
       "total": 12,
       "ok": 12,
       "retries": 0,
       "rejections": 0,
-      "max_s": 8.5
+      "max_s": 5.11
     }
   },
   "failures": [],
-  "ssh_processes_before": 2,
-  "ssh_processes_after": 2,
+  "ssh_processes_before": 0,
+  "ssh_processes_after": 0,
   "staging_root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\tb\\artifacts\\http-stress2\\stress-tmp",
   "staging_leftovers": [],
   "new_system_temp_dirs": [],
@@ -74,7 +74,7 @@
       "token": "vb-http-local",
       "worker": 5,
       "kind": "skill",
-      "marker": "VB-ski-1bc9e853b5",
+      "marker": "VB-ski-7d7a691fdf",
       "attempts": 1,
       "rejections": 0,
       "ok": true,
@@ -86,49 +86,49 @@
       "token": "vb-http-local",
       "worker": 5,
       "kind": "skill",
-      "marker": "VB-ski-6e3a489768",
+      "marker": "VB-ski-88807ee538",
       "attempts": 1,
       "rejections": 0,
       "ok": true,
       "detail": "",
       "first_error": "",
-      "elapsed_s": 0.016
+      "elapsed_s": 0.015
     },
     {
       "token": "vb-http-local",
       "worker": 4,
       "kind": "gui",
-      "marker": "VB-gui-7f17ea40c7",
+      "marker": "VB-gui-c4c2beadc8",
       "attempts": 1,
       "rejections": 0,
       "ok": true,
       "detail": "",
       "first_error": "",
-      "elapsed_s": 0.109
+      "elapsed_s": 0.125
+    },
+    {
+      "token": "vb-http-local",
+      "worker": 3,
+      "kind": "gui",
+      "marker": "VB-gui-44dea3de65",
+      "attempts": 1,
+      "rejections": 0,
+      "ok": true,
+      "detail": "",
+      "first_error": "",
+      "elapsed_s": 0.11
     },
     {
       "token": "vb-http-local",
       "worker": 1,
       "kind": "download",
-      "marker": "VB-dow-e5fa84b1c1",
+      "marker": "VB-dow-37797acbc9",
       "attempts": 1,
       "rejections": 0,
       "ok": true,
       "detail": "",
       "first_error": "",
-      "elapsed_s": 0.109
-    },
-    {
-      "token": "vb-http-local",
-      "worker": 2,
-      "kind": "download",
-      "marker": "VB-dow-7e4f70b4c9",
-      "attempts": 1,
-      "rejections": 0,
-      "ok": true,
-      "detail": "",
-      "first_error": "",
-      "elapsed_s": 0.14
+      "elapsed_s": 0.125
     }
   ]
 }
