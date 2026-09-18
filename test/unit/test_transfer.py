@@ -6,6 +6,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
@@ -174,6 +175,32 @@ class TestStagedInstall(unittest.TestCase):
         with self.assertRaises(FileNotFoundError):
             install_staged_item(self.stage, staged, target)
         self.assertEqual(target.read_text(encoding="utf-8"), "old")
+
+    def test_directory_install_rolls_back_when_new_tree_fails(self):
+        """目录替换是两次 rename；第二次失败必须把旧目录恢复回来。"""
+        target = self.root / "dst"
+        target.mkdir()
+        (target / "old.txt").write_text("old", encoding="utf-8")
+        staged = self.stage / "dst"
+        staged.mkdir()
+        (staged / "new.txt").write_text("new", encoding="utf-8")
+
+        original_rename = Path.rename
+
+        def failing_rename(self, other):
+            if self == staged:
+                raise OSError("second rename failed")
+            return original_rename(self, other)
+
+        with mock.patch.object(Path, "rename", failing_rename):
+            with self.assertRaises(OSError):
+                install_staged_item(self.stage, staged, target)
+        self.assertTrue(target.is_dir())
+        self.assertEqual((target / "old.txt").read_text(encoding="utf-8"), "old")
+        self.assertFalse((target / "new.txt").exists())
+        # 备份文件不得留在目标目录里
+        leftovers = [p.name for p in self.root.iterdir() if p.name.startswith(".vbbak-")]
+        self.assertEqual(leftovers, [])
 
     def test_install_staged_path_wrapper(self):
         from common.transfer import TarDownloadPlan

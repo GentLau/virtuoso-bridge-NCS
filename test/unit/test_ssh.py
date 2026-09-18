@@ -203,6 +203,7 @@ class _FakePipelineProc:
         self.returncode = returncode
         self.stdout = io.BytesIO(b"")
         self.stderr = io.BytesIO(stderr)
+        self.returncode_value = returncode
 
     def communicate(self, timeout=None):
         return b"", b""
@@ -215,6 +216,171 @@ class _FakePipelineProc:
 
     def kill(self):
         self.returncode = -9
+
+
+class _FakeTarProc(_FakePipelineProc):
+    """Popen stub for the local tar side of the upload pipeline."""
+
+    def __init__(self, returncode: int = 0, stderr: bytes = b""):
+        super().__init__(returncode, stderr)
+        self.stdout = io.BytesIO(b"")
+        self.stderr = io.BytesIO(stderr)
+
+
+class _FakeSshProc(_FakePipelineProc):
+    """Popen stub for the ssh side of the upload pipeline."""
+
+    def __init__(self, returncode: int = 0, stderr: bytes = b""):
+        super().__init__(returncode, stderr)
+        self.stdout = io.BytesIO(b"")
+        self.stderr = io.BytesIO(stderr)
+        self.returncode = returncode
+
+    def communicate(self, timeout=None):
+        return b"", self.stderr.getvalue()
+
+
+class TestRecursiveUploadPipeline(unittest.TestCase):
+    """ssh | tar 上传流水线的失败分类与 ControlMaster 降级（§4/§4.5）。"""
+
+    def setUp(self):
+        self.wd = Path(tempfile.mkdtemp())
+        from common.paths import override_work_dir_for_tests
+
+        override_work_dir_for_tests(self.wd)
+        self.local_file = self.wd / "f.txt"
+        self.local_file.write_text("payload", encoding="utf-8")
+
+    def _plan(self, runner):
+        (plan,) = ssh_mod.build_tar_upload_plans(
+            "tar", [(self.local_file, "/remote/f.txt")]
+        )
+        return plan
+
+    def test_upload_pipeline_degrades_from_broken_controlmaster(self):
+        runner = SSHRunner(
+            "server-a", user="u", backend="openssh", control_master="auto",
+        )
+        plan = self._plan(runner)
+        calls: list[str] = []
+
+        def fake_popen(cmd, **kwargs):
+            argv = list(cmd) if isinstance(cmd, (list, tuple)) else [str(cmd)]
+            if argv and argv[0] == runner._ssh_cmd:
+                if any("ControlPath=" in part for part in argv):
+                    calls.append("ssh-cm")
+                    return _FakeSshProc(
+                        255, b"mux_client_request_session: session failed\n"
+                    )
+                calls.append("ssh-direct")
+                return _FakeSshProc(0)
+            calls.append("tar")
+            return _FakeTarProc(0)
+
+        with mock.patch.object(ssh_mod.subprocess, "Popen", side_effect=fake_popen):
+            result = runner._execute_openssh_upload_plan(
+                plan, _TimeoutBudget.start(30, 30)
+            )
+        self.assertEqual(result.returncode, 0, result)
+        self.assertEqual(calls.count("ssh-cm"), 1)
+        self.assertIn("ssh-direct", calls)
+
+    def test_local_tar_failure_is_reported_with_tar_stderr(self):
+        runner = SSHRunner(
+            "server-a", user="u", backend="openssh", control_master="disable",
+        )
+        plan = self._plan(runner)
+
+        def fake_popen(cmd, **kwargs):
+            argv = list(cmd) if isinstance(cmd, (list, tuple)) else [str(cmd)]
+            if argv and argv[0] == runner._ssh_cmd:
+                return _FakeSshProc(0)
+            return _FakeTarProc(2, b"tar: Cannot open: No such file or directory\n")
+
+        with mock.patch.object(ssh_mod.subprocess, "Popen", side_effect=fake_popen):
+            result = runner._execute_openssh_upload_plan(
+                plan, _TimeoutBudget.start(30, 30)
+            )
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("Cannot open", result.stderr)
+
+
+class TestRunnerBackendDispatch(unittest.TestCase):
+    """openssh / paramiko 后端分派与连接测试（无真实网络）。"""
+
+    def setUp(self):
+        self.wd = Path(tempfile.mkdtemp())
+        from common.paths import override_work_dir_for_tests
+
+        override_work_dir_for_tests(self.wd)
+
+    def test_connection_success_and_failures(self):
+        runner = SSHRunner("server-a", user="u", backend="openssh")
+        with mock.patch.object(
+            ssh_mod.subprocess, "run",
+            return_value=mock.Mock(returncode=0, stderr=""),
+        ):
+            self.assertTrue(runner.test_connection(timeout=3))
+        with mock.patch.object(
+            ssh_mod.subprocess, "run",
+            return_value=mock.Mock(
+                returncode=255, stderr="ssh: connect to host server-a: refused"
+            ),
+        ):
+            self.assertFalse(runner.test_connection(timeout=3))
+        with mock.patch.object(
+            ssh_mod.subprocess, "run",
+            side_effect=subprocess.TimeoutExpired("ssh", 3),
+        ):
+            self.assertFalse(runner.test_connection(timeout=3))
+        with mock.patch.object(
+            ssh_mod.subprocess, "run", side_effect=FileNotFoundError("ssh")
+        ):
+            self.assertFalse(runner.test_connection(timeout=3))
+
+    def test_paramiko_run_command_uses_backend_result(self):
+        runner = SSHRunner("server-a", user="u", backend="paramiko")
+        fake_backend = mock.Mock()
+        fake_backend.run_command.return_value = (7, "out", "err")
+        runner._paramiko_backend = fake_backend
+        result = runner.run_command("echo hi", timeout=5)
+        self.assertEqual((result.returncode, result.stdout, result.stderr),
+                         (7, "out", "err"))
+        self.assertEqual(result.kind, "command")
+
+    def test_paramiko_recursive_download_dispatches_to_backend(self):
+        runner = SSHRunner("server-a", user="u", backend="paramiko")
+        fake_backend = mock.Mock()
+        fake_backend.download_tar.return_value = (0, "", "")
+        runner._paramiko_backend = fake_backend
+        plan = ssh_mod.build_tar_download_plan(
+            "tar", "/remote/dir", self.wd / "out"
+        )
+        result = runner._download_via_tar(
+            "/remote/dir", self.wd / "out", timeout=5
+        )
+        self.assertEqual(result.returncode, 0)
+        fake_backend.download_tar.assert_called_once()
+
+    def test_openssh_upload_text_uses_ssh_stdin(self):
+        runner = SSHRunner(
+            "server-a", user="u", backend="openssh", persistent_shell=False,
+            control_master="disable",
+        )
+        with mock.patch.object(ssh_mod.subprocess, "run") as run:
+            run.return_value = mock.Mock(returncode=0, stdout=b"", stderr=b"")
+            result = runner.upload_text("hello", "/remote/x.txt", timeout=5)
+        self.assertEqual(result.returncode, 0)
+        self.assertTrue(run.called)
+        payload = run.call_args.kwargs.get("input")
+        if payload is None:
+            payload = run.call_args[1]["input"]
+        self.assertIn(b"hello", payload)
+
+    def test_close_is_idempotent(self):
+        runner = SSHRunner("server-a", user="u", backend="openssh")
+        runner.close()
+        runner.close()
 
 
 class TestPortForwardLifecycle(unittest.TestCase):

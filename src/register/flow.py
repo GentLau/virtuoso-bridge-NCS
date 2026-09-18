@@ -813,20 +813,18 @@ def test_connectivity(entry: UserEntry, user: str) -> ConnectivityReport:
     if not skill_ok:
         detail.append(f"skill={skill.status}:{skill.errors}")
 
-    banner = _banner_hostname(entry, user, budget=budget)
+    # 一次读取 identity 文件，同时用于 banner 记录与 host/user 比对——
+    # 旧实现为 user 比对再读一次（remote 模式多花一条 SSH 命令）。
+    identity_text = _identity_text(entry, user, budget=budget) or ""
+    banner = _banner_hostname(entry, user, budget=budget, identity_text=identity_text)
     expected_hostname = entry.roles.daemon.expected_hostname
-    if banner and expected_hostname and not _short_host_match(banner, expected_hostname):
-        warnings.append(
-            f"daemon banner host {banner!r} differs from expected {expected_hostname!r}"
+    warnings.extend(
+        identity_warnings(
+            identity_text,
+            expected_hostname,
+            entry.roles.daemon.expected_user,
         )
-    expected_user = entry.roles.daemon.expected_user
-    if expected_user:
-        # only pay for a second identity read when a user baseline exists
-        actual_user = identity_user(_identity_text(entry, user, budget=budget) or "")
-        if actual_user and actual_user != expected_user:
-            warnings.append(
-                f"daemon user {actual_user!r} differs from expected {expected_user!r}"
-            )
+    )
 
     return ConnectivityReport(
         token=token,

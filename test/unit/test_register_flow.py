@@ -579,13 +579,40 @@ class TestFlowMoreBranches(unittest.TestCase):
         entry = UserEntry(token="t", mode="local")
         entry.roles.daemon.expected_hostname = "expected-host"
         with mock.patch("register.flow.SkillClient") as skill_cls, \
-             mock.patch("register.flow._banner_hostname", return_value="different-host"):
+             mock.patch(
+                 "register.flow._identity_text",
+                 return_value="host=different-host\nip=1.2.3.4\n",
+             ):
             skill_cls.return_value.execute_skill.return_value = VirtuosoResult(
                 status=ExecutionStatus.SUCCESS, output="2"
             )
             report = test_connectivity(entry, "alice")
         self.assertTrue(report.ok)
         self.assertTrue(any("differs from expected" in w for w in report.warnings))
+
+    def test_connectivity_reads_identity_once_and_reports_both_drifts(self):
+        """步骤 5 只读一次 identity 文件，同时给出 host/user 两条 WARNING。"""
+        from unittest import mock
+        from register.flow import test_connectivity
+        entry = UserEntry(token="t", mode="local")
+        entry.roles.daemon.expected_hostname = "expected-host"
+        entry.roles.daemon.expected_user = "expected-user"
+        identity = (
+            "host=different-host\nip=1.2.3.4\nbind=127.0.0.1:1\nuser=other-user\n"
+        )
+        with mock.patch("register.flow.SkillClient") as skill_cls, \
+             mock.patch(
+                 "register.flow._identity_text", return_value=identity
+             ) as identity_read:
+            skill_cls.return_value.execute_skill.return_value = VirtuosoResult(
+                status=ExecutionStatus.SUCCESS, output="2"
+            )
+            report = test_connectivity(entry, "alice")
+        self.assertTrue(report.ok)
+        self.assertEqual(identity_read.call_count, 1, "identity read more than once")
+        joined = " ".join(report.warnings)
+        self.assertIn("banner host", joined)
+        self.assertIn("daemon user", joined)
 
 
 class TestRequestAndIdempotence(unittest.TestCase):
@@ -739,7 +766,7 @@ class TestConnectivityFingerprint(unittest.TestCase):
         with mock.patch("register.flow.probes.host_key_fingerprint", return_value="SHA256:other"), \
              mock.patch("register.flow.SSHRunner", side_effect=[fake_cmd, fake_tunnel]), \
              mock.patch("register.flow.SkillClient") as skill_cls, \
-             mock.patch("register.flow._banner_hostname", return_value=None):
+             mock.patch("register.flow._identity_text", return_value=None):
             skill_cls.return_value.execute_skill.return_value = VirtuosoResult(
                 status=ExecutionStatus.SUCCESS, output="2"
             )

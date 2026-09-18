@@ -74,6 +74,45 @@ class TestProbeHelpers(unittest.TestCase):
         self.assertEqual(run.call_count, 3)
         self.assertFalse(Path("keys.tmp").exists())
 
+    def test_host_key_fingerprint_resolves_ssh_config_alias(self) -> None:
+        """known_hosts 里只有真实主机名时，要通过 ssh -G 解析别名再查。"""
+        from register import probe as probes
+        with mock.patch.object(probes.subprocess, "run", side_effect=[
+            mock.Mock(stdout="hostname real.example.com\n", returncode=0),
+            mock.Mock(stdout="", returncode=1),
+            mock.Mock(
+                stdout="real.example.com ssh-ed25519 AAAAB3NzaC1yc2EAAAADAQABAAAB\n",
+                returncode=0,
+            ),
+            mock.Mock(stdout="256 SHA256:real real.example.com (ED25519)\n", returncode=0),
+        ]):
+            fp = probes.host_key_fingerprint("alias")
+        self.assertEqual(fp, "SHA256:real")
+
+    def test_host_key_fingerprint_missing_entry_is_none(self) -> None:
+        from register import probe as probes
+        with mock.patch.object(probes.subprocess, "run", side_effect=[
+            mock.Mock(stdout="hostname same\n", returncode=0),
+            mock.Mock(stdout="", returncode=1),
+        ]):
+            self.assertIsNone(probes.host_key_fingerprint("same"))
+
+    def test_ssh_port_rule_enforces_22(self) -> None:
+        """配置一览 §6.5: 注册期校验目标/jump 的 SSH 端口必须是 22。"""
+        from register import probe as probes
+
+        def run_with(port_line: str):
+            return mock.Mock(stdout=f"hostname h\n{port_line}\n", returncode=0)
+
+        with mock.patch.object(probes.subprocess, "run", return_value=run_with("port 2222")):
+            self.assertFalse(probes.ssh_port_is_22("alias"))
+        with mock.patch.object(probes.subprocess, "run", return_value=run_with("port 22")):
+            self.assertTrue(probes.ssh_port_is_22("alias"))
+        with mock.patch.object(probes.subprocess, "run", return_value=run_with("")):
+            self.assertTrue(probes.ssh_port_is_22("alias"))
+        with mock.patch.object(probes.subprocess, "run", side_effect=OSError("no ssh")):
+            self.assertFalse(probes.ssh_port_is_22("alias"))
+
     def test_detect_cadence_python3(self) -> None:
         runner = FakeRunner([CommandResult(0, "CMD:/opt/x/python3 Python 3.9.5\n", "")])
         self.assertEqual(detect_remote_python(runner), ("/opt/x/python3", 3))

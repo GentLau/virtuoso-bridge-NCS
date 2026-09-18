@@ -132,6 +132,27 @@ class TestDaemonHandler(DaemonHandlerTestBase):
             any(w.startswith("CDS.log unavailable: ") for w in warnings), warnings
         )
 
+    def test_invalid_log_level_is_nak_without_touching_pipe(self):
+        """日志标准 §7: 非法 log_level 直接 NAK，不夹紧、不静默降级。"""
+        raw, sent = self._run_handler(
+            {"skill": "1+1", "timeout": 5, "token": "tok-1",
+             "log_level": "verbose"}
+        )
+        self.assertTrue(raw.startswith(NAK), raw)
+        self.assertIn("invalid log_level", raw.decode())
+        self.assertEqual(sent, b"")
+
+    def test_invalid_log_max_bytes_is_nak_without_touching_pipe(self):
+        for bad in ("not-a-number", 0, -1):
+            with self.subTest(bad=bad):
+                raw, sent = self._run_handler(
+                    {"skill": "1+1", "timeout": 5, "token": "tok-1",
+                     "log_level": "all", "log_max_bytes": bad}
+                )
+                self.assertTrue(raw.startswith(NAK), raw)
+                self.assertIn("invalid log_max_bytes", raw.decode())
+                self.assertEqual(sent, b"")
+
     def test_multiline_skill_is_packaged_into_il_file(self):
         raw, sent = self._run_handler({"skill": "a = 1\nb = 2", "timeout": 5, "token": "tok-1"})
         self.assertTrue(raw.startswith(STX), raw)

@@ -10,7 +10,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from pydantic import ValidationError
-from common.registry import Registry, UserEntry, load_registry
+from common.registry import Registry, RegistryError, UserEntry, load_registry
 from common.paths import registry_path, override_work_dir_for_tests
 
 
@@ -102,6 +102,52 @@ class TestRegistryMore(unittest.TestCase):
         entry = UserEntry(token="t", mode="remote")
         keys = set(entry.model_dump().keys())
         self.assertEqual(keys, {"token", "mode", "ssh", "root", "roles", "runtime", "cdslog", "registered_at"})
+
+
+class TestRegistryUpdate(unittest.TestCase):
+    """Registry.update：锁内读改写、深合并、整体校验、token 不可变。"""
+
+    def setUp(self):
+        self.wd = override_work_dir_for_tests(Path(tempfile.mkdtemp()))
+        self.reg = load_registry(registry_path())
+
+    def _register(self, user="alice", token="tok-u"):
+        entry = UserEntry(token=token, mode="remote")
+        entry.runtime.thread_pool_size = 8
+        entry.cdslog.log_level = "all"
+        self.reg.register(user, entry)
+        return entry
+
+    def test_patch_merges_and_preserves_untouched_fields(self):
+        self._register()
+        updated = self.reg.update("alice", {"cdslog": {"log_level": "error"}})
+        self.assertEqual(updated.cdslog.log_level, "error")
+        self.assertEqual(updated.runtime.thread_pool_size, 8)
+        self.assertEqual(updated.token, "tok-u")
+        # 重新从磁盘加载，确认写回生效
+        reloaded = load_registry(registry_path())
+        self.assertEqual(reloaded.get("alice").cdslog.log_level, "error")
+
+    def test_unknown_user_raises_keyerror(self):
+        with self.assertRaises(KeyError):
+            self.reg.update("ghost", {"cdslog": {"log_level": "error"}})
+
+    def test_validator_rejection_keeps_previous_entry(self):
+        self._register()
+        before = self.reg.get("alice").model_dump()
+        with self.assertRaises(RegistryError):
+            self.reg.update(
+                "alice",
+                {"cdslog": {"log_level": "error"}},
+                validator=lambda entry: ["rejected by validator"],
+            )
+        self.assertEqual(self.reg.get("alice").model_dump(), before)
+
+    def test_token_cannot_change_via_patch(self):
+        self._register()
+        with self.assertRaises(RegistryError):
+            self.reg.update("alice", {"token": "tok-rotated"})
+        self.assertEqual(self.reg.get("alice").token, "tok-u")
 
 
 if __name__ == "__main__":

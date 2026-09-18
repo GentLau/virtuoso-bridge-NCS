@@ -226,6 +226,44 @@ class TestRegistrationServer(unittest.TestCase):
         status, raw = self.srv.request("GET", "/api/register/ghost")
         self.assertEqual(status, 404)
 
+    def test_state_endpoint_requires_session_token(self):
+        data = self._apply("nina", mode="local")
+        status, raw = self.srv.request("GET", "/api/register/nina?token=wrong")
+        self.assertEqual(status, 400, raw)
+        self.assertIn("invalid token", raw)
+        status, raw = self.srv.request(
+            "GET", f"/api/register/nina?token={data['token']}"
+        )
+        self.assertEqual(status, 200)
+        self.assertEqual(json.loads(raw)["stage"], "applied")
+
+    def test_action_with_wrong_session_token_does_not_change_state(self):
+        data = self._apply("olga", mode="local")
+        status, raw = self.srv.request(
+            "POST", "/api/register",
+            {"user": "olga", "action": "validate", "token": "wrong"},
+        )
+        self.assertEqual(status, 400, raw)
+        status, raw = self.srv.request(
+            "GET", f"/api/register/olga?token={data['token']}"
+        )
+        self.assertEqual(status, 200)
+        self.assertEqual(json.loads(raw)["stage"], "applied")
+
+    def test_cancel_is_idempotent_and_session_disappears(self):
+        data = self._apply("pam", mode="local")
+        status, payload = self._step("pam", "cancel", data["token"])
+        self.assertEqual(status, 200)
+        self.assertEqual(payload["stage"], "cancelled")
+        status, payload = self._step("pam", "cancel", data["token"])
+        self.assertEqual(status, 200)
+        self.assertEqual(payload["stage"], "cancelled")
+        status, raw = self.srv.request(
+            "GET", f"/api/register/pam?token={data['token']}"
+        )
+        self.assertEqual(status, 404, raw)
+        self.assertIsNone(self.registry.get("pam"))
+
     def test_verify_endpoint_unknown_user(self):
         status, raw = self.srv.request("POST", "/api/register", {
             "user": "ghost",

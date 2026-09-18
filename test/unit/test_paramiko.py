@@ -1,6 +1,7 @@
 """Paramiko backend unit tests: config parsing and pure helpers (no network)."""
 
 import sys
+import io
 import tempfile
 import unittest
 from contextlib import contextmanager
@@ -295,6 +296,170 @@ class TestBackendExecutionPaths(unittest.TestCase):
         worker.is_alive = lambda: False
         worker.join = lambda timeout=None: None
         pb.ParamikoSessionBackend._stop_tar_transfer(channel, proc, [stream], [worker])
+
+    def _fake_tar_channel(self):
+        class _Channel:
+            def settimeout(self, value):
+                return None
+
+            def exec_command(self, command):
+                return None
+
+            def makefile(self, *args, **kwargs):
+                return io.BytesIO(b"")
+
+            def makefile_stderr(self, *args, **kwargs):
+                return io.BytesIO(b"")
+
+            def close(self):
+                return None
+
+        return _Channel()
+
+    def test_download_tar_failure_discards_stage(self):
+        """tar 下载中途失败：必须清理 stage，且按 transport 返回（§4.6）。"""
+        from unittest import mock
+        from common.transfer import build_tar_download_plan
+
+        target = Path(tempfile.mkdtemp()) / "out"
+        plan = build_tar_download_plan("tar", "/remote/dir", target)
+
+        @contextmanager
+        def fake_lease(*args, **kwargs):
+            yield object()
+
+        fake_proc = mock.Mock()
+        fake_proc.stdin = io.BytesIO()
+        fake_proc.stderr = io.BytesIO()
+        fake_proc.poll.return_value = 0
+        fake_proc.wait.return_value = 0
+        with mock.patch.object(self.backend, "_session_lease", fake_lease), \
+             mock.patch.object(
+                 self.backend, "_open_session_channel",
+                 return_value=self._fake_tar_channel(),
+             ), \
+             mock.patch.object(pb.subprocess, "Popen", return_value=fake_proc), \
+             mock.patch.object(
+                 self.backend, "_wait_tar_transfer",
+                 side_effect=RuntimeError("transfer boom"),
+             ):
+            rc, out, err = self.backend.download_tar(plan, timeout=5)
+        self.assertEqual(rc, 255)
+        self.assertIn("transfer boom", err)
+        self.assertFalse(plan.stage_path.exists())
+
+    def test_upload_tar_failure_maps_to_transport(self):
+        """tar 上传异常：返回 VB-TRANSPORT 前缀（中间层据此判 kind）。"""
+        from unittest import mock
+        from common.transfer import build_tar_upload_plans
+
+        local = Path(tempfile.mkdtemp()) / "f.txt"
+        local.write_text("x", encoding="utf-8")
+        (plan,) = build_tar_upload_plans("tar", [(local, "/remote/f.txt")])
+
+        @contextmanager
+        def fake_lease(*args, **kwargs):
+            yield object()
+
+        fake_proc = mock.Mock()
+        fake_proc.stdout = io.BytesIO()
+        fake_proc.stderr = io.BytesIO()
+        fake_proc.poll.return_value = 0
+        fake_proc.wait.return_value = 0
+        with mock.patch.object(self.backend, "_session_lease", fake_lease), \
+             mock.patch.object(
+                 self.backend, "_open_session_channel",
+                 return_value=self._fake_tar_channel(),
+             ), \
+             mock.patch.object(pb.subprocess, "Popen", return_value=fake_proc), \
+             mock.patch.object(
+                 self.backend, "_wait_tar_transfer",
+                 side_effect=RuntimeError("upload boom"),
+             ):
+            rc, out, err = self.backend.upload_tar(plan, timeout=5)
+        self.assertEqual(rc, 255)
+        self.assertIn("upload boom", err)
+        self.assertIn("VB-TRANSPORT", err)
+
+    def test_download_tar_success_installs_stage(self):
+        """tar 下载成功：staged_item 就位后原子安装到目标。"""
+        from unittest import mock
+        from common.transfer import build_tar_download_plan
+
+        target = Path(tempfile.mkdtemp()) / "out"
+        plan = build_tar_download_plan("tar", "/remote/dir", target)
+
+        @contextmanager
+        def fake_lease(*args, **kwargs):
+            yield object()
+
+        def fake_popen(cmd, **kwargs):
+            # 模拟远端 tar 已经解出目标目录
+            plan.staged_item.mkdir(parents=True, exist_ok=True)
+            proc = mock.Mock()
+            proc.stdin = io.BytesIO()
+            proc.stderr = io.BytesIO()
+            proc.poll.return_value = 0
+            proc.wait.return_value = 0
+            return proc
+
+        with mock.patch.object(self.backend, "_session_lease", fake_lease), \
+             mock.patch.object(
+                 self.backend, "_open_session_channel",
+                 return_value=self._fake_tar_channel(),
+             ), \
+             mock.patch.object(pb.subprocess, "Popen", side_effect=fake_popen), \
+             mock.patch.object(
+                 self.backend, "_wait_tar_transfer", return_value=(0, 0)
+             ):
+            rc, out, err = self.backend.download_tar(plan, timeout=5)
+        self.assertEqual((rc, err), (0, ""))
+        self.assertTrue(target.is_dir())
+        self.assertFalse(plan.stage_path.exists())
+
+    def test_upload_tar_success_returns_zero(self):
+        from unittest import mock
+        from common.transfer import build_tar_upload_plans
+
+        local = Path(tempfile.mkdtemp()) / "f.txt"
+        local.write_text("x", encoding="utf-8")
+        (plan,) = build_tar_upload_plans("tar", [(local, "/remote/f.txt")])
+
+        @contextmanager
+        def fake_lease(*args, **kwargs):
+            yield object()
+
+        fake_proc = mock.Mock()
+        fake_proc.stdout = io.BytesIO()
+        fake_proc.stderr = io.BytesIO()
+        fake_proc.poll.return_value = 0
+        fake_proc.wait.return_value = 0
+        with mock.patch.object(self.backend, "_session_lease", fake_lease), \
+             mock.patch.object(
+                 self.backend, "_open_session_channel",
+                 return_value=self._fake_tar_channel(),
+             ), \
+             mock.patch.object(pb.subprocess, "Popen", return_value=fake_proc), \
+             mock.patch.object(
+                 self.backend, "_wait_tar_transfer", return_value=(0, 0)
+             ):
+            rc, out, err = self.backend.upload_tar(plan, timeout=5)
+        self.assertEqual((rc, err), (0, ""))
+
+    def test_open_shell_failure_releases_session_gate(self):
+        """open_shell 失败必须归还 max_sessions 名额，否则预算泄漏。"""
+        from unittest import mock
+
+        with mock.patch.object(self.backend, "ensure_connected", return_value=None), \
+             mock.patch.object(
+                 self.backend, "_target_transport",
+                 side_effect=OSError("no transport"),
+             ):
+            for _ in range(4):  # max_sessions=3
+                with self.assertRaises(OSError):
+                    self.backend.open_shell(timeout=5)
+        self.assertTrue(self.backend._session_gate.acquire(blocking=False))
+        self.backend._session_gate.release()
 
     def test_wait_tar_transfer_success(self):
         import queue as q

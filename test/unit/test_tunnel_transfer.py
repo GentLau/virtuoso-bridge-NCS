@@ -468,6 +468,71 @@ class TestRemoteClientRecursiveUpload(unittest.TestCase):
         with self.assertRaises(RemotePathError):
             client.resolve_remote_path(client.targets.file, "~/x.txt")
 
+    def test_download_replace_failure_reports_path_kind(self):
+        """§4.6: 目标不可替换（如目标目录）→ kind=path，且清理 stage。"""
+        entry = make_entry()
+        from unittest import mock
+        target_dir = Path(tempfile.mkdtemp()) / "target"
+        target_dir.mkdir()
+        with mock.patch("transport.tunnel.SSHRunner", FakeRunner):
+            client = RemoteClient(entry, resolve(entry), "alice")
+            client._one_shot_runner = client._runner
+            runner = client.file_runner
+            runner.remote_kind = "file"
+            payload = b"payload-bytes"
+            runner.download_payload = payload
+            runner.sha256_value = hashlib.sha256(payload).hexdigest()
+            res = client.download_file("/remote/p.bin", target_dir)
+        self.assertEqual(res.kind, "path")
+        self.assertIn("VB-PATH-NOT-VISIBLE", res.stderr)
+        leftovers = [p.name for p in target_dir.parent.iterdir()
+                     if p.name.startswith(".vbtmp-")]
+        self.assertEqual(leftovers, [])
+
+    def test_serial_slot_wait_timeout_is_timeout_kind(self):
+        """默认串行命令：等不到串行位时必须返回 kind=timeout（§4.5）。"""
+        entry = make_entry()
+        from unittest import mock
+        with mock.patch("transport.tunnel.SSHRunner", FakeRunner):
+            client = RemoteClient(entry, resolve(entry), "alice")
+            client._one_shot_runner = client._runner
+            client._serial_lock.acquire()
+            try:
+                res = client.run_command("echo hi", timeout=0.1)
+            finally:
+                client._serial_lock.release()
+        self.assertEqual(res.kind, "timeout")
+        self.assertEqual(res.returncode, 124)
+        self.assertIn("serial command slot", res.stderr)
+
+    def test_one_shot_role_dispatch_uses_role_runner(self):
+        entry = make_entry()
+        from unittest import mock
+        with mock.patch("transport.tunnel.SSHRunner", FakeRunner):
+            client = RemoteClient(entry, resolve(entry), "alice")
+            res = client.run_one_shot("gui", "xdotool key Escape", timeout=5)
+            runner = client._runner(client.targets.gui)
+        self.assertEqual(res.returncode, 0)
+        self.assertTrue(any(
+            call[0] == "run_one_shot" and call[1][0] == "xdotool key Escape"
+            for call in runner.calls
+        ))
+
+    def test_remote_sha256_missing_digest_is_transport_error(self):
+        entry = make_entry()
+        from unittest import mock
+        with mock.patch("transport.tunnel.SSHRunner", FakeRunner):
+            client = RemoteClient(entry, resolve(entry), "alice")
+            client._one_shot_runner = client._runner
+            runner = client.file_runner
+            runner.run_command = lambda cmd, timeout=None: CommandResult(0, "", "")
+            error, digest = client._remote_sha256(
+                client.targets.file, "/remote/p.bin", 5
+            )
+        self.assertIsNotNone(error)
+        self.assertEqual(error.kind, "transport")
+        self.assertEqual(digest, "")
+
 
 if __name__ == "__main__":
     unittest.main()
