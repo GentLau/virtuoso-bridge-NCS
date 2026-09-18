@@ -1,7 +1,10 @@
 """BusinessServer routing tests with RemoteClient/SkillClient mocked."""
 
+import os
 import sys
 import tempfile
+import threading
+import time
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -12,6 +15,7 @@ from pyapi.models import CommandResult, ExecutionStatus, VirtuosoResult
 from transport.middle import BusinessServer
 from common.registry import UserEntry, load_registry
 from common.paths import registry_path, override_work_dir_for_tests
+from transport import middle as middle_mod
 
 
 def make_remote_entry(token="tok-1"):
@@ -239,6 +243,83 @@ class TestMiddleErrorAndLocalPaths(unittest.TestCase):
         r = self.server._local_download(str(src), dst, recursive=True)
         self.assertEqual(r.returncode, 0)
         self.assertEqual((dst / "sub" / "f.txt").read_text(encoding="utf-8"), "x")
+
+
+class TestLocalShellStartupBound(unittest.TestCase):
+    """端到端 deadline：本地常驻 shell 起不来时必须报错，不能永久挂起。"""
+
+    def test_local_shell_startup_is_bounded(self):
+        read_fd, write_fd = os.pipe()
+        read_end = os.fdopen(read_fd, "rb")
+        write_end = os.fdopen(write_fd, "wb")
+
+        class _NullStdin:
+            def write(self, data):
+                return len(data)
+
+            def flush(self):
+                return None
+
+            def close(self):
+                return None
+
+        class _SilentProc:
+            """启动后既无输出也无 EOF 的 shell（模拟卡死的本地 shell）。"""
+
+            def __init__(self, *args, **kwargs):
+                self.stdin = _NullStdin()
+                self.stdout = read_end
+                self.returncode = None
+
+            def poll(self):
+                return None
+
+            def terminate(self):
+                return None
+
+            def kill(self):
+                return None
+
+            def wait(self, timeout=None):
+                return 0
+
+        outcome: dict = {}
+
+        def run():
+            try:
+                with mock.patch.object(
+                    middle_mod.subprocess, "Popen", side_effect=_SilentProc
+                ), mock.patch.object(
+                    middle_mod._LocalCommandSession,
+                    "_BANNER_TIMEOUT",
+                    0.2,
+                    create=True,
+                ):
+                    try:
+                        middle_mod._LocalCommandSession()
+                    except RuntimeError:
+                        outcome["raised"] = True
+                    else:
+                        outcome["returned"] = True
+            except BaseException as exc:  # noqa: BLE001
+                outcome["exc"] = exc
+
+        worker = threading.Thread(target=run, daemon=True)
+        started = time.monotonic()
+        worker.start()
+        worker.join(timeout=3.0)
+        bounded = not worker.is_alive()
+        elapsed = time.monotonic() - started
+        write_end.close()
+        read_end.close()
+        worker.join(timeout=2.0)
+
+        self.assertTrue(
+            bounded,
+            "local command shell startup is unbounded (call hangs forever)",
+        )
+        self.assertLess(elapsed, 3.0)
+        self.assertTrue(outcome.get("raised"), outcome)
 
 
 if __name__ == "__main__":

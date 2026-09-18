@@ -146,6 +146,11 @@ class _LocalCommandSession:
     reads back after the shell finishes the command.
     """
 
+    #: Upper bound for the shell's startup echo.  Without it a local shell
+    #: that never answers makes every call hang forever, which violates the
+    #: end-to-end deadline contract (四层整体架构 §5.8).
+    _BANNER_TIMEOUT = 5.0
+
     def __init__(self, cwd: str | None = None, *, err_dir: Path | None = None) -> None:
         self._lock = threading.RLock()
         self._seq = 0
@@ -208,17 +213,25 @@ class _LocalCommandSession:
         self._seq = 0
         self._reader = threading.Thread(target=self._read_loop, daemon=True)
         self._reader.start()
-        time.sleep(0.1)
-        self._drain_banner()
+        try:
+            time.sleep(0.1)
+            self._drain_banner()
+        except Exception:
+            self._close_locked()
+            raise
 
     def _drain_banner(self) -> None:
         marker = "__VB_DRAIN_0__"
         with self._lock:
             self._current = {"marker": marker, "out": [], "rc": 0, "done": False, "eof": False}
         self._write_line(f"echo {marker}")
-        self._wait_current(None)
+        self._wait_current(time.monotonic() + self._BANNER_TIMEOUT)
         with self._lock:
+            cur = self._current
+            ready = bool(cur and (cur["done"] or cur["eof"]))
             self._current = None
+        if not ready:
+            raise RuntimeError("local command shell did not become ready")
 
     def _read_loop(self) -> None:
         try:
@@ -271,25 +284,31 @@ class _LocalCommandSession:
     def _close_locked(self) -> None:
         self._dead = True
         proc = self._proc
+        reader = self._reader
+        self._proc = None
+        self._reader = None
+        # 先终止子进程（其 stdout 随进程退出 EOF，读取线程随之结束），再
+        # 关闭流。若反过来在阻塞读取期间 close()，Windows 上会等待读锁，
+        # 使关闭路径永久挂起。
         if proc is not None:
+            try:
+                proc.terminate()
+                proc.wait(timeout=2)
+            except Exception:  # noqa: BLE001
+                try:
+                    proc.kill()
+                    proc.wait(timeout=2)
+                except Exception:  # noqa: BLE001
+                    pass
+        if reader is not None:
+            reader.join(timeout=1)
+        if proc is not None and (reader is None or not reader.is_alive()):
             for stream in (proc.stdin, proc.stdout):
                 try:
                     if stream:
                         stream.close()
                 except OSError:
                     pass
-            try:
-                proc.terminate()
-                proc.wait(timeout=2)
-            except Exception:
-                try:
-                    proc.kill()
-                except OSError:
-                    pass
-        self._proc = None
-        if self._reader is not None:
-            self._reader.join(timeout=1)
-            self._reader = None
 
     def execute(self, cmd: str, timeout: float | None = None) -> CommandResult:
         need_spawn = False
@@ -306,7 +325,7 @@ class _LocalCommandSession:
             try:
                 self._close_locked()
                 self._spawn()
-            except OSError as exc:
+            except (OSError, RuntimeError) as exc:
                 self._dead = True
                 return CommandResult(255, "", f"VB-TRANSPORT: local shell unavailable: {exc}", kind="transport")
             with self._lock:
