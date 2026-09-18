@@ -1,9 +1,9 @@
 # 中层配置文档
 
-> 版本：Draft v29
+> 版本：Draft v30
 > 日期：2026-09-15
 > 状态：Normative（字段目录、默认值、探测写回、注册表 schema、reservation 与 endpoint key 的唯一规范源）
-> Supersedes：Draft v21–v28（v21–v27 同前；v28 固定目录补充 server.json）
+> Supersedes：Draft v21–v29（v21–v28 同前；v29 cdslog.* 允许业务接口显式覆盖）
 > 定位：本文是[多用户与注册](1-多用户与注册.md)的**字段与 schema 详细补充**——六步状态机与授权归[多用户与注册](1-多用户与注册.md)；本文是字段与必填清单 owner（§4），并提供默认值、探测写回、注册表 schema、reservation 与 endpoint key。
 
 ## 1. 总述
@@ -34,8 +34,8 @@
 | `runtime.thread_pool_size` | 线程预算：在途请求上限（任何未完成动作占位）；超限语义见[并发设计 §2](2-并发设计.md) | 配置 | 默认 `32` |
 | `runtime.channel_budget` | 最大通道数：token 内所有 endpoint 已打开 SSH 通道总数；超限语义见[并发设计 §2](2-并发设计.md) | 配置 | 默认 `10` |
 | `runtime.connect_timeout` | 连接建立超时（各步 deadline 的子预算，见[四层整体架构与接口 §5.8](../总览/1-四层整体架构与接口.md)） | 配置 | 默认 `15` 秒 |
-| `cdslog.log_level` | 返回日志级别 off/all/warn/error；off 从 IL 源头不读不注入 | 配置 | 默认 `all` |
-| `cdslog.log_max_bytes` | 单次日志内联长度上限，超限自动降级（规则见[日志返回设计标准 §5](../底层/6-日志返回设计标准.md)） | 配置 | 默认 `65536` |
+| `cdslog.log_level` | 返回日志级别 off/all/warn/error；off 从 IL 源头不读不注入；业务接口可显式覆盖 | 配置 | 默认 `all` |
+| `cdslog.log_max_bytes` | 单次日志内联长度上限，超限自动降级（规则见[日志返回设计标准 §5](../底层/6-日志返回设计标准.md)）；业务接口可显式覆盖 | 配置 | 默认 `65536` |
 
 ### 2.3 各 role 公共字段
 

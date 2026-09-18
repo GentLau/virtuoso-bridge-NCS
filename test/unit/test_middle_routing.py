@@ -58,7 +58,8 @@ class FakeSkillClient:
         self.kwargs = kwargs
         FakeSkillClient.instances[kwargs["token"]] = self
 
-    def execute_skill(self, skill_code, timeout=None):
+    def execute_skill(self, skill_code, timeout=None, *, log_level=None, log_max_bytes=None):
+        self.last_call = {"log_level": log_level, "log_max_bytes": log_max_bytes}
         return VirtuosoResult(status=ExecutionStatus.SUCCESS, output="2")
 
 
@@ -83,6 +84,20 @@ class TestBusinessServerRouting(unittest.TestCase):
         self.assertEqual(r.output, "2")
         self.assertTrue(FakeRemoteClient.instances["tok-1"].ensure_tunnel_called)
         self.assertEqual(FakeSkillClient.instances["tok-1"].kwargs["log_level"], "all")
+
+    def test_execute_skill_log_params_override_registry(self):
+        entry = make_remote_entry()
+        entry.cdslog.log_level = "error"
+        entry.cdslog.log_max_bytes = 1024
+        self.reg.register("alice", entry)
+        server = self._server()
+        with mock.patch("transport.middle.RemoteClient", FakeRemoteClient), \
+             mock.patch("transport.middle.SkillClient", FakeSkillClient):
+            r = server.execute_skill("1+1", token="tok-1", log_level="warning")
+        self.assertTrue(r.ok)
+        client = FakeSkillClient.instances["tok-1"]
+        self.assertEqual(client.last_call, {"log_level": "warning", "log_max_bytes": None})
+        self.assertEqual(client.kwargs["log_max_bytes"], 1024)
 
     def test_execute_skill_unknown_token(self):
         server = self._server()
