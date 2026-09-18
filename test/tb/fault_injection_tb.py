@@ -390,7 +390,7 @@ def case_windows_casefold_overwrite():
     wd = temp_dir("vb-fault-casefold-")
     reg = Registry(wd / "registry.json").load()
     a = make_remote_entry("tok-a")
-    b = make_remote_entry("tok-b")
+    b = make_remote_entry("tok-a")  # token is immutable (多用户与注册 §1)
     with mock.patch.object(registry_mod.os, "name", "nt"):
         reg.register("Alice", a)
         reg.register("alice", b, overwrite=True)

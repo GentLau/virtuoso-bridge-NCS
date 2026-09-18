@@ -352,7 +352,7 @@ class Package:
             r"0x[0-9a-fA-F]+", request.target
         ):
             raise ValueError("target must be 'ciw', 'display' or a 0x window id")
-        facts = self.middle.query(request.token)
+        facts = self.middle.query(token=request.token)
         steps = [_step("query", facts.status.value == "success", facts)]
         if facts.status.value != "success":
             return ScreenshotResult(False, steps, "; ".join(facts.errors) or "query failed")

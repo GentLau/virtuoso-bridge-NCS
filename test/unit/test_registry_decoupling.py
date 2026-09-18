@@ -54,11 +54,22 @@ class TestRegistryCommitPolicy(unittest.TestCase):
         with self.assertRaises(UserAlreadyRegisteredError):
             self.reg.register("alice", UserEntry(token="tok-b", mode="remote"))
 
-    def test_overwrite_replaces_entry_and_token_index(self) -> None:
+    def test_overwrite_with_same_token_replaces_entry(self) -> None:
         self.reg.register("alice", UserEntry(token="tok-a", mode="remote"))
-        self.reg.register("alice", UserEntry(token="tok-b", mode="remote"), overwrite=True)
-        self.assertIsNone(self.reg.by_token("tok-a"))
-        self.assertEqual(self.reg.by_token("tok-b").token, "tok-b")
+        updated = UserEntry(token="tok-a", mode="remote")
+        updated.runtime.thread_pool_size = 8
+        self.reg.register("alice", updated, overwrite=True)
+        self.assertEqual(self.reg.by_token("tok-a").runtime.thread_pool_size, 8)
+
+    def test_overwrite_must_not_rotate_token(self) -> None:
+        """§1: token 终生有效、不轮换；轮换 = 删除用户重新注册。"""
+        self.reg.register("alice", UserEntry(token="tok-a", mode="remote"))
+        with self.assertRaises(RegistryError):
+            self.reg.register(
+                "alice", UserEntry(token="tok-b", mode="remote"), overwrite=True
+            )
+        self.assertIsNotNone(self.reg.by_token("tok-a"))
+        self.assertIsNone(self.reg.by_token("tok-b"))
 
     def test_token_conflict_across_users_rejected(self) -> None:
         self.reg.register("alice", UserEntry(token="tok-a", mode="remote"))

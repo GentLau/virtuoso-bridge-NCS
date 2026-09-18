@@ -263,11 +263,40 @@ class TestRegisterUserOneShot(unittest.TestCase):
              mock.patch("register.flow.deploy_user", return_value="/home/alice/setup.il"), \
              mock.patch("register.flow.test_connectivity", return_value=report):
             state = register_user(
-            self.reg, mode="remote", user="alice", token="tok-1",
-            ssh={"default": {"host": "server-a", "user": "alice"}},
-        )
+                self.reg, mode="remote", user="alice", token="tok-1",
+                ssh={"default": {"host": "server-a", "user": "alice"}},
+                confirm_commit=True,
+            )
         self.assertEqual(state.stage, "committed")
         self.assertIsNotNone(self.reg.get("alice"))
+
+    def test_requires_explicit_commit_confirmation(self):
+        """§3.1/§3.3: 第六步必须由用户显式确认；一次性辅助不得默认落盘。"""
+        entry = complete_remote_entry()
+        report = ConnectivityReport("tok-1", True, True, True)
+        with mock.patch("register.flow.probe_user", return_value=ProbeResult(entry, 3)), \
+             mock.patch.object(RegistrationFlow, "_recheck_ports_before_deploy", lambda self, state, budget: None), \
+             mock.patch("register.flow.deploy_user", return_value="/home/alice/setup.il"), \
+             mock.patch("register.flow.test_connectivity", return_value=report):
+            with self.assertRaises(ValueError):
+                register_user(
+                    self.reg, mode="remote", user="alice", token="tok-1",
+                    ssh={"default": {"host": "server-a", "user": "alice"}},
+                )
+        self.assertIsNone(self.reg.get("alice"))
+
+
+class TestFlowCancelGuard(unittest.TestCase):
+    def setUp(self):
+        self.wd = override_work_dir_for_tests(Path(tempfile.mkdtemp()))
+        self.reg = load_registry(registry_path())
+
+    def test_cancel_does_not_release_committed_session(self):
+        """§3.3: cancel 只合法于任意非 committed 进行中会话。"""
+        flow = RegistrationFlow(self.reg)
+        flow.state = RegistrationState(user="alice", stage="committed", step=6)
+        state = flow.cancel()
+        self.assertEqual(state.stage, "committed")
 
 
 class TestProbeFailureBranches(unittest.TestCase):

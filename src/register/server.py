@@ -30,8 +30,12 @@ from urllib.parse import parse_qs, unquote, urlparse
 from pydantic import ValidationError
 
 from register import RegistrationFlow, RegistrationRequest
+from register.candidate import (
+    fingerprint_conflicts_candidate,
+    validate_entry_shape,
+)
 from register.reservation import ReservationTable
-from common.registry import Registry, UserEntry, load_registry
+from common.registry import Registry, RegistryError, load_registry
 from common.paths import (  # noqa: E402 - 进程级路径基座（common 层）
     init_work_dir,
     registry_path,
@@ -352,56 +356,13 @@ class RegistrationHandler(BaseHTTPRequestHandler):
         if not isinstance(fields, dict):
             self._send_json(400, {"error": "update body must be an object"})
             return
-        def deep_merge(base, patch):
-            out = dict(base)
-            for key, value in patch.items():
-                if isinstance(value, dict) and isinstance(out.get(key), dict):
-                    out[key] = deep_merge(out[key], value)
-                else:
-                    out[key] = value
-            return out
-
-        # Flat convenience names retained for the registration page and old
-        # scripts; nested registry names remain the canonical transport.
-        flat_map = {
-            "root_default": ("root", "default"),
-            "ssh_backend": ("ssh", "backend"),
-            "ssh_control_master": ("ssh", "control_master"),
-            "ssh_proxy": ("ssh", "default", "proxy"),
-            "thread_pool_size": ("runtime", "thread_pool_size"),
-            "channel_budget": ("runtime", "channel_budget"),
-            "connect_timeout": ("runtime", "connect_timeout"),
-            "log_level": ("cdslog", "log_level"),
-            "log_max_bytes": ("cdslog", "log_max_bytes"),
-            "daemon_python": ("roles", "daemon", "python"),
-            "spectre_host": ("roles", "spectre", "host"),
-            "spectre_bin": ("roles", "spectre", "bin"),
-        }
-        translated: dict = {}
-        for key in list(fields):
-            path = flat_map.get(key)
-            if path is None:
-                continue
-            value = fields.pop(key)
-            node = translated
-            for part in path[:-1]:
-                node = node.setdefault(part, {})
-            node[path[-1]] = value
-        fields = deep_merge(fields, translated)
-
-        # ``GET /api/user/<user>`` returns a full entry, so the update endpoint
-        # must accept that same shape back: ``token`` is read-only but valid
-        # (a *changed* token is refused below) and ``registered_at`` is
-        # server-managed, never user-writable.
-        # spec 多用户与注册 §5: ssh.* / root.default / role.* / runtime.* /
-        # cdslog.* / expected_* are the writable fields -- ``mode`` is fixed at
-        # registration time.  ``token``/``registered_at`` are accepted so the
-        # entry returned by GET can be posted back (read-only, validated).
-        allowed = {"ssh", "root", "roles", "runtime", "cdslog",
-                   "registered_at"}
+        # 多用户与注册 v31 / §5: 白名单字段为 ssh.* / root.default / role.* /
+        # runtime.* / cdslog.* / expected_*；token、registered_at、未声明字段
+        # 与扁平别名一律拒绝（扁平别名不属公共协议）。
         if "token" in fields:
             self._send_json(400, {"error": "token must not be provided in update body"})
             return
+        allowed = {"ssh", "root", "roles", "runtime", "cdslog"}
         unknown = set(fields) - allowed
         if unknown:
             self._send_json(
@@ -410,23 +371,21 @@ class RegistrationHandler(BaseHTTPRequestHandler):
             )
             return
 
-        if "token" in fields and fields.pop("token") != entry.token:
-            self._send_json(400, {"error": "token is immutable; remove and re-register"})
-            return
-        fields.pop("registered_at", None)
-
-        candidate_data = deep_merge(entry.model_dump(), fields)
         try:
-            candidate = UserEntry.model_validate(candidate_data)
-        except Exception as exc:  # noqa: BLE001
-            self._send_json(400, {"error": "invalid update", "detail": str(exc)})
+            candidate = self.server.registry.update(
+                user,
+                fields,
+                validator=lambda updated: (
+                    validate_entry_shape(
+                        updated, user, require_root_default_null=False
+                    )
+                    + fingerprint_conflicts_candidate(updated, user)
+                ),
+            )
+        except KeyError:
+            self._send_json(404, {"error": "unknown user", "user": user})
             return
-        if candidate.token != entry.token:
-            self._send_json(400, {"error": "token is immutable; remove and re-register"})
-            return
-        try:
-            self.server.registry.register(user, candidate, overwrite=True)
-        except Exception as exc:  # noqa: BLE001
+        except (RegistryError, ValueError) as exc:
             self._send_json(400, {"error": "invalid update", "detail": str(exc)})
             return
         self._send_json(200, {"user": user, "entry": self._redacted(candidate)})

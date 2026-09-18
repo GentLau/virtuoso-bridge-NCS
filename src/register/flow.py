@@ -893,8 +893,12 @@ class RegistrationFlow:
         return state
 
     def cancel(self) -> RegistrationState | None:
-        """Explicit cancellation: drop the reservation, keep the registry clean."""
-        if self.state is not None:
+        """Explicit cancellation: drop the reservation, keep the registry clean.
+
+        多用户与注册 §3.3: cancel 只合法于任意非 committed 进行中会话；
+        committed 会话不可被取消（幂等 no-op）。
+        """
+        if self.state is not None and self.state.stage != "committed":
             self._release_reservation(self.state)
             self.state.stage = "cancelled"
         return self.state
@@ -1181,8 +1185,19 @@ class RegistrationFlow:
         return state
 
 
-def register_user(registry: Registry, **fields) -> RegistrationState:
-    """One-shot convenience (apply + verify + commit) for scripted registration."""
+def register_user(
+    registry: Registry, *, confirm_commit: bool = False, **fields
+) -> RegistrationState:
+    """One-shot convenience (apply + verify + commit) for scripted registration.
+
+    多用户与注册 §3.1/§3.3: 第五步通过不自动保存，第六步必须由用户显式确认。
+    因此本辅助函数要求 ``confirm_commit=True``；缺省直接拒绝，不落盘。
+    """
+    if not confirm_commit:
+        raise ValueError(
+            "register_user requires explicit confirm_commit=True: step 6 "
+            "(registry write) is a user confirmation, never automatic"
+        )
     flow = RegistrationFlow(registry)
     state = flow.apply(RegistrationRequest(**fields))
     if state.stage == "deployed":

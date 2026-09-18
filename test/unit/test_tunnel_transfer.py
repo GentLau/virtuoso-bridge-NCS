@@ -1,8 +1,10 @@
 """RemoteClient transport tests with a configurable fake SSHRunner."""
 
 import hashlib
+import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -448,6 +450,23 @@ class TestRemoteClientRecursiveUpload(unittest.TestCase):
         with mock.patch("transport.tunnel.SSHRunner", FakeRunner):
             client = RemoteClient(entry, resolve(entry), "alice")
         self.assertEqual(client._runner_kwargs["connect_timeout"], 0.5)
+
+    def test_local_sha256_honours_call_deadline(self):
+        """O3/§5.8: 本地摘要计算属于文件调用预算，超时必须中止。"""
+        path = Path(tempfile.mkdtemp()) / "big.bin"
+        path.write_bytes(b"x" * 4096)
+        with self.assertRaises(subprocess.TimeoutExpired):
+            RemoteClient._sha256_local(path, deadline=time.monotonic() - 1.0)
+
+    def test_runtime_tilde_path_is_rejected(self):
+        """O4/§4.2: 注册后 root 为绝对路径，运行期不再解析 ~。"""
+        entry = make_entry()
+        from unittest import mock
+        from common.remote_paths import RemotePathError
+        with mock.patch("transport.tunnel.SSHRunner", FakeRunner):
+            client = RemoteClient(entry, resolve(entry), "alice")
+        with self.assertRaises(RemotePathError):
+            client.resolve_remote_path(client.targets.file, "~/x.txt")
 
 
 if __name__ == "__main__":

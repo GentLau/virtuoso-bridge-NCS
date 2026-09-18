@@ -33,7 +33,7 @@ class TestRegistryMore(unittest.TestCase):
         reg.register("alice", first)
         first_at = first.registered_at
         time.sleep(1.01)
-        second = UserEntry(token="tok-2", mode="remote")
+        second = UserEntry(token="tok-1", mode="remote")  # token is immutable
         reg.register("alice", second, overwrite=True)
         self.assertGreaterEqual(second.registered_at, first_at + 1)
 

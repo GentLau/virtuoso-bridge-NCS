@@ -293,8 +293,12 @@ class TestRegistrationServer(unittest.TestCase):
         self.assertIsNone(self.registry.get("carol"))
 
     def test_update_user(self):
-        self.registry.register("carol", UserEntry(token="tok-upd", mode="local"))
-        status, raw = self.srv.request("POST", "/api/user/carol/update", {"log_level": "error", "thread_pool_size": 16}, _admin_auth())
+        self._register_full_local("carol", "tok-upd")
+        status, raw = self.srv.request(
+            "POST", "/api/user/carol/update",
+            {"cdslog": {"log_level": "error"}, "runtime": {"thread_pool_size": 16}},
+            _admin_auth(),
+        )
         self.assertEqual(status, 200)
         entry = self.registry.get("carol")
         self.assertEqual(entry.cdslog.log_level, "error")
@@ -302,14 +306,15 @@ class TestRegistrationServer(unittest.TestCase):
         self.assertNotIn("token", json.loads(raw)["entry"])
 
     def test_update_nested_three_segment_path(self):
-        self.registry.register("dave", UserEntry(token="tok-dave", mode="local"))
+        self._register_full_local("dave", "tok-dave")
         status, raw = self.srv.request(
             "POST", "/api/user/dave/update",
             {
-                "spectre_host": "spectre-a",
-                "spectre_bin": "/opt/spectre",
-                "root_default": "/work/dave",
-                "roles": {"spectre": {"mode": "remote"}},
+                "root": {"default": "/work/dave"},
+                "roles": {"spectre": {
+                    "mode": "remote", "host": "spectre-a", "user": "alice",
+                    "bin": "/opt/spectre",
+                }},
             },
             _admin_auth(),
         )
@@ -320,9 +325,12 @@ class TestRegistrationServer(unittest.TestCase):
         self.assertEqual(entry.root.default, "/work/dave")
 
     def test_update_invalid_value_keeps_old_entry(self):
-        self.registry.register("erin", UserEntry(token="tok-erin", mode="local"))
+        self._register_full_local("erin", "tok-erin")
         before = self.registry.get("erin").model_dump()
-        status, raw = self.srv.request("POST", "/api/user/erin/update", {"log_level": "bogus"}, _admin_auth())
+        status, raw = self.srv.request(
+            "POST", "/api/user/erin/update",
+            {"cdslog": {"log_level": "bogus"}}, _admin_auth(),
+        )
         self.assertEqual(status, 400)
         self.assertEqual(self.registry.get("erin").model_dump(), before)
 
@@ -561,6 +569,111 @@ class TestRegistrationServer(unittest.TestCase):
             for t in threads:
                 t.join(timeout=15)
         self.assertEqual(sorted(results), [200, 400])
+
+    # -- update semantics (D3/D4/D6) -----------------------------------------
+    def _register_full_remote(self, user="alice", token="tok-upd"):
+        entry = UserEntry(token=token, mode="remote")
+        entry.ssh.default.host = "server-a"
+        entry.ssh.default.user = "alice"
+        for name in ("gui", "daemon", "command", "file", "spectre"):
+            role = getattr(entry.roles, name)
+            role.root = f"/home/alice/.virtuoso-bridge/{user}/{name}"
+            role.expected_fingerprint = "SHA256:test"
+        entry.roles.daemon.daemon_port = 65081
+        entry.roles.daemon.local_port = 65082
+        entry.roles.daemon.python = "/usr/bin/python3"
+        entry.roles.daemon.expected_hostname = "server-a"
+        entry.roles.daemon.expected_user = "alice"
+        entry.roles.spectre.bin = "/opt/spectre"
+        entry.registered_at = 1700000000
+        self.registry.register(user, entry)
+        return entry
+
+    def _register_full_local(self, user="carol", token="tok-upd"):
+        """A complete post-registration local entry (absolute roots, ports, python)."""
+        entry = UserEntry(token=token, mode="local")
+        base = Path(self.wd) / "roots" / user
+        for name in ("gui", "daemon", "command", "file", "spectre"):
+            role = getattr(entry.roles, name)
+            role.root = str(base / name)
+        port = _free_port()
+        entry.roles.daemon.daemon_port = port
+        entry.roles.daemon.local_port = port
+        entry.roles.daemon.python = sys.executable
+        entry.registered_at = 1700000000
+        self.registry.register(user, entry)
+        return entry
+
+    def test_update_rejects_entry_with_unresolvable_remote_role(self):
+        """§5“整体校验”：update 不能写出运行期不可用的条目。"""
+        import copy
+        self._register_full_remote()
+        before = copy.deepcopy(self.registry.get("alice").model_dump())
+        status, raw = self.srv.request(
+            "POST", "/api/user/alice/update",
+            {"ssh": {"default": {"host": None, "user": None}},
+             "roles": {"gui": {"host": None, "user": None}}},
+            _admin_auth(),
+        )
+        self.assertEqual(status, 400, raw)
+        self.assertEqual(self.registry.get("alice").model_dump(), before)
+
+    def test_update_rejects_registered_at_and_flat_aliases(self):
+        """v31: token/registered_at/未声明字段与扁平别名一律拒绝。"""
+        self._register_full_remote()
+        status, raw = self.srv.request(
+            "POST", "/api/user/alice/update", {"registered_at": 123}, _admin_auth()
+        )
+        self.assertEqual(status, 400, raw)
+        status, raw = self.srv.request(
+            "POST", "/api/user/alice/update", {"log_level": "error"}, _admin_auth()
+        )
+        self.assertEqual(status, 400, raw)
+
+    def test_concurrent_updates_do_not_lose_fields(self):
+        """§5: 文件锁 + 读改写原子替换，不丢更新。"""
+        from unittest import mock
+        import common.registry as registry_mod
+
+        self._register_full_remote()
+        barrier = threading.Barrier(2)
+        original_get = registry_mod.Registry.get
+        counter = {"n": 0}
+        count_lock = threading.Lock()
+
+        def blocked_get(self, user):
+            with count_lock:
+                counter["n"] += 1
+                wait = counter["n"] <= 2
+            if wait:
+                try:
+                    barrier.wait(timeout=1.0)
+                except threading.BrokenBarrierError:
+                    pass
+            return original_get(self, user)
+
+        results = []
+
+        def patch(body):
+            status, _raw = self.srv.request(
+                "POST", "/api/user/alice/update", body, _admin_auth()
+            )
+            results.append(status)
+
+        with mock.patch.object(registry_mod.Registry, "get", blocked_get):
+            threads = [
+                threading.Thread(target=patch, args=({"runtime": {"thread_pool_size": 8}},)),
+                threading.Thread(target=patch, args=({"cdslog": {"log_level": "error"}},)),
+            ]
+            for t in threads:
+                t.start()
+            for t in threads:
+                t.join(timeout=15)
+
+        self.assertEqual(results, [200, 200])
+        entry = self.registry.get("alice")
+        self.assertEqual(entry.runtime.thread_pool_size, 8)
+        self.assertEqual(entry.cdslog.log_level, "error")
 
 
 if __name__ == "__main__":

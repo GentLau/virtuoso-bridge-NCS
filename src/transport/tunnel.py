@@ -13,6 +13,7 @@ import logging
 import os
 import posixpath
 import shlex
+import subprocess
 import threading
 import time
 import uuid
@@ -71,8 +72,6 @@ class RemoteClient:
         # runner creation is a check-then-act: without this lock the first
         # burst of concurrent calls creates one SSHRunner per thread.
         self._runner_lock = threading.Lock()
-        self._homes: dict[str | None, str] = {}
-        self._home_lock = threading.Lock()
         self._serial_lock = threading.Lock()
         self.budgets = TokenBudgets(
             thread_pool_size=entry.runtime.thread_pool_size,
@@ -108,6 +107,7 @@ class RemoteClient:
                 host=role.host, user=role.user, jump_host=jump_host,
                 jump_user=role.jump_user, proxy_url=role.proxy,
                 max_sessions=self.budgets.endpoint_limit(role.key),
+                work_dir=self._role_work_dir(role),
             )
             runner = SSHRunner(**kwargs)
             self._runners[role.key] = runner
@@ -136,6 +136,7 @@ class RemoteClient:
                 jump_user=role.jump_user, proxy_url=role.proxy,
                 max_sessions=self.budgets.endpoint_limit(role.key),
                 persistent_shell=False,  # 一次性命令，无常驻 shell
+                work_dir=self._role_work_dir(role),
             )
             runner = SSHRunner(**kwargs)
             self._one_shot_runners[role.name] = runner
@@ -172,62 +173,40 @@ class RemoteClient:
                 self._persistent_leases[key] = lease
             return lease, True
 
-    def _run_internal_one_shot(self, role: ResolvedRole, cmd: str, timeout: float):
-        lease = self._acquire_channel(role)
-        try:
-            return self._one_shot_runner(role).run_one_shot(cmd, timeout=timeout)
-        finally:
-            lease.release()
-
-    def remote_home(self, role: ResolvedRole) -> str:
-        """Remote ``$HOME`` for the role's connection (single-flight, cached).
-
-        scp uses the SFTP protocol by default, so ``~`` is NOT shell-expanded
-        on the remote side; the middle layer expands it explicitly.  The lookup
-        uses a one-shot runner so it can never wedge the persistent command
-        shell; failures are cached as "" (callers fall back to the raw root).
-        """
-        key = role.key
-        cached = self._homes.get(key)
-        if cached:
-            return cached
-        with self._home_lock:
-            cached = self._homes.get(key)
-            if cached:
-                return cached
-            detail = ""
-            try:
-                result = self._run_internal_one_shot(
-                    role, 'printf "%s" "$HOME"', 15
-                )
-                cached = result.stdout.strip() if result.returncode == 0 else ""
-                if not cached:
-                    detail = (
-                        result.stderr.strip()
-                        or f"rc={result.returncode}"
-                    )
-            except Exception as exc:  # noqa: BLE001 - reported as a path error
-                detail = str(exc)
-            if not cached:
-                # Never cache a failure: the next call retries.  Returning the
-                # raw ``~`` root instead would silently create a literal
-                # ``~/.virtuoso-bridge`` directory on the target.
-                raise RemotePathError(
-                    f"cannot resolve remote $HOME for role {role.name} on "
-                    f"{role.host}: {detail or 'empty response'}"
-                )
-            self._homes[key] = cached
-            return cached
+    @staticmethod
+    def _role_work_dir(role: ResolvedRole) -> str | None:
+        """Absolute role root usable as the remote helper temp dir, else None."""
+        root = (role.root or "").strip()
+        return root if root.startswith("/") else None
 
     def expanded_root(self, role: ResolvedRole) -> str:
-        if role.mode != "remote" or not role.root.startswith("~"):
+        """Return the committed absolute role root.
+
+        多用户与注册 §4.2: 探测后把展开的绝对路径写回各 role.root，运行期
+        不再解析 ``~``；运行期出现 ``~`` root 说明注册表不合格，明确报错而
+        不是偷偷做一次 HOME 查询（评审 O4）。
+        """
+        if role.mode != "remote" or not role.root:
             return role.root
-        return role.root.replace("~", self.remote_home(role), 1)
+        if role.root.startswith("~"):
+            raise RemotePathError(
+                f"role {role.name} root {role.root!r} is not absolute; the "
+                "runtime never expands '~' (re-register to write back an "
+                "absolute root)"
+            )
+        return role.root
 
     def resolve_remote_path(self, role: ResolvedRole, path: str) -> str:
-        """Expand ``~`` and resolve a relative path against the role root."""
+        """Resolve an absolute or role-root-relative remote path.
+
+        ``~`` is not part of the frozen path contract (§4.2/§5.6): reject it
+        instead of paying for an extra remote HOME lookup.
+        """
         if path.startswith("~"):
-            path = self.remote_home(role) + path[1:]
+            raise RemotePathError(
+                f"'~' is not a valid remote_path ({path!r}); use an absolute "
+                "path or a path relative to the role root"
+            )
         if path.startswith("/"):
             return path  # absolute paths never depend on the role root
         return remote_root_path(path, self.expanded_root(role))
@@ -363,10 +342,15 @@ class RemoteClient:
             lease.release()
 
     @staticmethod
-    def _sha256_local(path: Path) -> str:
+    def _sha256_local(path: Path, *, deadline: float | None = None) -> str:
         digest = hashlib.sha256()
         with path.open("rb") as fh:
             for chunk in iter(lambda: fh.read(1024 * 1024), b""):
+                if deadline is not None and time.monotonic() >= deadline:
+                    # 摘要计算属于文件调用预算（§5.8），超时立即中止。
+                    raise subprocess.TimeoutExpired(
+                        cmd=f"sha256 {path}", timeout=0.0
+                    )
                 digest.update(chunk)
         return digest.hexdigest()
 
@@ -495,7 +479,12 @@ class RemoteClient:
             if error is not None:
                 self._remove_remote_stage(role, stage)
                 return error
-            if remote_digest != self._sha256_local(local_path):
+            try:
+                local_digest = self._sha256_local(local_path, deadline=deadline)
+            except subprocess.TimeoutExpired:
+                self._remove_remote_stage(role, stage)
+                raise
+            if remote_digest != local_digest:
                 self._remove_remote_stage(role, stage)
                 return CommandResult(
                     returncode=1,
@@ -588,7 +577,12 @@ class RemoteClient:
             if dl.returncode != 0:
                 self._remove_local_stage(stage)
                 return dl
-            if remote_digest != self._sha256_local(stage):
+            try:
+                local_digest = self._sha256_local(stage, deadline=deadline)
+            except subprocess.TimeoutExpired:
+                self._remove_local_stage(stage)
+                raise
+            if remote_digest != local_digest:
                 self._remove_local_stage(stage)
                 return CommandResult(
                     returncode=1,

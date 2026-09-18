@@ -8,9 +8,11 @@ import binascii
 import hashlib
 import logging
 import logging.handlers
+import math
 import os
 import queue
 import shutil
+import shlex
 import signal
 import socket
 import subprocess
@@ -263,6 +265,7 @@ class SSHRunner:
         control_master: str = "auto",
         tool_override: dict | None = None,
         control_identity: str | None = None,
+        work_dir: str | None = None,
     ) -> None:
         
         self._host = host
@@ -280,6 +283,12 @@ class SSHRunner:
             raise ValueError(
                 f"Unsupported SSH backend {selected_backend!r}; expected 'openssh' or 'paramiko'."
             )
+        if proxy_url and selected_backend == "openssh":
+            # 忠实投送：配置了 proxy 就不能静默直连（评审 O7）。
+            raise ValueError(
+                "the openssh backend cannot honour role.proxy "
+                f"({proxy_url!r}); use ssh.backend=paramiko or remove the proxy"
+            )
         self._backend = selected_backend
         if max_sessions is None:
             max_sessions = 10
@@ -287,6 +296,9 @@ class SSHRunner:
             raise ValueError("max_sessions must be a positive integer")
         self._max_sessions = max_sessions
         self._proxy_url = proxy_url
+        #: Remote working directory for helper temp files (role root).  When
+        #: absent, the persistent shell keeps using the system temp dir.
+        self._work_dir = (work_dir or "").strip() or None
 
         _ov = tool_override or {}
         self._ssh_cmd = _ov.get("ssh") or ssh_cmd or shutil.which("ssh") or "ssh"
@@ -468,11 +480,20 @@ class SSHRunner:
         Returns the Popen process on success, or None if reusing an existing
         tunnel (port already reachable).  Raises RuntimeError on failure.
         """
+        if self._proxy_url:
+            # Skill 隧道由外部 OpenSSH 承载；它拿不到 role.proxy。宁可明确
+            # 报错，也不能静默改走直连（忠实投送 / 评审 O7）。
+            raise RuntimeError(
+                "the Skill tunnel is carried by OpenSSH and cannot honour "
+                f"proxy={self._proxy_url!r}; remove the proxy or use "
+                "mode=local for the daemon role"
+            )
         if remote_port is None:
             remote_port = port
 
         # the tunnel startup loop must spend from the caller's remaining budget,
         # never restart a fresh settle window (end-to-end deadline rule)
+        outer_deadline = deadline
         if deadline is not None:
             remaining = deadline - time.monotonic()
             if remaining <= 0:
@@ -521,6 +542,11 @@ class SSHRunner:
             # failure before the forward is established sent nothing.
             attempts = 3
             for attempt in range(attempts):
+                if outer_deadline is not None and time.monotonic() >= outer_deadline:
+                    self._note_tunnel_failure()
+                    raise subprocess.TimeoutExpired(
+                        cmd="port-forward", timeout=settle
+                    )
                 # Capture stderr so we can surface "banner exchange timeout"
                 # / "permission denied" etc. to the user.  Previously this
                 # was DEVNULL and any failure became an opaque "rc=1".
@@ -544,8 +570,11 @@ class SSHRunner:
                 # tunnel start appear to fail when it was merely still
                 # handshaking.  Align with the probe ConnectTimeout.
                 jh_settle = max(settle, 30.0) if self._jump_host else max(settle, 10.0)
-                deadline = time.monotonic() + jh_settle
-                while time.monotonic() < deadline:
+                attempt_deadline = time.monotonic() + jh_settle
+                if outer_deadline is not None:
+                    # 重试共享同一条端到端 deadline，绝不重置（评审 O2/§5.8）。
+                    attempt_deadline = min(attempt_deadline, outer_deadline)
+                while time.monotonic() < attempt_deadline:
                     # Check our own process FIRST: if the port is already served
                     # by somebody else our ``ssh -L`` exits immediately, and
                     # treating that dead process as "our tunnel" would look
@@ -604,9 +633,15 @@ class SSHRunner:
         proc = subprocess.Popen(cmd, **popen_kwargs)
 
         jh_settle = max(settle, 3.0) if self._jump_host else settle
-        deadline = time.monotonic() + jh_settle
-        while time.monotonic() < deadline:
+        attempt_deadline = time.monotonic() + jh_settle
+        if outer_deadline is not None:
+            attempt_deadline = min(attempt_deadline, outer_deadline)
+        reachable = False
+        while time.monotonic() < attempt_deadline:
             if proc.poll() is not None:
+                break
+            if self.can_reach_port(port):
+                reachable = True
                 break
             time.sleep(0.1)
 
@@ -631,6 +666,21 @@ class SSHRunner:
                 "SSH tunnel failed to start"
                 + (f" | {err_msg.strip()}" if err_msg.strip() else "")
             )
+        if not reachable and not self.can_reach_port(port):
+            # 进程活着不等于 forwarding 生效：标记失败并让调用方重建
+            # （评审 O6/并发设计 §4“隧道失效自动重建”）。
+            try:
+                proc.terminate()
+                proc.wait(timeout=2)
+            except OSError:
+                pass
+            except subprocess.TimeoutExpired:
+                proc.kill()
+            self._note_tunnel_failure()
+            raise RuntimeError(
+                f"SSH tunnel to {self._host} started but local port {port} "
+                "never became reachable"
+            )
         self._note_tunnel_ready(port, proc)
         return proc  # running
 
@@ -654,6 +704,10 @@ class SSHRunner:
 
     @property
     def is_tunnel_alive(self) -> bool:
+        # 进程活着不等于 forwarding 生效：先验证本地端口可达，否则隧道
+        # 会被判定为需要重建（评审 O6/并发设计 §4）。
+        if self._tunnel_local_port and not self.can_reach_port(self._tunnel_local_port):
+            return False
         if self._tunnel_proc is not None and self._tunnel_proc.poll() is None:
             return True
         if self._tunnel_using_external and self._tunnel_local_port:
@@ -1017,13 +1071,21 @@ class SSHRunner:
         # 3 attempts = 1 initial + 1 transient retry + 1 post-CM-fallback retry.
         attempts = 3
         last: subprocess.CompletedProcess[bytes] | None = None
+        # 一次执行自己回传真实 rc：ssh 的退出码只在“没有 marker”时用于
+        # 传输层判定，这样真实命令的 rc=124/255 不会被误分类（评审 O1）。
+        remote_rc_marker = "__VB_REMOTE_RC__:"
+        wrapped = (
+            command
+            + "\n__vb_rc=$?\n"
+            + f"printf '\\n{remote_rc_marker}%s\\n' \"$__vb_rc\" >&2\n"
+        )
         for attempt in range(attempts):
             cmd = self._build_ssh_base() + ["sh", "-l"]
             self._print_cmd(cmd)
             try:
                 last = subprocess.run(
                     cmd,
-                    input=command.encode("utf-8"),
+                    input=wrapped.encode("utf-8"),
                     capture_output=True,
                     text=False,
                     timeout=budget.remaining(cmd),
@@ -1058,23 +1120,53 @@ class SSHRunner:
         assert last is not None
         stdout = last.stdout.decode("utf-8", errors="replace")
         stderr = last.stderr.decode("utf-8", errors="replace")
+        remote_rc, marker_seen, stderr = self._extract_remote_rc(
+            stderr, remote_rc_marker, last.returncode
+        )
         logger.debug(
             "Remote command returned %d (stdout=%d bytes, stderr=%d bytes)",
-            last.returncode,
+            remote_rc,
             len(stdout),
             len(stderr),
         )
-        # ssh(1) reserves exit code 255 for its own transport failures; the
-        # persistent-shell path reports the *remote* rc explicitly, so only
-            # this one-shot path needs the classification (spec 四层整体架构 §4.4).
+        # ssh(1) reserves exit code 255 for its own transport failures.  A
+        # remote-rc marker proves the remote shell completed, so only the
+        # "no marker + rc 255 + ssh diagnostics" combination is transport.
         kind = (
             "transport"
-            if last.returncode == 255 and self._is_ssh_transport_255(stderr)
+            if not marker_seen
+            and remote_rc == 255
+            and self._is_ssh_transport_255(stderr)
             else "command"
         )
         return CommandResult(
-            returncode=last.returncode, stdout=stdout, stderr=stderr, kind=kind
+            returncode=remote_rc, stdout=stdout, stderr=stderr, kind=kind
         )
+
+    @staticmethod
+    def _extract_remote_rc(
+        stderr: str, marker: str, ssh_rc: int
+    ) -> tuple[int, bool, str]:
+        """Parse the trailing remote-rc marker from stderr.
+
+        Returns ``(rc, marker_seen, stderr_without_marker)``.  When the marker
+        is absent the ssh exit status is returned unchanged.
+        """
+        lines = stderr.splitlines(keepends=True)
+        for idx in range(len(lines) - 1, -1, -1):
+            stripped = lines[idx].strip()
+            if not stripped.startswith(marker):
+                continue
+            try:
+                value = int(stripped[len(marker):].strip())
+            except ValueError:
+                break
+            if idx > 0 and lines[idx - 1].strip() == "":
+                rest = lines[:idx - 1] + lines[idx + 1:]
+            else:
+                rest = lines[:idx] + lines[idx + 1:]
+            return value, True, "".join(rest)
+        return ssh_rc, False, stderr
 
     def upload(
         self,
@@ -1782,9 +1874,7 @@ class SSHRunner:
         begin_marker = f"__vb_STDOUT_B64_BEGIN_{token}__"
         stderr_marker = f"__vb_STDERR_B64_BEGIN_{token}__"
         rc_prefix = f"__vb_RC_{token}__"
-        script = (
-            "__vb_stdout=$(mktemp)\n"
-            "__vb_stderr=$(mktemp)\n"
+        body = (
             "{\n"
             f"{command}\n"
             "} >\"$__vb_stdout\" 2>\"$__vb_stderr\"\n"
@@ -1794,8 +1884,28 @@ class SSHRunner:
             f"printf '\\n%s\\n' '{stderr_marker}'\n"
             "base64 <\"$__vb_stderr\" | tr -d '\\n'\n"
             f"printf '\\n{rc_prefix}%s\\n' \"$__vb_rc\"\n"
-            "rm -f \"$__vb_stdout\" \"$__vb_stderr\"\n"
         )
+        if self._work_dir:
+            # 远端临时文件收拢到 role 工作根，并用 trap 覆盖异常路径
+            # （评审 O5，用户要求的“不逃逸到系统临时目录”）。
+            tmp_dir = shlex.quote(self._work_dir)
+            script = (
+                f"__vb_tmp={tmp_dir}\n"
+                "mkdir -p \"$__vb_tmp\" 2>/dev/null\n"
+                "(\n"
+                "trap 'rm -f \"$__vb_stdout\" \"$__vb_stderr\"' EXIT\n"
+                "__vb_stdout=$(mktemp -p \"$__vb_tmp\" 2>/dev/null || mktemp)\n"
+                "__vb_stderr=$(mktemp -p \"$__vb_tmp\" 2>/dev/null || mktemp)\n"
+                + body
+                + ")\n"
+            )
+        else:
+            script = (
+                "__vb_stdout=$(mktemp)\n"
+                "__vb_stderr=$(mktemp)\n"
+                + body
+                + "rm -f \"$__vb_stdout\" \"$__vb_stderr\"\n"
+            )
 
         budget.remaining(command)
         try:
@@ -1938,9 +2048,15 @@ class SSHRunner:
 
     def _common_ssh_options(self, *, control_master: bool = True) -> list[str]:
         """SSH options shared by both ssh and scp commands."""
+        # OpenSSH 的 ConnectTimeout 只接受整数秒（带小数会报
+        # "invalid time value"）；内部仍保留浮点秒做子预算。
+        try:
+            connect_cli = max(1, int(math.ceil(float(self._connect_timeout))))
+        except (TypeError, ValueError):
+            connect_cli = 30
         opts: list[str] = [
             "-o", "BatchMode=yes",
-            "-o", f"ConnectTimeout={self._connect_timeout}",
+            "-o", f"ConnectTimeout={connect_cli}",
             # Skip GSSAPI/Kerberos auth.  In many EDA environments the
             # Kerberos KDC is either unreachable from the client or on
             # a separate network; when sshd advertises gssapi-* the

@@ -761,7 +761,7 @@ class BusinessServer(Middle):
 
     # -- read-only companion query (spec §4.2) ---------------------------------
 
-    def query(self, token: str) -> QueryResult:
+    def query(self, *, token: str) -> QueryResult:
         """Return the per-role ``root``/``bin`` facts for one token.
 
         Read-only: it answers from the in-memory registry snapshot, never
@@ -847,10 +847,12 @@ class BusinessServer(Middle):
             return CommandResult(returncode=1, stdout="", stderr=str(exc), kind="path")
 
     @staticmethod
-    def _sha256_file(path: Path) -> str:
+    def _sha256_file(path: Path, *, deadline: float | None = None) -> str:
         digest = hashlib.sha256()
         with path.open("rb") as fh:
             for chunk in iter(lambda: fh.read(1024 * 1024), b""):
+                if deadline is not None and time.monotonic() >= deadline:
+                    raise _DeadlineExceeded
                 digest.update(chunk)
         return digest.hexdigest()
 
@@ -912,7 +914,8 @@ class BusinessServer(Middle):
             stage = dst.parent / f".vbtmp-{uuid.uuid4().hex}"
             try:
                 _copy_file_with_deadline(src, stage, deadline)
-                if BusinessServer._sha256_file(src) != BusinessServer._sha256_file(stage):
+                if BusinessServer._sha256_file(src, deadline=deadline) != \
+                        BusinessServer._sha256_file(stage, deadline=deadline):
                     return CommandResult(
                         1, "", "sha256 mismatch", kind="checksum"
                     )
@@ -963,7 +966,8 @@ class BusinessServer(Middle):
             stage = dst.parent / f".vbtmp-{uuid.uuid4().hex}"
             try:
                 _copy_file_with_deadline(src, stage, deadline)
-                if BusinessServer._sha256_file(src) != BusinessServer._sha256_file(stage):
+                if BusinessServer._sha256_file(src, deadline=deadline) != \
+                        BusinessServer._sha256_file(stage, deadline=deadline):
                     return CommandResult(
                         1, "", "sha256 mismatch", kind="checksum"
                     )

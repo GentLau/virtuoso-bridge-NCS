@@ -129,6 +129,22 @@ class TestPersistentShellProtocol(unittest.TestCase):
             )
         )
 
+    def test_remote_temp_files_use_injected_work_dir(self):
+        """O5: 捕获文件落在 role 工作根内，并带异常路径清理。"""
+        r = SSHRunner(
+            "server-a", user="u", backend="openssh", persistent_shell=False,
+            work_dir="/home/alice/.virtuoso-bridge/alice/command",
+        )
+        r._shell_proc = FakeProc()
+        r._shell_queue = queue.Queue()
+        feed_async(r, stdout=b"ok\n")
+        res = r._run_command_via_persistent_shell_locked("echo ok", timeout=5)
+        self.assertEqual(res.stdout, "ok\n")
+        payload = r._shell_proc.stdin.payload.decode("utf-8", errors="ignore")
+        self.assertIn("mktemp -p", payload)
+        self.assertIn("/home/alice/.virtuoso-bridge/alice/command", payload)
+        self.assertIn("trap", payload)
+
     def test_eof_after_delivery_is_unknown_effect(self):
         r = runner_with_shell()
         feed_async(r, raw=lambda tok: [None])

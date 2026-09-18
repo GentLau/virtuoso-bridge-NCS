@@ -7,6 +7,7 @@
 
 import os
 import sys
+import tempfile
 import time
 import unittest
 from pathlib import Path
@@ -81,12 +82,13 @@ class TunnelPathMixin:
 
     def test_own_process_records_port_and_is_alive(self):
         r = runner()
-        # Windows 分支靠 can_reach_port 判定成功；POSIX 分支只要求进程还活着
-        proc = self._start(r, alive=True, port_reachable=(self.platform == "nt"))
+        # O6: 两个分支都以“进程活着 + forwarding 可达”判定健康
+        proc = self._start(r, alive=True, port_reachable=True)
         self.assertIsNotNone(proc)
         self.assertEqual(r._tunnel_local_port, 65081)
         self.assertFalse(r._tunnel_using_external)
-        self.assertTrue(r.is_tunnel_alive)
+        with mock.patch.object(SSHRunner, "can_reach_port", staticmethod(lambda p: True)):
+            self.assertTrue(r.is_tunnel_alive)
         self.assertEqual(r._tunnel_failures, 0)
 
     def test_external_listener_is_recorded_and_alive(self):
@@ -159,6 +161,66 @@ class TestControlPathNamespace(unittest.TestCase):
         self.assertNotEqual(base, other_jump_user)
         self.assertNotEqual(base, other_proxy)
         self.assertNotEqual(other_jump_user, other_proxy)
+
+
+class _NeverReadyProc:
+    """ssh -L 进程“活着”，但本地端口永远不可达。"""
+
+    def __init__(self):
+        self._rc = None
+
+    def poll(self):
+        return None
+
+    def terminate(self):
+        self._rc = -15
+
+    def kill(self):
+        self._rc = -9
+
+    def wait(self, timeout=None):
+        self._rc = self._rc if self._rc is not None else 0
+        return self._rc
+
+
+class TestTunnelDeadlineAndHealth(unittest.TestCase):
+    def setUp(self):
+        self.wd = Path(tempfile.mkdtemp())
+        from common.paths import override_work_dir_for_tests
+
+        override_work_dir_for_tests(self.wd)
+
+    def test_port_forward_retry_shares_the_call_deadline(self):
+        """O2/§5.8: 隧道启动重试不得重置端到端 deadline。"""
+        runner = ssh_mod.SSHRunner(
+            "server-a", user="u", backend="openssh", jump_host="bastion",
+            control_master="disable",
+        )
+        clock = {"t": 1000.0}
+
+        def now():
+            return clock["t"]
+
+        def sleep(seconds):
+            clock["t"] += max(0.0, float(seconds))
+
+        with mock.patch.object(ssh_mod.subprocess, "Popen", return_value=_NeverReadyProc()), \
+             mock.patch.object(ssh_mod.time, "monotonic", now), \
+             mock.patch.object(ssh_mod.time, "sleep", sleep), \
+             mock.patch.object(runner, "can_reach_port", return_value=False):
+            with self.assertRaises((RuntimeError, ssh_mod.subprocess.TimeoutExpired)):
+                runner._start_port_forward_locked(
+                    65099, settle=30.0, deadline=clock["t"] + 0.2
+                )
+        self.assertLess(clock["t"] - 1000.0, 2.0)
+
+    def test_alive_process_with_dead_forward_is_not_healthy(self):
+        """O6/§4: 隧道健康 = 进程活着且 forwarding 可用。"""
+        runner = ssh_mod.SSHRunner("server-a", user="u", control_master="disable")
+        runner._tunnel_proc = _NeverReadyProc()
+        runner._tunnel_local_port = 65081
+        with mock.patch.object(runner, "can_reach_port", return_value=False):
+            self.assertFalse(runner.is_tunnel_alive)
 
 
 if __name__ == "__main__":

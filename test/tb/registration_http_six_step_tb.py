@@ -490,12 +490,10 @@ def main() -> int:
 
         status, current = http.call("GET", f"/api/user/{args.user}",
                                     headers=ADMIN_HEADERS)
-        entry = current.get("entry") or {}
-        entry.setdefault("runtime", {})["thread_pool_size"] = 12
-        # spec 多用户与注册 §5: ``mode`` is fixed at registration time and is
-        # not part of the update whitelist, so a GET round-trip omits it.
-        entry.pop("mode", None)
-        status, body = http.call("POST", f"/api/user/{args.user}/update", entry,
+        # spec 多用户与注册 v31 §5: only the whitelisted canonical fields are
+        # accepted; token/registered_at/mode/flat aliases are rejected.
+        status, body = http.call("POST", f"/api/user/{args.user}/update",
+                                 {"runtime": {"thread_pool_size": 12}},
                                  headers=ADMIN_HEADERS)
         steps.append({"action": "update", "status": status,
                       "thread_pool_size": (body.get("entry", {}).get("runtime") or {})

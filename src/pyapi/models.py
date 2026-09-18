@@ -76,7 +76,7 @@ class RoleQuery(BaseModel):
 
 
 class QueryResult(BaseModel):
-    """Answer of ``middle.query(token)``.
+    """Answer of ``middle.query(token=...)``.
 
     ``status`` is ``success``/``error``; an unknown token is a structured
     failure (``errors=["invalid token"]``) and never an exception.  只返回 role 的
@@ -128,7 +128,13 @@ class Middle(Protocol):
     """
 
     def execute_skill(
-        self, skill_code: str, timeout: float | None = None, *, token: str
+        self,
+        skill_code: str,
+        timeout: float | None = None,
+        *,
+        token: str,
+        log_level: str | None = None,
+        log_max_bytes: int | None = None,
     ) -> VirtuosoResult: ...
 
     def run_command(
@@ -154,7 +160,7 @@ class Middle(Protocol):
     #: Companion read-only query (spec §4.2) — not a sixth business interface:
     #: it never sends, executes or transfers anything, and never consumes the
     #: three budgets or a queue slot.
-    def query(self, token: str) -> "QueryResult": ...
+    def query(self, *, token: str) -> "QueryResult": ...
 
 
 __all__ = [

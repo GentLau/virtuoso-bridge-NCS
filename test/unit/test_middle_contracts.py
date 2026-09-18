@@ -168,5 +168,33 @@ class TestSkillContracts(MiddleContractBase):
         self.assertEqual(r.errors, ["invalid token"])
 
 
+class TestFrozenInterfaceSignatures(unittest.TestCase):
+    """四层接口 §4.1/§4.2 的唯一签名口径（v34）。"""
+
+    def test_query_token_is_keyword_only(self):
+        import inspect
+        from pyapi.models import Middle
+        from transport.middle import BusinessServer
+
+        for func in (BusinessServer.query, Middle.query):
+            params = inspect.signature(func).parameters
+            self.assertIn("token", params, func)
+            self.assertEqual(
+                params["token"].kind,
+                inspect.Parameter.KEYWORD_ONLY,
+                f"{func} must take token as keyword-only",
+            )
+
+    def test_execute_skill_exposes_log_overrides(self):
+        import inspect
+        from pyapi.models import Middle
+
+        params = inspect.signature(Middle.execute_skill).parameters
+        for name in ("log_level", "log_max_bytes"):
+            self.assertIn(name, params)
+            self.assertEqual(params[name].kind, inspect.Parameter.KEYWORD_ONLY)
+            self.assertIsNone(params[name].default)
+
+
 if __name__ == "__main__":
     unittest.main()

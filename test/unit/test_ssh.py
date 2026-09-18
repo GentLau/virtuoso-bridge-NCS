@@ -196,6 +196,24 @@ class TestOneShotRunCommand(unittest.TestCase):
 
 
 class TestPortForwardLifecycle(unittest.TestCase):
+    def test_proxy_is_never_silently_ignored(self):
+        """O7: OpenSSH 承载路径不支持 proxy 时必须明确报错，不得直连。"""
+        with self.assertRaises(ValueError):
+            SSHRunner(
+                "server-a", user="u", backend="openssh",
+                proxy_url="socks5://proxy:1080",
+            )
+
+    def test_skill_tunnel_rejects_proxy(self):
+        runner = SSHRunner(
+            "server-a", user="u", backend="paramiko",
+            proxy_url="socks5://proxy:1080",
+        )
+        with mock.patch.object(ssh_mod.subprocess, "Popen") as popen:
+            with self.assertRaises(RuntimeError):
+                runner._start_port_forward_locked(65099, settle=1.0)
+        popen.assert_not_called()
+
     def setUp(self):
         self.wd = Path(tempfile.mkdtemp())
         from common.paths import override_work_dir_for_tests
@@ -293,6 +311,49 @@ class TestRetryAndFallback(unittest.TestCase):
             result = r._run_command_once("echo hi")
         self.assertEqual(result.kind, "transport")
         self.assertEqual(result.returncode, 255)
+
+    def test_remote_rc_marker_wins_over_stderr_heuristics(self):
+        """O1: 远端 shell 已回传真实 rc 时，哪怕 stderr 出现类 ssh 文本，
+        也必须保持 kind=command 与真实返回码（§4.5）。"""
+        r = SSHRunner("server", control_master="disable")
+        completed = mock.Mock(
+            returncode=0,
+            stdout=b"remote-output",
+            stderr=(
+                b"ssh: connect to host elsewhere port 22: Connection refused\n"
+                b"\n__VB_REMOTE_RC__:255\n"
+            ),
+        )
+        with mock.patch.object(ssh_mod.subprocess, "run", return_value=completed):
+            result = r._run_command_once("some-command")
+        self.assertEqual(result.kind, "command")
+        self.assertEqual(result.returncode, 255)
+        self.assertNotIn("__VB_REMOTE_RC__", result.stderr)
+        self.assertIn("ssh: connect to host elsewhere", result.stderr)
+
+    def test_wrapped_script_reports_rc_marker(self):
+        """一次执行必须自己回传 rc：ssh 的 rc 只用于传输层判定。"""
+        r = SSHRunner("server", control_master="disable")
+        with mock.patch.object(ssh_mod.subprocess, "run") as run:
+            run.return_value = mock.Mock(returncode=0, stdout=b"", stderr=b"")
+            r._run_command_once("exit 7")
+        payload = run.call_args.kwargs.get("input")
+        if payload is None:
+            payload = run.call_args[1]["input"]
+        text = payload.decode("utf-8")
+        self.assertIn("exit 7", text)
+        self.assertIn("__VB_REMOTE_RC__", text)
+
+    def test_connect_timeout_rendered_as_integer_for_cli(self):
+        """OpenSSH 的 ConnectTimeout 只接受整数秒；浮点子预算不得直接
+        写进命令行（否则 ssh 报 ‘invalid time value’，隧道直接失败）。"""
+        r = SSHRunner(
+            "server", user="u", backend="paramiko", connect_timeout=0.5
+        )
+        opts = r._common_ssh_options()
+        rendered = [o for o in opts if o.startswith("ConnectTimeout=")]
+        self.assertEqual(len(rendered), 1)
+        self.assertEqual(rendered[0], "ConnectTimeout=1")
 
     def test_describe_failure(self):
         r = SSHRunner("server")

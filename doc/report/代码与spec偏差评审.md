@@ -87,3 +87,49 @@
 2. D3/D5/D6（注册表整体校验与并发写，直接影响注册表可用性）；
 3. O4/O5/O7（运行期路径与代理，涉及“忠实投送”）；
 4. O3/O6/O8/O9 与 D1/D2（体验与边界收口）。
+
+## 7. 第二轮：裁决后实施记录（2026-09-18）
+
+> 裁决依据：`doc/report/spec对代码评审的裁决.md`（spec 侧提交 `21f1ee9` / `44c9779` / `4100a7c`）。
+> 纪律同上：每项先补/改 TB 复现失败，再改代码。本轮 TB 首轮红灯共 17 条（D 系列 9 条 + O 系列 8 条）。
+
+### 7.1 D 系列（按 spec 补齐）
+
+| 项 | 实施 | TB / 复核 |
+|---|---|---|
+| D1 `query` keyword-only | `BusinessServer.query(*, token)`、`pyapi.models.Middle.query(*, token)`；调用点 `pyapi/packages/gui.py`、`test/tb/semantics_tb.py` 改为 `query(token=…)` | `test_middle_contracts.py::test_query_token_is_keyword_only`；`semantics_tb.py` rc=0 |
+| D2 `execute_skill` log 参数 | `pyapi.models.Middle.execute_skill` 补 `log_level=None`、`log_max_bytes=None`（keyword-only） | `test_middle_contracts.py::test_execute_skill_exposes_log_overrides` |
+| D3 update 整体校验 | 抽出 `validate_entry_shape()`，commit 与 update 共用；update 校验 remote 目标可解析、root 绝对、daemon python/端口等（允许只改 `root.default`） | `test_registration_server.py::test_update_rejects_entry_with_unresolvable_remote_role` |
+| D4 update 白名单 | 只接受 `ssh/root/roles/runtime/cdslog`；`token`/`registered_at`/未声明字段/扁平别名一律 400（扁平别名翻译整体删除） | `test_registration_server.py::test_update_rejects_registered_at_and_flat_aliases`；`registration_http_six_step_tb.py` 改发白名单 body 后通过 |
+| D5 token 不轮换 | `Registry.register(overwrite=True)` 换 token 直接 `RegistryError`；轮换必须 remove→register | `test_registry_decoupling.py::test_overwrite_must_not_rotate_token`、`::test_overwrite_with_same_token_replaces_entry`；`test_registry_more.py::test_overwrite_refreshes_timestamp` 改为同 token |
+| D6 并发 update 不丢更新 | 新增 `Registry.update(user, patch, validator=…)`：文件锁内重读当前条目→深合并 patch→整体校验→写回 | `test_registration_server.py::test_concurrent_updates_do_not_lose_fields` |
+| D7 第六步显式确认 | `register_user(..., confirm_commit=False)` 缺省拒绝且不落盘；`RegistrationFlow.cancel()` 对 committed 幂等 no-op | `test_register_flow.py::test_requires_explicit_commit_confirmation`、`::test_cancel_does_not_release_committed_session` |
+| D8 `expected_*` 收窄 | spec 已收窄为“注册探测时比对，运行期不强制比对”，代码现状即为该口径，无需改动 | 注册第五步 fingerprint/banner 比对保持 |
+
+### 7.2 O 系列（代码缺陷）
+
+| 项 | 实施 | TB / 真机复核 |
+|---|---|---|
+| O1 rc=255 误分类 | 一次性命令执行自带 rc marker：远端 shell 完成即回传真实 rc；只有“无 marker + rc=255 + 本地 ssh 诊断”才判 transport | `test_ssh.py::test_remote_rc_marker_wins_over_stderr_heuristics`、`::test_wrapped_script_reports_rc_marker`；`one_shot_burst_tb.py` 72/72 |
+| O2 隧道重试重置 deadline | 保留外层不可变 deadline，每次 attempt 取 `min(外层, now + attempt_settle)`，spawn 前检查剩余预算 | `test_ssh_tunnel_lifecycle.py::test_port_forward_retry_shares_the_call_deadline` |
+| O3 本地摘要不受预算约束 | `RemoteClient._sha256_local`、`BusinessServer._sha256_file` 接受 deadline，分块前检查；超时清理 stage 且不改目标 | `test_tunnel_transfer.py::test_local_sha256_honours_call_deadline` |
+| O4 运行期解析 `~` | `RemoteClient.expanded_root` 对 `~` root 报 `RemotePathError`；`resolve_remote_path` 拒绝 `~` 开头的 remote_path；删除运行期 HOME 查询与额外 channel lease | `test_tunnel_transfer.py::test_runtime_tilde_path_is_rejected` |
+| O5 远端临时文件逃逸 | `SSHRunner(work_dir=role.root)`：常驻 shell 用 `mktemp -p <role root>` + `trap` 清理；无 work_dir 时保留回退 | `test_persistent_shell_protocol.py::test_remote_temp_files_use_injected_work_dir`；真机检查 role root 无残留 |
+| O6 隧道健康只看进程 | `is_tunnel_alive` 与 POSIX ready 判定都要求 forwarding 可达，否则判失败并重建 | `test_ssh_tunnel_lifecycle.py::test_alive_process_with_dead_forward_is_not_healthy` |
+| O7 proxy 静默忽略 | openssh backend + proxy 直接 `ValueError`；Skill 隧道（外部 OpenSSH）带 proxy 时明确 `RuntimeError`，不再静默直连 | `test_ssh.py::test_proxy_is_never_silently_ignored`、`::test_skill_tunnel_rejects_proxy` |
+| O8 / O9 | 按裁决：目录目标保持 OS 语义、指纹临时文件允许，不改代码 | — |
+
+### 7.3 真机复核时发现的追加缺陷（已修）
+
+第二轮真机复核（`cov_remote_real` 首跑失败）暴露出 O3 修复的连带问题：`runtime.connect_timeout` 保留浮点后，
+`ConnectTimeout=15.0` 被 OpenSSH 拒绝（`invalid time value`），隧道无法建立。
+
+- 修复：`_common_ssh_options` 把 ConnectTimeout 渲染为整数秒（`ceil`，最小 1），内部仍保留浮点子预算；
+- TB：`test_ssh.py::test_connect_timeout_rendered_as_integer_for_cli`（修复前红）；
+- 真机：`cov_remote_real.py` 5/5 ok，`one_shot_burst_tb.py` 72/72，`recursive_link_check` PASS，
+  `registration_http_six_step_tb.py --local-mode` rc=0，`fault_injection_tb.py` / `semantics_tb.py` rc=0。
+
+### 7.4 第二轮门禁
+
+- `python -m pytest test/unit test/integration test/scenario`
+  → **566 passed, 1 skipped, 27 subtests passed in 329.91s**（2026-09-18，含 ConnectTimeout 回归 TB）。

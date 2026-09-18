@@ -349,7 +349,7 @@ def case_query_shape() -> dict:
     server, wd = _facts_server()
     try:
         snapshot = (wd / "registry.json").read_bytes()
-        result = server.query("tok-alpha")
+        result = server.query(token="tok-alpha")
         if str(result.status) not in ("success", "ExecutionStatus.SUCCESS"):
             raise ProbeFailure(f"query failed for a known token: {result}")
         roles = result.roles
@@ -387,7 +387,7 @@ def case_query_unknown_token() -> dict:
     server, _wd = _facts_server()
     try:
         try:
-            result = server.query("tok-does-not-exist")
+            result = server.query(token="tok-does-not-exist")
         except Exception as exc:  # noqa: BLE001 - any raise violates the contract
             raise ProbeFailure(f"unknown token raised {type(exc).__name__}: {exc}") from exc
         dumped = result.model_dump(mode="json")
@@ -404,8 +404,8 @@ def case_query_isolation() -> dict:
     """query 按 token 隔离：A 的查询不得泄露 B 的 root/bin。"""
     server, _wd = _facts_server()
     try:
-        alpha = server.query("tok-alpha")
-        beta = server.query("tok-beta")
+        alpha = server.query(token="tok-alpha")
+        beta = server.query(token="tok-beta")
         if alpha.roles["daemon"].root == beta.roles["daemon"].root:
             raise ProbeFailure("query leaked another token's root")
         if beta.roles["spectre"].bin is not None:
@@ -435,7 +435,7 @@ def case_query_no_budget() -> dict:
             if not client.started.wait(2):
                 raise ProbeFailure("could not occupy the only thread-pool slot")
             started = time.monotonic()
-            result = server.query("tok-query")
+            result = server.query(token="tok-query")
             elapsed = time.monotonic() - started
             client.release.set()
             holder.join(timeout=5)

@@ -95,8 +95,25 @@ def resolve_candidate(entry: UserEntry, user: str) -> CandidateTargets:
 
 def validate_commit_shape(entry: UserEntry, user: str) -> list[str]:
     """Validate the final registry shape immediately before the step-6 write."""
+    return validate_entry_shape(entry, user, require_root_default_null=True)
+
+
+def validate_entry_shape(
+    entry: UserEntry,
+    user: str,
+    *,
+    require_root_default_null: bool = True,
+) -> list[str]:
+    """Validate that one registry entry is runtime-usable.
+
+    Shared by the step-6 commit and the management update path
+    (多用户与注册 §5 “整体校验”) so an update can never persist an entry the
+    runtime cannot resolve.  ``require_root_default_null=False`` is used by
+    update: it may change ``root.default`` without touching committed
+    ``role.*.root``.
+    """
     errors: list[str] = []
-    if entry.root.default is not None:
+    if require_root_default_null and entry.root.default is not None:
         errors.append("root.default must be null after probe")
     targets = resolve_candidate(entry, user)
     for name in ("gui", "daemon", "command", "file", "spectre"):
@@ -154,4 +171,5 @@ __all__ = [
     "fingerprint_conflicts_candidate",
     "resolve_candidate",
     "validate_commit_shape",
+    "validate_entry_shape",
 ]

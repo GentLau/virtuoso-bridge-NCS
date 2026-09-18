@@ -396,11 +396,19 @@ class Registry:
                 # replace the existing key, not create a second case variant.
                 name = self._lookup_name_in(entries, requested_name)
                 previous = entries.get(name)
-                if previous is not None and not overwrite:
-                    raise UserAlreadyRegisteredError(
-                        f"user {name!r} is already registered; "
-                        f"use overwrite=True to replace it"
-                    )
+                if previous is not None:
+                    if not overwrite:
+                        raise UserAlreadyRegisteredError(
+                            f"user {name!r} is already registered; "
+                            f"use overwrite=True to replace it"
+                        )
+                    if entry.token != previous.token:
+                        # 多用户与注册 §1: token 终生有效、不轮换；
+                        # 轮换 = 删除用户重新注册。
+                        raise RegistryError(
+                            f"token for user {name!r} is immutable; "
+                            f"remove the user and register again to rotate it"
+                        )
                 index = self._index_of(entries)
                 if previous is not None:
                     index.pop(previous.token, None)  # slot is being replaced
@@ -412,6 +420,52 @@ class Registry:
                 entries[name] = entry
 
             self._mutate_locked(mutate)
+
+    @staticmethod
+    def _deep_merge(base: dict, patch: dict) -> dict:
+        out = dict(base)
+        for key, value in patch.items():
+            if isinstance(value, dict) and isinstance(out.get(key), dict):
+                out[key] = Registry._deep_merge(out[key], value)
+            else:
+                out[key] = value
+        return out
+
+    def update(self, user: str, patch: dict, *, validator=None) -> UserEntry:
+        """Atomic read-modify-write of one entry (management phase).
+
+        多用户与注册 §5: registry 写采用 OS 文件锁 + 读改写原子替换，不丢更新。
+        合并发生在文件锁内、基于**磁盘上的当前条目**，因此并发 update 不会用
+        旧快照覆盖别人的字段。``validator(entry) -> list[str]`` 在锁内执行，
+        由调用方注入注册模块的语义校验（保持 registry 与注册模块解耦）。
+        """
+        if not isinstance(patch, dict):
+            raise ValueError("registry update patch must be an object")
+        requested = validate_user_name(str(user))
+        with self._lock:
+            if not self._loaded:
+                raise RuntimeError("registry not loaded; call load() once at startup")
+
+            def mutate(entries: dict[str, UserEntry]) -> None:
+                name = self._lookup_name_in(entries, requested)
+                previous = entries.get(name)
+                if previous is None:
+                    raise KeyError(requested)
+                merged = self._deep_merge(previous.model_dump(), patch)
+                candidate = UserEntry.model_validate(merged)
+                if candidate.token != previous.token:
+                    raise RegistryError(
+                        f"token for user {name!r} is immutable; "
+                        f"remove the user and register again to rotate it"
+                    )
+                if validator is not None:
+                    errors = list(validator(candidate))
+                    if errors:
+                        raise RegistryError("; ".join(errors))
+                entries[name] = candidate
+
+            self._mutate_locked(mutate)
+            return self._entries[self._lookup_name_locked(requested)]
 
     def remove(self, user: str) -> None:
         """Remove one user and its token mapping (setup-phase write)."""
