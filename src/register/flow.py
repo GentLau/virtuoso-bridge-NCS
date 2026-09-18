@@ -880,6 +880,48 @@ class RegistrationFlow:
     def _update_reservation(self, state: RegistrationState) -> list[str]:
         return self.reservations.update(self._candidate_reservation(state))
 
+    def _prepare_local_port(self, state: RegistrationState) -> list[str]:
+        """Step 2: pre-allocate / validate the local tunnel port.
+
+        配置一览 §6.4: 第二步在内存分配候选（缺省 local_port 本机预分配；
+        缺省远端 daemon_port 第三步分配并回写）。local 模式下 daemon_port 与
+        local_port 是同一个候选端口，必须同步写入。
+        """
+        request = state.request
+        role = request.roles.daemon
+        mode = role.mode or request.mode.default
+        reserved = self.reserved_local_ports()
+
+        def unusable(port: int) -> bool:
+            return port in reserved or not probes.local_port_free(port)
+
+        if mode == "local":
+            joint = role.local_port or role.daemon_port
+            if joint is None:
+                joint = probes.allocate_local_port(reserved=reserved)
+                if joint is None:
+                    return ["no free local tunnel port found"]
+            elif unusable(joint):
+                # local 模式下两者是同一个候选端口，按 daemon_port 的冲突
+                # 语义报告（配置一览 §6.4 / 多用户与注册 §3 第二步）。
+                return [
+                    f"daemon port {joint} conflicts with another registration "
+                    f"in progress or is already in use locally"
+                ]
+            role.daemon_port = joint
+            role.local_port = joint
+            return []
+
+        if role.local_port is not None:
+            if unusable(role.local_port):
+                return [f"local port {role.local_port} is not usable"]
+            return []
+        allocated = probes.allocate_local_port(reserved=reserved)
+        if allocated is None:
+            return ["no free local tunnel port found"]
+        role.local_port = allocated
+        return []
+
     def _release_reservation(self, state: RegistrationState | None) -> None:
         if state is not None and state.user:
             try:
@@ -962,6 +1004,8 @@ class RegistrationFlow:
         if state is None:
             return self.state
         errors = validate_local(self.registry, state.request, state.token)
+        if not errors:
+            errors = self._prepare_local_port(state)
         if not errors:
             # reserve before touching the network so concurrent registrations
             # cannot pick the same user/token/ports

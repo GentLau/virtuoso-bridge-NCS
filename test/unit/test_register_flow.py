@@ -167,6 +167,42 @@ class TestStepRetryAfterFailure(unittest.TestCase):
         self.assertEqual(failed_stage, "failed")
         self.assertEqual(retried.stage, "probed")
 
+    def test_validate_preallocates_missing_local_port(self):
+        """§6.4: 第二步在内存分配候选——缺省 local_port 必须在本机预分配。"""
+        flow = RegistrationFlow(self.reg)
+        flow.start(remote_request())
+        state = flow.validate()
+        self.assertEqual(state.stage, "validated")
+        records = flow.reservations.records()
+        self.assertEqual(len(records), 1)
+        self.assertIsNotNone(records[0].local_port)
+        self.assertEqual(
+            state.request.roles.daemon.local_port, records[0].local_port
+        )
+
+    def test_validate_preallocates_joint_port_for_local_mode(self):
+        """§6.4: local 模式 daemon_port/local_port 是同一个候选端口。"""
+        request = RegistrationRequest(
+            mode="local", user="u", token="tok-local",
+            roles={"daemon": {"daemon_port": 65091}},
+        )
+        flow = RegistrationFlow(self.reg)
+        flow.start(request)
+        flow.validate()
+        records = flow.reservations.records()
+        self.assertEqual(records[0].local_port, 65091)
+        self.assertEqual(request.roles.daemon.daemon_port, 65091)
+        self.assertEqual(request.roles.daemon.local_port, 65091)
+
+    def test_validate_rejects_busy_explicit_local_port(self):
+        """§3 第二步: local_port 本机已被占用必须在这一步拒绝。"""
+        flow = RegistrationFlow(self.reg)
+        flow.start(remote_request(roles={"daemon": {"local_port": 65092}}))
+        with mock.patch("register.probe.local_port_free", return_value=False):
+            state = flow.validate()
+        self.assertEqual(state.stage, "failed")
+        self.assertTrue(any("not usable" in e for e in state.errors), state.errors)
+
 
 class TestFlowVerifyAndCommit(unittest.TestCase):
     def setUp(self):
