@@ -1,6 +1,7 @@
 """五接口错误契约（spec 三层架构 §4.4）——用假 RemoteClient 覆盖映射分支。"""
 
 import subprocess
+import json
 import sys
 import tempfile
 import unittest
@@ -194,6 +195,48 @@ class TestFrozenInterfaceSignatures(unittest.TestCase):
             self.assertIn(name, params)
             self.assertEqual(params[name].kind, inspect.Parameter.KEYWORD_ONLY)
             self.assertIsNone(params[name].default)
+
+
+class TestQueryContract(unittest.TestCase):
+    """§4.2 只读查询：返回 role root/bin，未知 token 为结构化错误。"""
+
+    def setUp(self):
+        self.wd = override_work_dir_for_tests(Path(tempfile.mkdtemp()))
+        self.registry = load_registry(registry_path())
+        entry = UserEntry(token="tok-q", mode="remote")
+        entry.ssh.default.host = "server-a"
+        entry.ssh.default.user = "alice"
+        for name in ("gui", "daemon", "command", "file", "spectre"):
+            role = getattr(entry.roles, name)
+            role.root = f"/home/alice/.virtuoso-bridge/alice/{name}"
+        entry.roles.spectre.bin = "/opt/spectre/bin/spectre"
+        self.registry.register("alice", entry)
+        self.server = BusinessServer()
+
+    def tearDown(self):
+        self.server.close()
+
+    def test_query_returns_roots_and_spectre_bin(self):
+        result = self.server.query(token="tok-q")
+        self.assertEqual(result.status, ExecutionStatus.SUCCESS)
+        self.assertEqual(len(result.roles), 5)
+        self.assertEqual(
+            result.roles["daemon"].root,
+            "/home/alice/.virtuoso-bridge/alice/daemon",
+        )
+        self.assertEqual(
+            result.roles["spectre"].bin, "/opt/spectre/bin/spectre"
+        )
+        # 只暴露 root/bin，不得泄漏拓扑
+        dumped = json.dumps(result.model_dump())
+        for forbidden in ("host", "jump", "proxy", "daemon_port", "local_port"):
+            self.assertNotIn(forbidden, dumped)
+
+    def test_query_unknown_token_is_structured_error(self):
+        result = self.server.query(token="nope")
+        self.assertEqual(result.status, ExecutionStatus.ERROR)
+        self.assertEqual(result.errors, ["invalid token"])
+        self.assertEqual(result.roles, {})
 
 
 if __name__ == "__main__":

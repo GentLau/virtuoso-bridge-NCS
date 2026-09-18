@@ -244,6 +244,28 @@ class TestMiddleErrorAndLocalPaths(unittest.TestCase):
         self.assertEqual(r.returncode, 0)
         self.assertEqual((dst / "sub" / "f.txt").read_text(encoding="utf-8"), "x")
 
+    def test_local_recursive_mismatches_are_path_kind(self):
+        """§4.6: 对象类型与 recursive 不符 → kind=path（本地模式同样适用）。"""
+        src_file = Path(self.wd) / "f.txt"
+        src_file.write_text("x", encoding="utf-8")
+        up = self.server._local_upload(
+            src_file, str(Path(self.wd) / "up-out"), recursive=True
+        )
+        self.assertEqual(up.kind, "path")
+        down = self.server._local_download(
+            str(src_file), Path(self.wd) / "down-out", recursive=True
+        )
+        self.assertEqual(down.kind, "path")
+
+    def test_local_upload_of_special_file_is_path_kind(self):
+        """非普通文件（这里用目录以外的最小可构造物）不得进入传输。"""
+        directory = Path(self.wd) / "a-directory"
+        directory.mkdir()
+        result = self.server._local_upload(
+            directory, str(Path(self.wd) / "out"), recursive=False
+        )
+        self.assertEqual(result.kind, "path")
+
 
 class TestLocalShellStartupBound(unittest.TestCase):
     """端到端 deadline：本地常驻 shell 起不来时必须报错，不能永久挂起。"""

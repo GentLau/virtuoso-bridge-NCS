@@ -297,6 +297,71 @@ class TestRegistrationServer(unittest.TestCase):
         status, raw = self.srv.request("POST", "/nope", {})
         self.assertEqual(status, 404)
 
+    def test_help_lists_all_routes(self):
+        status, raw = self.srv.request("GET", "/help")
+        self.assertEqual(status, 200)
+        endpoints = json.loads(raw)["endpoints"]
+        for expected in (
+            "POST /api/register",
+            "GET /api/user/<user>",
+            "POST /api/user/<user>/update",
+            "DELETE /api/user/<user>",
+            "PUT /api/config",
+        ):
+            self.assertIn(expected, endpoints)
+
+    def test_get_user_known_and_unknown(self):
+        self.registry.register("zoe", UserEntry(token="tok-zoe", mode="local"))
+        status, raw = self.srv.request(
+            "GET", "/api/user/zoe", None, _admin_auth()
+        )
+        self.assertEqual(status, 200)
+        payload = json.loads(raw)
+        self.assertEqual(payload["user"], "zoe")
+        self.assertNotIn("token", payload["entry"])
+        status, raw = self.srv.request(
+            "GET", "/api/user/ghost", None, _admin_auth()
+        )
+        self.assertEqual(status, 404)
+
+    def test_unknown_routes_are_404(self):
+        for method in ("GET", "POST", "DELETE", "PUT"):
+            with self.subTest(method=method):
+                status, _raw = self.srv.request(method, "/nope", None, _admin_auth())
+                self.assertEqual(status, 404)
+
+    def test_register_command_rejects_bad_bodies_and_actions(self):
+        status, _raw = self.srv.request(
+            "POST", "/api/register", {"user": "a", "action": "explode"}
+        )
+        self.assertEqual(status, 400)
+        status, _raw = self.srv.request("POST", "/api/register", ["not", "an", "object"])
+        self.assertEqual(status, 400)
+        status, _raw = self.srv.request(
+            "POST", "/api/register", {"action": "apply", "mode": "local"}
+        )
+        self.assertEqual(status, 400)
+
+    def test_non_apply_action_rejects_parameter_changes(self):
+        data = self._apply("quinn", mode="local")
+        status, raw = self.srv.request("POST", "/api/register", {
+            "user": "quinn", "action": "validate", "token": data["token"],
+            "mode": "remote",
+        })
+        self.assertEqual(status, 400)
+        self.assertIn("cancel", raw)
+
+    def test_out_of_order_action_is_400_and_state_unchanged(self):
+        data = self._apply("ruth", mode="local")
+        status, payload = self._step("ruth", "probe", data["token"])
+        self.assertEqual(status, 400)
+        self.assertIn("step order violation", json.dumps(payload))
+        status, raw = self.srv.request(
+            "GET", f"/api/register/ruth?token={data['token']}"
+        )
+        self.assertEqual(status, 200)
+        self.assertEqual(json.loads(raw)["stage"], "applied")
+
     def test_verify_without_daemon_does_not_commit(self):
         port = _free_port()
         data = self._to_deploy(
