@@ -321,6 +321,17 @@ class TestLocalShellStartupBound(unittest.TestCase):
         self.assertLess(elapsed, 3.0)
         self.assertTrue(outcome.get("raised"), outcome)
 
+    def test_local_session_removes_temp_dir_on_close(self):
+        """本地会话关闭后不得在工作目录留下 temp/local_err_* 目录。"""
+        err_dir = Path(tempfile.mkdtemp())
+        session = middle_mod._LocalCommandSession(err_dir=err_dir)
+        session_dir = session._err_dir
+        self.assertTrue(session_dir.exists())
+        session.close()
+        self.assertFalse(
+            session_dir.exists(), f"leftover local session dir: {session_dir}"
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

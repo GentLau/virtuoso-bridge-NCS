@@ -377,6 +377,9 @@ class _LocalCommandSession:
     def close(self) -> None:
         with self._lock:
             self._close_locked()
+        # 会话被丢弃时才清理自己的错误目录；超时/重建路径只走 _close_locked，
+        # 目录要留给下一次调用继续使用。
+        shutil.rmtree(self._err_dir, ignore_errors=True)
 
 
 class BusinessServer(Middle):
