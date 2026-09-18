@@ -906,12 +906,36 @@ class SSHRunner:
         "no route to host",
     )
 
+    #: 只有“明确发生在命令投递之前”的传输错误才允许重跑命令：名字解析、
+    #: 连接拒绝、banner/kex 握手阶段。``Connection reset by peer`` /
+    #: ``Connection closed by ...`` 也可能发生在命令已经执行之后——无法
+    #: 证明未投递，禁止重发（并发设计 §4 / 四层架构 §5.8）。
+    _PRE_DELIVERY_SSH_ERROR_FRAGMENTS = (
+        "connection timed out during banner exchange",
+        "kex_exchange_identification",
+        "connection timed out",
+        "no route to host",
+        "network is unreachable",
+        "could not resolve hostname",
+        "connection refused",
+        "host key verification failed",
+        "no matching host key type found",
+        "permission denied (publickey",
+    )
+
     @classmethod
     def _is_transient_ssh_error(cls, returncode: int, stderr: str) -> bool:
         if returncode == 0:
             return False
         low = stderr.lower()
         return any(fragment in low for fragment in cls._TRANSIENT_SSH_ERROR_FRAGMENTS)
+
+    @classmethod
+    def _is_pre_delivery_ssh_error(cls, stderr: str) -> bool:
+        low = (stderr or "").lower()
+        return any(
+            fragment in low for fragment in cls._PRE_DELIVERY_SSH_ERROR_FRAGMENTS
+        )
 
     # ``ssh`` reserves rc=255 for transport failures, but a remote command can
     # also legitimately return 255 (spec §4.5: real rc is preserved).  Only
@@ -1107,10 +1131,13 @@ class SSHRunner:
             if self._is_cm_failure(last.returncode, stderr_text):
                 self._disable_cm_for_session(stderr_first)
                 continue
-            if self._is_transient_ssh_error(last.returncode, stderr_text):
+            if (
+                last.returncode != 0
+                and self._is_pre_delivery_ssh_error(stderr_text)
+            ):
                 if attempt + 1 < attempts:
                     logger.info(
-                        "Transient SSH error on %s (rc=%d); retrying once: %s",
+                        "Pre-delivery SSH error on %s (rc=%d); retrying once: %s",
                         self._host,
                         last.returncode,
                         stderr_first,

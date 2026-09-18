@@ -430,6 +430,26 @@ class TestRetryAndFallback(unittest.TestCase):
         self.assertEqual(res.kind, "path")
         self.assertEqual(res.returncode, 1)
 
+    def test_ambiguous_mid_session_reset_is_not_retried(self):
+        """并发设计 §4: 无法证明命令未投递时不得重发。
+
+        “Connection reset by peer” 可能发生在命令已经执行之后；它不属于
+        明确的建连阶段失败，必须按结果未知/传输错误返回，绝不能重跑。
+        """
+        r = SSHRunner(
+            "server", user="u", backend="openssh",
+            persistent_shell=False, control_master="disable",
+        )
+        completed = mock.Mock(
+            returncode=255, stdout=b"", stderr=b"Connection reset by peer\n"
+        )
+        with mock.patch.object(
+            ssh_mod.subprocess, "run", return_value=completed
+        ) as run:
+            result = r._run_command_once("do-once")
+        self.assertEqual(run.call_count, 1, "ambiguous reset must not resend")
+        self.assertEqual(result.kind, "transport")
+
     def test_describe_failure(self):
         r = SSHRunner("server")
         text = r.describe_ssh_command_failure("upload", CommandResult(255, "", "Permission denied"))
