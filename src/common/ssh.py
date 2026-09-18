@@ -1132,16 +1132,16 @@ class SSHRunner:
         # ssh(1) reserves exit code 255 for its own transport failures.  A
         # remote-rc marker proves the remote shell completed, so only the
         # "no marker + rc 255 + ssh diagnostics" combination is transport.
-        kind = (
-            "transport"
-            if not marker_seen
+        result = self._result_from_rc(remote_rc, stdout, stderr)
+        if (
+            not marker_seen
             and remote_rc == 255
             and self._is_ssh_transport_255(stderr)
-            else "command"
-        )
-        return CommandResult(
-            returncode=remote_rc, stdout=stdout, stderr=stderr, kind=kind
-        )
+        ):
+            result = CommandResult(
+                returncode=255, stdout=stdout, stderr=stderr, kind="transport"
+            )
+        return result
 
     @staticmethod
     def _extract_remote_rc(

@@ -355,6 +355,22 @@ class TestRetryAndFallback(unittest.TestCase):
         self.assertEqual(len(rendered), 1)
         self.assertEqual(rendered[0], "ConnectTimeout=1")
 
+    def test_openssh_one_shot_maps_missing_file_to_path(self):
+        """§4.5/§4.6: no-such-file 诊断必须是 kind=path，且后端切换
+        （openssh/paramiko）不得改变结果语义。"""
+        r = SSHRunner(
+            "server", user="u", backend="openssh",
+            persistent_shell=False, control_master="disable",
+        )
+        completed = mock.Mock(
+            returncode=1, stdout=b"",
+            stderr=b"sha256sum: /remote/missing.bin: No such file or directory\n",
+        )
+        with mock.patch.object(ssh_mod.subprocess, "run", return_value=completed):
+            res = r.run_one_shot("sha256sum -- /remote/missing.bin", timeout=5)
+        self.assertEqual(res.kind, "path")
+        self.assertEqual(res.returncode, 1)
+
     def test_describe_failure(self):
         r = SSHRunner("server")
         text = r.describe_ssh_command_failure("upload", CommandResult(255, "", "Permission denied"))

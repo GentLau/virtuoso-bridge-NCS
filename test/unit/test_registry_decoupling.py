@@ -7,6 +7,7 @@
 """
 
 import json
+import socket
 import sys
 import tempfile
 import unittest
@@ -104,9 +105,17 @@ class TestProbeNeverPersists(unittest.TestCase):
         self.assertFalse(registry_path().exists())
 
     def test_remote_probe_returns_candidate_without_commit(self) -> None:
+        # Pin the local tunnel port: this test is about "probe never persists",
+        # not about port allocation; letting the real allocator run makes it
+        # flaky when the suite's own SSH connections occupy 65081+.
+        probe_sock = socket.socket()
+        probe_sock.bind(("127.0.0.1", 0))
+        pinned_local_port = probe_sock.getsockname()[1]
+        probe_sock.close()
         with mock.patch("register.flow.SSHRunner", _FakeProbeRunner), \
              mock.patch("register.probe.detect_remote_python", return_value=("python3", 3)), \
              mock.patch("register.probe.allocate_remote_port", return_value=65081), \
+             mock.patch("register.probe.allocate_local_port", return_value=pinned_local_port), \
              mock.patch("register.probe.remote_hostname", return_value="compute-a"), \
              mock.patch("register.probe.remote_user", return_value="alice"), \
              mock.patch("register.probe.remote_user_exists", return_value=True), \
