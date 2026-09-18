@@ -361,7 +361,8 @@ def main() -> int:
                 "basic.skill.execute", "basic.command.run", "basic.file.upload",
                 "basic.file.download", "basic.gui.run", "basic.spectre.run"}),
             ("pyapi.packages.demo", {
-                "demo.pipeline.run", "demo.parallel.probe", "virtuoso.netlist.import"}),
+                "demo.pipeline.run", "demo.parallel.probe", "virtuoso.netlist.import",
+                "demo.paths.facts"}),
         ):
             module = __import__(module_name, fromlist=["*"])
             if not hasattr(module, "Package") or not hasattr(module, "OPERATIONS"):
@@ -415,6 +416,21 @@ def main() -> int:
         if not hasattr(first_arg, "execute_skill"):
             raise ProbeFailure("the single constructor argument is not the Middle")
         results["ctor_contract"] = {"arguments": 1, "argument": type(first_arg).__name__}
+
+        # -- 上层业务包直接读 common 基座拿本机目录（经顶层 HTTP 返回）------------
+        status, body = _post(base, {"operation": "demo.paths.facts", "token": token})
+        if status != 200 or body.get("ok") is not True:
+            raise ProbeFailure(f"demo.paths.facts failed: {status} {body}")
+        facts = body["data"]
+        if facts.get("work_root") != str(work_dir):
+            raise ProbeFailure(f"business package did not read the common base: {facts}")
+        for key in ("temp_dir", "log_dir", "artifact_dir"):
+            if not Path(facts.get(key) or "").is_dir():
+                raise ProbeFailure(f"{key} not a directory: {facts}")
+        results["upper_layer_paths"] = {
+            "work_root_matches": True,
+            "temp_dir": facts["temp_dir"],
+        }
 
         class _SlowPackage:
             def __init__(self, _middle) -> None:

@@ -1,7 +1,7 @@
 {
   "ok": true,
   "failed": 0,
-  "elapsed_s": 4.25,
+  "elapsed_s": 4.234,
   "results": {
     "operations": [
       "basic.command.run",
@@ -11,6 +11,7 @@
       "basic.skill.execute",
       "basic.spectre.run",
       "demo.parallel.probe",
+      "demo.paths.facts",
       "demo.pipeline.run",
       "test.boom",
       "test.ctor",
@@ -62,6 +63,10 @@
     "ctor_contract": {
       "arguments": 1,
       "argument": "BusinessServer"
+    },
+    "upper_layer_paths": {
+      "work_root_matches": true,
+      "temp_dir": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-api-tb-i0hbvfdq\\temp"
     },
     "pool_limit": {
       "max_inflight": 1024,
