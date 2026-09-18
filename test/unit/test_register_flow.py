@@ -134,6 +134,40 @@ class TestFlowApply(unittest.TestCase):
         self.assertEqual(state.token, "tok-1")
 
 
+class TestStepRetryAfterFailure(unittest.TestCase):
+    def setUp(self):
+        self.wd = override_work_dir_for_tests(Path(tempfile.mkdtemp()))
+        self.reg = load_registry(registry_path())
+
+    def test_validate_can_retry_same_step(self):
+        flow = RegistrationFlow(self.reg)
+        flow.start(remote_request())
+        with mock.patch(
+            "register.flow.validate_local",
+            side_effect=[["validation boom"], []],
+        ):
+            failed_stage = flow.validate().stage
+            retried = flow.validate()
+        self.assertEqual(failed_stage, "failed")
+        self.assertEqual(retried.stage, "validated")
+
+    def test_probe_can_retry_same_step(self):
+        flow = RegistrationFlow(self.reg)
+        flow.start(remote_request())
+        flow.validate()
+        with mock.patch(
+            "register.flow.probe_user",
+            side_effect=[
+                RegistrationProbeError("probe boom"),
+                ProbeResult(complete_remote_entry(), 3),
+            ],
+        ):
+            failed_stage = flow.probe().stage
+            retried = flow.probe()
+        self.assertEqual(failed_stage, "failed")
+        self.assertEqual(retried.stage, "probed")
+
+
 class TestFlowVerifyAndCommit(unittest.TestCase):
     def setUp(self):
         self.wd = override_work_dir_for_tests(Path(tempfile.mkdtemp()))

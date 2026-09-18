@@ -395,7 +395,7 @@ class RegistrationMockHandler(BaseHTTPRequestHandler):
             raise ValueError("mode is required and must be local or remote")
         with self.mock_server.flow_lock:
             previous = self.mock_server.flows.get(user)
-            if previous is not None and previous.stage not in ("cancelled", "failed", "committed"):
+            if previous is not None and previous.stage != "cancelled":
                 raise ValueError("step order violation: registration already in progress")
             self.mock_server.flows.pop(user, None)
         flow = MockRegistrationState(
@@ -435,7 +435,8 @@ class RegistrationMockHandler(BaseHTTPRequestHandler):
             }
 
         if action == "validate":
-            if flow.stage != "applied":
+            retrying = flow.stage == "failed" and flow.step == 2
+            if flow.stage != "applied" and not retrying:
                 return 400, {"error": f"validate requires applied stage, got {flow.stage}"}
             flow.step = 2
             if scenario == "validate_fail":
@@ -446,7 +447,8 @@ class RegistrationMockHandler(BaseHTTPRequestHandler):
                 flow.errors = []
 
         elif action == "probe":
-            if flow.stage != "validated":
+            retrying = flow.stage == "failed" and flow.step == 3
+            if flow.stage != "validated" and not retrying:
                 return 400, {"error": f"probe requires validated stage, got {flow.stage}"}
             flow.step = 3
             if scenario == "probe_fail":
@@ -457,7 +459,8 @@ class RegistrationMockHandler(BaseHTTPRequestHandler):
                 flow.errors = []
 
         elif action == "deploy":
-            if flow.stage != "probed":
+            retrying = flow.stage == "failed" and flow.step == 4
+            if flow.stage != "probed" and not retrying:
                 return 400, {"error": f"deploy requires probed stage, got {flow.stage}"}
             flow.step = 4
             if scenario == "deploy_fail":
@@ -489,7 +492,8 @@ class RegistrationMockHandler(BaseHTTPRequestHandler):
                 flow.report = _success_report(warnings=[warning])
 
         elif action == "commit":
-            if flow.stage != "verified":
+            retrying = flow.stage == "failed" and flow.step == 6
+            if flow.stage != "verified" and not retrying:
                 return 400, {"error": f"commit requires verified stage, got {flow.stage}"}
             flow.step = 6
             if scenario == "commit_fail":
@@ -669,6 +673,11 @@ class RegistrationMockHandler(BaseHTTPRequestHandler):
             if action not in ("validate", "probe", "deploy", "verify", "commit", "cancel"):
                 self._send_json(400, {"error": "invalid action", "action": action})
                 return
+            if set(body) - {"user", "action", "token"}:
+                self._send_json(400, {
+                    "error": "parameter changes require cancel and re-apply"
+                })
+                return
             if not isinstance(user, str) or not user:
                 self._send_json(400, {"error": "invalid request: user is required"})
                 return
@@ -683,11 +692,6 @@ class RegistrationMockHandler(BaseHTTPRequestHandler):
             try:
                 with self.mock_server.flow_lock:
                     status, payload = self._transition(flow, action)
-                    if (
-                        payload.get("stage") == "failed"
-                        and action != "verify"
-                    ):
-                        self.mock_server.flows.pop(user, None)
                 self._send_json(status, payload)
                 return
             except (AttributeError, ValueError) as exc:

@@ -2080,10 +2080,11 @@ function flowGuideContent(state, processing) {
     const failedStep = Math.max(1, Number(state.step || 1));
     return {
       step: failedStep ? '第 ' + failedStep + ' 步' : '会话失效',
-      title: failedStep === 5 ? '处理连通性问题' : '修改左侧配置后重新申请',
-      text: failedStep === 5 ? '查看左侧检查结果，修复 CIW 或 daemon 后可直接重试。' :
-        '左侧保留了本次配置和错误信息，修改参数会重新从第 1 步开始。',
-      action: failedStep === 5 ? '重新测试连通性' : '返回修改配置'
+      title: failedStep === 5 ? '处理连通性问题' : '处理当前步骤问题',
+      text: failedStep === 5
+        ? '查看左侧检查结果，修复 CIW 或 daemon 后可直接重试。'
+        : '可直接重试当前步骤；如需修改参数，请先取消并重新申请。',
+      action: failedStep === 5 ? '重新测试连通性' : '重试当前步骤'
     }
   }
   const guides = {
@@ -2680,11 +2681,13 @@ function renderFailed(data) {
   appendWarnings(view.body, data);
   appendNotice(view.body, lost ? '服务端只在内存中保存进行中的会话。请重新提交第 1 步。' : '本次失败未写入注册表。', 'danger');
   const actions = appendActions(view.body);
-  if (!lost && step === 5 && data.user) {
-    actionButton(actions, '问题已处理，重新测试', 'primary', function() {
-      runStep(data.user, 'verify', 5, '正在重新测试连通性')
+  const retryActions = {2: 'validate', 3: 'probe', 4: 'deploy', 5: 'verify', 6: 'commit'};
+  if (!lost && retryActions[step] && data.user) {
+    const action = retryActions[step];
+    actionButton(actions, '重试第 ' + step + ' 步', 'primary', function() {
+      runStep(data.user, action, step, '正在重试第 ' + step + ' 步')
     });
-    actionButton(actions, '修改配置并重新申请', 'secondary', function() {
+    actionButton(actions, '取消并重新申请', 'secondary', function() {
       editAndRestart(true)
     })
   } else actionButton(actions, '返回修改并重新申请', 'primary', function() {

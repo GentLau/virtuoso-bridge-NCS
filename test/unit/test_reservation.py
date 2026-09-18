@@ -133,13 +133,15 @@ class TestFlowReservationLifecycle(unittest.TestCase):
         self.assertEqual(state.stage, "failed")
         self.assertTrue(any("daemon port 65081" in e for e in state.errors))
 
-    def test_failed_probe_releases_reservation(self):
+    def test_failed_probe_keeps_reservation_until_cancel(self):
         state = self.flow.start(self._request())
         self.flow.validate()
         with mock.patch("register.flow.probe_user",
                         side_effect=RegistrationProbeError("probe boom")):
             state = self.flow.probe()
         self.assertEqual(state.stage, "failed")
+        self.assertEqual([r.user for r in self.table.records()], ["alice"])
+        self.flow.cancel()
         self.assertEqual(self.table.records(), [])
 
     def test_commit_release_and_final_recheck(self):

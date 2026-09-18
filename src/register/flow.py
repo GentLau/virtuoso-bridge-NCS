@@ -857,7 +857,6 @@ class RegistrationFlow:
     def _fail(self, state: RegistrationState, errors: list[str]) -> RegistrationState:
         state.stage = "failed"
         state.errors = list(errors)
-        self._release_reservation(state)
         return state
 
     def cancel(self) -> RegistrationState | None:
@@ -898,9 +897,15 @@ class RegistrationFlow:
     def _ensure(self, expected: str, step: int) -> RegistrationState | None:
         if self.state is None or self.state.request is None:
             raise RuntimeError("registration has not started")
-        if self.state.stage != expected:
+        retry_same_step = (
+            self.state.stage == "failed" and self.state.step == step
+        )
+        if self.state.stage != expected and not retry_same_step:
             return None
         self.state.step = step
+        self.state.errors = []
+        self.state.warnings = []
+        self.state.report = None
         return self.state
 
     def validate(self) -> RegistrationState:
@@ -1092,7 +1097,10 @@ class RegistrationFlow:
                 errors=["no registration in progress"],
             )
             return self.state
-        if self.state.stage != "verified":
+        retry_after_failed_commit = (
+            self.state.stage == "failed" and self.state.step == 6
+        )
+        if self.state.stage != "verified" and not retry_after_failed_commit:
             stage = self.state.stage
             self.state.stage = "failed"
             self.state.errors = [

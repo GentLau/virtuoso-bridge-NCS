@@ -205,13 +205,19 @@ class RegistrationHandler(BaseHTTPRequestHandler):
     _REGISTER_ACTIONS = (
         "apply", "validate", "probe", "deploy", "verify", "commit", "cancel",
     )
-    _TERMINAL_STAGES = ("cancelled", "failed", "committed")
     _ACTION_REQUIRED_STAGE = {
         "validate": ("applied",),
         "probe": ("validated",),
         "deploy": ("probed",),
         "verify": ("deployed", "failed"),
         "commit": ("verified",),
+    }
+    _ACTION_STEP = {
+        "validate": 2,
+        "probe": 3,
+        "deploy": 4,
+        "verify": 5,
+        "commit": 6,
     }
 
     def _handle_register_command(self) -> None:
@@ -236,19 +242,24 @@ class RegistrationHandler(BaseHTTPRequestHandler):
         if action not in self._REGISTER_ACTIONS:
             self._send_json(400, {"error": "invalid action", "action": action})
             return
+        if action != "apply" and set(raw) - {"user", "action", "token"}:
+            self._send_json(400, {
+                "error": "parameter changes require cancel and re-apply",
+            })
+            return
 
         if action == "apply":
             with self.server.flow_lock:
                 previous = self.server.flows.get(user)
-            if (
-                previous is not None
-                and getattr(previous.state, "stage", None) not in self._TERMINAL_STAGES
-            ):
-                current = previous.state.stage if previous.state else None
+            current = getattr(previous.state, "stage", None) if previous else None
+            if current == "committed":
+                self._send_json(400, {"error": "user is already registered"})
+                return
+            if previous is not None and current != "cancelled":
                 self._send_json(400, {
                     "error": "step order violation",
                     "current_stage": current,
-                    "expected": "no registration in progress",
+                    "expected": "cancel",
                 })
                 return
             if previous is not None:
@@ -299,9 +310,10 @@ class RegistrationHandler(BaseHTTPRequestHandler):
 
         expected = self._ACTION_REQUIRED_STAGE[action]
         current = state.stage
-        allowed = current in expected
-        if action == "verify" and current == "failed":
-            allowed = state.step == 5
+        allowed = (
+            current in expected
+            or (current == "failed" and state.step == self._ACTION_STEP[action])
+        )
         if not allowed:
             self._send_json(400, {
                 "error": "step order violation",
@@ -311,11 +323,6 @@ class RegistrationHandler(BaseHTTPRequestHandler):
             return
 
         state = getattr(flow, action)()
-        # v27: ordinary step failures discard the candidate immediately;
-        # verify failures stay retryable in place per the HTTP action table.
-        if state.stage == "failed" and action != "verify":
-            with self.server.flow_lock:
-                self.server.flows.pop(user, None)
         self._send_json(200, self._state_payload(state))
 
     def _handle_delete(self, user: str) -> None:

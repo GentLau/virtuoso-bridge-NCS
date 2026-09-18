@@ -160,6 +160,33 @@ class TestRegistrationMockServer(unittest.TestCase):
         )
         self.assertEqual(status, 404)
 
+    def test_failed_step_retries_in_place_and_reapply_requires_cancel(self):
+        self.set_scenario("probe_fail")
+        applied = self.apply("retry-policy")
+        self.step("retry-policy", "validate")
+        failed = self.step("retry-policy", "probe")
+        self.assertEqual(failed["stage"], "failed")
+        status, current = self.srv.request(
+            "GET", f"/api/register/retry-policy?token={applied['token']}"
+        )
+        self.assertEqual(status, 200)
+        self.assertEqual(current["stage"], "failed")
+
+        retried = self.step("retry-policy", "probe")
+        self.assertEqual(retried["stage"], "failed")
+        status, body = self.srv.request("POST", "/api/register", {
+            "user": "retry-policy",
+            "action": "apply",
+            "mode": "local",
+        })
+        self.assertEqual(status, 400)
+        self.assertEqual(body["error"], "step order violation")
+
+        cancelled = self.step("retry-policy", "cancel")
+        self.assertEqual(cancelled["stage"], "cancelled")
+        restarted = self.apply("retry-policy")
+        self.assertEqual(restarted["stage"], "applied")
+
     def test_happy_path_reaches_committed_without_registry(self):
         deployed = self.deploy_ready()
         self.assertEqual(

@@ -171,7 +171,7 @@ class TestRegistrationServer(unittest.TestCase):
         )
         self.assertEqual(status, 404)
 
-    def test_failed_registration_can_apply_again(self):
+    def test_failed_registration_requires_cancel_before_apply(self):
         self.registry.register("retry", UserEntry(token="retry-existing", mode="local"))
         port = _free_port()
         data = self._apply(
@@ -182,15 +182,39 @@ class TestRegistrationServer(unittest.TestCase):
         status, failed = self._step("retry", "validate", data["token"])
         self.assertEqual(status, 200)
         self.assertEqual(failed["stage"], "failed")
-        status, _ = self.srv.request(
+        status, raw_current = self.srv.request(
             "GET", f"/api/register/retry?token={data['token']}"
         )
-        self.assertEqual(status, 404)
+        self.assertEqual(status, 200)
+        current = json.loads(raw_current)
+        self.assertEqual(current["stage"], "failed")
 
+        # Same-step retry is allowed; changing parameters is not.
+        status, retried = self._step("retry", "validate", data["token"])
+        self.assertEqual(status, 200)
+        self.assertEqual(retried["stage"], "failed")
+        status, raw = self.srv.request("POST", "/api/register", {
+            "user": "retry",
+            "action": "apply",
+            "mode": "local",
+            "roles": {
+                "daemon": {"daemon_port": _free_port()},
+                "spectre": {"bin": sys.executable},
+            },
+        })
+        self.assertEqual(status, 400)
+        self.assertEqual(json.loads(raw)["expected"], "cancel")
+
+        status, cancelled = self._step("retry", "cancel", data["token"])
+        self.assertEqual(status, 200)
+        self.assertEqual(cancelled["stage"], "cancelled")
         restarted = self._apply(
             "retry",
             mode="local",
-            roles={"daemon": {"daemon_port": _free_port()}, "spectre": {"bin": sys.executable}},
+            roles={
+                "daemon": {"daemon_port": _free_port()},
+                "spectre": {"bin": sys.executable},
+            },
         )
         self.assertEqual(restarted["stage"], "applied")
 
