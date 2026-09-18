@@ -133,3 +133,27 @@
 
 - `python -m pytest test/unit test/integration test/scenario`
   → **566 passed, 1 skipped, 27 subtests passed in 329.91s**（2026-09-18，含 ConnectTimeout 回归 TB）。
+
+## 8. 第三轮：持续评审发现（2026-09-18 续）
+
+> 用户要求“有 bug 修 bug，没有 bug 评审；评审发现的 bug 先用 TB 检出再修”。
+> 本轮继续按该纪律执行，共发现并修复 6 项（含 1 项测试 flake 加固）。
+
+| 项 | spec 依据 | 问题 | 修复 / TB |
+|---|---|---|---|
+| P1 openssh 一次性结果分类 | §4.5/§4.6 | openssh 的 one-shot 对 `no such file or directory` 返回 `kind=command`，paramiko 返回 `kind=path`——同一命令因后端不同而语义不一致 | `_run_command_once` 结果统一走 `_result_from_rc`；TB `test_openssh_one_shot_maps_missing_file_to_path`（修复前红）；提交 `9c5fae0` |
+| P2 递归下载 CM 降级 | 并发设计 §4 | 上传路径有 `_attempt_with_cm_fallback`（≤3 次、CM 故障降级直连），递归下载只有单次尝试 | 下载复用同一重试所有者；TB `test_recursive_download_degrades_from_broken_controlmaster`；提交 `ade635e` |
+| P3 注册第二步端口预分配 | 配置一览 §6.4 | 第二步没有预分配/校验 `local_port`（缺省端口在第三步才分配），并发注册可能选到同一个本地端口 | `RegistrationFlow._prepare_local_port`：第二步分配候选（local 模式按联合端口规则同步）并占用校验；TB ×3；提交 `9981fcc` |
+| P4 本地 shell 启动无界 | 四层架构 §5.8 | `_LocalCommandSession._drain_banner` 用 `_wait_current(None)` 无限等待；本地 shell 不回应时调用永久挂起 | 增加 `_BANNER_TIMEOUT`，启动失败报 transport；TB `test_local_shell_startup_is_bounded`；提交 `78c29ea` |
+| P5 本地 shell 关闭死锁 | §5.8 | 修复 P4 时发现 `_close_locked` 先 close 管道再终止进程，Windows 上 close 会等待阻塞读取的线程 → 关闭路径死锁 | 先 terminate/EOF，再按需 close；同一 TB 检出；提交 `78c29ea` |
+| P6 一次性命令重发 | 并发设计 §4 | `Connection reset by peer`/`connection closed by` 可能发生在命令已执行之后，原实现仍会重试（最多 3 次）→ 可能重复执行非幂等命令 | `_run_command_once` 只对“明确投递前”的诊断（解析/拒绝/banner/kex/hostkey）重试；传输（有 staging 幂等）保留宽列表；TB `test_ambiguous_mid_session_reset_is_not_retried`；提交 `a30b72a` |
+| P7 本地会话临时目录 | 工作目录卫生（用户约束） | `temp/local_err_*` 每 token 一个，close 后不删除 | `close()` 清理自身目录（respawn/timeout 路径保留复用）；TB `test_local_session_removes_temp_dir_on_close`；提交 `82e146f` |
+
+真机复核（Windows → `wsl-gent`，token `vb-vblog`）：`cov_remote_real.py` 5/5 ok；
+`one_shot_burst_tb.py` 72/72（无失败）；递归上传/下载 + 远端 symlink 解引用 PASS；
+`registration_http_six_step_tb.py --local-mode` rc=0；本地模式命令（串行/并行/失败命令）行为正确。
+
+### 8.1 第三轮门禁
+
+- `python -m pytest test/unit test/integration test/scenario`
+  → **574 passed, 1 skipped, 27 subtests passed in 346.38s**（2026-09-18）。
