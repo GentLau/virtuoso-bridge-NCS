@@ -100,7 +100,7 @@ CDS.log metadata frame 完整字节格式
 
 - **Release ID**：`SPEC-2026-09-18-r4`
 - **Normative 文件集**（10 份）：四层整体架构与接口、本版范围与明确不支持、中层配置文档、路由设计、多用户与注册、并发设计、日志返回设计标准、顶层：HTTP 入口与业务调度、顶层补充：控制面与业务面、上层：业务包与插件化；
-- **Normative 内容哈希**：`2872dc87ca7a46f5c5733de7234cac233f65e4b7c9242d75c34786dcda3b48f0`
+- **Normative 内容哈希**：`8c7a0ed293c1a2cd20f7c33a52985c9ff51bf0d45e6ac90db8fde6703ff38498`
   - 算法：路径为**相对 `spec/` 目录**并按路径排序；逐文件 SHA-256（**按 Git 提交内容计算，即 LF 行尾**；Windows 工作区受 `core.autocrlf` 影响的行尾差异不计入）；每行 `<相对路径> <hex>` 以 LF 拼接（**行间分隔、末行无尾 LF**），再取一次 SHA-256；
 - **基线 commit**：本 Release 段所在提交即基线（见 `git log -1 -- spec/`）；任何 Normative 文档变更必须同时更新本段哈希。
 
@@ -112,10 +112,10 @@ CDS.log metadata frame 完整字节格式
 | 路由设计 | v17 | Normative | v16（spectre 表述：本版第 5 业务接口，编排留待后续） |
 | 本版范围与明确不支持 | v9 | Normative | v8（业务接口计数口径：5 业务接口 + 只读查询 query） |
 | 中层配置文档 | Draft v31 | Normative | Draft v21–v30（合并说明见文件头 Supersedes） |
-| 多用户与注册 | Draft v28 | Normative | Draft v27（失败不自动丢弃：apply 后必须手动 cancel 才释放） |
+| 多用户与注册 | Draft v29 | Normative | Draft v28（各步失败均可同一步重试；cancel 才释放） |
 | 并发设计 | Draft v20 | Normative | Draft v19（重试决策单元术语统一为业务操作） |
 | 顶层 | Draft v16 | Normative | Draft v15（不保存业务状态措辞） |
-| 控制面与业务面 | Draft v17 | Normative | Draft v16（失败不自动丢弃：除 verify 外失败会话只能 cancel） |
+| 控制面与业务面 | Draft v18 | Normative | Draft v17（各步失败均可同一步重试；cancel 才释放） |
 | 上层 | Draft v14 | Normative | Draft v12–v13（v12 白名单加入 common.*；v13 收窄为 common.paths） |
 | 日志返回设计标准 | Draft v15 | Normative | Draft v14（覆盖示例统一为合法值 warn） |
 

@@ -1,9 +1,9 @@
 # 顶层补充：控制面与业务面
 
-> 版本：Draft v17
+> 版本：Draft v18
 > 日期：2026-09-17
 > 状态：Normative（顶层 HTTP 端点清单、端口划分与权限口径的唯一 owner）
-> Supersedes：Draft v16（失败不自动丢弃：除 verify 外失败会话只能 cancel）
+> Supersedes：Draft v17（各步失败均可同一步重试；cancel 才释放）
 > 定位：本文是[顶层](1-顶层.md)的端点补充——[顶层](1-顶层.md)定义顶层职责、调度与响应壳；本文定义顶层开哪些端口、哪些方法、支持哪些请求、每个端点需要什么权限。注册语义见[多用户与注册 §3/§5](../其他/1-多用户与注册.md)。
 
 ## 1. 双面双端口
@@ -58,7 +58,7 @@
 | `cancel` | 任意非 committed 的进行中会话 | 释放内存候选，不落盘
 
 - 非法 action/顺序 → 4xx `{"error": "step order violation", "current_stage": …, "expected": …}`，**不改变会话状态**；
-- 除 `verify` 失败可原地重试外，其余 action 失败后会话保留但只能 `cancel`；重新 `apply` 前必须 `cancel`（或服务重启）；
+- 任一步失败后候选保留，可**同一步重试**（请求可携带修正后的参数）；只有 `cancel`（或服务重启）才释放候选，重新 `apply` 前必须 `cancel`；
 - `apply` 响应返回 `token`（用户显式提供则原样，缺省自动生成）；除 `apply` 外的 action 必须携带 `token`，服务端校验其与候选一致，缺失/不一致 → 4xx `invalid token`，**不改变会话状态**；
 - 六步由该命令端点逐个调用完成：`apply` 以 body 中的 `user` 建**内存候选**（尚未进注册表），后续 action 都以该 `user` 定位候选；`commit` 前 registry 不存在该 user，失败/取消则丢弃候选。
 
