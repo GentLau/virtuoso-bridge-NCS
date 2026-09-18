@@ -70,18 +70,44 @@ class TestRegistrationServer(unittest.TestCase):
     def tearDown(self):
         self.srv.close()
 
+    def _apply(self, user, **fields):
+        status, raw = self.srv.request("POST", "/api/register", {
+            "user": user,
+            "action": "apply",
+            **fields,
+        })
+        data = json.loads(raw)
+        self.assertEqual(status, 200, raw)
+        return data
+
+    def _step(self, user, action, token):
+        status, raw = self.srv.request("POST", "/api/register", {
+            "user": user,
+            "action": action,
+            "token": token,
+        })
+        return status, json.loads(raw)
+
+    def _to_deploy(self, user, **fields):
+        data = self._apply(user, **fields)
+        for action in ("validate", "probe", "deploy"):
+            status, data = self._step(user, action, data["token"])
+            self.assertEqual(status, 200, data)
+        self.assertEqual(data["stage"], "deployed")
+        return data
+
     def test_page_served(self):
         status, raw = self.srv.request("GET", "/")
         self.assertEqual(status, 200)
         self.assertIn("注册", raw)
 
-    def test_local_apply_reaches_deployed(self):
+    def test_local_six_step_reaches_deployed(self):
         port = _free_port()
-        status, raw = self.srv.request("POST", "/api/register", {
-            "user": "alice", "mode": "local", "roles": {"daemon": {"daemon_port": port}, "spectre": {"bin": sys.executable}},
-        })
-        self.assertEqual(status, 200)
-        data = json.loads(raw)
+        data = self._to_deploy(
+            "alice",
+            mode="local",
+            roles={"daemon": {"daemon_port": port}, "spectre": {"bin": sys.executable}},
+        )
         self.assertEqual(data["stage"], "deployed")
         self.assertTrue(data["token"])
         self.assertTrue(data["setup_path"].endswith("virtuoso_setup.il"))
@@ -90,41 +116,43 @@ class TestRegistrationServer(unittest.TestCase):
         # seed a committed entry; the step-2 check reads only the registry
         self.registry.register("alice", UserEntry(token="tok-exists", mode="local"))
         port = _free_port()
-        status, raw = self.srv.request("POST", "/api/register", {"user": "alice", "mode": "local", "roles": {"daemon": {"daemon_port": port}, "spectre": {"bin": sys.executable}}})
-        data = json.loads(raw)
+        data = self._apply(
+            "alice",
+            mode="local",
+            roles={"daemon": {"daemon_port": port}, "spectre": {"bin": sys.executable}},
+        )
+        status, data = self._step("alice", "validate", data["token"])
         self.assertEqual(status, 200)
         self.assertEqual(data["stage"], "failed")
         self.assertTrue(any("already registered" in e for e in data["errors"]))
 
     def test_granular_six_steps(self):
         port = _free_port()
-        status, raw = self.srv.request("POST", "/api/register/apply", {"user": "bob", "mode": "local", "roles": {"daemon": {"daemon_port": port}, "spectre": {"bin": sys.executable}}})
-        self.assertEqual(status, 200)
-        data = json.loads(raw)
+        data = self._apply(
+            "bob",
+            mode="local",
+            roles={"daemon": {"daemon_port": port}, "spectre": {"bin": sys.executable}},
+        )
         self.assertEqual((data["stage"], data["step"]), ("applied", 1))
         self.assertTrue(data["token"])
 
-        status, raw = self.srv.request("POST", "/api/register/bob/validate", None)
-        data = json.loads(raw)
+        status, data = self._step("bob", "validate", data["token"])
         self.assertEqual((data["stage"], data["step"]), ("validated", 2))
 
-        status, raw = self.srv.request("POST", "/api/register/bob/probe", None)
-        data = json.loads(raw)
+        status, data = self._step("bob", "probe", data["token"])
         self.assertEqual((data["stage"], data["step"]), ("probed", 3))
 
-        status, raw = self.srv.request("POST", "/api/register/bob/deploy", None)
-        data = json.loads(raw)
+        status, data = self._step("bob", "deploy", data["token"])
         self.assertEqual((data["stage"], data["step"]), ("deployed", 4))
         self.assertTrue(data["setup_path"].endswith("virtuoso_setup.il"))
 
         # no daemon running: step 5 must fail and must NOT commit
-        status, raw = self.srv.request("POST", "/api/register/bob/verify", None)
-        data = json.loads(raw)
+        status, data = self._step("bob", "verify", data["token"])
         self.assertEqual(data["stage"], "failed")
         self.assertEqual(data["step"], 5)
         self.assertIsNone(self.registry.get("bob"))
 
-    def test_step_endpoint_unknown_user(self):
+    def test_legacy_step_endpoint_removed(self):
         status, raw = self.srv.request("POST", "/api/register/ghost/validate", None)
         self.assertEqual(status, 404)
 
@@ -133,7 +161,11 @@ class TestRegistrationServer(unittest.TestCase):
         self.assertEqual(status, 404)
 
     def test_verify_endpoint_unknown_user(self):
-        status, raw = self.srv.request("POST", "/api/register/ghost/verify", None)
+        status, raw = self.srv.request("POST", "/api/register", {
+            "user": "ghost",
+            "action": "verify",
+            "token": "missing",
+        })
         self.assertEqual(status, 404)
 
     def test_invalid_json_body(self):
@@ -150,7 +182,10 @@ class TestRegistrationServer(unittest.TestCase):
         self.assertIn("invalid request", json.loads(raw)["error"])
 
     def test_remote_without_ssh_user_is_400(self):
-        status, raw = self.srv.request("POST", "/api/register", {"user": "alice", "mode": "remote", "ssh": {"default": {"host": "server-a"}}})
+        status, raw = self.srv.request("POST", "/api/register", {
+            "user": "alice", "action": "apply", "mode": "remote",
+            "ssh": {"default": {"host": "server-a"}},
+        })
         self.assertEqual(status, 400)
         self.assertIn("invalid request", json.loads(raw)["error"])
 
@@ -160,10 +195,13 @@ class TestRegistrationServer(unittest.TestCase):
 
     def test_verify_without_daemon_does_not_commit(self):
         port = _free_port()
-        self.srv.request("POST", "/api/register", {"user": "alice", "mode": "local", "roles": {"daemon": {"daemon_port": port}, "spectre": {"bin": sys.executable}}})
-        status, raw = self.srv.request("POST", "/api/register/alice/verify", None)
+        data = self._to_deploy(
+            "alice",
+            mode="local",
+            roles={"daemon": {"daemon_port": port}, "spectre": {"bin": sys.executable}},
+        )
+        status, data = self._step("alice", "verify", data["token"])
         self.assertEqual(status, 200)
-        data = json.loads(raw)
         self.assertEqual(data["stage"], "failed")
         self.assertIn("report", data)
         self.assertFalse(self.registry.get("alice"))
@@ -171,8 +209,11 @@ class TestRegistrationServer(unittest.TestCase):
 
     def test_entry_payload_in_state(self):
         port = _free_port()
-        status, raw = self.srv.request("POST", "/api/register", {"user": "carol", "mode": "local", "roles": {"daemon": {"daemon_port": port}, "spectre": {"bin": sys.executable}}})
-        data = json.loads(raw)
+        data = self._to_deploy(
+            "carol",
+            mode="local",
+            roles={"daemon": {"daemon_port": port}, "spectre": {"bin": sys.executable}},
+        )
         self.assertEqual(data["stage"], "deployed")
         self.assertIn("entry", data)
         self.assertEqual(data["entry"]["token"], data["token"])
@@ -224,17 +265,16 @@ class TestRegistrationServer(unittest.TestCase):
         """role.<name>.mode / root 可通过 HTTP 提交（spec 配置一览 §2.3）。"""
         port = _free_port()
         local_port = _free_port()
-        status, raw = self.srv.request("POST", "/api/register", {
-            "user": "dave", "mode": "local",
-            "roles": {
+        data = self._to_deploy(
+            "dave",
+            mode="local",
+            roles={
                 "daemon": {"daemon_port": port},
                 "spectre": {"bin": sys.executable},
                 "file": {"root": "/tmp/vb-dave-file"},
                 "command": {"mode": "local"},
             },
-        })
-        self.assertEqual(status, 200)
-        data = json.loads(raw)
+        )
         self.assertEqual(data["stage"], "deployed")
         roles = data["entry"]["roles"]
         # 注册会把本地 root 回写成展开后的绝对路径（spec：注册后存绝对路径）
@@ -246,7 +286,7 @@ class TestRegistrationServer(unittest.TestCase):
         """mode=local 的 role 提交 host/user 必须是参数错误（拒绝注册）。"""
         port = _free_port()
         status, raw = self.srv.request("POST", "/api/register", {
-            "user": "erin", "mode": "remote",
+            "user": "erin", "action": "apply", "mode": "remote",
             "ssh": {"default": {"host": "server-a", "user": "alice"}},
             "roles": {"daemon": {"daemon_port": port}, "command": {"mode": "local", "host": "server-a"}},
         })
@@ -287,27 +327,31 @@ class TestRegistrationServer(unittest.TestCase):
         entry.roles.daemon.daemon_port = port
         self.registry.register("judy", entry)
         status, raw = self.srv.request("POST", "/api/register", {
-            "user": "karl", "mode": "local", "token": "dup-token",
+            "user": "karl", "action": "apply", "mode": "local", "token": "dup-token",
             "roles": {"daemon": {"daemon_port": _free_port()}, "spectre": {"bin": sys.executable}},
         })
         data = json.loads(raw)
+        self.assertEqual(status, 200, data)
+        status, data = self._step("karl", "validate", data["token"])
         self.assertTrue(status == 400 or data.get("stage") == "failed", (status, data))
         self.assertIn("token", json.dumps(data))
 
     def test_second_registration_with_same_daemon_port_fails_before_probe(self):
         """同 daemon 主机同端口：第二个注册在第二步就必须失败（配置一览 §6.4）。"""
         port = _free_port()
-        first = self.srv.request("POST", "/api/register", {
-            "user": "laura", "mode": "local",
-            "roles": {"daemon": {"daemon_port": port}, "spectre": {"bin": sys.executable}},
-        })
-        self.assertEqual(json.loads(first[1])["stage"], "deployed")
+        first_data = self._to_deploy(
+            "laura",
+            mode="local",
+            roles={"daemon": {"daemon_port": port}, "spectre": {"bin": sys.executable}},
+        )
+        self.assertEqual(first_data["stage"], "deployed")
 
-        second = self.srv.request("POST", "/api/register", {
-            "user": "mike", "mode": "local",
-            "roles": {"daemon": {"daemon_port": port}, "spectre": {"bin": sys.executable}},
-        })
-        data = json.loads(second[1])
+        second_data = self._apply(
+            "mike",
+            mode="local",
+            roles={"daemon": {"daemon_port": port}, "spectre": {"bin": sys.executable}},
+        )
+        status, data = self._step("mike", "validate", second_data["token"])
         self.assertEqual(data["stage"], "failed", data)
         self.assertTrue(any("daemon port" in e for e in data.get("errors", [])), data)
         self.assertIsNone(self.registry.get("mike"), "失败注册不得落盘")

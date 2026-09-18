@@ -137,11 +137,10 @@ class TestSkillClientSocketPaths(unittest.TestCase):
 
 
 class TestSmallEdgeCoverage(unittest.TestCase):
-    def test_server_lazy_main_and_unknown_attr(self):
+    def test_server_package_does_not_import_registration(self):
         import server
-        self.assertTrue(callable(server.main))
         with self.assertRaises(AttributeError):
-            _ = server.no_such_thing
+            _ = server.main
 
 
 if __name__ == "__main__":

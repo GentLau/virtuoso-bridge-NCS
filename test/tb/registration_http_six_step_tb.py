@@ -521,6 +521,10 @@ def main() -> int:
         steps.append({"action": "delete-verify", "users": sorted(on_disk)})
 
         # -- negative: verify before deploy must fail, never write ----------
+        # The main flow intentionally commits and then deletes its user, so the
+        # bytes on disk are no longer equal to the pre-run snapshot.  Re-base
+        # the zero-write check immediately before the negative case.
+        registry_before = registry_snapshot()
         bad_user = args.user + "bad"
         bad_port = free_port()
         bad_body = {"action": "apply", "user": bad_user,

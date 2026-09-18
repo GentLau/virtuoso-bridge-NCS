@@ -1,17 +1,14 @@
 """Registration HTTP server (the registration page).
 
-Stdlib-only ``ThreadingHTTPServer`` guiding a user step by step through the
-six-step manual registration flow:
+Stdlib-only ``ThreadingHTTPServer`` guiding a user through the six-step manual
+registration flow:
 
-  1 申请        POST /api/register/apply
-  2 本地校验    POST /api/register/<user>/validate
-  3 探测        POST /api/register/<user>/probe
-  4 部署        POST /api/register/<user>/deploy
-  5 连通性      POST /api/register/<user>/verify   (also performs step 6)
-  6 写注册表    (inside verify; the only durable write)
+* ``POST /api/register`` with ``{user, action, ...}`` executes one action per
+  request (``apply / validate / probe / deploy / verify / commit``);
+* ``GET /api/register/<user>`` reads the in-memory session state.
 
-``POST /api/register`` remains as a one-shot steps 1-4 convenience.
-State is kept in memory only; the single durable write is the step-6 commit.
+States are kept in memory only.  The sixth action (``commit``) is the single
+durable write; ``verify`` only observes and reports connectivity.
 """
 
 from __future__ import annotations
@@ -195,33 +192,10 @@ class RegistrationHandler(BaseHTTPRequestHandler):
             user = unquote(path[len("/api/user/"):-len("/update")])
             self._handle_update(user)
             return
-        if path == "/api/register/apply":
-            self._handle_apply()
-            return
         if path == "/api/register":
             self._handle_register_command()
             return
-        if path.startswith("/api/register/"):
-            rest = path[len("/api/register/"):].rstrip("/")
-            for action in ("validate", "probe", "deploy", "verify"):
-                if rest.endswith("/" + action):
-                    user = unquote(rest[: -(len(action) + 1)])
-                    self._handle_step(user, action)
-                    return
         self._send_json(404, {"error": "not found"})
-
-    def _parse_request(self):
-        try:
-            raw = self._read_json()
-        except (json.JSONDecodeError, UnicodeDecodeError):
-            self._send_json(400, {"error": "invalid JSON body"})
-            return None
-        try:
-            return RegistrationRequest(**raw)
-        except ValidationError as exc:
-            detail = [str(e) for e in exc.errors()]
-            self._send_json(400, {"error": "invalid request", "detail": detail})
-            return None
 
     _REGISTER_ACTIONS = ("apply", "validate", "probe", "deploy", "verify", "commit")
     _ACTION_REQUIRED_STAGE = {
@@ -250,29 +224,6 @@ class RegistrationHandler(BaseHTTPRequestHandler):
         action = raw.get("action")
         if not isinstance(user, str) or not user:
             self._send_json(400, {"error": "invalid request: user is required"})
-            return
-        if action is None:
-            # Legacy convenience kept for this iteration's page/scripts: a body
-            # without ``action`` still runs the one-shot 1-4 path.  The spec'd
-            # command endpoint always passes ``action``; an unknown action value
-            # is rejected below.  The body was already parsed above, so the
-            # request is built here instead of re-reading the socket.
-            fields = {key: value for key, value in raw.items() if key != "action"}
-            try:
-                request = RegistrationRequest(**fields)
-            except ValidationError as exc:
-                self._send_json(400, {"error": "invalid request",
-                                      "detail": [str(e) for e in exc.errors()]})
-                return
-            with self.server.flow_lock:
-                previous = self.server.flows.get(request.user)
-            if previous is not None:
-                previous.cancel()
-                self._store(previous, request.user)
-            flow = RegistrationFlow(self.server.registry, self.server.reservations)
-            state = flow.apply(request)
-            self._store(flow, request.user)
-            self._send_json(200, self._state_payload(state))
             return
         if action not in self._REGISTER_ACTIONS:
             self._send_json(400, {"error": "invalid action", "action": action})
@@ -330,22 +281,6 @@ class RegistrationHandler(BaseHTTPRequestHandler):
             return
 
         state = getattr(flow, action)()
-        self._send_json(200, self._state_payload(state))
-
-    def _handle_apply(self, granular: bool = True) -> None:
-        request = self._parse_request()
-        if request is None:
-            return
-        with self.server.flow_lock:  # type: ignore[attr-defined]
-            previous = self.server.flows.get(request.user)  # type: ignore[attr-defined]
-        if previous is not None:
-            previous.cancel()
-            self._store(previous, request.user)
-        flow = RegistrationFlow(
-            self.server.registry, self.server.reservations
-        )  # type: ignore[attr-defined]
-        state = flow.start(request) if granular else flow.apply(request)
-        self._store(flow, request.user)
         self._send_json(200, self._state_payload(state))
 
     def _handle_delete(self, user: str) -> None:
@@ -452,14 +387,6 @@ class RegistrationHandler(BaseHTTPRequestHandler):
             self._send_json(400, {"error": "invalid update", "detail": str(exc)})
             return
         self._send_json(200, {"user": user, "entry": candidate.model_dump()})
-
-    def _handle_step(self, user: str, action: str) -> None:
-        flow = self._flow(user)
-        if flow is None:
-            self._send_json(404, {"error": "no registration in progress", "user": user})
-            return
-        state = getattr(flow, action)()
-        self._send_json(200, self._state_payload(state))
 
     def do_PUT(self) -> None:  # noqa: N802
         path = urlparse(self.path).path

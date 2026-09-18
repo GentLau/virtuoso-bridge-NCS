@@ -395,17 +395,22 @@ class RegistrationMockHandler(BaseHTTPRequestHandler):
 
             flow.report = _success_report()
             flow.errors = []
+            flow.stage = "verified"
+            if scenario == "warning_success":
+                warning = "daemon banner host 'mock-compute' differs from expected 'mock-gui'"
+                flow.warnings = [warning]
+                flow.report = _success_report(warnings=[warning])
+
+        elif action == "commit":
+            if flow.stage != "verified":
+                return 409, {"error": f"commit requires verified stage, got {flow.stage}"}
+            flow.step = 6
             if scenario == "commit_fail":
                 flow.stage = "failed"
-                flow.step = 6
                 flow.errors = ["mock registry is read-only"]
             else:
                 flow.stage = "committed"
-                flow.step = 6
-                if scenario == "warning_success":
-                    warning = "daemon banner host 'mock-compute' differs from expected 'mock-gui'"
-                    flow.warnings = [warning]
-                    flow.report = _success_report(warnings=[warning])
+                flow.errors = []
 
         else:
             return 404, {"error": "unknown registration action"}
@@ -541,41 +546,36 @@ class RegistrationMockHandler(BaseHTTPRequestHandler):
             self._send_json(200, result)
             return
 
-        if path in {"/api/register/apply", "/api/register"}:
+        if path == "/api/register":
             self._delay()
-            try:
-                flow = self._new_flow(body)
-            except ValueError as exc:
-                self._send_json(400, {"error": "invalid request", "detail": [str(exc)]})
-                return
-            if path == "/api/register":
-                with self.mock_server.flow_lock:
-                    status = 200
-                    payload = flow.payload()
-                    for action in ("validate", "probe", "deploy"):
-                        status, payload = self._transition(flow, action)
-                        if status != 200 or payload.get("stage") == "failed":
-                            break
-                self._send_json(status, payload)
-            else:
-                self._send_json(200, flow.payload())
-            return
-
-        if path.startswith("/api/register/"):
-            self._delay()
-            rest = path[len("/api/register/"):].rstrip("/")
-            for action in ("validate", "probe", "deploy", "verify"):
-                suffix = "/" + action
-                if rest.endswith(suffix):
-                    user = unquote(rest[:-len(suffix)])
-                    flow = self._flow(user)
-                    if flow is None:
-                        self._send_json(404, {"error": "no registration in progress", "user": user})
-                        return
-                    with self.mock_server.flow_lock:
-                        status, payload = self._transition(flow, action)
-                    self._send_json(status, payload)
+            action = body.get("action")
+            user = body.get("user")
+            if action == "apply":
+                try:
+                    flow = self._new_flow(body)
+                except ValueError as exc:
+                    self._send_json(400, {"error": "invalid request", "detail": [str(exc)]})
                     return
+                self._send_json(200, flow.payload())
+                return
+            if action not in ("validate", "probe", "deploy", "verify", "commit"):
+                self._send_json(400, {"error": "invalid action", "action": action})
+                return
+            if not isinstance(user, str) or not user:
+                self._send_json(400, {"error": "invalid request: user is required"})
+                return
+            flow = self._flow(user)
+            if flow is None:
+                self._send_json(404, {"error": "no registration in progress", "user": user})
+                return
+            try:
+                with self.mock_server.flow_lock:
+                    status, payload = self._transition(flow, action)
+            except (AttributeError, ValueError) as exc:
+                self._send_json(400, {"error": str(exc)})
+                return
+            self._send_json(status, payload)
+            return
 
         self._send_json(404, {"error": "not found"})
 

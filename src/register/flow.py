@@ -1,6 +1,6 @@
 """Six-step registration flow (setup phase).
 
-Spec: ``多用户设计`` §3.2 and ``多节点设计``.
+Spec: ``多用户与注册`` §3.2 and ``路由设计``.
 
 1. 申请       submit canonical params (token generated here, no side effect)
 2. 本地校验   user-name / port de-dup against the registry (no network)

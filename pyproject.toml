@@ -5,28 +5,27 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "virtuoso-bridge"
 version = "0.9.0"
-description = "Three-layer bridge for Cadence Virtuoso: upper business APIs, transport runtime, SKILL daemon"
+description = "Four-layer bridge for Cadence Virtuoso: HTTP server, business packages, transport runtime, SKILL daemon"
 requires-python = ">=3.9"
 dependencies = [
     "pydantic>=2.0",
+    "paramiko>=3.5",
+    "PySocks>=1.7.1",
 ]
 
 [project.optional-dependencies]
-# Persistent SSH transport with real multi-session multiplexing. This avoids
-# Windows OpenSSH ControlMaster limitations while keeping local mode lightweight.
-ssh = ["paramiko>=3.5", "PySocks>=1.7.1"]
 # Complete test environment, including the optional SSH backend exercised by
 # the transport suite.
 dev = ["pytest>=7.0", "paramiko>=3.5", "PySocks>=1.7.1", "coverage>=7.0"]
 
 [project.scripts]
-virtuoso-bridge = "server.registration_server:main"
+virtuoso-bridge = "register.server:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools.package-data]
-"server" = ["registration_page.html"]
+"register" = ["registration_page.html"]
 "bridge.resources" = ["*.il", "*.py"]
 
 [tool.pytest.ini_options]

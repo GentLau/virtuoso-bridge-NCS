@@ -27,7 +27,14 @@ class RecordingSkillClient:
         self.max_active = 0
         self.lock = threading.Lock()
 
-    def execute_skill(self, code, timeout=None):
+    def execute_skill(
+        self,
+        code,
+        timeout=None,
+        *,
+        log_level=None,
+        log_max_bytes=None,
+    ):
         with self.lock:
             self.calls.append((code, timeout))
             self.active += 1

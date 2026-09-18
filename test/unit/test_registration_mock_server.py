@@ -59,8 +59,9 @@ class TestRegistrationMockServer(unittest.TestCase):
         self.assertTrue(data["safe"])
 
     def apply(self, user="alice"):
-        status, data = self.srv.request("POST", "/api/register/apply", {
+        status, data = self.srv.request("POST", "/api/register", {
             "user": user,
+            "action": "apply",
             "mode": "local",
         })
         self.assertEqual(status, 200)
@@ -69,8 +70,11 @@ class TestRegistrationMockServer(unittest.TestCase):
         return data
 
     def step(self, user, action, expected_status=200):
+        flow = self.srv.server.flows.get(user)
+        token = flow.token if flow is not None else ""
         status, data = self.srv.request(
-            "POST", f"/api/register/{user}/{action}", None
+            "POST", "/api/register",
+            {"user": user, "action": action, "token": token},
         )
         self.assertEqual(status, expected_status)
         return data
@@ -105,7 +109,9 @@ class TestRegistrationMockServer(unittest.TestCase):
             deployed["setup_path"],
             "/mock/virtuoso-bridge/alice/setup/virtuoso_setup.il",
         )
-        committed = self.step("alice", "verify")
+        verified = self.step("alice", "verify")
+        self.assertEqual((verified["stage"], verified["step"]), ("verified", 5))
+        committed = self.step("alice", "commit")
         self.assertEqual((committed["stage"], committed["step"]), ("committed", 6))
         self.assertTrue(committed["report"]["command_ok"])
         self.assertTrue(committed["report"]["skill_ok"])
@@ -116,7 +122,7 @@ class TestRegistrationMockServer(unittest.TestCase):
             ("validate_fail", ["validate"], 2),
             ("probe_fail", ["validate", "probe"], 3),
             ("deploy_fail", ["validate", "probe", "deploy"], 4),
-            ("commit_fail", ["validate", "probe", "deploy", "verify"], 6),
+            ("commit_fail", ["validate", "probe", "deploy", "verify", "commit"], 6),
         ]
         for index, (scenario, actions, failed_step) in enumerate(cases):
             with self.subTest(scenario=scenario):
@@ -141,9 +147,11 @@ class TestRegistrationMockServer(unittest.TestCase):
         self.assertEqual((failed["stage"], failed["step"]), ("failed", 5))
         self.assertFalse(failed["report"]["skill_ok"])
 
-        committed = self.step("retry-user", "verify")
+        verified = self.step("retry-user", "verify")
+        self.assertEqual((verified["stage"], verified["step"]), ("verified", 5))
+        self.assertTrue(verified["report"]["skill_ok"])
+        committed = self.step("retry-user", "commit")
         self.assertEqual((committed["stage"], committed["step"]), ("committed", 6))
-        self.assertTrue(committed["report"]["skill_ok"])
 
     def test_session_lost_and_transient_error_are_recoverable(self):
         self.set_scenario("session_lost")

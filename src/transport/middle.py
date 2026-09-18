@@ -102,7 +102,7 @@ def _copy_into_with_deadline(src: Path, dst: Path, deadline: float | None) -> No
     else:
         _copy_file_with_deadline(src, dst, deadline)
 
-# Reserved diagnostic prefixes (spec: 三层架构 §4.4).  Upper layers may match
+# Reserved diagnostic prefixes (spec: 四层整体架构与接口 §4.4).  Upper layers may match
 # on them; the text after the prefix is diagnostic detail only.
 _VB_TRANSPORT = "VB-TRANSPORT: "
 _VB_PATH = "VB-PATH-NOT-VISIBLE: "
@@ -544,9 +544,17 @@ class BusinessServer(Middle):
                 self._local_sessions[token] = session
             return session
 
-    # -- three interfaces -----------------------------------------------------
+    # -- five business interfaces + read-only query ---------------------------
 
-    def execute_skill(self, skill_code: str, timeout: float | None = None, *, token: str) -> VirtuosoResult:
+    def execute_skill(
+        self,
+        skill_code: str,
+        timeout: float | None = None,
+        *,
+        token: str,
+        log_level: str | None = None,
+        log_max_bytes: int | None = None,
+    ) -> VirtuosoResult:
         budget = _effective_timeout(timeout)
         deadline = time.monotonic() + budget
         sem = None
@@ -565,8 +573,9 @@ class BusinessServer(Middle):
             gate = self._skill_gate(token)
             remaining = max(0.0, deadline - time.monotonic())
             if not gate.acquire(timeout=remaining):
-                # The delivery state is deliberately not observable: spec v17
-                # makes every external Skill timeout look like "result unknown".
+                # The delivery state is deliberately not observable: the
+                # frozen contract makes every external Skill timeout look like
+                # "result unknown" (四层整体架构与接口 §4.5/§5.8).
                 return VirtuosoResult(
                     status=ExecutionStatus.ERROR,
                     errors=["SKILL execution timed out"],
@@ -581,7 +590,12 @@ class BusinessServer(Middle):
                     status=ExecutionStatus.ERROR,
                     errors=["SKILL execution timed out"],
                 )
-            return self._skill(token).execute_skill(skill_code, timeout=remaining)
+            return self._skill(token).execute_skill(
+                skill_code,
+                timeout=remaining,
+                log_level=log_level,
+                log_max_bytes=log_max_bytes,
+            )
         except LookupError:
             return VirtuosoResult(status=ExecutionStatus.ERROR, errors=["invalid token"])
         except CapacityExceeded as exc:

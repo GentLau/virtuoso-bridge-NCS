@@ -1,4 +1,4 @@
-"""Per-token concurrency budgets (spec: 并发设计 §2/§3, Draft v17).
+"""Per-token concurrency budgets (spec: 并发设计 §2/§3, Draft v20).
 
 The token-wide channel budget counts every open SSH channel.  The per-role
 ``max_sessions`` setting is configured on roles but enforced on the resolved

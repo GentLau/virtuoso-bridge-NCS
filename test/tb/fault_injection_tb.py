@@ -315,7 +315,7 @@ class BlockingSkillClient:
         self.started = threading.Event()
         self.release = threading.Event()
 
-    def execute_skill(self, code, timeout=None):
+    def execute_skill(self, code, timeout=None, *, log_level=None, log_max_bytes=None):
         self.started.set()
         self.release.wait(2)
         return VirtuosoResult(status=ExecutionStatus.SUCCESS, output="2")

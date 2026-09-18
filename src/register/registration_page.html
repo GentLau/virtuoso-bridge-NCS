@@ -2613,14 +2613,14 @@ function renderDeployed(data) {
     '并确认 CIW 显示的 Token 与页面一致。'));
   confirm.append(checkbox, label);
   view.body.appendChild(confirm);
-  const actions = appendActions(view.body, '点击测试后将执行第 5 步；若全部通过，服务端会立即自动执行第 6 步写入注册表。'),
-    verify = actionButton(actions, '开始连通性测试并完成注册', 'primary', function() {
+  const actions = appendActions(view.body, '点击测试只执行第 5 步；全部通过后返回本页确认，再手动执行第 6 步写入注册表。'),
+    verify = actionButton(actions, '开始连通性测试', 'primary', function() {
       runStep(data.user, 'verify', 5, '正在测试连通性')
     }, true);
   checkbox.addEventListener('change', function() {
     verify.disabled = !checkbox.checked || BUSY;
     const guideButton = byId('flowGuideActions').querySelector('button');
-    if (guideButton) guideButton.textContent = checkbox.checked ? '开始连通性测试并完成注册' : '查看 CIW 操作'
+    if (guideButton) guideButton.textContent = checkbox.checked ? '开始连通性测试' : '查看 CIW 操作'
   });
   actionButton(actions, '放弃并重新填写', 'secondary', function() {
     editAndRestart(true)
