@@ -67,7 +67,7 @@ class SkillClient:
         #: sub-budget for TCP connect (spec §5.8: runtime.connect_timeout)
         self.connect_timeout = connect_timeout
 
-    def execute_skill(self, skill_code: str, timeout: float | None = None, *, log_level: str | None = None, log_max_bytes: int | None = None) -> VirtuosoResult:
+    def execute_skill(self, skill_code: str, timeout: float | None = None) -> VirtuosoResult:
         effective = timeout if timeout is not None else self.timeout
         deadline = time.monotonic() + effective
         start = time.monotonic()
@@ -81,7 +81,7 @@ class SkillClient:
                 )
             attempts += 1
             try:
-                raw = self._execute_once(skill_code, effective, deadline, log_level=log_level, log_max_bytes=log_max_bytes)
+                raw = self._execute_once(skill_code, effective, deadline)
                 elapsed = time.monotonic() - start
                 return self._parse_response(raw, elapsed)
             except _DeliveredRequestFailure:
@@ -119,7 +119,7 @@ class SkillClient:
                     execution_time=time.monotonic() - start,
                 )
 
-    def _execute_once(self, skill_code: str, timeout: float, deadline: float, log_level: str | None = None, log_max_bytes: int | None = None) -> str:
+    def _execute_once(self, skill_code: str, timeout: float, deadline: float) -> str:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             connect_budget = _remaining_timeout(deadline)
             if self.connect_timeout is not None:
@@ -131,8 +131,8 @@ class SkillClient:
                 "skill": skill_code,
                 "timeout": request_timeout,
                 "token": self.token,
-                "log_level": log_level if log_level is not None else self.log_level,
-                "log_max_bytes": log_max_bytes if log_max_bytes is not None else self.log_max_bytes,
+                "log_level": self.log_level,
+                "log_max_bytes": self.log_max_bytes,
             }
             send_timeout = _remaining_timeout(deadline)
             payload_bytes = json.dumps(payload, ensure_ascii=False).encode("utf-8")
