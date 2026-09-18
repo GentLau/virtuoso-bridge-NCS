@@ -134,7 +134,7 @@ Python TCP client
 - [`src/bridge/resources/ramic_bridge.il:68-93`](../../src/bridge/resources/ramic_bridge.il)：`RBIpcDataHandler` 使用 `errset`、`evalstring` 和 STX/NAK/RS；
 - [`src/bridge/resources/ramic_bridge.il:95-157`](../../src/bridge/resources/ramic_bridge.il)：stderr ring buffer、banner/stat 解析；
 - [`src/bridge/resources/ramic_bridge_daemon_3.py:110-243`](../../src/bridge/resources/ramic_bridge_daemon_3.py)：内层 frame、watchdog、外层 TCP response；
-- [`src/transport/skill_client.py:313-395`](../../src/transport/skill_client.py) 和 `:1440-1496`：Python 端只把结果解析为 output/errors/warnings。
+- [`src/transport/skill_client.py:313-395`](../../src/common/skill_client.py) 和 `:1440-1496`：Python 端只把结果解析为 output/errors/warnings。
 
 ### 3.2 当前实现值得保留
 
@@ -875,7 +875,7 @@ request_id
 - [`skills/virtuoso/references/maestro-python-api.md`](../../skills/virtuoso/references/maestro-python-api.md)：Detail CSV、snapshot、run observer 约定。
 - [`skills/virtuoso/references/cellview-on-disk-layout.md`](../../skills/virtuoso/references/cellview-on-disk-layout.md)：`.log/.msg.db/.rdb` 职责和只读边界。
 - [`skills/virtuoso/references/troubleshooting.md`](../../skills/virtuoso/references/troubleshooting.md)：modal dialog、远端文件、readback 限制。
-- [`src/transport/skill_client.py`](../../src/transport/skill_client.py)：当前 TCP request/result、timeout、response parser。
+- [`src/transport/skill_client.py`](../../src/common/skill_client.py)：当前 TCP request/result、timeout、response parser。
 - [`src/bridge/resources/ramic_bridge.il`](../../src/bridge/resources/ramic_bridge.il)：SKILL IPC handler、stderr ring、daemon lifecycle。
 - [`src/bridge/resources/ramic_bridge_daemon_3.py`](../../src/bridge/resources/ramic_bridge_daemon_3.py)：内外层 framing、watchdog、banner、`listen(1)`。
 - [`src_bak/virtuoso_bridge/virtuoso/maestro/writer.py`](../../src_bak/virtuoso_bridge/virtuoso/maestro/writer.py)：callback marker 观察和 run timeout。
