@@ -79,12 +79,19 @@ def build_registry(users, wd):
         entry = UserEntry(token=token, mode="local")
         entry.roles.daemon.daemon_port = daemon.port
         entry.roles.daemon.local_port = daemon.port
-        entry.roles.daemon.host = "127.0.0.1"
         entry.roles.daemon.root = str((Path(wd) / "users" / f"u{i}").resolve())
         registry.register(f"u{i}", entry)
         tokens.append(token)
         roots.append(entry.roles.daemon.root)
     return registry, daemons, tokens, roots
+
+
+def free_port() -> int:
+    sock = socket.socket()
+    sock.bind(("127.0.0.1", 0))
+    port = sock.getsockname()[1]
+    sock.close()
+    return port
 
 
 def main(argv=None):
@@ -96,22 +103,24 @@ def main(argv=None):
     wd = Path(tempfile.mkdtemp())
     override_work_dir_for_tests(wd)
     registry, daemons, tokens, roots = build_registry(args.users, wd)
+    server_port = free_port()
 
     server = subprocess.Popen(
-        [sys.executable, "-m", "server.stress_server", "--port", "8126", "--work-dir", str(wd)],
+        [sys.executable, "-m", "server.stress_server",
+         "--port", str(server_port), "--work-dir", str(wd)],
         stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT,
         env={**__import__("os").environ, "PYTHONPATH": str(Path(__file__).resolve().parents[2] / "src")},
     )
     try:
         for _ in range(40):
             try:
-                socket.create_connection(("127.0.0.1", 8126), timeout=0.5).close()
+                socket.create_connection(("127.0.0.1", server_port), timeout=0.5).close()
                 break
             except OSError:
                 time.sleep(0.25)
         cmd = [
             sys.executable, str(Path(__file__).resolve().parent / "stress_client.py"),
-            "--base", "http://127.0.0.1:8126",
+            "--base", f"http://127.0.0.1:{server_port}",
             "--tokens", ",".join(tokens),
             "--file-roots", ",".join(roots),
             "--concurrency", str(args.concurrency),

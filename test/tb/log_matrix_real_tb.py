@@ -72,19 +72,13 @@ class Env:
 
     def skill(self, code: str, *, level: str | None = None, max_bytes: int | None = None):
         """Run one Skill call with an explicit log level for this request."""
-        entry = self.server.registry.get(self.args.user)
-        previous_level, previous_max = entry.cdslog.log_level, entry.cdslog.log_max_bytes
-        if level is not None:
-            entry.cdslog.log_level = level
-        if max_bytes is not None:
-            entry.cdslog.log_max_bytes = max_bytes
-        self.server.invalidate_token(self.token)
-        try:
-            return self.server.execute_skill(code, timeout=60, token=self.token)
-        finally:
-            entry.cdslog.log_level = previous_level
-            entry.cdslog.log_max_bytes = previous_max
-            self.server.invalidate_token(self.token)
+        return self.server.execute_skill(
+            code,
+            timeout=60,
+            token=self.token,
+            log_level=level,
+            log_max_bytes=max_bytes,
+        )
 
     def ssh(self, command: str) -> subprocess.CompletedProcess:
         return subprocess.run(

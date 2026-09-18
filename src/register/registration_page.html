@@ -2852,8 +2852,37 @@ async function refreshState(user, silent) {
   }
 }
 
-function editAndRestart(confirmDeployed) {
+async function cancelCurrentSession() {
+  if (!CURRENT_USER || !CURRENT_STATE || CURRENT_STATE.stage === 'committed') return;
+  try {
+    await requestJSON('/api/register', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({
+        user: CURRENT_USER,
+        action: 'cancel',
+        token: CURRENT_STATE.token
+      })
+    })
+  } catch (error) {
+    if (error.status !== 404 && error.status !== 400) throw error
+  }
+}
+
+async function editAndRestart(confirmDeployed) {
   if (confirmDeployed && !window.confirm('重新申请会放弃当前页面会话；已部署到目标目录的文件不会自动删除。是否继续？')) return;
+  try {
+    await cancelCurrentSession()
+  } catch (error) {
+    renderRequestFailure(error, {
+      step: 0,
+      label: '取消当前注册会话'
+    });
+    return
+  }
   storageRemove(ACTIVE_USER_KEY);
   CURRENT_USER = null;
   CURRENT_STATE = null;

@@ -106,13 +106,13 @@ class TestBusinessServerRouting(unittest.TestCase):
             result = server.execute_skill(
                 "1+1",
                 token="tok-1",
-                log_level="warning",
+                log_level="warn",
             )
         self.assertTrue(result.ok)
         client = FakeSkillClient.instances["tok-1"]
         self.assertEqual(
             client.last_call,
-            {"log_level": "warning", "log_max_bytes": None},
+            {"log_level": "warn", "log_max_bytes": None},
         )
         self.assertEqual(client.kwargs["log_max_bytes"], 1024)
 

@@ -21,7 +21,7 @@ from dataclasses import dataclass, field
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
-from urllib.parse import unquote, urlparse
+from urllib.parse import parse_qs, unquote, urlparse
 
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -90,6 +90,69 @@ def _failed_report(*, token_ok: bool = True) -> dict[str, Any]:
     }
 
 
+def _normalize_mock_request(request: dict[str, Any]) -> dict[str, Any]:
+    """Flatten the production page payload for the mock-only view fields."""
+    out = dict(request)
+    mode = request.get("mode")
+    if isinstance(mode, dict):
+        out["mode"] = mode.get("default")
+
+    def nested(mapping: Any, key: str) -> Any:
+        return mapping.get(key) if isinstance(mapping, dict) else None
+
+    ssh_default = nested(nested(request, "ssh"), "default") or {}
+    for source, target in (
+        ("host", "host"),
+        ("user", "ssh_user"),
+        ("jump_host", "jump_host"),
+        ("jump_user", "jump_user"),
+        ("proxy", "ssh_proxy"),
+    ):
+        value = nested(ssh_default, source)
+        if value is not None:
+            out[target] = value
+
+    root = nested(request, "root") or {}
+    if nested(root, "default") is not None:
+        out["scratch_root"] = nested(root, "default")
+
+    roles = request.get("roles") or {}
+    daemon = nested(roles, "daemon") or {}
+    command = nested(roles, "command") or {}
+    file_role = nested(roles, "file") or {}
+    spectre = nested(roles, "spectre") or {}
+    for source, target in (
+        ("host", "daemon_host"),
+        ("user", "daemon_user"),
+        ("daemon_port", "daemon_port"),
+        ("local_port", "local_port"),
+        ("python", "remote_python"),
+        ("expected_hostname", "daemon_endpoint_hostname"),
+        ("expected_user", "daemon_expected_user"),
+        ("expected_fingerprint", "ssh_host_key_fingerprint"),
+    ):
+        value = nested(daemon, source)
+        if value is not None:
+            out[target] = value
+    for source, target in (("host", "host"), ("user", "ssh_user")):
+        value = nested(command, source)
+        if value is not None:
+            out[target] = value
+    for source, target in (("host", "file_host"), ("root", "file_root")):
+        value = nested(file_role, source)
+        if value is not None:
+            out[target] = value
+    for source, target in (
+        ("host", "spectre_host"),
+        ("bin", "spectre_bin"),
+        ("root", "spectre_root"),
+    ):
+        value = nested(spectre, source)
+        if value is not None:
+            out[target] = value
+    return out
+
+
 @dataclass
 class MockRegistrationState:
     """One in-memory mock registration session."""
@@ -130,8 +193,14 @@ class MockRegistrationState:
             "deploy_root": scratch,
             "file_root": f"{scratch.rstrip('/')}/{self.user}",
             "remote_python": "python3.11" if remote else "python3.12",
-            "ssh_host_key_fingerprint": "SHA256:MOCK-FINGERPRINT-7vQp2K" if remote else None,
-            "daemon_endpoint_hostname": "mock-compute-01" if remote else "mock-localhost",
+            "ssh_host_key_fingerprint": (
+                request.get("ssh_host_key_fingerprint")
+                or ("SHA256:MOCK-FINGERPRINT-7vQp2K" if remote else None)
+            ),
+            "daemon_endpoint_hostname": (
+                request.get("daemon_endpoint_hostname")
+                or ("mock-compute-01" if remote else "mock-localhost")
+            ),
             "jump_host": request.get("jump_host"),
             "jump_user": request.get("jump_user"),
             "spectre_host": request.get("spectre_host") or command_host,
@@ -148,45 +217,54 @@ class MockRegistrationState:
 
     def entry_payload(self) -> dict[str, Any]:
         resolved = self.resolved_payload()
+        root = str(resolved["deploy_root"]).rstrip("/")
+        remote = self.mode == "remote"
+        host = resolved["command_host"] if remote else None
+        user = resolved["command_user"] if remote else None
+
+        def role(name: str, *, extra: dict[str, Any] | None = None) -> dict[str, Any]:
+            data: dict[str, Any] = {
+                "root": f"{root}/{name}",
+            }
+            if extra:
+                data.update(extra)
+            return data
+
         return {
-            "token": self.token,
-            "mode": self.mode,
-            "route": {
-                "skill": {
-                    "local_port": resolved["local_port"],
-                    "daemon_host": resolved["daemon_host"],
-                    "daemon_port": resolved["daemon_port"],
-                },
-                "command": {
-                    "host": resolved["command_host"],
-                    "user": resolved["command_user"],
-                },
-                "file": {
-                    "host": resolved["file_host"],
-                    "root": resolved["file_root"],
-                },
-                "spectre": {
-                    "host": resolved["spectre_host"],
-                    "bin": resolved["spectre_bin"],
-                },
-                "jump": {
-                    "host": resolved["jump_host"],
-                    "user": resolved["jump_user"],
-                },
-            },
-            "expected": {
-                "ssh_host_key_fingerprint": resolved["ssh_host_key_fingerprint"],
-                "daemon_endpoint_hostname": resolved["daemon_endpoint_hostname"],
-                "daemon_user": resolved["daemon_user"],
-                "remote_python": resolved["remote_python"],
-            },
-            "deploy": {"scratch_root": resolved["deploy_root"]},
+            "mode": {"default": resolved["mode"]},
             "ssh": {
+                "default": {
+                    "host": host,
+                    "user": user,
+                    "jump_host": resolved["jump_host"],
+                    "jump_user": resolved["jump_user"],
+                    "proxy": self.request.get("ssh_proxy"),
+                },
                 "backend": resolved["ssh_backend"],
-                "max_sessions": resolved["ssh_max_sessions"],
-                "proxy": self.request.get("ssh_proxy"),
                 "control_master": resolved["ssh_control_master"],
                 "tool_override": {},
+            },
+            "root": {"default": root},
+            "roles": {
+                "gui": role("gui", extra={"host": host, "user": user}),
+                "daemon": role("daemon", extra={
+                    "host": resolved["daemon_host"] if remote else None,
+                    "user": resolved["daemon_user"] if remote else None,
+                    "daemon_port": resolved["daemon_port"],
+                    "local_port": resolved["local_port"],
+                    "python": resolved["remote_python"],
+                    "expected_hostname": resolved["daemon_endpoint_hostname"],
+                    "expected_user": resolved["daemon_user"],
+                }),
+                "command": role("command", extra={"host": host, "user": user}),
+                "file": role("file", extra={
+                    "host": resolved["file_host"] if remote else None,
+                    "root": resolved["file_root"],
+                }),
+                "spectre": role("spectre", extra={
+                    "host": resolved["spectre_host"] if remote else None,
+                    "bin": resolved["spectre_bin"],
+                }),
             },
             "runtime": {
                 "thread_pool_size": resolved["thread_pool_size"],
@@ -308,15 +386,24 @@ class RegistrationMockHandler(BaseHTTPRequestHandler):
         if not user:
             raise ValueError("user is required")
         token = str(request.get("token") or "").strip() or f"mock-{uuid.uuid4().hex[:16]}"
-        mode = str(request.get("mode") or "").strip()
+        normalized = _normalize_mock_request(request)
+        mode_value = normalized.get("mode")
+        if isinstance(mode_value, dict):
+            mode_value = mode_value.get("default")
+        mode = str(mode_value or "").strip()
         if mode not in ("local", "remote"):
             raise ValueError("mode is required and must be local or remote")
+        with self.mock_server.flow_lock:
+            previous = self.mock_server.flows.get(user)
+            if previous is not None and previous.stage not in ("cancelled", "failed", "committed"):
+                raise ValueError("step order violation: registration already in progress")
+            self.mock_server.flows.pop(user, None)
         flow = MockRegistrationState(
             user=user,
             token=token,
             scenario=self.mock_server.scenario,
             mode=mode,
-            request=dict(request),
+            request=normalized,
         )
         with self.mock_server.flow_lock:
             self.mock_server.flows[user] = flow
@@ -349,7 +436,7 @@ class RegistrationMockHandler(BaseHTTPRequestHandler):
 
         if action == "validate":
             if flow.stage != "applied":
-                return 409, {"error": f"validate requires applied stage, got {flow.stage}"}
+                return 400, {"error": f"validate requires applied stage, got {flow.stage}"}
             flow.step = 2
             if scenario == "validate_fail":
                 flow.stage = "failed"
@@ -360,7 +447,7 @@ class RegistrationMockHandler(BaseHTTPRequestHandler):
 
         elif action == "probe":
             if flow.stage != "validated":
-                return 409, {"error": f"probe requires validated stage, got {flow.stage}"}
+                return 400, {"error": f"probe requires validated stage, got {flow.stage}"}
             flow.step = 3
             if scenario == "probe_fail":
                 flow.stage = "failed"
@@ -371,7 +458,7 @@ class RegistrationMockHandler(BaseHTTPRequestHandler):
 
         elif action == "deploy":
             if flow.stage != "probed":
-                return 409, {"error": f"deploy requires probed stage, got {flow.stage}"}
+                return 400, {"error": f"deploy requires probed stage, got {flow.stage}"}
             flow.step = 4
             if scenario == "deploy_fail":
                 flow.stage = "failed"
@@ -384,7 +471,7 @@ class RegistrationMockHandler(BaseHTTPRequestHandler):
         elif action == "verify":
             retrying = flow.stage == "failed" and flow.step == 5
             if flow.stage != "deployed" and not retrying:
-                return 409, {"error": f"verify requires deployed stage, got {flow.stage}"}
+                return 400, {"error": f"verify requires deployed stage, got {flow.stage}"}
             flow.step = 5
             attempt = flow.mark_attempt(action)
             if scenario == "verify_fail_once" and attempt == 1:
@@ -403,7 +490,7 @@ class RegistrationMockHandler(BaseHTTPRequestHandler):
 
         elif action == "commit":
             if flow.stage != "verified":
-                return 409, {"error": f"commit requires verified stage, got {flow.stage}"}
+                return 400, {"error": f"commit requires verified stage, got {flow.stage}"}
             flow.step = 6
             if scenario == "commit_fail":
                 flow.stage = "failed"
@@ -411,6 +498,14 @@ class RegistrationMockHandler(BaseHTTPRequestHandler):
             else:
                 flow.stage = "committed"
                 flow.errors = []
+
+        elif action == "cancel":
+            if flow.stage == "committed":
+                return 400, {
+                    "error": f"cancel requires a non-committed stage, got {flow.stage}"
+                }
+            flow.stage = "cancelled"
+            flow.errors = []
 
         else:
             return 404, {"error": "unknown registration action"}
@@ -502,7 +597,11 @@ class RegistrationMockHandler(BaseHTTPRequestHandler):
             if flow is None:
                 self._send_json(404, {"error": "no registration in progress", "user": user})
             else:
-                self._send_json(200, flow.payload())
+                session_token = parse_qs(urlparse(self.path).query).get("token", [""])[0]
+                if session_token != flow.token:
+                    self._send_json(400, {"error": "invalid token"})
+                else:
+                    self._send_json(200, flow.payload())
             return
         self._send_json(404, {"error": "not found"})
 
@@ -554,11 +653,18 @@ class RegistrationMockHandler(BaseHTTPRequestHandler):
                 try:
                     flow = self._new_flow(body)
                 except ValueError as exc:
+                    if "step order violation" in str(exc):
+                        self._send_json(400, {
+                            "error": "step order violation",
+                            "current_stage": "in-progress",
+                            "expected": "no registration in progress",
+                        })
+                        return
                     self._send_json(400, {"error": "invalid request", "detail": [str(exc)]})
                     return
                 self._send_json(200, flow.payload())
                 return
-            if action not in ("validate", "probe", "deploy", "verify", "commit"):
+            if action not in ("validate", "probe", "deploy", "verify", "commit", "cancel"):
                 self._send_json(400, {"error": "invalid action", "action": action})
                 return
             if not isinstance(user, str) or not user:
@@ -568,14 +674,20 @@ class RegistrationMockHandler(BaseHTTPRequestHandler):
             if flow is None:
                 self._send_json(404, {"error": "no registration in progress", "user": user})
                 return
+            session_token = body.get("token")
+            if not isinstance(session_token, str) or session_token != flow.token:
+                self._send_json(400, {"error": "invalid token"})
+                return
             try:
                 with self.mock_server.flow_lock:
                     status, payload = self._transition(flow, action)
+                    if action == "cancel":
+                        self.mock_server.flows.pop(user, None)
+                self._send_json(status, payload)
+                return
             except (AttributeError, ValueError) as exc:
                 self._send_json(400, {"error": str(exc)})
                 return
-            self._send_json(status, payload)
-            return
 
         self._send_json(404, {"error": "not found"})
 

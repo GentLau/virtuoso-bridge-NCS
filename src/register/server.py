@@ -4,7 +4,7 @@ Stdlib-only ``ThreadingHTTPServer`` guiding a user through the six-step manual
 registration flow:
 
 * ``POST /api/register`` with ``{user, action, ...}`` executes one action per
-  request (``apply / validate / probe / deploy / verify / commit``);
+  request (``apply / validate / probe / deploy / verify / commit / cancel``);
 * ``GET /api/register/<user>`` reads the in-memory session state.
 
 States are kept in memory only.  The sixth action (``commit``) is the single
@@ -85,7 +85,7 @@ class RegistrationHandler(BaseHTTPRequestHandler):
         if state.setup_path:
             payload["setup_path"] = state.setup_path
         if state.entry is not None:
-            payload["entry"] = state.entry.model_dump()
+            payload["entry"] = self._redacted(state.entry)
         if state.report is not None:
             payload["report"] = {
                 "command_ok": state.report.command_ok,
@@ -99,11 +99,13 @@ class RegistrationHandler(BaseHTTPRequestHandler):
         return payload
 
     def _require_admin(self) -> bool:
-        """内置单管理员 token 校验：只比对 SHA-256 哈希，凭据不进日志。"""
+        """单管理员 token 校验：只比对 SHA-256 哈希，凭据不进日志。"""
         header = self.headers.get("Authorization", "")
         presented = header.removeprefix("Bearer ").strip() if header else ""
         digest = hashlib.sha256(presented.encode("utf-8")).hexdigest() if presented else ""
-        ok = bool(presented) and hmac.compare_digest(digest, _ADMIN_TOKEN_HASH)
+        ok = bool(presented) and hmac.compare_digest(
+            digest, self.server.admin_token_hash  # type: ignore[attr-defined]
+        )
         if not ok:
             self._send_json(401, {"error": "unauthorized"})
             return False
@@ -197,7 +199,10 @@ class RegistrationHandler(BaseHTTPRequestHandler):
             return
         self._send_json(404, {"error": "not found"})
 
-    _REGISTER_ACTIONS = ("apply", "validate", "probe", "deploy", "verify", "commit")
+    _REGISTER_ACTIONS = (
+        "apply", "validate", "probe", "deploy", "verify", "commit", "cancel",
+    )
+    _TERMINAL_STAGES = ("cancelled", "failed", "committed")
     _ACTION_REQUIRED_STAGE = {
         "validate": ("applied",),
         "probe": ("validated",),
@@ -232,7 +237,10 @@ class RegistrationHandler(BaseHTTPRequestHandler):
         if action == "apply":
             with self.server.flow_lock:
                 previous = self.server.flows.get(user)
-            if previous is not None and getattr(previous.state, "stage", None) != "cancelled":
+            if (
+                previous is not None
+                and getattr(previous.state, "stage", None) not in self._TERMINAL_STAGES
+            ):
                 current = previous.state.stage if previous.state else None
                 self._send_json(400, {
                     "error": "step order violation",
@@ -240,6 +248,10 @@ class RegistrationHandler(BaseHTTPRequestHandler):
                     "expected": "no registration in progress",
                 })
                 return
+            if previous is not None:
+                previous.cancel()
+                with self.server.flow_lock:
+                    self.server.flows.pop(user, None)
             payload = {key: value for key, value in raw.items()
                        if key not in ("action", "user")}
             try:
@@ -265,6 +277,20 @@ class RegistrationHandler(BaseHTTPRequestHandler):
             return
         if state.token is not None and session_token != state.token:
             self._send_json(400, {"error": "invalid token"})
+            return
+
+        if action == "cancel":
+            if state.stage == "committed":
+                self._send_json(400, {
+                    "error": "step order violation",
+                    "current_stage": state.stage,
+                    "expected": "non-committed",
+                })
+                return
+            state = flow.cancel()
+            with self.server.flow_lock:
+                self.server.flows.pop(user, None)
+            self._send_json(200, self._state_payload(state))
             return
 
         expected = self._ACTION_REQUIRED_STAGE[action]
@@ -386,7 +412,7 @@ class RegistrationHandler(BaseHTTPRequestHandler):
         except Exception as exc:  # noqa: BLE001
             self._send_json(400, {"error": "invalid update", "detail": str(exc)})
             return
-        self._send_json(200, {"user": user, "entry": candidate.model_dump()})
+        self._send_json(200, {"user": user, "entry": self._redacted(candidate)})
 
     def do_PUT(self) -> None:  # noqa: N802
         path = urlparse(self.path).path
@@ -415,9 +441,22 @@ class RegistrationServer(ThreadingHTTPServer):
     daemon_threads = True
     request_queue_size = 64
 
-    def __init__(self, server_address, registry: Registry) -> None:
+    def __init__(
+        self,
+        server_address,
+        registry: Registry,
+        *,
+        admin_token_hash: str | None = None,
+    ) -> None:
         super().__init__(server_address, RegistrationHandler)
         self.registry = registry
+        self.admin_token_hash = admin_token_hash or _ADMIN_TOKEN_HASH
+        if (
+            len(self.admin_token_hash) != 64
+            or any(ch not in "0123456789abcdefABCDEF" for ch in self.admin_token_hash)
+        ):
+            raise ValueError("admin_token_hash must be a 64-character SHA-256 hex digest")
+        self.admin_token_hash = self.admin_token_hash.lower()
         self.reservations = ReservationTable()
         self.flows: dict[str, RegistrationFlow] = {}
         self.flow_lock = threading.Lock()
@@ -454,6 +493,12 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8124)
     parser.add_argument("--work-dir", default=None, help="local working directory holding registry.json")
+    parser.add_argument(
+        "--admin-token-hash",
+        default=None,
+        help="SHA-256 hex digest of the admin bearer token; "
+             "overrides VB_ADMIN_TOKEN_HASH",
+    )
     args = parser.parse_args(argv)
 
     init_work_dir(args.work_dir)
@@ -463,7 +508,12 @@ def main(argv: list[str] | None = None) -> None:
 
     configure_command_log(command_log_file())
     registry = load_registry(registry_path())
-    server = RegistrationServer((args.host, args.port), registry)
+    admin_token_hash = args.admin_token_hash or os.environ.get("VB_ADMIN_TOKEN_HASH")
+    server = RegistrationServer(
+        (args.host, args.port),
+        registry,
+        admin_token_hash=admin_token_hash,
+    )
     print(f"registration page: http://{args.host}:{args.port}  (registry: {registry.path})")
     try:
         server.serve_forever()

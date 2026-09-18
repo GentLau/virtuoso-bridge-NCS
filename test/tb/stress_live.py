@@ -117,8 +117,12 @@ def main():
     time.sleep(2)
 
     state = flow.verify()
-    if state.stage != "committed":
+    if state.stage != "verified":
         print("verify failed:", state.errors, state.report)
+        sys.exit(1)
+    state = flow.commit()
+    if state.stage != "committed":
+        print("commit failed:", state.errors, state.report)
         sys.exit(1)
     print("committed:", token)
 

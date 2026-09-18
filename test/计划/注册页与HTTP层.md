@@ -23,8 +23,8 @@
 
 ### 4. 六步 API
 
-- **测试目标**：`/api/register`（一步）与 `/api/register/apply|validate|probe|deploy|verify`（分步）状态机正确
-- **测试流程**：分步推进并检查 `stage/step`；unknown user / 非法 JSON / 非法字段
+- **测试目标**：`POST /api/register` 命令端点的 `apply/validate/probe/deploy/verify/commit/cancel` 状态机正确
+- **测试流程**：逐步推进并检查 `stage/step`；verify 后必须显式 commit；检查 cancel、失败后重新 apply、unknown user / 非法 JSON / 非法字段
 - **预计响应**：状态与 spec 六步一致；错误为 400/404 且不落盘
 
 ### 5. update / delete API

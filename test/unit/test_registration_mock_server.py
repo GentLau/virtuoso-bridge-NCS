@@ -87,8 +87,9 @@ class TestRegistrationMockServer(unittest.TestCase):
         self.assertEqual(data["stage"], "deployed")
         self.assertIn("entry", data)
         self.assertNotIn("resolved", data)
-        self.assertTrue(data["entry"]["expected"]["remote_python"])
-        self.assertTrue(data["entry"]["route"]["file"]["root"])
+        self.assertTrue(data["entry"]["roles"]["daemon"]["python"])
+        self.assertTrue(data["entry"]["roles"]["file"]["root"])
+        self.assertNotIn("token", data["entry"])
         return data
 
     def test_page_is_production_ui_with_mock_controller(self):
@@ -102,6 +103,55 @@ class TestRegistrationMockServer(unittest.TestCase):
         self.assertIn('id="statusCard"', page)
         self.assertIn('id="flowGuide"', page)
         self.assertIn("配置值 / 探测回填值", page)
+
+    def test_production_page_payload_shape_is_accepted(self):
+        port = 65432
+        status, data = self.srv.request("POST", "/api/register", {
+            "user": "shape-user",
+            "action": "apply",
+            "mode": {"default": "local"},
+            "ssh": {"default": {}},
+            "root": {},
+            "roles": {
+                "gui": {},
+                "daemon": {"daemon_port": port},
+                "command": {},
+                "file": {},
+                "spectre": {},
+            },
+        })
+        self.assertEqual(status, 200)
+        self.assertEqual(data["stage"], "applied")
+        self.step("shape-user", "validate")
+        self.step("shape-user", "probe")
+        self.step("shape-user", "deploy")
+        status, state = self.srv.request(
+            "GET", f"/api/register/shape-user?token={data['token']}"
+        )
+        self.assertEqual(status, 200)
+        self.assertIn("roles", state["entry"])
+        self.assertNotIn("route", state["entry"])
+
+    def test_cancel_requires_session_token(self):
+        applied = self.apply("cancel-user")
+        status, data = self.srv.request("POST", "/api/register", {
+            "user": "cancel-user",
+            "action": "cancel",
+        })
+        self.assertEqual(status, 400)
+        self.assertEqual(data["error"], "invalid token")
+
+        status, data = self.srv.request("POST", "/api/register", {
+            "user": "cancel-user",
+            "action": "cancel",
+            "token": applied["token"],
+        })
+        self.assertEqual(status, 200)
+        self.assertEqual(data["stage"], "cancelled")
+        status, _ = self.srv.request(
+            "GET", f"/api/register/cancel-user?token={applied['token']}"
+        )
+        self.assertEqual(status, 404)
 
     def test_happy_path_reaches_committed_without_registry(self):
         deployed = self.deploy_ready()
@@ -165,7 +215,10 @@ class TestRegistrationMockServer(unittest.TestCase):
         error = self.step("transient-user", "probe", expected_status=500)
         self.assertIn("temporarily unavailable", error["error"])
 
-        status, state = self.srv.request("GET", "/api/register/transient-user")
+        flow = self.srv.server.flows["transient-user"]
+        status, state = self.srv.request(
+            "GET", f"/api/register/transient-user?token={flow.token}"
+        )
         self.assertEqual(status, 200)
         self.assertEqual(state["stage"], "validated")
         self.assertEqual(self.step("transient-user", "probe")["stage"], "probed")
@@ -178,7 +231,10 @@ class TestRegistrationMockServer(unittest.TestCase):
         user = seeded["user"]
         self.assertTrue(user.startswith("mock-preview-"))
 
-        status, state = self.srv.request("GET", f"/api/register/{user}")
+        token = seeded["payload"]["token"]
+        status, state = self.srv.request(
+            "GET", f"/api/register/{user}?token={token}"
+        )
         self.assertEqual(status, 200)
         self.assertEqual((state["stage"], state["step"]), ("deployed", 4))
         self.assertIn("setup_path", state)
@@ -186,7 +242,10 @@ class TestRegistrationMockServer(unittest.TestCase):
         status, cleared = self.srv.request("POST", "/__mock__/seed", {"state": "form"})
         self.assertEqual(status, 200)
         self.assertIsNone(cleared["user"])
-        self.assertEqual(self.srv.request("GET", f"/api/register/{user}")[0], 404)
+        self.assertEqual(
+            self.srv.request("GET", f"/api/register/{user}?token={token}")[0],
+            404,
+        )
 
     def test_invalid_mock_config_is_rejected(self):
         status, data = self.srv.request("POST", "/__mock__/config", {

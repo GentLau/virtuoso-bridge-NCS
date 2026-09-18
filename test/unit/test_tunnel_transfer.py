@@ -24,6 +24,9 @@ class FakeRunner:
         self.command_results = {}
         self.upload_result = CommandResult(0, "", "")
         self.download_result = CommandResult(0, "", "")
+        self.sha256_value = None
+        self.download_payload = None
+        self.remote_kind = "missing"
         FakeRunner.instances.append(self)
 
     @property
@@ -51,8 +54,10 @@ class FakeRunner:
             return CommandResult(0, "/home/alice", "")
         if cmd.startswith("sha256sum"):
             path = cmd.split()[-1].strip("'")
-            digest = hashlib.sha256(path.encode()).hexdigest()
+            digest = self.sha256_value or hashlib.sha256(path.encode()).hexdigest()
             return CommandResult(0, f"{digest}  {path}", "")
+        if cmd.startswith("if [ -d"):
+            return CommandResult(0, self.remote_kind, "")
         return self.command_results.get(cmd, CommandResult(0, "", ""))
 
     def upload_text(self, *a, **k):
@@ -65,6 +70,14 @@ class FakeRunner:
 
     def download(self, *a, **k):
         self.calls.append(("download", a, k))
+        if (
+            self.download_result.returncode == 0
+            and self.download_payload is not None
+            and len(a) >= 2
+        ):
+            local = Path(a[1])
+            local.parent.mkdir(parents=True, exist_ok=True)
+            local.write_bytes(self.download_payload)
         return self.download_result
 
 
@@ -111,14 +124,13 @@ class TestRemoteClientTransport(unittest.TestCase):
             # one-shot channels (digest check) reuse the role runner here
             client._one_shot_runner = client._runner
             digest = hashlib.sha256(local.read_bytes()).hexdigest()
-            client.file_runner.command_results[f"sha256sum /remote/p.bin"] = CommandResult(
-                0, f"{digest}  /remote/p.bin", ""
-            )
+            client.file_runner.sha256_value = digest
             res = client.upload_file(local, "/remote/p.bin")
             runner = client.file_runner
         self.assertEqual(res.returncode, 0)
         calls = [c for c in runner.calls if c[0] == "run_command"]
         self.assertTrue(any(c[1][0].startswith("sha256sum") for c in calls))
+        self.assertTrue(any(c[1][0].startswith("if [ -d") for c in calls))
 
     def test_upload_failure_propagates(self):
         entry = make_entry()
@@ -134,6 +146,23 @@ class TestRemoteClientTransport(unittest.TestCase):
         self.assertEqual(res.returncode, 1)
         self.assertIn("boom", res.stderr)
 
+    def test_upload_checksum_mismatch_does_not_move_stage(self):
+        entry = make_entry()
+        from unittest import mock
+        local = Path(tempfile.mkdtemp()) / "p.bin"
+        local.write_bytes(b"payload")
+        with mock.patch("transport.tunnel.SSHRunner", FakeRunner):
+            client = RemoteClient(entry, resolve(entry), "alice")
+            client._one_shot_runner = client._runner
+            client.file_runner.sha256_value = "deadbeef"
+            res = client.upload_file(local, "/remote/p.bin")
+            runner = client.file_runner
+        self.assertEqual(res.kind, "checksum")
+        self.assertFalse(
+            any(c[0] == "run_command" and c[1][0].startswith("if [ -d")
+                for c in runner.calls)
+        )
+
     def test_download_recursive_skips_digest(self):
         entry = make_entry()
         from unittest import mock
@@ -141,6 +170,7 @@ class TestRemoteClientTransport(unittest.TestCase):
             client = RemoteClient(entry, resolve(entry), "alice")
             # one-shot channels (digest check) reuse the role runner here
             client._one_shot_runner = client._runner
+            client.file_runner.remote_kind = "directory"
             res = client.download_file("/remote/dir", Path(tempfile.mkdtemp()) / "out", recursive=True)
             runner = client.file_runner
         self.assertEqual(res.returncode, 0)
@@ -274,6 +304,20 @@ class TestRemoteClientEdges(unittest.TestCase):
             res = client.download_file("/remote/p.bin", Path(tempfile.mkdtemp()) / "p.bin")
         self.assertIn("download boom", res.stderr)
 
+    def test_download_checksum_mismatch_keeps_existing_target(self):
+        entry = make_entry()
+        from unittest import mock
+        target = Path(tempfile.mkdtemp()) / "p.bin"
+        target.write_bytes(b"old")
+        with mock.patch("transport.tunnel.SSHRunner", FakeRunner):
+            client = RemoteClient(entry, resolve(entry), "alice")
+            client._one_shot_runner = client._runner
+            client.file_runner.sha256_value = hashlib.sha256(b"remote").hexdigest()
+            client.file_runner.download_payload = b"new"
+            res = client.download_file("/remote/p.bin", target)
+        self.assertEqual(res.kind, "checksum")
+        self.assertEqual(target.read_bytes(), b"old")
+
     def test_verify_command_failure_propagates(self):
         entry = make_entry()
         from unittest import mock
@@ -342,6 +386,31 @@ class TestRemoteClientRecursiveUpload(unittest.TestCase):
             res = client.upload_file(f, "/remote/f.txt", recursive=True)
         self.assertEqual(res.returncode, 1)
         self.assertIn("recursive upload requires a directory", res.stderr)
+
+    def test_recursive_upload_rejects_file_target(self):
+        entry = make_entry()
+        from unittest import mock
+        source = Path(tempfile.mkdtemp())
+        with mock.patch("transport.tunnel.SSHRunner", FakeRunner):
+            client = RemoteClient(entry, resolve(entry), "alice")
+            client._one_shot_runner = client._runner
+            client.file_runner.remote_kind = "file"
+            res = client.upload_file(source, "/remote/not-a-dir", recursive=True)
+        self.assertEqual(res.kind, "path")
+
+    def test_recursive_download_rejects_file_source(self):
+        entry = make_entry()
+        from unittest import mock
+        with mock.patch("transport.tunnel.SSHRunner", FakeRunner):
+            client = RemoteClient(entry, resolve(entry), "alice")
+            client._one_shot_runner = client._runner
+            client.file_runner.remote_kind = "file"
+            res = client.download_file(
+                "/remote/not-a-dir",
+                Path(tempfile.mkdtemp()) / "out",
+                recursive=True,
+            )
+        self.assertEqual(res.kind, "path")
 
 
 if __name__ == "__main__":

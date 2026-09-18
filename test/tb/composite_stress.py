@@ -154,6 +154,9 @@ def main():
             if not wait_port(port):
                 raise RuntimeError(f"{user} daemon not ready")
             state = flow.verify()
+            if state.stage != "verified":
+                raise RuntimeError(state.errors)
+            state = flow.commit()
             if state.stage != "committed":
                 raise RuntimeError(state.errors)
             users.append((user, token, "local"))

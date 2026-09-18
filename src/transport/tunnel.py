@@ -10,10 +10,12 @@ from __future__ import annotations
 
 import hashlib
 import logging
+import os
 import posixpath
 import shlex
 import threading
 import time
+import uuid
 from pathlib import Path
 
 from pyapi.models import CommandResult
@@ -25,6 +27,12 @@ from transport.roles import ResolvedRole, ResolvedTargets
 from common.ssh import SSHRunner
 
 logger = logging.getLogger(__name__)
+
+
+def _remaining(deadline: float | None, fallback: float | None) -> float | None:
+    if deadline is None:
+        return fallback
+    return max(0.0, deadline - time.monotonic())
 
 
 def _norm_host(host: str | None) -> str:
@@ -352,6 +360,66 @@ class RemoteClient:
         finally:
             lease.release()
 
+    @staticmethod
+    def _sha256_local(path: Path) -> str:
+        digest = hashlib.sha256()
+        with path.open("rb") as fh:
+            for chunk in iter(lambda: fh.read(1024 * 1024), b""):
+                digest.update(chunk)
+        return digest.hexdigest()
+
+    def _remote_sha256(
+        self,
+        role: ResolvedRole,
+        remote_path: str,
+        timeout: float | None,
+    ) -> tuple[CommandResult | None, str]:
+        """Return ``(error_result, digest)`` for a remote single file."""
+        check = self._one_shot_runner(role).run_one_shot(
+            f"sha256sum -- {shlex.quote(remote_path)}",
+            timeout=timeout,
+        )
+        if check.returncode != 0:
+            return check, ""
+        digest = check.stdout.strip().split()[0] if check.stdout.strip() else ""
+        if not digest:
+            return CommandResult(
+                returncode=1,
+                stdout="",
+                stderr=f"sha256sum returned no digest for {remote_path}",
+                kind="transport",
+            ), ""
+        return None, digest
+
+    def _remove_remote_stage(self, role: ResolvedRole, remote_path: str) -> None:
+        """Best-effort cleanup for a failed pre-install staging path."""
+        try:
+            self._one_shot_runner(role).run_one_shot(
+                f"rm -f -- {shlex.quote(remote_path)}",
+                timeout=5,
+            )
+        except Exception:  # noqa: BLE001 - cleanup must not mask the original error
+            pass
+
+    def _remote_path_kind(
+        self,
+        role: ResolvedRole,
+        remote_path: str,
+        timeout: float | None,
+    ) -> tuple[CommandResult | None, str]:
+        path_q = shlex.quote(remote_path)
+        result = self._one_shot_runner(role).run_one_shot(
+            f"if [ -d {path_q} ]; then echo directory; "
+            f"elif [ -f {path_q} ]; then echo file; "
+            f"elif [ -e {path_q} ] || [ -L {path_q} ]; then echo other; "
+            "else echo missing; fi",
+            timeout=timeout,
+        )
+        if result.returncode != 0:
+            return result, ""
+        kind = result.stdout.strip().splitlines()[-1] if result.stdout.strip() else "missing"
+        return None, kind
+
     # -- file (runner already stages + atomically installs; we add digest) -----
 
     def upload_file(
@@ -376,18 +444,67 @@ class RemoteClient:
                         1, "", f"recursive upload requires a directory: {local_path}",
                         kind="path",
                     )
+                error, remote_kind = self._remote_path_kind(
+                    role,
+                    remote_path,
+                    _remaining(deadline, timeout),
+                )
+                if error is not None:
+                    return error
+                if remote_kind in ("file", "other"):
+                    return CommandResult(
+                        1,
+                        "",
+                        f"recursive upload requires a directory target: {remote_path}",
+                        kind="path",
+                    )
                 return self.file_runner.upload(
-                    local_path, remote_path, recursive=True, timeout=timeout
+                    local_path,
+                    remote_path,
+                    recursive=True,
+                    timeout=_remaining(deadline, timeout),
                 )
             if local_path.is_dir():
                 return CommandResult(
                     1, "", f"directory upload requires recursive=True: {local_path}",
                     kind="path",
                 )
-            up = self.file_runner.upload(local_path, remote_path, timeout=timeout)
+            stage = f"{remote_path}.vbtmp-{uuid.uuid4().hex}"
+            up = self.file_runner.upload(
+                local_path,
+                stage,
+                timeout=_remaining(deadline, timeout),
+            )
             if up.returncode != 0:
+                self._remove_remote_stage(role, stage)
                 return up
-            return self._verify(remote_path, local_path.read_bytes(), deadline=deadline)
+            error, remote_digest = self._remote_sha256(
+                role,
+                stage,
+                _remaining(deadline, timeout),
+            )
+            if error is not None:
+                self._remove_remote_stage(role, stage)
+                return error
+            if remote_digest != self._sha256_local(local_path):
+                self._remove_remote_stage(role, stage)
+                return CommandResult(
+                    returncode=1,
+                    stdout="",
+                    stderr="sha256 mismatch",
+                    kind="checksum",
+                )
+            target_q = shlex.quote(remote_path)
+            move = self._one_shot_runner(role).run_one_shot(
+                f"if [ -d {target_q} ]; then "
+                "printf '%s\\n' 'target is a directory' >&2; exit 1; "
+                f"fi; mv -f -- {shlex.quote(stage)} {target_q}",
+                timeout=_remaining(deadline, timeout),
+            )
+            if move.returncode != 0:
+                self._remove_remote_stage(role, stage)
+                return move
+            return CommandResult(0, remote_path, "")
         finally:
             lease.release()
 
@@ -408,17 +525,72 @@ class RemoteClient:
             local_path = Path(local_path)
             remote_path = self.resolve_remote_path(role, remote_path)
             if recursive:
-                return self.file_runner.download(
-                    remote_path, local_path, recursive=True, timeout=timeout
+                error, remote_kind = self._remote_path_kind(
+                    role,
+                    remote_path,
+                    _remaining(deadline, timeout),
                 )
+                if error is not None:
+                    return error
+                if remote_kind != "directory":
+                    return CommandResult(
+                        1,
+                        "",
+                        f"recursive download requires a directory source: {remote_path}",
+                        kind="path",
+                    )
+                return self.file_runner.download(
+                    remote_path,
+                    local_path,
+                    recursive=True,
+                    timeout=_remaining(deadline, timeout),
+                )
+            error, remote_digest = self._remote_sha256(
+                role,
+                remote_path,
+                _remaining(deadline, timeout),
+            )
+            if error is not None:
+                return error
+            local_path.parent.mkdir(parents=True, exist_ok=True)
+            stage = local_path.parent / f".vbtmp-{uuid.uuid4().hex}"
             dl = self.file_runner.download(
-                remote_path, local_path, recursive=False, timeout=timeout
+                remote_path,
+                stage,
+                recursive=False,
+                timeout=_remaining(deadline, timeout),
             )
             if dl.returncode != 0:
+                self._remove_local_stage(stage)
                 return dl
-            return self._verify(remote_path, local_path.read_bytes(), deadline=deadline)
+            if remote_digest != self._sha256_local(stage):
+                self._remove_local_stage(stage)
+                return CommandResult(
+                    returncode=1,
+                    stdout="",
+                    stderr="sha256 mismatch",
+                    kind="checksum",
+                )
+            try:
+                os.replace(stage, local_path)
+            except OSError as exc:
+                self._remove_local_stage(stage)
+                return CommandResult(
+                    returncode=1,
+                    stdout="",
+                    stderr=f"VB-PATH-NOT-VISIBLE: {exc}",
+                    kind="path",
+                )
+            return CommandResult(0, str(local_path), "")
         finally:
             lease.release()
+
+    @staticmethod
+    def _remove_local_stage(path: Path) -> None:
+        try:
+            path.unlink(missing_ok=True)
+        except OSError:
+            pass
 
     def _verify(
         self, remote_path: str, local_bytes: bytes, deadline: float | None = None

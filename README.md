@@ -48,7 +48,7 @@ server.download_file("/home/user/run/out.psf", "out.psf", token="<token>")
 
 `token` 每次调用必填（keyword-only）；`run_command(..., parallel=False)`、文件接口 `recursive=False` 是可选参数。
 
-接口共 5 个：Skill 执行 / 命令执行 / 文件执行 / GUI 命令执行 / Spectre 命令执行；role 与目标位置见 [spec/design-concepts/底层与中层/多节点设计.md](spec/design-concepts/底层与中层/多节点设计.md)。
+接口共 5 个：Skill 执行 / 命令执行 / 文件执行 / GUI 命令执行 / Spectre 命令执行；role 与目标位置见 [spec/design-concepts/中层/3-路由设计.md](spec/design-concepts/中层/3-路由设计.md)。
 
 ## 只看前端：Mock Testbench
 

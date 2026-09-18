@@ -133,6 +133,9 @@ def main(argv=None):
             continue
         v = flow.verify()
         print(f"{user} verify={v.stage} errors={v.errors}")
+        if v.stage == "verified":
+            v = flow.commit()
+            print(f"{user} commit={v.stage} errors={v.errors}")
         if v.stage == "committed":
             ok.append(user)
     print(f"committed={len(ok)}/{len(flows)} users; workdir={wd}; available={free_gb():.1f}G")

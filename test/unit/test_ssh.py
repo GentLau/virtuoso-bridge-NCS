@@ -274,6 +274,26 @@ class TestRetryAndFallback(unittest.TestCase):
         self.assertEqual(rc, 255)
         self.assertIn(b"Permission denied", err)
 
+    def test_remote_command_rc255_stays_command_kind(self):
+        r = SSHRunner("server", control_master="disable")
+        completed = mock.Mock(returncode=255, stdout=b"remote-output", stderr=b"")
+        with mock.patch.object(ssh_mod.subprocess, "run", return_value=completed):
+            result = r._run_command_once("exit 255")
+        self.assertEqual(result.kind, "command")
+        self.assertEqual(result.returncode, 255)
+
+    def test_ssh_transport_diagnostic_rc255_is_transport_kind(self):
+        r = SSHRunner("server", control_master="disable")
+        completed = mock.Mock(
+            returncode=255,
+            stdout=b"",
+            stderr=b"ssh: connect to host server port 22: Connection refused",
+        )
+        with mock.patch.object(ssh_mod.subprocess, "run", return_value=completed):
+            result = r._run_command_once("echo hi")
+        self.assertEqual(result.kind, "transport")
+        self.assertEqual(result.returncode, 255)
+
     def test_describe_failure(self):
         r = SSHRunner("server")
         text = r.describe_ssh_command_failure("upload", CommandResult(255, "", "Permission denied"))

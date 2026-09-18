@@ -152,6 +152,41 @@ class TestRegistrationServer(unittest.TestCase):
         self.assertEqual(data["step"], 5)
         self.assertIsNone(self.registry.get("bob"))
 
+    def test_cancel_releases_session_and_does_not_write_registry(self):
+        port = _free_port()
+        data = self._apply(
+            "cancelme",
+            mode="local",
+            roles={"daemon": {"daemon_port": port}, "spectre": {"bin": sys.executable}},
+        )
+        status, data = self._step("cancelme", "cancel", data["token"])
+        self.assertEqual(status, 200)
+        self.assertEqual(data["stage"], "cancelled")
+        self.assertIsNone(self.registry.get("cancelme"))
+        status, _ = self.srv.request(
+            "GET", f"/api/register/cancelme?token={data['token']}"
+        )
+        self.assertEqual(status, 404)
+
+    def test_failed_registration_can_apply_again(self):
+        self.registry.register("retry", UserEntry(token="retry-existing", mode="local"))
+        port = _free_port()
+        data = self._apply(
+            "retry",
+            mode="local",
+            roles={"daemon": {"daemon_port": port}, "spectre": {"bin": sys.executable}},
+        )
+        status, failed = self._step("retry", "validate", data["token"])
+        self.assertEqual(status, 200)
+        self.assertEqual(failed["stage"], "failed")
+
+        restarted = self._apply(
+            "retry",
+            mode="local",
+            roles={"daemon": {"daemon_port": _free_port()}, "spectre": {"bin": sys.executable}},
+        )
+        self.assertEqual(restarted["stage"], "applied")
+
     def test_legacy_step_endpoint_removed(self):
         status, raw = self.srv.request("POST", "/api/register/ghost/validate", None)
         self.assertEqual(status, 404)
@@ -216,7 +251,7 @@ class TestRegistrationServer(unittest.TestCase):
         )
         self.assertEqual(data["stage"], "deployed")
         self.assertIn("entry", data)
-        self.assertEqual(data["entry"]["token"], data["token"])
+        self.assertNotIn("token", data["entry"])
         self.assertEqual(data["entry"]["mode"]["default"], "local")
 
     def test_delete_user(self):
@@ -233,6 +268,7 @@ class TestRegistrationServer(unittest.TestCase):
         entry = self.registry.get("carol")
         self.assertEqual(entry.cdslog.log_level, "error")
         self.assertEqual(entry.runtime.thread_pool_size, 16)
+        self.assertNotIn("token", json.loads(raw)["entry"])
 
     def test_update_nested_three_segment_path(self):
         self.registry.register("dave", UserEntry(token="tok-dave", mode="local"))
@@ -427,6 +463,17 @@ class TestRegistrationServer(unittest.TestCase):
         status, raw = self.srv.request("PUT", "/api/config",
                                        {"bogus": 1}, _admin_auth())
         self.assertEqual(status, 400)
+
+    def test_admin_hash_can_be_supplied_at_server_construction(self):
+        server = RegistrationServer(
+            ("127.0.0.1", 0),
+            self.registry,
+            admin_token_hash="A" * 64,
+        )
+        try:
+            self.assertEqual(server.admin_token_hash, "a" * 64)
+        finally:
+            server.server_close()
 
 
 if __name__ == "__main__":

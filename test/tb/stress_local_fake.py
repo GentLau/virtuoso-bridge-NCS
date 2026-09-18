@@ -11,6 +11,11 @@ import threading
 import time
 from pathlib import Path
 
+ROOT = Path(__file__).resolve().parents[2]
+SRC = ROOT / "src"
+if str(SRC) not in sys.path:
+    sys.path.insert(0, str(SRC))
+
 from transport.middle import BusinessServer
 from common.registry import UserEntry, load_registry
 from common.paths import registry_path, override_work_dir_for_tests  # noqa: E402

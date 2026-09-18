@@ -91,8 +91,11 @@ class TestBusinessLocalLive(unittest.TestCase):
         # step 5-6: connectivity test + single registry commit per user
         for user, _token, _port in cls.users:
             state = cls.flows[user].verify()
-            if state.stage != "committed":
+            if state.stage != "verified":
                 raise RuntimeError(f"{user} verify failed: {state.errors}")
+            state = cls.flows[user].commit()
+            if state.stage != "committed":
+                raise RuntimeError(f"{user} commit failed: {state.errors}")
 
         cls.server = BusinessServer(cls.wd)
 

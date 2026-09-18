@@ -803,6 +803,12 @@ class SSHRunner:
                 "cannot stat",
                 "failed to open file",
                 "open failed",
+                "is a directory",
+                "not a directory",
+                "not a regular file",
+                "cannot overwrite",
+                "cannot move",
+                "directory not empty",
             )
         ):
             # SSH/SCP/tar no-such-file diagnostics are path failures, not
@@ -838,6 +844,32 @@ class SSHRunner:
             return False
         low = stderr.lower()
         return any(fragment in low for fragment in cls._TRANSIENT_SSH_ERROR_FRAGMENTS)
+
+    # ``ssh`` reserves rc=255 for transport failures, but a remote command can
+    # also legitimately return 255 (spec §4.5: real rc is preserved).  Only
+    # classify it as transport when ssh emitted a recognizable diagnostic.
+    _SSH_TRANSPORT_255_FRAGMENTS = (
+        "ssh: ",
+        "connection closed by",
+        "connection reset by peer",
+        "connection timed out",
+        "could not resolve hostname",
+        "host key verification failed",
+        "kex_exchange_identification",
+        "no route to host",
+        "network is unreachable",
+        "connection refused",
+        "permission denied (publickey",
+        "permission denied, please try again",
+        "mux_client_request_session",
+        "getsockname failed",
+        "broken pipe",
+    )
+
+    @classmethod
+    def _is_ssh_transport_255(cls, stderr: str) -> bool:
+        low = (stderr or "").lower()
+        return any(fragment in low for fragment in cls._SSH_TRANSPORT_255_FRAGMENTS)
 
     # Stderr patterns that mean ControlMaster itself is broken on this
     # platform (Windows OpenSSH variants, non-ASCII ControlPath, old WSL
@@ -1021,7 +1053,11 @@ class SSHRunner:
         # ssh(1) reserves exit code 255 for its own transport failures; the
         # persistent-shell path reports the *remote* rc explicitly, so only
             # this one-shot path needs the classification (spec 四层整体架构 §4.4).
-        kind = "transport" if last.returncode == 255 else "command"
+        kind = (
+            "transport"
+            if last.returncode == 255 and self._is_ssh_transport_255(stderr)
+            else "command"
+        )
         return CommandResult(
             returncode=last.returncode, stdout=stdout, stderr=stderr, kind=kind
         )

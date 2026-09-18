@@ -126,6 +126,55 @@ class TestSkillClientSocketPaths(unittest.TestCase):
         self.assertEqual(r.output, "2")
         self.assertEqual(r.log, "ok")
 
+    def test_skill_request_log_precedence_at_wire_level(self):
+        server = socket.socket()
+        server.bind(("127.0.0.1", 0))
+        server.listen(2)
+        port = server.getsockname()[1]
+        captured = []
+
+        def serve():
+            for _ in range(2):
+                conn, _ = server.accept()
+                data = b""
+                while True:
+                    chunk = conn.recv(65536)
+                    if not chunk:
+                        break
+                    data += chunk
+                captured.append(json.loads(data.decode("utf-8")))
+                conn.sendall(
+                    (STX + json.dumps({"value": "2", "log": ""}) + RS).encode()
+                )
+                conn.close()
+            server.close()
+
+        import threading
+        thread = threading.Thread(target=serve)
+        thread.start()
+        client = SkillClient(
+            host="127.0.0.1",
+            port=port,
+            timeout=5,
+            token="tok",
+            log_level="error",
+            log_max_bytes=1024,
+        )
+        explicit = client.execute_skill(
+            "1+1",
+            log_level="warn",
+            log_max_bytes=2048,
+        )
+        fallback = client.execute_skill("2+2")
+        thread.join(timeout=5)
+
+        self.assertTrue(explicit.ok)
+        self.assertTrue(fallback.ok)
+        self.assertEqual(captured[0]["log_level"], "warn")
+        self.assertEqual(captured[0]["log_max_bytes"], 2048)
+        self.assertEqual(captured[1]["log_level"], "error")
+        self.assertEqual(captured[1]["log_max_bytes"], 1024)
+
     def test_parse_malformed_json_marker(self):
         r = SkillClient._parse_response(STX + "not-json" + RS, 0.1)
         self.assertEqual(r.status, ExecutionStatus.ERROR)

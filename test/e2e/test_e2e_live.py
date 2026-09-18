@@ -128,8 +128,10 @@ class TestLiveE2E(unittest.TestCase):
         _send_load(state.setup_path, cur_token, cur_port)
         time.sleep(2)
 
-        # 5-6. verify (connectivity smoke + registry commit)
+        # 5-6. verify (connectivity smoke) then explicit registry commit
         state = flow.verify()
+        self.assertEqual(state.stage, "verified", str(state.errors) + str(state.report))
+        state = flow.commit()
         self.assertEqual(state.stage, "committed", str(state.errors) + str(state.report))
 
         # 5. skill returns value + log: the bridge never injects CDS.log

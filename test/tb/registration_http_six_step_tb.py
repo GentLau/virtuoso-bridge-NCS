@@ -1,8 +1,8 @@
 """Six-step registration over the real HTTP API (artifact-producing TB).
 
 Drives ``register.server`` exactly as the registration page does:
-apply -> validate -> probe -> deploy -> verify (+ step 6 durable write), then
-reads back, updates and deletes the user.  Steps 3/4 go to a real SSH host
+apply -> validate -> probe -> deploy -> verify -> commit (the only durable
+write), then reads back, updates and deletes the user.  Steps 3/4 go to a real SSH host
 (``wsl-gent``); step 5's Skill smoke runs against a protocol-compatible fake
 daemon on that host, so the whole flow is automatable without a CIW.
 
@@ -548,6 +548,23 @@ def main() -> int:
         if body.get("current_stage") != "applied" or body.get("expected") != "deployed":
             raise ProbeFailure(f"order violation lacks stage context: {body}")
         assert_no_registry_write("out-of-order verify")
+
+        status, body = http.call("POST", "/api/register",
+                                 {"user": bad_user, "action": "cancel",
+                                  "token": bad_session})
+        steps.append({"action": "cancel-in-progress", "status": status,
+                      "stage": body.get("stage")})
+        if status != 200 or body.get("stage") != "cancelled":
+            raise ProbeFailure(f"cancel failed: {status} {body}")
+        assert_no_registry_write("cancel")
+
+        status, body = http.call("POST", "/api/register", bad_body)
+        steps.append({"action": "reapply-after-cancel", "status": status,
+                      "stage": body.get("stage")})
+        if status != 200 or body.get("stage") != "applied":
+            raise ProbeFailure(f"reapply after cancel failed: {status} {body}")
+        assert_no_registry_write("reapply-after-cancel")
+
         on_disk = json.loads(registry_path().read_text(encoding="utf-8"))
         if bad_user in on_disk:
             raise ProbeFailure("failed registration still reached the registry")

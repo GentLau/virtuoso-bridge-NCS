@@ -674,6 +674,7 @@ class BusinessServer(Middle):
     def upload_file(self, local_path: Path, remote_path: str, timeout: int | None = None, *, token: str, recursive: bool = False) -> CommandResult:
         sem = None
         budget = _effective_timeout(timeout)
+        started = time.monotonic()
         try:
             entry = self._entry(token)
             sem = self._acquire(token, entry)
@@ -686,9 +687,16 @@ class BusinessServer(Middle):
                     local_path, remote_path, recursive,
                     root=targets.file.root, budget=budget,
                 )
+            remaining = max(0.0, budget - (time.monotonic() - started))
+            if remaining <= 0:
+                return CommandResult(
+                    returncode=124, stdout="",
+                    stderr=f"command timed out after {budget:g}s",
+                    kind="timeout",
+                )
             return self._remote(token).upload_file(
                 Path(local_path), remote_path,
-                timeout=budget, recursive=recursive,
+                timeout=remaining, recursive=recursive,
             )
         except LookupError:
             return CommandResult(returncode=1, stdout="", stderr="invalid token", kind="invalid-token")
@@ -700,6 +708,7 @@ class BusinessServer(Middle):
     def download_file(self, remote_path: str, local_path: Path, timeout: int | None = None, *, token: str, recursive: bool = False) -> CommandResult:
         sem = None
         budget = _effective_timeout(timeout)
+        started = time.monotonic()
         try:
             entry = self._entry(token)
             sem = self._acquire(token, entry)
@@ -712,9 +721,16 @@ class BusinessServer(Middle):
                     remote_path, local_path, recursive,
                     root=targets.file.root, budget=budget,
                 )
+            remaining = max(0.0, budget - (time.monotonic() - started))
+            if remaining <= 0:
+                return CommandResult(
+                    returncode=124, stdout="",
+                    stderr=f"command timed out after {budget:g}s",
+                    kind="timeout",
+                )
             return self._remote(token).download_file(
                 remote_path, Path(local_path),
-                timeout=budget, recursive=recursive,
+                timeout=remaining, recursive=recursive,
             )
         except LookupError:
             return CommandResult(returncode=1, stdout="", stderr="invalid token", kind="invalid-token")
@@ -763,6 +779,7 @@ class BusinessServer(Middle):
     def _one_shot_role(self, role_name: str, cmd: str, timeout: int | None, token: str) -> CommandResult:
         sem = None
         budget = _effective_timeout(timeout)
+        started = time.monotonic()
         try:
             entry = self._entry(token)
             sem = self._acquire(token, entry)
@@ -773,8 +790,15 @@ class BusinessServer(Middle):
             role = targets.role(role_name)
             if role.mode == "local":
                 return self._local_command(cmd, budget, cwd=role.root)
+            remaining = max(0.0, budget - (time.monotonic() - started))
+            if remaining <= 0:
+                return CommandResult(
+                    returncode=124, stdout="",
+                    stderr=f"command timed out after {budget:g}s",
+                    kind="timeout",
+                )
             return self._remote(token).run_one_shot(
-                role_name, cmd, timeout=budget
+                role_name, cmd, timeout=remaining
             )
         except LookupError:
             return CommandResult(returncode=1, stdout="", stderr="invalid token", kind="invalid-token")
