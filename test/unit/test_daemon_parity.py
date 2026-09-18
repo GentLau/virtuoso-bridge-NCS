@@ -52,6 +52,31 @@ class TestDaemonParity(unittest.TestCase):
             self.assertEqual(mod._parse_meta(b"no-separator"), (None, 0, 0))
             self.assertEqual(mod._parse_meta(b"/p\x1fabc"), (None, 0, 0))
 
+    def test_temp_dir_uses_configured_working_dir(self):
+        for name, mod in MODULES:
+            configured = Path(tempfile.mkdtemp())
+            previous = mod.TEMP_DIR
+            try:
+                mod.TEMP_DIR = str(configured)
+                self.assertEqual(Path(mod._temp_dir()), configured, name)
+            finally:
+                mod.TEMP_DIR = previous
+
+    def test_temp_dir_fallback_is_not_system_tmp(self):
+        for name, mod in MODULES:
+            previous = mod.TEMP_DIR
+            try:
+                mod.TEMP_DIR = ""
+                fallback = Path(mod._temp_dir()).resolve()
+                self.assertNotEqual(
+                    fallback,
+                    Path(tempfile.gettempdir()).resolve(),
+                    name,
+                )
+                self.assertTrue(fallback.is_dir(), name)
+            finally:
+                mod.TEMP_DIR = previous
+
     def test_read_range_offset_delta(self):
         for name, mod in MODULES:
             f = Path(tempfile.mkdtemp()) / "CDS.log"

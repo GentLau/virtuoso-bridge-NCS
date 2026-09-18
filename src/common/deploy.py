@@ -10,6 +10,7 @@ from __future__ import annotations
 import importlib.resources
 import logging
 import os
+import posixpath
 import shlex
 from pathlib import Path
 
@@ -45,6 +46,11 @@ def deploy_files(
     il_dst = remote_paths.il_path(user, scratch_root)
     setup_dst = remote_paths.setup_il_path(user, scratch_root)
     identity_dst = remote_paths.identity_path(user, scratch_root)
+    log_dst = (
+        str(Path(status) / "daemon.log")
+        if local
+        else posixpath.join(str(status), "daemon.log")
+    )
 
     setup = generate_setup_il(
         daemon=str(selected_daemon),
@@ -53,6 +59,8 @@ def deploy_files(
         port=port,
         token=token,
         identity=str(identity_dst),
+        temp_dir=str(scratch_root),
+        log_path=log_dst,
     )
 
     if local:

@@ -9,13 +9,15 @@ unless(boundp('RBPython) RBPython = "python")
 unless(boundp('RBPort) RBPort = 65432)
 unless(boundp('RBIdentityPath) RBIdentityPath = "")
 unless(boundp('RBDToken) RBDToken = nil)
+unless(boundp('RBTempDir) RBTempDir = "")
+unless(boundp('RBDLogPath) RBDLogPath = if(RBTempDir strcat(RBTempDir "/RB.log") ""))
 ; Per-request directive set by daemon.py before the SKILL text:
 ; t  -> capture CDS.log [start,end) without injecting any output into CDS.log
 ; nil -> behave exactly like the old no-log code path (no flush/fileLength)
 unless(boundp('RBDLogOn) RBDLogOn = nil)
 RBLocal = nil                                                                      ; Local-only connections (127.0.0.1 vs 0.0.0.0)
 RBEcho = nil                                                                     ; Echo bridging messages for debugging
-RBDLog = nil                                                                     ; Enable daemon logging to /tmp/RB.log
+RBDLog = nil                                                                     ; Enable daemon logging to RBDLogPath
 
 ; IPC process handle. Do not reset on reload: a live daemon keeps the port;
 ; clearing RBIpc would make RBStart spawn a second daemon -> bind failure (exit 1).
@@ -167,7 +169,7 @@ procedure(RBIpcErrHandler(ipcId data)
                     ipcId
                     sprintf(nil "%s (%s)" RBLastIP RBLastHost)
                     RBLastPid RBLastBind
-                    if(RBDLog "/tmp/RB.log" "off")))
+                    if(RBDLog RBDLogPath "off")))
             ; Banner is the canonical "daemon just identified itself"
             ; event -- repaint the monitor so users don't have to hit
             ; Refresh after a fresh start.
@@ -237,7 +239,7 @@ procedure(RBStart()
             host = "127.0.0.1"
             ; Set log path if logging is enabled
             if(RBDLog then
-                logpath = "/tmp/RB.log"
+                logpath = RBDLogPath
             else
                 logpath = ""
             )
@@ -245,7 +247,7 @@ procedure(RBStart()
             ; Use "env -u" to strip Virtuoso's LD_LIBRARY_PATH / LD_PRELOAD
             ; so the system Python links against its own libs, not Virtuoso's
             ; bundled (and often incompatible) copies.
-            RBIpc = ipcBeginProcess(sprintf(nil "/usr/bin/env -u LD_LIBRARY_PATH -u LD_PRELOAD stdbuf -oL %s -u %L %L %L %L" RBPython RBDPath host RBPort if(boundp('RBDToken) && RBDToken RBDToken "")) "" 'RBIpcDataHandler 'RBIpcErrHandler 'RBIpcFinishHandler logpath)
+            RBIpc = ipcBeginProcess(sprintf(nil "/usr/bin/env -u LD_LIBRARY_PATH -u LD_PRELOAD stdbuf -oL %s -u %L %L %L %L %L" RBPython RBDPath host RBPort if(boundp('RBDToken) && RBDToken RBDToken "") RBTempDir) "" 'RBIpcDataHandler 'RBIpcErrHandler 'RBIpcFinishHandler logpath)
         )
         printf("[RAMIC Bridge ipc=%L] launching daemon (bind=127.0.0.1:%d) at (%s)\n"
             RBIpc
@@ -403,7 +405,7 @@ RBMBolEcho = hiCreateBooleanButton(
 
 RBMBolLog = hiCreateBooleanButton(
     ?name 'RBMBolLog
-    ?buttonText "Daemon log (/tmp/RB.log)"
+    ?buttonText strcat("Daemon log (" RBDLogPath ")")
     ?value RBDLog
     ?defValue RBDLog
     ?callback nil)

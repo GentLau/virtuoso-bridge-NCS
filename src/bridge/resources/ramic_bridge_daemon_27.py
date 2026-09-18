@@ -27,6 +27,7 @@ except ImportError:
 HOST = "127.0.0.1"
 PORT = 65432
 DAEMON_TOKEN = ""
+TEMP_DIR = ""
 
 STX = 2
 NAK = 21
@@ -86,6 +87,19 @@ def _safe_close(conn):
         conn.shutdown(socket.SHUT_RDWR)
     except OSError:
         pass
+
+
+def _temp_dir():
+    """Runtime working dir configured by the deployment."""
+    candidate = os.path.expanduser(
+        TEMP_DIR or os.path.dirname(os.path.abspath(__file__))
+    )
+    try:
+        if not os.path.isdir(candidate):
+            os.makedirs(candidate)
+    except OSError:
+        pass
+    return candidate
     try:
         conn.close()
     except OSError:
@@ -292,7 +306,11 @@ def handle_connection(conn):
 
         log_directive = "RBDLogOn=t " if log_on else "RBDLogOn=nil "
         if "\n" in skill_code:
-            fd, tmp_il_path = tempfile.mkstemp(suffix=".il", prefix="vb_eval_")
+            fd, tmp_il_path = tempfile.mkstemp(
+                suffix=".il",
+                prefix="vb_eval_",
+                dir=_temp_dir(),
+            )
             with os.fdopen(fd, "wb") as f:
                 f.write(("_vb_eval_result = progn(\n%s\n)\n" % skill_code).encode("utf-8"))
             escaped = tmp_il_path.replace("\\", "/")
@@ -364,7 +382,7 @@ def handle_connection(conn):
 
 
 def start_server():
-    global HOST, PORT, DAEMON_TOKEN
+    global HOST, PORT, DAEMON_TOKEN, TEMP_DIR
     if len(sys.argv) > 1:
         HOST = sys.argv[1]
     if len(sys.argv) > 2:
@@ -374,6 +392,8 @@ def start_server():
     else:
         sys.stderr.write("ERROR: daemon requires a non-empty token (argv[3]).\n")
         sys.exit(1)
+    if len(sys.argv) > 4 and sys.argv[4]:
+        TEMP_DIR = sys.argv[4]
 
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)

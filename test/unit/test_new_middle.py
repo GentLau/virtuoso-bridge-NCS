@@ -27,12 +27,35 @@ class TestNewMiddle(unittest.TestCase):
         self.assertIn("ramic_bridge_daemon_3.py", str(daemon_path("alice", 3, root)))
 
     def test_setup_il_globals(self):
-        text = generate_setup_il("/r/ramic_daemon.py", "/r/ramic_bridge.il", "python3", 65081, "tok-1", "/s/id.txt")
+        text = generate_setup_il(
+            "/r/ramic_daemon.py",
+            "/r/ramic_bridge.il",
+            "python3",
+            65081,
+            "tok-1",
+            "/s/id.txt",
+            temp_dir="/r/root",
+            log_path="/r/root/status/daemon.log",
+        )
         self.assertIn('RBDPath = "/r/ramic_daemon.py"', text)
         self.assertIn('RBDToken = "tok-1"', text)
+        self.assertIn('RBTempDir = "/r/root"', text)
+        self.assertIn('RBDLogPath = "/r/root/status/daemon.log"', text)
         self.assertIn('printf("[RAMIC] token=%L\\n" RBDToken)', text)
         self.assertIn('load("/r/ramic_bridge.il")', text)
         self.assertNotIn("setShellEnvVar", text)
+
+    def test_bridge_il_uses_configured_runtime_paths(self):
+        source = (
+            Path(__file__).resolve().parents[2]
+            / "src"
+            / "bridge"
+            / "resources"
+            / "ramic_bridge.il"
+        ).read_text(encoding="utf-8")
+        self.assertNotIn("/tmp/RB.log", source)
+        self.assertIn("RBTempDir", source)
+        self.assertIn("RBDLogPath", source)
 
     def test_route_defaults(self):
         from common.registry import SshDefaults

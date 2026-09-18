@@ -3,7 +3,7 @@
 
 Launched by ``ipcBeginProcess`` from ``ramic_bridge.il``:
 
-    python3 ramic_bridge_daemon_3.py <host> <port> <token>
+    python3 ramic_bridge_daemon_3.py <host> <port> <token> [temp_dir]
 
 Wire protocol (bottom <-> middle):
   request : UTF-8 JSON {"skill", "timeout", "token", "log_level", "log_max_bytes"}
@@ -29,6 +29,7 @@ except ImportError:
 HOST = "127.0.0.1"
 PORT = 65432
 DAEMON_TOKEN: str = ""
+TEMP_DIR: str = ""
 
 STX = b"\x02"
 NAK = b"\x15"
@@ -85,6 +86,19 @@ def _safe_close(conn):
         conn.shutdown(socket.SHUT_RDWR)
     except OSError:
         pass
+
+
+def _temp_dir() -> str:
+    """Runtime working dir configured by the deployment."""
+    candidate = os.path.expanduser(
+        TEMP_DIR or os.path.dirname(os.path.abspath(__file__))
+    )
+    try:
+        if not os.path.isdir(candidate):
+            os.makedirs(candidate)
+    except OSError:
+        pass
+    return candidate
     try:
         conn.close()
     except OSError:
@@ -301,7 +315,11 @@ def handle_connection(conn):
 
         log_directive = "RBDLogOn=t " if log_on else "RBDLogOn=nil "
         if "\n" in skill_code:
-            fd, tmp_il_path = tempfile.mkstemp(suffix=".il", prefix="vb_eval_")
+            fd, tmp_il_path = tempfile.mkstemp(
+                suffix=".il",
+                prefix="vb_eval_",
+                dir=_temp_dir(),
+            )
             with os.fdopen(fd, "w", encoding="utf-8") as f:
                 f.write(f"_vb_eval_result = progn(\n{skill_code}\n)\n")
             escaped = tmp_il_path.replace("\\", "/")
@@ -373,7 +391,7 @@ def handle_connection(conn):
 
 
 def start_server():
-    global HOST, PORT, DAEMON_TOKEN
+    global HOST, PORT, DAEMON_TOKEN, TEMP_DIR
     if len(sys.argv) > 1:
         HOST = sys.argv[1]
     if len(sys.argv) > 2:
@@ -383,6 +401,8 @@ def start_server():
     else:
         sys.stderr.write("ERROR: daemon requires a non-empty token (argv[3]).\n")
         sys.exit(1)
+    if len(sys.argv) > 4 and sys.argv[4]:
+        TEMP_DIR = sys.argv[4]
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         try:
