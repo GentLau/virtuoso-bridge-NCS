@@ -1,6 +1,7 @@
 """Registry persistence / integrity edge cases."""
 
 import json
+import subprocess
 import sys
 import tempfile
 import time
@@ -148,6 +149,42 @@ class TestRegistryUpdate(unittest.TestCase):
         with self.assertRaises(RegistryError):
             self.reg.update("alice", {"token": "tok-rotated"})
         self.assertEqual(self.reg.get("alice").token, "tok-u")
+
+
+class TestCrossProcessLock(unittest.TestCase):
+    """§5: registry 写采用 OS 文件锁；锁被别的进程持有时必须超时报错。"""
+
+    def setUp(self):
+        self.wd = override_work_dir_for_tests(Path(tempfile.mkdtemp()))
+
+    def test_file_lock_times_out_when_held_by_another_process(self):
+        from common import registry as registry_mod
+
+        src = str(Path(__file__).resolve().parents[2] / "src")
+        lock_target = registry_path()
+        script = (
+            "import sys, time\n"
+            f"sys.path.insert(0, {src!r})\n"
+            "from pathlib import Path\n"
+            "from common.registry import file_lock\n"
+            f"with file_lock(Path({str(lock_target)!r}), timeout=30):\n"
+            "    print('locked', flush=True)\n"
+            "    time.sleep(5)\n"
+        )
+        proc = subprocess.Popen(
+            [sys.executable, "-c", script],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        try:
+            self.assertEqual(proc.stdout.readline().strip(), "locked")
+            with self.assertRaises(OSError):
+                with registry_mod.file_lock(lock_target, timeout=0.3):
+                    pass
+        finally:
+            proc.kill()
+            proc.wait(timeout=5)
 
 
 if __name__ == "__main__":

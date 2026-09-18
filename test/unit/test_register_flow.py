@@ -555,6 +555,71 @@ class TestFlowMoreBranches(unittest.TestCase):
             with self.assertRaises(RegistrationProbeError):
                 probe_user(RegistrationRequest(mode="remote", user="u", ssh={"default": {"host": "h", "user": "a"}}), token="t")
 
+    def test_remote_role_non_22_port_is_rejected(self):
+        """配置一览 §6.5: 目标/jump 解析到非 22 端口必须拒绝。"""
+        from unittest import mock
+        from register import probe_user
+        with mock.patch("register.flow.SSHRunner"), \
+             mock.patch("register.flow.probes.ssh_port_is_22", return_value=False):
+            with self.assertRaises(RegistrationProbeError):
+                probe_user(RegistrationRequest(
+                    mode="remote", user="u",
+                    ssh={"default": {"host": "h", "user": "a"}},
+                ), token="t")
+
+    def test_local_explicit_python_invalid_is_rejected(self):
+        from unittest import mock
+        from register import probe_user
+        with mock.patch("register.probe.local_path_writable", return_value=True), \
+             mock.patch("register.probe.local_port_free", return_value=True), \
+             mock.patch("register.probe.local_executable_exists", return_value=False):
+            with self.assertRaises(RegistrationProbeError):
+                probe_user(RegistrationRequest(
+                    mode="local", user="u",
+                    roles={"daemon": {"python": "/bad/python"}},
+                ), token="t")
+
+    def test_remote_explicit_python_invalid_is_rejected(self):
+        from unittest import mock
+        from register import probe_user
+        with mock.patch("register.flow.SSHRunner") as runner, \
+             mock.patch("register.probe.host_key_fingerprint", return_value="fp"), \
+             mock.patch("register.probe.remote_hostname", return_value="host-a"), \
+             mock.patch("register.probe.remote_user", return_value="alice"), \
+             mock.patch("register.probe.remote_executable_exists", return_value=False), \
+             mock.patch("register.probe.remote_path_writable", return_value=True):
+            runner.return_value.test_connection.return_value = True
+            runner.return_value.run_command.side_effect = _probe_run
+            with self.assertRaises(RegistrationProbeError):
+                probe_user(RegistrationRequest(
+                    mode="remote", user="u",
+                    ssh={"default": {"host": "h", "user": "a"}},
+                    roles={"daemon": {"python": "/bad/python"}},
+                ), token="t")
+
+    def test_reserved_local_port_is_rejected(self):
+        from unittest import mock
+        from register import probe_user
+        with mock.patch("register.flow.SSHRunner") as runner, \
+             mock.patch("register.probe.host_key_fingerprint", return_value="fp"), \
+             mock.patch("register.probe.remote_hostname", return_value="host-a"), \
+             mock.patch("register.probe.remote_user", return_value="alice"), \
+             mock.patch("register.probe.detect_remote_python", return_value=("python3", 3)), \
+             mock.patch("register.probe.allocate_remote_port", return_value=65081), \
+             mock.patch("register.probe.remote_path_writable", return_value=True):
+            runner.return_value.test_connection.return_value = True
+            runner.return_value.run_command.side_effect = _probe_run
+            with self.assertRaises(RegistrationProbeError):
+                probe_user(
+                    RegistrationRequest(
+                        mode="remote", user="u",
+                        ssh={"default": {"host": "h", "user": "a"}},
+                        roles={"daemon": {"local_port": 65092}},
+                    ),
+                    token="t",
+                    reserved_local_ports={65092},
+                )
+
     def test_short_host_match(self):
         from register.flow import _short_host_match
         self.assertTrue(_short_host_match("GLIS", "GLIS.localdomain"))
