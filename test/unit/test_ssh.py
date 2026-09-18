@@ -2,6 +2,7 @@
 command execution with subprocess mocked out (no real SSH)."""
 
 import os
+import io
 import subprocess
 import sys
 import time
@@ -195,7 +196,65 @@ class TestOneShotRunCommand(unittest.TestCase):
                 r.run_command("echo hi", timeout=2)
 
 
+class _FakePipelineProc:
+    """Minimal Popen stub for the ssh | tar download pipeline."""
+
+    def __init__(self, returncode: int = 0, stderr: bytes = b""):
+        self.returncode = returncode
+        self.stdout = io.BytesIO(b"")
+        self.stderr = io.BytesIO(stderr)
+
+    def communicate(self, timeout=None):
+        return b"", b""
+
+    def wait(self, timeout=None):
+        return self.returncode
+
+    def poll(self):
+        return self.returncode
+
+    def kill(self):
+        self.returncode = -9
+
+
 class TestPortForwardLifecycle(unittest.TestCase):
+    def test_recursive_download_degrades_from_broken_controlmaster(self):
+        """并发设计 §4: ControlMaster 故障必须自动降级直连（≤3 次总尝试）。
+        当前只有 upload 走了降级路径，递归下载是单次尝试（评审新发现）。"""
+        wd = Path(tempfile.mkdtemp())
+        from common.paths import override_work_dir_for_tests
+
+        override_work_dir_for_tests(wd)
+        runner = SSHRunner(
+            "server-a", user="u", backend="openssh", control_master="auto",
+        )
+        plan = ssh_mod.build_tar_download_plan("tar", "/remote/dir", wd / "out")
+        calls: list[str] = []
+
+        def fake_popen(cmd, **kwargs):
+            argv = list(cmd) if isinstance(cmd, (list, tuple)) else [str(cmd)]
+            if argv and argv[0] == runner._ssh_cmd:
+                if any("ControlPath=" in part for part in argv):
+                    calls.append("ssh-cm")
+                    return _FakePipelineProc(
+                        255,
+                        b"mux_client_request_session: session request failed\n",
+                    )
+                calls.append("ssh-direct")
+                return _FakePipelineProc(0)
+            calls.append("tar")
+            plan.staged_item.mkdir(parents=True, exist_ok=True)
+            return _FakePipelineProc(0)
+
+        with mock.patch.object(ssh_mod.subprocess, "Popen", side_effect=fake_popen):
+            result = runner._execute_openssh_download_plan(
+                plan, _TimeoutBudget.start(30, 30)
+            )
+        self.assertEqual(result.returncode, 0, result)
+        self.assertIn("ssh-direct", calls)
+        self.assertEqual(calls.count("ssh-cm"), 1)
+        self.assertTrue((wd / "out").is_dir())
+
     def test_proxy_is_never_silently_ignored(self):
         """O7: OpenSSH 承载路径不支持 proxy 时必须明确报错，不得直连。"""
         with self.assertRaises(ValueError):

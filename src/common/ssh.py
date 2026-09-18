@@ -1464,6 +1464,36 @@ class SSHRunner:
         plan: TarDownloadPlan,
         budget: _TimeoutBudget,
     ) -> CommandResult:
+        """Run the recursive download with CM degradation + ≤3 attempts.
+
+        并发设计 §4: ControlMaster 故障自动降级直连；建连/传输失败只在无
+        副作用阶段重试，最多 3 次总尝试（含初次）。上传路径早已走
+        ``_attempt_with_cm_fallback``；下载此前只尝试一次（评审补修）。
+        """
+
+        def _attempt() -> tuple[int, bytes, bytes]:
+            result = self._run_openssh_download_attempt(plan, budget)
+            return (
+                result.returncode,
+                result.stdout.encode("utf-8"),
+                result.stderr.encode("utf-8"),
+            )
+
+        rc, stdout, stderr = self._attempt_with_cm_fallback(
+            _attempt,
+            budget=budget,
+            command=plan.remote_command,
+        )
+        if rc == 0:
+            # 成功路径已在 attempt 内完成 staged install
+            return CommandResult(0, _as_text(stdout), _as_text(stderr))
+        return self._result_from_rc(rc, _as_text(stdout), _as_text(stderr))
+
+    def _run_openssh_download_attempt(
+        self,
+        plan: TarDownloadPlan,
+        budget: _TimeoutBudget,
+    ) -> CommandResult:
         plan.local_path.parent.mkdir(parents=True, exist_ok=True)
         plan.stage_path.mkdir(parents=True)
         ssh_command = self._build_ssh_base() + [plan.remote_command]
