@@ -13,7 +13,7 @@
    - 分层/接口/错误总则：[四层整体架构与接口](design-concepts/总览/1-四层整体架构与接口.md)（第 4 节为接口唯一基线）
    - 本版范围/非目标：[本版范围与明确不支持](design-concepts/总览/add-本版范围与明确不支持.md)
    - 配置与注册输入目录：[中层配置文档](design-concepts/中层/add-中层配置文档.md)
-   - 多用户/注册/token：[多用户与注册](design-concepts/中层/1-多用户与注册.md)
+   - 多用户/注册/token：[多用户与注册](design-concepts/其他/1-多用户与注册.md)
    - 多节点/5 role 拓扑：[路由设计](design-concepts/中层/3-路由设计.md)
    - 并发/SSH/线程池：[并发设计](design-concepts/中层/2-并发设计.md)
    - CDS.log 返回：[日志返回设计标准](design-concepts/底层/6-日志返回设计标准.md)
@@ -56,7 +56,7 @@
 | Normative | [本版范围与明确不支持](design-concepts/总览/add-本版范围与明确不支持.md) | 本版不做什么的唯一口径（每项含本版口径） |
 | Normative | [中层配置文档](design-concepts/中层/add-中层配置文档.md) | 字段目录唯一 owner（字段/默认值/探测写回/注册表 schema）+ reservation + endpoint key |
 | Normative | [路由设计](design-concepts/中层/3-路由设计.md) | 5 role 拓扑与职责、五业务接口与 role 的对应、token↔主机边界、endpoint 与连接复用 |
-| Normative | [多用户与注册](design-concepts/中层/1-多用户与注册.md) | 六步注册、token 寻址/校验、路由与授权 |
+| Normative | [多用户与注册](design-concepts/其他/1-多用户与注册.md) | 六步注册、token 寻址/校验、路由与授权 |
 | Normative | [并发设计](design-concepts/中层/2-并发设计.md) | 并发与限流唯一口径：排队投递/直接开通道、三预算（线程/最大通道数/单目标点上限）、建连重试 |
 | Normative | [日志返回设计标准](design-concepts/底层/6-日志返回设计标准.md) | CDS.log 增量返回唯一口径（offset 定界、分级、限长） |
 | Normative | [顶层：HTTP 入口与业务调度](design-concepts/顶层/1-顶层.md) | 顶层职责、插件注册表、业务调度、响应壳与错误分界 |
@@ -74,9 +74,9 @@
 |---|---|---|
 | 五业务接口签名、返回与错误总则（含 `kind` 枚举、保留码、`query` 查询） | [四层整体架构与接口](design-concepts/总览/1-四层整体架构与接口.md) §4 | 一句摘要 + 链接 |
 | 五接口 ↔ role 映射、role 职责、token↔主机边界、连接数量与复用拓扑 | [路由设计](design-concepts/中层/3-路由设计.md) §2.1–§4 | 一句摘要 + 链接 |
-| 逐 role 探测流程（何时探测、失败级别、何时提交）与部署/根算法 | [多用户与注册](design-concepts/中层/1-多用户与注册.md) §4 | 一句摘要 + 链接 |
+| 逐 role 探测流程（何时探测、失败级别、何时提交）与部署/根算法 | [多用户与注册](design-concepts/其他/1-多用户与注册.md) §4 | 一句摘要 + 链接 |
 | 字段格式、默认值、提交 schema、写回字段形态、endpoint key、reservation | [中层配置文档](design-concepts/中层/add-中层配置文档.md) | 一句摘要 + 链接 |
-| 六步注册状态机、注册 deadline、token 生命周期 | [多用户与注册](design-concepts/中层/1-多用户与注册.md) | 一句摘要 + 链接 |
+| 六步注册状态机、注册 deadline、token 生命周期 | [多用户与注册](design-concepts/其他/1-多用户与注册.md) | 一句摘要 + 链接 |
 | 并发形态与排队语义、三预算与通道记账矩阵、连接生命周期、建连重试 | [并发设计](design-concepts/中层/2-并发设计.md) | 一句摘要 + 链接 |
 | CDS.log offset/frame/分级/限长/warning | [日志返回设计标准](design-concepts/底层/6-日志返回设计标准.md) | 一句摘要 + 链接 |
 | 顶层 HTTP 入口、业务调度与响应壳 | [顶层：HTTP 入口与业务调度](design-concepts/顶层/1-顶层.md) | 一句摘要 + 链接 |
@@ -100,7 +100,7 @@ CDS.log metadata frame 完整字节格式
 
 - **Release ID**：`SPEC-2026-09-16-r3`
 - **Normative 文件集**（10 份）：四层整体架构与接口、本版范围与明确不支持、中层配置文档、路由设计、多用户与注册、并发设计、日志返回设计标准、顶层：HTTP 入口与业务调度、顶层补充：控制面与业务面、上层：业务包与插件化；
-- **Normative 内容哈希**：`a28c45afba9099c62129ea0b8a84b9dcdadb36ad6c8036a2b95ef8e52bc3562a`
+- **Normative 内容哈希**：`69eb4a47337eb49572942f4012722fc4ef475117231836f6473ef27fe986ff41`
   - 算法：路径为**相对 `spec/` 目录**并按路径排序；逐文件 SHA-256（**按 Git 提交内容计算，即 LF 行尾**；Windows 工作区受 `core.autocrlf` 影响的行尾差异不计入）；每行 `<相对路径> <hex>` 以 LF 拼接（**行间分隔、末行无尾 LF**），再取一次 SHA-256；
 - **基线 commit**：本 Release 段所在提交即基线（见 `git log -1 -- spec/`）；任何 Normative 文档变更必须同时更新本段哈希。
 
