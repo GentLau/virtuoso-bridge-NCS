@@ -1,9 +1,9 @@
 # 顶层补充：控制面与业务面
 
-> 版本：Draft v15
+> 版本：Draft v16
 > 日期：2026-09-17
 > 状态：Normative（顶层 HTTP 端点清单、端口划分与权限口径的唯一 owner）
-> Supersedes：Draft v14（action 转移表标注为六步状态机的 HTTP 投影）
+> Supersedes：Draft v15（server.json→config.json、管理哈希写死、脱敏边界明确）
 > 定位：本文是[顶层](1-顶层.md)的端点补充——[顶层](1-顶层.md)定义顶层职责、调度与响应壳；本文定义顶层开哪些端口、哪些方法、支持哪些请求、每个端点需要什么权限。注册语义见[多用户与注册 §3/§5](../其他/1-多用户与注册.md)。
 
 ## 1. 双面双端口
@@ -74,10 +74,10 @@
 
 | 方法 | 路径 | 用途 | 权限 |
 |---|---|---|---|
-| GET / PUT | `/api/config` | 业务 server 线程池大小（`server.json`，仅 `business_thread_pool_size`） | 管理权限 |
+| GET / PUT | `/api/config` | 业务 server 线程池大小（`config.json`，仅 `business_thread_pool_size`） | 管理权限 |
 
 - 修改类（update/delete）路径以 `user` 定位，**收归管理员**：个人 token 不能自助修改；update 请求体含 `token` 字段 → 拒绝；
-- 控制端口成功返回 JSON（或 HTML 页面）；失败 4xx + `{"error": …}`（可选 `detail`）；注册各步结果含 `warnings`（见[多用户与注册 §3.2](../其他/1-多用户与注册.md)）；所有返回用户条目的响应**不含 `token` 字段**；
+- 控制端口成功返回 JSON（或 HTML 页面）；失败 4xx + `{"error": …}`（可选 `detail`）；注册各步结果含 `warnings`（见[多用户与注册 §3.2](../其他/1-多用户与注册.md)）；任何 **entry 对象**（候选 entry、用户查询/更新返回）均不含 `token`；session token 只作为注册响应顶层字段返回；
 - 控制端口不运行业务操作。
 
 ## 4. 业务端口端点
@@ -93,12 +93,12 @@
 
 ## 5. 全局配置与启动参数
 
-- 工作路径下除 `registry.json` 外，另存一份配置 JSON `server.json`；`GET/PUT /api/config` 操作该配置：GET 读内存快照，PUT 更新快照并原子写回 `server.json`；
-- 当前 `server.json` 只有**一个参数**：`business_thread_pool_size`（业务 server 线程池大小）；
-- 控制/业务端口与工作路径由**启动参数**给定，不写入 `server.json`；
-- 控制/业务进程分离时，PUT 只影响控制进程的内存快照与 `server.json`；业务进程在启动时导入，变更生效需**重启业务进程**；
-- 管理员 token 哈希经**启动参数/环境变量**提供，不写入 `server.json`；原文不落配置、不进日志；
-- `server.json` **启动时导入一次到内存快照**，运行期不再读文件；配置变更由 `PUT /api/config` 手动触发并原子写回，其余时间零文件 IO；
+- 工作路径下除 `registry.json` 外，另存一份配置 JSON `config.json`；`GET/PUT /api/config` 操作该配置：GET 读内存快照，PUT 更新快照并原子写回 `config.json`；
+- 当前 `config.json` 只有**一个参数**：`business_thread_pool_size`（业务 server 线程池大小）；
+- 控制/业务端口与工作路径由**启动参数**给定，不写入 `config.json`；
+- 控制/业务进程分离时，PUT 只影响控制进程的内存快照与 `config.json`；业务进程在启动时导入，变更生效需**重启业务进程**；
+- 管理员 token 哈希**写死在代码**（不读环境变量）；原文离线保管、不落配置、不进日志；校验目标与规则同样写死在代码，当前版本单管理员；
+- `config.json` **启动时导入一次到内存快照**，运行期不再读文件；配置变更由 `PUT /api/config` 手动触发并原子写回，其余时间零文件 IO；
 - `runtime.thread_pool_size` 是**每 token** 的注册表配置（唯一 owner 见[并发设计 §2](../中层/2-并发设计.md)），与本节的“全局线程池上限”不是一回事：前者是单用户预算，后者是顶层进程能力上限；两者独立，不互相替代。
 
 ## 6. 索引

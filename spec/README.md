@@ -100,7 +100,7 @@ CDS.log metadata frame 完整字节格式
 
 - **Release ID**：`SPEC-2026-09-16-r3`
 - **Normative 文件集**（10 份）：四层整体架构与接口、本版范围与明确不支持、中层配置文档、路由设计、多用户与注册、并发设计、日志返回设计标准、顶层：HTTP 入口与业务调度、顶层补充：控制面与业务面、上层：业务包与插件化；
-- **Normative 内容哈希**：`d32426de0baf77895323a3741a2dbe4d6108d08938fb5e9fb98e17c3712e068d`
+- **Normative 内容哈希**：`3405ce58259eeaa5324c6589237702e10af1468368a1bc1a88d34966e20640ba`
   - 算法：路径为**相对 `spec/` 目录**并按路径排序；逐文件 SHA-256（**按 Git 提交内容计算，即 LF 行尾**；Windows 工作区受 `core.autocrlf` 影响的行尾差异不计入）；每行 `<相对路径> <hex>` 以 LF 拼接（**行间分隔、末行无尾 LF**），再取一次 SHA-256；
 - **基线 commit**：本 Release 段所在提交即基线（见 `git log -1 -- spec/`）；任何 Normative 文档变更必须同时更新本段哈希。
 
@@ -108,14 +108,14 @@ CDS.log metadata frame 完整字节格式
 
 | 文档 | 版本 | 状态 | Supersedes |
 |---|---|---|---|
-| 四层整体架构与接口 | Draft v31 | Normative | Draft v30（全局配置归属控制面，不再归入注册模块） |
+| 四层整体架构与接口 | Draft v32 | Normative | Draft v31（模块改名注册与管理、config.json、checksum 先校验后替换） |
 | 路由设计 | v17 | Normative | v16（spectre 表述：本版第 5 业务接口，编排留待后续） |
 | 本版范围与明确不支持 | v9 | Normative | v8（业务接口计数口径：5 业务接口 + 只读查询 query） |
-| 中层配置文档 | Draft v30 | Normative | Draft v21–v29（合并说明见文件头 Supersedes） |
-| 多用户与注册 | Draft v25 | Normative | Draft v24（注册为独立模块，只产出注册表；中层只消费） |
+| 中层配置文档 | Draft v31 | Normative | Draft v21–v30（合并说明见文件头 Supersedes） |
+| 多用户与注册 | Draft v26 | Normative | Draft v25（重导入语义、cancel 状态机、token 生成、模块改名注册与管理） |
 | 并发设计 | Draft v20 | Normative | Draft v19（重试决策单元术语统一为业务操作） |
 | 顶层 | Draft v16 | Normative | Draft v15（不保存业务状态措辞） |
-| 控制面与业务面 | Draft v15 | Normative | Draft v14（action 转移表标注为六步状态机的 HTTP 投影） |
+| 控制面与业务面 | Draft v16 | Normative | Draft v15（config.json、管理哈希写死、脱敏边界明确） |
 | 上层 | Draft v14 | Normative | Draft v12（import 白名单收窄为 common.paths） |
 | 日志返回设计标准 | Draft v15 | Normative | Draft v14（覆盖示例统一为合法值 warn） |
 
