@@ -100,7 +100,7 @@ CDS.log metadata frame 完整字节格式
 
 - **Release ID**：`SPEC-2026-09-16-r3`
 - **Normative 文件集**（10 份）：四层整体架构与接口、本版范围与明确不支持、中层配置文档、路由设计、多用户与注册、并发设计、日志返回设计标准、顶层：HTTP 入口与业务调度、顶层补充：控制面与业务面、上层：业务包与插件化；
-- **Normative 内容哈希**：`d37730c4c17a43b3d0d56451833003209086f5e198c40159ef24d2ed5ed6c8a5`
+- **Normative 内容哈希**：`a28c45afba9099c62129ea0b8a84b9dcdadb36ad6c8036a2b95ef8e52bc3562a`
   - 算法：路径为**相对 `spec/` 目录**并按路径排序；逐文件 SHA-256（**按 Git 提交内容计算，即 LF 行尾**；Windows 工作区受 `core.autocrlf` 影响的行尾差异不计入）；每行 `<相对路径> <hex>` 以 LF 拼接（**行间分隔、末行无尾 LF**），再取一次 SHA-256；
 - **基线 commit**：本 Release 段所在提交即基线（见 `git log -1 -- spec/`）；任何 Normative 文档变更必须同时更新本段哈希。
 
@@ -114,9 +114,9 @@ CDS.log metadata frame 完整字节格式
 | 中层配置文档 | Draft v30 | Normative | Draft v21–v29（合并说明见文件头 Supersedes） |
 | 多用户与注册 | Draft v25 | Normative | Draft v24（注册为独立模块，只产出注册表；中层只消费） |
 | 并发设计 | Draft v20 | Normative | Draft v19（重试决策单元术语统一为业务操作） |
-| 顶层 | Draft v14 | Normative | Draft v13（import 白名单加入共享基座 common.*） |
+| 顶层 | Draft v15 | Normative | Draft v14（import 白名单收窄为 common.paths） |
 | 控制面与业务面 | Draft v14 | Normative | Draft v13（权限口径、config 读写语义、跨进程生效、管理哈希供给、cancel action 收口） |
-| 上层 | Draft v13 | Normative | Draft v12（import 白名单加入共享基座 common.*） |
+| 上层 | Draft v14 | Normative | Draft v12（import 白名单收窄为 common.paths） |
 | 日志返回设计标准 | Draft v14 | Normative | Draft v13（log 参数支持业务接口显式覆盖注册表默认） |
 
 > 版本链规则：每份文档的文件头 `版本 / Supersedes` 必须与本表一致（日期由文件头记录，不入本表）；版本号只递增，跳号必须在 `Supersedes` 中说明合并了哪些版本。
