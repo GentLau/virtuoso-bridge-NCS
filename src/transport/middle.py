@@ -546,7 +546,7 @@ class BusinessServer(Middle):
 
     # -- three interfaces -----------------------------------------------------
 
-    def execute_skill(self, skill_code: str, timeout: float | None = None, *, token: str, log_level: str | None = None, log_max_bytes: int | None = None) -> VirtuosoResult:
+    def execute_skill(self, skill_code: str, timeout: float | None = None, *, token: str) -> VirtuosoResult:
         budget = _effective_timeout(timeout)
         deadline = time.monotonic() + budget
         sem = None
@@ -581,7 +581,7 @@ class BusinessServer(Middle):
                     status=ExecutionStatus.ERROR,
                     errors=["SKILL execution timed out"],
                 )
-            return self._skill(token).execute_skill(skill_code, timeout=remaining, log_level=log_level, log_max_bytes=log_max_bytes)
+            return self._skill(token).execute_skill(skill_code, timeout=remaining)
         except LookupError:
             return VirtuosoResult(status=ExecutionStatus.ERROR, errors=["invalid token"])
         except CapacityExceeded as exc:
