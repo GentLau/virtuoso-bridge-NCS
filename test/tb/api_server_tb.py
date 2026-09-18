@@ -382,21 +382,21 @@ def main() -> int:
         else:
             raise ProbeFailure("duplicate operation registration was accepted")
 
-        # -- global config snapshot: business_thread_pool_size from server.json --
+        # -- global config snapshot: business_thread_pool_size from config.json --
         if DEFAULT_MAX_INFLIGHT != 1024:
             raise ProbeFailure(f"provisional default drifted: {DEFAULT_MAX_INFLIGHT}")
         config_path = work_dir / CONFIG_FILENAME
         config_path.write_text(json.dumps({"business_thread_pool_size": 7}),
                                encoding="utf-8")
         if load_business_thread_pool_size(config_path) != 7:
-            raise ProbeFailure("server.json business_thread_pool_size was not honoured")
+            raise ProbeFailure("config.json business_thread_pool_size was not honoured")
         config_path.write_text(json.dumps({"business_thread_pool_size": 0}),
                                encoding="utf-8")
         if load_business_thread_pool_size(config_path) != DEFAULT_MAX_INFLIGHT:
             raise ProbeFailure("invalid pool size must fall back to the default")
         config_path.write_text("{not json", encoding="utf-8")
         if load_business_thread_pool_size(config_path) != DEFAULT_MAX_INFLIGHT:
-            raise ProbeFailure("broken server.json must fall back to the default")
+            raise ProbeFailure("broken config.json must fall back to the default")
         results["config_snapshot"] = {
             "file": CONFIG_FILENAME,
             "honoured": 7,

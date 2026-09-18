@@ -397,6 +397,26 @@ class BusinessServer(Middle):
                 except Exception:  # noqa: BLE001
                     logger.debug("invalidating token %s failed", token, exc_info=True)
 
+    def reload_registry(self) -> None:
+        """Explicitly refresh the runtime snapshot and close stale caches.
+
+        Runtime never rereads ``registry.json`` implicitly.  A control-plane
+        deployment on the same filesystem may call this method (or restart the
+        business process) after a management update.
+        """
+        fresh = load_registry(registry_path())
+        with self._lock:
+            self.registry = fresh
+            tokens = (
+                set(self._clients)
+                | set(self._skill_clients)
+                | set(self._skill_entries)
+                | set(self._local_sessions)
+                | set(self._capacity)
+            )
+        for token in tokens:
+            self.invalidate_token(token)
+
     def close(self) -> None:
         """Release every per-token client (tunnels + shells) exactly once."""
         with self._lock:

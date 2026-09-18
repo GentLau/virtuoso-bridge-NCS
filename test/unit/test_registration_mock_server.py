@@ -148,6 +148,13 @@ class TestRegistrationMockServer(unittest.TestCase):
         })
         self.assertEqual(status, 200)
         self.assertEqual(data["stage"], "cancelled")
+        status, repeated = self.srv.request("POST", "/api/register", {
+            "user": "cancel-user",
+            "action": "cancel",
+            "token": applied["token"],
+        })
+        self.assertEqual(status, 200)
+        self.assertEqual(repeated["stage"], "cancelled")
         status, _ = self.srv.request(
             "GET", f"/api/register/cancel-user?token={applied['token']}"
         )

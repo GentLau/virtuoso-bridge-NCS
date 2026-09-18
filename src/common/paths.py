@@ -14,7 +14,7 @@
 
     <work_root>/
       registry.json
-      server.json
+      config.json
       temp/
       log/commands.log
       artifact/
@@ -108,8 +108,8 @@ def registry_path() -> Path:
     return work_root() / "registry.json"
 
 
-def server_config_path() -> Path:
-    return work_root() / "server.json"
+def config_path() -> Path:
+    return work_root() / "config.json"
 
 
 def command_log_file() -> Path:
@@ -125,7 +125,7 @@ __all__ = [
     "override_work_dir_for_tests",
     "registry_path",
     "reset_work_dir",
-    "server_config_path",
+    "config_path",
     "sub_dir",
     "temp_dir",
     "work_root",

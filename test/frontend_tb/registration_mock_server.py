@@ -500,6 +500,8 @@ class RegistrationMockHandler(BaseHTTPRequestHandler):
                 flow.errors = []
 
         elif action == "cancel":
+            if flow.stage == "cancelled":
+                return 200, flow.payload()
             if flow.stage == "committed":
                 return 400, {
                     "error": f"cancel requires a non-committed stage, got {flow.stage}"
@@ -594,7 +596,7 @@ class RegistrationMockHandler(BaseHTTPRequestHandler):
             self._delay()
             user = unquote(path[len("/api/register/"):].rstrip("/"))
             flow = self._flow(user)
-            if flow is None:
+            if flow is None or flow.stage == "cancelled":
                 self._send_json(404, {"error": "no registration in progress", "user": user})
             else:
                 session_token = parse_qs(urlparse(self.path).query).get("token", [""])[0]
@@ -681,8 +683,6 @@ class RegistrationMockHandler(BaseHTTPRequestHandler):
             try:
                 with self.mock_server.flow_lock:
                     status, payload = self._transition(flow, action)
-                    if action == "cancel":
-                        self.mock_server.flows.pop(user, None)
                 self._send_json(status, payload)
                 return
             except (AttributeError, ValueError) as exc:

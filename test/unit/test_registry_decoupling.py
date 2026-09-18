@@ -138,6 +138,14 @@ class TestRuntimeFacadePurity(unittest.TestCase):
         registry_path().write_text(json.dumps({}), encoding="utf-8")
         self.assertIsNotNone(server.registry.by_token("tok-1"))
 
+    def test_explicit_reload_refreshes_registry_snapshot(self) -> None:
+        server = BusinessServer(self.wd)
+        fresh_registry = load_registry(registry_path())
+        fresh_registry.register("bob", UserEntry(token="tok-bob", mode="local"))
+        server.reload_registry()
+        self.assertIsNotNone(server.registry.by_token("tok-bob"))
+        server.close()
+
 
 if __name__ == "__main__":
     unittest.main()

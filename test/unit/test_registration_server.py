@@ -163,6 +163,9 @@ class TestRegistrationServer(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertEqual(data["stage"], "cancelled")
         self.assertIsNone(self.registry.get("cancelme"))
+        status, repeated = self._step("cancelme", "cancel", data["token"])
+        self.assertEqual(status, 200)
+        self.assertEqual(repeated["stage"], "cancelled")
         status, _ = self.srv.request(
             "GET", f"/api/register/cancelme?token={data['token']}"
         )
@@ -444,10 +447,10 @@ class TestRegistrationServer(unittest.TestCase):
         self.assertEqual(json.loads(raw)["business_thread_pool_size"], 8)
 
     def test_config_persisted_and_loaded_once(self):
-        # 写入后 server.json 原子落盘
+        # 写入后 config.json 原子落盘
         self.srv.request("PUT", "/api/config",
                          {"business_thread_pool_size": 8}, _admin_auth())
-        cfg_path = Path(registry_path()).parent / "server.json"
+        cfg_path = Path(registry_path()).parent / "config.json"
         self.assertTrue(cfg_path.exists())
         self.assertEqual(json.loads(cfg_path.read_text(encoding="utf-8"))["business_thread_pool_size"], 8)
         # 启动导入一次：新 server 直接从文件读到 8
@@ -463,17 +466,6 @@ class TestRegistrationServer(unittest.TestCase):
         status, raw = self.srv.request("PUT", "/api/config",
                                        {"bogus": 1}, _admin_auth())
         self.assertEqual(status, 400)
-
-    def test_admin_hash_can_be_supplied_at_server_construction(self):
-        server = RegistrationServer(
-            ("127.0.0.1", 0),
-            self.registry,
-            admin_token_hash="A" * 64,
-        )
-        try:
-            self.assertEqual(server.admin_token_hash, "a" * 64)
-        finally:
-            server.server_close()
 
 
 if __name__ == "__main__":

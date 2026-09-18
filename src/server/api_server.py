@@ -22,15 +22,15 @@ from typing import Any
 
 from server import dispatch as dispatch_module
 from server.dispatch import dispatch
-from common.paths import init_work_dir, server_config_path
+from common.paths import config_path, init_work_dir
 
 
-#: Top-layer overall thread-pool size when ``server.json`` does not set
+#: Top-layer overall thread-pool size when ``config.json`` does not set
 #: ``business_thread_pool_size`` (spec 顶层补充 §5 owns the config file).
 DEFAULT_MAX_INFLIGHT = 1024
 
 #: Global config snapshot file (startup import once; PUT /api/config writes it).
-CONFIG_FILENAME = "server.json"
+CONFIG_FILENAME = "config.json"
 
 
 def load_business_thread_pool_size(config_path: Path) -> int:
@@ -218,7 +218,7 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8126)
     parser.add_argument("--work-dir", default=None,
-                        help="directory holding registry.json + server.json "
+                        help="directory holding registry.json + config.json "
                              "(assembly only)")
     args = parser.parse_args(argv)
 
@@ -233,7 +233,7 @@ def main(argv: list[str] | None = None) -> None:
     init_work_dir(args.work_dir)          # 进程级环境：入口初始化一次
     middle = BusinessServer()
     # global config snapshot: imported once at startup, never read per request
-    pool_size = load_business_thread_pool_size(server_config_path())
+    pool_size = load_business_thread_pool_size(config_path())
     server = build_server(args.host, args.port, middle, max_inflight=pool_size)
     print(f"virtuoso-bridge API (business): http://{args.host}:{args.port}  "
           f"({len(dispatch_module.operations())} operations, "
