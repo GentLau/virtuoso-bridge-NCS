@@ -1498,7 +1498,7 @@ button,input,select {
             <section class="form-section">
               <div class="section-head"><span class="section-number">02</span><div><h2>运行模式</h2><p>选择接入拓扑，页面会自动显示对应参数并进行前置校验。</p></div></div>
               <div class="mode-grid" role="radiogroup" aria-label="运行模式">
-                <label class="mode-option"><input type="radio" name="mode" value="remote" checked><span class="mode-body"><span class="mode-name"><span class="mode-dot"></span>远程服务器</span><span class="mode-desc">通过 SSH 探测、部署，并在本机建立到 daemon 的访问端口。</span></span></label>
+                <label class="mode-option"><input type="radio" name="mode" value="remote" required><span class="mode-body"><span class="mode-name"><span class="mode-dot"></span>远程服务器</span><span class="mode-desc">通过 SSH 探测、部署，并在本机建立到 daemon 的访问端口。</span></span></label>
                 <label class="mode-option"><input type="radio" name="mode" value="local"><span class="mode-body"><span class="mode-name"><span class="mode-dot"></span>本机 Virtuoso</span><span class="mode-desc">不使用 SSH，直接在当前机器部署并连接 Virtuoso。</span></span></label>
               </div>
               <div id="modeStatus" class="mode-status"><span class="info-dot" aria-hidden="true">i</span><span></span></div>
@@ -1665,7 +1665,6 @@ const STEPS = [{
 const NUMERIC_FIELDS = ['daemon_port', 'local_port', 'channel_budget', 'connect_timeout',
   'thread_pool_size', 'log_max_bytes'
 ];
-const LOCAL_HOSTS = ['localhost', '127.0.0.1', '::1'];
 const ACTIVE_USER_KEY = 'vb.registration.activeUser';
 const DRAFT_KEY = 'vb.registration.draft';
 let CURRENT_USER = null,
@@ -1741,19 +1740,7 @@ async function copyText(text, label) {
 
 function selectedMode() {
   const node = document.querySelector('input[name="mode"]:checked');
-  return node ? node.value : 'auto'
-}
-
-function resolvedMode() {
-  const mode = selectedMode();
-  if (mode === 'local' || mode === 'remote') return mode;
-  const host = byId('host').value.trim(),
-    sshUser = byId('ssh_user').value.trim(),
-    jump = byId('jump_host').value.trim(),
-    daemon = (byId('daemon_host').value.trim() || host).toLowerCase();
-  if (LOCAL_HOSTS.indexOf(daemon) >= 0) return 'local';
-  if (!host && !sshUser && !jump) return 'local';
-  return 'remote'
+  return node ? node.value : ''
 }
 
 function setRemoteAvailability(enabled) {
@@ -1770,8 +1757,7 @@ function updateModeUI() {
   const mode = selectedMode(),
     enabled = mode !== 'local';
   setRemoteAvailability(enabled);
-  const resolved = resolvedMode(),
-    required = resolved === 'remote';
+  const required = mode === 'remote';
   byId('host').required = required;
   byId('ssh_user').required = required;
   document.querySelectorAll('.remote-required').forEach(function(star) {
@@ -1786,16 +1772,9 @@ function updateModeUI() {
   } else if (mode === 'remote') {
     strong.textContent = '远程模式';
     text.append(strong, document.createTextNode('：目标 SSH 主机和 SSH 用户为必填项。'))
-  } else if (resolved === 'remote') {
-    const missing = [];
-    if (!byId('host').value.trim()) missing.push('目标 SSH 主机');
-    if (!byId('ssh_user').value.trim()) missing.push('SSH 用户');
-    strong.textContent = '自动判断为远程模式';
-    text.append(strong, document.createTextNode(missing.length ? '，还需填写：' + missing.join('、') + '。' :
-      '，必填参数已齐全。'))
   } else {
-    strong.textContent = '自动判断为本机模式';
-    text.append(strong, document.createTextNode('：如需远程接入，请填写目标 SSH 主机与用户。'))
+    strong.textContent = '请选择运行模式';
+    text.append(strong, document.createTextNode('：模式必填且不做自动判断，请显式选择远程或本机。'))
   }
 }
 
@@ -1844,7 +1823,9 @@ function collectPayload() {
   const payload = {};
   if (flat.user) payload.user = flat.user;
   if (flat.token) payload.token = flat.token;
-  payload.mode = {default: flat.mode || 'remote'};
+  // 多用户与注册 §2: mode.default 必填、不做默认推断；未选择时由
+  // validateApplication() + radio required 阻止提交。
+  payload.mode = {default: flat.mode};
   payload.root = flat.scratch_root ? {default: flat.scratch_root} : {};
   payload.ssh = {default: ep(flat.host, flat.ssh_user, flat.jump_host, flat.jump_user, flat.ssh_proxy)};
   const daemon = ep(flat.daemon_host, flat.daemon_user, null, null, null);
@@ -1926,8 +1907,8 @@ function configurationSnapshot(data) {
     }
   });
   const resolved = resolvedValues(data),
-    mode = resolved.mode || (requested.local ? 'local' : (requested.host ? 'remote' : resolvedMode())),
-    modeChoice = requested.local ? 'local' : (requested.host ? 'remote' : (values.mode || 'auto')),
+    mode = resolved.mode || values.mode || (requested.local ? 'local' : (requested.host ? 'remote' : '')),
+    modeChoice = values.mode || mode || '',
     host = values.host || '',
     sshUser = values.ssh_user || '',
     daemonHost = mode === 'local' ? '127.0.0.1' : (values.daemon_host || host || '未填写'),
@@ -1938,8 +1919,8 @@ function configurationSnapshot(data) {
     user: (data && data.user) || values.user || '—',
     token: (data && data.token) || values.token || '服务端生成',
     mode: mode,
-    modeLabel: modeChoice === 'auto' ? '自动判断 → ' + (mode === 'local' ? '本机' : '远程') :
-      (mode === 'local' ? '本机 Virtuoso' : '远程服务器'),
+    modeLabel: mode === 'local' ? '本机 Virtuoso' :
+      (mode === 'remote' ? '远程服务器' : '未选择'),
     target: mode === 'local' ? '当前机器' : ((sshUser ? sshUser + '@' : '') + (host || '未填写')),
     daemon: (daemonUser && mode !== 'local' ? daemonUser + '@' : '') + daemonHost + ':' + daemonPort,
     daemonPort: daemonPort,
@@ -2003,7 +1984,8 @@ function validateApplication() {
   updateModeUI();
   const form = byId('f');
   if (!byId('user').value.trim()) byId('user').setCustomValidity('请输入用户名。');
-  if (resolvedMode() === 'remote') {
+  const mode = selectedMode();
+  if (mode === 'remote') {
     if (!byId('host').value.trim()) byId('host').setCustomValidity('远程模式需要目标 SSH 主机。');
     if (!byId('ssh_user').value.trim()) byId('ssh_user').setCustomValidity('远程模式需要 SSH 用户。')
   }

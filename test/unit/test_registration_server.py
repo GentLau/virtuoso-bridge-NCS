@@ -495,6 +495,73 @@ class TestRegistrationServer(unittest.TestCase):
                                        {"bogus": 1}, _admin_auth())
         self.assertEqual(status, 400)
 
+    def test_config_invalid_value_rejected(self):
+        """非法配置直接拒绝（顶层补充 §5）。"""
+        status, raw = self.srv.request(
+            "PUT", "/api/config", {"business_thread_pool_size": "abc"}, _admin_auth()
+        )
+        self.assertEqual(status, 400)
+        self.assertEqual(
+            self.srv.server.config["business_thread_pool_size"],
+            self.srv.server.config.get("business_thread_pool_size"),
+        )
+
+    def test_config_malformed_json_is_4xx(self):
+        conn = http.client.HTTPConnection("127.0.0.1", self.srv.port, timeout=10)
+        conn.request(
+            "PUT", "/api/config", "{bad",
+            {**_admin_auth(), "Content-Type": "application/json"},
+        )
+        resp = conn.getresponse()
+        raw = resp.read().decode("utf-8")
+        conn.close()
+        self.assertEqual(resp.status, 400, raw)
+
+    def test_config_persist_failure_keeps_memory_snapshot(self):
+        from unittest import mock
+        before = dict(self.srv.server.config)
+        with mock.patch.object(
+            RegistrationServer, "save_config", side_effect=OSError("disk full")
+        ):
+            status, raw = self.srv.request(
+                "PUT", "/api/config",
+                {"business_thread_pool_size": 9}, _admin_auth(),
+            )
+        self.assertEqual(status, 500, raw)
+        self.assertEqual(self.srv.server.config, before)
+
+    def test_concurrent_apply_creates_exactly_one_session(self):
+        """§3: apply 的合法前提是“无同名进行中会话”；并发 apply 只能有一个成功。"""
+        from unittest import mock
+        import register.server as server_mod
+
+        barrier = threading.Barrier(2)
+        original_start = server_mod.RegistrationFlow.start
+
+        def blocked_start(self, request):
+            try:
+                barrier.wait(timeout=0.5)
+            except threading.BrokenBarrierError:
+                pass
+            return original_start(self, request)
+
+        results = []
+
+        def apply():
+            status, _raw = self.srv.request(
+                "POST", "/api/register",
+                {"user": "race", "action": "apply", "mode": "local"},
+            )
+            results.append(status)
+
+        with mock.patch.object(server_mod.RegistrationFlow, "start", blocked_start):
+            threads = [threading.Thread(target=apply) for _ in range(2)]
+            for t in threads:
+                t.start()
+            for t in threads:
+                t.join(timeout=15)
+        self.assertEqual(sorted(results), [200, 400])
+
 
 if __name__ == "__main__":
     unittest.main()

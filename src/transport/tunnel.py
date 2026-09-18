@@ -56,7 +56,9 @@ class RemoteClient:
 
         self._runner_kwargs: dict = {
             "timeout": 600,
-            "connect_timeout": int(entry.runtime.connect_timeout),
+            # 浮点秒：配置文档 §2.2 的 connect_timeout 是子预算，不能截断
+            # （0.5 -> 0 会让每次建连立即失败）。
+            "connect_timeout": float(entry.runtime.connect_timeout),
             "persistent_shell": True,
             "backend": entry.ssh.backend or "paramiko",
             "max_sessions": entry.runtime.channel_budget or 10,
@@ -469,6 +471,13 @@ class RemoteClient:
                     1, "", f"directory upload requires recursive=True: {local_path}",
                     kind="path",
                 )
+            if not local_path.is_file():
+                # §4.6: recursive=False 只传单个常规文件；FIFO/设备/链接目录
+                # 等对象类型不符要报 kind=path，而不是阻塞在传输里。
+                return CommandResult(
+                    1, "", f"upload requires a regular file: {local_path}",
+                    kind="path",
+                )
             stage = f"{remote_path}.vbtmp-{uuid.uuid4().hex}"
             up = self.file_runner.upload(
                 local_path,
@@ -544,6 +553,22 @@ class RemoteClient:
                     local_path,
                     recursive=True,
                     timeout=_remaining(deadline, timeout),
+                )
+            error, remote_kind = self._remote_path_kind(
+                role,
+                remote_path,
+                _remaining(deadline, timeout),
+            )
+            if error is not None:
+                return error
+            if remote_kind != "file":
+                # §4.6: 非 recursive 下载的源必须是常规文件；目录/特殊对象
+                # 一律 kind=path（不能把 sha256sum 的报错当成命令失败）。
+                return CommandResult(
+                    1,
+                    "",
+                    f"download requires a regular file: {remote_path} ({remote_kind})",
+                    kind="path",
                 )
             error, remote_digest = self._remote_sha256(
                 role,

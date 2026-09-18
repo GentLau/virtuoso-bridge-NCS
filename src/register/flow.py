@@ -357,6 +357,8 @@ def _probe(
             try:
                 if role.mode == "local":
                     entry_role.root = _local_role_checks(role)
+                    # §2.3: local role 无 endpoint，expected_fingerprint 必须为 null
+                    entry_role.expected_fingerprint = None
                     continue
                 if not probes.ssh_port_is_22(role.host):
                     raise RegistrationProbeError(
@@ -424,19 +426,44 @@ def _probe(
             entry.roles.daemon.python = python_cmd
             entry.roles.daemon.expected_hostname = socket.gethostname()
             entry.roles.daemon.expected_user = getpass.getuser()
-            daemon_port = request.roles.daemon.daemon_port or _LOCAL_DEFAULT_PORT
-            if not probes.local_port_free(daemon_port):
+            # 配置一览 §6.4: local 模式下 daemon_port 与 local_port 是同一个
+            # 候选端口——任一缺省用同一个值生成并同步写入，双值必须相等。
+            requested_daemon_port = request.roles.daemon.daemon_port
+            requested_local_port = request.roles.daemon.local_port
+            if (
+                requested_daemon_port is not None
+                and requested_local_port is not None
+                and requested_daemon_port != requested_local_port
+            ):
                 raise RegistrationProbeError(
-                    f"daemon port {daemon_port} already in use locally"
+                    "daemon role is local: daemon_port and local_port are the same "
+                    f"candidate port (got daemon_port={requested_daemon_port}, "
+                    f"local_port={requested_local_port})"
                 )
-            local_port = request.roles.daemon.local_port
-            if local_port is not None and local_port != daemon_port:
-                raise RegistrationProbeError(
-                    f"daemon role is local: local_port must equal daemon_port "
-                    f"(got local_port={local_port}, daemon_port={daemon_port})"
+            explicit_port = (
+                requested_daemon_port is not None or requested_local_port is not None
+            )
+            joint_port = (
+                requested_daemon_port or requested_local_port or _LOCAL_DEFAULT_PORT
+            )
+            if (
+                joint_port in reserved_local_ports
+                or not probes.local_port_free(joint_port)
+            ):
+                if explicit_port:
+                    raise RegistrationProbeError(
+                        f"daemon port {joint_port} is not usable locally"
+                    )
+                replacement = probes.allocate_local_port(
+                    reserved=reserved_local_ports
                 )
-            entry.roles.daemon.daemon_port = daemon_port
-            entry.roles.daemon.local_port = daemon_port
+                if replacement is None:
+                    raise RegistrationProbeError(
+                        "no free local daemon port found"
+                    )
+                joint_port = replacement
+            entry.roles.daemon.daemon_port = joint_port
+            entry.roles.daemon.local_port = joint_port
         else:
             runner = _BudgetedRunner(role_runners["daemon"], budget)
             explicit_python = request.roles.daemon.python
@@ -511,6 +538,14 @@ def _probe(
 
         # spectre bin (warning-only)
         spectre_role = targets.spectre
+        def nullify_spectre(reason: str | None = None) -> None:
+            """§6.2: spectre 探测失败时 root/fingerprint/bin 一并提交为 null。"""
+            entry.roles.spectre.root = None
+            entry.roles.spectre.expected_fingerprint = None
+            entry.roles.spectre.bin = None
+            if reason:
+                warnings.append(reason)
+
         if entry.roles.spectre.root is None:
             pass  # prior spectre probe failure is warning-only; keep binomial null
         elif spectre_role.mode == "local":
@@ -518,8 +553,7 @@ def _probe(
                 if probes.local_executable_exists(request.roles.spectre.bin):
                     entry.roles.spectre.bin = request.roles.spectre.bin
                 else:
-                    entry.roles.spectre.bin = None
-                    warnings.append(
+                    nullify_spectre(
                         f"spectre bin not usable locally: {request.roles.spectre.bin} "
                         f"(non-blocking)"
                     )
@@ -528,7 +562,7 @@ def _probe(
                 if detected:
                     entry.roles.spectre.bin = detected
                 else:
-                    warnings.append("no usable spectre found locally (non-blocking)")
+                    nullify_spectre("no usable spectre found locally (non-blocking)")
         else:
             raw_runner = role_runners.get("spectre")
             runner = _BudgetedRunner(raw_runner, budget) if raw_runner is not None else None
@@ -537,8 +571,7 @@ def _probe(
                     if probes.remote_executable_exists(runner, request.roles.spectre.bin):
                         entry.roles.spectre.bin = request.roles.spectre.bin
                     else:
-                        entry.roles.spectre.bin = None
-                        warnings.append(
+                        nullify_spectre(
                             f"spectre bin not usable on {spectre_role.host}: "
                             f"{request.roles.spectre.bin} (non-blocking)"
                         )
@@ -547,7 +580,7 @@ def _probe(
                     if detected:
                         entry.roles.spectre.bin = detected
                     else:
-                        warnings.append(
+                        nullify_spectre(
                             f"no usable spectre found on {spectre_role.host} (non-blocking)"
                         )
 
@@ -866,13 +899,25 @@ class RegistrationFlow:
             self.state.stage = "cancelled"
         return self.state
 
-    def reserved_daemon_ports(self) -> set[int]:
-        """daemon ports held by *other* in-progress registrations."""
+    def reserved_daemon_ports(self, daemon_scope: str | None = None) -> set[int]:
+        """daemon ports held by *other* in-progress registrations.
+
+        配置一览 §6.4: daemon_port 的唯一性作用域是 daemon 目标主机——同一
+        端口号在不同 daemon host 上互不冲突。``daemon_scope=None`` 返回全部。
+        """
         others = [
             r for r in self.reservations.records()
             if self.state is None or r.user != self.state.user
         ]
-        return {r.daemon_port for r in others if r.daemon_port is not None}
+        return {
+            r.daemon_port
+            for r in others
+            if r.daemon_port is not None
+            and (
+                daemon_scope is None
+                or (r.daemon_scope or "local") == daemon_scope
+            )
+        }
 
     def reserved_local_ports(self) -> set[int]:
         """local tunnel ports held by *other* in-progress registrations."""
@@ -930,7 +975,9 @@ class RegistrationFlow:
             result = probe_user(
                 state.request,
                 token=state.token,
-                reserved_ports=self.reserved_daemon_ports(),
+                reserved_ports=self.reserved_daemon_ports(
+                    daemon_scope_of_request(state.request)
+                ),
                 reserved_local_ports=self.reserved_local_ports(),
             )
         except (RegistrationProbeError, Exception) as exc:  # noqa: BLE001
@@ -978,7 +1025,11 @@ class RegistrationFlow:
                     runner, port, python_cmd
                 ):
                     replacement = probes.allocate_remote_port(
-                        runner, python_cmd, reserved=self.reserved_daemon_ports()
+                        runner,
+                        python_cmd,
+                        reserved=self.reserved_daemon_ports(
+                            daemon_scope_of_entry(entry, state.user)
+                        ),
                     )
                     if replacement is None:
                         raise RegistrationProbeError(
@@ -1072,6 +1123,10 @@ class RegistrationFlow:
 
         state = self.state
         state.step = 5
+        # §3.3: 同一步原样重试；上一次失败的错误/报告不得残留到成功结果里
+        state.errors = []
+        state.warnings = []
+        state.report = None
         try:
             report = test_connectivity(state.entry, state.user)
         except Exception as exc:  # noqa: BLE001
@@ -1109,6 +1164,7 @@ class RegistrationFlow:
             return self.state
 
         state = self.state
+        state.errors = []
         errors = validate_commit_shape(state.entry, state.user)
         errors += validate_final(self.registry, state.entry, state.user)
         if errors:

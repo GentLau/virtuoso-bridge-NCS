@@ -300,6 +300,7 @@ class TestRemoteClientEdges(unittest.TestCase):
             client = RemoteClient(entry, resolve(entry), "alice")
             # one-shot channels (digest check) reuse the role runner here
             client._one_shot_runner = client._runner
+            client.file_runner.remote_kind = "file"  # 源是常规文件（§4.6）
             client.file_runner.download_result = CommandResult(1, "", "download boom")
             res = client.download_file("/remote/p.bin", Path(tempfile.mkdtemp()) / "p.bin")
         self.assertIn("download boom", res.stderr)
@@ -312,6 +313,7 @@ class TestRemoteClientEdges(unittest.TestCase):
         with mock.patch("transport.tunnel.SSHRunner", FakeRunner):
             client = RemoteClient(entry, resolve(entry), "alice")
             client._one_shot_runner = client._runner
+            client.file_runner.remote_kind = "file"  # 源是常规文件（§4.6）
             client.file_runner.sha256_value = hashlib.sha256(b"remote").hexdigest()
             client.file_runner.download_payload = b"new"
             res = client.download_file("/remote/p.bin", target)
@@ -411,6 +413,41 @@ class TestRemoteClientRecursiveUpload(unittest.TestCase):
                 recursive=True,
             )
         self.assertEqual(res.kind, "path")
+
+    def test_non_recursive_download_of_directory_is_path_kind(self):
+        """§4.6: 对象类型与 recursive 不符 → kind=path（不能把 sha 报错当命令失败）。"""
+        entry = make_entry()
+        from unittest import mock
+        with mock.patch("transport.tunnel.SSHRunner", FakeRunner):
+            client = RemoteClient(entry, resolve(entry), "alice")
+            client._one_shot_runner = client._runner
+            runner = client.file_runner
+            runner.remote_kind = "directory"
+            original = runner.run_command
+
+            def run_command(cmd, timeout=None):
+                if cmd.startswith("sha256sum"):
+                    # real ``sha256sum <dir>`` fails exactly like this
+                    return CommandResult(
+                        1, "", "sha256sum: /remote/dir: Is a directory"
+                    )
+                return original(cmd, timeout=timeout)
+
+            runner.run_command = run_command
+            res = client.download_file(
+                "/remote/dir", Path(tempfile.mkdtemp()) / "out"
+            )
+        self.assertEqual(res.kind, "path")
+        self.assertEqual(res.returncode, 1)
+
+    def test_connect_timeout_keeps_fractional_seconds(self):
+        """§2.2: connect_timeout 是浮点秒；不得被 int() 截断成 0。"""
+        entry = make_entry()
+        entry.runtime.connect_timeout = 0.5
+        from unittest import mock
+        with mock.patch("transport.tunnel.SSHRunner", FakeRunner):
+            client = RemoteClient(entry, resolve(entry), "alice")
+        self.assertEqual(client._runner_kwargs["connect_timeout"], 0.5)
 
 
 if __name__ == "__main__":

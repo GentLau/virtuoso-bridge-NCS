@@ -146,6 +146,20 @@ class TestControlPathNamespace(unittest.TestCase):
             d = ssh_mod._short_control_path("server-a", "u", None, "tok-1")
         self.assertNotEqual(a, d)
 
+    def test_control_path_covers_full_endpoint_identity(self):
+        """§6.5/§4: endpoint=(host,user,jump_host,jump_user,proxy)；只差
+        jump_user 或 proxy 的两个 endpoint 不得复用同一个 ControlMaster。"""
+        base = ssh_mod._short_control_path("server-a", "u", "bastion")
+        other_jump_user = ssh_mod._short_control_path(
+            "server-a", "u", "bastion", jump_user="other"
+        )
+        other_proxy = ssh_mod._short_control_path(
+            "server-a", "u", "bastion", proxy="socks5://proxy-a:1080"
+        )
+        self.assertNotEqual(base, other_jump_user)
+        self.assertNotEqual(base, other_proxy)
+        self.assertNotEqual(other_jump_user, other_proxy)
+
 
 if __name__ == "__main__":
     unittest.main()

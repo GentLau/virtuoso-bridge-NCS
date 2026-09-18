@@ -210,6 +210,45 @@ class TestFlowVerifyAndCommit(unittest.TestCase):
         self.assertEqual(state.stage, "failed")
         self.assertIn("no registration in progress", state.errors)
 
+    def test_verify_retry_success_clears_stale_errors(self):
+        """§3.3: 同一步失败后可原样重试；成功后不得残留上一次的 errors。"""
+        flow = self._deployed_flow()
+        bad = ConnectivityReport("tok-1", True, False, True, detail="skill failed")
+        with mock.patch("register.flow.test_connectivity", return_value=bad):
+            state = flow.verify()
+        self.assertEqual(state.stage, "failed")
+        self.assertTrue(state.errors)
+
+        good = ConnectivityReport("tok-1", True, True, True)
+        with mock.patch("register.flow.test_connectivity", return_value=good):
+            state = flow.verify()
+        self.assertEqual(state.stage, "verified")
+        self.assertEqual(state.errors, [])
+
+    def test_commit_retry_success_clears_stale_errors(self):
+        flow = self._deployed_flow()
+        good = ConnectivityReport("tok-1", True, True, True)
+        with mock.patch("register.flow.test_connectivity", return_value=good):
+            flow.verify()
+        flow.state.stage = "failed"
+        flow.state.step = 6
+        flow.state.errors = ["previous commit failure"]
+        state = flow.commit()
+        self.assertEqual(state.stage, "committed")
+        self.assertEqual(state.errors, [])
+
+    def test_reserved_daemon_ports_are_scoped_by_target_host(self):
+        """§6.4: daemon_port 唯一性作用域是 daemon 目标主机。"""
+        from register.reservation import Reservation
+        flow = RegistrationFlow(self.reg)
+        flow.start(remote_request())
+        flow.reservations.reserve(Reservation(
+            user="bob", token="tok-2", daemon_scope="server-b",
+            daemon_port=65081, local_port=65082,
+        ))
+        self.assertEqual(flow.reserved_daemon_ports("server-a"), set())
+        self.assertEqual(flow.reserved_daemon_ports("server-b"), {65081})
+
 
 class TestRegisterUserOneShot(unittest.TestCase):
     def setUp(self):
@@ -518,6 +557,67 @@ class TestRequestAndIdempotence(unittest.TestCase):
         tc.assert_not_called()
 
 
+class TestLocalJointPort(unittest.TestCase):
+    """§6.4: local 模式下 daemon_port 与 local_port 是同一个候选端口。"""
+
+    def setUp(self):
+        self.wd = override_work_dir_for_tests(Path(tempfile.mkdtemp()))
+        self.reg = load_registry(registry_path())
+
+    def _probe_local(self, **daemon_fields):
+        from register import probe_user
+        request = RegistrationRequest(
+            mode="local", user="u", token="tok",
+            roles={"daemon": daemon_fields},
+        )
+        with mock.patch("register.probe.local_path_writable", return_value=True), \
+             mock.patch("register.probe.local_port_free", return_value=True), \
+             mock.patch("register.probe.detect_local_spectre", return_value=None):
+            return probe_user(request, token="tok")
+
+    def test_single_explicit_local_port_is_used_for_both(self):
+        result = self._probe_local(local_port=65091)
+        daemon = result.entry.roles.daemon
+        self.assertEqual(daemon.daemon_port, 65091)
+        self.assertEqual(daemon.local_port, 65091)
+
+    def test_single_explicit_daemon_port_is_used_for_both(self):
+        result = self._probe_local(daemon_port=65092)
+        daemon = result.entry.roles.daemon
+        self.assertEqual(daemon.daemon_port, 65092)
+        self.assertEqual(daemon.local_port, 65092)
+
+    def test_mismatched_explicit_ports_are_rejected(self):
+        with self.assertRaises(RegistrationProbeError):
+            self._probe_local(daemon_port=65093, local_port=65094)
+
+    def test_default_port_in_use_falls_back_to_a_free_port(self):
+        from register import probe_user
+        request = RegistrationRequest(mode="local", user="u", token="tok")
+        with mock.patch("register.probe.local_path_writable", return_value=True), \
+             mock.patch("register.probe.local_port_free",
+                        side_effect=lambda port: port != 65432), \
+             mock.patch("register.probe.allocate_local_port", return_value=65123), \
+             mock.patch("register.probe.detect_local_spectre", return_value=None):
+            result = probe_user(request, token="tok")
+        daemon = result.entry.roles.daemon
+        self.assertEqual(daemon.daemon_port, 65123)
+        self.assertEqual(daemon.local_port, 65123)
+
+    def test_local_role_expected_fingerprint_is_cleared(self):
+        """§2.3: mode=local 的 role 没有 endpoint，expected_fingerprint 必须为 null。"""
+        from register import probe_user
+        request = RegistrationRequest(
+            mode="local", user="u", token="tok",
+            roles={"gui": {"expected_fingerprint": "SHA256:stale"}},
+        )
+        with mock.patch("register.probe.local_path_writable", return_value=True), \
+             mock.patch("register.probe.local_port_free", return_value=True), \
+             mock.patch("register.probe.detect_local_spectre", return_value=None):
+            result = probe_user(request, token="tok")
+        self.assertIsNone(result.entry.roles.gui.expected_fingerprint)
+
+
 class TestPolicyFieldsApplied(unittest.TestCase):
     def test_policy_fields_are_written_into_entry(self):
         from unittest import mock
@@ -629,6 +729,9 @@ class TestSpectreAutoProbe(unittest.TestCase):
             result = probe_user(request, token="tok")
         self.assertIsNone(result.entry.roles.spectre.bin)
         self.assertTrue(any("non-blocking" in w for w in result.warnings))
+        # §6.2: spectre 探测失败时 root / expected_fingerprint / bin 一并提交为 null
+        self.assertIsNone(result.entry.roles.spectre.root)
+        self.assertIsNone(result.entry.roles.spectre.expected_fingerprint)
 
 
 if __name__ == "__main__":

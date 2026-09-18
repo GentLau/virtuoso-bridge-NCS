@@ -46,6 +46,14 @@ class TestRegistrationPageContract(unittest.TestCase):
         """expected_* 由探测回写，页面不得把它们作为用户输入提交。"""
         self.assertNotRegex(self.html, r'name="role_[a-z]+_expected_')
 
+    def test_mode_is_never_defaulted_or_inferred(self):
+        """多用户与注册 §2: mode.default 必填、不推断；页面不得预选或兜底。"""
+        self.assertNotIn('name="mode" value="remote" checked', self.html)
+        self.assertNotIn('name="mode" value="local" checked', self.html)
+        self.assertNotIn("|| 'remote'", self.html)
+        self.assertNotIn("return node ? node.value : 'auto'", self.html)
+        self.assertIn("请选择运行模式", self.html)
+
 
 if __name__ == "__main__":
     unittest.main()

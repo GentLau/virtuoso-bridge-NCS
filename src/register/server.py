@@ -71,10 +71,6 @@ class RegistrationHandler(BaseHTTPRequestHandler):
         with self.server.flow_lock:  # type: ignore[attr-defined]
             return self.server.flows.get(user)  # type: ignore[attr-defined]
 
-    def _store(self, flow: RegistrationFlow, user: str) -> None:
-        with self.server.flow_lock:  # type: ignore[attr-defined]
-            self.server.flows[user] = flow  # type: ignore[attr-defined]
-
     def _state_payload(self, state) -> dict:
         payload = {
             "user": state.user,
@@ -249,23 +245,6 @@ class RegistrationHandler(BaseHTTPRequestHandler):
             return
 
         if action == "apply":
-            with self.server.flow_lock:
-                previous = self.server.flows.get(user)
-            current = getattr(previous.state, "stage", None) if previous else None
-            if current == "committed":
-                self._send_json(400, {"error": "user is already registered"})
-                return
-            if previous is not None and current != "cancelled":
-                self._send_json(400, {
-                    "error": "step order violation",
-                    "current_stage": current,
-                    "expected": "cancel",
-                })
-                return
-            if previous is not None:
-                previous.cancel()
-                with self.server.flow_lock:
-                    self.server.flows.pop(user, None)
             payload = {key: value for key, value in raw.items()
                        if key not in ("action", "user")}
             try:
@@ -274,9 +253,31 @@ class RegistrationHandler(BaseHTTPRequestHandler):
                 self._send_json(400, {"error": "invalid request",
                                       "detail": [str(e) for e in exc.errors()]})
                 return
-            flow = RegistrationFlow(self.server.registry, self.server.reservations)
-            state = flow.start(request)
-            self._store(flow, user)
+            # 检查“无同名进行中会话”与创建/登记必须是一个原子步骤，否则两个
+            # 并发 apply 会各自看到空会话并互相覆盖（顶层补充 §3）。
+            error_payload = None
+            with self.server.flow_lock:
+                previous = self.server.flows.get(user)
+                current = getattr(previous.state, "stage", None) if previous else None
+                if current == "committed":
+                    error_payload = {"error": "user is already registered"}
+                elif previous is not None and current != "cancelled":
+                    error_payload = {
+                        "error": "step order violation",
+                        "current_stage": current,
+                        "expected": "cancel",
+                    }
+                else:
+                    if previous is not None:
+                        previous.cancel()
+                    flow = RegistrationFlow(
+                        self.server.registry, self.server.reservations
+                    )
+                    state = flow.start(request)
+                    self.server.flows[user] = flow
+            if error_payload is not None:
+                self._send_json(400, error_payload)
+                return
             self._send_json(200, self._state_payload(state))
             return
 
@@ -435,7 +436,11 @@ class RegistrationHandler(BaseHTTPRequestHandler):
         if path == "/api/config":
             if not self._require_admin():
                 return
-            body = self._read_json()
+            try:
+                body = self._read_json()
+            except (json.JSONDecodeError, UnicodeDecodeError, ValueError):
+                self._send_json(400, {"error": "invalid JSON body"})
+                return
             if not isinstance(body, dict):
                 self._send_json(400, {"error": "invalid config body"})
                 return
@@ -443,8 +448,27 @@ class RegistrationHandler(BaseHTTPRequestHandler):
             if unknown:
                 self._send_json(400, {"error": "unknown config keys", "detail": sorted(unknown)})
                 return
-            self.server.config.update(body)
-            self.server.save_config()
+            candidate = dict(self.server.config)
+            candidate.update(body)
+            pool_size = candidate.get("business_thread_pool_size")
+            if pool_size is not None and (
+                isinstance(pool_size, bool)
+                or not isinstance(pool_size, int)
+                or pool_size < 1
+            ):
+                self._send_json(400, {
+                    "error": "business_thread_pool_size must be a positive integer",
+                })
+                return
+            # 先落盘成功、再替换内存快照：持久化失败时不得出现内外不一致。
+            try:
+                self.server.save_config(candidate)
+            except OSError as exc:
+                self._send_json(500, {
+                    "error": "failed to persist config", "detail": str(exc),
+                })
+                return
+            self.server.config = candidate
             self._send_json(200, self.server.config)
             return
         self._send_json(404, {"error": "not found"})
@@ -474,8 +498,9 @@ class RegistrationServer(ThreadingHTTPServer):
             return {"business_thread_pool_size": None}
         return {"business_thread_pool_size": data.get("business_thread_pool_size")}
 
-    def save_config(self) -> None:
+    def save_config(self, config: dict | None = None) -> None:
         """配置变更的手动写回：临时文件 + 原子替换，不频繁 IO。"""
+        payload = self.config if config is None else config
         self.config_path.parent.mkdir(parents=True, exist_ok=True)
         fd, tmp = tempfile.mkstemp(
             dir=str(self.config_path.parent),
@@ -484,7 +509,7 @@ class RegistrationServer(ThreadingHTTPServer):
         )
         try:
             with os.fdopen(fd, "w", encoding="utf-8") as fh:
-                json.dump(self.config, fh, ensure_ascii=False, indent=2)
+                json.dump(payload, fh, ensure_ascii=False, indent=2)
                 fh.write("\n")
             os.replace(tmp, self.config_path)
         except Exception:

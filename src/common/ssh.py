@@ -201,6 +201,9 @@ def _short_control_path(
     user: str | None,
     jump_host: str | None,
     identity: str | None = None,
+    *,
+    jump_user: str | None = None,
+    proxy: str | None = None,
 ) -> str:
     """Build a short literal ControlPath for OpenSSH multiplexing.
 
@@ -214,12 +217,16 @@ def _short_control_path(
     previous (killed/crashed) process can never be reused: a wedged leftover
     master answers the mux handshake but never replies to the session request,
     which hangs every later connection with no client-side timeout.
+
+    The full endpoint identity participates (配置一览 §6.5): two endpoints that
+    differ only by ``jump_user`` or ``proxy`` are different endpoints and must
+    never share one ControlMaster.
     """
     base_dir = "/tmp" if os.name != "nt" and Path("/tmp").is_dir() else tempfile.gettempdir()
     local_id = str(os.getuid()) if hasattr(os, "getuid") else os.environ.get("USERNAME", "local")
     conn_identity = (
         f"{local_id}|{os.getpid()}|{user or 'default'}@{host}|"
-        f"{jump_host or 'direct'}|{identity or ''}"
+        f"{jump_host or 'direct'}|{jump_user or ''}|{proxy or ''}|{identity or ''}"
     )
     token = hashlib.sha1(conn_identity.encode("utf-8")).hexdigest()[:16]
     return str(Path(base_dir) / f"vb_ssh_{token}")
@@ -295,7 +302,14 @@ class SSHRunner:
         else:  # auto
             self._use_control_master = self._backend == "openssh"
 
-        self._control_path = _short_control_path(host, user, jump_host, control_identity)
+        self._control_path = _short_control_path(
+            host,
+            user,
+            jump_host,
+            control_identity,
+            jump_user=jump_user,
+            proxy=proxy_url,
+        )
 
         # Persistent SSH shell = one long-lived ``ssh host sh -s`` subprocess
         # shared by every run_command call.  Turns N cold handshakes into 1.
@@ -1672,6 +1686,9 @@ class SSHRunner:
 
     @staticmethod
     def _is_retryable_persistent_shell_error(exc: Exception) -> bool:
+        # 结果未知（命令可能已经执行）永远不重发：见 并发设计 §4 / 架构 §5.8。
+        if isinstance(exc, UnknownEffectError):
+            return False
         message = str(exc).lower()
         retryable_fragments = (
             "invalid base64 payload",
@@ -1701,6 +1718,11 @@ class SSHRunner:
                         _budget=budget,
                     )
             except subprocess.TimeoutExpired:
+                raise
+            except UnknownEffectError:
+                # 已投递：关闭本 token 的常驻 shell，但绝不重发。
+                with self._shell_lock:
+                    self._close_persistent_shell_locked(_budget=budget)
                 raise
             except Exception as exc:  # noqa: BLE001
                 last_exc = exc
@@ -1780,7 +1802,11 @@ class SSHRunner:
             proc.stdin.write(script.encode("utf-8"))
             proc.stdin.flush()
         except OSError as exc:
-            raise RuntimeError(f"Failed to write to persistent SSH shell: {exc}") from exc
+            # 写入中断时无法证明远端没有收到（部分）脚本，按“结果未知”处理，
+            # 不得重建 shell 后重发（并发设计 §4）。
+            raise UnknownEffectError(
+                f"failed to write to persistent SSH shell; delivery unknown: {exc}"
+            ) from exc
 
         stdout_b64 = None
         stderr_b64 = None
@@ -1825,7 +1851,11 @@ class SSHRunner:
                 if stripped == "":
                     continue
                 if stripped != stderr_marker:
-                    raise RuntimeError(f"Unexpected persistent shell protocol line: {stripped!r}")
+                    # 命令已经写入远端 shell，之后的任何协议错乱都意味着
+                    # “可能已执行、结果未知”，禁止重放。
+                    raise UnknownEffectError(
+                        f"Unexpected persistent shell protocol line: {stripped!r}"
+                    )
                 phase = "stderr_b64"
                 continue
             if phase == "stderr_b64":
@@ -1838,7 +1868,9 @@ class SSHRunner:
                 if stripped.startswith(rc_prefix):
                     rc = int(stripped[len(rc_prefix):])
                     break
-                raise RuntimeError(f"Unexpected persistent shell return line: {stripped!r}")
+                raise UnknownEffectError(
+                    f"Unexpected persistent shell return line: {stripped!r}"
+                )
 
         if preamble:
             logger.debug("Ignoring %d preamble line(s) from persistent SSH shell to %s", len(preamble), self._host)
@@ -1856,7 +1888,9 @@ class SSHRunner:
         try:
             return base64.b64decode(padded.encode("ascii")).decode("utf-8", errors="replace")
         except (binascii.Error, ValueError) as exc:
-            raise RuntimeError(f"Persistent SSH shell returned invalid base64 payload: {exc}") from exc
+            raise UnknownEffectError(
+                f"Persistent SSH shell returned invalid base64 payload: {exc}"
+            ) from exc
 
     def _close_persistent_shell_locked(
         self,

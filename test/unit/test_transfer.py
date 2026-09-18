@@ -23,6 +23,12 @@ from common.transfer import (
 )
 
 
+def _remote_script(remote_command: str) -> str:
+    """Decode the base64-wrapped remote bash script of a transfer plan."""
+    encoded = remote_command.split("printf %s ")[1].split(" | base64 -d")[0]
+    return base64.b64decode(encoded).decode("utf-8")
+
+
 class TestRemoteBashCommand(unittest.TestCase):
     def test_base64_roundtrip_and_wrapper(self):
         script = 'echo "hello world"\n'
@@ -70,6 +76,13 @@ class TestDownloadPlans(unittest.TestCase):
         self.assertEqual(plan.staged_item, plan.stage_path / "psf_dir")
         self.assertTrue(plan.remote_command.startswith("bash -c"))
 
+    def test_tar_download_dereferences_symlinks(self):
+        """§4.6: symlink 跟随传输；远端 tar 必须解引用（-h）。"""
+        plan = build_tar_download_plan("tar", "/remote/runs/dir", Path("/tmp/out/dir"))
+        script = _remote_script(plan.remote_command)
+        self.assertIn("tar", script)
+        self.assertIn("-h", script)
+
     def test_tar_download_invalid_path_raises(self):
         with self.assertRaises(ValueError):
             build_tar_download_plan("tar", "/", Path("/tmp/out"))
@@ -88,6 +101,11 @@ class TestTarUploadPlans(unittest.TestCase):
         self.assertEqual(plan.local_command[-1], "a.txt")
         self.assertIn("-C", plan.local_command)
         self.assertTrue(plan.remote_command.startswith("bash -c"))
+
+    def test_tar_upload_dereferences_symlinks(self):
+        """§4.6: symlink 跟随传输；本地 tar 必须解引用（-h）。"""
+        (plan,) = build_tar_upload_plans("tar", [(self.root / "a.txt", "/home/u/a.txt")])
+        self.assertIn("-h", plan.local_command)
 
     def test_duplicate_remote_target_raises(self):
         with self.assertRaises(ValueError):

@@ -104,21 +104,30 @@ class TestPersistentShellProtocol(unittest.TestCase):
         res = r._run_command_via_persistent_shell_locked("echo hello", timeout=5)
         self.assertEqual((res.returncode, res.stdout, res.stderr), (7, "hello\n", "warn\n"))
 
-    def test_unexpected_protocol_line_raises(self):
+    def test_unexpected_protocol_line_after_delivery_is_unknown_effect(self):
+        """命令已写入远端后再出现协议错乱：不得重发（§4.5/§5.8）。"""
         r = runner_with_shell()
         feed_async(r, marker_override="WRONG_MARKER")
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(UnknownEffectError):
             r._run_command_via_persistent_shell_locked("echo hi", timeout=5)
 
-    def test_bad_return_line_raises(self):
+    def test_bad_return_line_after_delivery_is_unknown_effect(self):
         r = runner_with_shell()
         feed_async(r, raw=lambda tok: [
             f"__vb_STDOUT_B64_BEGIN_{tok}__\n", "\n",
             f"__vb_STDERR_B64_BEGIN_{tok}__\n", "\n",
             "NOT_A_RC_LINE\n",
         ])
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(UnknownEffectError):
             r._run_command_via_persistent_shell_locked("echo hi", timeout=5)
+
+    def test_unknown_effect_is_never_retryable(self):
+        """仅“确认未投递”的异常允许重建常驻 shell 后重发。"""
+        self.assertFalse(
+            SSHRunner._is_retryable_persistent_shell_error(
+                UnknownEffectError("Unexpected persistent shell protocol line: 'x'")
+            )
+        )
 
     def test_eof_after_delivery_is_unknown_effect(self):
         r = runner_with_shell()

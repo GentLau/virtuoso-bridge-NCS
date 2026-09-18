@@ -287,7 +287,9 @@ def build_tar_upload_plans(
     for remote_dir, local_parent, entries in upload_groups:
         local_command = [
             tar_command,
-            "cf",
+            "-c",
+            "-h",  # 跟随 symlink：§4.6 要求传送目标内容
+            "-f",
             "-",
             "-C",
             str(local_parent).replace("\\", "/"),
@@ -324,7 +326,7 @@ def build_tar_download_plan(
     inner_command = (
         f"p={quoted_remote}; "
         'd=$(dirname "$p"); b=$(basename "$p"); '
-        'cd "$d" && tar czf - -- "$b"'
+        'cd "$d" && tar -c -h -z -f - -- "$b"'
     )
     stage_path = local_path.parent / f".vbtmp-{uuid.uuid4().hex}"
     return TarDownloadPlan(

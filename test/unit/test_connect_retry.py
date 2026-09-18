@@ -94,6 +94,29 @@ class ConnectRetryContractTest(unittest.TestCase):
         self.assertFalse(ParamikoSessionBackend._is_banner_drop(Exception("Authentication failed.")))
         self.assertFalse(ParamikoSessionBackend._is_banner_drop(Exception("Connection refused")))
 
+    def test_connect_timeout_is_a_cap_inside_the_call_budget(self):
+        """§5.8: runtime.connect_timeout 是本次调用预算内的连接子预算。"""
+        backend = self._backend()  # connect_timeout=5
+        seen = {}
+
+        class _StubDeadline:
+            def __init__(self, seconds):
+                self.timeout = seconds
+
+            def remaining(self, _cmd):
+                return self.timeout
+
+        def fake_start(seconds):
+            seen["seconds"] = seconds
+            return _StubDeadline(seconds)
+
+        with mock.patch.object(
+            ParamikoSessionBackend, "_transport_is_ready", return_value=True
+        ), mock.patch("common.paramiko_backend._Deadline.start", side_effect=fake_start):
+            backend.ensure_connected(timeout=30)
+
+        self.assertEqual(seen["seconds"], 5)
+
 
 if __name__ == "__main__":
     unittest.main()

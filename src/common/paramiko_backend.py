@@ -928,7 +928,13 @@ class ParamikoSessionBackend:
         return client
 
     def ensure_connected(self, timeout: float | None = None) -> None:
-        deadline = _Deadline.start(self._connect_timeout if timeout is None else timeout)
+        # 配置文档 §2.2 / 架构 §5.8: runtime.connect_timeout 是“本次调用的预算内”
+        # 连接子预算——外层剩余再多也不能让建连阶段吃掉整条 deadline。
+        if timeout is None:
+            budget = self._connect_timeout
+        else:
+            budget = min(float(timeout), self._connect_timeout)
+        deadline = _Deadline.start(budget)
         acquired = self._connect_lock.acquire(
             timeout=deadline.remaining(self._host)
         )
