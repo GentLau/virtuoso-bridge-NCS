@@ -1,7 +1,7 @@
 # virtuoso-bridge-NCS Spec
 
 > 版本：Release `SPEC-2026-09-16-r3`（送审修订版）
-> 日期：2026-09-16
+> 日期：2026-09-18
 > 状态：Normative 基线（取代 r2）
 > Supersedes：`SPEC-2026-09-14-r2`（按 2026-09-15/16 两轮复审意见收口：hash/checker 治理对齐、max_sessions 按 endpoint、Skill 超时合同、探测矩阵按 role mode 条件化、reservation 内存化、新增 Informative 整体流程示例）
 
@@ -100,7 +100,7 @@ CDS.log metadata frame 完整字节格式
 
 - **Release ID**：`SPEC-2026-09-16-r3`
 - **Normative 文件集**（10 份）：四层整体架构与接口、本版范围与明确不支持、中层配置文档、路由设计、多用户与注册、并发设计、日志返回设计标准、顶层：HTTP 入口与业务调度、顶层补充：控制面与业务面、上层：业务包与插件化；
-- **Normative 内容哈希**：`69eb4a47337eb49572942f4012722fc4ef475117231836f6473ef27fe986ff41`
+- **Normative 内容哈希**：`d32426de0baf77895323a3741a2dbe4d6108d08938fb5e9fb98e17c3712e068d`
   - 算法：路径为**相对 `spec/` 目录**并按路径排序；逐文件 SHA-256（**按 Git 提交内容计算，即 LF 行尾**；Windows 工作区受 `core.autocrlf` 影响的行尾差异不计入）；每行 `<相对路径> <hex>` 以 LF 拼接（**行间分隔、末行无尾 LF**），再取一次 SHA-256；
 - **基线 commit**：本 Release 段所在提交即基线（见 `git log -1 -- spec/`）；任何 Normative 文档变更必须同时更新本段哈希。
 
@@ -108,16 +108,16 @@ CDS.log metadata frame 完整字节格式
 
 | 文档 | 版本 | 状态 | Supersedes |
 |---|---|---|---|
-| 四层整体架构与接口 | Draft v30 | Normative | Draft v29（Skill 接口可选显式 log_level/log_max_bytes） |
+| 四层整体架构与接口 | Draft v31 | Normative | Draft v30（全局配置归属控制面，不再归入注册模块） |
 | 路由设计 | v17 | Normative | v16（spectre 表述：本版第 5 业务接口，编排留待后续） |
 | 本版范围与明确不支持 | v9 | Normative | v8（业务接口计数口径：5 业务接口 + 只读查询 query） |
 | 中层配置文档 | Draft v30 | Normative | Draft v21–v29（合并说明见文件头 Supersedes） |
 | 多用户与注册 | Draft v25 | Normative | Draft v24（注册为独立模块，只产出注册表；中层只消费） |
 | 并发设计 | Draft v20 | Normative | Draft v19（重试决策单元术语统一为业务操作） |
-| 顶层 | Draft v15 | Normative | Draft v14（import 白名单收窄为 common.paths） |
-| 控制面与业务面 | Draft v14 | Normative | Draft v13（权限口径、config 读写语义、跨进程生效、管理哈希供给、cancel action 收口） |
+| 顶层 | Draft v16 | Normative | Draft v15（不保存业务状态措辞） |
+| 控制面与业务面 | Draft v15 | Normative | Draft v14（action 转移表标注为六步状态机的 HTTP 投影） |
 | 上层 | Draft v14 | Normative | Draft v12（import 白名单收窄为 common.paths） |
-| 日志返回设计标准 | Draft v14 | Normative | Draft v13（log 参数支持业务接口显式覆盖注册表默认） |
+| 日志返回设计标准 | Draft v15 | Normative | Draft v14（覆盖示例统一为合法值 warn） |
 
 > 版本链规则：每份文档的文件头 `版本 / Supersedes` 必须与本表一致（日期由文件头记录，不入本表）；版本号只递增，跳号必须在 `Supersedes` 中说明合并了哪些版本。
 

@@ -1,9 +1,9 @@
 # 顶层补充：控制面与业务面
 
-> 版本：Draft v14
+> 版本：Draft v15
 > 日期：2026-09-17
 > 状态：Normative（顶层 HTTP 端点清单、端口划分与权限口径的唯一 owner）
-> Supersedes：Draft v13（权限口径、config 读写语义、跨进程生效、管理哈希供给、cancel action 收口）
+> Supersedes：Draft v14（action 转移表标注为六步状态机的 HTTP 投影）
 > 定位：本文是[顶层](1-顶层.md)的端点补充——[顶层](1-顶层.md)定义顶层职责、调度与响应壳；本文定义顶层开哪些端口、哪些方法、支持哪些请求、每个端点需要什么权限。注册语义见[多用户与注册 §3/§5](../其他/1-多用户与注册.md)。
 
 ## 1. 双面双端口
@@ -45,7 +45,7 @@
 | POST | `/api/register` | 注册命令：`{user, action, token?, 参数}`，`action` ∈ `apply / validate / probe / deploy / verify / commit / cancel` | `apply` 无权限；其余 action 会话 token |
 | GET | `/api/register/<user>` | 查询进行中的注册状态 | 会话 token |
 
-状态机转移：
+状态机转移（本文是[多用户与注册 §3](../其他/1-多用户与注册.md)六步状态机的 HTTP 投影，语义以该文档为准）：
 
 | action | 合法前提 |
 |---|---|
