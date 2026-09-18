@@ -157,3 +157,69 @@
 
 - `python -m pytest test/unit test/integration test/scenario`
   → **574 passed, 1 skipped, 27 subtests passed in 346.38s**（2026-09-18）。
+
+## 9. 测试覆盖率增强（第四轮：门禁覆盖，2026-09-18）
+
+> 门槛口径：`coverage run --branch --source=src -m pytest test/unit test/integration test/scenario`
+> （只统计门禁 pytest 套件；`test/tb/*.py` 的真实环境脚本不计入，避免“虚高”）。
+> 这轮先承认问题：此前只看 statement 覆盖率，**顶层 HTTP 面、daemon 非法参数、tar 传输、
+> registry 并发写、query 只读接口在门禁里几乎为 0**，所以高覆盖率是假的。
+
+### 9.1 本轮门禁结果
+
+- `python -m pytest test/unit test/integration test/scenario`（带分支覆盖）
+  → **631 passed, 1 skipped, 37 subtests passed in 469.71s**；
+  测试数从 574 增至 631。
+- 全量分支覆盖率：**68% → 73%**（stmts 8109、miss 2004、branch partial 359）。
+- 各层汇总（statement+branch 加权）：
+
+| 范围 | 覆盖率 |
+|---|---|
+| `src/transport`（中层） | 78.2% |
+| `src/register`（注册/管理） | 79.4% |
+| `src/common`（共享基座） | 73.4% |
+| `src/server`（顶层） | 66.7%（`main()`/装配路径与 stress TB 服务拉低） |
+| `src/bridge`（底层 daemon） | 59.6%（未覆盖集中在 `start_server()` 主循环/accept） |
+| `src/pyapi`（上层业务包） | 47.7%（`schematic.py` 11% 为最大缺口，属上层职责） |
+
+### 9.2 关键模块变化（基线 → 现在）
+
+| 模块 | 基线 | 现在 | 主要补测内容 |
+|---|---|---|---|
+| `src/server/dispatch.py` | 0% | 80% | 响应壳 4xx/2xx/5xx 分界、unknown op、token 校验、jsonable、重复注册 |
+| `src/server/api_server.py` | 0% | 53% | 业务面 429 + Retry-After、/health 线程池状态 |
+| `src/common/paramiko_backend.py` | 58% | 69% | `upload_tar`/`download_tar` 成功+失败、`open_shell` 名额归还、SFTP 错误 |
+| `src/common/ssh.py` | 72% | 76% | 上传流水线 CM 降级、tar 失败分类、后端分派、`test_connection`、`close` 幂等 |
+| `src/transport/tunnel.py` | 76% | 80% | 串行位超时、下载替换失败 `kind=path`、one-shot role 分派、摘要错误 |
+| `src/transport/middle.py` | 77% | 79% | 本地 recursive 类型不符、query 契约、本地 shell 边界 |
+| `src/register/flow.py` | 76% | 79% | 非 22 端口、显式 python 非法、保留端口、identity 只读一次 |
+| `src/register/server.py` | 78% | 86% | /help、GET user、未知路由、参数修正拒绝、乱序不改状态 |
+| `src/common/registry.py` | 91% | 94% | `update` 合并/校验/token 不可变、跨进程锁超时 |
+| `src/common/transfer.py` | 89% | 92% | 目录替换回滚（backup dance） |
+
+### 9.3 本轮新增门禁 TB（节选）
+
+- 新增文件：`test/unit/test_top_layer_pool.py`、`test/unit/test_top_layer_dispatch.py`；
+- `test/integration/test_daemon_handler.py`：非法 `log_level` / `log_max_bytes` → NAK 且零管道接触；
+- `test/unit/test_paramiko.py`：tar 上传/下载成功与失败路径、shell 名额释放；
+- `test/unit/test_ssh.py`：递归上传 CM 降级、tar 错误映射、后端分派、连接测试、close 幂等；
+- `test/unit/test_registry_more.py`：`Registry.update` 语义 + 跨进程文件锁超时；
+- `test/unit/test_register_flow.py`：探测失败分支 + identity 单次读取；
+- `test/unit/test_registration_server.py`：控制面端点/顺序/权限边界；
+- `test/unit/test_middle_contracts.py`：`query` 契约（root/bin、不泄漏拓扑、未知 token）；
+- `test/unit/test_transfer.py`：目录替换回滚；`test/unit/test_tunnel_transfer.py`：串行/替换/摘要错误。
+
+### 9.4 本轮顺带修掉的产品缺陷
+
+- **步骤 5 identity 读两次**：`test_connectivity` 先 `_banner_hostname()` 再为 user 比对调用
+  `_identity_text()`，remote 模式多花一条 SSH 命令；且 `identity_warnings()` 是未被使用的死代码。
+  现已合并为“一次读取 + 统一比对”。TB：`test_connectivity_reads_identity_once_and_reports_both_drifts`
+  （修复前红：2 次读取）。
+
+### 9.5 仍然偏低的区域（需要环境或归属方）
+
+- `pyapi/packages/schematic.py` 11%、`cellview.py` 50%：上层业务包，需要上层补 TB（或真机 skill 回放）；
+- daemon 的两个文件 62–69%：未覆盖主要是 `start_server()` 主循环/accept，属进程级行为，
+  由 `test/tb/*` 真机脚本覆盖；
+- `paramiko_backend` 69%：SOCKS5/proxy + ProxyJump 的 socket 内部路径，需要真实代理环境；
+- `api_server.py` 53%：`main()` 与 `register_packages()` 装配路径，属进程启动行为。
