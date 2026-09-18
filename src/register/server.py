@@ -311,6 +311,11 @@ class RegistrationHandler(BaseHTTPRequestHandler):
             return
 
         state = getattr(flow, action)()
+        # v27: ordinary step failures discard the candidate immediately;
+        # verify failures stay retryable in place per the HTTP action table.
+        if state.stage == "failed" and action != "verify":
+            with self.server.flow_lock:
+                self.server.flows.pop(user, None)
         self._send_json(200, self._state_payload(state))
 
     def _handle_delete(self, user: str) -> None:

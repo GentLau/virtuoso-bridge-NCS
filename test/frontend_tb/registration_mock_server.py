@@ -683,6 +683,11 @@ class RegistrationMockHandler(BaseHTTPRequestHandler):
             try:
                 with self.mock_server.flow_lock:
                     status, payload = self._transition(flow, action)
+                    if (
+                        payload.get("stage") == "failed"
+                        and action != "verify"
+                    ):
+                        self.mock_server.flows.pop(user, None)
                 self._send_json(status, payload)
                 return
             except (AttributeError, ValueError) as exc:

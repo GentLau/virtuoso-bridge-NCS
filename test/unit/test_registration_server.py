@@ -182,6 +182,10 @@ class TestRegistrationServer(unittest.TestCase):
         status, failed = self._step("retry", "validate", data["token"])
         self.assertEqual(status, 200)
         self.assertEqual(failed["stage"], "failed")
+        status, _ = self.srv.request(
+            "GET", f"/api/register/retry?token={data['token']}"
+        )
+        self.assertEqual(status, 404)
 
         restarted = self._apply(
             "retry",
