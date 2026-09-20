@@ -110,7 +110,7 @@ CDS.log metadata frame 完整字节格式
 |---|---|---|---|
 | 四层整体架构与接口 | Draft v34 | Normative | Draft v33（query 与五业务接口统一 token 必填关键字） |
 | 路由设计 | v17 | Normative | v16（spectre 表述：本版第 5 业务接口，编排留待后续） |
-| 本版范围与明确不支持 | v9 | Normative | v8（业务接口计数口径：5 业务接口 + 只读查询 query） |
+| 本版范围与明确不支持 | v10 | Normative | v9（顶层任务等待池本版不实现） |
 | 中层配置文档 | Draft v32 | Normative | Draft v21–v31（合并说明见文件头 Supersedes） |
 | 多用户与注册 | Draft v31 | Normative | Draft v30（update 白名单拒绝 token/registered_at/未声明字段） |
 | 并发设计 | Draft v20 | Normative | Draft v19（重试决策单元术语统一为业务操作） |
