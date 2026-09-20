@@ -397,6 +397,8 @@ class BusinessServer(Middle):
         self._skill_clients: dict[str, SkillClient] = {}
         self._skill_entries: dict[str, UserEntry] = {}
         self._capacity: dict[str, threading.BoundedSemaphore] = {}
+        self._in_flight: dict[str, int] = {}
+        self._retire_pending: set[str] = set()
         self._local_locks: dict[str, threading.Lock] = {}
         self._skill_gates: dict[str, threading.Lock] = {}
         self._local_sessions: dict[str, _LocalCommandSession] = {}
@@ -412,6 +414,8 @@ class BusinessServer(Middle):
             self._skill_entries.pop(token, None)
             session = self._local_sessions.pop(token, None)
             self._capacity.pop(token, None)
+            self._in_flight.pop(token, None)
+            self._retire_pending.discard(token)
         for resource in (client, session):
             if resource is not None:
                 try:
@@ -420,13 +424,18 @@ class BusinessServer(Middle):
                     logger.debug("invalidating token %s failed", token, exc_info=True)
 
     def reload_registry(self) -> None:
-        """Explicitly refresh the runtime snapshot and close stale caches.
+        """Explicitly refresh the runtime snapshot and retire stale caches.
 
         Runtime never rereads ``registry.json`` implicitly.  A control-plane
         deployment on the same filesystem may call this method (or restart the
         business process) after a management update.
+
+        顶层补充 v27: ``/api/process/reload`` 不打断在途请求 —— 快照立即切换
+        （新请求按新注册表路由），旧 token 的连接缓存等其 in-flight 归零后
+        再关闭。
         """
         fresh = load_registry(registry_path())
+        to_close: list[str] = []
         with self._lock:
             self.registry = fresh
             tokens = (
@@ -436,7 +445,12 @@ class BusinessServer(Middle):
                 | set(self._local_sessions)
                 | set(self._capacity)
             )
-        for token in tokens:
+            for token in tokens:
+                if self._in_flight.get(token, 0) > 0:
+                    self._retire_pending.add(token)
+                else:
+                    to_close.append(token)
+        for token in to_close:
             self.invalidate_token(token)
 
     def close(self) -> None:
@@ -546,12 +560,32 @@ class BusinessServer(Middle):
             if sem is None:
                 sem = threading.BoundedSemaphore(entry.runtime.thread_pool_size)
                 self._capacity[token] = sem
-        return sem if sem.acquire(blocking=False) else None
+            if not sem.acquire(blocking=False):
+                return None
+            self._in_flight[token] = self._in_flight.get(token, 0) + 1
+            return sem
 
-    @staticmethod
-    def _release(sem: threading.BoundedSemaphore | None) -> None:
+    def _release(
+        self,
+        sem: threading.BoundedSemaphore | None,
+        token: str | None = None,
+    ) -> None:
+        """Release one in-flight slot; retire a token whose cache is pending."""
+        retire = False
         if sem is not None:
             sem.release()
+        if token is not None:
+            with self._lock:
+                left = self._in_flight.get(token, 0) - 1
+                if left > 0:
+                    self._in_flight[token] = left
+                else:
+                    self._in_flight.pop(token, None)
+                    if token in self._retire_pending:
+                        self._retire_pending.discard(token)
+                        retire = True
+        if retire:
+            self.invalidate_token(token)
 
     def _skill_gate(self, token: str) -> threading.Lock:
         """Per-token **delivery** gate for the Skill channel.
@@ -661,7 +695,7 @@ class BusinessServer(Middle):
         finally:
             if gate_held and gate is not None:
                 gate.release()
-            self._release(sem)
+            self._release(sem, token)
 
     def run_command(self, cmd: str, timeout: int | None = None, *, token: str, parallel: bool = False) -> CommandResult:
         sem = None
@@ -711,7 +745,7 @@ class BusinessServer(Middle):
         except Exception as exc:  # noqa: BLE001 - mapped onto the kind contract
             return _error_result(exc, budget)
         finally:
-            self._release(sem)
+            self._release(sem, token)
 
     def upload_file(self, local_path: Path, remote_path: str, timeout: int | None = None, *, token: str, recursive: bool = False) -> CommandResult:
         sem = None
@@ -745,7 +779,7 @@ class BusinessServer(Middle):
         except Exception as exc:  # noqa: BLE001 - mapped onto the kind contract
             return _error_result(exc, budget)
         finally:
-            self._release(sem)
+            self._release(sem, token)
 
     def download_file(self, remote_path: str, local_path: Path, timeout: int | None = None, *, token: str, recursive: bool = False) -> CommandResult:
         sem = None
@@ -779,7 +813,7 @@ class BusinessServer(Middle):
         except Exception as exc:  # noqa: BLE001 - mapped onto the kind contract
             return _error_result(exc, budget)
         finally:
-            self._release(sem)
+            self._release(sem, token)
 
     # -- read-only companion query (spec §4.2) ---------------------------------
 
@@ -847,7 +881,7 @@ class BusinessServer(Middle):
         except Exception as exc:  # noqa: BLE001 - mapped onto the kind contract
             return _error_result(exc, budget)
         finally:
-            self._release(sem)
+            self._release(sem, token)
 
     # -- local-mode helpers ---------------------------------------------------
 

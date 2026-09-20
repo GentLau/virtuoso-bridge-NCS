@@ -39,7 +39,11 @@ class FakeRemoteClient:
         self.entry = entry
         self.targets = targets
         self.user = user
+        self.closed = False
         FakeRemoteClient.instances[entry.token] = self
+
+    def close(self):
+        self.closed = True
 
     def ensure_tunnel(self, deadline=None):
         self.ensure_tunnel_called = True
@@ -265,6 +269,44 @@ class TestMiddleErrorAndLocalPaths(unittest.TestCase):
             directory, str(Path(self.wd) / "out"), recursive=False
         )
         self.assertEqual(result.kind, "path")
+
+
+class TestReloadDefersInFlightClose(unittest.TestCase):
+    """v27: /api/process/reload 不打断在途请求。"""
+
+    def setUp(self):
+        self.wd = override_work_dir_for_tests(Path(tempfile.mkdtemp()))
+        self.reg = load_registry(registry_path())
+
+    def test_reload_defers_cache_close_for_in_flight_token(self):
+        """v27: reload 不打断在途请求 —— 缓存等 in-flight 归零再关。"""
+        self.reg.register("alice", make_remote_entry("tok-reload"))
+        with mock.patch.object(middle_mod, "RemoteClient", FakeRemoteClient):
+            server = BusinessServer()
+            entry = server.registry.by_token("tok-reload")
+            sem = server._acquire("tok-reload", entry)
+            self.assertIsNotNone(sem)
+            client = server._remote("tok-reload")
+            self.assertIs(server._clients["tok-reload"], client)
+
+            server.reload_registry()
+            self.assertIn("tok-reload", server._clients, "must not interrupt in-flight")
+            self.assertFalse(client.closed)
+
+            server._release(sem, "tok-reload")
+            self.assertNotIn("tok-reload", server._clients)
+            self.assertTrue(client.closed)
+            server.close()
+
+    def test_reload_closes_idle_token_cache_immediately(self):
+        self.reg.register("alice", make_remote_entry("tok-idle"))
+        with mock.patch.object(middle_mod, "RemoteClient", FakeRemoteClient):
+            server = BusinessServer()
+            client = server._remote("tok-idle")
+            server.reload_registry()
+            self.assertNotIn("tok-idle", server._clients)
+            self.assertTrue(client.closed)
+            server.close()
 
 
 class TestLocalShellStartupBound(unittest.TestCase):

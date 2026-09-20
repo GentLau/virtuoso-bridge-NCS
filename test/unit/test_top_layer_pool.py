@@ -98,6 +98,35 @@ class TestBusinessFacePool(unittest.TestCase):
         self.assertEqual(body["data"]["max_inflight"], 1)
         self.assertEqual(body["data"]["in_flight"], 0)
 
+    def test_hot_resize_admits_more_requests(self):
+        """v27: reload 热生效 business_thread_pool_size（可变准入上限）。"""
+        first = []
+        worker = threading.Thread(target=lambda: first.append(self._post()))
+        worker.start()
+        time.sleep(0.2)
+        self.assertEqual(self._post()[0], 429, "limit=1 must refuse a second call")
+
+        self.server.set_max_inflight(2)
+        status, raw, _retry = self._post()
+        self.assertEqual(status, 200, raw)
+        worker.join(timeout=10)
+        self.assertEqual(first[0][0], 200, first[0][1])
+
+    def test_draining_refuses_new_requests_with_503(self):
+        self.server.draining = True
+        status, raw, retry_after = self._post()
+        self.assertEqual(status, 503, raw)
+        self.assertIn("restarting", json.loads(raw)["error"])
+        self.assertIsNotNone(retry_after)
+
+    def test_wait_idle_times_out_then_completes(self):
+        worker = threading.Thread(target=self._post)
+        worker.start()
+        time.sleep(0.2)
+        self.assertFalse(self.server.wait_idle(0.1))
+        worker.join(timeout=10)
+        self.assertTrue(self.server.wait_idle(2.0))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -37,8 +37,10 @@ def _free_port() -> int:
 
 
 class _ServerThread:
-    def __init__(self, registry):
-        self.server = RegistrationServer(("127.0.0.1", 0), registry)
+    def __init__(self, registry, process_manager=None):
+        self.server = RegistrationServer(
+            ("127.0.0.1", 0), registry, process_manager
+        )
         self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
         self.thread.start()
         self.port = self.server.server_address[1]
@@ -69,6 +71,129 @@ class _ServerThread:
         body = resp.read().decode("utf-8")
         conn.close()
         return resp.status, body
+
+
+class _StubManager:
+    """Duck-typed process manager used by the control-plane endpoint tests."""
+
+    def __init__(self, *, same_process=False, reload_error=None, restart_error=None):
+        self.same_process = same_process
+        self.reload_error = reload_error
+        self.restart_error = restart_error
+        self.calls: list[str] = []
+
+    def status(self):
+        return {
+            "same_process": self.same_process,
+            "state": "ready",
+            "pid": 4242,
+            "port": 8127,
+            "work_dir": "/tmp/w",
+            "startup_args": ["-m", "server.api_server", "--port", "8127"],
+            "last_error": None,
+        }
+
+    def reload(self):
+        self.calls.append("reload")
+        if self.reload_error is not None:
+            raise self.reload_error
+        return self.status()
+
+    def restart(self):
+        self.calls.append("restart")
+        if self.restart_error is not None:
+            raise self.restart_error
+        return self.status()
+
+    def shutdown(self):
+        self.calls.append("shutdown")
+
+
+class TestProcessEndpoints(unittest.TestCase):
+    """顶层补充 v27 §3：/api/process/*（管理员，target=business）。"""
+
+    def setUp(self):
+        self.wd = override_work_dir_for_tests(Path(tempfile.mkdtemp()))
+        self.registry = load_registry(registry_path())
+        self.manager = _StubManager()
+        self.srv = _ServerThread(self.registry, self.manager)
+
+    def tearDown(self):
+        self.srv.close()
+
+    def test_admin_required(self):
+        for method, path, body in (
+            ("GET", "/api/process/status", None),
+            ("POST", "/api/process/reload", {"target": "business"}),
+            ("POST", "/api/process/restart", {"target": "business"}),
+        ):
+            with self.subTest(path=path):
+                status, _raw = self.srv.request(method, path, body)
+                self.assertEqual(status, 401)
+
+    def test_status_reports_manager_state(self):
+        status, raw = self.srv.request(
+            "GET", "/api/process/status", None, _admin_auth()
+        )
+        self.assertEqual(status, 200)
+        payload = json.loads(raw)
+        self.assertEqual(payload["state"], "ready")
+        self.assertFalse(payload["same_process"])
+        self.assertEqual(payload["port"], 8127)
+
+    def test_reload_and_restart_call_manager_and_audit(self):
+        for action in ("reload", "restart"):
+            status, raw = self.srv.request(
+                "POST", f"/api/process/{action}", {"target": "business"},
+                _admin_auth(),
+            )
+            self.assertEqual(status, 200, raw)
+        self.assertEqual(self.manager.calls, ["reload", "restart"])
+        audit = Path(self.wd) / "log" / "audit.log"
+        self.assertTrue(audit.exists())
+        lines = [json.loads(line) for line in audit.read_text(encoding="utf-8").splitlines()]
+        self.assertEqual([line["action"] for line in lines], ["reload", "restart"])
+        self.assertTrue(all(line["ok"] for line in lines))
+        self.assertNotIn(_ADMIN_TOKEN, audit.read_text(encoding="utf-8"))
+
+    def test_invalid_target_is_400(self):
+        status, raw = self.srv.request(
+            "POST", "/api/process/reload", {"target": "control"}, _admin_auth()
+        )
+        self.assertEqual(status, 400, raw)
+        self.assertEqual(self.manager.calls, [])
+
+    def test_unmanaged_returns_409(self):
+        server = _ServerThread(self.registry, None)
+        try:
+            status, raw = server.request(
+                "GET", "/api/process/status", None, _admin_auth()
+            )
+            self.assertEqual(status, 409, raw)
+            status, raw = server.request(
+                "POST", "/api/process/reload", {"target": "business"},
+                _admin_auth(),
+            )
+            self.assertEqual(status, 409, raw)
+        finally:
+            server.close()
+
+    def test_same_process_restart_is_501(self):
+        manager = _StubManager(same_process=True, restart_error=NotImplementedError())
+        server = _ServerThread(self.registry, manager)
+        try:
+            status, raw = server.request(
+                "POST", "/api/process/restart", {"target": "business"},
+                _admin_auth(),
+            )
+            self.assertEqual(status, 501, raw)
+            status, raw = server.request(
+                "POST", "/api/process/reload", {"target": "business"},
+                _admin_auth(),
+            )
+            self.assertEqual(status, 200, raw)  # same-process reload is allowed
+        finally:
+            server.close()
 
 
 class TestRegistrationServer(unittest.TestCase):

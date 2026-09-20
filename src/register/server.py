@@ -142,6 +142,8 @@ class RegistrationHandler(BaseHTTPRequestHandler):
             self._send_json(200, {"endpoints": [
                 "GET /", "GET /health", "GET /help",
                 "POST /api/bug",
+                "GET /api/process/status",
+                "POST /api/process/reload", "POST /api/process/restart",
                 "POST /api/register", "GET /api/register/<user>",
                 "GET /api/users", "GET /api/user/<user>",
                 "POST /api/user/<user>/update", "DELETE /api/user/<user>",
@@ -152,6 +154,11 @@ class RegistrationHandler(BaseHTTPRequestHandler):
             if not self._require_admin():
                 return
             self._send_json(200, self.server.config)
+            return
+        if path == "/api/process/status":
+            if not self._require_admin():
+                return
+            self._handle_process_status()
             return
         if path == "/api/users":
             if not self._require_admin():
@@ -213,6 +220,13 @@ class RegistrationHandler(BaseHTTPRequestHandler):
             return
         if path == "/api/bug":
             self._handle_bug_report()
+            return
+        if path in ("/api/process/reload", "/api/process/restart"):
+            if not self._require_admin():
+                return
+            self._handle_process_action(
+                "reload" if path.endswith("/reload") else "restart"
+            )
             return
         self._send_json(404, {"error": "not found"})
 
@@ -345,6 +359,50 @@ class RegistrationHandler(BaseHTTPRequestHandler):
         self._send_json(200, self._state_payload(state))
 
     # -- POST /api/bug（控制面 v22 §3） --------------------------------------
+    # -- 业务进程管理（顶层补充 v27 §3） -------------------------------------
+    def _handle_process_status(self) -> None:
+        manager = self.server.process_manager  # type: ignore[attr-defined]
+        if manager is None:
+            self._send_json(409, {"error": "business process is not managed"})
+            return
+        try:
+            payload = manager.status()
+        except Exception as exc:  # noqa: BLE001
+            self._send_json(500, {"error": f"status failed: {exc}"})
+            return
+        self._send_json(200, payload)
+
+    def _handle_process_action(self, action: str) -> None:
+        try:
+            body = self._read_json()
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            body = {}
+        if not isinstance(body, dict):
+            body = {}
+        target = body.get("target", "business")
+        if target != "business":
+            # v27: target 本版只允许 business
+            self._send_json(400, {"error": "invalid target", "detail": target})
+            return
+        manager = self.server.process_manager  # type: ignore[attr-defined]
+        if manager is None:
+            self.server.audit(action, target=target, ok=False, detail="not managed")  # type: ignore[attr-defined]
+            self._send_json(409, {"error": "business process is not managed"})
+            return
+        try:
+            payload = getattr(manager, action)()
+        except NotImplementedError:
+            # 同进程部署：不允许自己重启自己（v27 §3）
+            self.server.audit(action, target=target, ok=False, detail="not supported")  # type: ignore[attr-defined]
+            self._send_json(501, {"error": f"{action} is not supported in this mode"})
+            return
+        except Exception as exc:  # noqa: BLE001
+            self.server.audit(action, target=target, ok=False, detail=str(exc))  # type: ignore[attr-defined]
+            self._send_json(500, {"error": f"{action} failed: {exc}"})
+            return
+        self.server.audit(action, target=target, ok=True)  # type: ignore[attr-defined]
+        self._send_json(200, payload)
+
     @staticmethod
     def _mask_token(raw_text: str, token: str) -> tuple[str, bool]:
         """Return the raw body with the bearer token value masked.
@@ -594,14 +652,37 @@ class RegistrationServer(ThreadingHTTPServer):
     daemon_threads = True
     request_queue_size = 64
 
-    def __init__(self, server_address, registry: Registry) -> None:
+    def __init__(
+        self,
+        server_address,
+        registry: Registry,
+        process_manager=None,
+    ) -> None:
         super().__init__(server_address, RegistrationHandler)
         self.registry = registry
+        #: 业务进程管理（None = 未托管；v27 §1.1）
+        self.process_manager = process_manager
         self.reservations = ReservationTable()
         self.flows: dict[str, RegistrationFlow] = {}
         self.flow_lock = threading.Lock()
         self.config_path = registry_path().parent / "config.json"
         self.config: dict = self.load_config()
+
+    def audit(self, action: str, *, target: str, ok: bool, detail: str = "") -> None:
+        """Append one admin action to ``log/audit.log``（不含凭据）。"""
+        path = log_dir() / "audit.log"
+        record = {
+            "ts": datetime.now(timezone.utc).isoformat(),
+            "action": action,
+            "target": target,
+            "ok": bool(ok),
+            "detail": detail,
+        }
+        try:
+            with path.open("a", encoding="utf-8") as fh:
+                fh.write(json.dumps(record, ensure_ascii=False) + "\n")
+        except OSError:
+            pass
 
     def load_config(self) -> dict:
         """启动时导入一次到内存快照；运行期不再读文件。"""
