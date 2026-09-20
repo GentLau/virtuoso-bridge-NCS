@@ -103,7 +103,7 @@ CDS.log metadata frame 完整字节格式
 
 - **Release ID**：`SPEC-2026-09-18-r4`
 - **Normative 文件集**（11 份）：四层整体架构与接口、本版范围与明确不支持、中层配置文档、路由设计、多用户与注册、并发设计、日志返回设计标准、顶层：HTTP 入口与业务调度、顶层补充：控制面与业务面、顶层补充：任务等待池、上层：业务包与插件化；
-- **Normative 内容哈希**：`85099fc0bc58203e6e3f0de8b2540e4955f375e9c88b54766bb22accb3568a33`
+- **Normative 内容哈希**：`f5fed9949a0591918ea2f7f797af56172d8220e0b38bb0564e72e03a9a229e2f`
   - 算法：路径为**相对 `spec/` 目录**并按路径排序；逐文件 SHA-256（**按 Git 提交内容计算，即 LF 行尾**；Windows 工作区受 `core.autocrlf` 影响的行尾差异不计入）；每行 `<相对路径> <hex>` 以 LF 拼接（**行间分隔、末行无尾 LF**），再取一次 SHA-256；
 - **基线 commit**：本 Release 段所在提交即基线（见 `git log -1 -- spec/`）；任何 Normative 文档变更必须同时更新本段哈希。
 
@@ -119,7 +119,7 @@ CDS.log metadata frame 完整字节格式
 | 并发设计 | Draft v20 | Normative | Draft v19（重试决策单元术语统一为业务操作） |
 | 顶层 | Draft v17 | Normative | Draft v16（索引任务等待池） |
 | 控制面与业务面 | Draft v20 | Normative | Draft v19（索引任务等待池端点） |
-| 任务等待池 | Draft v1 | Normative | — |
+| 任务等待池 | Draft v2 | Normative | Draft v1（查询统一端点、token 授权、挂起失败语义） |
 | 上层 | Draft v14 | Normative | Draft v12–v13（v12 白名单加入 common.*；v13 收窄为 common.paths） |
 | 日志返回设计标准 | Draft v15 | Normative | Draft v14（覆盖示例统一为合法值 warn） |
 
