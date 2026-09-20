@@ -1,9 +1,9 @@
 # 顶层补充：控制面与业务面
 
-> 版本：Draft v25
+> 版本：Draft v26
 > 日期：2026-09-17
 > 状态：Normative（顶层 HTTP 端点清单、端口划分与权限口径的唯一 owner）
-> Supersedes：Draft v24（业务进程管理端点并入控制端口端点表）
+> Supersedes：Draft v25（starting 状态、30s 排空上限、503 拒绝语义、同进程语义、reload 内部通道）
 > 定位：本文是[顶层](1-顶层.md)的端点补充——[顶层](1-顶层.md)定义顶层职责、调度与响应壳；本文定义顶层开哪些端口、哪些方法、支持哪些请求、每个端点需要什么权限。注册语义见[多用户与注册 §3/§5](../其他/1-多用户与注册.md)。
 
 ## 1. 双面双端口
@@ -82,11 +82,15 @@
 
 | 方法 | 路径 | 用途 | 权限 |
 |---|---|---|---|
-| GET | `/api/process/status` | 业务进程 pid/端口/工作路径/启动参数/状态（`ready` / `crashed`） | 管理权限 |
+| GET | `/api/process/status` | 业务进程 pid/端口/工作路径/启动参数/状态（`starting` / `ready` / `crashed`） | 管理权限 |
 | POST | `/api/process/reload` | 重新导入 `registry.json` 与 `config.json`、关闭旧 token 缓存；不打断在途请求 | 管理权限 |
-| POST | `/api/process/restart` | 拒绝新请求、等在途完成（上限 N 秒，超时强杀）、按原启动参数重新拉起 | 管理权限 |
+| POST | `/api/process/restart` | 拒绝新请求、等在途完成（上限 **30 秒**，超时强杀）、按原启动参数重新拉起 | 管理权限 |
 
-- `target` 本版只允许 `business`；不提供任意命令/进程控制；子进程意外退出 → `crashed`，不自动拉起；
+- `target` 本版只允许 `business`；不提供任意命令/进程控制；子进程意外退出 → `crashed`，**不自动拉起**，需管理员 `restart`；
+- `status`：`starting` = 已拉起但端口尚未 ready；`crashed` = 已退出；
+- `restart` 的“拒绝新请求”：业务监听保持，新请求返回 `503 + Retry-After`；在途请求继续排空至 30 秒上限；管理端 `restart` 调用同步等待完成，其自身超时必须大于 30 秒；
+- `reload` 经父进程 spawn 时建立的**内部控制通道**触发，不新增业务端口对外端点；
+- 同进程部署：`reload` = 原地重导（`BusinessServer.reload_registry()`）；`restart` = `501`（不允许自己重启自己）；`status` 返回 `same_process=true`；
 - 未托管或跨机业务进程 → `409`/`501`，不得静默假装成功；审计日志不含凭据。
 
 - 修改类（update/delete）路径以 `user` 定位，**收归管理员**：个人 token 不能自助修改；update 请求体含 `token` 字段 → 拒绝；
