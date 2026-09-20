@@ -20,7 +20,11 @@ import hashlib
 import hmac
 import json
 import os
+import re
 import tempfile
+import time
+import uuid
+from datetime import datetime, timezone
 from importlib.resources import files
 import threading
 from pathlib import Path
@@ -38,10 +42,16 @@ from register.reservation import ReservationTable
 from common.registry import Registry, RegistryError, load_registry
 from common.paths import (  # noqa: E402 - 进程级路径基座（common 层）
     init_work_dir,
+    log_dir,
     registry_path,
+    work_root,
 )
 
 _PAGE = files("register").joinpath("registration_page.html").read_text(encoding="utf-8")
+
+#: POST /api/bug 报告条目中随附日志的有界上限
+_BUG_LOG_TAIL_BYTES = 200_000
+_BUG_LOG_TAIL_LINES = 500
 
 # 内置单管理员 token 的 SHA-256 哈希写死在代码中；原文离线保管。
 _ADMIN_TOKEN_HASH = "db84f807b2bc4af3c4aa7ee220862433438a3d1ee22be3705568a9e7a26b7771"
@@ -131,6 +141,7 @@ class RegistrationHandler(BaseHTTPRequestHandler):
         if path == "/help":
             self._send_json(200, {"endpoints": [
                 "GET /", "GET /health", "GET /help",
+                "POST /api/bug",
                 "POST /api/register", "GET /api/register/<user>",
                 "GET /api/users", "GET /api/user/<user>",
                 "POST /api/user/<user>/update", "DELETE /api/user/<user>",
@@ -199,6 +210,9 @@ class RegistrationHandler(BaseHTTPRequestHandler):
             return
         if path == "/api/register":
             self._handle_register_command()
+            return
+        if path == "/api/bug":
+            self._handle_bug_report()
             return
         self._send_json(404, {"error": "not found"})
 
@@ -329,6 +343,146 @@ class RegistrationHandler(BaseHTTPRequestHandler):
 
         state = getattr(flow, action)()
         self._send_json(200, self._state_payload(state))
+
+    # -- POST /api/bug（控制面 v22 §3） --------------------------------------
+    @staticmethod
+    def _mask_token(raw_text: str, token: str) -> tuple[str, bool]:
+        """Return the raw body with the bearer token value masked.
+
+        控制面 v22 要求“记录原始请求体”，但 token 是终生有效的凭据；原文
+        落盘等于把用户凭据写进报告文件。除 token 值以外一个字符都不改。
+        """
+        if not token:
+            return raw_text, False
+        pattern = r'("token"\s*:\s*)"' + re.escape(token) + r'"'
+        masked = re.sub(pattern, r'\1"***"', raw_text, count=1)
+        return masked, masked != raw_text
+
+    def _bug_status_summary(self) -> dict:
+        with self.server.flow_lock:  # type: ignore[attr-defined]
+            flows = list(self.server.flows.items())  # type: ignore[attr-defined]
+        registrations = []
+        for user, flow in flows:
+            state = getattr(flow, "state", None)
+            if state is None or state.stage == "cancelled":
+                continue
+            registrations.append({
+                "user": user,
+                "stage": state.stage,
+                "step": state.step,
+            })
+        return {
+            "users": len(self.server.registry.users()),  # type: ignore[attr-defined]
+            "registrations_in_progress": registrations,
+            "config": dict(self.server.config),  # type: ignore[attr-defined]
+            "control_plane": {
+                "pid": os.getpid(),
+                "work_dir": str(work_root()),
+            },
+        }
+
+    @staticmethod
+    def _bug_recent_logs() -> list[dict]:
+        """Bounded tail of the local operation/error logs in ``log/``."""
+        entries: list[dict] = []
+        try:
+            candidates = sorted(log_dir().glob("*"))
+        except OSError:
+            return entries
+        for path in candidates:
+            if not path.is_file():
+                continue
+            try:
+                size = path.stat().st_size
+                with path.open("rb") as fh:
+                    if size > _BUG_LOG_TAIL_BYTES:
+                        fh.seek(-_BUG_LOG_TAIL_BYTES, os.SEEK_END)
+                    data = fh.read()
+            except OSError:
+                continue
+            text = data.decode("utf-8", errors="replace")
+            lines = text.splitlines()
+            truncated = size > _BUG_LOG_TAIL_BYTES or len(lines) > _BUG_LOG_TAIL_LINES
+            if len(lines) > _BUG_LOG_TAIL_LINES:
+                lines = lines[-_BUG_LOG_TAIL_LINES:]
+            entries.append({
+                "name": path.name,
+                "size": size,
+                "truncated": truncated,
+                "tail": "\n".join(lines),
+            })
+        return entries
+
+    def _handle_bug_report(self) -> None:
+        """Record one bug report entry; invalid/missing token records nothing."""
+        try:
+            length = int(self.headers.get("Content-Length", "0") or "0")
+        except ValueError:
+            length = 0
+        raw_bytes = self.rfile.read(length) if length > 0 else b""
+        raw_text = raw_bytes.decode("utf-8", errors="replace")
+
+        token = ""
+        try:
+            parsed = json.loads(raw_text) if raw_text else None
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            parsed = None
+        if isinstance(parsed, dict) and isinstance(parsed.get("token"), str):
+            token = parsed["token"]
+
+        user = self.server.registry.user_of(token) if token else None  # type: ignore[attr-defined]
+        if not user:
+            # v22: 无 token / 无效 → 4xx，不记录（这里不落任何文件）
+            self._send_json(400, {"error": "invalid token"})
+            return
+
+        now = datetime.now(timezone.utc)
+        report_id = (
+            f"bug-{now.strftime('%Y%m%dT%H%M%SZ')}-{user}-{uuid.uuid4().hex[:8]}"
+        )
+        raw_body, token_masked = self._mask_token(raw_text, token)
+        entry = {
+            "id": report_id,
+            "received_at": now.isoformat(),
+            "user": user,
+            "remote_addr": self.client_address[0],
+            "content_type": self.headers.get("Content-Type", ""),
+            "raw_body": raw_body,
+            "raw_body_bytes": len(raw_bytes),
+            "token_masked": token_masked,
+            "status": self._bug_status_summary(),
+            "logs": self._bug_recent_logs(),
+        }
+
+        reports_dir = log_dir() / "bug_reports"
+        reports_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            os.chmod(reports_dir, 0o700)
+        except OSError:
+            pass
+        path = reports_dir / f"{report_id}.json"
+        fd, tmp = tempfile.mkstemp(dir=str(reports_dir), prefix="bug-", suffix=".tmp")
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as fh:
+                json.dump(entry, fh, ensure_ascii=False, indent=2)
+                fh.write("\n")
+            try:
+                os.chmod(tmp, 0o600)
+            except OSError:
+                pass
+            os.replace(tmp, path)
+        except Exception:
+            try:
+                os.unlink(tmp)
+            except OSError:
+                pass
+            self._send_json(500, {"error": "failed to record bug report"})
+            return
+        self._send_json(200, {
+            "ok": True,
+            "id": report_id,
+            "path": str(path.relative_to(work_root())),
+        })
 
     def _handle_delete(self, user: str) -> None:
         if self.server.registry.get(user) is None:

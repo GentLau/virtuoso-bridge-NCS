@@ -60,6 +60,16 @@ class _ServerThread:
         conn.close()
         return resp.status, raw
 
+    def request_raw(self, method, path, raw: bytes, headers=None):
+        conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=10)
+        merged = dict(headers or {})
+        merged.setdefault("Content-Type", "application/json")
+        conn.request(method, path, raw, merged)
+        resp = conn.getresponse()
+        body = resp.read().decode("utf-8")
+        conn.close()
+        return resp.status, body
+
 
 class TestRegistrationServer(unittest.TestCase):
     def setUp(self):
@@ -302,6 +312,7 @@ class TestRegistrationServer(unittest.TestCase):
         self.assertEqual(status, 200)
         endpoints = json.loads(raw)["endpoints"]
         for expected in (
+            "POST /api/bug",
             "POST /api/register",
             "GET /api/user/<user>",
             "POST /api/user/<user>/update",
@@ -309,6 +320,60 @@ class TestRegistrationServer(unittest.TestCase):
             "PUT /api/config",
         ):
             self.assertIn(expected, endpoints)
+
+    # -- POST /api/bug（控制面 v22 §3） --------------------------------------
+    def _bug_report_files(self):
+        reports = Path(self.wd) / "log" / "bug_reports"
+        return sorted(reports.glob("*.json")) if reports.is_dir() else []
+
+    def test_bug_report_requires_valid_personal_token(self):
+        self.registry.register("carol", UserEntry(token="tok-bug", mode="local"))
+        for body in (
+            b'{"report": "no token here"}',
+            b"not json at all",
+            b'{"token": "wrong", "report": "bad token"}',
+            b'{"token": "", "report": "empty token"}',
+        ):
+            with self.subTest(body=body):
+                status, raw = self.srv.request_raw("POST", "/api/bug", body)
+                self.assertEqual(status, 400, raw)
+                self.assertIn("invalid token", raw)
+                self.assertEqual(self._bug_report_files(), [], "must not record")
+
+    def test_bug_report_records_entry_with_user_and_masked_token(self):
+        self.registry.register("carol", UserEntry(token="tok-bug", mode="local"))
+        body = json.dumps(
+            {"token": "tok-bug", "error": "boom", "trace": ["line1", "line2"]}
+        ).encode("utf-8")
+        status, raw = self.srv.request_raw("POST", "/api/bug", body, {
+            "Content-Type": "application/json",
+        })
+        self.assertEqual(status, 200, raw)
+        receipt = json.loads(raw)
+        self.assertTrue(receipt["ok"])
+        self.assertTrue(receipt["id"])
+
+        files = self._bug_report_files()
+        self.assertEqual(len(files), 1, files)
+        entry = json.loads(files[0].read_text(encoding="utf-8"))
+        self.assertEqual(entry["user"], "carol")
+        self.assertTrue(entry["id"].startswith("bug-"))
+        self.assertTrue(entry["received_at"])
+        self.assertIn("boom", entry["raw_body"])
+        self.assertIn("line1", entry["raw_body"])
+        self.assertNotIn("tok-bug", entry["raw_body"], "credential must be masked")
+        self.assertIn("status", entry)
+        self.assertIn("users", entry["status"])
+        self.assertIn("logs", entry)
+
+    def test_bug_report_does_not_touch_registry_or_config(self):
+        self.registry.register("carol", UserEntry(token="tok-bug", mode="local"))
+        before = self.registry.get("carol").model_dump()
+        self.srv.request_raw(
+            "POST", "/api/bug",
+            json.dumps({"token": "tok-bug", "error": "x"}).encode(),
+        )
+        self.assertEqual(self.registry.get("carol").model_dump(), before)
 
     def test_get_user_known_and_unknown(self):
         self.registry.register("zoe", UserEntry(token="tok-zoe", mode="local"))
