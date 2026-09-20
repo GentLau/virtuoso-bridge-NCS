@@ -19,6 +19,7 @@
    - CDS.log 返回：[日志返回设计标准](design-concepts/底层/6-日志返回设计标准.md)
    - 顶层入口与业务调度：[顶层：HTTP 入口与业务调度](design-concepts/顶层/1-顶层.md)
    - 顶层端点清单与端口划分：[顶层补充：控制面与业务面](design-concepts/顶层/add-控制面与业务面.md)
+   - 顶层任务等待池：[顶层补充：任务等待池](design-concepts/顶层/add-任务等待池.md)
    - 上层业务包与插件化：[上层：业务包与插件化](design-concepts/上层/1-上层.md)
 2. **Informative（只索引/摘要，不定义）**：[整体流程示例](design-concepts/总览/2-整体流程示例.md)、[demo](demo/README.md)。
 3. **Research**：[research](research/README.md)，仅作背景知识。
@@ -61,6 +62,7 @@
 | Normative | [日志返回设计标准](design-concepts/底层/6-日志返回设计标准.md) | CDS.log 增量返回唯一口径（offset 定界、分级、限长） |
 | Normative | [顶层：HTTP 入口与业务调度](design-concepts/顶层/1-顶层.md) | 顶层职责、插件注册表、业务调度、响应壳与错误分界 |
 | Normative | [顶层补充：控制面与业务面](design-concepts/顶层/add-控制面与业务面.md) | 双面双端口、控制端口与业务端口的 HTTP 端点清单 |
+| Normative | [顶层补充：任务等待池](design-concepts/顶层/add-任务等待池.md) | 挂起监督契约、三态、端点、节拍与配额配置 |
 | Normative | [上层：业务包与插件化](design-concepts/上层/1-上层.md) | 业务包（业务操作集合）与业务操作契约、插件注册、禁止事项、开发规范 |
 | Research | [research/README.md](research/README.md) | Virtuoso/TB/日志/并发背景调研 |
 | Informative | [整体流程示例](design-concepts/总览/2-整体流程示例.md) | 一次请求从顶层到中层再到返回的完整流程示例（不定义机制） |
@@ -81,6 +83,7 @@
 | CDS.log offset/frame/分级/限长/warning | [日志返回设计标准](design-concepts/底层/6-日志返回设计标准.md) | 一句摘要 + 链接 |
 | 顶层 HTTP 入口、业务调度与响应壳 | [顶层：HTTP 入口与业务调度](design-concepts/顶层/1-顶层.md) | 一句摘要 + 链接 |
 | 顶层 HTTP 端点清单与端口划分 | [顶层补充：控制面与业务面](design-concepts/顶层/add-控制面与业务面.md) | 一句摘要 + 链接 |
+| 顶层任务等待池职责/契约/端点/配置 | [顶层补充：任务等待池](design-concepts/顶层/add-任务等待池.md) | 一句摘要 + 链接 |
 | 业务包/业务操作契约、插件注册、上层开发规范 | [上层：业务包与插件化](design-concepts/上层/1-上层.md) | 一句摘要 + 链接 |
 | 本版不做什么（非目标清单与遇到时的行为） | [本版范围与明确不支持](design-concepts/总览/add-本版范围与明确不支持.md) | 一句摘要 + 链接 |
 
@@ -99,8 +102,8 @@ CDS.log metadata frame 完整字节格式
 ## Release（本基线）
 
 - **Release ID**：`SPEC-2026-09-18-r4`
-- **Normative 文件集**（10 份）：四层整体架构与接口、本版范围与明确不支持、中层配置文档、路由设计、多用户与注册、并发设计、日志返回设计标准、顶层：HTTP 入口与业务调度、顶层补充：控制面与业务面、上层：业务包与插件化；
-- **Normative 内容哈希**：`bc05fa7a938296feec84b307c6c481d4b3532a080e3be2fe5bc5549467d3450f`
+- **Normative 文件集**（11 份）：四层整体架构与接口、本版范围与明确不支持、中层配置文档、路由设计、多用户与注册、并发设计、日志返回设计标准、顶层：HTTP 入口与业务调度、顶层补充：控制面与业务面、顶层补充：任务等待池、上层：业务包与插件化；
+- **Normative 内容哈希**：`85099fc0bc58203e6e3f0de8b2540e4955f375e9c88b54766bb22accb3568a33`
   - 算法：路径为**相对 `spec/` 目录**并按路径排序；逐文件 SHA-256（**按 Git 提交内容计算，即 LF 行尾**；Windows 工作区受 `core.autocrlf` 影响的行尾差异不计入）；每行 `<相对路径> <hex>` 以 LF 拼接（**行间分隔、末行无尾 LF**），再取一次 SHA-256；
 - **基线 commit**：本 Release 段所在提交即基线（见 `git log -1 -- spec/`）；任何 Normative 文档变更必须同时更新本段哈希。
 
@@ -108,14 +111,15 @@ CDS.log metadata frame 完整字节格式
 
 | 文档 | 版本 | 状态 | Supersedes |
 |---|---|---|---|
-| 四层整体架构与接口 | Draft v34 | Normative | Draft v33（query 与五业务接口统一 token 必填关键字） |
+| 四层整体架构与接口 | Draft v35 | Normative | Draft v34（注册与管理模块产出新增 task_registry.json） |
 | 路由设计 | v17 | Normative | v16（spectre 表述：本版第 5 业务接口，编排留待后续） |
 | 本版范围与明确不支持 | v9 | Normative | v8（业务接口计数口径：5 业务接口 + 只读查询 query） |
-| 中层配置文档 | Draft v32 | Normative | Draft v21–v31（合并说明见文件头 Supersedes） |
-| 多用户与注册 | Draft v31 | Normative | Draft v30（update 白名单拒绝 token/registered_at/未声明字段） |
+| 中层配置文档 | Draft v33 | Normative | Draft v21–v32（合并说明见文件头 Supersedes） |
+| 多用户与注册 | Draft v32 | Normative | Draft v31（新增 task_registry.json 与 per-token 挂起上限） |
 | 并发设计 | Draft v20 | Normative | Draft v19（重试决策单元术语统一为业务操作） |
-| 顶层 | Draft v16 | Normative | Draft v15（不保存业务状态措辞） |
-| 控制面与业务面 | Draft v19 | Normative | Draft v18（参数修正必须 cancel 后重新 apply；重试不携带修正） |
+| 顶层 | Draft v17 | Normative | Draft v16（索引任务等待池） |
+| 控制面与业务面 | Draft v20 | Normative | Draft v19（索引任务等待池端点） |
+| 任务等待池 | Draft v1 | Normative | — |
 | 上层 | Draft v14 | Normative | Draft v12–v13（v12 白名单加入 common.*；v13 收窄为 common.paths） |
 | 日志返回设计标准 | Draft v15 | Normative | Draft v14（覆盖示例统一为合法值 warn） |
 
