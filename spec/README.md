@@ -115,7 +115,7 @@ CDS.log metadata frame 完整字节格式
 | 多用户与注册 | Draft v32 | Normative | Draft v31（重新导入触发索引业务进程管理端点） |
 | 并发设计 | Draft v20 | Normative | Draft v19（重试决策单元术语统一为业务操作） |
 | 顶层 | Draft v16 | Normative | Draft v15（不保存业务状态措辞） |
-| 控制面与业务面 | Draft v26 | Normative | Draft v25（starting 状态、30s 排空、503 拒绝、同进程语义、reload 内部通道） |
+| 控制面与业务面 | Draft v27 | Normative | Draft v26（reload 对 business_thread_pool_size 热生效） |
 | 上层 | Draft v14 | Normative | Draft v12–v13（v12 白名单加入 common.*；v13 收窄为 common.paths） |
 | 日志返回设计标准 | Draft v15 | Normative | Draft v14（覆盖示例统一为合法值 warn） |
 
