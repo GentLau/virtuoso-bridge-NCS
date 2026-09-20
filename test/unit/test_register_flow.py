@@ -273,6 +273,19 @@ class TestFlowVerifyAndCommit(unittest.TestCase):
         self.assertEqual(state.stage, "committed")
         self.assertEqual(state.errors, [])
 
+    def test_commit_failure_keeps_step6_and_can_retry(self):
+        """BUG-2: commit 失败必须留在第 6 步，可原样重试同一 action。"""
+        flow = self._deployed_flow()
+        good = ConnectivityReport("tok-1", True, True, True)
+        with mock.patch("register.flow.test_connectivity", return_value=good):
+            flow.verify()
+        with mock.patch("register.flow.validate_final", return_value=["conflict"]):
+            failed = flow.commit()
+        self.assertEqual(failed.stage, "failed")
+        self.assertEqual(failed.step, 6, "commit failure must stay on step 6")
+        retried = flow.commit()
+        self.assertEqual(retried.stage, "committed")
+
     def test_reserved_daemon_ports_are_scoped_by_target_host(self):
         """§6.4: daemon_port 唯一性作用域是 daemon 目标主机。"""
         from register.reservation import Reservation
@@ -284,6 +297,40 @@ class TestFlowVerifyAndCommit(unittest.TestCase):
         ))
         self.assertEqual(flow.reserved_daemon_ports("server-a"), set())
         self.assertEqual(flow.reserved_daemon_ports("server-b"), {65081})
+
+    def test_auto_allocated_ports_avoid_committed_registry_ports(self):
+        """BUG-1: 自动分配端口必须避开已提交用户的端口（§6.4）。"""
+        other = UserEntry(token="tok-old", mode="remote")
+        other.roles.daemon.host = "h"
+        other.roles.daemon.daemon_port = 65081
+        other.roles.daemon.local_port = 65082
+        self.reg.register("old", other)
+
+        request = RegistrationRequest(
+            mode="remote", user="new", token="tok-new",
+            ssh={"default": {"host": "h", "user": "a"}},
+        )
+        flow = RegistrationFlow(self.reg)
+        flow.start(request)
+        seen: dict = {}
+
+        def fake_local_alloc(reserved=None):
+            seen["step2_local"] = set(reserved or ())
+            return 65092
+
+        def fake_probe(req, *, token, reserved_ports=None, reserved_local_ports=None):
+            seen["probe_remote"] = set(reserved_ports or ())
+            seen["probe_local"] = set(reserved_local_ports or ())
+            return ProbeResult(complete_remote_entry(token=token), 3)
+
+        with mock.patch("register.probe.allocate_local_port", side_effect=fake_local_alloc), \
+             mock.patch("register.flow.probe_user", side_effect=fake_probe):
+            flow.validate()
+            flow.probe()
+
+        self.assertIn(65082, seen["step2_local"], "step 2 must avoid committed local_port")
+        self.assertIn(65081, seen["probe_remote"], "probe must avoid committed daemon_port")
+        self.assertIn(65082, seen["probe_local"], "probe must avoid committed local_port")
 
 
 class TestRegisterUserOneShot(unittest.TestCase):

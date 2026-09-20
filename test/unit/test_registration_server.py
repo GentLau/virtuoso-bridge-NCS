@@ -163,6 +163,40 @@ class TestProcessEndpoints(unittest.TestCase):
         self.assertEqual(status, 400, raw)
         self.assertEqual(self.manager.calls, [])
 
+    def test_malformed_content_length_is_400_and_does_not_reload(self):
+        """畸形长度不能按空 body 走默认 target，更不能触发真实 reload。"""
+        body = b'{"target":"business"}'
+        request = (
+            b"POST /api/process/reload HTTP/1.1\r\nHost: x\r\n"
+            + f"Authorization: Bearer {_ADMIN_TOKEN}\r\n".encode("ascii")
+            + b"Content-Type: application/json\r\nContent-Length: abc\r\n\r\n"
+            + body
+        )
+        sock = socket.create_connection(("127.0.0.1", self.srv.port), timeout=5)
+        sock.sendall(request)
+        data = b""
+        try:
+            while True:
+                chunk = sock.recv(65536)
+                if not chunk:
+                    break
+                data += chunk
+        except OSError:
+            pass
+        sock.close()
+        self.assertIn(b" 400 ", data.split(b"\r\n", 1)[0], data[:200])
+        self.assertEqual(self.manager.calls, [])
+
+    def test_malformed_json_is_400_and_does_not_reload(self):
+        """畸形 JSON 也不能退化为默认 target 并触发真实 reload。"""
+        for body in (b"{bad", b"[]"):
+            with self.subTest(body=body):
+                status, raw = self.srv.request_raw(
+                    "POST", "/api/process/reload", body, _admin_auth()
+                )
+                self.assertEqual(status, 400, raw)
+                self.assertEqual(self.manager.calls, [])
+
     def test_unmanaged_returns_409(self):
         server = _ServerThread(self.registry, None)
         try:
@@ -499,6 +533,51 @@ class TestRegistrationServer(unittest.TestCase):
             json.dumps({"token": "tok-bug", "error": "x"}).encode(),
         )
         self.assertEqual(self.registry.get("carol").model_dump(), before)
+
+    def test_bug_report_strips_credentials(self):
+        """控制面 v28：记录前先剥离 token/Authorization 等凭据。"""
+        self.registry.register("carol", UserEntry(token="tok-bug", mode="local"))
+        body = json.dumps({
+            "token": "tok-bug",
+            "authorization": "Bearer super-secret",
+            "password": "hunter2",
+            "secret": "s3cr3t",
+            "error": "boom",
+        }).encode("utf-8")
+        status, raw = self.srv.request_raw("POST", "/api/bug", body)
+        self.assertEqual(status, 200, raw)
+        entry = json.loads(self._bug_report_files()[0].read_text(encoding="utf-8"))
+        recorded = entry["raw_body"]
+        for leaked in ("tok-bug", "super-secret", "hunter2", "s3cr3t"):
+            self.assertNotIn(leaked, recorded)
+        self.assertIn("boom", recorded)
+
+    def test_malformed_content_length_returns_4xx(self):
+        """BUG-4: 畸形 Content-Length 不得静默断连，必须给 4xx JSON。"""
+        import socket as _socket
+        for value in ("abc", "-7"):
+            with self.subTest(value=value):
+                sock = _socket.create_connection(
+                    ("127.0.0.1", self.srv.port), timeout=5
+                )
+                body = b'{"user":"a","action":"apply","mode":"local"}'
+                sock.sendall(
+                    b"POST /api/register HTTP/1.1\r\nHost: x\r\n"
+                    + f"Content-Length: {value}\r\n\r\n".encode("ascii")
+                    + body
+                )
+                data = b""
+                try:
+                    while True:
+                        chunk = sock.recv(65536)
+                        if not chunk:
+                            break
+                        data += chunk
+                except OSError:
+                    pass
+                sock.close()
+                self.assertTrue(data, "no HTTP response for malformed Content-Length")
+                self.assertIn(b"400", data.split(b"\r\n", 1)[0], data[:200])
 
     def test_get_user_known_and_unknown(self):
         self.registry.register("zoe", UserEntry(token="tok-zoe", mode="local"))

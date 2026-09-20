@@ -1931,38 +1931,53 @@ class SSHRunner:
         begin_marker = f"__vb_STDOUT_B64_BEGIN_{token}__"
         stderr_marker = f"__vb_STDERR_B64_BEGIN_{token}__"
         rc_prefix = f"__vb_RC_{token}__"
+        # BUG-3: 用户命令可能自己 exit；回包走保存的原始 fd（9/8），
+        # 这样 EXIT trap 在命令重定向仍然生效时也能把真实 rc 发到 SSH 通道。
+        # 非退出路径会先解除 trap，再显式 emit，常驻 shell 的 cwd/env 继续保留。
+        emitter = (
+            "__vb_emit() {\n"
+            "  __vb_rc=$1\n"
+            "  {\n"
+            f"    printf '%s\\n' '{begin_marker}'\n"
+            "    base64 <\"$__vb_stdout\" | tr -d '\\n'\n"
+            f"    printf '\\n%s\\n' '{stderr_marker}'\n"
+            "    base64 <\"$__vb_stderr\" | tr -d '\\n'\n"
+            f"    printf '\\n{rc_prefix}%s\\n' \"$__vb_rc\"\n"
+            "  } >&9 2>&8\n"
+            "  rm -f \"$__vb_stdout\" \"$__vb_stderr\"\n"
+            "  exec 9>&- 8>&-\n"
+            "}\n"
+        )
         body = (
             "{\n"
             f"{command}\n"
             "} >\"$__vb_stdout\" 2>\"$__vb_stderr\"\n"
             "__vb_rc=$?\n"
-            f"printf '%s\\n' '{begin_marker}'\n"
-            "base64 <\"$__vb_stdout\" | tr -d '\\n'\n"
-            f"printf '\\n%s\\n' '{stderr_marker}'\n"
-            "base64 <\"$__vb_stderr\" | tr -d '\\n'\n"
-            f"printf '\\n{rc_prefix}%s\\n' \"$__vb_rc\"\n"
+            "trap - 0\n"
+            "__vb_emit \"$__vb_rc\"\n"
         )
         if self._work_dir:
-            # 远端临时文件收拢到 role 工作根，并用 trap 覆盖异常路径
-            # （评审 O5，用户要求的“不逃逸到系统临时目录”）。
+            # 远端临时文件收拢到 role 工作根（评审 O5；清理由 __vb_emit /
+            # EXIT trap 负责）。
             tmp_dir = shlex.quote(self._work_dir)
-            script = (
+            setup = (
                 f"__vb_tmp={tmp_dir}\n"
                 "mkdir -p \"$__vb_tmp\" 2>/dev/null\n"
-                "(\n"
-                "trap 'rm -f \"$__vb_stdout\" \"$__vb_stderr\"' EXIT\n"
                 "__vb_stdout=$(mktemp -p \"$__vb_tmp\" 2>/dev/null || mktemp)\n"
                 "__vb_stderr=$(mktemp -p \"$__vb_tmp\" 2>/dev/null || mktemp)\n"
-                + body
-                + ")\n"
             )
         else:
-            script = (
+            setup = (
                 "__vb_stdout=$(mktemp)\n"
                 "__vb_stderr=$(mktemp)\n"
-                + body
-                + "rm -f \"$__vb_stdout\" \"$__vb_stderr\"\n"
             )
+        script = (
+            emitter
+            + setup
+            + "exec 9>&1 8>&2\n"
+            + "trap '__vb_emit $?' 0\n"
+            + body
+        )
 
         budget.remaining(command)
         try:

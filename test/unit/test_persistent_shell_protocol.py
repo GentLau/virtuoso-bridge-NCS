@@ -6,6 +6,7 @@
 import base64
 import queue
 import re
+import shutil
 import subprocess
 import sys
 import threading
@@ -97,6 +98,27 @@ def feed_async(runner, *, stdout=b"", stderr=b"", rc=0, preamble=(), marker_over
     return t
 
 
+def _posix_shell_args():
+    """Return an argv that reads a shell script from stdin, or None."""
+    if sys.platform == "win32":
+        shell = shutil.which("wsl") or shutil.which("wsl.exe")
+        return [shell, "-e", "sh"] if shell else None
+    shell = shutil.which("sh") or shutil.which("bash")
+    return [shell] if shell else None
+
+
+def script_for_command(command: str) -> str:
+    """Build the same persistent-shell payload without a live SSH session."""
+    r = SSHRunner(
+        "server-a", user="u", backend="openssh", persistent_shell=False
+    )
+    r._shell_proc = FakeProc()
+    r._shell_queue = queue.Queue()
+    feed_async(r, stdout=b"")
+    r._run_command_via_persistent_shell_locked(command, timeout=5)
+    return r._shell_proc.stdin.payload.decode("utf-8")
+
+
 class TestPersistentShellProtocol(unittest.TestCase):
     def test_success_round_trip(self):
         r = runner_with_shell()
@@ -143,7 +165,72 @@ class TestPersistentShellProtocol(unittest.TestCase):
         payload = r._shell_proc.stdin.payload.decode("utf-8", errors="ignore")
         self.assertIn("mktemp -p", payload)
         self.assertIn("/home/alice/.virtuoso-bridge/alice/command", payload)
-        self.assertIn("trap", payload)
+        self.assertIn("trap '__vb_emit $?' 0", payload)
+        self.assertIn('rm -f "$__vb_stdout" "$__vb_stderr"', payload)
+
+    def test_script_reports_real_rc_even_if_command_exits_shell(self):
+        """BUG-3: 用户命令 exit 时用 EXIT trap 回传真实 rc（不再假超时）。"""
+        r = SSHRunner(
+            "server-a", user="u", backend="openssh", persistent_shell=False,
+            work_dir="/home/alice/.virtuoso-bridge/alice/command",
+        )
+        r._shell_proc = FakeProc()
+        r._shell_queue = queue.Queue()
+        feed_async(r, stdout=b"")
+        res = r._run_command_via_persistent_shell_locked("exit 7", timeout=5)
+        self.assertEqual(res.returncode, 0)  # feed_async 默认 rc=0
+        payload = r._shell_proc.stdin.payload.decode("utf-8", errors="ignore")
+        self.assertIn("trap '__vb_emit $?' 0", payload)
+        self.assertIn('__vb_emit "$__vb_rc"', payload)
+        self.assertIn("trap - 0", payload)
+        self.assertIn('} >"$__vb_stdout" 2>"$__vb_stderr"', payload)
+        self.assertIn("} >&9 2>&8", payload)
+        self.assertIn("exit 7", payload)
+
+    def test_exit_returns_real_rc_in_a_real_posix_shell(self):
+        """BUG-3 端到端：真实 POSIX shell 执行生成的脚本后仍能回传 rc=7。"""
+        shell_args = _posix_shell_args()
+        if not shell_args:
+            self.skipTest("no POSIX shell available")
+        script = script_for_command("echo before-exit; exit 7")
+        proc = subprocess.run(
+            shell_args,
+            input=script.encode("utf-8"),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=15,
+        )
+        self.assertEqual(proc.returncode, 7, proc.stderr.decode("utf-8", "replace"))
+        self.assertIn(base64.b64encode(b"before-exit\n"), proc.stdout)
+        match = re.search(rb"__vb_RC_[0-9a-f]+__(\d+)", proc.stdout)
+        self.assertIsNotNone(match, proc.stdout.decode("utf-8", "replace"))
+        self.assertEqual(match.group(1), b"7")
+
+    def test_command_state_persists_across_calls_in_real_shell(self):
+        """常驻 shell 的 cwd/env 跨命令保留；exit 才结束该会话。"""
+        shell_args = _posix_shell_args()
+        if not shell_args:
+            self.skipTest("no POSIX shell available")
+        script = (
+            script_for_command("cd /tmp; export VB_PERSIST=ok")
+            + script_for_command('pwd; printf "%s" "$VB_PERSIST"')
+        )
+        proc = subprocess.run(
+            shell_args,
+            input=script.encode("utf-8"),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=15,
+        )
+        self.assertEqual(proc.returncode, 0, proc.stderr.decode("utf-8", "replace"))
+        outputs = [
+            base64.b64decode(m.group(1))
+            for m in re.finditer(
+                rb"__vb_STDOUT_B64_BEGIN_[0-9a-f]+__\n([A-Za-z0-9+/=]*)\n",
+                proc.stdout,
+            )
+        ]
+        self.assertEqual(outputs, [b"", b"/tmp\nok"])
 
     def test_eof_after_delivery_is_unknown_effect(self):
         r = runner_with_shell()

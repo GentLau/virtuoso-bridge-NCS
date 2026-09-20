@@ -888,7 +888,7 @@ class RegistrationFlow:
         request = state.request
         role = request.roles.daemon
         mode = role.mode or request.mode.default
-        reserved = self.reserved_local_ports()
+        reserved = self._reserved_local_ports_all()
 
         def unusable(port: int) -> bool:
             return port in reserved or not probes.local_port_free(port)
@@ -971,6 +971,28 @@ class RegistrationFlow:
         ]
         return {r.local_port for r in others if r.local_port is not None}
 
+    def _registry_daemon_ports(self, daemon_scope: str | None) -> set[int]:
+        """Committed users' daemon ports on one daemon target host (§6.4)."""
+        ports: set[int] = set()
+        for name, entry in self.registry.entries():
+            port = entry.roles.daemon.daemon_port
+            if port is None:
+                continue
+            if daemon_scope is None or daemon_scope_of_entry(entry, name) == daemon_scope:
+                ports.add(port)
+        return ports
+
+    def _registry_local_ports(self) -> set[int]:
+        """Committed users' local tunnel ports on this machine (§6.4)."""
+        return {
+            entry.roles.daemon.local_port
+            for _, entry in self.registry.entries()
+            if entry.roles.daemon.local_port is not None
+        }
+
+    def _reserved_local_ports_all(self) -> set[int]:
+        return self.reserved_local_ports() | self._registry_local_ports()
+
     def start(self, request: RegistrationRequest) -> RegistrationState:
         self._release_reservation(self.state)
         token = request.token
@@ -1021,10 +1043,15 @@ class RegistrationFlow:
             result = probe_user(
                 state.request,
                 token=state.token,
-                reserved_ports=self.reserved_daemon_ports(
-                    daemon_scope_of_request(state.request)
+                reserved_ports=(
+                    self.reserved_daemon_ports(
+                        daemon_scope_of_request(state.request)
+                    )
+                    | self._registry_daemon_ports(
+                        daemon_scope_of_request(state.request)
+                    )
                 ),
-                reserved_local_ports=self.reserved_local_ports(),
+                reserved_local_ports=self._reserved_local_ports_all(),
             )
         except (RegistrationProbeError, Exception) as exc:  # noqa: BLE001
             if not isinstance(exc, RegistrationProbeError):
@@ -1050,7 +1077,7 @@ class RegistrationFlow:
             port = entry.roles.daemon.daemon_port
             if port is None or not probes.local_port_free(port):
                 replacement = probes.allocate_local_port(
-                    reserved=self.reserved_local_ports()
+                    reserved=self._reserved_local_ports_all()
                 )
                 if replacement is None:
                     raise RegistrationProbeError(
@@ -1073,8 +1100,13 @@ class RegistrationFlow:
                     replacement = probes.allocate_remote_port(
                         runner,
                         python_cmd,
-                        reserved=self.reserved_daemon_ports(
-                            daemon_scope_of_entry(entry, state.user)
+                        reserved=(
+                            self.reserved_daemon_ports(
+                                daemon_scope_of_entry(entry, state.user)
+                            )
+                            | self._registry_daemon_ports(
+                                daemon_scope_of_entry(entry, state.user)
+                            )
                         ),
                     )
                     if replacement is None:
@@ -1085,7 +1117,7 @@ class RegistrationFlow:
                 local_port = entry.roles.daemon.local_port
                 if local_port is None or not probes.local_port_free(local_port):
                     replacement = probes.allocate_local_port(
-                        reserved=self.reserved_local_ports()
+                        reserved=self._reserved_local_ports_all()
                     )
                     if replacement is None:
                         raise RegistrationProbeError(
@@ -1210,6 +1242,9 @@ class RegistrationFlow:
             return self.state
 
         state = self.state
+        # BUG-2: commit 失败也必须停留在第 6 步，否则同一步原样重试会被
+        # 服务端当作 step order violation（spec §3.3：各步失败均可原地重试）。
+        state.step = 6
         state.errors = []
         errors = validate_commit_shape(state.entry, state.user)
         errors += validate_final(self.registry, state.entry, state.user)
