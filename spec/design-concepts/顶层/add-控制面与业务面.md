@@ -1,9 +1,9 @@
 # 顶层补充：控制面与业务面
 
-> 版本：Draft v26
+> 版本：Draft v27
 > 日期：2026-09-17
 > 状态：Normative（顶层 HTTP 端点清单、端口划分与权限口径的唯一 owner）
-> Supersedes：Draft v25（starting 状态、30s 排空上限、503 拒绝语义、同进程语义、reload 内部通道）
+> Supersedes：Draft v26（reload 对 business_thread_pool_size 热生效）
 > 定位：本文是[顶层](1-顶层.md)的端点补充——[顶层](1-顶层.md)定义顶层职责、调度与响应壳；本文定义顶层开哪些端口、哪些方法、支持哪些请求、每个端点需要什么权限。注册语义见[多用户与注册 §3/§5](../其他/1-多用户与注册.md)。
 
 ## 1. 双面双端口
@@ -83,7 +83,7 @@
 | 方法 | 路径 | 用途 | 权限 |
 |---|---|---|---|
 | GET | `/api/process/status` | 业务进程 pid/端口/工作路径/启动参数/状态（`starting` / `ready` / `crashed`） | 管理权限 |
-| POST | `/api/process/reload` | 重新导入 `registry.json` 与 `config.json`、关闭旧 token 缓存；不打断在途请求 | 管理权限 |
+| POST | `/api/process/reload` | 重新导入 `registry.json` 与 `config.json`、关闭旧 token 缓存；`business_thread_pool_size` 对**新请求**立即生效，在途不受影响 | 管理权限 |
 | POST | `/api/process/restart` | 拒绝新请求、等在途完成（上限 **30 秒**，超时强杀）、按原启动参数重新拉起 | 管理权限 |
 
 - `target` 本版只允许 `business`；不提供任意命令/进程控制；子进程意外退出 → `crashed`，**不自动拉起**，需管理员 `restart`；
@@ -113,9 +113,9 @@
 - 工作路径下除 `registry.json` 外，另存一份配置 JSON `config.json`；`GET/PUT /api/config` 操作该配置：GET 读内存快照，PUT 更新快照并原子写回 `config.json`；
 - 当前 `config.json` 只有**一个参数**：`business_thread_pool_size`（业务 server 线程池大小）；
 - 控制/业务端口与工作路径由**启动参数**给定，不写入 `config.json`；
-- 控制/业务进程分离时，PUT 只影响控制进程的内存快照与 `config.json`；业务进程在启动时导入，变更生效需**重启业务进程**；
+- 业务进程启动时导入 `registry.json`/`config.json`，运行期不读文件；`/api/process/reload` 或 `restart` 显式刷新；`PUT /api/config` 只更新控制进程快照并写回 `config.json`；
 - 管理员 token 哈希**写死在代码**（不读环境变量）；原文离线保管、不落配置、不进日志；校验目标与规则同样写死在代码，当前版本单管理员；
-- `config.json` **启动时导入一次到内存快照**，运行期不再读文件；配置变更由 `PUT /api/config` 手动触发并原子写回，其余时间零文件 IO；
+- `config.json` **启动时导入一次到内存快照**，运行期不再读文件；配置变更由 `PUT /api/config` 手动触发并原子写回；`business_thread_pool_size` 是**可变准入上限**：reload 后新请求按新上限准入；在途数 ≥ 新上限时，新请求拒绝（`429 + Retry-After`）直至低于上限；
 - `runtime.thread_pool_size` 是**每 token** 的注册表配置（唯一 owner 见[并发设计 §2](../中层/2-并发设计.md)），与本节的“全局线程池上限”不是一回事：前者是单用户预算，后者是顶层进程能力上限；两者独立，不互相替代。
 
 ## 6. 索引
