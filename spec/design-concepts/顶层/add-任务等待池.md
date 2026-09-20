@@ -1,9 +1,8 @@
 # 顶层补充：任务等待池
 
-> 版本：Draft v2
+> 版本：Draft v1
 > 日期：2026-09-20
 > 状态：Normative（顶层任务等待池职责、契约、端点与配置的唯一口径）
-> Supersedes：Draft v1（查询统一端点、token 授权、挂起失败语义）
 > 定位：本文是[顶层](1-顶层.md)的附加功能——顶层代为监督长任务的完成情况。挂起区**不负责业务、不负责命令**；它只按上层声明的 `follow_up` 反复询问，直到终态。端点清单见[控制面与业务面](add-控制面与业务面.md)。
 
 ## 1. 职责与边界
@@ -51,14 +50,11 @@ pending = {
 
 - 阻塞/非阻塞**共用同一套 follow_up 逻辑与任务表**；
 - 阻塞模式不强制服务端截止；调用方应自行设置 HTTP 超时与 deadline；
-- 查询统一端点 `GET /api/job`（业务端口，个人 token）：
-  - `GET /api/job/<job_id>`：返回 `{job_id, state, progress?, result?|error?, recent: [...]}`，其中 `recent` 为**最近几次轮询情况**（默认保留最近 10 次）；
-  - `GET /api/job`（不带 job_id）：返回 `{jobs: [...]}`，列出**该 token 下全部挂起任务**；
-- 授权：查询必须携带该任务所属 `token`，服务端只返回该 token 自己名下的任务；缺失/不匹配 → 4xx `invalid token`，拿不到他人 token 就查不到他人的挂起任务。
+- 查询端点：`GET /api/job/<job_id>`，返回 `{job_id, state, progress?, result?|error?}`。
 
 ## 5. 取消
 
-- `DELETE /api/job/<job_id>`：**只取消挂起区的监督**，不取消、不撤销已经发出的命令/仿真；原命令是否继续以目标侧为准；必须携带该任务所属 `token` 且校验通过；
+- `DELETE /api/job/<job_id>`：**只取消挂起区的监督**，不取消、不撤销已经发出的命令/仿真；原命令是否继续以目标侧为准；
 - 取消后登记项删除，后续查询返回 404；幂等。
 
 ## 6. 监督线程与节拍
@@ -74,7 +70,7 @@ pending = {
 | 全局 | `config.json` | `task_global_pending_limit`（挂起区全局在途上限，默认 128） |
 | per-token | `task_registry.json`（与中层 `registry.json` 分离，注册时写入） | `task.pending_limit`（该 token 挂起在途上限，默认 8） |
 
-- 提交时超过 per-token 或全局上限 → 明确 4xx `pending limit exceeded` 拒绝，并注明是 per-token 还是 global 上限；任何**挂起失败**都必须在返回中说明失败原因；
+- 提交时超过 per-token 或全局上限 → 明确 4xx 拒绝，不静默排队；
 - 终态/取消的登记不占上述配额；
 - 注册与管理模块产出：`registry.json`（中层消费）、`config.json`、`task_registry.json`（任务等待池消费）。
 
