@@ -1,9 +1,9 @@
 # 顶层补充：控制面与业务面
 
-> 版本：Draft v23
+> 版本：Draft v24
 > 日期：2026-09-17
 > 状态：Normative（顶层 HTTP 端点清单、端口划分与权限口径的唯一 owner）
-> Supersedes：Draft v22（标准形态为同机双进程父子模型，新增业务进程管理端点）
+> Supersedes：Draft v23（业务进程管理端点改名为 /api/process/*）
 > 定位：本文是[顶层](1-顶层.md)的端点补充——[顶层](1-顶层.md)定义顶层职责、调度与响应壳；本文定义顶层开哪些端口、哪些方法、支持哪些请求、每个端点需要什么权限。注册语义见[多用户与注册 §3/§5](../其他/1-多用户与注册.md)。
 
 ## 1. 双面双端口
@@ -19,9 +19,9 @@
 
 - 管理进程作为 supervisor，记录业务进程的 pid、端口、工作路径与启动参数（响应脱敏 token）；
 - 管理端点（控制端口，管理权限）：
-  - `GET /api/service/status` → 业务进程 pid/端口/工作路径/启动参数/状态（`ready` / `crashed`）；
-  - `POST /api/service/reload {"target":"business"}` → 业务进程重新导入 `registry.json` 与 `config.json`、关闭旧 token 缓存；不打断在途请求；2xx = 已完成；
-  - `POST /api/service/restart {"target":"business"}` → 拒绝新请求、等在途完成（上限 N 秒，超时强杀）、按原启动参数重新拉起；2xx = 已完成；
+  - `GET /api/process/status` → 业务进程 pid/端口/工作路径/启动参数/状态（`ready` / `crashed`）；
+  - `POST /api/process/reload {"target":"business"}` → 业务进程重新导入 `registry.json` 与 `config.json`、关闭旧 token 缓存；不打断在途请求；2xx = 已完成；
+  - `POST /api/process/restart {"target":"business"}` → 拒绝新请求、等在途完成（上限 N 秒，超时强杀）、按原启动参数重新拉起；2xx = 已完成；
 - `target` 本版只允许 `business`；不提供任意命令/任意进程控制；
 - 子进程意外退出 → 状态 `crashed`，**不自动拉起**；
 - 未托管或跨机的业务进程 → `409`/`501`，不得静默假装成功；
