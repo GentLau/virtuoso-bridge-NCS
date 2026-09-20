@@ -1,9 +1,9 @@
 # 顶层补充：控制面与业务面
 
-> 版本：Draft v27
+> 版本：Draft v28
 > 日期：2026-09-17
 > 状态：Normative（顶层 HTTP 端点清单、端口划分与权限口径的唯一 owner）
-> Supersedes：Draft v26（reload 对 business_thread_pool_size 热生效）
+> Supersedes：Draft v27（bug 记录剥离凭据）
 > 定位：本文是[顶层](1-顶层.md)的端点补充——[顶层](1-顶层.md)定义顶层职责、调度与响应壳；本文定义顶层开哪些端口、哪些方法、支持哪些请求、每个端点需要什么权限。注册语义见[多用户与注册 §3/§5](../其他/1-多用户与注册.md)。
 
 ## 1. 双面双端口
@@ -59,7 +59,7 @@
 | `cancel` | 任意非 committed 的进行中会话 | 释放内存候选，不落盘
 
 - 非法 action/顺序 → 4xx `{"error": "step order violation", "current_stage": …, "expected": …}`，**不改变会话状态**；
-- 任一步失败后候选保留，可**原样重试同一步**（不携带参数修正）；**修正参数必须 `cancel` 后重新 `apply`**；只有 `cancel`（或服务重启）才释放候选；
+- `validate`/`probe`/`deploy`/`verify`/`commit` 任一步失败后候选保留，可**原样重试同一步**（不携带参数修正）；**修正参数必须 `cancel` 后重新 `apply`**；只有 `cancel`（或服务重启）才释放候选；
 - `apply` 响应返回 `token`（用户显式提供则原样，缺省自动生成）；除 `apply` 外的 action 必须携带 `token`，服务端校验其与候选一致，缺失/不一致 → 4xx `invalid token`，**不改变会话状态**；
 - 六步由该命令端点逐个调用完成：`apply` 以 body 中的 `user` 建**内存候选**（尚未进注册表），后续 action 都以该 `user` 定位候选；`commit` 前 registry 不存在该 user，失败/取消则丢弃候选。
 
@@ -95,7 +95,7 @@
 
 - 修改类（update/delete）路径以 `user` 定位，**收归管理员**：个人 token 不能自助修改；update 请求体含 `token` 字段 → 拒绝；
 - 控制端口成功返回 JSON（或 HTML 页面）；失败 4xx + `{"error": …}`（可选 `detail`）；注册各步结果含 `warnings`（见[多用户与注册 §3.2](../其他/1-多用户与注册.md)）；任何 **entry 对象**（候选 entry、用户查询/更新返回）均不含 `token`；session token 只作为注册响应顶层字段返回；
-- 控制端口不运行业务操作；`POST /api/bug` 携带并校验个人 token；**无 token 或无效 → 4xx，不记录**；校验通过后，服务端记录原始请求体，并附加提交 user、提交日期时间、当前状态摘要、备份的近期操作/错误日志，统一写入本地工作目录 `log/bug_reports/`（每份一个条目）；不解析内容、不触发业务，成功返回 2xx 收据。
+- 控制端口不运行业务操作；`POST /api/bug` 携带并校验个人 token；**无 token 或无效 → 4xx，不记录**；校验通过后，服务端**先剥离 token/Authorization 等凭据**再记录原始请求体，并附加提交 user、提交日期时间、当前状态摘要、备份的近期操作/错误日志，统一写入本地工作目录 `log/bug_reports/`（每份一个条目）；不解析内容、不触发业务，成功返回 2xx 收据。
 
 ## 4. 业务端口端点
 

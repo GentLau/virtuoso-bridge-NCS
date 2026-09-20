@@ -1,9 +1,9 @@
 # virtuoso-bridge-NCS Spec
 
-> 版本：Release `SPEC-2026-09-18-r4`（送审修订版）
-> 日期：2026-09-18
-> 状态：Normative 基线（取代 r3）
-> Supersedes：`SPEC-2026-09-16-r3`（09-17/18 两轮复审收口：注册与管理模块、控制面权限、config.json、checksum 顺序、cancel 状态机、token 与脱敏口径）
+> 版本：Release `SPEC-2026-09-20-r5`（送审修订版）
+> 日期：2026-09-20
+> 状态：Normative 基线（取代 r4）
+> Supersedes：`SPEC-2026-09-18-r4`（09-20 顶层扩展：父子进程管理、/api/bug、线程池热生效、失败原地重试）
 
 ## 0. 版本治理（替代“文件修改时间优先”）
 
@@ -98,9 +98,9 @@ CDS.log metadata frame 完整字节格式
 
 ## Release（本基线）
 
-- **Release ID**：`SPEC-2026-09-18-r4`
+- **Release ID**：`SPEC-2026-09-20-r5`
 - **Normative 文件集**（10 份）：四层整体架构与接口、本版范围与明确不支持、中层配置文档、路由设计、多用户与注册、并发设计、日志返回设计标准、顶层：HTTP 入口与业务调度、顶层补充：控制面与业务面、上层：业务包与插件化；
-- **Normative 内容哈希**：`3caa72907498ca70c15f4ce20faf15f20bd86ce950b523b53578c12a996d7891`
+- **Normative 内容哈希**：`7b545b22d9325d1a1328c8036743e31b473796505b69fbc3425e6cfcac2040bf`
   - 算法：路径为**相对 `spec/` 目录**并按路径排序；逐文件 SHA-256（**按 Git 提交内容计算，即 LF 行尾**；Windows 工作区受 `core.autocrlf` 影响的行尾差异不计入）；每行 `<相对路径> <hex>` 以 LF 拼接（**行间分隔、末行无尾 LF**），再取一次 SHA-256；
 - **基线 commit**：本 Release 段所在提交即基线（见 `git log -1 -- spec/`）；任何 Normative 文档变更必须同时更新本段哈希。
 
@@ -111,11 +111,11 @@ CDS.log metadata frame 完整字节格式
 | 四层整体架构与接口 | Draft v34 | Normative | Draft v33（query 与五业务接口统一 token 必填关键字） |
 | 路由设计 | v17 | Normative | v16（spectre 表述：本版第 5 业务接口，编排留待后续） |
 | 本版范围与明确不支持 | v10 | Normative | v9（顶层任务等待池本版不实现） |
-| 中层配置文档 | Draft v32 | Normative | Draft v21–v31（合并说明见文件头 Supersedes） |
+| 中层配置文档 | Draft v33 | Normative | Draft v21–v32（合并说明见文件头 Supersedes） |
 | 多用户与注册 | Draft v32 | Normative | Draft v31（重新导入触发索引业务进程管理端点） |
 | 并发设计 | Draft v20 | Normative | Draft v19（重试决策单元术语统一为业务操作） |
-| 顶层 | Draft v16 | Normative | Draft v15（不保存业务状态措辞） |
-| 控制面与业务面 | Draft v27 | Normative | Draft v26（reload 对 business_thread_pool_size 热生效） |
+| 顶层 | Draft v17 | Normative | Draft v16（顶层准入与禁令边界限定） |
+| 控制面与业务面 | Draft v28 | Normative | Draft v27（bug 记录剥离凭据） |
 | 上层 | Draft v14 | Normative | Draft v12–v13（v12 白名单加入 common.*；v13 收窄为 common.paths） |
 | 日志返回设计标准 | Draft v15 | Normative | Draft v14（覆盖示例统一为合法值 warn） |
 
