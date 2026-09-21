@@ -316,6 +316,10 @@ PACKAGES = (
     ("pyapi.packages.maestro", "Package", "OPERATIONS"),
     ("pyapi.packages.symbol", "Package", "OPERATIONS"),
     ("pyapi.packages.layout", "Package", "OPERATIONS"),
+    ("pyapi.packages.skillref", "Package", "OPERATIONS"),
+    ("pyapi.packages.spectre", "Package", "OPERATIONS"),
+    ("pyapi.packages.verilog", "Package", "OPERATIONS"),
+    ("pyapi.packages.veriloga", "Package", "OPERATIONS"),
 )
 
 
