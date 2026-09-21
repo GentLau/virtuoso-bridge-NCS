@@ -159,6 +159,24 @@ class TestDaemonHandler(DaemonHandlerTestBase):
         self.assertIn(b'load("', sent)
         self.assertIn(b".il", sent)
 
+    def test_single_line_multiform_is_wrapped_in_progn(self):
+        raw, sent = self._run_handler({
+            "skill": "a = 1 b = 2 a+b",
+            "timeout": 5,
+            "token": "tok-1",
+        })
+        self.assertTrue(raw.startswith(STX), raw)
+        self.assertIn(b"progn(a = 1 b = 2 a+b\n)", sent)
+
+    def test_single_line_trailing_comment_keeps_wrapper_open(self):
+        raw, sent = self._run_handler({
+            "skill": "a = 1 ; comment",
+            "timeout": 5,
+            "token": "tok-1",
+        })
+        self.assertTrue(raw.startswith(STX), raw)
+        self.assertIn(b"progn(a = 1 ; comment\n)", sent)
+
     def test_timeout_without_virtuoso_reply(self):
         # do not feed frames; the watchdog should produce a TimeoutError
         a, b = socket.socketpair()
@@ -293,6 +311,24 @@ class TestDaemon27Handler(unittest.TestCase):
         raw, sent = self._run({"skill": "a = 1\nb = 2", "timeout": 5, "token": "tok-1"})
         self.assertTrue(raw.startswith(STX), raw)
         self.assertIn(b'load("', sent)
+
+    def test_single_line_multiform_is_wrapped_in_progn(self):
+        raw, sent = self._run({
+            "skill": "a = 1 b = 2 a+b",
+            "timeout": 5,
+            "token": "tok-1",
+        })
+        self.assertTrue(raw.startswith(STX), raw)
+        self.assertIn(b"progn(a = 1 b = 2 a+b\n)", sent)
+
+    def test_single_line_trailing_comment_keeps_wrapper_open(self):
+        raw, sent = self._run({
+            "skill": "a = 1 ; comment",
+            "timeout": 5,
+            "token": "tok-1",
+        })
+        self.assertTrue(raw.startswith(STX), raw)
+        self.assertIn(b"progn(a = 1 ; comment\n)", sent)
 
 
 class TestDaemonSubprocess(unittest.TestCase):

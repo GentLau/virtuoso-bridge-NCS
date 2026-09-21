@@ -403,7 +403,12 @@ def handle_connection(conn):
             escaped = tmp_il_path.replace("\\", "/")
             send_code = log_directive + ('load("%s") hiFlush() _vb_eval_result\n' % escaped)
         else:
-            send_code = log_directive + ('let(((__vb_r %s)) hiFlush() __vb_r)\n' % skill_code)
+            # Same contract as the Python 3 daemon: legal multi-form input
+            # and trailing comments must survive the inline wrapper.
+            send_code = (
+                log_directive
+                + 'let(((__vb_r progn(%s\n))) hiFlush() __vb_r)\n' % skill_code
+            )
 
         sys.stdout.write(send_code.encode("utf-8"))
         sys.stdout.flush()

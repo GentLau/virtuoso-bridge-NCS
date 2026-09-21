@@ -406,7 +406,13 @@ def handle_connection(conn):
             escaped = tmp_il_path.replace("\\", "/")
             send_code = log_directive + f'load("{escaped}") hiFlush() _vb_eval_result\n'
         else:
-            send_code = log_directive + f'let(((__vb_r {skill_code})) hiFlush() __vb_r)\n'
+            # Keep the inline path equivalent to the file path for legal
+            # multi-form input and trailing ``;`` comments.  The newline
+            # before the closing parentheses terminates a trailing comment.
+            send_code = (
+                log_directive
+                + f'let(((__vb_r progn({skill_code}\n))) hiFlush() __vb_r)\n'
+            )
 
         sys.stdout.buffer.write(send_code.encode("utf-8"))
         sys.stdout.buffer.flush()
