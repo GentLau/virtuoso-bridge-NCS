@@ -1,9 +1,9 @@
 # virtuoso-bridge-NCS Spec
 
-> 版本：Release `SPEC-2026-09-20-r5`（送审修订版）
-> 日期：2026-09-20
-> 状态：Normative 基线（取代 r4）
-> Supersedes：`SPEC-2026-09-18-r4`（09-20 顶层扩展：父子进程管理、/api/bug、线程池热生效、失败原地重试）
+> 版本：Release `SPEC-2026-09-21-r6`（送审修订版）
+> 日期：2026-09-21
+> 状态：Normative 基线（取代 r5）
+> Supersedes：`SPEC-2026-09-20-r5`（09-21 收口 /api/bug 个人 token 校验职责与状态转移重试口径）
 
 ## 0. 版本治理（替代“文件修改时间优先”）
 
@@ -98,9 +98,9 @@ CDS.log metadata frame 完整字节格式
 
 ## Release（本基线）
 
-- **Release ID**：`SPEC-2026-09-20-r5`
+- **Release ID**：`SPEC-2026-09-21-r6`
 - **Normative 文件集**（10 份）：四层整体架构与接口、本版范围与明确不支持、中层配置文档、路由设计、多用户与注册、并发设计、日志返回设计标准、顶层：HTTP 入口与业务调度、顶层补充：控制面与业务面、上层：业务包与插件化；
-- **Normative 内容哈希**：`45be1c2f72e9a23bd194742013a4f56dfebaa2e02db184d185b0f4aa986e7c7b`
+- **Normative 内容哈希**：`3c5a49f3c6bc26a0466f0463160179234930a47d6c5f74824f1cbcbf7e10c0c2`
   - 算法：路径为**相对 `spec/` 目录**并按路径排序；逐文件 SHA-256（**按 Git 提交内容计算，即 LF 行尾**；Windows 工作区受 `core.autocrlf` 影响的行尾差异不计入）；每行 `<相对路径> <hex>` 以 LF 拼接（**行间分隔、末行无尾 LF**），再取一次 SHA-256；
 - **基线 commit**：本 Release 段所在提交即基线（见 `git log -1 -- spec/`）；任何 Normative 文档变更必须同时更新本段哈希。
 
@@ -114,8 +114,8 @@ CDS.log metadata frame 完整字节格式
 | 中层配置文档 | Draft v33 | Normative | Draft v21–v32（合并说明见文件头 Supersedes） |
 | 多用户与注册 | Draft v32 | Normative | Draft v31（重新导入触发索引业务进程管理端点） |
 | 并发设计 | Draft v20 | Normative | Draft v19（重试决策单元术语统一为业务操作） |
-| 顶层 | Draft v19 | Normative | Draft v18（最小化 405 表述） |
-| 控制面与业务面 | Draft v32 | Normative | Draft v31（删除 bug 提交次数表述） |
+| 顶层 | Draft v20 | Normative | Draft v19（token 口径限定到业务请求链路，控制端口校验例外索引到顶层补充） |
+| 控制面与业务面 | Draft v33 | Normative | Draft v32（/api/bug 个人 token 校验来源收口；状态转移表补齐失败重试口径） |
 | 上层 | Draft v14 | Normative | Draft v12–v13（v12 白名单加入 common.*；v13 收窄为 common.paths） |
 | 日志返回设计标准 | Draft v15 | Normative | Draft v14（覆盖示例统一为合法值 warn） |
 
