@@ -12,6 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from pyapi.models import CommandResult
 from common.registry import UserEntry
+from common.remote_paths import RemotePathError
 from transport.remote_roles import resolve
 from common.paths import override_work_dir_for_tests
 from transport.tunnel import RemoteClient
@@ -115,6 +116,16 @@ class TestRemoteClientTransport(unittest.TestCase):
             runner = client.command_runner
         self.assertEqual(res.returncode, 0)
         self.assertTrue(any(c[0] == "run_command" and c[1][0] == "echo hi" for c in runner.calls))
+
+    def test_nul_remote_path_is_rejected(self):
+        entry = make_entry()
+        from unittest import mock
+        with mock.patch("transport.tunnel.SSHRunner", FakeRunner):
+            client = RemoteClient(entry, resolve(entry), "alice")
+            with self.assertRaises(RemotePathError):
+                client.resolve_remote_path(
+                    client.targets.file, "misc\x00nul.txt"
+                )
 
     def test_upload_success_verifies_sha(self):
         entry = make_entry()

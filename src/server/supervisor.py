@@ -28,6 +28,7 @@ from pathlib import Path
 
 from register.server import RegistrationServer
 from common.registry import load_registry
+from common.process_lifetime import ProcessJob
 from common.paths import (
     command_log_file,
     config_path,
@@ -88,6 +89,7 @@ class BusinessProcess:
         self.bound_port: int | None = None
         self.last_error: str | None = None
         self._proc: subprocess.Popen[str] | None = None
+        self._job: ProcessJob | None = None
         self._events: list[dict] = []
         self._event_cv = threading.Condition()
         self._stderr_tail: list[str] = []
@@ -95,6 +97,8 @@ class BusinessProcess:
 
     # -- lifecycle -----------------------------------------------------------
     def start(self, timeout: float = DRAIN_TIMEOUT) -> None:
+        if self._proc is not None or self._job is not None:
+            self._dispose_child(1.0)
         env = dict(os.environ)
         src = str(Path(__file__).resolve().parents[1])
         existing = env.get("PYTHONPATH", "")
@@ -105,15 +109,22 @@ class BusinessProcess:
             self._stderr_tail.clear()
             self.state = "starting"
         self._shutting_down = False
-        self._proc = subprocess.Popen(
-            self.args,
-            env=env,
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            bufsize=1,
-        )
+        self._job = ProcessJob()
+        try:
+            self._proc = subprocess.Popen(
+                self.args,
+                env=env,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                bufsize=1,
+            )
+        except Exception:
+            self._job.close()
+            self._job = None
+            raise
+        self._job.assign(self._proc)
         self.pid = self._proc.pid
         threading.Thread(target=self._read_stdout, daemon=True).start()
         threading.Thread(target=self._read_stderr, daemon=True).start()
@@ -125,6 +136,7 @@ class BusinessProcess:
             )
             with self._event_cv:
                 self.state = "crashed"
+            self._dispose_child(5.0)
             raise RuntimeError(self.last_error)
         self.bound_port = int(event.get("port") or self.port)
         with self._event_cv:
@@ -203,7 +215,10 @@ class BusinessProcess:
 
     def _dispose_child(self, timeout: float) -> None:
         proc = self._proc
+        job, self._job = self._job, None
         if proc is None:
+            if job is not None:
+                job.close()
             return
         if proc.poll() is None:
             if not self._wait_exit(timeout):
@@ -216,6 +231,8 @@ class BusinessProcess:
             except OSError:
                 pass
         self._proc = None
+        if job is not None:
+            job.close()
 
     # -- management API ------------------------------------------------------
     def status(self) -> dict:
@@ -242,13 +259,14 @@ class BusinessProcess:
         return self.status()
 
     def restart(self, timeout: float = DRAIN_TIMEOUT) -> dict:
-        if self._proc is not None and self._proc.poll() is None:
-            self._shutting_down = True
-            self._send("drain")
-            self.wait_event("drain_done", timeout)
-            if not self._wait_exit(5.0):
-                self._proc.kill()
-                self._wait_exit(5.0)
+        if self._proc is not None:
+            if self._proc.poll() is None:
+                self._shutting_down = True
+                self._send("drain")
+                self.wait_event("drain_done", timeout)
+                if not self._wait_exit(5.0):
+                    self._proc.kill()
+                    self._wait_exit(5.0)
             self._dispose_child(5.0)
         self._shutting_down = False
         self.start(timeout)

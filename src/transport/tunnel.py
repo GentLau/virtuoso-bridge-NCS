@@ -202,6 +202,8 @@ class RemoteClient:
         ``~`` is not part of the frozen path contract (§4.2/§5.6): reject it
         instead of paying for an extra remote HOME lookup.
         """
+        if "\x00" in path:
+            raise RemotePathError("remote_path contains NUL byte")
         if path.startswith("~"):
             raise RemotePathError(
                 f"'~' is not a valid remote_path ({path!r}); use an absolute "

@@ -579,6 +579,38 @@ class TestRegistrationServer(unittest.TestCase):
                 self.assertTrue(data, "no HTTP response for malformed Content-Length")
                 self.assertIn(b"400", data.split(b"\r\n", 1)[0], data[:200])
 
+    def test_json_parser_limits_return_400(self):
+        """超长整数字面量/超深嵌套必须回 JSON 400，不得静默断连。"""
+        long_int = b'{"user":"nobody","action":"cancel","token":"x","n":' + b"9" * 5000 + b"}"
+        deep = (
+            b'{"user":"nobody","action":"cancel","token":"x","n":'
+            + b"[" * 5000 + b"]" * 5000 + b"}"
+        )
+        for label, body in (("long-int", long_int), ("deep", deep)):
+            with self.subTest(label=label):
+                status, raw = self.srv.request_raw(
+                    "POST", "/api/register", body
+                )
+                self.assertEqual(status, 400, raw)
+                self.assertIn("invalid JSON body", raw)
+
+    def test_string_port_is_rejected(self):
+        """配置字段必须严格按声明类型接收，不能把 "65203" 静默转成 int。"""
+        status, raw = self.srv.request(
+            "POST",
+            "/api/register",
+            {
+                "user": "strictport",
+                "action": "apply",
+                "mode": "local",
+                "roles": {"daemon": {"local_port": "65203"}},
+            },
+        )
+        self.assertEqual(status, 400, raw)
+        self.assertIn("invalid request", raw)
+        status, _raw = self.srv.request("GET", "/api/register/strictport?token=x")
+        self.assertEqual(status, 404)
+
     def test_get_user_known_and_unknown(self):
         self.registry.register("zoe", UserEntry(token="tok-zoe", mode="local"))
         status, raw = self.srv.request(
@@ -592,6 +624,13 @@ class TestRegistrationServer(unittest.TestCase):
             "GET", "/api/user/ghost", None, _admin_auth()
         )
         self.assertEqual(status, 404)
+
+    def test_unsupported_methods_return_json_405(self):
+        for method in ("PATCH", "OPTIONS", "TRACE"):
+            with self.subTest(method=method):
+                status, raw = self.srv.request(method, "/api/register")
+                self.assertEqual(status, 405, raw)
+                self.assertIn("method", raw.lower())
 
     def test_unknown_routes_are_404(self):
         for method in ("GET", "POST", "DELETE", "PUT"):

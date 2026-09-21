@@ -124,6 +124,17 @@ class TestCommandContracts(MiddleContractBase):
         self.assertEqual(r.returncode, 0)
         self.assertTrue(self.fake.parallel_seen)
 
+    def test_invalid_timeout_is_a_parameter_error(self):
+        """NaN/Infinity/bool 不能被当作合法秒数送进传输层。"""
+        for bad in (
+            float("nan"), float("inf"), float("-inf"), True, 1e9,
+        ):
+            with self.subTest(timeout=bad):
+                with self.assertRaises(ValueError):
+                    self.server.run_command(
+                        "echo hi", timeout=bad, token="tok-c"
+                    )
+
 
 class TestFileAndRoleContracts(MiddleContractBase):
     def test_upload_transport_error(self):
@@ -138,6 +149,14 @@ class TestFileAndRoleContracts(MiddleContractBase):
         dst = Path(tempfile.mkdtemp()) / "out.bin"
         r = self.server.download_file("missing.bin", dst, token="tok-c")
         self.assert_kind(r, "path", 1)
+
+    def test_nul_remote_path_maps_to_kind_path(self):
+        src = Path(tempfile.mkdtemp()) / "f.bin"
+        src.write_bytes(b"x")
+        up = self.server.upload_file(src, "bad\x00name", token="tok-c")
+        self.assert_kind(up, "path", 1)
+        down = self.server.download_file("bad\x00name", src, token="tok-c")
+        self.assert_kind(down, "path", 1)
 
     def test_gui_and_spectre_one_shot(self):
         r1 = self.server.run_gui_command("xdotool key Escape", token="tok-c")

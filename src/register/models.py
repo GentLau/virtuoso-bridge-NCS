@@ -11,7 +11,14 @@ from dataclasses import dataclass, field
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    StrictFloat,
+    StrictInt,
+    model_validator,
+)
 
 from common.registry import UserEntry
 from common.validation import validate_token, validate_user_name
@@ -27,13 +34,13 @@ class RequestRole(BaseModel):
     jump_user: str | None = None
     proxy: str | None = None
     root: str | None = None
-    max_sessions: int | None = Field(default=None, ge=1)
+    max_sessions: StrictInt | None = Field(default=None, ge=1)
     expected_fingerprint: str | None = None
 
 
 class RequestDaemonRole(RequestRole):
-    daemon_port: int | None = Field(default=None, ge=1, le=65535)
-    local_port: int | None = Field(default=None, ge=1, le=65535)
+    daemon_port: StrictInt | None = Field(default=None, ge=1, le=65535)
+    local_port: StrictInt | None = Field(default=None, ge=1, le=65535)
     python: str | None = None
     expected_hostname: str | None = None
     expected_user: str | None = None
@@ -98,11 +105,11 @@ class RegistrationRequest(BaseModel):
     ssh_backend: Literal["openssh", "paramiko"] | None = None
     ssh_control_master: Literal["auto", "force", "disable"] | None = None
     ssh_tool_override: dict[str, str] | None = None
-    thread_pool_size: int | None = Field(default=None, ge=1)
-    channel_budget: int | None = Field(default=None, ge=1)
-    connect_timeout: float | None = Field(default=None, gt=0)
+    thread_pool_size: StrictInt | None = Field(default=None, ge=1)
+    channel_budget: StrictInt | None = Field(default=None, ge=1)
+    connect_timeout: StrictFloat | None = Field(default=None, gt=0)
     log_level: Literal["off", "all", "warn", "error"] | None = None
-    log_max_bytes: int | None = Field(default=None, ge=1)
+    log_max_bytes: StrictInt | None = Field(default=None, ge=1)
 
     @model_validator(mode="before")
     @classmethod

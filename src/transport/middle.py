@@ -8,6 +8,7 @@ from __future__ import annotations
 import atexit
 import hashlib
 import logging
+import math
 import os
 import shlex
 import shutil
@@ -44,6 +45,11 @@ from transport.tunnel import RemoteClient
 logger = logging.getLogger(__name__)
 
 _DEFAULT_TIMEOUT = 30.0  # spec: timeout=None -> 30s for all five interfaces
+#: ``socket`` timers are milliseconds on the supported Windows client; values
+#: above this cannot be represented and previously leaked an OverflowError
+#: from the transport layer.  It is an implementation safety bound, not a
+#: product-level deadline policy.
+_MAX_TIMEOUT_SECONDS = 2_147_483.0
 
 # Local transfers stream in bounded chunks so the call deadline is observed
 # even when the disk is slow; a single shutil.copy2 cannot be interrupted.
@@ -110,7 +116,30 @@ _VB_UNKNOWN_EFFECT = "VB-UNKNOWN-EFFECT: "
 
 
 def _effective_timeout(timeout: float | int | None) -> float:
-    return _DEFAULT_TIMEOUT if timeout is None else float(timeout)
+    if timeout is None:
+        return _DEFAULT_TIMEOUT
+    if isinstance(timeout, bool):
+        raise ValueError("timeout must be a positive finite number")
+    try:
+        value = float(timeout)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("timeout must be a positive finite number") from exc
+    if (
+        not math.isfinite(value)
+        or value <= 0
+        or value > _MAX_TIMEOUT_SECONDS
+    ):
+        raise ValueError(
+            "timeout must be a positive finite number no larger than "
+            f"{_MAX_TIMEOUT_SECONDS:g} seconds"
+        )
+    return value
+
+
+def _reject_nul_path(value: object, label: str) -> None:
+    """Reject NUL before the OS/shell silently truncates the path."""
+    if "\x00" in str(value):
+        raise RemotePathError(f"{label} contains NUL byte")
 
 
 def _error_result(exc: BaseException, budget: float | None = None) -> CommandResult:
@@ -699,7 +728,7 @@ class BusinessServer(Middle):
 
     def run_command(self, cmd: str, timeout: int | None = None, *, token: str, parallel: bool = False) -> CommandResult:
         sem = None
-        budget: float | None = None
+        budget = _effective_timeout(timeout)
         try:
             entry = self._entry(token)
             sem = self._acquire(token, entry)
@@ -707,7 +736,6 @@ class BusinessServer(Middle):
                 return CommandResult(returncode=1, stdout="", stderr="thread pool exceeded", kind="rejected")
             user = self.registry.user_of(token) or token
             targets = self._targets(entry, user=user)
-            budget = _effective_timeout(timeout)
             deadline = time.monotonic() + budget
             if targets.command.mode == "local":
                 if parallel:
@@ -752,6 +780,8 @@ class BusinessServer(Middle):
         budget = _effective_timeout(timeout)
         started = time.monotonic()
         try:
+            _reject_nul_path(local_path, "local_path")
+            _reject_nul_path(remote_path, "remote_path")
             entry = self._entry(token)
             sem = self._acquire(token, entry)
             if sem is None:
@@ -786,6 +816,8 @@ class BusinessServer(Middle):
         budget = _effective_timeout(timeout)
         started = time.monotonic()
         try:
+            _reject_nul_path(remote_path, "remote_path")
+            _reject_nul_path(local_path, "local_path")
             entry = self._entry(token)
             sem = self._acquire(token, entry)
             if sem is None:

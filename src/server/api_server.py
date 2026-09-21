@@ -26,6 +26,7 @@ from typing import Any
 from server import dispatch as dispatch_module
 from server.dispatch import dispatch
 from common.paths import config_path, init_work_dir, work_root
+from common.jsonutil import loads_strict
 
 
 #: Top-layer overall thread-pool size when ``config.json`` does not set
@@ -76,14 +77,16 @@ class ApiHandler(BaseHTTPRequestHandler):
     def _read_json(self) -> tuple[bool, Any]:
         try:
             length = int(self.headers.get("Content-Length", "0") or "0")
-        except ValueError:
+        except (TypeError, ValueError):
+            return False, None
+        if length < 0:
             return False, None
         raw = self.rfile.read(length) if length > 0 else b""
         if not raw:
             return False, None
         try:
-            return True, json.loads(raw.decode("utf-8"))
-        except (UnicodeDecodeError, json.JSONDecodeError):
+            return True, loads_strict(raw.decode("utf-8"))
+        except (UnicodeDecodeError, ValueError, RecursionError):
             return False, None
 
     # -- routes ----------------------------------------------------------------
@@ -156,6 +159,37 @@ class ApiHandler(BaseHTTPRequestHandler):
         finally:
             server.release_slot()
         self._send(status, body)
+
+    def _method_not_allowed(self, *, body: bool = True) -> None:
+        if body:
+            self._send(405, {
+                "ok": False,
+                "data": None,
+                "error": "method not allowed",
+            })
+            return
+        self.send_response(405)
+        self.send_header("Allow", "GET, POST")
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+
+    def do_PUT(self) -> None:  # noqa: N802
+        self._method_not_allowed()
+
+    def do_DELETE(self) -> None:  # noqa: N802
+        self._method_not_allowed()
+
+    def do_OPTIONS(self) -> None:  # noqa: N802
+        self._method_not_allowed()
+
+    def do_TRACE(self) -> None:  # noqa: N802
+        self._method_not_allowed()
+
+    def do_PATCH(self) -> None:  # noqa: N802
+        self._method_not_allowed()
+
+    def do_HEAD(self) -> None:  # noqa: N802
+        self._method_not_allowed(body=False)
 
     def log_message(self, fmt: str, *args: Any) -> None:  # keep stdout clean
         return

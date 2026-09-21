@@ -40,6 +40,7 @@ from register.candidate import (
 )
 from register.reservation import ReservationTable
 from common.registry import Registry, RegistryError, load_registry
+from common.jsonutil import loads_strict
 from common.paths import (  # noqa: E402 - 进程级路径基座（common 层）
     init_work_dir,
     log_dir,
@@ -91,7 +92,7 @@ class RegistrationHandler(BaseHTTPRequestHandler):
         if length < 0:
             raise _InvalidContentLength("invalid Content-Length")
         raw = self.rfile.read(length) if length > 0 else b""
-        return json.loads(raw.decode("utf-8")) if raw else {}
+        return loads_strict(raw.decode("utf-8")) if raw else {}
 
     def _flow(self, user: str):
         with self.server.flow_lock:  # type: ignore[attr-defined]
@@ -267,7 +268,7 @@ class RegistrationHandler(BaseHTTPRequestHandler):
         """
         try:
             raw = self._read_json()
-        except (json.JSONDecodeError, UnicodeDecodeError, _InvalidContentLength):
+        except (UnicodeDecodeError, ValueError, RecursionError):
             self._send_json(400, {"error": "invalid JSON body"})
             return
         if not isinstance(raw, dict):
@@ -387,11 +388,11 @@ class RegistrationHandler(BaseHTTPRequestHandler):
     def _handle_process_action(self, action: str) -> None:
         try:
             body = self._read_json()
-        except (json.JSONDecodeError, UnicodeDecodeError):
-            self._send_json(400, {"error": "invalid JSON body"})
-            return
         except _InvalidContentLength:
             self._send_json(400, {"error": "invalid Content-Length"})
+            return
+        except (json.JSONDecodeError, UnicodeDecodeError, ValueError, RecursionError):
+            self._send_json(400, {"error": "invalid JSON body"})
             return
         if not isinstance(body, dict):
             self._send_json(400, {"error": "request body must be an object"})
@@ -529,7 +530,7 @@ class RegistrationHandler(BaseHTTPRequestHandler):
         token = ""
         try:
             parsed = json.loads(raw_text) if raw_text else None
-        except (json.JSONDecodeError, UnicodeDecodeError):
+        except (json.JSONDecodeError, UnicodeDecodeError, ValueError, RecursionError):
             parsed = None
         if isinstance(parsed, dict) and isinstance(parsed.get("token"), str):
             token = parsed["token"]
@@ -611,7 +612,7 @@ class RegistrationHandler(BaseHTTPRequestHandler):
             return
         try:
             fields = self._read_json()
-        except (json.JSONDecodeError, UnicodeDecodeError, _InvalidContentLength):
+        except (UnicodeDecodeError, ValueError, RecursionError):
             self._send_json(400, {"error": "invalid JSON body"})
             return
         if not isinstance(fields, dict):
@@ -658,7 +659,7 @@ class RegistrationHandler(BaseHTTPRequestHandler):
                 return
             try:
                 body = self._read_json()
-            except (json.JSONDecodeError, UnicodeDecodeError, ValueError):
+            except (json.JSONDecodeError, UnicodeDecodeError, ValueError, RecursionError):
                 self._send_json(400, {"error": "invalid JSON body"})
                 return
             if not isinstance(body, dict):
@@ -692,6 +693,24 @@ class RegistrationHandler(BaseHTTPRequestHandler):
             self._send_json(200, self.server.config)
             return
         self._send_json(404, {"error": "not found"})
+
+    def _method_not_allowed(self) -> None:
+        self._send_json(405, {"error": "method not allowed"})
+
+    def do_PATCH(self) -> None:  # noqa: N802
+        self._method_not_allowed()
+
+    def do_OPTIONS(self) -> None:  # noqa: N802
+        self._method_not_allowed()
+
+    def do_TRACE(self) -> None:  # noqa: N802
+        self._method_not_allowed()
+
+    def do_HEAD(self) -> None:  # noqa: N802
+        self.send_response(405)
+        self.send_header("Allow", "GET, POST, PUT, DELETE")
+        self.send_header("Content-Length", "0")
+        self.end_headers()
 
     def log_message(self, format: str, *args) -> None:  # noqa: A002
         print(f"[registration] {self.address_string()} - {format % args}")

@@ -67,6 +67,73 @@ class TestBusinessFacePool(unittest.TestCase):
         conn.close()
         return resp.status, raw, retry_after
 
+    def _post_raw(self, body: bytes):
+        conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=10)
+        try:
+            conn.request(
+                "POST", "/api/operation", body,
+                {"Content-Type": "application/json"},
+            )
+            resp = conn.getresponse()
+            return resp.status, resp.read().decode("utf-8")
+        except Exception as exc:  # noqa: BLE001 - failure diagnostic
+            return None, f"{type(exc).__name__}: {exc}"
+        finally:
+            conn.close()
+
+    def test_json_parser_limits_return_400(self):
+        """超长整数字面量/超深嵌套必须回 JSON 400，不得静默断连。"""
+        long_int = (
+            b'{"operation":"tb.pool.slow","token":"t","value":'
+            + b"9" * 5000 + b"}"
+        )
+        deep = (
+            b'{"operation":"tb.pool.slow","token":"t","value":'
+            + b"[" * 5000 + b"]" * 5000 + b"}"
+        )
+        for label, body in (("long-int", long_int), ("deep", deep)):
+            with self.subTest(label=label):
+                status, raw = self._post_raw(body)
+                self.assertEqual(status, 400, raw)
+                self.assertIn("invalid JSON body", raw)
+
+    def test_non_finite_json_literals_are_400(self):
+        for literal in (b"NaN", b"Infinity", b"-Infinity", b"1e400"):
+            with self.subTest(literal=literal):
+                body = (
+                    b'{"operation":"tb.pool.slow","token":"t","timeout":'
+                    + literal + b"}"
+                )
+                status, raw = self._post_raw(body)
+                self.assertEqual(status, 400, raw)
+                self.assertIn("invalid JSON body", raw)
+
+    def test_unsupported_methods_return_json_405(self):
+        for method in ("PUT", "DELETE", "OPTIONS", "TRACE", "PATCH"):
+            with self.subTest(method=method):
+                conn = http.client.HTTPConnection(
+                    "127.0.0.1", self.port, timeout=10
+                )
+                conn.request(
+                    method, "/api/operation", "{}",
+                    {"Content-Type": "application/json"},
+                )
+                resp = conn.getresponse()
+                raw = resp.read().decode("utf-8")
+                conn.close()
+                self.assertEqual(resp.status, 405, raw)
+                self.assertEqual(json.loads(raw)["ok"], False)
+                self.assertIn("method", raw.lower())
+
+    def test_head_returns_405_without_body(self):
+        conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=10)
+        conn.request("HEAD", "/api/operation")
+        resp = conn.getresponse()
+        body = resp.read()
+        conn.close()
+        self.assertEqual(resp.status, 405)
+        self.assertEqual(body, b"")
+
     def test_over_limit_is_refused_with_429_and_retry_after(self):
         results = []
 
