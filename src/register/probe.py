@@ -73,7 +73,8 @@ def _fingerprint_from_key_lines(lines: list[str]) -> str | None:
             tmp_path = Path(f.name)
             f.write("\n".join(lines) + "\n")
         fp = subprocess.run(
-            ["ssh-keygen", "-lf", str(tmp_path)], capture_output=True, text=True, timeout=10
+            ["ssh-keygen", "-lf", str(tmp_path)], capture_output=True, text=True,
+            timeout=10, **_no_window_kwargs(),
         )
         return fp.stdout.strip().split()[1] if fp.stdout.strip() else None
     except (OSError, subprocess.TimeoutExpired):
@@ -92,6 +93,7 @@ def scan_host_key_fingerprint(host: str, port: int = 22) -> str | None:
         found = subprocess.run(
             ["ssh-keyscan", "-p", str(port), host],
             capture_output=True, text=True, timeout=10,
+            **_no_window_kwargs(),
         ).stdout
     except (OSError, subprocess.TimeoutExpired):
         return None
@@ -117,7 +119,8 @@ def host_key_fingerprint(host: str, port: int = 22) -> str | None:
     for candidate in candidates:
         try:
             found = subprocess.run(
-                ["ssh-keygen", "-F", candidate], capture_output=True, text=True, timeout=10
+                ["ssh-keygen", "-F", candidate], capture_output=True, text=True,
+                timeout=10, **_no_window_kwargs(),
             ).stdout
         except (OSError, subprocess.TimeoutExpired):
             found = ""

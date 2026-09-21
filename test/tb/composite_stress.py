@@ -30,6 +30,7 @@ if _src.is_dir():
 from common.registry import UserEntry, load_registry
 from register.probe import allocate_local_port
 from common.paths import override_work_dir_for_tests, registry_path
+from _win import no_window
 
 SPECTRE = "/opt/eda/cadence/SPECTRE241/bin/spectre"
 WSL_ROOT = "/home/Gent/.virtuoso-bridge"
@@ -191,6 +192,7 @@ def main():
                       "--port", str(server_port), "--work-dir", str(wd)]
     server_proc = subprocess.Popen(
         server_cmd, stdout=server_log, stderr=subprocess.STDOUT, text=True, env=env,
+        **no_window(),
     )
     if not wait_http(base, timeout=25):
         print(json.dumps({"error": "stress server did not start", "log_path": str(server_log_path)}))

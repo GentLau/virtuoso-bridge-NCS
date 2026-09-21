@@ -286,7 +286,8 @@ def _local_role_checks(role: CandidateRole) -> str:
     Returns the expanded local root (stored back into the registry entry).
     """
     proc = subprocess.run(
-        "echo vb-ok", shell=True, capture_output=True, text=True, timeout=15
+        "echo vb-ok", shell=True, capture_output=True, text=True, timeout=15,
+        **probes._no_window_kwargs(),
     )
     if proc.returncode != 0 or proc.stdout.strip() != "vb-ok":
         raise RegistrationProbeError(
@@ -748,7 +749,8 @@ def test_connectivity(entry: UserEntry, user: str) -> ConnectivityReport:
         command_role = targets.command
         if command_role.mode == "local":
             proc = subprocess.run(
-                "echo vb-ok", shell=True, capture_output=True, text=True, timeout=15
+                "echo vb-ok", shell=True, capture_output=True, text=True,
+                timeout=15, **probes._no_window_kwargs(),
             )
             command_ok = proc.returncode == 0 and proc.stdout.strip() == "vb-ok"
             if not command_ok:
@@ -809,7 +811,7 @@ def test_connectivity(entry: UserEntry, user: str) -> ConnectivityReport:
             command_runner.close()
 
     skill_ok = skill.ok and (skill.output or "").strip().strip('"') == "2"
-    token_ok = "invalid token" not in " ".join(skill.errors).lower()
+    token_ok = _token_ok(skill)
     if not skill_ok:
         detail.append(f"skill={skill.status}:{skill.errors}")
 
@@ -837,6 +839,11 @@ def test_connectivity(entry: UserEntry, user: str) -> ConnectivityReport:
         detail="; ".join(detail),
         warnings=warnings,
     )
+
+
+def _token_ok(skill: VirtuosoResult) -> bool:
+    """True only when the daemon positively accepted and executed the smoke."""
+    return bool(skill.ok)
 
 
 # -- six-step orchestrator ------------------------------------------------------

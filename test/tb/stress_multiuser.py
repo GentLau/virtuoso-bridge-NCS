@@ -24,6 +24,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from common.registry import UserEntry, load_registry
 from common.paths import registry_path, override_work_dir_for_tests
+from _win import no_window
 
 
 class FakeDaemon:
@@ -110,6 +111,7 @@ def main(argv=None):
          "--port", str(server_port), "--work-dir", str(wd)],
         stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT,
         env={**__import__("os").environ, "PYTHONPATH": str(Path(__file__).resolve().parents[2] / "src")},
+        **no_window(),
     )
     try:
         for _ in range(40):
@@ -129,7 +131,10 @@ def main(argv=None):
             "--uploads", str(args.users * 2),
             "--downloads", str(args.users * 2),
         ]
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=1200)
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, timeout=1200,
+            **no_window(),
+        )
         print(result.stdout)
         if result.stderr:
             print(result.stderr)

@@ -10,6 +10,7 @@ from __future__ import print_function
 
 import errno
 import json
+import math
 import os
 import signal
 import socket
@@ -39,17 +40,57 @@ _US_BYTE = chr(US).encode("latin-1")
 def _B(code):
     """Control byte that is consistent under both Python 2 and 3."""
     return chr(code).encode("latin-1")
-virtuoso_pid = None
+
+
+try:
+    _STRING_TYPES = (str, unicode)
+except NameError:  # pragma: no cover - Python 3 smoke run
+    _STRING_TYPES = (str,)
+
+_REQUEST_READ_TIMEOUT = 10.0
+_MAX_REQUEST_BYTES = 16 * 1024 * 1024
+
+
+def _is_virtuoso_process(pid):
+    """Validate the ppid-derived target before sending SIGINT."""
+    if not isinstance(pid, int) or pid <= 1:
+        return False
+    try:
+        with open("/proc/%d/comm" % pid, "rb") as fh:
+            comm = fh.read().decode("utf-8", "replace").strip().lower()
+        if "virtuoso" in comm:
+            return True
+    except (IOError, OSError):
+        return False
+    try:
+        with open("/proc/%d/cmdline" % pid, "rb") as fh:
+            cmdline = fh.read().replace(b"\x00", b" ").decode(
+                "utf-8", "replace"
+            ).lower()
+    except (IOError, OSError):
+        return False
+    return "virtuoso" in cmdline
+
+
+_derived_virtuoso_pid = None
 try:
     with open("/proc/self/stat") as _f:
         _ppid = int(_f.read().split()[3])
     with open("/proc/%d/stat" % _ppid) as _f:
-        virtuoso_pid = int(_f.read().split()[3])
+        _derived_virtuoso_pid = int(_f.read().split()[3])
 except Exception:
-    virtuoso_pid = None
+    _derived_virtuoso_pid = None
+
+virtuoso_pid = (
+    _derived_virtuoso_pid
+    if _derived_virtuoso_pid and _is_virtuoso_process(_derived_virtuoso_pid)
+    else None
+)
 
 _timeout_flag = False
 _watchdog = None
+_watchdog_gen = 0
+_watchdog_lock = threading.Lock()
 
 if _fcntl is not None:
     _fd = sys.stdin.fileno()
@@ -106,15 +147,37 @@ def _temp_dir():
         pass
 
 
-def _watchdog_cb():
+def _valid_timeout(value):
+    if isinstance(value, bool):
+        return None
+    try:
+        timeout = float(value)
+    except (TypeError, ValueError):
+        return None
+    if math.isnan(timeout) or math.isinf(timeout) or timeout <= 0:
+        return None
+    return timeout
+
+
+def _send_error(conn, message):
+    _safe_sendall(
+        conn,
+        _B(NAK) + json.dumps({"error": message, "log": ""}).encode("utf-8") + _B(RS),
+    )
+
+
+def _watchdog_cb(gen):
     global _timeout_flag
-    if not _timeout_flag:
+    with _watchdog_lock:
+        if gen != _watchdog_gen or _timeout_flag:
+            return
         _timeout_flag = True
-        if virtuoso_pid:
-            try:
-                os.kill(virtuoso_pid, signal.SIGINT)
-            except Exception:
-                pass
+        pid = virtuoso_pid
+    if pid and _is_virtuoso_process(pid):
+        try:
+            os.kill(pid, signal.SIGINT)
+        except Exception:
+            pass
 
 
 def _read_byte():
@@ -263,20 +326,68 @@ def _read_range(path, start_offset, end_offset):
     return _READER.read(path, start_offset, end_offset)
 
 def handle_connection(conn):
-    global _timeout_flag, _watchdog, _RB_CALLS, _RB_ERRORS
+    global _timeout_flag, _watchdog, _watchdog_gen, _RB_CALLS, _RB_ERRORS
     tmp_il_path = None
     try:
         chunks = []
+        total = 0
+        timed_out = False
+        conn.settimeout(_REQUEST_READ_TIMEOUT)
         while True:
-            chunk = conn.recv(65536)
+            try:
+                chunk = conn.recv(65536)
+            except socket.timeout:
+                timed_out = True
+                break
             if not chunk:
                 break
+            total += len(chunk)
+            if total > _MAX_REQUEST_BYTES:
+                _send_error(conn, "request too large")
+                _RB_ERRORS += 1
+                _emit_stat()
+                return
             chunks.append(chunk)
-        req = json.loads(b"".join(chunks).decode("utf-8"))
+            try:
+                json.loads(b"".join(chunks).decode("utf-8"))
+            except (UnicodeDecodeError, ValueError):
+                pass
+            else:
+                break
+        if not chunks:
+            _send_error(
+                conn,
+                "request read timed out" if timed_out else "invalid request payload",
+            )
+            return
+        try:
+            req = json.loads(b"".join(chunks).decode("utf-8"))
+        except (UnicodeDecodeError, ValueError):
+            _send_error(
+                conn,
+                "request read timed out" if timed_out else "invalid request payload",
+            )
+            _RB_ERRORS += 1
+            _emit_stat()
+            return
+        if not isinstance(req, dict):
+            _send_error(conn, "invalid request payload")
+            _RB_ERRORS += 1
+            _emit_stat()
+            return
 
-        skill_code = req.get("skill", "")
-        timeout_seconds = float(req.get("timeout", 30.0))
+        skill_code = req.get("skill")
+        timeout_seconds = _valid_timeout(req.get("timeout", 30.0))
         token = req.get("token")
+        if (
+            not isinstance(skill_code, _STRING_TYPES)
+            or not isinstance(token, _STRING_TYPES)
+            or timeout_seconds is None
+        ):
+            _send_error(conn, "invalid request payload")
+            _RB_ERRORS += 1
+            _emit_stat()
+            return
 
         if not DAEMON_TOKEN or token != DAEMON_TOKEN:
             _safe_sendall(conn, _B(NAK) + json.dumps({"error": "invalid token", "log": ""}).encode("utf-8") + _B(RS))
@@ -296,7 +407,10 @@ def handle_connection(conn):
             return
         log_on = log_level != "off"
 
-        _timeout_flag = False
+        with _watchdog_lock:
+            _timeout_flag = False
+            _watchdog_gen += 1
+            watchdog_gen = _watchdog_gen
         while True:
             try:
                 if not sys.stdin.read(1):
@@ -321,7 +435,9 @@ def handle_connection(conn):
         sys.stdout.write(send_code.encode("utf-8"))
         sys.stdout.flush()
 
-        _watchdog = threading.Timer(timeout_seconds, _watchdog_cb)
+        _watchdog = threading.Timer(
+            timeout_seconds, _watchdog_cb, args=(watchdog_gen,)
+        )
         _watchdog.daemon = True
         _watchdog.start()
 
@@ -336,9 +452,10 @@ def handle_connection(conn):
         if log_on:
             frame2 = _read_frame()
 
-        _timeout_flag = True
-        if _watchdog:
-            _watchdog.cancel()
+        with _watchdog_lock:
+            _timeout_flag = True
+            if _watchdog:
+                _watchdog.cancel()
 
         if log_on:
             meta = _parse_meta(frame2[1:])
@@ -360,19 +477,21 @@ def handle_connection(conn):
             _RB_ERRORS += 1
         _emit_stat()
 
-    except ValueError as e:
-        _safe_sendall(conn, _B(NAK) + json.dumps({"error": "JSONDecodeError: %s" % e, "log": ""}).encode("utf-8") + _B(RS))
+    except (UnicodeDecodeError, ValueError):
+        traceback.print_exc()
+        _send_error(conn, "invalid request payload")
         _RB_ERRORS += 1
         _emit_stat()
-    except Exception as e:
+    except Exception:
         traceback.print_exc()
-        _safe_sendall(conn, _B(NAK) + json.dumps({"error": str(e), "log": ""}).encode("utf-8") + _B(RS))
+        _send_error(conn, "internal daemon error")
         _RB_ERRORS += 1
         _emit_stat()
     finally:
-        _timeout_flag = True
-        if _watchdog:
-            _watchdog.cancel()
+        with _watchdog_lock:
+            _timeout_flag = True
+            if _watchdog:
+                _watchdog.cancel()
         if tmp_il_path:
             try:
                 os.unlink(tmp_il_path)

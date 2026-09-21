@@ -132,6 +132,7 @@ def main():
     server_proc = subprocess.Popen(
         [sys.executable, "-m", "server.stress_server", "--port", "8126", "--work-dir", str(wd)],
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, env=env,
+        **no_window(),
     )
     try:
         for _ in range(20):
@@ -153,6 +154,7 @@ def main():
              "--uploads", "20", "--downloads", "20", "--parallel",
              "--skill-expr", "RBDToken"],
             capture_output=True, text=True, timeout=300,
+            **no_window(),
         )
         print(client.stdout)
         if client.stderr:

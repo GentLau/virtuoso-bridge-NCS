@@ -54,6 +54,7 @@ def _taskkill(pid: int) -> None:
             capture_output=True,
             check=False,
             timeout=10,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
         )
     except (OSError, subprocess.TimeoutExpired):
         pass
@@ -75,7 +76,8 @@ class TestProcessJob(unittest.TestCase):
                 "while not go.exists():\n"
                 "    time.sleep(0.05)\n"
                 "p = subprocess.Popen([sys.executable, '-c', "
-                "'import time; time.sleep(60)'])\n"
+                "'import time; time.sleep(60)'], "
+                "creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))\n"
                 "pidfile.write_text(str(p.pid))\n"
                 "time.sleep(60)"
             )
@@ -151,7 +153,8 @@ class TestBusinessProcessLifetime(unittest.TestCase):
             script = (
                 "import json, pathlib, subprocess, sys, time\n"
                 "p = subprocess.Popen([sys.executable, '-c', "
-                "'import time; time.sleep(60)'])\n"
+                "'import time; time.sleep(60)'], "
+                "creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))\n"
                 "pathlib.Path(sys.argv[1]).write_text(str(p.pid))\n"
                 "print('VB-EVENT ' + json.dumps("
                 "{'event': 'ready', 'port': 1}), flush=True)\n"

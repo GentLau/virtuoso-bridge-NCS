@@ -30,6 +30,7 @@ from pathlib import Path
 from register.server import RegistrationServer
 from common.registry import load_registry
 from common.process_lifetime import ProcessJob
+from common.ssh import _windows_no_window_kwargs
 from common.paths import (
     command_log_file,
     config_path,
@@ -121,6 +122,7 @@ class BusinessProcess:
             "text": True,
             "bufsize": 1,
         }
+        popen_kwargs.update(_windows_no_window_kwargs())
         if os.name != "nt":
             # Make the business child a session/process-group leader so the
             # supervised restart path can signal the whole tree.
@@ -272,6 +274,9 @@ class BusinessProcess:
                     capture_output=True,
                     check=False,
                     timeout=10,
+                    creationflags=getattr(
+                        subprocess, "CREATE_NO_WINDOW", 0
+                    ),
                 )
                 if result.returncode == 0:
                     return

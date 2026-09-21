@@ -214,6 +214,7 @@ class TestCrossProcessLock(unittest.TestCase):
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
         )
         try:
             self.assertEqual(proc.stdout.readline().strip(), "locked")

@@ -267,7 +267,7 @@ def case_server_loop(daemon) -> dict:
                 break
             except OSError:
                 time.sleep(0.1)
-        if not response.startswith(NAK) or b"JSONDecodeError" not in response:
+        if not response.startswith(NAK) or b"invalid request payload" not in response:
             raise ProbeFailure(f"server loop did not NAK a bad payload: {response[:80]!r}")
         if daemon._RB_ERRORS < 1:
             raise ProbeFailure("server loop did not account the protocol error")

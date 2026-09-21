@@ -44,7 +44,11 @@ def _http(method: str, port: int, path: str, body=None, admin=False, timeout=35)
 
 class TestSupervisorProcess(unittest.TestCase):
     def setUp(self):
-        self.work_dir = Path(tempfile.mkdtemp(prefix="vb-supervisor-"))
+        artifact_root = ROOT / "test" / "tb" / "artifacts"
+        artifact_root.mkdir(parents=True, exist_ok=True)
+        self.work_dir = Path(
+            tempfile.mkdtemp(prefix="vb-supervisor-", dir=artifact_root)
+        )
         self.control_port = _free_port()
         self.business_port = _free_port()
         env = dict(os.environ)
@@ -62,6 +66,7 @@ class TestSupervisorProcess(unittest.TestCase):
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
         )
         threading.Thread(target=self._drain, args=(self.proc.stdout,), daemon=True).start()
         threading.Thread(target=self._drain, args=(self.proc.stderr,), daemon=True).start()

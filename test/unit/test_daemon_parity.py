@@ -1,9 +1,13 @@
 """Parity tests: the Python 3 and Python 2.7 daemons share one fixture set."""
 
+import os
+import socket
 import sys
 import tempfile
+import threading
 import unittest
 from pathlib import Path
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
@@ -87,6 +91,105 @@ class TestDaemonParity(unittest.TestCase):
             self.assertEqual(mod._read_range(str(f), 100, 50), ("abc", None), name)
             self.assertEqual(mod._read_range(str(f), -1, 99), ("abc", None), name)
             self.assertEqual(mod._read_range("", 0, 10), ("", "CDS.log path unavailable"), name)
+
+
+class TestDaemonSocketHardening(unittest.TestCase):
+    """Direct-port hardening: bounded reads and structured NAK payloads."""
+
+    @staticmethod
+    def _nak_byte(mod):
+        return mod._B(mod.NAK) if hasattr(mod, "_B") else mod.NAK
+
+    def _exchange(self, mod, payload, *, hold_open=False):
+        listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        listener.bind(("127.0.0.1", 0))
+        listener.listen(1)
+        address = listener.getsockname()
+        errors = []
+
+        def serve():
+            try:
+                conn, _ = listener.accept()
+                try:
+                    mod.handle_connection(conn)
+                finally:
+                    conn.close()
+            except Exception as exc:  # noqa: BLE001 - diagnostic
+                errors.append(exc)
+            finally:
+                listener.close()
+
+        thread = threading.Thread(target=serve, daemon=True)
+        thread.start()
+        client = socket.create_connection(address, timeout=3)
+        client.sendall(payload)
+        if not hold_open:
+            client.shutdown(socket.SHUT_WR)
+        data = b""
+        try:
+            while b"\x1e" not in data:
+                chunk = client.recv(65536)
+                if not chunk:
+                    break
+                data += chunk
+        finally:
+            client.close()
+            thread.join(timeout=3)
+        self.assertFalse(thread.is_alive(), "daemon handler did not terminate")
+        self.assertEqual(errors, [])
+        return data
+
+    def test_malformed_payload_never_leaks_python_exception(self):
+        for name, mod in MODULES:
+            old_timeout = mod._REQUEST_READ_TIMEOUT
+            try:
+                mod._REQUEST_READ_TIMEOUT = 0.3
+                data = self._exchange(
+                    mod, b'{"skill": 5, "token": "x"}'
+                )
+            finally:
+                mod._REQUEST_READ_TIMEOUT = old_timeout
+            self.assertTrue(data.startswith(self._nak_byte(mod)), (name, data))
+            self.assertIn(b"invalid request payload", data, name)
+            self.assertNotIn(b"Traceback", data, name)
+            self.assertNotIn(b"object has no attribute", data, name)
+
+    def test_half_open_request_times_out_with_structured_nak(self):
+        for name, mod in MODULES:
+            old_timeout = mod._REQUEST_READ_TIMEOUT
+            try:
+                mod._REQUEST_READ_TIMEOUT = 0.2
+                data = self._exchange(
+                    mod, b'{"skill": "1+1"', hold_open=True
+                )
+            finally:
+                mod._REQUEST_READ_TIMEOUT = old_timeout
+            self.assertTrue(data.startswith(self._nak_byte(mod)), (name, data))
+            self.assertIn(b"request read timed out", data, name)
+
+    def test_watchdog_rejects_pid_one_and_stale_generation(self):
+        for name, mod in MODULES:
+            self.assertFalse(mod._is_virtuoso_process(1), name)
+            old_pid = mod.virtuoso_pid
+            old_gen = mod._watchdog_gen
+            old_flag = mod._timeout_flag
+            calls = []
+            try:
+                mod.virtuoso_pid = os.getpid()
+                mod._watchdog_gen = 2
+                mod._timeout_flag = False
+                with mock.patch.object(
+                    mod, "_is_virtuoso_process", return_value=True
+                ), mock.patch.object(
+                    mod.os, "kill", side_effect=lambda *a: calls.append(a)
+                ):
+                    mod._watchdog_cb(1)
+            finally:
+                mod.virtuoso_pid = old_pid
+                mod._watchdog_gen = old_gen
+                mod._timeout_flag = old_flag
+            self.assertEqual(calls, [], name)
 
 
 if __name__ == "__main__":

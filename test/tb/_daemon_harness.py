@@ -112,6 +112,9 @@ class FakeConn:
     def shutdown(self, _how) -> None:
         return None
 
+    def settimeout(self, timeout) -> None:
+        self.timeout = timeout
+
     def close(self) -> None:
         self.closed = True
 

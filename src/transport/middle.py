@@ -38,7 +38,11 @@ from common.paths import (
     temp_dir,
 )
 from common.skill_client import SkillClient
-from common.ssh import UnknownEffectError, configure_command_log
+from common.ssh import (
+    UnknownEffectError,
+    _windows_no_window_kwargs,
+    configure_command_log,
+)
 from common.transfer import install_staged_item
 from transport.tunnel import RemoteClient
 
@@ -177,7 +181,7 @@ class _LocalCommandSession:
     #: Upper bound for the shell's startup echo.  Without it a local shell
     #: that never answers makes every call hang forever, which violates the
     #: end-to-end deadline contract (四层整体架构 §5.8).
-    _BANNER_TIMEOUT = 5.0
+    _BANNER_TIMEOUT = 15.0
 
     def __init__(self, cwd: str | None = None, *, err_dir: Path | None = None) -> None:
         self._lock = threading.RLock()
@@ -233,7 +237,12 @@ class _LocalCommandSession:
             errors="replace",
             bufsize=1,
             env=self._env(),
-            cwd=self._cwd or None,
+            # Set the working directory with an explicit ``cd`` in the banner
+            # probe below.  Passing a transient/invalid path to cmd.exe's
+            # ``cwd`` can make it emit a localized startup error while still
+            # returning rc=0, which hid the real failure from callers.
+            cwd=None,
+            **_windows_no_window_kwargs(),
         )
         self._proc = proc
         self._dead = False
@@ -250,16 +259,28 @@ class _LocalCommandSession:
 
     def _drain_banner(self) -> None:
         marker = "__VB_DRAIN_0__"
+        if self._cwd and not os.path.isdir(self._cwd):
+            raise RuntimeError(
+                f"local command cwd does not exist: {self._cwd!r}"
+            )
         with self._lock:
             self._current = {"marker": marker, "out": [], "rc": 0, "done": False, "eof": False}
-        self._write_line(f"echo {marker}")
+        prefix = ""
+        if self._cwd:
+            quoted = self._quote_path(self._cwd)
+            prefix = f"cd /d {quoted} && " if os.name == "nt" else f"cd {quoted} && "
+        self._write_line(prefix + f"echo {marker}")
         self._wait_current(time.monotonic() + self._BANNER_TIMEOUT)
         with self._lock:
             cur = self._current
             ready = bool(cur and (cur["done"] or cur["eof"]))
+            output = "".join(cur["out"]) if cur else ""
             self._current = None
         if not ready:
-            raise RuntimeError("local command shell did not become ready")
+            raise RuntimeError(
+                "local command shell did not become ready "
+                f"(cwd={self._cwd!r}, output={output[-500:]!r})"
+            )
 
     def _read_loop(self) -> None:
         try:
@@ -350,12 +371,24 @@ class _LocalCommandSession:
                 marker = f"__VB_EOM_{n}__"
                 self._current = {"marker": marker, "out": [], "rc": 0, "done": False, "eof": False}
         if need_spawn:
-            try:
-                self._close_locked()
-                self._spawn()
-            except (OSError, RuntimeError) as exc:
+            spawn_error = None
+            for attempt in range(2):
+                try:
+                    self._close_locked()
+                    self._spawn()
+                    spawn_error = None
+                    break
+                except (OSError, RuntimeError) as exc:
+                    spawn_error = exc
+                    if attempt == 0:
+                        time.sleep(0.1)
+            if spawn_error is not None:
                 self._dead = True
-                return CommandResult(255, "", f"VB-TRANSPORT: local shell unavailable: {exc}", kind="transport")
+                return CommandResult(
+                    255, "",
+                    f"VB-TRANSPORT: local shell unavailable: {spawn_error}",
+                    kind="transport",
+                )
             with self._lock:
                 self._seq += 1
                 n = self._seq
@@ -926,6 +959,7 @@ class BusinessServer(Middle):
             proc = subprocess.run(
                 cmd, shell=True, capture_output=True, text=True,
                 timeout=timeout, cwd=workdir,
+                **_windows_no_window_kwargs(),
             )
             return CommandResult(proc.returncode, proc.stdout, proc.stderr)
         except subprocess.TimeoutExpired:

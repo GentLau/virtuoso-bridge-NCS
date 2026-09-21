@@ -23,7 +23,11 @@ class _Child:
     """Spawn `python -m server.api_server --supervised` and speak its protocol."""
 
     def __init__(self):
-        self.work_dir = Path(tempfile.mkdtemp(prefix="vb-supervised-"))
+        artifact_root = ROOT / "test" / "tb" / "artifacts"
+        artifact_root.mkdir(parents=True, exist_ok=True)
+        self.work_dir = Path(
+            tempfile.mkdtemp(prefix="vb-supervised-", dir=artifact_root)
+        )
         env = dict(os.environ)
         env["PYTHONPATH"] = str(SRC)
         self.proc = subprocess.Popen(
@@ -40,6 +44,7 @@ class _Child:
             stderr=subprocess.PIPE,
             text=True,
             bufsize=1,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
         )
         self.events: list[dict] = []
         self.deadline = time.monotonic() + 30

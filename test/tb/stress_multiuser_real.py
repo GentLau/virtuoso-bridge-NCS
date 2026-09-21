@@ -22,6 +22,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from common.registry import load_registry
 from common.paths import registry_path, override_work_dir_for_tests
+from _win import no_window
 
 
 def main(argv=None):
@@ -66,6 +67,7 @@ def main(argv=None):
         stdout=server_log_fh,
         stderr=subprocess.STDOUT,
         env={**os.environ, "PYTHONPATH": str(Path(__file__).resolve().parents[2] / "src")},
+        **no_window(),
     )
     try:
         for _ in range(80):
@@ -93,7 +95,10 @@ def main(argv=None):
             "--skill-expect", "token",
             "--remote",
         ] + (["--parallel"] if args.parallel else [])
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=1800)
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, timeout=1800,
+            **no_window(),
+        )
         print(result.stdout)
         if result.stderr:
             print(result.stderr)

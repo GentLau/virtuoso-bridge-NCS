@@ -33,6 +33,7 @@ import uuid
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
+from _win import no_window  # noqa: E402
 SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
@@ -123,13 +124,14 @@ def _ssh_process_count() -> int:
             out = subprocess.run(
                 ["tasklist", "/FI", "IMAGENAME eq ssh.exe", "/NH"],
                 capture_output=True, text=True, timeout=30,
+                **no_window(),
             )
             return sum(
                 1 for line in out.stdout.splitlines()
                 if line.strip().lower().startswith("ssh.exe")
             )
         out = subprocess.run(["pgrep", "-c", "ssh"], capture_output=True, text=True,
-                             timeout=30)
+                             timeout=30, **no_window())
         return int((out.stdout or "0").strip() or 0)
     except Exception:  # noqa: BLE001 - diagnostics only
         return -1

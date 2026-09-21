@@ -508,6 +508,29 @@ class TestVerifyExceptionBranches(unittest.TestCase):
         self.assertEqual(state.stage, "failed")
         self.assertIn("connectivity test failed", state.errors[0])
 
+    def test_token_ok_requires_positive_skill_evidence(self):
+        from register.flow import _token_ok
+
+        self.assertFalse(
+            _token_ok(
+                VirtuosoResult(
+                    status=ExecutionStatus.ERROR,
+                    errors=["SKILL execution timed out"],
+                )
+            )
+        )
+        self.assertFalse(
+            _token_ok(
+                VirtuosoResult(
+                    status=ExecutionStatus.ERROR,
+                    errors=["invalid token"],
+                )
+            )
+        )
+        self.assertTrue(
+            _token_ok(VirtuosoResult(status=ExecutionStatus.SUCCESS, output="3"))
+        )
+
     def test_commit_registry_error(self):
         from unittest import mock
         flow = RegistrationFlow(self.reg)

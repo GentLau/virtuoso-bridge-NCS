@@ -205,7 +205,8 @@ class TestDaemonHandler(DaemonHandlerTestBase):
         a.close()
         raw = b"".join(chunks)
         self.assertTrue(raw.startswith(NAK), raw)
-        self.assertIn("JSONDecodeError", raw.decode())
+        self.assertIn("invalid request payload", raw.decode())
+        self.assertNotIn("JSONDecodeError", raw.decode())
 
 
 def _free_port():
