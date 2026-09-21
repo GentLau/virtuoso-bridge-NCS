@@ -28,6 +28,7 @@ import time
 from pathlib import Path
 
 from register.server import RegistrationServer
+from common import config as config_base
 from common.registry import load_registry
 from common.process_lifetime import ProcessJob
 from common.ssh import _windows_no_window_kwargs
@@ -413,14 +414,14 @@ def _build_business(
 ):
     from transport.middle import BusinessServer
     from server.api_server import (
-        DEFAULT_MAX_INFLIGHT,
         build_server,
-        load_business_thread_pool_size,
+        pool_size_from_snapshot,
     )
 
     init_work_dir(work_dir)
+    config_base.reload_config(config_path())
     middle = BusinessServer()
-    pool_size = load_business_thread_pool_size(config_path())
+    pool_size = pool_size_from_snapshot(config_base.snapshot())
     server = build_server(host, port, middle, max_inflight=pool_size)
     return middle, server
 

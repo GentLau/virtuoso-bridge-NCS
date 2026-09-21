@@ -1025,21 +1025,51 @@ class TestRegistrationServer(unittest.TestCase):
         finally:
             second.close()
 
-    def test_config_unknown_key_rejected(self):
+    def test_config_unknown_top_level_key_passthrough(self):
         status, raw = self.srv.request("PUT", "/api/config",
-                                       {"bogus": 1}, _admin_auth())
-        self.assertEqual(status, 400)
+                                       {"future_key": {"x": 1}}, _admin_auth())
+        self.assertEqual(status, 200, raw)
+        self.assertEqual(json.loads(raw)["future_key"], {"x": 1})
+        cfg_path = Path(registry_path()).parent / "config.json"
+        self.assertEqual(
+            json.loads(cfg_path.read_text(encoding="utf-8"))["future_key"],
+            {"x": 1},
+        )
 
     def test_config_invalid_value_rejected(self):
         """非法配置直接拒绝（顶层补充 §5）。"""
+        before = dict(self.srv.server.config)
         status, raw = self.srv.request(
             "PUT", "/api/config", {"business_thread_pool_size": "abc"}, _admin_auth()
         )
         self.assertEqual(status, 400)
-        self.assertEqual(
-            self.srv.server.config["business_thread_pool_size"],
-            self.srv.server.config.get("business_thread_pool_size"),
+        self.assertEqual(self.srv.server.config, before)
+
+    def test_config_other_sections_are_opaque_passthrough(self):
+        """r9: non-top-level-owned sections are stored and returned verbatim."""
+        skillref = {
+            "source": "REMOTE",
+            "doc_root": "relative-is-not-validated-here",
+            "doc_token": "plain-secret",
+            "extra": "kept",
+        }
+        status, raw = self.srv.request(
+            "PUT", "/api/config", {"skillref": skillref}, _admin_auth()
         )
+        self.assertEqual(status, 200, raw)
+        self.assertEqual(json.loads(raw)["skillref"], skillref)
+
+        cfg_path = Path(registry_path()).parent / "config.json"
+        self.assertEqual(
+            json.loads(cfg_path.read_text(encoding="utf-8"))["skillref"],
+            skillref,
+        )
+
+        status, raw = self.srv.request(
+            "GET", "/api/config", None, _admin_auth()
+        )
+        self.assertEqual(status, 200, raw)
+        self.assertEqual(json.loads(raw)["skillref"], skillref)
 
     def test_config_malformed_json_is_4xx(self):
         conn = http.client.HTTPConnection("127.0.0.1", self.srv.port, timeout=10)

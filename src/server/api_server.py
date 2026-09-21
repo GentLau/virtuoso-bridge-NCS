@@ -25,6 +25,7 @@ from typing import Any
 
 from server import dispatch as dispatch_module
 from server.dispatch import dispatch
+from common import config as config_base
 from common.paths import config_path, init_work_dir, work_root
 from common.jsonutil import loads_strict
 
@@ -37,16 +38,20 @@ DEFAULT_MAX_INFLIGHT = 1024
 CONFIG_FILENAME = "config.json"
 
 
-def load_business_thread_pool_size(config_path: Path) -> int:
-    """Read the business pool size from the config snapshot, once at startup."""
-    try:
-        data = json.loads(config_path.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return DEFAULT_MAX_INFLIGHT
-    value = data.get("business_thread_pool_size")
+def pool_size_from_snapshot(
+    snapshot, default: int = DEFAULT_MAX_INFLIGHT
+) -> int:
+    value = snapshot.get("business_thread_pool_size")
     if isinstance(value, bool) or not isinstance(value, int) or value < 1:
-        return DEFAULT_MAX_INFLIGHT
+        return default
     return value
+
+
+def load_business_thread_pool_size(config_path: Path) -> int:
+    """Compatibility helper for tests/assembly; reads one JSON file."""
+    return pool_size_from_snapshot(
+        config_base.load_config_file(config_path), DEFAULT_MAX_INFLIGHT
+    )
 
 #: Fixed over-limit answer: the request was *not* accepted; the caller may retry.
 BUSY_ERROR = "server thread pool exceeded (max {limit} in-flight), please retry"
@@ -343,6 +348,7 @@ def build_middle(work_dir: str | None = None):
     from transport.middle import BusinessServer
 
     init_work_dir(work_dir)
+    config_base.reload_config(config_path())
     return BusinessServer()
 
 
@@ -367,7 +373,10 @@ def reload_business_state(server: ApiServer, middle) -> tuple[bool, str | None]:
     """
     try:
         middle.reload_registry()
-        server.set_max_inflight(load_business_thread_pool_size(config_path()))
+        config_base.reload_config(config_path())
+        server.set_max_inflight(
+            pool_size_from_snapshot(config_base.snapshot())
+        )
         return True, None
     except Exception as exc:  # noqa: BLE001
         return False, f"{type(exc).__name__}: {exc}"
@@ -437,9 +446,10 @@ def main(argv: list[str] | None = None) -> None:
 
     # 本机路径由顶层解析一次，注入中层（中层不再自己决定工作目录）
     init_work_dir(args.work_dir)          # 进程级环境：入口初始化一次
+    config_base.init_config(config_path())
     middle = BusinessServer()
     # global config snapshot: imported once at startup, never read per request
-    pool_size = load_business_thread_pool_size(config_path())
+    pool_size = pool_size_from_snapshot(config_base.snapshot())
     server = build_server(args.host, args.port, middle, max_inflight=pool_size)
     banner = (
         f"virtuoso-bridge API (business): http://{args.host}:{args.port}  "

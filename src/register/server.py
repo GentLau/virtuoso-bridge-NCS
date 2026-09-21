@@ -37,6 +37,7 @@ from register.candidate import (
     validate_entry_shape,
 )
 from register.reservation import ReservationTable
+from common import config as config_base
 from common.registry import Registry, RegistryError, load_registry
 from common.jsonutil import loads_strict
 from common.paths import (  # noqa: E402 - 进程级路径基座（common 层）
@@ -695,10 +696,6 @@ class RegistrationHandler(BaseHTTPRequestHandler):
             if not isinstance(body, dict):
                 self._send_json(400, {"error": "invalid config body"})
                 return
-            unknown = set(body) - set(self.server.config)
-            if unknown:
-                self._send_json(400, {"error": "unknown config keys", "detail": sorted(unknown)})
-                return
             candidate = dict(self.server.config)
             candidate.update(body)
             pool_size = candidate.get("business_thread_pool_size")
@@ -708,7 +705,10 @@ class RegistrationHandler(BaseHTTPRequestHandler):
                 or pool_size < 1
             ):
                 self._send_json(400, {
-                    "error": "business_thread_pool_size must be a positive integer",
+                    "error": (
+                        "business_thread_pool_size must be a positive "
+                        "integer or null"
+                    ),
                 })
                 return
             # 先落盘成功、再替换内存快照：持久化失败时不得出现内外不一致。
@@ -720,6 +720,9 @@ class RegistrationHandler(BaseHTTPRequestHandler):
                 })
                 return
             self.server.config = candidate
+            config_base.replace_snapshot(
+                candidate, path=self.server.config_path
+            )
             self._send_json(200, self.server.config)
             return
         self._send_json(404, {"error": "not found"})
@@ -821,11 +824,9 @@ class RegistrationServer(ThreadingHTTPServer):
 
     def load_config(self) -> dict:
         """启动时导入一次到内存快照；运行期不再读文件。"""
-        try:
-            data = json.loads(self.config_path.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            return {"business_thread_pool_size": None}
-        return {"business_thread_pool_size": data.get("business_thread_pool_size")}
+        data = config_base.load_config_file(self.config_path)
+        config_base.replace_snapshot(data, path=self.config_path)
+        return data
 
     def save_config(self, config: dict | None = None) -> None:
         """配置变更的手动写回：临时文件 + 原子替换，不频繁 IO。"""
