@@ -20,6 +20,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import signal
 import subprocess
 import sys
 import threading
@@ -91,6 +92,7 @@ class BusinessProcess:
         self._proc: subprocess.Popen[str] | None = None
         self._job: ProcessJob | None = None
         self._job_bound = False
+        self._posix_group_pid: int | None = None
         self._events: list[dict] = []
         self._event_cv = threading.Condition()
         self._stderr_tail: list[str] = []
@@ -111,20 +113,26 @@ class BusinessProcess:
             self.state = "starting"
         self._shutting_down = False
         self._job = ProcessJob()
+        popen_kwargs = {
+            "env": env,
+            "stdin": subprocess.PIPE,
+            "stdout": subprocess.PIPE,
+            "stderr": subprocess.PIPE,
+            "text": True,
+            "bufsize": 1,
+        }
+        if os.name != "nt":
+            # Make the business child a session/process-group leader so the
+            # supervised restart path can signal the whole tree.
+            popen_kwargs["start_new_session"] = True
         try:
-            self._proc = subprocess.Popen(
-                self.args,
-                env=env,
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                bufsize=1,
-            )
+            self._proc = subprocess.Popen(self.args, **popen_kwargs)
         except Exception:
             self._job.close()
             self._job = None
             raise
+        if os.name != "nt":
+            self._posix_group_pid = self._proc.pid
         self._job_bound = self._job.assign(self._proc)
         if os.name == "nt" and not self._job_bound:
             self._dispose_child(1.0)
@@ -189,6 +197,9 @@ class BusinessProcess:
         self._job_bound = False
         if job is not None:
             job.close()
+        group, self._posix_group_pid = self._posix_group_pid, None
+        if os.name != "nt" and group:
+            self._signal_process_group(group, signal.SIGTERM)
 
     def _send(self, command: str) -> bool:
         proc = self._proc
@@ -228,6 +239,7 @@ class BusinessProcess:
         proc = self._proc
         job, self._job = self._job, None
         bound, self._job_bound = self._job_bound, False
+        posix_group, self._posix_group_pid = self._posix_group_pid, None
         if proc is None:
             if job is not None:
                 job.close()
@@ -245,6 +257,8 @@ class BusinessProcess:
         self._proc = None
         if job is not None:
             job.close()
+        if os.name != "nt" and posix_group:
+            self._signal_process_group(posix_group, signal.SIGTERM)
 
     @staticmethod
     def _force_kill_tree(
@@ -263,10 +277,25 @@ class BusinessProcess:
                     return
             except (OSError, subprocess.TimeoutExpired):
                 pass
+        if os.name != "nt" and proc.pid:
+            self._signal_process_group(proc.pid, signal.SIGTERM)
+            try:
+                proc.wait(timeout=2)
+                return
+            except subprocess.TimeoutExpired:
+                self._signal_process_group(proc.pid, signal.SIGKILL)
+                return
         if job_bound:
             return
         try:
             proc.kill()
+        except OSError:
+            pass
+
+    @staticmethod
+    def _signal_process_group(pgid: int, sig: int) -> None:
+        try:
+            os.killpg(pgid, sig)
         except OSError:
             pass
 

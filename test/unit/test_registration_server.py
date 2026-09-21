@@ -608,6 +608,31 @@ class TestRegistrationServer(unittest.TestCase):
                 self.assertTrue(data, "no HTTP response for malformed Content-Length")
                 self.assertIn(b"400", data.split(b"\r\n", 1)[0], data[:200])
 
+    def test_request_body_limit_returns_413(self):
+        import socket as _socket
+
+        for path in ("/api/register", "/api/bug"):
+            with self.subTest(path=path):
+                sock = _socket.create_connection(
+                    ("127.0.0.1", self.srv.port), timeout=5
+                )
+                sock.sendall(
+                    f"POST {path} HTTP/1.1\r\nHost: x\r\n"
+                    "Content-Length: 16777217\r\n\r\n".encode("ascii")
+                )
+                data = b""
+                try:
+                    while True:
+                        chunk = sock.recv(65536)
+                        if not chunk:
+                            break
+                        data += chunk
+                except OSError:
+                    pass
+                sock.close()
+                self.assertIn(b" 413 ", data.split(b"\r\n", 1)[0], data[:200])
+                self.assertIn(b"request body too large", data)
+
     def test_json_parser_limits_return_400(self):
         """超长整数字面量/超深嵌套必须回 JSON 400，不得静默断连。"""
         long_int = b'{"user":"nobody","action":"cancel","token":"x","n":' + b"9" * 5000 + b"}"
@@ -713,6 +738,15 @@ class TestRegistrationServer(unittest.TestCase):
             resp.getheader("Allow"), "GET, POST, PUT, DELETE"
         )
         self.assertEqual(resp.getheader("Connection"), "close")
+
+    def test_unknown_method_on_defined_and_undefined_paths(self):
+        for method in ("FOO", "PROPFIND"):
+            with self.subTest(method=method):
+                status, raw = self.srv.request(method, "/api/register")
+                self.assertEqual(status, 405, raw)
+                status, raw = self.srv.request(method, "/no-such-path")
+                self.assertEqual(status, 404, raw)
+                self.assertIn("not found", raw)
 
     def test_unknown_routes_are_404(self):
         for method in ("GET", "POST", "DELETE", "PUT"):

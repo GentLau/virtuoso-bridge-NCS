@@ -178,6 +178,29 @@ class TestBusinessFacePool(unittest.TestCase):
         self.assertIn(b"Connection: close", data)
         self.assertNotIn(b"501", data)
 
+    def test_unknown_method_on_defined_and_undefined_paths(self):
+        for method in ("FOO", "PROPFIND"):
+            with self.subTest(method=method):
+                conn = http.client.HTTPConnection(
+                    "127.0.0.1", self.port, timeout=10
+                )
+                conn.request(method, "/api/operation", "{}")
+                resp = conn.getresponse()
+                raw = resp.read().decode("utf-8")
+                conn.close()
+                self.assertEqual(resp.status, 405, raw)
+                self.assertEqual(resp.getheader("Allow"), "GET, POST")
+
+                conn = http.client.HTTPConnection(
+                    "127.0.0.1", self.port, timeout=10
+                )
+                conn.request(method, "/no-such-path")
+                resp = conn.getresponse()
+                raw = resp.read().decode("utf-8")
+                conn.close()
+                self.assertEqual(resp.status, 404, raw)
+                self.assertIn("not found", raw)
+
     def test_malformed_content_length_with_body_closes(self):
         import socket
 

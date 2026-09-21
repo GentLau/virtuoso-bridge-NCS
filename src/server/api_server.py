@@ -221,6 +221,22 @@ class ApiHandler(BaseHTTPRequestHandler):
     def do_HEAD(self) -> None:  # noqa: N802
         self._method_not_allowed(body=False)
 
+    _DEFINED_PATHS = frozenset({"/api/operation", "/health", "/help"})
+
+    def _unknown_method(self) -> None:
+        if self.path.split("?", 1)[0] in self._DEFINED_PATHS:
+            self._method_not_allowed()
+            return
+        self._send(
+            404, {"ok": False, "data": None, "error": "not found"},
+            close=True,
+        )
+
+    def __getattr__(self, name: str):
+        if name.startswith("do_"):
+            return self._unknown_method
+        raise AttributeError(name)
+
     def log_message(self, fmt: str, *args: Any) -> None:  # keep stdout clean
         return
 

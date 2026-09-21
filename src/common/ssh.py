@@ -621,7 +621,6 @@ class SSHRunner:
         popen_kwargs: dict[str, Any] = {
             "stdin": subprocess.DEVNULL,
             "stdout": subprocess.DEVNULL,
-            "start_new_session": True,
             "stderr": subprocess.PIPE,
         }
         # On Windows, suppress the console window the long-lived tunnel

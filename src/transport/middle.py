@@ -45,10 +45,9 @@ from transport.tunnel import RemoteClient
 logger = logging.getLogger(__name__)
 
 _DEFAULT_TIMEOUT = 30.0  # spec: timeout=None -> 30s for all five interfaces
-#: ``socket`` timers are milliseconds on the supported Windows client; values
-#: above this cannot be represented and previously leaked an OverflowError
-#: from the transport layer.  It is an implementation safety bound, not a
-#: product-level deadline policy.
+#: Spec 四层整体架构与接口 §5.8 (Draft v36): platform timeout upper bound.
+#: Current Windows socket timers are milliseconds; larger values cannot be
+#: represented and previously leaked an OverflowError from the transport.
 _MAX_TIMEOUT_SECONDS = 2_147_483.0
 
 # Local transfers stream in bounded chunks so the call deadline is observed

@@ -17,6 +17,12 @@ from common.process_lifetime import ProcessJob
 
 
 def _pid_alive(pid: int) -> bool:
+    if os.name != "nt":
+        try:
+            os.kill(pid, 0)
+            return True
+        except OSError:
+            return False
     import ctypes
     from ctypes import wintypes
 
@@ -174,6 +180,48 @@ class TestBusinessProcessLifetime(unittest.TestCase):
                     _taskkill(child_pid)
                 if bp.pid:
                     _taskkill(bp.pid)
+
+
+@unittest.skipIf(os.name == "nt", "POSIX process-group contract")
+class TestPosixBusinessProcessLifetime(unittest.TestCase):
+    def test_dispose_kills_process_group_descendant(self):
+        from server.supervisor import BusinessProcess
+
+        with tempfile.TemporaryDirectory() as td:
+            pidfile = Path(td) / "descendant.pid"
+            script = (
+                "import pathlib, subprocess, sys, time\n"
+                "p = subprocess.Popen([sys.executable, '-c', "
+                "'import time; time.sleep(60)'])\n"
+                "pathlib.Path(sys.argv[1]).write_text(str(p.pid))\n"
+                "print('VB-EVENT ' + __import__('json').dumps("
+                "{'event': 'ready', 'port': 1}), flush=True)\n"
+                "time.sleep(60)\n"
+            )
+            bp = BusinessProcess(host="127.0.0.1", port=1, work_dir=td)
+            bp.args = [sys.executable, "-c", script, str(pidfile)]
+            child_pid = None
+            try:
+                bp.start(timeout=15)
+                child_pid = int(pidfile.read_text(encoding="ascii"))
+                self.assertTrue(_pid_alive(child_pid))
+                bp._dispose_child(1.0)
+                deadline = time.time() + 5
+                while _pid_alive(child_pid) and time.time() < deadline:
+                    time.sleep(0.05)
+                self.assertFalse(_pid_alive(child_pid))
+            finally:
+                bp._dispose_child(0.5)
+                if child_pid is not None:
+                    try:
+                        os.kill(child_pid, 9)
+                    except OSError:
+                        pass
+                if bp.pid:
+                    try:
+                        os.kill(bp.pid, 9)
+                    except OSError:
+                        pass
 
 
 if __name__ == "__main__":

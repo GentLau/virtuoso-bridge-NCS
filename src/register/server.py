@@ -51,10 +51,16 @@ _PAGE = files("register").joinpath("registration_page.html").read_text(encoding=
 #: POST /api/bug 报告条目中随附日志的有界上限
 _BUG_LOG_TAIL_BYTES = 200_000
 _BUG_LOG_TAIL_LINES = 500
+#: 顶层补充 v33: control-plane request body limit.
+_MAX_REQUEST_BYTES = 16 * 1024 * 1024
 
 
 class _InvalidContentLength(ValueError):
     """Request header has no valid non-negative Content-Length."""
+
+
+class _PayloadTooLarge(ValueError):
+    """Request body exceeds the control-plane limit."""
 
 
 # 内置单管理员 token 的 SHA-256 哈希写死在代码中；原文离线保管。
@@ -96,6 +102,8 @@ class RegistrationHandler(BaseHTTPRequestHandler):
             raise _InvalidContentLength("invalid Content-Length") from exc
         if length < 0:
             raise _InvalidContentLength("invalid Content-Length")
+        if length > _MAX_REQUEST_BYTES:
+            raise _PayloadTooLarge("request body too large")
         raw = self.rfile.read(length) if length > 0 else b""
         return loads_strict(raw.decode("utf-8")) if raw else {}
 
@@ -286,6 +294,9 @@ class RegistrationHandler(BaseHTTPRequestHandler):
         """
         try:
             raw = self._read_json()
+        except _PayloadTooLarge:
+            self._send_json(413, {"error": "request body too large"})
+            return
         except (UnicodeDecodeError, ValueError, RecursionError):
             self._send_json(400, {"error": "invalid JSON body"})
             return
@@ -406,6 +417,9 @@ class RegistrationHandler(BaseHTTPRequestHandler):
     def _handle_process_action(self, action: str) -> None:
         try:
             body = self._read_json()
+        except _PayloadTooLarge:
+            self._send_json(413, {"error": "request body too large"})
+            return
         except _InvalidContentLength:
             self._send_json(400, {"error": "invalid Content-Length"})
             return
@@ -531,6 +545,9 @@ class RegistrationHandler(BaseHTTPRequestHandler):
             length = int(self.headers.get("Content-Length", "0") or "0")
         except ValueError:
             length = 0
+        if length > _MAX_REQUEST_BYTES:
+            self._send_json(413, {"error": "request body too large"})
+            return
         raw_bytes = self.rfile.read(length) if length > 0 else b""
         raw_text = raw_bytes.decode("utf-8", errors="replace")
 
@@ -619,6 +636,9 @@ class RegistrationHandler(BaseHTTPRequestHandler):
             return
         try:
             fields = self._read_json()
+        except _PayloadTooLarge:
+            self._send_json(413, {"error": "request body too large"})
+            return
         except (UnicodeDecodeError, ValueError, RecursionError):
             self._send_json(400, {"error": "invalid JSON body"})
             return
@@ -666,6 +686,9 @@ class RegistrationHandler(BaseHTTPRequestHandler):
                 return
             try:
                 body = self._read_json()
+            except _PayloadTooLarge:
+                self._send_json(413, {"error": "request body too large"})
+                return
             except (UnicodeDecodeError, ValueError, RecursionError):
                 self._send_json(400, {"error": "invalid JSON body"})
                 return
@@ -730,6 +753,31 @@ class RegistrationHandler(BaseHTTPRequestHandler):
         self.send_header("Connection", "close")
         self.send_header("Content-Length", "0")
         self.end_headers()
+
+    @staticmethod
+    def _is_defined_path(path: str) -> bool:
+        if path in {
+            "/", "/health", "/help", "/api/bug", "/api/register",
+            "/api/users", "/api/config",
+        }:
+            return True
+        return path.startswith((
+            "/api/register/", "/api/user/", "/api/process/",
+        ))
+
+    def _unknown_method(self) -> None:
+        path = self.path.split("?", 1)[0]
+        if self._is_defined_path(path):
+            self._method_not_allowed()
+            return
+        self._send_json(
+            404, {"error": "not found"}, close=True
+        )
+
+    def __getattr__(self, name: str):
+        if name.startswith("do_"):
+            return self._unknown_method
+        raise AttributeError(name)
 
     def log_message(self, format: str, *args) -> None:  # noqa: A002
         print(f"[registration] {self.address_string()} - {format % args}")
