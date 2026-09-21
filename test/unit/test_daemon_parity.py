@@ -94,11 +94,7 @@ class TestDaemonParity(unittest.TestCase):
 
 
 class TestDaemonSocketHardening(unittest.TestCase):
-    """Direct-port hardening: bounded reads and structured NAK payloads."""
-
-    @staticmethod
-    def _nak_byte(mod):
-        return mod._B(mod.NAK) if hasattr(mod, "_B") else mod.NAK
+    """Direct-port hardening: bounded reads; foreign packets are dropped."""
 
     def _exchange(self, mod, payload, *, hold_open=False):
         listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -140,7 +136,7 @@ class TestDaemonSocketHardening(unittest.TestCase):
         self.assertEqual(errors, [])
         return data
 
-    def test_malformed_payload_never_leaks_python_exception(self):
+    def test_foreign_payload_is_dropped_silently(self):
         for name, mod in MODULES:
             old_timeout = mod._REQUEST_READ_TIMEOUT
             try:
@@ -150,12 +146,11 @@ class TestDaemonSocketHardening(unittest.TestCase):
                 )
             finally:
                 mod._REQUEST_READ_TIMEOUT = old_timeout
-            self.assertTrue(data.startswith(self._nak_byte(mod)), (name, data))
-            self.assertIn(b"invalid request payload", data, name)
+            self.assertEqual(data, b"", name)
             self.assertNotIn(b"Traceback", data, name)
             self.assertNotIn(b"object has no attribute", data, name)
 
-    def test_half_open_request_times_out_with_structured_nak(self):
+    def test_half_open_request_is_dropped_silently(self):
         for name, mod in MODULES:
             old_timeout = mod._REQUEST_READ_TIMEOUT
             try:
@@ -165,8 +160,7 @@ class TestDaemonSocketHardening(unittest.TestCase):
                 )
             finally:
                 mod._REQUEST_READ_TIMEOUT = old_timeout
-            self.assertTrue(data.startswith(self._nak_byte(mod)), (name, data))
-            self.assertIn(b"request read timed out", data, name)
+            self.assertEqual(data, b"", name)
 
     def test_watchdog_rejects_pid_one_and_stale_generation(self):
         for name, mod in MODULES:

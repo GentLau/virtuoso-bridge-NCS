@@ -184,7 +184,7 @@ class TestDaemonHandler(DaemonHandlerTestBase):
         # spec: every Skill timeout surfaces as the frozen wording
         self.assertIn("SKILL execution timed out", raw.decode())
 
-    def test_json_decode_error(self):
+    def test_json_decode_error_is_dropped(self):
         a, b = socket.socketpair()
         thread = threading.Thread(target=daemon.handle_connection, args=(a,))
         with mock.patch.object(daemon, "DAEMON_TOKEN", "tok-1"), \
@@ -204,9 +204,8 @@ class TestDaemonHandler(DaemonHandlerTestBase):
             thread.join(timeout=5)
         a.close()
         raw = b"".join(chunks)
-        self.assertTrue(raw.startswith(NAK), raw)
-        self.assertIn("invalid request payload", raw.decode())
-        self.assertNotIn("JSONDecodeError", raw.decode())
+        self.assertEqual(raw, b"")
+        self.assertNotIn(b"JSONDecodeError", raw)
 
 
 def _free_port():

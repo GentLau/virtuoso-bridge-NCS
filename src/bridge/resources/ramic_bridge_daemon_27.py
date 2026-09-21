@@ -331,49 +331,25 @@ def handle_connection(conn):
     try:
         chunks = []
         total = 0
-        timed_out = False
         conn.settimeout(_REQUEST_READ_TIMEOUT)
-        while True:
-            try:
+        try:
+            while True:
                 chunk = conn.recv(65536)
-            except socket.timeout:
-                timed_out = True
-                break
-            if not chunk:
-                break
-            total += len(chunk)
-            if total > _MAX_REQUEST_BYTES:
-                _send_error(conn, "request too large")
-                _RB_ERRORS += 1
-                _emit_stat()
-                return
-            chunks.append(chunk)
-            try:
-                json.loads(b"".join(chunks).decode("utf-8"))
-            except (UnicodeDecodeError, ValueError):
-                pass
-            else:
-                break
+                if not chunk:
+                    break
+                total += len(chunk)
+                if total > _MAX_REQUEST_BYTES:
+                    return  # foreign/oversized packet: drop silently
+                chunks.append(chunk)
+        except socket.timeout:
+            return  # slow/incomplete foreign packet: drop silently
         if not chunks:
-            _send_error(
-                conn,
-                "request read timed out" if timed_out else "invalid request payload",
-            )
             return
         try:
             req = json.loads(b"".join(chunks).decode("utf-8"))
         except (UnicodeDecodeError, ValueError):
-            _send_error(
-                conn,
-                "request read timed out" if timed_out else "invalid request payload",
-            )
-            _RB_ERRORS += 1
-            _emit_stat()
-            return
+            return  # not our JSON protocol: drop silently
         if not isinstance(req, dict):
-            _send_error(conn, "invalid request payload")
-            _RB_ERRORS += 1
-            _emit_stat()
             return
 
         skill_code = req.get("skill")
@@ -384,10 +360,7 @@ def handle_connection(conn):
             or not isinstance(token, _STRING_TYPES)
             or timeout_seconds is None
         ):
-            _send_error(conn, "invalid request payload")
-            _RB_ERRORS += 1
-            _emit_stat()
-            return
+            return  # malformed own-protocol packet: drop silently
 
         if not DAEMON_TOKEN or token != DAEMON_TOKEN:
             _safe_sendall(conn, _B(NAK) + json.dumps({"error": "invalid token", "log": ""}).encode("utf-8") + _B(RS))
@@ -479,9 +452,6 @@ def handle_connection(conn):
 
     except (UnicodeDecodeError, ValueError):
         traceback.print_exc()
-        _send_error(conn, "invalid request payload")
-        _RB_ERRORS += 1
-        _emit_stat()
     except Exception:
         traceback.print_exc()
         _send_error(conn, "internal daemon error")

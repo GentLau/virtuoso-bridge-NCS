@@ -267,10 +267,10 @@ def case_server_loop(daemon) -> dict:
                 break
             except OSError:
                 time.sleep(0.1)
-        if not response.startswith(NAK) or b"invalid request payload" not in response:
-            raise ProbeFailure(f"server loop did not NAK a bad payload: {response[:80]!r}")
-        if daemon._RB_ERRORS < 1:
-            raise ProbeFailure("server loop did not account the protocol error")
+        if response:
+            raise ProbeFailure(
+                f"server loop did not silently drop a foreign payload: {response[:80]!r}"
+            )
     finally:
         for sock in created:
             try:
