@@ -870,11 +870,11 @@ request_id
 
 - [`AGENTS.md`](../../AGENTS.md)：`system()` 返回码不可靠；poll 必须同时 tail terminal failure。
 - [`README.md`](../../README.md)：VirtuosoClient/Spectre/SSH 分层与原始 bridge 说明。
-- [`skills/virtuoso/references/simulation-flow.md`](../../skills/virtuoso/references/simulation-flow.md)：GUI simulation、callback + marker、非阻塞等待。
-- [`skills/virtuoso/references/maestro-skill-api.md`](../../skills/virtuoso/references/maestro-skill-api.md)：`maeGetSimulationMessages`、`maeRunSimulation`、`axl*` 边界。
-- [`skills/virtuoso/references/maestro-python-api.md`](../../skills/virtuoso/references/maestro-python-api.md)：Detail CSV、snapshot、run observer 约定。
-- [`skills/virtuoso/references/cellview-on-disk-layout.md`](../../skills/virtuoso/references/cellview-on-disk-layout.md)：`.log/.msg.db/.rdb` 职责和只读边界。
-- [`skills/virtuoso/references/troubleshooting.md`](../../skills/virtuoso/references/troubleshooting.md)：modal dialog、远端文件、readback 限制。
+- [`skills_bak/virtuoso/references/simulation-flow.md`](../../skills_bak/virtuoso/references/simulation-flow.md)：GUI simulation、callback + marker、非阻塞等待。
+- [`skills_bak/virtuoso/references/maestro-skill-api.md`](../../skills_bak/virtuoso/references/maestro-skill-api.md)：`maeGetSimulationMessages`、`maeRunSimulation`、`axl*` 边界。
+- [`skills_bak/virtuoso/references/maestro-python-api.md`](../../skills_bak/virtuoso/references/maestro-python-api.md)：Detail CSV、snapshot、run observer 约定。
+- [`skills_bak/virtuoso/references/cellview-on-disk-layout.md`](../../skills_bak/virtuoso/references/cellview-on-disk-layout.md)：`.log/.msg.db/.rdb` 职责和只读边界。
+- [`skills_bak/virtuoso/references/troubleshooting.md`](../../skills_bak/virtuoso/references/troubleshooting.md)：modal dialog、远端文件、readback 限制。
 - [`src/transport/skill_client.py`](../../src/common/skill_client.py)：当前 TCP request/result、timeout、response parser。
 - [`src/bridge/resources/ramic_bridge.il`](../../src/bridge/resources/ramic_bridge.il)：SKILL IPC handler、stderr ring、daemon lifecycle。
 - [`src/bridge/resources/ramic_bridge_daemon_3.py`](../../src/bridge/resources/ramic_bridge_daemon_3.py)：内外层 framing、watchdog、banner、`listen(1)`。
