@@ -90,6 +90,7 @@ class BusinessProcess:
         self.last_error: str | None = None
         self._proc: subprocess.Popen[str] | None = None
         self._job: ProcessJob | None = None
+        self._job_bound = False
         self._events: list[dict] = []
         self._event_cv = threading.Condition()
         self._stderr_tail: list[str] = []
@@ -124,7 +125,13 @@ class BusinessProcess:
             self._job.close()
             self._job = None
             raise
-        self._job.assign(self._proc)
+        self._job_bound = self._job.assign(self._proc)
+        if os.name == "nt" and not self._job_bound:
+            self._dispose_child(1.0)
+            raise RuntimeError(
+                "could not bind business process to a Windows Job Object; "
+                "refusing to start with process-tree cleanup degraded"
+            )
         self.pid = self._proc.pid
         threading.Thread(target=self._read_stdout, daemon=True).start()
         threading.Thread(target=self._read_stderr, daemon=True).start()
@@ -178,6 +185,10 @@ class BusinessProcess:
             else:
                 self.state = "crashed"
             self._event_cv.notify_all()
+        job, self._job = self._job, None
+        self._job_bound = False
+        if job is not None:
+            job.close()
 
     def _send(self, command: str) -> bool:
         proc = self._proc
@@ -216,13 +227,14 @@ class BusinessProcess:
     def _dispose_child(self, timeout: float) -> None:
         proc = self._proc
         job, self._job = self._job, None
+        bound, self._job_bound = self._job_bound, False
         if proc is None:
             if job is not None:
                 job.close()
             return
         if proc.poll() is None:
             if not self._wait_exit(timeout):
-                proc.kill()
+                self._force_kill_tree(proc, job_bound=bound)
                 self._wait_exit(5.0)
         for stream in (proc.stdin, proc.stdout, proc.stderr):
             try:
@@ -233,6 +245,30 @@ class BusinessProcess:
         self._proc = None
         if job is not None:
             job.close()
+
+    @staticmethod
+    def _force_kill_tree(
+        proc: subprocess.Popen[str], *, job_bound: bool
+    ) -> None:
+        """Kill the child tree, using taskkill when no job is available."""
+        if os.name == "nt" and proc.pid:
+            try:
+                result = subprocess.run(
+                    ["taskkill", "/PID", str(proc.pid), "/T", "/F"],
+                    capture_output=True,
+                    check=False,
+                    timeout=10,
+                )
+                if result.returncode == 0:
+                    return
+            except (OSError, subprocess.TimeoutExpired):
+                pass
+        if job_bound:
+            return
+        try:
+            proc.kill()
+        except OSError:
+            pass
 
     # -- management API ------------------------------------------------------
     def status(self) -> dict:

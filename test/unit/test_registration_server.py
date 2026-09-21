@@ -552,6 +552,35 @@ class TestRegistrationServer(unittest.TestCase):
             self.assertNotIn(leaked, recorded)
         self.assertIn("boom", recorded)
 
+    def test_bug_report_masks_nested_and_escaped_credentials(self):
+        """凭据剥离必须覆盖嵌套字段和 JSON 转义值，而不是只做顶层替换。"""
+        self.registry.register(
+            "carol2", UserEntry(token="tok-nested", mode="local")
+        )
+        body = json.dumps(
+            {
+                "token": "tok-nested",
+                "context": {
+                    "password": 'pa"ss\\word',
+                    "authorization": 'Bearer a"b',
+                },
+                "keep": "visible",
+            },
+            ensure_ascii=False,
+        ).encode("utf-8")
+        status, raw = self.srv.request_raw("POST", "/api/bug", body)
+        self.assertEqual(status, 200, raw)
+        receipt = json.loads(raw)
+        entry = json.loads(
+            (Path(self.wd) / receipt["path"]).read_text(encoding="utf-8")
+        )
+        recorded = json.loads(entry["raw_body"])
+        self.assertEqual(recorded["context"]["password"], "***")
+        self.assertEqual(recorded["context"]["authorization"], "***")
+        self.assertEqual(recorded["keep"], "visible")
+        self.assertTrue(entry["credentials_stripped"])
+        self.assertTrue(entry["token_masked"])
+
     def test_malformed_content_length_returns_4xx(self):
         """BUG-4: 畸形 Content-Length 不得静默断连，必须给 4xx JSON。"""
         import socket as _socket
@@ -594,6 +623,24 @@ class TestRegistrationServer(unittest.TestCase):
                 self.assertEqual(status, 400, raw)
                 self.assertIn("invalid JSON body", raw)
 
+    def test_long_int_rejected_without_interpreter_limit(self):
+        if not hasattr(sys, "set_int_max_str_digits"):
+            self.skipTest("interpreter has no int_max_str_digits switch")
+        previous = sys.get_int_max_str_digits()
+        try:
+            sys.set_int_max_str_digits(0)
+            body = (
+                b'{"user":"nobody","action":"cancel","token":"x","n":'
+                + b"9" * 5000 + b"}"
+            )
+            status, raw = self.srv.request_raw(
+                "POST", "/api/register", body
+            )
+        finally:
+            sys.set_int_max_str_digits(previous)
+        self.assertEqual(status, 400, raw)
+        self.assertIn("invalid JSON body", raw)
+
     def test_string_port_is_rejected(self):
         """配置字段必须严格按声明类型接收，不能把 "65203" 静默转成 int。"""
         status, raw = self.srv.request(
@@ -610,6 +657,27 @@ class TestRegistrationServer(unittest.TestCase):
         self.assertIn("invalid request", raw)
         status, _raw = self.srv.request("GET", "/api/register/strictport?token=x")
         self.assertEqual(status, 404)
+
+    def test_update_numeric_fields_rejected_strictly(self):
+        self.registry.register(
+            "strictupdate", UserEntry(token="tok-strict", mode="local")
+        )
+        before = self.registry.get("strictupdate").model_dump()
+        for patch in (
+            {"roles": {"daemon": {"local_port": "65081"}}},
+            {"runtime": {"thread_pool_size": "64"}},
+            {"runtime": {"connect_timeout": "15"}},
+            {"cdslog": {"log_max_bytes": "65536"}},
+        ):
+            with self.subTest(patch=patch):
+                status, raw = self.srv.request(
+                    "POST",
+                    "/api/user/strictupdate/update",
+                    patch,
+                    _admin_auth(),
+                )
+                self.assertEqual(status, 400, raw)
+        self.assertEqual(self.registry.get("strictupdate").model_dump(), before)
 
     def test_get_user_known_and_unknown(self):
         self.registry.register("zoe", UserEntry(token="tok-zoe", mode="local"))
@@ -631,6 +699,20 @@ class TestRegistrationServer(unittest.TestCase):
                 status, raw = self.srv.request(method, "/api/register")
                 self.assertEqual(status, 405, raw)
                 self.assertIn("method", raw.lower())
+
+    def test_405_carries_allow_and_closes(self):
+        conn = http.client.HTTPConnection(
+            "127.0.0.1", self.srv.port, timeout=5
+        )
+        conn.request("PATCH", "/api/register", "{}", {"Content-Type": "application/json"})
+        resp = conn.getresponse()
+        body = resp.read().decode("utf-8")
+        conn.close()
+        self.assertEqual(resp.status, 405, body)
+        self.assertEqual(
+            resp.getheader("Allow"), "GET, POST, PUT, DELETE"
+        )
+        self.assertEqual(resp.getheader("Connection"), "close")
 
     def test_unknown_routes_are_404(self):
         for method in ("GET", "POST", "DELETE", "PUT"):

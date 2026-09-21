@@ -64,13 +64,20 @@ class ApiHandler(BaseHTTPRequestHandler):
 
     # -- helpers ---------------------------------------------------------------
     def _send(self, status: int, payload: dict[str, Any], *,
-              retry_after: int | None = None) -> None:
+              retry_after: int | None = None,
+              allow: str | None = None,
+              close: bool = False) -> None:
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
         if retry_after is not None:
             self.send_header("Retry-After", str(retry_after))
+        if allow is not None:
+            self.send_header("Allow", allow)
+        if close:
+            self.send_header("Connection", "close")
+            self.close_connection = True
         self.end_headers()
         self.wfile.write(body)
 
@@ -88,6 +95,19 @@ class ApiHandler(BaseHTTPRequestHandler):
             return True, loads_strict(raw.decode("utf-8"))
         except (UnicodeDecodeError, ValueError, RecursionError):
             return False, None
+
+    def _drain_request_body(self, limit: int = 1_048_576) -> None:
+        """Consume a bounded request body before closing the connection."""
+        try:
+            length = int(self.headers.get("Content-Length", "0") or "0")
+        except (TypeError, ValueError):
+            return
+        remaining = min(max(length, 0), limit)
+        while remaining > 0:
+            chunk = self.rfile.read(min(remaining, 65536))
+            if not chunk:
+                break
+            remaining -= len(chunk)
 
     # -- routes ----------------------------------------------------------------
     def do_GET(self) -> None:  # noqa: N802
@@ -132,7 +152,11 @@ class ApiHandler(BaseHTTPRequestHandler):
             return
         ok, payload = self._read_json()
         if not ok:
-            self._send(400, {"ok": False, "data": None, "error": "invalid JSON body"})
+            self._send(
+                400,
+                {"ok": False, "data": None, "error": "invalid JSON body"},
+                close=True,
+            )
             return
         # top-layer overall pool: refuse immediately instead of queueing, so the
         # caller can retry (this bounds the top layer's own resources)
@@ -161,15 +185,18 @@ class ApiHandler(BaseHTTPRequestHandler):
         self._send(status, body)
 
     def _method_not_allowed(self, *, body: bool = True) -> None:
+        self._drain_request_body()
         if body:
             self._send(405, {
                 "ok": False,
                 "data": None,
                 "error": "method not allowed",
-            })
+            }, allow="GET, POST", close=True)
             return
+        self.close_connection = True
         self.send_response(405)
         self.send_header("Allow", "GET, POST")
+        self.send_header("Connection", "close")
         self.send_header("Content-Length", "0")
         self.end_headers()
 
@@ -186,6 +213,9 @@ class ApiHandler(BaseHTTPRequestHandler):
         self._method_not_allowed()
 
     def do_PATCH(self) -> None:  # noqa: N802
+        self._method_not_allowed()
+
+    def do_CONNECT(self) -> None:  # noqa: N802
         self._method_not_allowed()
 
     def do_HEAD(self) -> None:  # noqa: N802

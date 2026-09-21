@@ -13,6 +13,15 @@ import json
 import math
 from typing import Any
 
+_MAX_JSON_INT_DIGITS = 4300
+
+
+def _parse_int(text: str) -> int:
+    digits = text[1:] if text.startswith("-") else text
+    if len(digits) > _MAX_JSON_INT_DIGITS:
+        raise ValueError("integer literal is too long")
+    return int(text)
+
 
 def _parse_finite_float(text: str) -> float:
     value = float(text)
@@ -29,6 +38,7 @@ def loads_strict(text: str) -> Any:
     """Parse standard JSON, rejecting non-finite numbers and constants."""
     return json.loads(
         text,
+        parse_int=_parse_int,
         parse_float=_parse_finite_float,
         parse_constant=_reject_constant,
     )

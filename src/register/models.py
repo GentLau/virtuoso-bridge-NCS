@@ -107,7 +107,9 @@ class RegistrationRequest(BaseModel):
     ssh_tool_override: dict[str, str] | None = None
     thread_pool_size: StrictInt | None = Field(default=None, ge=1)
     channel_budget: StrictInt | None = Field(default=None, ge=1)
-    connect_timeout: StrictFloat | None = Field(default=None, gt=0)
+    connect_timeout: StrictFloat | None = Field(
+        default=None, gt=0, allow_inf_nan=False
+    )
     log_level: Literal["off", "all", "warn", "error"] | None = None
     log_max_bytes: StrictInt | None = Field(default=None, ge=1)
 

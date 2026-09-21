@@ -97,6 +97,22 @@ class TestBusinessFacePool(unittest.TestCase):
                 self.assertEqual(status, 400, raw)
                 self.assertIn("invalid JSON body", raw)
 
+    def test_long_int_rejected_without_interpreter_limit(self):
+        if not hasattr(sys, "set_int_max_str_digits"):
+            self.skipTest("interpreter has no int_max_str_digits switch")
+        previous = sys.get_int_max_str_digits()
+        try:
+            sys.set_int_max_str_digits(0)
+            body = (
+                b'{"operation":"tb.pool.slow","token":"t","value":'
+                + b"9" * 5000 + b"}"
+            )
+            status, raw = self._post_raw(body)
+        finally:
+            sys.set_int_max_str_digits(previous)
+        self.assertEqual(status, 400, raw)
+        self.assertIn("invalid JSON body", raw)
+
     def test_non_finite_json_literals_are_400(self):
         for literal in (b"NaN", b"Infinity", b"-Infinity", b"1e400"):
             with self.subTest(literal=literal):
@@ -122,6 +138,8 @@ class TestBusinessFacePool(unittest.TestCase):
                 raw = resp.read().decode("utf-8")
                 conn.close()
                 self.assertEqual(resp.status, 405, raw)
+                self.assertEqual(resp.getheader("Allow"), "GET, POST")
+                self.assertEqual(resp.getheader("Connection"), "close")
                 self.assertEqual(json.loads(raw)["ok"], False)
                 self.assertIn("method", raw.lower())
 
@@ -132,7 +150,58 @@ class TestBusinessFacePool(unittest.TestCase):
         body = resp.read()
         conn.close()
         self.assertEqual(resp.status, 405)
+        self.assertEqual(resp.getheader("Allow"), "GET, POST")
         self.assertEqual(body, b"")
+
+    def test_405_with_body_closes_connection(self):
+        import socket
+
+        body = b'{"x":"yy"}'
+        request = (
+            b"PUT /api/operation HTTP/1.1\r\nHost: x\r\n"
+            + f"Content-Length: {len(body)}\r\n\r\n".encode("ascii")
+            + body
+        )
+        sock = socket.create_connection(("127.0.0.1", self.port), timeout=5)
+        sock.sendall(request)
+        data = b""
+        try:
+            while True:
+                chunk = sock.recv(65536)
+                if not chunk:
+                    break
+                data += chunk
+        except OSError:
+            pass
+        sock.close()
+        self.assertIn(b" 405 ", data.split(b"\r\n", 1)[0], data[:200])
+        self.assertIn(b"Connection: close", data)
+        self.assertNotIn(b"501", data)
+
+    def test_malformed_content_length_with_body_closes(self):
+        import socket
+
+        body = b'{"operation":"tb.pool.slow","token":"t"}'
+        request = (
+            b"POST /api/operation HTTP/1.1\r\nHost: x\r\n"
+            + f"Content-Length: abc\r\n\r\n".encode("ascii")
+            + body
+        )
+        sock = socket.create_connection(("127.0.0.1", self.port), timeout=5)
+        sock.sendall(request)
+        data = b""
+        try:
+            while True:
+                chunk = sock.recv(65536)
+                if not chunk:
+                    break
+                data += chunk
+        except OSError:
+            pass
+        sock.close()
+        self.assertIn(b" 400 ", data.split(b"\r\n", 1)[0], data[:200])
+        self.assertIn(b"Connection: close", data)
+        self.assertIn(b"invalid JSON body", data)
 
     def test_over_limit_is_refused_with_429_and_retry_after(self):
         results = []

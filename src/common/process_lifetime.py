@@ -5,9 +5,9 @@ On Windows a supervised process's descendants (notably long-lived
 Object with ``KILL_ON_JOB_CLOSE`` makes the OS tear down the whole tree when
 the supervisor closes the job handle or exits.
 
-On POSIX this is intentionally a no-op: the platform's process/session rules
-already cover the supported deployments, and the caller still gets the normal
-explicit ``terminate()`` path.
+On POSIX this is intentionally a no-op; the caller remains responsible for
+explicit cleanup and must not claim a stronger guarantee than the platform
+provides.
 """
 
 from __future__ import annotations
@@ -74,8 +74,6 @@ if _IS_WINDOWS:
         wintypes.HANDLE,
     ]
     _kernel32.AssignProcessToJobObject.restype = wintypes.BOOL
-    _kernel32.TerminateJobObject.argtypes = [wintypes.HANDLE, wintypes.UINT]
-    _kernel32.TerminateJobObject.restype = wintypes.BOOL
     _kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
     _kernel32.CloseHandle.restype = wintypes.BOOL
 else:
@@ -122,19 +120,13 @@ class ProcessJob:
             if not ok:
                 raise ctypes.WinError(ctypes.get_last_error())
         except Exception as exc:  # noqa: BLE001 - lifetime binding is best effort
-            logger.warning("could not assign process %s to Job Object: %s", getattr(proc, "pid", "?"), exc)
+            logger.warning(
+                "could not assign process %s to Job Object: %s",
+                getattr(proc, "pid", "?"),
+                exc,
+            )
             return False
         return True
-
-    def terminate(self) -> None:
-        """Terminate every process currently assigned to the job."""
-        if self._handle is None:
-            return
-        if not _kernel32.TerminateJobObject(self._handle, 1):
-            logger.warning(
-                "could not terminate Job Object: %s",
-                ctypes.WinError(ctypes.get_last_error()),
-            )
 
     def close(self) -> None:
         """Close the handle; ``KILL_ON_JOB_CLOSE`` tears down descendants."""
@@ -146,12 +138,5 @@ class ProcessJob:
                 "could not close Job Object: %s",
                 ctypes.WinError(ctypes.get_last_error()),
             )
-
-    def __enter__(self) -> "ProcessJob":
-        return self
-
-    def __exit__(self, *_exc: object) -> None:
-        self.close()
-
 
 __all__ = ["ProcessJob"]

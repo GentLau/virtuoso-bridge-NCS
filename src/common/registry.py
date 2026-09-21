@@ -35,7 +35,14 @@ except ImportError:  # pragma: no cover - Windows
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    StrictFloat,
+    StrictInt,
+    model_validator,
+)
 from common.validation import validate_user_name
 
 
@@ -144,14 +151,14 @@ class RoleConfig(BaseModel):
     proxy: str | None = None
     root: str | None = None
     expected_fingerprint: str | None = None
-    max_sessions: int = Field(default=10, ge=1)
+    max_sessions: StrictInt = Field(default=10, ge=1)
 
 
 class DaemonRoleConfig(RoleConfig):
     """daemon role: Skill endpoint, deployment target, python environment."""
 
-    daemon_port: int | None = Field(default=None, ge=1, le=65535)
-    local_port: int | None = Field(default=None, ge=1, le=65535)
+    daemon_port: StrictInt | None = Field(default=None, ge=1, le=65535)
+    local_port: StrictInt | None = Field(default=None, ge=1, le=65535)
     python: str | None = None  # 环境：探测写入（或显式提供后校验）
     expected_hostname: str | None = None
     expected_user: str | None = None
@@ -213,16 +220,16 @@ class Ssh(BaseModel):
 class Runtime(BaseModel):
     model_config = ConfigDict(extra="forbid", validate_assignment=True)
 
-    thread_pool_size: int = Field(default=32, ge=1)
-    channel_budget: int = Field(default=10, ge=1)
-    connect_timeout: float = Field(default=15.0, gt=0)
+    thread_pool_size: StrictInt = Field(default=32, ge=1)
+    channel_budget: StrictInt = Field(default=10, ge=1)
+    connect_timeout: StrictFloat = Field(default=15.0, gt=0, allow_inf_nan=False)
 
 
 class CdsLog(BaseModel):
     model_config = ConfigDict(extra="forbid", validate_assignment=True)
 
     log_level: Literal["off", "all", "warn", "error"] = "all"
-    log_max_bytes: int = Field(default=65536, ge=1)
+    log_max_bytes: StrictInt = Field(default=65536, ge=1)
 
 
 class UserEntry(BaseModel):
@@ -238,7 +245,7 @@ class UserEntry(BaseModel):
     roles: Roles = Field(default_factory=Roles)
     runtime: Runtime = Field(default_factory=Runtime)
     cdslog: CdsLog = Field(default_factory=CdsLog)
-    registered_at: int | None = None  # unix seconds; set at the step-6 commit
+    registered_at: StrictInt | None = None  # unix seconds; set at the step-6 commit
 
     @model_validator(mode="before")
     @classmethod

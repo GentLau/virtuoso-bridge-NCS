@@ -95,6 +95,31 @@ class TestRegistryMore(unittest.TestCase):
         with self.assertRaises(ValidationError):
             UserEntry(token="t", mode="remote", roles={"daemon": {"local_port": 70000}})
 
+    def test_numeric_fields_are_strict_on_load(self):
+        for patch in (
+            {"roles": {"daemon": {"daemon_port": "65081"}}},
+            {"roles": {"daemon": {"local_port": "65081"}}},
+            {"roles": {"daemon": {"max_sessions": "10"}}},
+            {"runtime": {"thread_pool_size": "32"}},
+            {"runtime": {"channel_budget": "10"}},
+            {"runtime": {"connect_timeout": "15"}},
+            {"cdslog": {"log_max_bytes": "65536"}},
+        ):
+            with self.subTest(patch=patch):
+                with self.assertRaises(ValidationError):
+                    UserEntry.model_validate(
+                        {"token": "t", "mode": "remote", **patch}
+                    )
+
+    def test_connect_timeout_rejects_non_finite(self):
+        for value in (float("inf"), float("-inf"), float("nan")):
+            with self.subTest(value=value):
+                with self.assertRaises(ValidationError):
+                    UserEntry(
+                        token="t", mode="remote",
+                        runtime={"connect_timeout": value},
+                    )
+
     def test_empty_token_rejected(self):
         with self.assertRaises(ValidationError):
             UserEntry(token="", mode="remote")
@@ -149,6 +174,19 @@ class TestRegistryUpdate(unittest.TestCase):
         with self.assertRaises(RegistryError):
             self.reg.update("alice", {"token": "tok-rotated"})
         self.assertEqual(self.reg.get("alice").token, "tok-u")
+
+    def test_numeric_patch_is_rejected_strictly(self):
+        self._register()
+        for patch in (
+            {"roles": {"daemon": {"local_port": "65081"}}},
+            {"runtime": {"thread_pool_size": "64"}},
+            {"runtime": {"connect_timeout": "15"}},
+            {"cdslog": {"log_max_bytes": "65536"}},
+        ):
+            with self.subTest(patch=patch):
+                with self.assertRaises(ValidationError):
+                    self.reg.update("alice", patch)
+        self.assertEqual(self.reg.get("alice").runtime.thread_pool_size, 8)
 
 
 class TestCrossProcessLock(unittest.TestCase):

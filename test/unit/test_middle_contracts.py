@@ -5,6 +5,7 @@ import json
 import sys
 import tempfile
 import unittest
+from dataclasses import dataclass
 from pathlib import Path
 from unittest import mock
 
@@ -134,6 +135,46 @@ class TestCommandContracts(MiddleContractBase):
                     self.server.run_command(
                         "echo hi", timeout=bad, token="tok-c"
                     )
+
+    def test_invalid_timeout_maps_to_dispatch_400(self):
+        from server import dispatch as dispatch_module
+        from server.dispatch import dispatch
+
+        @dataclass(frozen=True)
+        class TimeoutRequest:
+            token: str
+            timeout: float | None = None
+
+        class TimeoutPackage:
+            def __init__(self, middle):
+                self.middle = middle
+
+            def run(self, request):
+                return self.middle.run_command(
+                    "echo hi",
+                    timeout=request.timeout,
+                    token=request.token,
+                )
+
+        dispatch_module.register_operation(
+            "tb.timeout.contract", TimeoutPackage, "run",
+            TimeoutRequest, replace=True,
+        )
+        try:
+            for bad in (True, 1e9):
+                with self.subTest(timeout=bad):
+                    status, body = dispatch(
+                        self.server,
+                        {
+                            "operation": "tb.timeout.contract",
+                            "token": "tok-c",
+                            "timeout": bad,
+                        },
+                    )
+                    self.assertEqual(status, 400, body)
+            self.assertIsNone(self.fake.parallel_seen)
+        finally:
+            dispatch_module.PACKAGES.pop("tb.timeout.contract", None)
 
 
 class TestFileAndRoleContracts(MiddleContractBase):

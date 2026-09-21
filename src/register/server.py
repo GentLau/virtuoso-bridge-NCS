@@ -22,12 +22,10 @@ import json
 import os
 import re
 import tempfile
-import time
 import uuid
 from datetime import datetime, timezone
 from importlib.resources import files
 import threading
-from pathlib import Path
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, unquote, urlparse
 
@@ -66,11 +64,18 @@ _ADMIN_TOKEN_HASH = "db84f807b2bc4af3c4aa7ee220862433438a3d1ee22be3705568a9e7a26
 class RegistrationHandler(BaseHTTPRequestHandler):
     server_version = "vb-registration/0.2"
 
-    def _send_json(self, status: int, payload: dict) -> None:
+    def _send_json(self, status: int, payload: dict, *,
+                   allow: str | None = None,
+                   close: bool = False) -> None:
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
+        if allow is not None:
+            self.send_header("Allow", allow)
+        if close:
+            self.send_header("Connection", "close")
+            self.close_connection = True
         self.end_headers()
         self.wfile.write(body)
 
@@ -93,6 +98,19 @@ class RegistrationHandler(BaseHTTPRequestHandler):
             raise _InvalidContentLength("invalid Content-Length")
         raw = self.rfile.read(length) if length > 0 else b""
         return loads_strict(raw.decode("utf-8")) if raw else {}
+
+    def _drain_request_body(self, limit: int = 1_048_576) -> None:
+        """Consume a bounded request body before closing the connection."""
+        try:
+            length = int(self.headers.get("Content-Length", "0") or "0")
+        except (TypeError, ValueError):
+            return
+        remaining = min(max(length, 0), limit)
+        while remaining > 0:
+            chunk = self.rfile.read(min(remaining, 65536))
+            if not chunk:
+                break
+            remaining -= len(chunk)
 
     def _flow(self, user: str):
         with self.server.flow_lock:  # type: ignore[attr-defined]
@@ -391,7 +409,7 @@ class RegistrationHandler(BaseHTTPRequestHandler):
         except _InvalidContentLength:
             self._send_json(400, {"error": "invalid Content-Length"})
             return
-        except (json.JSONDecodeError, UnicodeDecodeError, ValueError, RecursionError):
+        except (UnicodeDecodeError, ValueError, RecursionError):
             self._send_json(400, {"error": "invalid JSON body"})
             return
         if not isinstance(body, dict):
@@ -421,46 +439,35 @@ class RegistrationHandler(BaseHTTPRequestHandler):
         self.server.audit(action, target=target, ok=True)  # type: ignore[attr-defined]
         self._send_json(200, payload)
 
-    #: 记录前必须剥离的凭据字段名（控制面 v28：token/Authorization 等）
-    _CREDENTIAL_KEYS = (
-        "token", "authorization", "password", "passwd", "secret",
-        "api_key", "apikey", "credential",
+    _CREDENTIAL_KEY_RE = re.compile(
+        r'("(?P<key>token|authorization|password|passwd|secret|api_key|apikey|credential)"'
+        r'\s*:\s*)'
+        r'("(?:\\.|[^"\\])*"|true|false|null|'
+        r'-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?)',
+        re.IGNORECASE,
     )
 
     @classmethod
     def _mask_credentials(
-        cls, raw_text: str, parsed, token: str
+        cls, raw_text: str, token: str
     ) -> tuple[str, bool, bool]:
         """Return the raw body with credential values masked (v28).
 
         控制面 v28 要求“先剥离 token/Authorization 等凭据再记录原始请求体”；
         除这些凭据值以外一个字符都不改。
         """
-        credentials: dict[str, str] = {}
-        if isinstance(parsed, dict):
-            for key, value in parsed.items():
-                if (
-                    isinstance(key, str)
-                    and isinstance(value, str)
-                    and key.lower() in cls._CREDENTIAL_KEYS
-                ):
-                    credentials[key] = value
-        if token:
-            credentials.setdefault("token", token)
-        masked = raw_text
         token_masked = False
-        for key, value in credentials.items():
-            if not value:
-                continue
-            pattern = (
-                r'("' + re.escape(key) + r'"\s*:\s*)"'
-                + re.escape(value) + r'"'
-            )
-            masked, count = re.subn(
-                pattern, r'\1"***"', masked, flags=re.IGNORECASE
-            )
-            if count and key.lower() == "token":
+
+        def replace(match: re.Match[str]) -> str:
+            nonlocal token_masked
+            if match.group("key").lower() == "token":
                 token_masked = True
+            return match.group(1) + '"***"'
+
+        masked, _count = cls._CREDENTIAL_KEY_RE.subn(replace, raw_text)
+        if token and token in masked:
+            masked = masked.replace(token, "***")
+            token_masked = True
         return masked, token_masked, masked != raw_text
 
     def _bug_status_summary(self) -> dict:
@@ -530,7 +537,7 @@ class RegistrationHandler(BaseHTTPRequestHandler):
         token = ""
         try:
             parsed = json.loads(raw_text) if raw_text else None
-        except (json.JSONDecodeError, UnicodeDecodeError, ValueError, RecursionError):
+        except (UnicodeDecodeError, ValueError, RecursionError):
             parsed = None
         if isinstance(parsed, dict) and isinstance(parsed.get("token"), str):
             token = parsed["token"]
@@ -546,7 +553,7 @@ class RegistrationHandler(BaseHTTPRequestHandler):
             f"bug-{now.strftime('%Y%m%dT%H%M%SZ')}-{user}-{uuid.uuid4().hex[:8]}"
         )
         raw_body, token_masked, credentials_stripped = self._mask_credentials(
-            raw_text, parsed, token
+            raw_text, token
         )
         entry = {
             "id": report_id,
@@ -659,7 +666,7 @@ class RegistrationHandler(BaseHTTPRequestHandler):
                 return
             try:
                 body = self._read_json()
-            except (json.JSONDecodeError, UnicodeDecodeError, ValueError, RecursionError):
+            except (UnicodeDecodeError, ValueError, RecursionError):
                 self._send_json(400, {"error": "invalid JSON body"})
                 return
             if not isinstance(body, dict):
@@ -695,7 +702,13 @@ class RegistrationHandler(BaseHTTPRequestHandler):
         self._send_json(404, {"error": "not found"})
 
     def _method_not_allowed(self) -> None:
-        self._send_json(405, {"error": "method not allowed"})
+        self._drain_request_body()
+        self._send_json(
+            405,
+            {"error": "method not allowed"},
+            allow="GET, POST, PUT, DELETE",
+            close=True,
+        )
 
     def do_PATCH(self) -> None:  # noqa: N802
         self._method_not_allowed()
@@ -706,9 +719,15 @@ class RegistrationHandler(BaseHTTPRequestHandler):
     def do_TRACE(self) -> None:  # noqa: N802
         self._method_not_allowed()
 
+    def do_CONNECT(self) -> None:  # noqa: N802
+        self._method_not_allowed()
+
     def do_HEAD(self) -> None:  # noqa: N802
+        self._drain_request_body()
+        self.close_connection = True
         self.send_response(405)
         self.send_header("Allow", "GET, POST, PUT, DELETE")
+        self.send_header("Connection", "close")
         self.send_header("Content-Length", "0")
         self.end_headers()
 
