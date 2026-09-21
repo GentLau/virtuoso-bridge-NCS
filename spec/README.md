@@ -100,7 +100,7 @@ CDS.log metadata frame 完整字节格式
 
 - **Release ID**：`SPEC-2026-09-20-r5`
 - **Normative 文件集**（10 份）：四层整体架构与接口、本版范围与明确不支持、中层配置文档、路由设计、多用户与注册、并发设计、日志返回设计标准、顶层：HTTP 入口与业务调度、顶层补充：控制面与业务面、上层：业务包与插件化；
-- **Normative 内容哈希**：`255ef01c704af93e862a3d03e21dc3bf38e11a6af280171fdb95497599a8465e`
+- **Normative 内容哈希**：`3ac5551fe0672970145757f0b4d7764ad3c71e0b40f91a3db39bfca72cff871e`
   - 算法：路径为**相对 `spec/` 目录**并按路径排序；逐文件 SHA-256（**按 Git 提交内容计算，即 LF 行尾**；Windows 工作区受 `core.autocrlf` 影响的行尾差异不计入）；每行 `<相对路径> <hex>` 以 LF 拼接（**行间分隔、末行无尾 LF**），再取一次 SHA-256；
 - **基线 commit**：本 Release 段所在提交即基线（见 `git log -1 -- spec/`）；任何 Normative 文档变更必须同时更新本段哈希。
 
@@ -115,7 +115,7 @@ CDS.log metadata frame 完整字节格式
 | 多用户与注册 | Draft v32 | Normative | Draft v31（重新导入触发索引业务进程管理端点） |
 | 并发设计 | Draft v20 | Normative | Draft v19（重试决策单元术语统一为业务操作） |
 | 顶层 | Draft v18 | Normative | Draft v17（放行 common.jsonutil；未知方法 405） |
-| 控制面与业务面 | Draft v29 | Normative | Draft v28（请求体 16MiB/413；bug 配额写死；POSIX 进程组强杀） |
+| 控制面与业务面 | Draft v30 | Normative | Draft v29（/api/bug 不限制提交次数） |
 | 上层 | Draft v14 | Normative | Draft v12–v13（v12 白名单加入 common.*；v13 收窄为 common.paths） |
 | 日志返回设计标准 | Draft v15 | Normative | Draft v14（覆盖示例统一为合法值 warn） |
 
