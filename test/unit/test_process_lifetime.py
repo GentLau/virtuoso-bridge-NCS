@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 import unittest
 from pathlib import Path
@@ -14,6 +16,8 @@ from unittest import mock
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from common.process_lifetime import ProcessJob
+
+_CREATE_SUSPENDED = 0x00000004
 
 
 def _pid_alive(pid: int) -> bool:
@@ -86,19 +90,25 @@ class TestProcessJob(unittest.TestCase):
                     sys.executable, "-c", parent_code,
                     str(ready), str(go), str(pidfile),
                 ],
-                creationflags=subprocess.CREATE_NO_WINDOW,
+                creationflags=(
+                    subprocess.CREATE_NO_WINDOW | _CREATE_SUSPENDED
+                ),
             )
             child_pid = None
             job = ProcessJob()
             try:
-                deadline = time.time() + 10
-                while not ready.exists() and time.time() < deadline:
-                    time.sleep(0.05)
-                self.assertTrue(ready.exists(), "parent did not become ready")
                 self.assertTrue(
                     job.assign(parent),
                     "test process could not be assigned to a Job Object",
                 )
+                self.assertTrue(
+                    job.resume(parent),
+                    "suspended test process could not be resumed",
+                )
+                deadline = time.time() + 10
+                while not ready.exists() and time.time() < deadline:
+                    time.sleep(0.05)
+                self.assertTrue(ready.exists(), "parent did not become ready")
                 go.write_text("go", encoding="ascii")
                 deadline = time.time() + 10
                 while not pidfile.exists() and time.time() < deadline:
@@ -125,6 +135,84 @@ class TestProcessJob(unittest.TestCase):
 
 @unittest.skipUnless(os.name == "nt", "Windows Job Object contract")
 class TestBusinessProcessLifetime(unittest.TestCase):
+    def test_start_binds_suspended_child_before_resuming(self):
+        from server import supervisor
+        from server.supervisor import BusinessProcess
+
+        class BlockingStream:
+            def __init__(self, lines=()):
+                self._lines = list(lines)
+                self._stop = threading.Event()
+
+            def __iter__(self):
+                for line in self._lines:
+                    yield line
+                self._stop.wait()
+
+            def close(self):
+                self._stop.set()
+
+        class FakeProc:
+            pid = 4242
+            _handle = 1
+
+            def __init__(self):
+                self.returncode = None
+                self.stdin = BlockingStream()
+                self.stdout = BlockingStream([
+                    supervisor.EVENT_PREFIX
+                    + json.dumps({"event": "ready", "port": 1})
+                    + "\n"
+                ])
+                self.stderr = BlockingStream()
+
+            def poll(self):
+                return self.returncode
+
+            def wait(self, timeout=None):
+                self.returncode = 0
+                return 0
+
+            def kill(self):
+                self.returncode = -1
+
+        class FakeJob:
+            def __init__(self):
+                self.assigned = []
+                self.resumed = []
+                self.closed = 0
+
+            def assign(self, proc):
+                self.assigned.append(proc)
+                return True
+
+            def resume(self, proc):
+                self.resumed.append(proc)
+                return True
+
+            def close(self):
+                self.closed += 1
+
+        proc = FakeProc()
+        job = FakeJob()
+        with mock.patch.object(
+            supervisor.subprocess, "Popen", return_value=proc
+        ) as popen, mock.patch.object(
+            supervisor, "ProcessJob", return_value=job
+        ):
+            bp = BusinessProcess(host="127.0.0.1", port=1, work_dir=".")
+            bp.start(timeout=5)
+            try:
+                self.assertTrue(
+                    popen.call_args.kwargs["creationflags"]
+                    & _CREATE_SUSPENDED
+                )
+                self.assertEqual(job.assigned, [proc])
+                self.assertEqual(job.resumed, [proc])
+                self.assertTrue(bp._job_bound)
+            finally:
+                bp._dispose_child(0.1)
+
     def test_unbound_fallback_uses_taskkill_tree(self):
         from server.supervisor import BusinessProcess
 
@@ -172,6 +260,10 @@ class TestBusinessProcessLifetime(unittest.TestCase):
                 bp.start(timeout=15)
                 child_pid = int(pidfile.read_text(encoding="ascii"))
                 self.assertTrue(_pid_alive(child_pid))
+                self.assertTrue(
+                    bp._job_bound,
+                    "business process was not bound before it was resumed",
+                )
                 bp._dispose_child(1.0)
                 deadline = time.time() + 5
                 while _pid_alive(child_pid) and time.time() < deadline:

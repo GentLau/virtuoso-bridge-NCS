@@ -15,6 +15,7 @@ from __future__ import annotations
 import ctypes
 import logging
 import os
+import time
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -22,6 +23,9 @@ logger = logging.getLogger(__name__)
 _IS_WINDOWS = os.name == "nt"
 _JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE = 0x00002000
 _JOB_OBJECT_EXTENDED_LIMIT_INFORMATION_CLASS = 9
+_TH32CS_SNAPTHREAD = 0x00000004
+_THREAD_SUSPEND_RESUME = 0x0002
+_INVALID_HANDLE_VALUE = ctypes.c_void_p(-1).value
 
 if _IS_WINDOWS:
     from ctypes import wintypes
@@ -59,6 +63,17 @@ if _IS_WINDOWS:
             ("PeakJobMemoryUsed", ctypes.c_size_t),
         ]
 
+    class _ThreadEntry32(ctypes.Structure):
+        _fields_ = [
+            ("dwSize", wintypes.DWORD),
+            ("cntUsage", wintypes.DWORD),
+            ("th32ThreadID", wintypes.DWORD),
+            ("th32OwnerProcessID", wintypes.DWORD),
+            ("tpBasePri", ctypes.c_long),
+            ("tpDeltaPri", ctypes.c_long),
+            ("dwFlags", wintypes.DWORD),
+        ]
+
     _kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
     _kernel32.CreateJobObjectW.argtypes = [wintypes.LPVOID, wintypes.LPCWSTR]
     _kernel32.CreateJobObjectW.restype = wintypes.HANDLE
@@ -76,8 +91,51 @@ if _IS_WINDOWS:
     _kernel32.AssignProcessToJobObject.restype = wintypes.BOOL
     _kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
     _kernel32.CloseHandle.restype = wintypes.BOOL
+    _kernel32.CreateToolhelp32Snapshot.argtypes = [
+        wintypes.DWORD,
+        wintypes.DWORD,
+    ]
+    _kernel32.CreateToolhelp32Snapshot.restype = wintypes.HANDLE
+    _kernel32.Thread32First.argtypes = [
+        wintypes.HANDLE,
+        ctypes.POINTER(_ThreadEntry32),
+    ]
+    _kernel32.Thread32First.restype = wintypes.BOOL
+    _kernel32.Thread32Next.argtypes = [
+        wintypes.HANDLE,
+        ctypes.POINTER(_ThreadEntry32),
+    ]
+    _kernel32.Thread32Next.restype = wintypes.BOOL
+    _kernel32.OpenThread.argtypes = [
+        wintypes.DWORD,
+        wintypes.BOOL,
+        wintypes.DWORD,
+    ]
+    _kernel32.OpenThread.restype = wintypes.HANDLE
+    _kernel32.ResumeThread.argtypes = [wintypes.HANDLE]
+    _kernel32.ResumeThread.restype = wintypes.DWORD
 else:
     _kernel32 = None
+
+
+def _find_thread_id(pid: int) -> int | None:
+    """Return one thread id owned by *pid* on Windows, if visible yet."""
+    if not _IS_WINDOWS or _kernel32 is None:
+        return None
+    snapshot = _kernel32.CreateToolhelp32Snapshot(_TH32CS_SNAPTHREAD, 0)
+    if not snapshot or snapshot == _INVALID_HANDLE_VALUE:
+        return None
+    try:
+        entry = _ThreadEntry32()
+        entry.dwSize = ctypes.sizeof(entry)
+        ok = _kernel32.Thread32First(snapshot, ctypes.byref(entry))
+        while ok:
+            if entry.th32OwnerProcessID == pid:
+                return int(entry.th32ThreadID)
+            ok = _kernel32.Thread32Next(snapshot, ctypes.byref(entry))
+    finally:
+        _kernel32.CloseHandle(snapshot)
+    return None
 
 
 class ProcessJob:
@@ -127,6 +185,40 @@ class ProcessJob:
             )
             return False
         return True
+
+    def resume(self, proc: Any, timeout: float = 2.0) -> bool:
+        """Resume a process created with ``CREATE_SUSPENDED``.
+
+        Call this only after :meth:`assign`.  Creating the process suspended
+        and binding it before its first instruction makes descendant
+        inheritance deterministic even when the supervisor itself is already
+        running inside another Job Object.
+        """
+        if not _IS_WINDOWS or _kernel32 is None:
+            return True
+        if self._handle is None or proc is None or proc.poll() is not None:
+            return False
+        deadline = time.monotonic() + max(0.0, timeout)
+        while True:
+            thread_id = _find_thread_id(int(proc.pid))
+            if thread_id is not None:
+                thread = _kernel32.OpenThread(
+                    _THREAD_SUSPEND_RESUME, False, thread_id
+                )
+                if thread:
+                    try:
+                        if _kernel32.ResumeThread(thread) != 0xFFFFFFFF:
+                            return True
+                    finally:
+                        _kernel32.CloseHandle(thread)
+            if time.monotonic() >= deadline:
+                break
+            time.sleep(0.01)
+        logger.warning(
+            "could not resume process %s after Job Object assignment",
+            getattr(proc, "pid", "?"),
+        )
+        return False
 
     def close(self) -> None:
         """Close the handle; ``KILL_ON_JOB_CLOSE`` tears down descendants."""

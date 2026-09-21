@@ -45,6 +45,9 @@ EVENT_PREFIX = "VB-EVENT "
 #: 重启排空上限（顶层补充 v27 §3：写死 30 秒）
 DRAIN_TIMEOUT = 30.0
 
+#: Windows CreateProcess flag: leave the child's primary thread suspended.
+_CREATE_SUSPENDED = 0x00000004
+
 
 def _redact_args(args: list[str]) -> list[str]:
     """Redact any token-looking startup argument (v27 §1.1)."""
@@ -123,6 +126,11 @@ class BusinessProcess:
             "bufsize": 1,
         }
         popen_kwargs.update(_windows_no_window_kwargs())
+        if os.name == "nt":
+            # Bind the child to its Job before it executes any instruction.
+            # Assigning after it has already started can leave descendants
+            # outside the Job when this supervisor itself runs inside one.
+            popen_kwargs["creationflags"] |= _CREATE_SUSPENDED
         if os.name != "nt":
             # Make the business child a session/process-group leader so the
             # supervised restart path can signal the whole tree.
@@ -135,13 +143,19 @@ class BusinessProcess:
             raise
         if os.name != "nt":
             self._posix_group_pid = self._proc.pid
-        self._job_bound = self._job.assign(self._proc)
-        if os.name == "nt" and not self._job_bound:
-            self._dispose_child(1.0)
-            raise RuntimeError(
-                "could not bind business process to a Windows Job Object; "
-                "refusing to start with process-tree cleanup degraded"
+        if os.name == "nt":
+            self._job_bound = self._job.assign(self._proc)
+            self._job_bound = (
+                self._job_bound and self._job.resume(self._proc)
             )
+            if not self._job_bound:
+                self._dispose_child(1.0)
+                raise RuntimeError(
+                    "could not bind business process to a Windows Job Object; "
+                    "refusing to start with process-tree cleanup degraded"
+                )
+        else:
+            self._job_bound = self._job.assign(self._proc)
         self.pid = self._proc.pid
         threading.Thread(target=self._read_stdout, daemon=True).start()
         threading.Thread(target=self._read_stderr, daemon=True).start()
