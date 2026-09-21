@@ -309,6 +309,8 @@ PACKAGES = (
     ("pyapi.packages.cellview", "Package", "OPERATIONS"),
     ("pyapi.packages.schematic", "Package", "OPERATIONS"),
     ("pyapi.packages.maestro", "Package", "OPERATIONS"),
+    ("pyapi.packages.symbol", "Package", "OPERATIONS"),
+    ("pyapi.packages.layout", "Package", "OPERATIONS"),
 )
 
 
