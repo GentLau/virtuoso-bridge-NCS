@@ -1,9 +1,9 @@
 # 顶层补充：控制面与业务面
 
-> 版本：Draft v34
+> 版本：Draft v35
 > 日期：2026-09-21
 > 状态：Normative（顶层 HTTP 端点清单、端口划分与权限口径的唯一 owner）
-> Supersedes：Draft v33（config.json 多键、common.config 只读快照、skillref 段与 doc_token）
+> Supersedes：Draft v34（config 改为按顶层键登记全局配置段，便于日后扩展）
 > 定位：本文是[顶层](1-顶层.md)的端点补充——[顶层](1-顶层.md)定义顶层职责、调度与响应壳；本文定义顶层开哪些端口、哪些方法、支持哪些请求、每个端点需要什么权限。注册语义见[多用户与注册 §3/§5](../其他/1-多用户与注册.md)。
 
 ## 1. 双面双端口
@@ -110,7 +110,7 @@
 ## 5. 全局配置与启动参数
 
 - 工作路径下除 `registry.json` 外，另存一份配置 JSON `config.json`；`GET/PUT /api/config` 操作该配置：GET 读内存快照，PUT 只覆盖请求里出现的顶层键、未出现的键原样保留，校验通过后更新快照并原子写回 `config.json`；
-- 当前 `config.json` 登记两个顶层键：`business_thread_pool_size`（业务 server 线程池大小）与 `skillref`（结构校验见下，业务语义见 [skillref §3](../上层/9-skillref.md)）；未登记的键**原样透传**、控制面不解读；
+- `config.json` 按顶层键登记**全局配置段**，日后可继续增段；本版登记 `business_thread_pool_size`（业务 server 线程池大小）与 `skillref`（结构校验见下，业务语义见 [skillref §3](../上层/9-skillref.md)）；未登记的键**原样透传**、控制面不解读；
 - 控制/业务端口与工作路径由**启动参数**给定，不写入 `config.json`；
 - 业务进程启动时导入 `registry.json`/`config.json`，运行期不读文件；`/api/process/reload` 或 `restart` 显式刷新；`PUT /api/config` 只更新控制进程快照并写回 `config.json`；`config.json` 经 `common.config` 提供**进程级只读快照**（控制面是唯一写者、请求期零文件 IO）；`business_thread_pool_size` 是**可变准入上限**：reload 后新请求按新上限准入；在途数 ≥ 新上限时，新请求拒绝（`429 + Retry-After`）直至低于上限；
 - `skillref` 段结构校验（本文唯一口径，业务语义见 [skillref §3](../上层/9-skillref.md)）：`source ∈ local/remote`（大小写不敏感）、`doc_root` 非空绝对路径且不含 NUL、`doc_token` 若给出必须是已注册 user 的 token（控制进程经注册与管理模块的 registry 快照校验）；值缺失或 `null` = 未配置，不阻断进程启动；`GET /api/config` 回带 `skillref` 段时 `doc_token` 一律脱敏（不回原文），审计与日志不含该凭据；
