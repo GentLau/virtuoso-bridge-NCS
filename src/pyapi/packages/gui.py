@@ -21,13 +21,6 @@ from typing import Any
 
 from pyapi.models import Middle
 
-OPERATIONS = (
-    ("virtuoso.gui.list_windows", "list_windows", "ListWindowsRequest", "ListWindowsResult"),
-    ("virtuoso.gui.send_key", "send_key", "SendKeyRequest", "SendKeyResult"),
-    ("virtuoso.gui.auto_dismiss", "auto_dismiss", "AutoDismissRequest", "AutoDismissResult"),
-    ("virtuoso.gui.screenshot", "screenshot", "ScreenshotRequest", "ScreenshotResult"),
-)
-
 # 从 Virtuoso 进程环境里取 DISPLAY；取不到退 :0。
 _DISPLAY_PREFIX = (
     "disp=$(for p in $(pgrep -f 'virtuoso' 2>/dev/null); do "
@@ -397,6 +390,15 @@ class Package:
         if downloaded.returncode != 0:
             return ScreenshotResult(False, steps, downloaded.stderr or "download failed")
         return ScreenshotResult(True, steps, None, str(local_path))
+
+
+#: 操作名 -> (方法名, Request 模型, Result 模型)
+OPERATIONS = (
+    ("virtuoso.gui.list_windows", "list_windows", ListWindowsRequest, ListWindowsResult),
+    ("virtuoso.gui.send_key", "send_key", SendKeyRequest, SendKeyResult),
+    ("virtuoso.gui.auto_dismiss", "auto_dismiss", AutoDismissRequest, AutoDismissResult),
+    ("virtuoso.gui.screenshot", "screenshot", ScreenshotRequest, ScreenshotResult),
+)
 
 
 __all__ = [

@@ -10,6 +10,7 @@ token 每次调用原样透传。
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import math
 from pathlib import Path
 from typing import Any
 
@@ -50,6 +51,9 @@ class CommandRequest:
     timeout: int | None = None
     parallel: bool = False
 
+    def __post_init__(self) -> None:
+        _require_bool(self.parallel, "parallel")
+
 
 @dataclass(frozen=True)
 class UploadRequest:
@@ -59,6 +63,9 @@ class UploadRequest:
     timeout: int | None = None
     recursive: bool = False
 
+    def __post_init__(self) -> None:
+        _require_bool(self.recursive, "recursive")
+
 
 @dataclass(frozen=True)
 class DownloadRequest:
@@ -67,6 +74,9 @@ class DownloadRequest:
     local_path: str
     timeout: int | None = None
     recursive: bool = False
+
+    def __post_init__(self) -> None:
+        _require_bool(self.recursive, "recursive")
 
 
 @dataclass(frozen=True)
@@ -96,8 +106,27 @@ def _require_text(value: Any, name: str) -> str:
 
 
 def _require_timeout(timeout: Any) -> None:
-    if timeout is not None and (not isinstance(timeout, (int, float)) or timeout <= 0):
-        raise ValueError("timeout must be a positive number or None")
+    if timeout is None:
+        return
+    if (
+        isinstance(timeout, bool)
+        or not isinstance(timeout, (int, float))
+        or not math.isfinite(timeout)
+        or timeout <= 0
+    ):
+        raise ValueError("timeout must be a positive finite number or None")
+
+
+def _require_bool(value: Any, name: str) -> bool:
+    if not isinstance(value, bool):
+        raise ValueError(f"{name} must be a boolean")
+    return value
+
+
+def _command_error(name: str, returncode: int, stderr: str) -> str | None:
+    if returncode == 0:
+        return None
+    return (stderr or "").strip() or f"{name} failed with rc={returncode}"
 
 
 class Package:
@@ -117,7 +146,11 @@ class Package:
         return Result(
             ok=bool(skill.ok),
             steps=[{"name": "skill", "ok": bool(skill.ok), "detail": skill}],
-            error="; ".join(skill.errors) or None,
+            error=(
+                None if skill.ok
+                else "; ".join(skill.errors)
+                or f"skill execution failed: status={skill.status.value}"
+            ),
             result=skill,
         )
 
@@ -127,13 +160,13 @@ class Package:
         _require_timeout(request.timeout)
         command = self.middle.run_command(
             request.cmd, timeout=request.timeout, token=token,
-            parallel=bool(request.parallel),
+            parallel=request.parallel,
         )
         return Result(
             ok=command.returncode == 0,
             steps=[{"name": "command", "ok": command.returncode == 0,
                     "detail": command}],
-            error=command.stderr or None,
+            error=_command_error("command", command.returncode, command.stderr),
             result=command,
         )
 
@@ -144,12 +177,12 @@ class Package:
         _require_timeout(request.timeout)
         upload = self.middle.upload_file(
             Path(request.local_path), request.remote_path,
-            timeout=request.timeout, token=token, recursive=bool(request.recursive),
+            timeout=request.timeout, token=token, recursive=request.recursive,
         )
         return Result(
             ok=upload.returncode == 0,
             steps=[{"name": "upload", "ok": upload.returncode == 0, "detail": upload}],
-            error=upload.stderr or None,
+            error=_command_error("upload", upload.returncode, upload.stderr),
             result=upload,
         )
 
@@ -160,13 +193,13 @@ class Package:
         _require_timeout(request.timeout)
         download = self.middle.download_file(
             request.remote_path, Path(request.local_path),
-            timeout=request.timeout, token=token, recursive=bool(request.recursive),
+            timeout=request.timeout, token=token, recursive=request.recursive,
         )
         return Result(
             ok=download.returncode == 0,
             steps=[{"name": "download", "ok": download.returncode == 0,
                     "detail": download}],
-            error=download.stderr or None,
+            error=_command_error("download", download.returncode, download.stderr),
             result=download,
         )
 
@@ -178,7 +211,7 @@ class Package:
         return Result(
             ok=gui.returncode == 0,
             steps=[{"name": "gui", "ok": gui.returncode == 0, "detail": gui}],
-            error=gui.stderr or None,
+            error=_command_error("gui command", gui.returncode, gui.stderr),
             result=gui,
         )
 
@@ -193,7 +226,7 @@ class Package:
             ok=spectre.returncode == 0,
             steps=[{"name": "spectre", "ok": spectre.returncode == 0,
                     "detail": spectre}],
-            error=spectre.stderr or None,
+            error=_command_error("spectre command", spectre.returncode, spectre.stderr),
             result=spectre,
         )
 

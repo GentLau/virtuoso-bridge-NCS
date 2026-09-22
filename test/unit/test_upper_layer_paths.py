@@ -9,7 +9,20 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from common.paths import init_work_dir, override_work_dir_for_tests
+from pyapi.models import ExecutionStatus, QueryResult
 from pyapi.packages.demo import OPERATIONS, Package, PathsFactsRequest
+
+
+class FakeQueryMiddle:
+    def __init__(self, ok: bool) -> None:
+        self.ok = ok
+
+    def query(self, *, token: str) -> QueryResult:
+        if self.ok:
+            return QueryResult(status=ExecutionStatus.SUCCESS)
+        return QueryResult(
+            status=ExecutionStatus.ERROR, errors=["invalid token"],
+        )
 
 
 class TestUpperLayerPaths(unittest.TestCase):
@@ -32,6 +45,17 @@ class TestUpperLayerPaths(unittest.TestCase):
         package = Package(middle=None)
         with self.assertRaises(ValueError):
             package.paths_facts(PathsFactsRequest(token=""))
+
+    def test_invalid_token_is_business_failure(self):
+        package = Package(middle=FakeQueryMiddle(ok=False))
+        result = package.paths_facts(PathsFactsRequest(token="bad"))
+        self.assertFalse(result.ok)
+        self.assertIn("invalid token", result.error or "")
+
+    def test_valid_token_passes_with_middle(self):
+        package = Package(middle=FakeQueryMiddle(ok=True))
+        result = package.paths_facts(PathsFactsRequest(token="good"))
+        self.assertTrue(result.ok)
 
     def test_entry_init_is_idempotent_for_same_path(self):
         self.assertEqual(init_work_dir(self.wd), self.wd)

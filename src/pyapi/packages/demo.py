@@ -81,6 +81,18 @@ class Package:
 
         if not isinstance(request.token, str) or not request.token:
             raise ValueError("token must be a non-empty string")
+        if self.middle is not None:
+            token_check = self.middle.query(token=request.token)
+            if token_check.status.value != "success":
+                return PathsFactsResult(
+                    ok=False,
+                    steps=[{
+                        "name": "token",
+                        "ok": False,
+                        "detail": token_check,
+                    }],
+                    error="; ".join(token_check.errors) or "invalid token",
+                )
         facts = {
             "work_root": str(work_root()),
             "temp_dir": str(temp_dir()),

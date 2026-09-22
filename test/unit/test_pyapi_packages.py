@@ -7,6 +7,13 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from pyapi.models import CommandResult, ExecutionStatus, VirtuosoResult
+from pyapi.packages.basic import (
+    CommandRequest,
+    DownloadRequest,
+    Package as BasicPackage,
+    SkillRequest,
+    UploadRequest,
+)
 from pyapi.packages.file_skill_command_file import FileSkillCommandFilePackage
 from pyapi.packages.parallel_probe import ParallelProbePackage
 
@@ -95,6 +102,37 @@ class TestParallelProbePackage(unittest.TestCase):
         middle.command_result = CommandResult(1, "", "bad")
         result = ParallelProbePackage(middle).run(token="tok", commands=["a"], max_workers=1)
         self.assertFalse(result.ok)
+
+
+class TestBasicPackageContracts(unittest.TestCase):
+    def test_command_failure_has_error_fallback(self):
+        middle = FakeMiddle()
+        middle.command_result = CommandResult(7, "", "")
+        result = BasicPackage(middle).run_command(
+            CommandRequest(token="tok", cmd="exit 7")
+        )
+        self.assertFalse(result.ok)
+        self.assertEqual(result.error, "command failed with rc=7")
+
+    def test_parallel_rejects_string(self):
+        with self.assertRaises(ValueError):
+            CommandRequest(token="tok", cmd="x", parallel="no")
+
+    def test_recursive_rejects_string(self):
+        with self.assertRaises(ValueError):
+            UploadRequest(
+                token="tok", local_path="a", remote_path="b", recursive="no"
+            )
+        with self.assertRaises(ValueError):
+            DownloadRequest(
+                token="tok", remote_path="a", local_path="b", recursive="no"
+            )
+
+    def test_timeout_rejects_bool(self):
+        with self.assertRaises(ValueError):
+            BasicPackage(FakeMiddle()).execute_skill(
+                SkillRequest(token="tok", skill_code="1", timeout=True)
+            )
 
 
 if __name__ == "__main__":

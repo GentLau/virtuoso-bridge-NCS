@@ -1,6 +1,6 @@
 """``cellview`` business package: lib / cell / view / category file management.
 
-只调中层 execute_skill；SKILL 文本工具从 ``pyapi.packages.basic`` 复用。
+只调中层 execute_skill；SKILL 文本工具从 `pyapi.packages.basic` 复用。
 """
 from __future__ import annotations
 
@@ -253,8 +253,8 @@ let((vbLib vbTechName vbBound)
       vbBound = techBindTechFile(vbLib vbTechName)
       if(vbBound && techGetTechLibName(vbLib) == vbTechName
         then list("ok" {_library_info_expr("vbLib")})
-        else list("partial" "technologyBindingFailed" {_library_info_expr("vbLib")})))))))
-'''.strip()
+        else list("partial" "technologyBindingFailed" {_library_info_expr("vbLib")}))))))))
+)'''.strip()
 
 
 def _lib_delete_skill(name: str) -> str:
@@ -262,7 +262,7 @@ def _lib_delete_skill(name: str) -> str:
             'if(!vbLib then list("error" "libraryNotFound") else progn('
             'vbDeleted = ddDeleteObj(vbLib) '
             f'if(vbDeleted && !ddGetObj({basic.q(name)}) then list("ok") '
-            'else list("error" "deleteFailed"))))')
+            'else list("error" "deleteFailed")))))')
 
 
 def _lib_rename_skill(name: str, new_name: str) -> str:
@@ -279,8 +279,8 @@ let((vbSource vbDestination vbRenamed vbLib)
       vbLib = ddGetObj({basic.q(new_name)})
       if(vbRenamed && vbLib && !ddGetObj({basic.q(name)})
         then list("ok" {_library_info_expr("vbLib")})
-        else list("error" "renameFailed"))))))
-'''.strip()
+        else list("error" "renameFailed")))))))
+)'''.strip()
 
 
 def _lib_bind_skill(name: str, tech: str) -> str:
@@ -296,7 +296,7 @@ let((vbLib vbTechLib vbCurrent vbChanged)
                   else techBindTechFile(vbLib {basic.q(tech)}))
     if(vbChanged && techGetTechLibName(vbLib) == {basic.q(tech)}
       then list("ok" {_library_info_expr("vbLib")})
-      else list("error" "technologyBindingFailed")))))
+      else list("error" "technologyBindingFailed"))))))
 '''.strip()
 
 
@@ -308,58 +308,65 @@ let((vbLib vbResult)
   else progn(
     vbResult = nil
     foreach(vbCell vbLib~>cells vbResult = cons(vbCell~>name vbResult))
-    list("ok" reverse(vbResult))))
+    list("ok" reverse(vbResult)))))
 '''.strip()
 
 
 def _cell_copy_skill(library: str, cell: str, new_library: str, new_cell: str) -> str:
     return f'''
-let((vbLib vbNewLib vbCell vbAll)
+let((vbLib vbNewLib vbCell vbAll vbSourceCv vbOk)
   vbLib = ddGetObj({basic.q(library)})
   vbNewLib = ddGetObj({basic.q(new_library)})
-  vbCell = if(vbLib then vbLib~>cells~>{basic.q(cell)} nil)
+  vbCell = if(vbLib car(setof(vbC vbLib~>cells vbC~>name == {basic.q(cell)})) nil)
   if(!vbLib then list("error" "libraryNotFound")
   else if(!vbNewLib then list("error" "destinationLibraryNotFound")
   else if(!vbCell then list("error" "cellNotFound")
-  else if(vbNewLib~>cells~>{basic.q(new_cell)} then list("error" "destinationExists")
+  else if(car(setof(vbC vbNewLib~>cells vbC~>name == {basic.q(new_cell)})) then list("error" "destinationExists")
   else progn(
     vbAll = t
     foreach(vbView vbCell~>views
-      unless(dbCopyCellView({basic.q(library)} {basic.q(cell)} vbView~>name
-                            {basic.q(new_library)} {basic.q(new_cell)} vbView~>name)
+      unless(progn(
+        vbSourceCv = dbOpenCellViewByType({basic.q(library)} {basic.q(cell)}
+                                         vbView~>name vbView~>viewType "r")
+        if(vbSourceCv then
+          vbOk = dbCopyCellView(vbSourceCv {basic.q(new_library)}
+                                {basic.q(new_cell)} vbView~>name)
+          dbClose(vbSourceCv)
+          vbOk
+        else nil))
         vbAll = nil))
-    if(vbAll then list("ok") else list("error" "copyFailed")))))
-'''.strip()
+    if(vbAll then list("ok") else list("error" "copyFailed")))))))
+)'''.strip()
 
 
 def _cell_delete_skill(library: str, cell: str) -> str:
     return f'''
 let((vbLib vbCell vbDeleted)
   vbLib = ddGetObj({basic.q(library)})
-  vbCell = if(vbLib then vbLib~>cells~>{basic.q(cell)} nil)
+  vbCell = if(vbLib car(setof(vbC vbLib~>cells vbC~>name == {basic.q(cell)})) nil)
   if(!vbLib then list("error" "libraryNotFound")
   else if(!vbCell then list("error" "cellNotFound")
   else progn(
     vbDeleted = ddDeleteObj(vbCell)
     if(vbDeleted && !member({basic.q(cell)} vbLib~>cells~>name)
-      then list("ok") else list("error" "deleteFailed"))))
-'''.strip()
+      then list("ok") else list("error" "deleteFailed")))))
+)'''.strip()
 
 
 def _cell_rename_skill(library: str, cell: str, new_name: str) -> str:
     return f'''
 let((vbLib vbCell vbSource vbDestination vbRenamed)
   vbLib = ddGetObj({basic.q(library)})
-  vbCell = if(vbLib then vbLib~>cells~>{basic.q(cell)} nil)
+  vbCell = if(vbLib car(setof(vbC vbLib~>cells vbC~>name == {basic.q(cell)})) nil)
   if(!vbLib then list("error" "libraryNotFound")
   else if(!vbCell then list("error" "cellNotFound")
-  else if(vbLib~>cells~>{basic.q(new_name)} then list("error" "destinationExists")
+  else if(car(setof(vbC vbLib~>cells vbC~>name == {basic.q(new_name)})) then list("error" "destinationExists")
   else progn(
     vbSource = gdmCreateSpec({basic.q(library)} {basic.q(cell)} "" "" "CDBA")
     vbDestination = gdmCreateSpec({basic.q(library)} {basic.q(new_name)} "" "" "CDBA")
     vbRenamed = ccpRename(vbSource vbDestination nil)
     if(vbRenamed && !member({basic.q(cell)} vbLib~>cells~>name)
-      then list("ok") else list("error" "renameFailed")))))
+      then list("ok") else list("error" "renameFailed")))))))
 '''.strip()
 
 
@@ -367,15 +374,15 @@ def _view_list_skill(library: str, cell: str) -> str:
     return f'''
 let((vbLib vbCell vbResult)
   vbLib = ddGetObj({basic.q(library)})
-  vbCell = if(vbLib then vbLib~>cells~>{basic.q(cell)} nil)
+  vbCell = if(vbLib car(setof(vbC vbLib~>cells vbC~>name == {basic.q(cell)})) nil)
   if(!vbLib then list("error" "libraryNotFound")
   else if(!vbCell then list("error" "cellNotFound")
   else progn(
     vbResult = nil
     foreach(vbView vbCell~>views
       vbResult = cons(list(vbView~>name vbView~>viewType) vbResult))
-    list("ok" reverse(vbResult))))
-'''.strip()
+    list("ok" reverse(vbResult)))))
+)'''.strip()
 
 
 def _view_create_skill(library: str, cell: str, view: str, view_type: str) -> str:
@@ -387,25 +394,30 @@ let((vbCv vbSaved)
   else progn(
     vbSaved = dbSave(vbCv)
     dbClose(vbCv)
-    if(vbSaved then list("ok") else list("error" "saveFailed"))))
+    if(vbSaved then list("ok") else list("error" "saveFailed")))))
 '''.strip()
 
 
 def _view_copy_skill(library: str, cell: str, view: str,
                      new_library: str, new_cell: str, new_view: str) -> str:
     return f'''
-let((vbLib vbNewLib vbView vbCopied)
+let((vbLib vbNewLib vbCell vbView vbSourceCv vbCopied)
   vbLib = ddGetObj({basic.q(library)})
   vbNewLib = ddGetObj({basic.q(new_library)})
-  vbView = if(vbLib && vbLib~>cells~>{basic.q(cell)})
-           then vbLib~>cells~>{basic.q(cell)}~>views~>{basic.q(view)} nil)
+  vbCell = if(vbLib car(setof(vbC vbLib~>cells vbC~>name == {basic.q(cell)})) nil)
+  vbView = if(vbCell car(setof(vbV vbCell~>views vbV~>name == {basic.q(view)})) nil)
   if(!vbLib then list("error" "libraryNotFound")
   else if(!vbNewLib then list("error" "destinationLibraryNotFound")
   else if(!vbView then list("error" "viewNotFound")
   else progn(
-    vbCopied = dbCopyCellView({basic.q(library)} {basic.q(cell)} {basic.q(view)}
-                              {basic.q(new_library)} {basic.q(new_cell)} {basic.q(new_view)})
-    if(vbCopied then list("ok") else list("error" "copyFailed")))))
+    vbSourceCv = dbOpenCellViewByType({basic.q(library)} {basic.q(cell)}
+                                      {basic.q(view)} vbView~>viewType "r")
+    if(!vbSourceCv then list("error" "viewOpenFailed")
+    else progn(
+      vbCopied = dbCopyCellView(vbSourceCv {basic.q(new_library)}
+                                {basic.q(new_cell)} {basic.q(new_view)})
+      dbClose(vbSourceCv)
+      if(vbCopied then list("ok") else list("error" "copyFailed")))))))))
 '''.strip()
 
 
@@ -413,15 +425,15 @@ def _view_delete_skill(library: str, cell: str, view: str) -> str:
     return f'''
 let((vbLib vbCell vbView vbDeleted)
   vbLib = ddGetObj({basic.q(library)})
-  vbCell = if(vbLib then vbLib~>cells~>{basic.q(cell)} nil)
-  vbView = if(vbCell then vbCell~>views~>{basic.q(view)} nil)
+  vbCell = if(vbLib car(setof(vbC vbLib~>cells vbC~>name == {basic.q(cell)})) nil)
+  vbView = if(vbCell car(setof(vbV vbCell~>views vbV~>name == {basic.q(view)})) nil)
   if(!vbLib then list("error" "libraryNotFound")
   else if(!vbCell then list("error" "cellNotFound")
   else if(!vbView then list("error" "viewNotFound")
   else progn(
     vbDeleted = ddDeleteObj(vbView)
     if(vbDeleted && !member({basic.q(view)} vbCell~>views~>name)
-      then list("ok") else list("error" "deleteFailed")))))
+      then list("ok") else list("error" "deleteFailed")))))))
 '''.strip()
 
 
@@ -429,17 +441,18 @@ def _view_rename_skill(library: str, cell: str, view: str, new_name: str) -> str
     return f'''
 let((vbLib vbCell vbSource vbDestination vbRenamed)
   vbLib = ddGetObj({basic.q(library)})
-  vbCell = if(vbLib then vbLib~>cells~>{basic.q(cell)} nil)
+  vbCell = if(vbLib car(setof(vbC vbLib~>cells vbC~>name == {basic.q(cell)})) nil)
   if(!vbLib then list("error" "libraryNotFound")
   else if(!vbCell then list("error" "cellNotFound")
-  else if(vbCell~>views~>{basic.q(new_name)} then list("error" "destinationExists")
+  else if(car(setof(vbV vbCell~>views vbV~>name == {basic.q(new_name)})) then list("error" "destinationExists")
   else progn(
     vbSource = gdmCreateSpec({basic.q(library)} {basic.q(cell)} {basic.q(view)} "" "CDBA")
     vbDestination = gdmCreateSpec({basic.q(library)} {basic.q(cell)} {basic.q(new_name)} "" "CDBA")
     vbRenamed = ccpRename(vbSource vbDestination nil)
     if(vbRenamed && !member({basic.q(view)} vbCell~>views~>name)
-      then list("ok") else list("error" "renameFailed")))))
+      then list("ok") else list("error" "renameFailed")))))))
 '''.strip()
+
 
 def _cat_list_skill(library: str) -> str:
     return f'''
@@ -454,7 +467,7 @@ let((vbLib vbName vbCat vbClosed vbResult)
         vbResult = cons(vbName vbResult)
         vbClosed = ddCatClose(vbCat)
         unless(vbClosed error("category close failed"))))
-    list("ok" reverse(vbResult))))
+    list("ok" reverse(vbResult)))))
 '''.strip()
 
 
@@ -472,8 +485,8 @@ let((vbLib vbCat vbMember vbCells vbClosed)
         when(cadr(vbMember) == "cell" vbCells = cons(car(vbMember) vbCells)))
       vbClosed = ddCatClose(vbCat)
       if(vbClosed then list("ok" reverse(vbCells))
-      else list("error" "categoryCloseFailed")))))
-'''.strip()
+      else list("error" "categoryCloseFailed"))))))
+)'''.strip()
 
 
 def _cat_create_skill(library: str, category: str) -> str:
@@ -500,8 +513,8 @@ let((vbLib vbExisting vbCat vbSaved vbClosed vbVerify)
           else progn(
             vbClosed = ddCatClose(vbVerify)
             if(vbClosed then list("ok" {basic.q(category)})
-            else list("partial" "categoryCloseFailed"))))))))))
-'''.strip()
+            else list("partial" "categoryCloseFailed")))))))))))
+))'''.strip()
 
 
 def _cat_delete_skill(library: str, category: str) -> str:
@@ -524,8 +537,8 @@ let((vbLib vbExisting vbCat vbRemoved vbClosed vbVerify)
           else progn(
             vbVerify = ddCatOpen(vbLib {basic.q(category)} "r")
             if(vbVerify then list("partial" "categoryDeleteVerificationFailed")
-            else list("ok"))))))))))
-'''.strip()
+            else list("ok")))))))))))
+))'''.strip()
 
 
 def _cat_rename_skill(library: str, category: str, new_name: str) -> str:
@@ -575,8 +588,8 @@ let((vbLib vbSource vbDestination vbExisting vbMember vbMembers vbDestinationMem
                     else progn(
                       vbVerify = ddCatOpen(vbLib {basic.q(category)} "r")
                       if(vbVerify then list("partial" "categoryRenameSourceVerificationFailed")
-                      else list("ok" {basic.q(new_name)}))))))))))))))))))
-'''.strip()
+                      else list("ok" {basic.q(new_name)})))))))))))))))))
+)))))))'''.strip()
 
 
 def _cat_change_cell_skill(library: str, category: str, cell: str, *, add: bool) -> str:
@@ -616,9 +629,8 @@ let((vbLib vbCell vbCat vbMembers vbPresent vbChanged vbSaved vbClosed vbVerify)
                 vbPresent = if(member(list({basic.q(cell)} "cell") vbMembers) t nil)
                 vbClosed = ddCatClose(vbVerify)
                 if(vbClosed && vbPresent == {expected} then list("ok")
-                else list("partial" "categoryMembershipVerificationFailed")))))))))))))
-'''.strip()
-
+                else list("partial" "categoryMembershipVerificationFailed"))))))))))))))
+))))'''.strip()
 # ---- package ------------------------------------------------------------------
 
 class Package:
