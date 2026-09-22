@@ -21,14 +21,6 @@ from typing import Any
 
 from pyapi.models import Middle
 
-# 从 Virtuoso 进程环境里取 DISPLAY；取不到退 :0。
-_DISPLAY_PREFIX = (
-    "disp=$(for p in $(pgrep -f 'virtuoso' 2>/dev/null); do "
-    "d=$(tr '\\0' '\\n' </proc/$p/environ 2>/dev/null | "
-    "sed -n 's/^DISPLAY=\\(.*\\)/\\1/p' | head -1); "
-    "[ -n \"$d\" ] && { echo \"$d\"; break; }; done); export DISPLAY=${disp:-:0}"
-)
-
 # 通过 ctypes 调 libX11/libXtst 注入一次按键（enter/escape）。
 _SEND_KEY_SCRIPT = r'''
 import ctypes, os, sys
@@ -168,13 +160,15 @@ _DIALOG_WORDS = re.compile(r"(?i)error|warning|question|confirm|notice|dialog")
 def parse_xwininfo_tree(text: str) -> list[dict[str, Any]]:
     """Parse ``xwininfo -root -tree`` into top-level window records.
 
+    只返回 root 的直接子窗口（缩进最浅的那一层），去重；
     每条：window_id / title / wm_class / width / height / kind / suggested_action。
     """
-    windows: list[dict[str, Any]] = []
+    candidates: list[tuple[int, dict[str, Any]]] = []
     for line in text.splitlines():
         m = _WIN_LINE.match(line)
         if not m:
             continue
+        indent = len(line) - len(line.lstrip())
         window_id, title, cls, width, height = m.group(1), m.group(2) or "", m.group(3), m.group(4), m.group(5)
         wm_class = [item for item in re.findall(r'"([^"]*)"', cls)]
         record = {
@@ -196,6 +190,16 @@ def parse_xwininfo_tree(text: str) -> list[dict[str, Any]]:
             record.update(kind="dialog", suggested_action="dismiss")
         else:
             record["kind"] = "window"
+        candidates.append((indent, record))
+    if not candidates:
+        return []
+    top_indent = min(indent for indent, _ in candidates)
+    windows: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for indent, record in candidates:
+        if indent != top_indent or record["window_id"] in seen:
+            continue
+        seen.add(record["window_id"])
         windows.append(record)
     return windows
 
@@ -276,12 +280,26 @@ class Package:
     def __init__(self, middle: Middle) -> None:
         self.middle = middle
 
+    def _gui_display(self, token: str) -> tuple[str | None, str | None]:
+        """Read the GUI execution fact from the middle's readonly query."""
+        facts = self.middle.query(token=token)
+        if facts.status.value != "success":
+            return None, "; ".join(facts.errors) or "query failed"
+        role = facts.roles.get("gui")
+        display = role.display if role else None
+        if not display:
+            return None, "gui display is not configured"
+        return display, None
+
     def list_windows(self, request: ListWindowsRequest) -> ListWindowsResult:
         _require_text(request.token, "token")
         _require_timeout(request.timeout)
-        cmd = _DISPLAY_PREFIX + "\nxwininfo -root -tree"
+        display, error = self._gui_display(request.token)
+        if error:
+            return ListWindowsResult(False, [_step("query", False, error)], error)
+        cmd = f"export DISPLAY={shlex.quote(display)}; xwininfo -root -tree"
         run = self.middle.run_gui_command(cmd, timeout=request.timeout, token=request.token)
-        steps = [_step("list", run.returncode == 0, run)]
+        steps = [_step("query", True, display), _step("list", run.returncode == 0, run)]
         if run.returncode != 0:
             return ListWindowsResult(False, steps, run.stderr or "xwininfo failed")
         return ListWindowsResult(True, steps, None, parse_xwininfo_tree(run.stdout))
@@ -292,17 +310,20 @@ class Package:
         if request.key not in ("enter", "escape"):
             raise ValueError("key must be 'enter' or 'escape'")
         _require_timeout(request.timeout)
+        display, error = self._gui_display(request.token)
+        if error:
+            return SendKeyResult(False, [_step("query", False, error)], error, None)
         cmd = (
-            _DISPLAY_PREFIX
-            + f'\npython3 - "{request.window_id}" "{request.key}" <<\'PY\'\n'
+            f"export DISPLAY={shlex.quote(display)}; "
+            + f'python3 - "{request.window_id}" "{request.key}" <<\'PY\'\n'
             + _SEND_KEY_SCRIPT
             + "\nPY"
         )
         sent = self.middle.run_gui_command(cmd, timeout=request.timeout, token=request.token)
-        steps = [_step("send", sent.returncode == 0, sent)]
+        steps = [_step("query", True, display), _step("send", sent.returncode == 0, sent)]
         if sent.returncode != 0:
             return SendKeyResult(False, steps, sent.stderr or "key injection failed", None)
-        verify_cmd = _DISPLAY_PREFIX + f"\nxwininfo -id {request.window_id}"
+        verify_cmd = f"export DISPLAY={shlex.quote(display)}; xwininfo -id {request.window_id}"
         verified = self.middle.run_gui_command(
             verify_cmd, timeout=request.timeout, token=request.token,
         )
@@ -353,6 +374,9 @@ class Package:
         gui_root = gui_role.root if gui_role else None
         if not gui_root:
             return ScreenshotResult(False, steps, "gui role root is not available")
+        display = gui_role.display
+        if not display:
+            return ScreenshotResult(False, steps, "gui display is not configured")
 
         windows = self.list_windows(ListWindowsRequest(request.token, request.timeout))
         steps.append(_step("list", windows.ok, windows))
@@ -371,8 +395,8 @@ class Package:
         remote_abs = posixpath.join(gui_root.rstrip("/"), "screenshots", name)
         cmd = (
             f"mkdir -p $(dirname {shlex.quote(remote_abs)}); "
-            + _DISPLAY_PREFIX
-            + f'\npython3 - "{target}" "{remote_abs}" <<\'PY\'\n'
+            f"export DISPLAY={shlex.quote(display)}; "
+            + f'python3 - "{target}" "{remote_abs}" <<\'PY\'\n'
             + _CAPTURE_SCRIPT
             + "\nPY"
         )

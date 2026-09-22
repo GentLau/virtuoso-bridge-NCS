@@ -42,7 +42,7 @@ class FakeMiddle:
             status=ExecutionStatus.SUCCESS,
             roles={
                 "file": RoleQuery(root="/srv/vb/vb11/file"),
-                "gui": RoleQuery(root="/srv/vb/vb11/gui"),
+                "gui": RoleQuery(root="/srv/vb/vb11/gui", display=":99"),
             },
         )
 
@@ -97,8 +97,19 @@ class TestListWindows(unittest.TestCase):
         result = Package(middle).list_windows(ListWindowsRequest(token="vb-vb11"))
         self.assertTrue(result.ok)
         self.assertEqual(len(result.windows), 4)
-        self.assertTrue(middle.calls[0][0] == "gui")
-        self.assertIn("xwininfo -root -tree", middle.calls[0][1])
+        self.assertEqual([c[0] for c in middle.calls], ["query", "gui"])
+        self.assertIn("export DISPLAY=:99", middle.calls[1][1])
+        self.assertIn("xwininfo -root -tree", middle.calls[1][1])
+
+    def test_list_windows_missing_display(self):
+        middle = FakeMiddle()
+        middle.query_result = QueryResult(
+            status=ExecutionStatus.SUCCESS,
+            roles={"gui": RoleQuery(root="/srv/vb/vb11/gui")},
+        )
+        result = Package(middle).list_windows(ListWindowsRequest(token="vb-vb11"))
+        self.assertFalse(result.ok)
+        self.assertIn("display", result.error)
 
     def test_list_windows_gui_failure(self):
         middle = FakeMiddle()
@@ -122,7 +133,8 @@ class TestSendKey(unittest.TestCase):
         )
         self.assertTrue(result.ok)
         self.assertTrue(result.still_mapped)
-        gui_calls = [c[1] for c in middle.calls]
+        gui_calls = [c[1] for c in middle.calls if c[0] == "gui"]
+        self.assertIn("export DISPLAY=:99", gui_calls[0])
         self.assertIn("python3", gui_calls[0])
         self.assertIn("0x600010", gui_calls[0])
         self.assertIn("XTestFakeKeyEvent", gui_calls[0])
@@ -161,12 +173,13 @@ class TestScreenshot(unittest.TestCase):
         self.assertTrue(result.ok)
         self.assertEqual(result.local_path, "out.ppm")
         kinds = [c[0] for c in middle.calls]
-        self.assertEqual(kinds, ["query", "gui", "gui", "download"])
-        capture = middle.calls[2][1]
+        self.assertEqual(kinds, ["query", "query", "gui", "gui", "download"])
+        capture = middle.calls[3][1]
         self.assertIn("python3", capture)
+        self.assertIn("export DISPLAY=:99", capture)
         self.assertIn("0x400008", capture)
         self.assertIn("/srv/vb/vb11/gui/screenshots/shot-", capture)
-        self.assertTrue(middle.calls[3][1].startswith("/srv/vb/vb11/gui/screenshots/shot-"))
+        self.assertTrue(middle.calls[4][1].startswith("/srv/vb/vb11/gui/screenshots/shot-"))
 
     def test_target_validation(self):
         middle = FakeMiddle()
