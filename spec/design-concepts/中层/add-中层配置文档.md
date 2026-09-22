@@ -1,9 +1,9 @@
 # 中层配置文档
 
-> 版本：Draft v37
+> 版本：Draft v38
 > 日期：2026-09-22
 > 状态：Normative（字段目录、默认值、探测写回、注册表 schema、reservation 与 endpoint key 的唯一规范源）
-> Supersedes：Draft v36（command role 增加工具事实 `bin`/`version`，与 spectre 平等）
+> Supersedes：Draft v37（command 工具事实改为通用 per-role 用户组）
 > 定位：本文是[多用户与注册](../其他/1-多用户与注册.md)的**字段与 schema 详细补充**——六步状态机与授权归[多用户与注册](../其他/1-多用户与注册.md)；本文是字段与必填清单 owner（§4），并提供默认值、探测写回、注册表 schema、reservation 与 endpoint key。
 
 ## 1. 总述
@@ -49,6 +49,8 @@
 | `role.<name>.max_sessions` | 该 role 解析到的 endpoint 的并发通道上限（配置在 role、生效在 endpoint；多 role 同 endpoint 取最小值；`local` 不适用） | 配置 | 默认 `10` |
 | `role.<name>.expected_fingerprint` | 该 role endpoint 的 host-key 指纹比对基准（业务 role 必检；spectre 例外，见 §3）；`mode=local` 无 endpoint，省略或为 `null` | 校验 | 探测写入 |
 
+- 各 role 可携带**用户组** `role.<name>.<组名>`（如 `role.command.calibre`）：值必须是对象且仅含标量字段；中层只做结构约束，**不校验语义、不探测**，注册原样落盘、`query` 原样返回，含义由上层业务包约定；组名不得与本节/§2.4 固定字段重名（字符集与大小限制见 §5）。
+
 ### 2.4 role 特有字段
 
 | 字段 | 作用 | 类型 | 默认/必填 |
@@ -59,8 +61,6 @@
 | `role.daemon.expected_hostname` | daemon 主机名比对基准 | 校验 | 探测写入 |
 | `role.daemon.expected_user` | daemon 进程账号比对基准 | 校验 | 探测写入 |
 | `role.spectre.bin` | spectre 可执行文件（显式→校验，缺省→探测；失败仅 warning） | 环境 | 可选 |
-| `role.command.bin` | command role 的 calibre 可执行文件（与 `role.spectre.bin` 同范式：显式→校验，缺省→探测；失败仅 warning）；经 `query` 返回供上层拼命令 | 环境 | 可选 |
-| `role.command.version` | calibre 版本（显式→与 `-version` 输出比对；缺省→随 bin 探测写回） | 环境 | 可选 |
 | `role.gui.display` | gui role 的 X server（`DISPLAY` 值，每用户单值）；经只读查询 `query` 返回，供上层拼 X11 命令（见[四层整体架构与接口 §4.2](../总览/1-四层整体架构与接口.md)） | 环境 | 显式→校验；缺省→探测写回，失败留空（见 §3） |
 
 ### 2.5 全局默认与字段回退
@@ -86,7 +86,7 @@
 | 类型 | 规则 |
 |---|---|
 | 配置 | 用户提供；只做格式/范围/查重校验，失败拒绝；无自动探测 |
-| 环境 | 默认自动探测；用户显式提供时校验，不可用报告并拒绝。例外：spectre 与 command 的工具探测（`bin`/`version`，失败仅 WARNING，见[多用户与注册 §4.1](../其他/1-多用户与注册.md)）与 `role.gui.display`（缺省探测失败仅留空 + WARNING，显式不可达仍拒绝） |
+| 环境 | 默认自动探测；用户显式提供时校验，不可用报告并拒绝。例外：spectre（失败级别与提交态见[多用户与注册 §4.1](../其他/1-多用户与注册.md)）与 `role.gui.display`（缺省探测失败仅留空 + WARNING，显式不可达仍拒绝） |
 | 校验 | 探测写入各 role 的 `expected_*`，只用于比对、不参与业务；在注册探测时比对，**运行期不强制比对**。唯一例外：业务 role 的 host-key 指纹不匹配 = ERROR（含机器重装未确认），见[多用户与注册 §3.2/§5](../其他/1-多用户与注册.md) |
 
 探测动作本身（何时探测、逐 role 探测矩阵、失败级别）见[多用户与注册 §4](../其他/1-多用户与注册.md)，本文只定义字段类型规则。`root` 不是探测发现的环境值，而是按 §2.5 与[多用户与注册 §4.2](../其他/1-多用户与注册.md)的默认算法推导、探测期写回绝对路径，其类型为**配置**。
@@ -104,7 +104,7 @@
 - `token` 格式 `^[A-Za-z0-9._-]{1,64}$`；碰撞重生成一次；轮换 = 删除用户重新注册；
 - `local` role 显式提交 `host/user/jump_host/jump_user/proxy` → 参数错误；
 - `role.gui.display` 只接受 X display 形式（如 `:11`、`localhost:10.0`、`unix/:0`），禁止空白、引号、`$`、反引号、`;` 等 shell 元字符（防注入）；
-- 未知字段拒绝（`extra=forbid`）；空串视为未提供；
+- 未知字段拒绝（`extra=forbid`）；各 role 的用户组例外：组名 `^[a-z][a-z0-9_-]{0,63}$`、不与固定字段重名，值为对象、字段值仅 JSON 标量且不含 NUL，每 role 用户组总大小 ≤ 16 KiB；语义由上层业务包约定；空串视为未提供；
 - host-key 首信任优先级：① known_hosts 匹配 → 记录；② 用户显式指纹 → 校验后记录；③ 两者皆无 → 注册失败；spectre 例外（缺失/失败仅 WARNING、指纹留空）；
 - registry 持久化 UTF-8、权限 `0600`、tmp + 原子替换。
 
@@ -124,7 +124,7 @@
                 "daemon_port": 65081, "local_port": 65082, "python": "/usr/bin/python3",
                 "expected_fingerprint": "SHA256:…", "expected_hostname": "server-a", "expected_user": "ssh-user"},
     "command": {"root": "/home/ssh-user/.virtuoso-bridge/alice/command", "max_sessions": 10,
-                "bin": "/opt/eda/mentor/calibre/bin/calibre", "version": "2024.4",
+                "calibre": {"bin": "/opt/eda/mentor/calibre/bin/calibre", "version": "2024.4"},
                 "expected_fingerprint": "SHA256:…"},
     "file":    {"root": "/home/ssh-user/.virtuoso-bridge/alice/file", "max_sessions": 10, "expected_fingerprint": "SHA256:…"},
     "spectre": {"root": "/home/ssh-user/.virtuoso-bridge/alice/spectre", "max_sessions": 10,

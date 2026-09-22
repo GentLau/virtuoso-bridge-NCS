@@ -1,9 +1,9 @@
 # virtuoso-bridge-NCS Spec
 
-> 版本：Release `SPEC-2026-09-22-r13`（送审修订版）
+> 版本：Release `SPEC-2026-09-22-r14`（送审修订版）
 > 日期：2026-09-22
-> 状态：Normative 基线（取代 r12）
-> Supersedes：`SPEC-2026-09-22-r12`（command role 增加 calibre 工具事实 `bin`/`version`）
+> 状态：Normative 基线（取代 r13）
+> Supersedes：`SPEC-2026-09-22-r13`（per-role 用户组：工具事实不再逐个加 typed 字段）
 
 ## 0. 版本治理（替代“文件修改时间优先”）
 
@@ -98,9 +98,9 @@ CDS.log metadata frame 完整字节格式
 
 ## Release（本基线）
 
-- **Release ID**：`SPEC-2026-09-22-r13`
+- **Release ID**：`SPEC-2026-09-22-r14`
 - **Normative 文件集**（10 份）：四层整体架构与接口、本版范围与明确不支持、中层配置文档、路由设计、多用户与注册、并发设计、日志返回设计标准、顶层：HTTP 入口与业务调度、顶层补充：控制面与业务面、上层：业务包与插件化；
-- **Normative 内容哈希**：`e104555e6de818ad8ab8e23bb17e4c35fa8bc31bcc79ad7ee96f62170210e249`
+- **Normative 内容哈希**：`c7a31c290fb7387f2558b40971a29190e3ecd20080cb1e3533f99613f1daa958`
   - 算法：路径为**相对 `spec/` 目录**并按路径排序；逐文件 SHA-256（**按 Git 提交内容计算，即 LF 行尾**；Windows 工作区受 `core.autocrlf` 影响的行尾差异不计入）；每行 `<相对路径> <hex>` 以 LF 拼接（**行间分隔、末行无尾 LF**），再取一次 SHA-256；
 - **基线 commit**：本 Release 段所在提交即基线（见 `git log -1 -- spec/`）；任何 Normative 文档变更必须同时更新本段哈希。
 
@@ -108,11 +108,11 @@ CDS.log metadata frame 完整字节格式
 
 | 文档 | 版本 | 状态 | Supersedes |
 |---|---|---|---|
-| 四层整体架构与接口 | Draft v39 | Normative | Draft v38（query 增加 command role 的 calibre `bin`/`version`） |
-| 路由设计 | v21 | Normative | v20（command role 增加 calibre 工具事实 `bin`/`version`） |
+| 四层整体架构与接口 | Draft v40 | Normative | Draft v39（query 返回各 role 用户组，撤销 command 专用 `bin`/`version`） |
+| 路由设计 | v22 | Normative | v21（command 工具事实改为 per-role 用户组） |
 | 本版范围与明确不支持 | v10 | Normative | v9（顶层任务等待池本版不实现） |
-| 中层配置文档 | Draft v37 | Normative | Draft v36（command role 增加工具事实 `bin`/`version`，与 spectre 平等） |
-| 多用户与注册 | Draft v34 | Normative | Draft v33（command role 的 calibre 工具探测口径） |
+| 中层配置文档 | Draft v38 | Normative | Draft v37（command 工具事实改为通用 per-role 用户组） |
+| 多用户与注册 | Draft v35 | Normative | Draft v34（calibre 工具事实改为 per-role 用户组，不探测） |
 | 并发设计 | Draft v20 | Normative | Draft v19（重试决策单元术语统一为业务操作） |
 | 顶层 | Draft v21 | Normative | Draft v20（白名单加入 common.config） |
 | 控制面与业务面 | Draft v36 | Normative | Draft v35（config 改为与 paths 同性质的公共只读数据，删除 skillref 专用校验与脱敏） |
