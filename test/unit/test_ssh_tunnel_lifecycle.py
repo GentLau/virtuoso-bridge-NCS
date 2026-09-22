@@ -130,11 +130,56 @@ class TestCloseTearsDownTunnel(unittest.TestCase):
         r._tunnel_proc = proc
         r._tunnel_pid = proc.pid
         r._tunnel_local_port = 65081
-        with mock.patch.object(ssh_mod.os, "kill") as kill, \
-             mock.patch.object(ssh_mod.os, "name", "posix"):
-            r.close()
-        self.assertTrue(kill.called, "close() 必须向自己的隧道进程发信号")
+        r.close()
+        self.assertTrue(proc.terminated, "close() 必须终止自己的隧道句柄")
         self.assertIsNone(r._tunnel_local_port)
+
+
+class TestParamikoTunnelPath(unittest.TestCase):
+    def test_paramiko_backend_uses_in_process_forward(self):
+        class FakeTunnel:
+            pid = 9999
+
+            def __init__(self):
+                self.terminated = False
+
+            def poll(self):
+                return None
+
+            def terminate(self):
+                self.terminated = True
+
+            def wait(self, timeout=None):
+                return 0
+
+        class FakeBackend:
+            def __init__(self):
+                self.tunnel = FakeTunnel()
+                self.calls = []
+
+            def open_port_forward(self, local_port, remote_port, **kwargs):
+                self.calls.append((local_port, remote_port, kwargs))
+                return self.tunnel
+
+        runner = SSHRunner(
+            host="server-a", user="u", backend="paramiko",
+            persistent_shell=False,
+        )
+        backend = FakeBackend()
+        runner._paramiko_backend = backend
+        with mock.patch.object(ssh_mod.subprocess, "Popen") as popen, \
+             mock.patch.object(
+                 SSHRunner, "can_reach_port",
+                 staticmethod(lambda port: False),
+             ):
+            proc = runner.start_port_forward(
+                65081, remote_port=65103, settle=0.05
+            )
+        self.assertIs(proc, backend.tunnel)
+        self.assertEqual(backend.calls[0][0:2], (65081, 65103))
+        popen.assert_not_called()
+        runner.stop_port_forward()
+        self.assertTrue(backend.tunnel.terminated)
 
 
 class TestControlPathNamespace(unittest.TestCase):

@@ -105,6 +105,189 @@ class ParamikoShellProcess:
         self._backend._release_shell_gate()
 
 
+class ParamikoTunnel:
+    """In-process local TCP forwarder backed by a Paramiko transport.
+
+    This is deliberately Popen-like: ``poll``/``terminate``/``wait`` let the
+    existing tunnel lifecycle code treat both OpenSSH and Paramiko forwards
+    uniformly.  It never spawns ``ssh.exe``, so ProxyJump cannot create a
+    Windows console window.
+    """
+
+    def __init__(
+        self,
+        transport_getter,
+        local_host: str,
+        local_port: int,
+        remote_host: str,
+        remote_port: int,
+        *,
+        backlog: int = 128,
+    ) -> None:
+        self._transport_getter = transport_getter
+        self._remote_host = remote_host
+        self._remote_port = int(remote_port)
+        self._stop = threading.Event()
+        self._lock = threading.Lock()
+        self._clients: set[Any] = set()
+        self._channels: set[Any] = set()
+        self._threads: set[threading.Thread] = set()
+        self._returncode: int | None = None
+        self.pid = os.getpid()
+        self._listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self._listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self._listener.bind((local_host, int(local_port)))
+        self._listener.listen(backlog)
+        self._listener.settimeout(0.5)
+        self._spawn(self._accept_loop)
+
+    def _spawn(self, target, *args) -> threading.Thread:
+        def run() -> None:
+            try:
+                target(*args)
+            finally:
+                with self._lock:
+                    self._threads.discard(threading.current_thread())
+
+        thread = threading.Thread(target=run, daemon=True)
+        with self._lock:
+            self._threads.add(thread)
+        thread.start()
+        return thread
+
+    def _accept_loop(self) -> None:
+        while not self._stop.is_set():
+            try:
+                client, _peer = self._listener.accept()
+            except socket.timeout:
+                continue
+            except OSError:
+                break
+            if self._stop.is_set():
+                client.close()
+                break
+            with self._lock:
+                self._clients.add(client)
+            self._spawn(self._handle_connection, client)
+
+    def _handle_connection(self, client: Any) -> None:
+        channel = None
+        try:
+            transport = self._transport_getter()
+            if transport is None or not transport.is_active():
+                raise OSError("Paramiko transport is not active")
+            channel = transport.open_channel(
+                "direct-tcpip",
+                (self._remote_host, self._remote_port),
+                client.getsockname(),
+                timeout=10.0,
+            )
+            if channel is None:
+                raise OSError("Paramiko direct-tcpip channel was refused")
+            with self._lock:
+                self._channels.add(channel)
+            left = self._spawn(self._pump_local_to_channel, client, channel)
+            right = self._spawn(self._pump_channel_to_local, channel, client)
+            left.join()
+            right.join()
+        except Exception:  # noqa: BLE001 - one forwarded connection failed
+            logger.debug("Paramiko forwarded connection failed", exc_info=True)
+        finally:
+            with self._lock:
+                self._clients.discard(client)
+                if channel is not None:
+                    self._channels.discard(channel)
+            if channel is not None:
+                try:
+                    channel.close()
+                except Exception:  # noqa: BLE001
+                    pass
+            try:
+                client.close()
+            except Exception:  # noqa: BLE001
+                pass
+
+    def _pump_local_to_channel(self, client: Any, channel: Any) -> None:
+        try:
+            while not self._stop.is_set():
+                data = client.recv(65536)
+                if not data:
+                    break
+                channel.sendall(data)
+        except Exception:  # noqa: BLE001 - peer closed
+            pass
+        finally:
+            try:
+                channel.shutdown_write()
+            except Exception:  # noqa: BLE001
+                pass
+
+    def _pump_channel_to_local(self, channel: Any, client: Any) -> None:
+        try:
+            while not self._stop.is_set():
+                data = channel.recv(65536)
+                if not data:
+                    break
+                client.sendall(data)
+        except Exception:  # noqa: BLE001 - peer closed
+            pass
+        finally:
+            try:
+                client.shutdown(socket.SHUT_WR)
+            except Exception:  # noqa: BLE001
+                pass
+
+    def poll(self) -> int | None:
+        if self._returncode is None:
+            try:
+                transport = self._transport_getter()
+                if (
+                    transport is None
+                    or not transport.is_active()
+                    or not transport.is_authenticated()
+                ):
+                    self.terminate()
+            except Exception:  # noqa: BLE001 - transport disappeared
+                self.terminate()
+        return self._returncode
+
+    def terminate(self) -> None:
+        with self._lock:
+            if self._returncode is not None:
+                return
+            self._returncode = 0
+        self._stop.set()
+        try:
+            self._listener.close()
+        except OSError:
+            pass
+        with self._lock:
+            channels = list(self._channels)
+            clients = list(self._clients)
+        for channel in channels:
+            try:
+                channel.close()
+            except Exception:  # noqa: BLE001
+                pass
+        for client in clients:
+            try:
+                client.close()
+            except Exception:  # noqa: BLE001
+                pass
+
+    kill = terminate
+    close = terminate
+
+    def wait(self, timeout: float | None = None) -> int:
+        deadline = None if timeout is None else time.monotonic() + timeout
+        with self._lock:
+            threads = list(self._threads)
+        for thread in threads:
+            remaining = None if deadline is None else max(0.0, deadline - time.monotonic())
+            thread.join(remaining)
+        return int(self._returncode or 0)
+
+
 @dataclass(frozen=True)
 class _Endpoint:
     host_alias: str
@@ -1041,6 +1224,25 @@ class ParamikoSessionBackend:
         if transport is None:
             raise OSError("Paramiko target transport is unavailable")
         return transport
+
+    def open_port_forward(
+        self,
+        local_port: int,
+        remote_port: int,
+        *,
+        timeout: float | None = None,
+        local_host: str = "127.0.0.1",
+        remote_host: str = "127.0.0.1",
+    ) -> ParamikoTunnel:
+        """Start an in-process local forward over the existing transport."""
+        self.ensure_connected(timeout)
+        return ParamikoTunnel(
+            self._target_transport,
+            local_host,
+            local_port,
+            remote_host,
+            remote_port,
+        )
 
     def _release_shell_gate(self) -> None:
         try:
