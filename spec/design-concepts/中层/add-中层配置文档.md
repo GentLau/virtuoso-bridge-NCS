@@ -1,9 +1,9 @@
 # 中层配置文档
 
-> 版本：Draft v34
+> 版本：Draft v35
 > 日期：2026-09-22
 > 状态：Normative（字段目录、默认值、探测写回、注册表 schema、reservation 与 endpoint key 的唯一规范源）
-> Supersedes：Draft v33（新增 `role.gui.display`）
+> Supersedes：Draft v34（`role.gui.display` 支持接口显式覆盖）
 > 定位：本文是[多用户与注册](../其他/1-多用户与注册.md)的**字段与 schema 详细补充**——六步状态机与授权归[多用户与注册](../其他/1-多用户与注册.md)；本文是字段与必填清单 owner（§4），并提供默认值、探测写回、注册表 schema、reservation 与 endpoint key。
 
 ## 1. 总述
@@ -59,7 +59,7 @@
 | `role.daemon.expected_hostname` | daemon 主机名比对基准 | 校验 | 探测写入 |
 | `role.daemon.expected_user` | daemon 进程账号比对基准 | 校验 | 探测写入 |
 | `role.spectre.bin` | spectre 可执行文件（显式→校验，缺省→探测；失败仅 warning） | 环境 | 可选 |
-| `role.gui.display` | gui role 的 X server（`DISPLAY` 值，每用户单值）；中层执行 GUI 命令时据此设置环境，`null` → 该命令失败并指明未配置 | 环境 | 显式→校验；缺省→探测写回，失败留空（见 §3） |
+| `role.gui.display` | gui role 的 X server（`DISPLAY` 值，每用户单值）；GUI 命令缺省 `DISPLAY` 来源（接口显式 `display` 可覆盖），两者皆无 → 该命令失败并指明未配置 | 环境 | 显式→校验；缺省→探测写回，失败留空（见 §3） |
 
 ### 2.5 全局默认与字段回退
 
