@@ -35,6 +35,7 @@ from typing import Any
 from common.paths import artifact_dir
 from pyapi.models import Middle, VirtuosoResult
 from pyapi.packages import gui as gui_pkg
+from pyapi.packages.basic import parse_sexpr, q
 from pyapi.packages._maestro_util import (
     decode_skill_text,
     natural_sort_histories,
@@ -43,11 +44,10 @@ from pyapi.packages._maestro_util import (
     parse_detail_csv,
     parse_ocn_text,
     parse_overall_yield,
-    parse_sexpr,
-    parse_skill_str_list,
-    q,
+    parse_skill_str_leaves,
     skill_alist,
     skill_string_list,
+    skill_value,
     unquote,
 )
 
@@ -381,7 +381,7 @@ class Package:
 
     def _session_list(self, token: str, timeout: int | float | None) -> list[str]:
         raw = self._q("maeGetSessions()", token, timeout)
-        return parse_skill_str_list(raw)
+        return parse_skill_str_leaves(raw)
 
     def _open_session(
         self,
@@ -641,7 +641,7 @@ class Package:
         )
         sdb_names: list[str] = []
         try:
-            sdb_names = parse_skill_str_list(self._q(expr, token, timeout))
+            sdb_names = parse_skill_str_leaves(self._q(expr, token, timeout))
         except Exception:
             sdb_names = []
 
@@ -654,7 +654,7 @@ class Package:
                 "if(isDir(d) getDirFiles(d) nil))"
             )
             raw = self._q(listing_expr, token, timeout)
-            disk_names = natural_sort_histories(parse_skill_str_list(raw))
+            disk_names = natural_sort_histories(parse_skill_str_leaves(raw))
         except Exception:
             disk_names = []
 
@@ -772,7 +772,7 @@ class Package:
         timeout: int | float | None,
     ) -> bool:
         try:
-            names = parse_skill_str_list(self._q(
+            names = parse_skill_str_leaves(self._q(
                 f"cadr(axlGetHistory({self._main_setup_db_expr(session)}))",
                 token,
                 timeout,
@@ -1349,12 +1349,12 @@ class Package:
             # exist in the global table; test-only variables are invisible.
             # The axl* list APIs are the authoritative per-scope sources.
             sdb_expr = self._main_setup_db_expr(session)
-            variable_names = parse_skill_str_list(self._q(
+            variable_names = parse_skill_str_leaves(self._q(
                 f"cadr(axlGetVars({sdb_expr}))",
                 request.token,
                 request.timeout,
             ))
-            parameter_names = parse_skill_str_list(self._q(
+            parameter_names = parse_skill_str_leaves(self._q(
                 f"axlGetParameters({sdb_expr})",
                 request.token,
                 request.timeout,
@@ -1491,7 +1491,7 @@ class Package:
                         request.token,
                         request.timeout,
                     )
-                    names = parse_skill_str_list(names_raw)
+                    names = parse_skill_str_leaves(names_raw)
                     if not names:
                         test_variables[test_name] = {}
                         continue
@@ -1524,7 +1524,7 @@ class Package:
                         request.token,
                         request.timeout,
                     )
-                    names = parse_skill_str_list(names_raw)
+                    names = parse_skill_str_leaves(names_raw)
                     if not names:
                         corner_variables[corner] = {}
                         continue
@@ -1574,7 +1574,7 @@ class Package:
                         request.token,
                         request.timeout,
                     )
-                    paths = parse_skill_str_list(paths_raw)
+                    paths = parse_skill_str_leaves(paths_raw)
                     values: dict[str, Any] = {}
                     for path in paths:
                         value_raw = self._q(
@@ -2912,7 +2912,7 @@ class Package:
         except Exception:
             info["current_form"] = None
         try:
-            info["sessions"] = parse_skill_str_list(
+            info["sessions"] = parse_skill_str_leaves(
                 self._q("maeGetSessions()", token, timeout)
             )
         except Exception:

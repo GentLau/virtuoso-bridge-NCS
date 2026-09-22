@@ -15,14 +15,11 @@ from typing import Any
 # SKILL string / literal helpers
 # ---------------------------------------------------------------------------
 
-def escape_skill_string(value: Any) -> str:
-    """Escape a value for use inside a SKILL double-quoted string."""
-    return str(value).replace("\\", "\\\\").replace('"', '\\"')
-
-
-def q(value: Any) -> str:
-    """Return a complete SKILL double-quoted string literal."""
-    return f'"{escape_skill_string(value)}"'
+from pyapi.packages.basic import (
+    parse_sexpr,
+    q,
+    tokenize_top_level,
+)
 
 
 def unquote(raw: str) -> str:
@@ -49,12 +46,7 @@ def parse_bool(raw: Any) -> bool | None:
 
 
 def skill_value(value: Any) -> str:
-    """Serialize a Python value to a SKILL literal.
-
-    Strings become double-quoted SKILL strings, booleans become ``t``/``nil``,
-    numbers are emitted verbatim, and mappings/sequences become SKILL lists.
-    Callers that need a quoted assoc-list often want :func:`skill_alist`.
-    """
+    """Serialize a Python value to a SKILL literal."""
     if value is None:
         return "nil"
     if isinstance(value, bool):
@@ -73,15 +65,7 @@ def skill_value(value: Any) -> str:
 
 
 def skill_alist(value: Any, *, name: str = "options") -> str | None:
-    """Build a quoted SKILL assoc-list fragment (without the backquote).
-
-    ``value`` may be:
-
-    * ``None`` -> ``None`` (the caller omits the option);
-    * a string -> used verbatim (already a SKILL list/alist literal);
-    * a mapping -> ``(("key" "value") ...)``;
-    * a sequence of two-item sequences -> ``(("key" "value") ...)``.
-    """
+    """Build a quoted SKILL assoc-list fragment (without the backquote)."""
     if value is None:
         return None
     if isinstance(value, str):
@@ -107,12 +91,23 @@ def skill_string_list(values: list[str]) -> str:
     return "(" + " ".join(q(value) for value in values) + ")"
 
 
-# ---------------------------------------------------------------------------
-# SKILL value parser (ported from the old upper-layer skill_output.py)
-# ---------------------------------------------------------------------------
+def pairs_to_dict(value: Any) -> dict[str, Any]:
+    """Turn a parsed SKILL alist ``[[key, value], ...]`` into a dict."""
+    result: dict[str, Any] = {}
+    if not isinstance(value, list):
+        return result
+    for item in value:
+        if isinstance(item, (list, tuple)) and len(item) >= 2:
+            result[str(item[0])] = item[1]
+    return result
 
-def parse_skill_str_list(raw: str) -> list[str]:
-    """Parse all string leaves of a SKILL list/atom text."""
+
+def parse_skill_str_leaves(raw: str) -> list[str]:
+    """Parse all string leaves of a SKILL list/atom text.
+
+    Unlike ``basic.parse_skill_str_list``（只收双引号字符串字面量），本函数
+    与 maestro 读回契约一致：列表里的符号原子也作为字符串叶子收集。
+    """
     text = (raw or "").strip()
     if not text or text == "nil":
         return []
@@ -127,170 +122,6 @@ def parse_skill_str_list(raw: str) -> list[str]:
     return values
 
 
-def tokenize_top_level(
-    body: str,
-    *,
-    include_groups: bool = True,
-    include_strings: bool = False,
-    include_atoms: bool = False,
-    max_tokens: int | None = None,
-) -> list[str]:
-    """Split ``body`` into top-level SKILL tokens, respecting strings/parens."""
-    tokens: list[str] = []
-    i, n = 0, len(body)
-    while i < n and (max_tokens is None or len(tokens) < max_tokens):
-        ch = body[i]
-        if ch.isspace():
-            i += 1
-            continue
-        if ch == '"':
-            j = _scan_string(body, i)
-            if include_strings:
-                tokens.append(body[i:j])
-            i = j
-            continue
-        if ch == "(":
-            j = _scan_group(body, i)
-            if include_groups:
-                tokens.append(body[i:j])
-            i = j
-            continue
-        j = i
-        while j < n and not body[j].isspace() and body[j] not in "()":
-            j += 1
-        if include_atoms:
-            tokens.append(body[i:j])
-        i = j
-    return tokens
-
-
-def scan_top_groups(body: str) -> list[str]:
-    """Return the top-level parenthesized groups from ``body``."""
-    return tokenize_top_level(
-        body,
-        include_groups=True,
-        include_strings=False,
-        include_atoms=False,
-    )
-
-
-def parse_sexpr(token: str) -> Any:
-    """Parse one SKILL atom or parenthesized list into Python values."""
-    text = (token or "").strip()
-    if not text:
-        return None
-    if text == "nil":
-        return None
-    if text == "t":
-        return True
-    if text.startswith('"') and text.endswith('"') and len(text) >= 2:
-        return _unescape_skill_string(text[1:-1])
-    if text.startswith("(") and text.endswith(")"):
-        inner = text[1:-1]
-        return [
-            parse_sexpr(item)
-            for item in tokenize_top_level(
-                inner,
-                include_groups=True,
-                include_strings=True,
-                include_atoms=True,
-            )
-        ]
-    return text
-
-
-def is_single_complete_skill_list(raw: str) -> bool:
-    """Return whether text is exactly one balanced top-level SKILL list."""
-    text = (raw or "").strip()
-    if not text.startswith("("):
-        return False
-    depth = 0
-    in_string = False
-    escaped = False
-    for index, character in enumerate(text):
-        if in_string:
-            if escaped:
-                escaped = False
-            elif character == "\\":
-                escaped = True
-            elif character == '"':
-                in_string = False
-            continue
-        if character == '"':
-            in_string = True
-        elif character == "(":
-            depth += 1
-        elif character == ")":
-            depth -= 1
-            if depth < 0 or (depth == 0 and index != len(text) - 1):
-                return False
-    return depth == 0 and not in_string
-
-
-def pairs_to_dict(value: Any) -> dict[str, Any]:
-    """Turn a parsed SKILL alist ``[[key, value], ...]`` into a dict."""
-    result: dict[str, Any] = {}
-    if not isinstance(value, list):
-        return result
-    for item in value:
-        if isinstance(item, (list, tuple)) and len(item) >= 2:
-            result[str(item[0])] = item[1]
-    return result
-
-
-def _scan_string(text: str, start: int) -> int:
-    i = start + 1
-    while i < len(text):
-        if text[i] == '"' and not _is_escaped(text, i):
-            return i + 1
-        i += 1
-    return len(text)
-
-
-def _scan_group(text: str, start: int) -> int:
-    depth = 1
-    i = start + 1
-    in_string = False
-    while i < len(text) and depth:
-        ch = text[i]
-        if in_string:
-            if ch == '"' and not _is_escaped(text, i):
-                in_string = False
-        elif ch == '"':
-            in_string = True
-        elif ch == "(":
-            depth += 1
-        elif ch == ")":
-            depth -= 1
-        i += 1
-    return i
-
-
-def _is_escaped(text: str, index: int) -> bool:
-    slash_count = 0
-    i = index - 1
-    while i >= 0 and text[i] == "\\":
-        slash_count += 1
-        i -= 1
-    return slash_count % 2 == 1
-
-
-def _unescape_skill_string(value: str) -> str:
-    chars: list[str] = []
-    i = 0
-    escapes = {"n": "\n", "t": "\t", "r": "\r", '"': '"', "\\": "\\"}
-    while i < len(value):
-        ch = value[i]
-        if ch == "\\" and i + 1 < len(value):
-            nxt = value[i + 1]
-            chars.append(escapes.get(nxt, "\\" + nxt))
-            i += 2
-            continue
-        chars.append(ch)
-        i += 1
-    return "".join(chars)
-
-
 def _collect_strings(value: Any) -> list[str]:
     if isinstance(value, str):
         return [value]
@@ -302,7 +133,6 @@ def _collect_strings(value: Any) -> list[str]:
     return []
 
 
-# ---------------------------------------------------------------------------
 # Result/history parsing
 # ---------------------------------------------------------------------------
 
@@ -484,10 +314,8 @@ def parse_overall_yield(raw: str) -> dict[str, Any]:
 
 
 __all__ = [
-    "escape_skill_string",
     "decode_skill_text",
     "history_name_for_file",
-    "is_single_complete_skill_list",
     "natural_sort_histories",
     "natural_sort_key",
     "pairs_to_dict",
@@ -495,13 +323,9 @@ __all__ = [
     "parse_detail_csv",
     "parse_ocn_text",
     "parse_overall_yield",
-    "parse_sexpr",
-    "parse_skill_str_list",
-    "q",
-    "scan_top_groups",
+    "parse_skill_str_leaves",
     "skill_alist",
     "skill_string_list",
     "skill_value",
-    "tokenize_top_level",
     "unquote",
 ]
