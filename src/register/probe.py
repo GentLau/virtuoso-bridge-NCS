@@ -17,6 +17,7 @@ import tempfile
 from pathlib import Path
 
 from common.ssh import SSHRunner
+from common.validation import validate_display
 
 
 def _no_window_kwargs() -> dict:
@@ -165,6 +166,91 @@ def remote_executable_exists(runner: SSHRunner, path: str) -> bool:
         f"test -x {shlex.quote(path)}", timeout=15
     )
     return r.returncode == 0
+
+
+def _display_validate_script(display: str) -> str:
+    return (
+        "d=" + shlex.quote(display) + "; "
+        "if command -v xdpyinfo >/dev/null 2>&1; then "
+        "DISPLAY=\"$d\" XAUTHORITY=\"${XAUTHORITY:-$HOME/.Xauthority}\" "
+        "xdpyinfo >/dev/null 2>&1; "
+        "else "
+        "DISPLAY=\"$d\" XAUTHORITY=\"${XAUTHORITY:-$HOME/.Xauthority}\" "
+        "xwininfo -root >/dev/null 2>&1; "
+        "fi"
+    )
+
+
+_DISPLAY_DETECT_SCRIPT = (
+    "pids=$(pgrep -u \"$(id -u)\" -x virtuoso 2>/dev/null || true); "
+    "count=$(printf '%s\\n' \"$pids\" | sed '/^$/d' | wc -l); "
+    "[ \"$count\" -eq 1 ] || exit 3; "
+    "pid=$(printf '%s\\n' \"$pids\" | sed -n '1p'); "
+    "tr '\\0' '\\n' < \"/proc/$pid/environ\" 2>/dev/null | "
+    "sed -n 's/^DISPLAY=//p' | head -1"
+)
+
+
+def validate_remote_display(
+    runner: SSHRunner, display: str, timeout: float = 15
+) -> bool:
+    """Return whether an explicit GUI display is reachable on a remote host."""
+    result = runner.run_command(
+        _display_validate_script(display), timeout=timeout
+    )
+    return result.returncode == 0
+
+
+def detect_remote_display(runner: SSHRunner, timeout: float = 15) -> str | None:
+    """Detect DISPLAY only when exactly one Virtuoso process exists."""
+    result = runner.run_command(_DISPLAY_DETECT_SCRIPT, timeout=timeout)
+    if result.returncode != 0:
+        return None
+    lines = [line.strip() for line in (result.stdout or "").splitlines()]
+    if not lines or not lines[-1]:
+        return None
+    try:
+        return validate_display(lines[-1])
+    except ValueError:
+        return None
+
+
+def validate_local_display(display: str, timeout: float = 15) -> bool:
+    """Local equivalent of :func:`validate_remote_display`."""
+    try:
+        result = subprocess.run(
+            ["sh", "-c", _display_validate_script(display)],
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            **_no_window_kwargs(),
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    return result.returncode == 0
+
+
+def detect_local_display(timeout: float = 15) -> str | None:
+    """Local equivalent of :func:`detect_remote_display`."""
+    try:
+        result = subprocess.run(
+            ["sh", "-c", _DISPLAY_DETECT_SCRIPT],
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            **_no_window_kwargs(),
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if result.returncode != 0:
+        return None
+    lines = [line.strip() for line in (result.stdout or "").splitlines()]
+    if not lines or not lines[-1]:
+        return None
+    try:
+        return validate_display(lines[-1])
+    except ValueError:
+        return None
 
 
 def detect_remote_spectre(runner: SSHRunner) -> str | None:
@@ -399,6 +485,8 @@ __all__ = [
     "allocate_local_port",
     "allocate_remote_port",
     "detect_local_spectre",
+    "detect_local_display",
+    "detect_remote_display",
     "detect_remote_python",
     "detect_remote_spectre",
     "remote_executable_exists",
@@ -413,4 +501,6 @@ __all__ = [
     "remote_path_writable",
     "remote_user",
     "remote_user_exists",
+    "validate_local_display",
+    "validate_remote_display",
 ]

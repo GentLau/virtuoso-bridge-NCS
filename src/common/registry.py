@@ -41,9 +41,10 @@ from pydantic import (
     Field,
     StrictFloat,
     StrictInt,
+    field_validator,
     model_validator,
 )
-from common.validation import validate_user_name
+from common.validation import validate_display, validate_user_name
 
 
 
@@ -164,6 +165,17 @@ class DaemonRoleConfig(RoleConfig):
     expected_user: str | None = None
 
 
+class GuiRoleConfig(RoleConfig):
+    """gui role: X11 display used by one-shot GUI commands."""
+
+    display: str | None = None
+
+    @field_validator("display")
+    @classmethod
+    def _validate_display(cls, value):
+        return validate_display(value)
+
+
 class SpectreRoleConfig(RoleConfig):
     bin: str | None = None
 
@@ -173,7 +185,7 @@ class Roles(BaseModel):
 
     """The five role configurations; container key in registry.json is ``roles``."""
 
-    gui: RoleConfig = Field(default_factory=RoleConfig)
+    gui: GuiRoleConfig = Field(default_factory=GuiRoleConfig)
     daemon: DaemonRoleConfig = Field(default_factory=DaemonRoleConfig)
     command: RoleConfig = Field(default_factory=RoleConfig)
     file: RoleConfig = Field(default_factory=RoleConfig)
@@ -538,6 +550,7 @@ __all__ = [
     "canonical_host",
     "file_lock",
     "DaemonRoleConfig",
+    "GuiRoleConfig",
     "ModeConfig",
     "RoleConfig",
     "Roles",

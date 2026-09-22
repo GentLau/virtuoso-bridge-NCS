@@ -403,6 +403,58 @@ class TestProbeFailureBranches(unittest.TestCase):
                 pass
             return probe_user, runner
 
+    def test_gui_display_probe_explicit_and_detected(self):
+        from register.flow import StepBudget, _probe_gui_display
+
+        def fresh_role():
+            return UserEntry(token="t", mode="remote").roles.gui
+
+        role = fresh_role()
+        with mock.patch(
+            "register.flow.probes.validate_remote_display", return_value=True
+        ):
+            _probe_gui_display(
+                role, ":11", runner=object(), budget=StepBudget("t"),
+                warnings=[], local=False,
+            )
+        self.assertEqual(role.display, ":11")
+
+        role = fresh_role()
+        with mock.patch(
+            "register.flow.probes.validate_remote_display", return_value=False
+        ):
+            with self.assertRaises(RegistrationProbeError):
+                _probe_gui_display(
+                    role, ":12", runner=object(), budget=StepBudget("t"),
+                    warnings=[], local=False,
+                )
+
+        role = fresh_role()
+        warnings = []
+        with mock.patch(
+            "register.flow.probes.detect_remote_display", return_value=":11"
+        ), mock.patch(
+            "register.flow.probes.validate_remote_display", return_value=True
+        ):
+            _probe_gui_display(
+                role, None, runner=object(), budget=StepBudget("t"),
+                warnings=warnings, local=False,
+            )
+        self.assertEqual(role.display, ":11")
+        self.assertEqual(warnings, [])
+
+        role = fresh_role()
+        warnings = []
+        with mock.patch(
+            "register.flow.probes.detect_remote_display", return_value=None
+        ):
+            _probe_gui_display(
+                role, None, runner=object(), budget=StepBudget("t"),
+                warnings=warnings, local=False,
+            )
+        self.assertIsNone(role.display)
+        self.assertTrue(warnings)
+
     def test_user_path_escape_rejected(self):
         from register.models import RegistrationRequest
         from pydantic import ValidationError

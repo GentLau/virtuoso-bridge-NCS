@@ -17,11 +17,12 @@ from pydantic import (
     Field,
     StrictFloat,
     StrictInt,
+    field_validator,
     model_validator,
 )
 
 from common.registry import UserEntry
-from common.validation import validate_token, validate_user_name
+from common.validation import validate_display, validate_token, validate_user_name
 
 
 class RequestRole(BaseModel):
@@ -46,6 +47,15 @@ class RequestDaemonRole(RequestRole):
     expected_user: str | None = None
 
 
+class RequestGuiRole(RequestRole):
+    display: str | None = None
+
+    @field_validator("display")
+    @classmethod
+    def _validate_display(cls, value):
+        return validate_display(value)
+
+
 class RequestSpectreRole(RequestRole):
     bin: str | None = None
 
@@ -53,7 +63,7 @@ class RequestSpectreRole(RequestRole):
 class RequestRoles(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    gui: RequestRole = Field(default_factory=RequestRole)
+    gui: RequestGuiRole = Field(default_factory=RequestGuiRole)
     daemon: RequestDaemonRole = Field(default_factory=RequestDaemonRole)
     command: RequestRole = Field(default_factory=RequestRole)
     file: RequestRole = Field(default_factory=RequestRole)

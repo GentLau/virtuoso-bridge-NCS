@@ -258,7 +258,7 @@ class TestFrozenInterfaceSignatures(unittest.TestCase):
 
 
 class TestQueryContract(unittest.TestCase):
-    """§4.2 只读查询：返回 role root/bin，未知 token 为结构化错误。"""
+    """§4.2 只读查询：返回 role root、gui display、spectre bin。"""
 
     def setUp(self):
         self.wd = override_work_dir_for_tests(Path(tempfile.mkdtemp()))
@@ -269,6 +269,7 @@ class TestQueryContract(unittest.TestCase):
         for name in ("gui", "daemon", "command", "file", "spectre"):
             role = getattr(entry.roles, name)
             role.root = f"/home/alice/.virtuoso-bridge/alice/{name}"
+        entry.roles.gui.display = ":11"
         entry.roles.spectre.bin = "/opt/spectre/bin/spectre"
         self.registry.register("alice", entry)
         self.server = BusinessServer()
@@ -276,7 +277,7 @@ class TestQueryContract(unittest.TestCase):
     def tearDown(self):
         self.server.close()
 
-    def test_query_returns_roots_and_spectre_bin(self):
+    def test_query_returns_roots_display_and_spectre_bin(self):
         result = self.server.query(token="tok-q")
         self.assertEqual(result.status, ExecutionStatus.SUCCESS)
         self.assertEqual(len(result.roles), 5)
@@ -287,6 +288,7 @@ class TestQueryContract(unittest.TestCase):
         self.assertEqual(
             result.roles["spectre"].bin, "/opt/spectre/bin/spectre"
         )
+        self.assertEqual(result.roles["gui"].display, ":11")
         # 只暴露 root/bin，不得泄漏拓扑
         dumped = json.dumps(result.model_dump())
         for forbidden in ("host", "jump", "proxy", "daemon_port", "local_port"):

@@ -1529,7 +1529,7 @@ button,input,select {
                 <p class="field-help">按 <code>role.&lt;name&gt;.&lt;field&gt;</code> 逐字段覆盖全局默认；<code>mode=local</code> 的 role 不得再填 host/user/jump（本地直连，会报参数错误）。daemon 的端口用上面的「Daemon 端口/本地端口」，spectre 的可执行文件用上面的 spectre bin。</p>
                 <div class="table-scroll">
                   <table class="role-table">
-                    <thead><tr><th>role</th><th>mode</th><th>host</th><th>user</th><th>jump_host</th><th>root</th><th>max_sessions</th></tr></thead>
+                    <thead><tr><th>role</th><th>mode</th><th>host</th><th>user</th><th>jump_host</th><th>root</th><th>display</th><th>max_sessions</th></tr></thead>
                     <tbody>
                   <tr>
                     <th scope="row">gui</th>
@@ -1540,6 +1540,7 @@ button,input,select {
                     <td><input id="role_gui_user" name="role_gui_user" placeholder="继承" spellcheck="false"></td>
                     <td><input id="role_gui_jump_host" name="role_gui_jump_host" placeholder="继承" spellcheck="false"></td>
                     <td><input id="role_gui_root" name="role_gui_root" placeholder="继承 root.default/&lt;role&gt;" spellcheck="false"></td>
+                    <td><input id="role_gui_display" name="role_gui_display" placeholder="自动探测，如 :11" spellcheck="false" pattern="[A-Za-z0-9._/-]*:[0-9]+(\.[0-9]+)?" title="X display 形式，例如 :11、localhost:10.0"></td>
                     <td><input id="role_gui_max_sessions" name="role_gui_max_sessions" type="number" min="1" inputmode="numeric" placeholder="默认 10"></td>
                   </tr>
                   <tr>
@@ -1551,6 +1552,7 @@ button,input,select {
                     <td><input id="role_daemon_user" name="role_daemon_user" placeholder="继承" spellcheck="false"></td>
                     <td><input id="role_daemon_jump_host" name="role_daemon_jump_host" placeholder="继承" spellcheck="false"></td>
                     <td><input id="role_daemon_root" name="role_daemon_root" placeholder="继承 root.default/&lt;role&gt;" spellcheck="false"></td>
+                    <td></td>
                     <td><input id="role_daemon_max_sessions" name="role_daemon_max_sessions" type="number" min="1" inputmode="numeric" placeholder="默认 10"></td>
                   </tr>
                   <tr>
@@ -1562,6 +1564,7 @@ button,input,select {
                     <td><input id="role_command_user" name="role_command_user" placeholder="继承" spellcheck="false"></td>
                     <td><input id="role_command_jump_host" name="role_command_jump_host" placeholder="继承" spellcheck="false"></td>
                     <td><input id="role_command_root" name="role_command_root" placeholder="继承 root.default/&lt;role&gt;" spellcheck="false"></td>
+                    <td></td>
                     <td><input id="role_command_max_sessions" name="role_command_max_sessions" type="number" min="1" inputmode="numeric" placeholder="默认 10"></td>
                   </tr>
                   <tr>
@@ -1573,6 +1576,7 @@ button,input,select {
                     <td><input id="role_file_user" name="role_file_user" placeholder="继承" spellcheck="false"></td>
                     <td><input id="role_file_jump_host" name="role_file_jump_host" placeholder="继承" spellcheck="false"></td>
                     <td><input id="role_file_root" name="role_file_root" placeholder="继承 root.default/&lt;role&gt;" spellcheck="false"></td>
+                    <td></td>
                     <td><input id="role_file_max_sessions" name="role_file_max_sessions" type="number" min="1" inputmode="numeric" placeholder="默认 10"></td>
                   </tr>
                   <tr>
@@ -1584,6 +1588,7 @@ button,input,select {
                     <td><input id="role_spectre_user" name="role_spectre_user" placeholder="继承" spellcheck="false"></td>
                     <td><input id="role_spectre_jump_host" name="role_spectre_jump_host" placeholder="继承" spellcheck="false"></td>
                     <td><input id="role_spectre_root" name="role_spectre_root" placeholder="继承 root.default/&lt;role&gt;" spellcheck="false"></td>
+                    <td></td>
                     <td><input id="role_spectre_max_sessions" name="role_spectre_max_sessions" type="number" min="1" inputmode="numeric" placeholder="默认 10"></td>
                   </tr>
                     </tbody>
@@ -1840,7 +1845,7 @@ function collectPayload() {
     Object.keys(flat).forEach(function(key) {
       if (key.indexOf(prefix) !== 0) return;
       const field = key.slice(prefix.length);
-      if (['mode', 'host', 'user', 'jump_host', 'jump_user', 'proxy', 'root', 'max_sessions'].indexOf(field) < 0) return;
+      if (['mode', 'host', 'user', 'jump_host', 'jump_user', 'proxy', 'root', 'display', 'max_sessions'].indexOf(field) < 0) return;
       role[field] = field === 'max_sessions' ? Number(flat[key]) : flat[key]
     })
   });
@@ -1857,6 +1862,7 @@ function resolvedValues(data) {
   if (data && data.resolved) return data.resolved;
   const entry = data && data.entry ? data.entry : {},
     roles = entry.roles || {},
+    gui = roles.gui || {},
     daemon = roles.daemon || {},
     command = roles.command || {},
     file = roles.file || {},
@@ -1869,6 +1875,7 @@ function resolvedValues(data) {
     cdslog = entry.cdslog || {};
   return {
     mode: modeCfg.default,
+    gui_display: gui.display,
     command_host: command.host || sshDefault.host,
     command_user: command.user || sshDefault.user,
     daemon_host: daemon.host || sshDefault.host,
@@ -1914,7 +1921,8 @@ function configurationSnapshot(data) {
     daemonHost = mode === 'local' ? '127.0.0.1' : (values.daemon_host || host || '未填写'),
     daemonUser = values.daemon_user || sshUser,
     daemonPort = values.daemon_port || '自动分配',
-    localPort = mode === 'local' ? (values.daemon_port || '同 Daemon 端口') : (values.local_port || '自动分配');
+    localPort = mode === 'local' ? (values.daemon_port || '同 Daemon 端口') : (values.local_port || '自动分配'),
+    guiDisplay = values.role_gui_display || resolved.gui_display || '';
   return {
     user: (data && data.user) || values.user || '—',
     token: (data && data.token) || values.token || '服务端生成',
@@ -1925,6 +1933,7 @@ function configurationSnapshot(data) {
     daemon: (daemonUser && mode !== 'local' ? daemonUser + '@' : '') + daemonHost + ':' + daemonPort,
     daemonPort: daemonPort,
     localPort: localPort,
+    guiDisplay: guiDisplay,
     scratch: values.scratch_root || '~/.virtuoso-bridge',
     jump: values.jump_host ? ((values.jump_user ? values.jump_user + '@' : '') + values.jump_host) : '',
     spectre: values.spectre_host || values.spectre_bin ?
@@ -1958,6 +1967,7 @@ function renderConfigSummary(data) {
   appendSummaryRow(list, '执行目标', snapshot.target, {mono: snapshot.mode === 'remote'});
   appendSummaryRow(list, 'Daemon', snapshot.daemon, {mono: true});
   appendSummaryRow(list, '本地端口', snapshot.localPort);
+  if (snapshot.guiDisplay) appendSummaryRow(list, 'GUI display', snapshot.guiDisplay, {mono: true});
   appendSummaryRow(list, '部署根目录', snapshot.scratch, {mono: true});
   if (snapshot.jump) appendSummaryRow(list, '跳板机', snapshot.jump, {mono: true});
   if (snapshot.spectre) appendSummaryRow(list, 'Spectre', snapshot.spectre, {mono: true});

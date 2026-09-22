@@ -903,6 +903,7 @@ class BusinessServer(Middle):
             roles[name] = RoleQuery(
                 root=targets.role(name).root,
                 bin=getattr(configured, "bin", None) if name == "spectre" else None,
+                display=getattr(configured, "display", None) if name == "gui" else None,
             )
         return QueryResult(status=ExecutionStatus.SUCCESS, roles=roles)
 

@@ -36,6 +36,10 @@ class TestRegistrationPageContract(unittest.TestCase):
     def test_local_mode_rejects_connection_fields(self):
         self.assertIn("mode=local 的 role 不能填写", self.html)
 
+    def test_gui_display_override_is_present(self):
+        self.assertIn('id="role_gui_display"', self.html)
+        self.assertIn('name="role_gui_display"', self.html)
+
     def test_details_blocks_are_balanced(self):
         self.assertEqual(
             self.html.count("<details"), self.html.count("</details>"),

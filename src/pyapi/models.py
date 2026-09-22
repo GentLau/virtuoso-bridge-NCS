@@ -67,20 +67,23 @@ class CommandResult(NamedTuple):
 class RoleQuery(BaseModel):
     """Parameter facts of one role (spec §4.2).
 
-    Deliberately limited to ``root``/``bin``: the upper layer must not be able
-    to infer topology (mode/host/user/jump/proxy) from this query.
+    Deliberately limited to ``root``/``bin`` and the GUI execution fact
+    ``display``: the upper layer must not be able to infer topology
+    (mode/host/user/jump/proxy) from this query.
     """
 
     root: str | None = None
     bin: str | None = None
+    display: str | None = None
 
 
 class QueryResult(BaseModel):
     """Answer of ``middle.query(token=...)``.
 
     ``status`` is ``success``/``error``; an unknown token is a structured
-    failure (``errors=["invalid token"]``) and never an exception.  只返回 role 的
-    ``root``/``bin``：本机路径不属于中层的查询范围（spec 总览 §4.2）。
+    failure (``errors=["invalid token"]``) and never an exception.  返回 role 的
+    ``root``、gui 的 ``display`` 与 spectre 的 ``bin``；本机路径不属于中层的
+    查询范围（spec 总览 §4.2）。
     """
 
     status: ExecutionStatus

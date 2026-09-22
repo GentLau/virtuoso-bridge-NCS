@@ -30,6 +30,7 @@ from common.registry import (
     CdsLog,
     canonical_host,
     DaemonRoleConfig,
+    GuiRoleConfig,
     ModeConfig,
     Registry,
     RegistryError,
@@ -229,7 +230,13 @@ def _build_entry(request: RegistrationRequest, token: str) -> UserEntry:
         ),
         root=RootConfig(default=request.root.default),
         roles=Roles(
-            gui=RoleConfig(**{k: v for k, v in request.roles.gui.model_dump().items() if v is not None}),
+            gui=GuiRoleConfig(
+                **{
+                    k: v
+                    for k, v in request.roles.gui.model_dump().items()
+                    if v is not None
+                }
+            ),
             daemon=DaemonRoleConfig(**{k: v for k, v in request.roles.daemon.model_dump().items() if v is not None}),
             command=RoleConfig(**{k: v for k, v in request.roles.command.model_dump().items() if v is not None}),
             file=RoleConfig(**{k: v for k, v in request.roles.file.model_dump().items() if v is not None}),
@@ -324,6 +331,61 @@ def _remote_role_checks(runner: SSHRunner, role: CandidateRole) -> str:
     return root
 
 
+def _probe_gui_display(
+    entry_role,
+    explicit: str | None,
+    *,
+    runner: SSHRunner | None,
+    budget: StepBudget,
+    warnings: list[str],
+    local: bool,
+) -> None:
+    """Validate an explicit display, or detect one when it is unique.
+
+    The caller owns the role mode; ``runner`` is required for remote roles.
+    """
+    if explicit:
+        available = (
+            probes.validate_local_display(explicit)
+            if local
+            else probes.validate_remote_display(
+                _BudgetedRunner(runner, budget), explicit
+            )
+        )
+        if not available:
+            raise RegistrationProbeError(
+                f"gui display {explicit!r} is not reachable on the gui role"
+            )
+        entry_role.display = explicit
+        return
+
+    detected = (
+        probes.detect_local_display()
+        if local
+        else probes.detect_remote_display(_BudgetedRunner(runner, budget))
+    )
+    if not detected:
+        warnings.append(
+            "role.gui.display was not detected (multiple or no Virtuoso "
+            "processes); GUI commands will fail until it is configured"
+        )
+        return
+    available = (
+        probes.validate_local_display(detected)
+        if local
+        else probes.validate_remote_display(
+            _BudgetedRunner(runner, budget), detected
+        )
+    )
+    if not available:
+        warnings.append(
+            f"detected role.gui.display {detected!r} is not reachable; "
+            "GUI commands will fail until it is configured"
+        )
+        return
+    entry_role.display = detected
+
+
 def _probe(
     request: RegistrationRequest,
     token: str,
@@ -360,6 +422,15 @@ def _probe(
                     entry_role.root = _local_role_checks(role)
                     # §2.3: local role 无 endpoint，expected_fingerprint 必须为 null
                     entry_role.expected_fingerprint = None
+                    if name == "gui":
+                        _probe_gui_display(
+                            entry_role,
+                            request.roles.gui.display,
+                            runner=None,
+                            budget=budget,
+                            warnings=warnings,
+                            local=True,
+                        )
                     continue
                 if not probes.ssh_port_is_22(role.host):
                     raise RegistrationProbeError(
@@ -397,6 +468,15 @@ def _probe(
                     )
                 entry_role.expected_fingerprint = fp
                 entry_role.root = _remote_role_checks(_BudgetedRunner(runner, budget), role)
+                if name == "gui":
+                    _probe_gui_display(
+                        entry_role,
+                        request.roles.gui.display,
+                        runner=runner,
+                        budget=budget,
+                        warnings=warnings,
+                        local=False,
+                    )
             except RegistrationProbeError as exc:
                 if name == "spectre":
                     entry_role.root = None

@@ -7,7 +7,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from common.registry import UserEntry
 from transport.roles import fingerprint_conflicts, resolve
-from common.validation import validate_token, validate_user_name
+from common.validation import validate_display, validate_token, validate_user_name
 
 
 class TestValidation(unittest.TestCase):
@@ -24,6 +24,16 @@ class TestValidation(unittest.TestCase):
             with self.subTest(bad=bad):
                 with self.assertRaises(ValueError):
                     validate_token(bad)
+
+    def test_gui_displays(self):
+        for good in (":11", "localhost:10.0", "unix/:0"):
+            with self.subTest(good=good):
+                self.assertEqual(validate_display(good), good)
+        self.assertIsNone(validate_display(""))
+        for bad in ("11", ":abc", " :11", ":11;x", "host:1 1", "$(x):1"):
+            with self.subTest(bad=bad):
+                with self.assertRaises(ValueError):
+                    validate_display(bad)
 
 
 class TestRoleResolution(unittest.TestCase):
@@ -48,6 +58,15 @@ class TestRoleResolution(unittest.TestCase):
         t = resolve(e, "alice")
         self.assertIsNone(t.command.key)
         self.assertEqual(t.daemon_port, 65081)
+
+    def test_gui_role_display_is_validated(self):
+        e = UserEntry(
+            token="t", mode="remote",
+            roles={"gui": {"display": "localhost:10.0"}},
+        )
+        self.assertEqual(e.roles.gui.display, "localhost:10.0")
+        with self.assertRaises(ValueError):
+            e.roles.gui.display = "bad display"
 
 
 if __name__ == "__main__":
