@@ -909,6 +909,8 @@ class Package:
             layer, purpose = _lpp(layers[0][0], layers[0][1]) if isinstance(layers[0], (list, tuple)) \
                 else _lpp(command.get("layer"), command.get("purpose"))
             body = (
+                f"unless(leSetLayerValid({_lpp_expr(layer, purpose)} t) "
+                'error("leSetLayerValid failed")) '
                 f"unless(leSetEntryLayer({_lpp_expr(layer, purpose)} vbTf) "
                 'error("leSetEntryLayer failed"))'
             )
