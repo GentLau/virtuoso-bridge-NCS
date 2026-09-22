@@ -157,10 +157,14 @@ _WIN_LINE = re.compile(
 _DIALOG_WORDS = re.compile(r"(?i)error|warning|question|confirm|notice|dialog")
 
 
-def parse_xwininfo_tree(text: str) -> list[dict[str, Any]]:
+def parse_xwininfo_tree(
+    text: str, top_ids: set[str] | None = None,
+) -> list[dict[str, Any]]:
     """Parse ``xwininfo -root -tree`` into top-level window records.
 
-    只返回 root 的直接子窗口（缩进最浅的那一层），去重；
+    ``top_ids`` 给出 EWMH ``_NET_CLIENT_LIST`` 时按它过滤（窗口管理器
+    会把客户窗口重父化一层，缩进不再是顶层标志）；否则回退为
+    root 直接子窗口（缩进最浅的那一层）。两种方式都按 ``window_id`` 去重。
     每条：window_id / title / wm_class / width / height / kind / suggested_action。
     """
     candidates: list[tuple[int, dict[str, Any]]] = []
@@ -182,7 +186,7 @@ def parse_xwininfo_tree(text: str) -> list[dict[str, Any]]:
         }
         if not title:
             record.update(kind="anon", suggested_action="ignore")
-        elif "Virtuoso" in title and "CDS.log" in title:
+        elif "Virtuoso" in title and "Log:" in title:
             record["kind"] = "ciw"
         elif "perfUtilExtCtrl" in title:
             record.update(kind="aux", suggested_action="ignore")
@@ -193,15 +197,23 @@ def parse_xwininfo_tree(text: str) -> list[dict[str, Any]]:
         candidates.append((indent, record))
     if not candidates:
         return []
-    top_indent = min(indent for indent, _ in candidates)
+    top_indent = None if top_ids else min(indent for indent, _ in candidates)
     windows: list[dict[str, Any]] = []
     seen: set[str] = set()
     for indent, record in candidates:
-        if indent != top_indent or record["window_id"] in seen:
+        if top_ids is not None:
+            if record["window_id"] not in top_ids or record["window_id"] in seen:
+                continue
+        elif indent != top_indent or record["window_id"] in seen:
             continue
         seen.add(record["window_id"])
         windows.append(record)
     return windows
+
+
+def _parse_client_ids(text: str) -> set[str]:
+    """Extract window ids from ``xprop -root _NET_CLIENT_LIST`` output."""
+    return set(re.findall(r"0x[0-9a-fA-F]+", text))
 
 
 def _find_ciw(windows: list[dict[str, Any]]) -> str | None:
@@ -297,12 +309,22 @@ class Package:
         display, error = self._gui_display(request.token)
         if error:
             return ListWindowsResult(False, [_step("query", False, error)], error)
-        cmd = f"export DISPLAY={shlex.quote(display)}; xwininfo -root -tree"
+        cmd = (
+            f"export DISPLAY={shlex.quote(display)}; "
+            "xprop -root _NET_CLIENT_LIST 2>/dev/null; "
+            "echo __TREE__; xwininfo -root -tree"
+        )
         run = self.middle.run_gui_command(cmd, timeout=request.timeout, token=request.token)
         steps = [_step("query", True, display), _step("list", run.returncode == 0, run)]
         if run.returncode != 0:
             return ListWindowsResult(False, steps, run.stderr or "xwininfo failed")
-        return ListWindowsResult(True, steps, None, parse_xwininfo_tree(run.stdout))
+        stdout = run.stdout or ""
+        if "__TREE__" in stdout:
+            clients, tree_text = stdout.split("__TREE__", 1)
+        else:
+            clients, tree_text = "", stdout
+        top_ids = _parse_client_ids(clients) or None
+        return ListWindowsResult(True, steps, None, parse_xwininfo_tree(tree_text, top_ids))
 
     def send_key(self, request: SendKeyRequest) -> SendKeyResult:
         _require_text(request.token, "token")

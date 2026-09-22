@@ -111,6 +111,24 @@ class TestListWindows(unittest.TestCase):
         self.assertFalse(result.ok)
         self.assertIn("display", result.error)
 
+    def test_list_windows_ewmh_client_list(self):
+        middle = FakeMiddle()
+        middle.tree = """\
+_NET_CLIENT_LIST(WINDOW): window id # 0x400008, 0x600010
+__TREE__
+xwininfo: Window id: 0x50e (the root window) (has no name)
+
+  Root window id: 0x50e (the root window) (has no name)
+     0x400008 "Virtuoso 6.1.8-64b - Log: /home/Gent/virtuoso_11.log": ("virtuoso" "virtuoso")  795x193+243+804  +243+804
+        0x400009 "child": ("virtuoso" "virtuoso")  100x100+0+0  +0+0
+     0x600010 "Confirm Save Changes": ("virtuoso" "Dialog")  400x120+100+100  +100+100
+"""
+        result = Package(middle).list_windows(ListWindowsRequest(token="vb-vb11"))
+        self.assertTrue(result.ok)
+        ids = [w["window_id"] for w in result.windows]
+        self.assertEqual(ids, ["0x400008", "0x600010"])
+        self.assertEqual(result.windows[0]["kind"], "ciw")
+
     def test_list_windows_gui_failure(self):
         middle = FakeMiddle()
         middle.list_rc = 1

@@ -14,7 +14,7 @@
 
 | 操作名 | 说明 | 步骤摘要 | 接口 |
 |---|---|---|---|
-| list_windows | 返回 X11 **顶层**窗口列表（root 直接子窗口，含分类、suggested_action） | `query` 读 `gui.display` → `export DISPLAY` → `xwininfo -root -tree` → 只取最浅缩进层 → 去重/分类 | Q+G |
+| list_windows | 返回 X11 **顶层**窗口列表（含分类、suggested_action） | `query` 读 `gui.display` → `export DISPLAY` → `xprop _NET_CLIENT_LIST`（无 WM 退 root 直接子窗口）→ `xwininfo -root -tree` → 去重/分类 | Q+G |
 | screenshot | 截取任意 X11 窗口或整个显示并取回：`target∈{ciw, window_id, display}` | `query` 读 `gui.display` → `export DISPLAY` → `XGetImage(root/窗口)` → PPM → 下载 | Q+G+D |
 
 ### 1.2 写操作（改变业务服务器状态）
