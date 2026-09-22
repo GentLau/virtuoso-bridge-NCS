@@ -508,29 +508,6 @@ class SSHRunner:
                 f"after {self._tunnel_failures} failed attempt(s)"
             )
 
-        if self._paramiko_backend is not None:
-            if self.can_reach_port(port):
-                logger.info("Reusing existing tunnel at localhost:%d", port)
-                self._note_tunnel_ready(port)
-                return None
-            timeout = self._connect_timeout
-            if outer_deadline is not None:
-                timeout = min(
-                    timeout,
-                    max(0.0, outer_deadline - time.monotonic()),
-                )
-            try:
-                proc = self._paramiko_backend.open_port_forward(
-                    port,
-                    remote_port,
-                    timeout=timeout,
-                )
-            except Exception:
-                self._note_tunnel_failure()
-                raise
-            self._note_tunnel_ready(port, proc)
-            return proc
-
         cmd: list[str] = [self._ssh_cmd]
         # A long-lived forward must own its own ssh process.  Attaching it to
         # a command-session ControlMaster makes the local listener disappear
@@ -707,22 +684,16 @@ class SSHRunner:
         return proc  # running
 
     def stop_port_forward(self) -> None:
-        """Stop the local forward (OpenSSH process or Paramiko server)."""
-        proc = self._tunnel_proc
-        if proc is not None:
-            logger.info("Terminating SSH tunnel (pid=%s)", getattr(proc, "pid", "?"))
-            try:
-                proc.terminate()
-            except (OSError, PermissionError):
-                pass
-            try:
-                proc.wait(timeout=2)
-            except (AttributeError, OSError, subprocess.TimeoutExpired):
-                pass
+        """Stop the standalone port-forwarding process by PID."""
+        pid = None
+        if self._tunnel_proc is not None and self._tunnel_proc.poll() is None:
+            pid = self._tunnel_proc.pid
         elif self._tunnel_pid:
-            logger.info("Terminating SSH tunnel (PID %d)", self._tunnel_pid)
+            pid = self._tunnel_pid
+        if pid:
+            logger.info("Terminating SSH tunnel (PID %d)", pid)
             try:
-                os.kill(self._tunnel_pid, signal.SIGTERM)
+                os.kill(pid, signal.SIGTERM)
             except (OSError, PermissionError):
                 pass
         self._tunnel_proc = None
