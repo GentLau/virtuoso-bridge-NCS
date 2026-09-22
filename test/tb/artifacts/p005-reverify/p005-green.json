@@ -1,0 +1,9 @@
+{
+  "topic": "P-005 calibre staging work-dir 初始化时序（瞬态红灯复验）",
+  "command": "python -m pytest test/unit/test_calibre_package.py -q（连续 5 轮）",
+  "expectation": "复验稳定绿，未再出现 RuntimeError: work dir not initialized",
+  "actual": "5/5 轮 rc=0，每轮 21 passed",
+  "time": "2026-09-22T19:45:00+08:00",
+  "machine": "GLIS-DESKTOP / WSL wsl-gent",
+  "status": "GREEN"
+}
