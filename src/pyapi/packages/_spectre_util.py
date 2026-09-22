@@ -676,7 +676,9 @@ def _compute_ac_magnitude(data: dict[str, Any], spec: dict[str, Any]) -> dict[st
         value: float
         unit: str | None
         if scale == "db":
-            value = 20.0 * math.log10(magnitude) if magnitude > 0 else -math.inf
+            if magnitude <= 0:
+                raise ValueError("magnitude must be positive for dB scale")
+            value = 20.0 * math.log10(magnitude)
             unit = "dB"
         elif scale == "linear":
             value = magnitude

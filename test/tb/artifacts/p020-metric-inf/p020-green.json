@@ -1,0 +1,9 @@
+{
+  "topic": "P-020 ac_magnitude dB 零幅值返回 -math.inf",
+  "command": "python -m pytest test/unit/test_spectre_metrics.py -q",
+  "expectation": "dB 尺度零幅值返回结构化错误（ok=false, value=null, detail 非空）；正幅值/线性零幅值仍成功",
+  "actual": "3 passed",
+  "time": "2026-09-22T19:33:16+08:00",
+  "machine": "GLIS-DESKTOP / WSL wsl-gent",
+  "status": "GREEN"
+}
