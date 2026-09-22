@@ -1,9 +1,9 @@
 # 中层配置文档
 
-> 版本：Draft v33
-> 日期：2026-09-15
+> 版本：Draft v34
+> 日期：2026-09-22
 > 状态：Normative（字段目录、默认值、探测写回、注册表 schema、reservation 与 endpoint key 的唯一规范源）
-> Supersedes：Draft v21–v32（v21–v31 同前；v32 候选释放规则与多用户对齐）
+> Supersedes：Draft v33（新增 `role.gui.display`）
 > 定位：本文是[多用户与注册](../其他/1-多用户与注册.md)的**字段与 schema 详细补充**——六步状态机与授权归[多用户与注册](../其他/1-多用户与注册.md)；本文是字段与必填清单 owner（§4），并提供默认值、探测写回、注册表 schema、reservation 与 endpoint key。
 
 ## 1. 总述
@@ -59,6 +59,7 @@
 | `role.daemon.expected_hostname` | daemon 主机名比对基准 | 校验 | 探测写入 |
 | `role.daemon.expected_user` | daemon 进程账号比对基准 | 校验 | 探测写入 |
 | `role.spectre.bin` | spectre 可执行文件（显式→校验，缺省→探测；失败仅 warning） | 环境 | 可选 |
+| `role.gui.display` | gui role 的 X server（`DISPLAY` 值，每用户单值）；中层执行 GUI 命令时据此设置环境，`null` → 该命令失败并指明未配置 | 环境 | 显式→校验；缺省→探测写回，失败留空（见 §3） |
 
 ### 2.5 全局默认与字段回退
 
@@ -83,7 +84,7 @@
 | 类型 | 规则 |
 |---|---|
 | 配置 | 用户提供；只做格式/范围/查重校验，失败拒绝；无自动探测 |
-| 环境 | 默认自动探测；用户显式提供时校验，不可用报告并拒绝。唯一例外 spectre（失败级别与提交态见[多用户与注册 §4.1](../其他/1-多用户与注册.md)） |
+| 环境 | 默认自动探测；用户显式提供时校验，不可用报告并拒绝。例外：spectre（失败级别与提交态见[多用户与注册 §4.1](../其他/1-多用户与注册.md)）与 `role.gui.display`（缺省探测失败仅留空 + WARNING，显式不可达仍拒绝） |
 | 校验 | 探测写入各 role 的 `expected_*`，只用于比对、不参与业务；在注册探测时比对，**运行期不强制比对**。唯一例外：业务 role 的 host-key 指纹不匹配 = ERROR（含机器重装未确认），见[多用户与注册 §3.2/§5](../其他/1-多用户与注册.md) |
 
 探测动作本身（何时探测、逐 role 探测矩阵、失败级别）见[多用户与注册 §4](../其他/1-多用户与注册.md)，本文只定义字段类型规则。`root` 不是探测发现的环境值，而是按 §2.5 与[多用户与注册 §4.2](../其他/1-多用户与注册.md)的默认算法推导、探测期写回绝对路径，其类型为**配置**。
@@ -100,6 +101,7 @@
 - `user` 格式 `^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$`；禁止 `/`、`\`、`..`、绝对路径；Windows 大小写不敏感查重；拒绝保留设备名（CON/PRN/AUX/NUL/COM1–9/LPT1–9 及带扩展名）与结尾 `.`/空格；
 - `token` 格式 `^[A-Za-z0-9._-]{1,64}$`；碰撞重生成一次；轮换 = 删除用户重新注册；
 - `local` role 显式提交 `host/user/jump_host/jump_user/proxy` → 参数错误；
+- `role.gui.display` 只接受 X display 形式（如 `:11`、`localhost:10.0`、`unix/:0`），禁止空白、引号、`$`、反引号、`;` 等 shell 元字符（防注入）；
 - 未知字段拒绝（`extra=forbid`）；空串视为未提供；
 - host-key 首信任优先级：① known_hosts 匹配 → 记录；② 用户显式指纹 → 校验后记录；③ 两者皆无 → 注册失败；spectre 例外（缺失/失败仅 WARNING、指纹留空）；
 - registry 持久化 UTF-8、权限 `0600`、tmp + 原子替换。
@@ -114,7 +116,7 @@
   "ssh": {"default": {"host": "server-a", "user": "ssh-user"}, "backend": "paramiko", "control_master": "auto"},
   "root": {"default": null},
   "roles": {
-    "gui":     {"root": "/home/ssh-user/.virtuoso-bridge/alice/gui", "max_sessions": 10,
+    "gui":     {"root": "/home/ssh-user/.virtuoso-bridge/alice/gui", "max_sessions": 10, "display": ":11",
                 "expected_fingerprint": "SHA256:…"},
     "daemon":  {"root": "/home/ssh-user/.virtuoso-bridge/alice/daemon", "max_sessions": 10,
                 "daemon_port": 65081, "local_port": 65082, "python": "/usr/bin/python3",
