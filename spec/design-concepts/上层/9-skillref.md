@@ -1,9 +1,9 @@
 # 上层业务包：skillref
 
-> 版本：Draft v8
+> 版本：Draft v11
 > 日期：2026-09-21
 > 状态：Draft（待共同修订，暂未纳入 README 治理）
-> Supersedes：Draft v7（skillref 段加入 `doc_token` 代理账号，读取改为 `common.config` 快照）；Draft v6（**记录"本版不建索引"的决策与实测依据**，见 §6.5）；Draft v5（更正正文层成本口径：可搜索文本只有 223.8 MB；远端 `grep` 0.10–0.15 s、本地纯 Python 189 s，本地模式必须给 `under`）；Draft v4（去掉 `local_dir`）；Draft v3（显式 `source` + `doc_root`，去掉路径探测）；Draft v2（config 方案 A + R1–R7；`search_in` 增 `all`；返回补 `elapsed_ms`）；Draft v1（单一搜索入口）；本文取代设计概念 `9-skill-tooling.md`
+> Supersedes：Draft v10（**跟随顶层收口**：config 改为公共只读数据、skillref 段结构校验回到本文；新增 §6.6 待裁决项——`doc_token` 与 1-上层 v17"token 原样透传"的冲突）；Draft v9（实现落地并回填包级实测）；Draft v8（消歧：本地模式仅一次只读 `query`；`doc_token` 不可由请求给出；`invalid-token` 失败文案）；Draft v7（`doc_token` 查询账户 + `common.config` 快照）；Draft v6（"本版不建索引"决策与实测依据，§6.5）；Draft v5（正文层成本口径更正）；Draft v4（去掉 `local_dir`）；Draft v3（显式 `source` + `doc_root`，去掉路径探测）；Draft v2（config 方案 A + R1–R7）；Draft v1（单一搜索入口）；本文取代设计概念 `9-skill-tooling.md`
 > 定位：业务包/业务操作一般契约见[1-上层.md](1-上层.md)；五业务接口见[四层整体架构与接口 §4](../总览/1-四层整体架构与接口.md)。
 
 ## 1. 总述
@@ -84,7 +84,8 @@ G=`run_gui_command`、Sp=`run_spectre_command`。
 
 ### 3.2 local 模式（`source="local"`）
 
-直接读本机文件、不调用任何中层业务接口；`doc_root` 不可见时业务失败
+直接读本机文件，**不调用五个业务接口**（仅按 §3.1 做一次只读 `query` 校验调用者 token）；
+`doc_root` 不可见时业务失败
 （错误文案带该路径），不退回远端、也不猜别的路径。
 
 ### 3.3 remote 模式（`source="remote"`）
@@ -98,6 +99,9 @@ G=`run_gui_command`、Sp=`run_spectre_command`。
 | 正文层 | 一次 `command.run` 跑远端候选搜索（`grep -r -l -m1`，形状见 `src_bak/virtuoso_bridge/virtuoso/docs_search.py:417-459`）→ `download_file` 取候选（≤ `max_candidates`）→ 本地打分与摘要 | 搜索本身 0 传输（整树 0.10–0.15 s）；候选 ≈190–240 KB/个、≈1.9 s/个 |
 
 路径纪律：远端路径一律按 POSIX 语义拼接，**禁止**对远端路径调用 `Path.exists()`。
+
+失败文案要求：remote 阶段若 C/D 返回 `kind=invalid-token`（`doc_token` 被删除或轮换），
+业务失败必须指明"`skillref.doc_token` 无效或已删除"，不得只报 `command failed`。
 
 ### 3.4 远端取数的落点（包内部，不是用户参数）
 
@@ -137,6 +141,7 @@ G=`run_gui_command`、Sp=`run_spectre_command`。
 | `max_files` | 否 | 5000 | 正文层未给 `under` 时的扫描文件上限，超出回 `truncated=true` |
 | `snippet` | 否 | `true` | 是否回带命中片段 |
 | `doc_root` | 否 | 配置表值 | 绝对路径；校验规则见 §3.1 |
+| `doc_token` | **不可由请求给出** | 配置表值 | remote 模式的执行代理账号；只来自配置，请求参数不可覆盖（防提权，见 §3.1） |
 | `timeout` | 否 | — | 单次 C/D 调用的超时（正文层远端候选搜索默认 120 s） |
 
 ### 4.2 匹配范围 `search_in`（逐级加深）
@@ -234,15 +239,21 @@ G=`run_gui_command`、Sp=`run_spectre_command`。
 
 ## 6. 与既有 spec 的关系（差异与待确认）
 
-### 6.1 配置表扩展：已定方案 A（`config.json` 增加 `skillref` 段，已由[顶层补充 §5](../顶层/add-控制面与业务面.md)落地）
+### 6.1 配置表：`config.json` 的 `skillref` 段（公共只读数据）
 
-`skillref` 段含 `source`/`doc_root`/`doc_token` 三个字段；PUT 只覆盖请求里出现的键、
-`GET` 回带时 `doc_token` 脱敏等结构口径以[顶层补充 §5](../顶层/add-控制面与业务面.md)为唯一口径，本文不复制。
+`config.json` 经 `common.config` 提供**进程级只读快照**（与 `common.paths` 同性质、四层可读；
+口径见[顶层补充 §5](../顶层/add-控制面与业务面.md)）：控制面只登记/校验自己的
+`business_thread_pool_size`，其余顶层键**原样透传、不解读**。因此：
+
+* `skillref.source` / `doc_root` / `doc_token` 三个字段的**结构校验归本文**（§3.1 的表）；
+* `doc_token` **不做脱敏**（与 `registry.json` 中的 token 同类的凭据，明文随配置文件保存）；
+* 本段缺失或 `null` = 未配置，不阻断进程启动，只在调用时返回可读的业务失败。
 
 实现口径（本包）：读取顺序 = 请求参数 `source`+`doc_root` → `common.config` 快照的
 `skillref.source`+`skillref.doc_root`+`skillref.doc_token` → 业务失败（不探测）。
-`doc_token` 只来自配置；remote 模式以它作为中层 token 执行 C/D。
-`skillref` 段缺失不影响进程启动，只让 skillref 操作返回可读的失败文案。
+`doc_token` 只来自配置；remote 模式以它作为中层 token 执行 C/D（见 §6.6）。
+文档查询是**部署级共享能力**：调用者 token 只用于身份校验（§3.1 的 `query`），
+数据源与远端执行账号由配置决定——即"谁能查"与"查的是哪台机"解耦。
 
 ### 6.2 单一搜索入口
 
@@ -252,8 +263,9 @@ v1 曾把"词条检索"与"多层检索"拆成 `find` / `search` 两个操作；
 
 ### 6.3 本地直读不占中层接口
 
-旧文件 §2 待修订已写"纯本地解析不占中层接口"；本版把它写成正式口径（§3.2），
-两个操作在本地模式下接口列均为空。
+旧文件 §2 待修订已写"纯本地解析不占中层接口"；本版把它写成正式口径（§3.2）：
+本地模式**不占用五个业务接口**（仅一次只读 `query` 校验调用者 token），
+两个操作在本地模式下接口列为空。
 
 ### 6.4 与 `tools/skill_doc_server.py`（8123）的关系
 
@@ -283,6 +295,19 @@ v1 曾把"词条检索"与"多层检索"拆成 `find` / `search` 两个操作；
 
 本版结论：**不建索引**；正文层按 §4.6 的"远端 `grep` 候选 / 本地限 `under`"实现。
 
+### 6.6 待裁决：`doc_token` 与"token 原样透传"的冲突（**需要 owner 拍板**）
+
+[1-上层.md §3.1](1-上层.md)（Draft v17）写"token 每次调用都带上并原样透传"，未保留例外；
+而本包 remote 模式用配置里的 `doc_token`（≠ 请求 token）执行 C/D。两者需要对齐，二选一：
+
+| 方案 | 动作 | 后果 |
+|---|---|---|
+| **A. 保留 `doc_token`**（当前实现） | `1-上层.md §3.1` 加回一行例外（"配置预置的查询账户"） | 跨机器读文档：调用者 token 只做身份校验，数据源与执行账号由配置决定 |
+| B. 撤销 `doc_token` | 本文 §3.1 删除 `doc_token`，remote 的 C/D 改用请求 token | 远端文档树必须对调用者 token 所在的 role 可见，否则查不了；配置段只剩 `source`+`doc_root` |
+
+owner 拍板前：实现按 **A** 编写（`doc_token` 缺失时 remote 直接业务失败并给出明确文案）；
+若改为 B，只需把 `_resolve_source` 里的执行 token 换成请求 token，其余逻辑不变。
+
 ## 7. 已知限制
 
 1. 只覆盖 Cadence 自带的 SKILL 索引；第三方/客户自定义 API 不在 `.fnd` 中；
@@ -311,6 +336,26 @@ v1 曾把"词条检索"与"多层检索"拆成 `find` / `search` 两个操作；
 | 数据源 | 请求参数给定（`local` / `remote` 各 1）、配置表给定（1）、未配置 → 明确失败（1） |
 | 失败 | local 路径不存在、remote 路径不可见、`source` 非法值、正文层超 `max_files` |
 
+**实现状态（2026-09-21）**：已落地
+
+| 文件 | 内容 |
+|---|---|
+| `src/pyapi/packages/skillref.py` | 两个业务操作 + 数据源解析 + 本地/远端取数 |
+| `src/pyapi/packages/_skillref_docs.py` | stdlib-only 解析层（`.fnd` / `.tgf` / HTML→Markdown / 正文打分） |
+| `test/unit/test_skillref_package.py` | 27 项单元测试（四层匹配、两种模式、配置快照、错误口径） |
+| `test/tb/skillref_probe.py` | 真机探针（`--from-config` 走 config.json 快照） |
+
+**包级真机实测（2026-09-21，探针输出）**：
+
+| 调用 | 本地（`C:\Users\user\Desktop\doc`） | 远端（`/opt/eda/cadence/IC618/doc`，doc_token=vb-vblog） |
+|---|---:|---:|
+| `search_in=name` | 0.27 s | 3.50 s（首个调用含通道预热） |
+| `search_in=entry` | 0.27 s | 1.80 s |
+| `search_in=topic` | 0.28 s | 4.21 s |
+| `search_in=body`（`under=["cpf_ref"]`） | 0.91 s（扫 16 文件，1 命中） | 7.65 s（grep 候选 1 个 + 下载，1 命中） |
+| `info(dbOpenCellViewByType)` | 命中，Markdown 5 719 字符 | 4.56 s，同 5 719 字符 |
+| `info(不存在)` | `found=false`（ok=true） | 2.67 s，`found=false` |
+
 真机基线（2026-09-21 实测，作为断言下限）：
 
 | 项 | 值 |
@@ -336,4 +381,6 @@ v1 曾把"词条检索"与"多层检索"拆成 `find` / `search` 两个操作；
 | 调研与方案 | `doc/report/skilltooling-调研与上层包设计方案.md` |
 | 远端取数成本评估（实测） | `doc/report/skillref-远端取数成本评估.md` |
 | 探针 | `test/tb/skill_tooling_probe.py`、`test/tb/docs_search_probe.py` |
+| 包实现 | `src/pyapi/packages/skillref.py`、`src/pyapi/packages/_skillref_docs.py` |
+| 包级真机探针与日志 | `test/tb/skillref_probe.py`、`test/tb/artifacts/skill-tooling-tb/skillref-probe-{local,remote,config-local,config-remote}.log` |
 | 实测记录 | `test/tb/artifacts/skill-tooling-tb/docs-search-probe-20260921.log` |
