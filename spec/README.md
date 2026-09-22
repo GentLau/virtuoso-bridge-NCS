@@ -1,9 +1,9 @@
 # virtuoso-bridge-NCS Spec
 
-> 版本：Release `SPEC-2026-09-22-r11`（送审修订版）
+> 版本：Release `SPEC-2026-09-22-r12`（送审修订版）
 > 日期：2026-09-22
-> 状态：Normative 基线（取代 r10）
-> Supersedes：`SPEC-2026-09-22-r10`（`run_gui_command` 增加显式 `display` 覆盖）
+> 状态：Normative 基线（取代 r11）
+> Supersedes：`SPEC-2026-09-22-r11`（display 改为 query 返回的 gui role 事实）
 
 ## 0. 版本治理（替代“文件修改时间优先”）
 
@@ -98,9 +98,9 @@ CDS.log metadata frame 完整字节格式
 
 ## Release（本基线）
 
-- **Release ID**：`SPEC-2026-09-22-r11`
+- **Release ID**：`SPEC-2026-09-22-r12`
 - **Normative 文件集**（10 份）：四层整体架构与接口、本版范围与明确不支持、中层配置文档、路由设计、多用户与注册、并发设计、日志返回设计标准、顶层：HTTP 入口与业务调度、顶层补充：控制面与业务面、上层：业务包与插件化；
-- **Normative 内容哈希**：`768ec9e7fc4c4d2a9aec4120aaf200895a573ab14a0131a015eab9eff9798f54`
+- **Normative 内容哈希**：`f49913c967cfaeb2b53055aff52c9d0e9e8c780166da79e44aa215687ecf4f68`
   - 算法：路径为**相对 `spec/` 目录**并按路径排序；逐文件 SHA-256（**按 Git 提交内容计算，即 LF 行尾**；Windows 工作区受 `core.autocrlf` 影响的行尾差异不计入）；每行 `<相对路径> <hex>` 以 LF 拼接（**行间分隔、末行无尾 LF**），再取一次 SHA-256；
 - **基线 commit**：本 Release 段所在提交即基线（见 `git log -1 -- spec/`）；任何 Normative 文档变更必须同时更新本段哈希。
 
@@ -108,10 +108,10 @@ CDS.log metadata frame 完整字节格式
 
 | 文档 | 版本 | 状态 | Supersedes |
 |---|---|---|---|
-| 四层整体架构与接口 | Draft v37 | Normative | Draft v36（`run_gui_command` 增加可选 `display` 覆盖参数） |
-| 路由设计 | v19 | Normative | v18（GUI 命令支持显式 `display` 覆盖） |
+| 四层整体架构与接口 | Draft v38 | Normative | Draft v37（display 改为 query 返回的 gui role 事实） |
+| 路由设计 | v20 | Normative | v19（display 改为 query 返回的 gui role 事实） |
 | 本版范围与明确不支持 | v10 | Normative | v9（顶层任务等待池本版不实现） |
-| 中层配置文档 | Draft v35 | Normative | Draft v34（`role.gui.display` 支持接口显式覆盖） |
+| 中层配置文档 | Draft v36 | Normative | Draft v35（display 改为 query 返回的 gui role 事实） |
 | 多用户与注册 | Draft v33 | Normative | Draft v32（`role.gui.display` 探测/校验/写回口径） |
 | 并发设计 | Draft v20 | Normative | Draft v19（重试决策单元术语统一为业务操作） |
 | 顶层 | Draft v21 | Normative | Draft v20（白名单加入 common.config） |
