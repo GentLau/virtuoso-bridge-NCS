@@ -60,6 +60,25 @@ class TestPureHelpers(unittest.TestCase):
             expired.remaining("cmd")
 
 
+@unittest.skipUnless(os.name == "nt", "Windows process flags")
+class TestWindowsProcessFlags(unittest.TestCase):
+    def test_tunnel_hidden_console_instead_of_no_window(self):
+        kwargs = ssh_mod._windows_no_window_kwargs(
+            hidden_console=True, new_process_group=True
+        )
+        flags = kwargs["creationflags"]
+        self.assertTrue(flags & getattr(subprocess, "CREATE_NEW_CONSOLE", 0x10))
+        self.assertFalse(flags & subprocess.CREATE_NO_WINDOW)
+        self.assertFalse(flags & subprocess.DETACHED_PROCESS)
+        self.assertEqual(kwargs["startupinfo"].wShowWindow, 0)
+
+    def test_default_still_uses_no_window(self):
+        kwargs = ssh_mod._windows_no_window_kwargs(detached=True)
+        flags = kwargs["creationflags"]
+        self.assertTrue(flags & subprocess.CREATE_NO_WINDOW)
+        self.assertFalse(flags & getattr(subprocess, "CREATE_NEW_CONSOLE", 0x10))
+
+
 class TestSSHRunnerConstruction(unittest.TestCase):
     def setUp(self):
         self.wd = Path(tempfile.mkdtemp())

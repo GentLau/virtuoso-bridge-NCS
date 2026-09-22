@@ -93,17 +93,27 @@ def _windows_no_window_kwargs(
     *,
     detached: bool = False,
     new_process_group: bool = False,
+    hidden_console: bool = False,
 ) -> dict[str, Any]:
-    """Best-effort Windows process flags for CLI tools like ssh/scp/tar."""
+    """Best-effort Windows process flags for CLI tools like ssh/scp/tar.
+
+    ``hidden_console`` creates a hidden console instead of ``CREATE_NO_WINDOW``.
+    Long-lived OpenSSH tunnels need this: ProxyJump internally starts
+    ``ssh -W``, and a console child inherits the hidden console instead of
+    allocating a visible one.
+    """
     if os.name != "nt":
         return {}
 
     startupinfo = subprocess.STARTUPINFO()  # type: ignore[attr-defined]
     startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW  # type: ignore[attr-defined]
     startupinfo.wShowWindow = 0  # SW_HIDE
-    creationflags = subprocess.CREATE_NO_WINDOW  # type: ignore[attr-defined]
-    if detached:
-        creationflags |= subprocess.DETACHED_PROCESS  # type: ignore[attr-defined]
+    if hidden_console:
+        creationflags = getattr(subprocess, "CREATE_NEW_CONSOLE", 0x00000010)
+    else:
+        creationflags = subprocess.CREATE_NO_WINDOW  # type: ignore[attr-defined]
+        if detached:
+            creationflags |= subprocess.DETACHED_PROCESS  # type: ignore[attr-defined]
     if new_process_group:
         creationflags |= subprocess.CREATE_NEW_PROCESS_GROUP  # type: ignore[attr-defined]
     return {
@@ -561,7 +571,9 @@ class SSHRunner:
                     stdin=subprocess.DEVNULL,
                     stdout=subprocess.DEVNULL,
                     stderr=stderr_stream,
-                    **_windows_no_window_kwargs(detached=True, new_process_group=True),
+                    **_windows_no_window_kwargs(
+                        hidden_console=True, new_process_group=True
+                    ),
                 )
                 stderr_stream.close()  # the child holds its own handle
                 # Jump-host cold handshakes can exceed 10 s (slow PAM,
