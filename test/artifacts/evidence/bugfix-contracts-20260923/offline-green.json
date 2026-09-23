@@ -1,0 +1,12 @@
+{
+  "run_id": "bugfix-contracts-20260923",
+  "command": "python -m pytest test/offline/unit test/offline/integration test/offline/scenario -q",
+  "expectation": "离线三级全绿；此前用 expectedFailure/现状断言钉住的 11 个缺陷用例转绿",
+  "actual": "unit/scenario 全绿；integration.test_parallel_local 在全量并发负载下出现一次时序抖动（1.058s > 1.0s），隔离复跑 3/3 通过，归因=环境（机器负载），非被测代码",
+  "time": "2026-09-23T11:44:36+08:00",
+  "machine": "DESKTOP-F143LSD（Windows/Python 3.12.10）",
+  "status": "PASS",
+  "attribution": [
+    "环境缺陷：test_parallel_local 1.0s 门槛在满载下抖动一次；隔离 3/3 绿"
+  ]
+}
