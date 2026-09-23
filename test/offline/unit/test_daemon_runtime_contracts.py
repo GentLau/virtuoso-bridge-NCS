@@ -221,9 +221,9 @@ class TestIsVirtuosoProcess(unittest.TestCase):
 
 
 class TestFcntlNonBlockingSetup(unittest.TestCase):
-    """On hosts with fcntl the daemon flips its stdin to non-blocking."""
+    """P-050: 导入期不得碰 stdin；非阻塞翻转移交运行期入口。"""
 
-    def test_nonblocking_applied_when_fcntl_available(self):
+    def test_import_is_stdin_free_and_runtime_flips_nonblocking(self):
         for name in VARIANTS:
             fake_fcntl = types.ModuleType("fcntl")
             calls = []
@@ -232,11 +232,14 @@ class TestFcntlNonBlockingSetup(unittest.TestCase):
             fake_fcntl.fcntl = lambda fd, *args: calls.append((fd, *args)) or 0x41
             fake_stdin = ScriptedStdin([])
             # Windows has no os.O_NONBLOCK; the real host that runs this branch
-            # (Linux) always does, so supply it for the import.
+            # (Linux) always does, so supply it for the runtime call.
             with mock.patch.dict(sys.modules, {"fcntl": fake_fcntl}), \
                     mock.patch.object(sys, "stdin", fake_stdin), \
                     mock.patch.object(os, "O_NONBLOCK", 0o4000, create=True):
                 mod = load_daemon(f"daemon_fcntl_{name}", "tok", DAEMON_FILES[name])
+                # 伪 stdin（pytest/CI）没有可用 fileno；导入必须零副作用
+                self.assertEqual(calls, [], "import must not touch stdin (P-050)")
+                mod._set_stdin_nonblocking()
             self.assertIs(mod._fcntl, fake_fcntl)
             self.assertEqual(calls, [(0, 3), (0, 4, 0x41 | 0o4000)])
 

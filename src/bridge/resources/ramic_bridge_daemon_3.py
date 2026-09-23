@@ -83,10 +83,22 @@ _watchdog = None
 _watchdog_gen = 0
 _watchdog_lock = threading.Lock()
 
-if _fcntl is not None:
-    _fd = sys.stdin.fileno()
-    _fl = _fcntl.fcntl(_fd, _fcntl.F_GETFL)
-    _fcntl.fcntl(_fd, _fcntl.F_SETFL, _fl | os.O_NONBLOCK)
+def _set_stdin_nonblocking():
+    """Best-effort: make the ipcBeginProcess stdin pipe non-blocking.
+
+    Must run at *runtime*, never at import: pytest/CI replaces sys.stdin with
+    a pseudofile whose fileno() raises, and a library module must stay
+    importable there (Linux CI otherwise fails during collection).
+    """
+    if _fcntl is None:
+        return
+    try:
+        fd = sys.stdin.fileno()
+        flags = _fcntl.fcntl(fd, _fcntl.F_GETFL)
+        _fcntl.fcntl(fd, _fcntl.F_SETFL, flags | os.O_NONBLOCK)
+    except (AttributeError, OSError, ValueError):
+        # pseudofile / closed pipe: keep blocking mode; real ipc pipes have fileno
+        pass
 
 _RB_START_T = time.time()
 _RB_CALLS = 0
@@ -481,6 +493,7 @@ def handle_connection(conn):
 
 def start_server():
     global HOST, PORT, DAEMON_TOKEN, TEMP_DIR
+    _set_stdin_nonblocking()
     if len(sys.argv) > 1:
         HOST = sys.argv[1]
     if len(sys.argv) > 2:
