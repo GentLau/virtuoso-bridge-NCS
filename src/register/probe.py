@@ -20,6 +20,37 @@ from common.ssh import SSHRunner
 from common.validation import validate_display
 
 
+#: 在目标解释器内直接打印三段版本号（py2/py3 同一条命令，不依赖 --version 文案）。
+_PYTHON_VERSION_CODE = 'import sys; print("%d.%d.%d" % sys.version_info[:3])'
+
+
+def _parse_python_version(text: str | None) -> tuple[int, int, int] | None:
+    """Extract the last ``X.Y[.Z]`` token from probe output (None if absent)."""
+    if not text:
+        return None
+    for token in reversed(text.split()):
+        numbers = token.split(".")
+        if len(numbers) not in (2, 3):
+            continue
+        try:
+            major, minor = int(numbers[0]), int(numbers[1])
+            micro = int(numbers[2]) if len(numbers) == 3 else 0
+        except ValueError:
+            continue
+        return (major, minor, micro)
+    return None
+
+
+def python_version_supported(version: tuple[int, int, int] | None) -> bool:
+    """r17: role machines accept Python 2.7+ or 3.6.8+."""
+    if version is None:
+        return False
+    major, minor, micro = version
+    return (major == 2 and minor >= 7) or (
+        major == 3 and (minor, micro) >= (6, 8)
+    )
+
+
 def _no_window_kwargs() -> dict:
     """Hide the Windows console for external ssh/scp probes (CREATE_NO_WINDOW)."""
     if os.name != "nt":
@@ -268,26 +299,25 @@ def detect_local_spectre() -> str | None:
     return shutil.which("spectre")
 
 
-def remote_python_major(runner: SSHRunner, python_cmd: str) -> int | None:
-    """Validate an explicitly supplied remote interpreter and return its major."""
+def remote_python_version(
+    runner: SSHRunner, python_cmd: str
+) -> tuple[int, int, int] | None:
+    """Return the exact version of an explicitly supplied remote interpreter."""
     quoted = shlex.quote(python_cmd)
     r = runner.run_command(
-        f"{quoted} -c 'import sys; print(sys.version_info[0])'", timeout=10
+        f"{quoted} -c '{_PYTHON_VERSION_CODE}'", timeout=10
     )
     if r.returncode != 0:
         return None
-    try:
-        value = int((r.stdout or "").strip().splitlines()[-1])
-    except (IndexError, ValueError):
-        return None
-    return value if value in (2, 3) else None
+    lines = (r.stdout or "").strip().splitlines()
+    return _parse_python_version(lines[-1] if lines else None)
 
 
-def local_python_major(python_cmd: str) -> int | None:
-    """Validate an explicitly supplied local interpreter and return its major."""
+def local_python_version(python_cmd: str) -> tuple[int, int, int] | None:
+    """Return the exact version of an explicitly supplied local interpreter."""
     try:
         r = subprocess.run(
-            [python_cmd, "-c", "import sys; print(sys.version_info[0])"],
+            [python_cmd, "-c", _PYTHON_VERSION_CODE],
             capture_output=True, text=True, timeout=10,
             **_no_window_kwargs(),
         )
@@ -295,20 +325,19 @@ def local_python_major(python_cmd: str) -> int | None:
         return None
     if r.returncode != 0:
         return None
-    try:
-        value = int(r.stdout.strip().splitlines()[-1])
-    except (IndexError, ValueError):
-        return None
-    return value if value in (2, 3) else None
+    lines = (r.stdout or "").strip().splitlines()
+    return _parse_python_version(lines[-1] if lines else None)
 
 
 def detect_remote_python(runner: SSHRunner) -> tuple[str, int] | None:
-    """Find a usable remote interpreter and pin its absolute path.
+    """Find a *supported* remote interpreter and pin its absolute path.
 
     Prefers the Cadence-bundled interpreters under ``$CDSHOME`` (which are
     usually absent from PATH), then falls back to PATH names.  The probe runs
     as one remote command so registration stays a single SSH round trip.
-    Returns ``None`` when no interpreter is found.
+    r17: role machines require Python 2.7+ or 3.6.8+, so interpreters that
+    exist but fall outside that window are skipped, never deployed to.
+    Returns ``None`` when no supported interpreter is found.
     """
     script = (
         "for p in "
@@ -317,23 +346,26 @@ def detect_remote_python(runner: SSHRunner) -> tuple[str, int] | None:
         '"$CDSHOME/tools.lnx86/python2.7/bin/python2.7" '
         "python3 python python2.7 python2; do "
         'if [ -x "$p" ] || command -v "$p" >/dev/null 2>&1; then '
-        'v=$("$p" --version 2>&1) && { echo "CMD:$p $v"; break; } || true; '
+        f"v=$(\"$p\" -c '{_PYTHON_VERSION_CODE}' 2>/dev/null) || v=; "
+        '[ -n "$v" ] && echo "CMD:$p $v"; '
         "fi; done"
     )
     r = runner.run_command(script, timeout=20)
-    last = (r.stdout or "").strip().splitlines()
-    line = last[-1] if last else ""
-    if line.startswith("CMD:") and "Python" in line:
-        cmd = line[4:].strip().split()[0]
-        major = 2 if "Python 2" in line else 3
-        if cmd:
-            return cmd, major
+    for line in (r.stdout or "").strip().splitlines():
+        if not line.startswith("CMD:"):
+            continue
+        parts = line[4:].strip().split()
+        if not parts:
+            continue
+        cmd = parts[0]
+        version = _parse_python_version(" ".join(parts[1:]))
+        if cmd and python_version_supported(version):
+            return cmd, version[0]
     # Fallback: individual PATH probes for hosts without a Bourne-style shell.
     for cmd in ("python3", "python", "python2.7", "python2"):
-        rr = runner.run_command(f"{shlex.quote(cmd)} --version 2>&1", timeout=10)
-        if rr.returncode == 0 and "Python" in rr.stdout + rr.stderr:
-            major = 2 if "Python 2" in (rr.stdout + rr.stderr) else 3
-            return cmd, major
+        version = remote_python_version(runner, cmd)
+        if version and python_version_supported(version):
+            return cmd, version[0]
     return None
 
 
@@ -478,8 +510,9 @@ def local_path_writable(path: str | Path) -> bool:
 
 
 __all__ = [
-    "local_python_major",
-    "remote_python_major",
+    "local_python_version",
+    "python_version_supported",
+    "remote_python_version",
     "scan_host_key_fingerprint",
     "ssh_port_is_22",
     "allocate_local_port",

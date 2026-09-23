@@ -30,6 +30,39 @@ class TestProbeHelpers(unittest.TestCase):
     def setUp(self) -> None:
         override_work_dir_for_tests(Path(tempfile.mkdtemp(prefix="vb-")))
 
+    def test_python_version_window_r17(self) -> None:
+        """r17: role 机器 2.7+ 或 3.6.8+；边界值必须精确。"""
+        from register import probe as probes
+
+        cases = {
+            (2, 6, 9): False,
+            (2, 7, 0): True,
+            (2, 7, 18): True,
+            (3, 6, 7): False,
+            (3, 6, 8): True,
+            (3, 6, 9): True,
+            (3, 9, 25): True,
+            (4, 0, 0): False,
+        }
+        for version, expected in cases.items():
+            with self.subTest(version=version):
+                self.assertEqual(
+                    probes.python_version_supported(version), expected
+                )
+        self.assertFalse(probes.python_version_supported(None))
+
+    def test_remote_python_version_parses_interpreter_output(self) -> None:
+        from register import probe as probes
+
+        runner = FakeRunner([CommandResult(0, "Python 3.6.8\n", "")])
+        self.assertEqual(
+            probes.remote_python_version(runner, "python3"), (3, 6, 8)
+        )
+        runner = FakeRunner([CommandResult(1, "", "not found")])
+        self.assertIsNone(probes.remote_python_version(runner, "nope"))
+        runner = FakeRunner([CommandResult(0, "garbage output", "")])
+        self.assertIsNone(probes.remote_python_version(runner, "weird"))
+
     def test_local_helpers(self) -> None:
         from register import probe as probes
         self.assertTrue(probes.local_hostname())
@@ -148,18 +181,51 @@ class TestProbeHelpers(unittest.TestCase):
             self.assertFalse(probes.ssh_port_is_22("alias"))
 
     def test_detect_cadence_python3(self) -> None:
-        runner = FakeRunner([CommandResult(0, "CMD:/opt/x/python3 Python 3.9.5\n", "")])
+        runner = FakeRunner([CommandResult(0, "CMD:/opt/x/python3 3.9.5\n", "")])
         self.assertEqual(detect_remote_python(runner), ("/opt/x/python3", 3))
 
     def test_detect_python27(self) -> None:
-        runner = FakeRunner([CommandResult(0, "CMD:/opt/x/python2.7 Python 2.7.18\n", "")])
+        runner = FakeRunner([CommandResult(0, "CMD:/opt/x/python2.7 2.7.18\n", "")])
         self.assertEqual(detect_remote_python(runner), ("/opt/x/python2.7", 2))
+
+    def test_detect_accepts_oldest_supported_36_8(self) -> None:
+        runner = FakeRunner([CommandResult(0, "CMD:/opt/x/python3.6 3.6.8\n", "")])
+        self.assertEqual(detect_remote_python(runner), ("/opt/x/python3.6", 3))
+
+    def test_detect_skips_unsupported_then_picks_supported(self) -> None:
+        """r17: 3.5 存在也要跳过，不能被部署。"""
+        runner = FakeRunner([CommandResult(
+            0,
+            "CMD:/opt/old/python3 3.5.9\n"
+            "CMD:/opt/new/python3 3.9.18\n",
+            "",
+        )])
+        self.assertEqual(detect_remote_python(runner), ("/opt/new/python3", 3))
+
+    def test_detect_prefers_first_supported_candidate(self) -> None:
+        """2.7.x 任意 micro 都合格，先命中的就是被固定的解释器。"""
+        runner = FakeRunner([CommandResult(
+            0,
+            "CMD:/opt/python27 2.7.5\nCMD:/opt/new/python3 3.9.18\n",
+            "",
+        )])
+        self.assertEqual(detect_remote_python(runner), ("/opt/python27", 2))
+
+    def test_detect_rejects_only_unsupported_candidates(self) -> None:
+        runner = FakeRunner([
+            CommandResult(0, "CMD:/opt/old/python 2.6.9\nCMD:/opt/old3 3.6.7\n", ""),
+            CommandResult(1, "", "missing"),   # fallback python3
+            CommandResult(1, "", "missing"),   # fallback python
+            CommandResult(1, "", "missing"),   # fallback python2.7
+            CommandResult(1, "", "missing"),   # fallback python2
+        ])
+        self.assertIsNone(detect_remote_python(runner))
 
     def test_detect_falls_back_to_path(self) -> None:
         runner = FakeRunner([
             CommandResult(0, "", ""),                 # one-shot found nothing
             CommandResult(1, "", "no python3"),       # python3 missing
-            CommandResult(0, "Python 2.7.18", ""),    # python works
+            CommandResult(0, "2.7.18", ""),           # python works
         ])
         self.assertEqual(detect_remote_python(runner), ("python", 2))
 

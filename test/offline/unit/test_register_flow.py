@@ -701,6 +701,45 @@ class TestFlowMoreBranches(unittest.TestCase):
                     roles={"daemon": {"python": "/bad/python"}},
                 ), token="t")
 
+    def test_local_explicit_python_below_r17_floor_is_rejected(self):
+        """r17: role 机器 3.6.8+；显式给出 3.5 必须注册失败并带上版本号。"""
+        from unittest import mock
+        from register import probe_user
+        with mock.patch("register.probe.local_path_writable", return_value=True), \
+             mock.patch("register.probe.local_port_free", return_value=True), \
+             mock.patch("register.probe.local_executable_exists", return_value=True), \
+             mock.patch("register.probe.local_python_version",
+                        return_value=(3, 5, 9)):
+            with self.assertRaises(RegistrationProbeError) as ctx:
+                probe_user(RegistrationRequest(
+                    mode="local", user="u",
+                    roles={"daemon": {"python": "/opt/old/python3"}},
+                ), token="t")
+        self.assertIn("3.5.9", str(ctx.exception))
+        self.assertIn("3.6.8+", str(ctx.exception))
+
+    def test_remote_explicit_python_below_r17_floor_is_rejected(self):
+        from unittest import mock
+        from register import probe_user
+        with mock.patch("register.flow.SSHRunner") as runner, \
+             mock.patch("register.probe.host_key_fingerprint", return_value="fp"), \
+             mock.patch("register.probe.remote_hostname", return_value="host-a"), \
+             mock.patch("register.probe.remote_user", return_value="alice"), \
+             mock.patch("register.probe.remote_executable_exists", return_value=True), \
+             mock.patch("register.probe.remote_python_version",
+                        return_value=(2, 6, 9)), \
+             mock.patch("register.probe.remote_path_writable", return_value=True):
+            runner.return_value.test_connection.return_value = True
+            runner.return_value.run_command.side_effect = _probe_run
+            with self.assertRaises(RegistrationProbeError) as ctx:
+                probe_user(RegistrationRequest(
+                    mode="remote", user="u",
+                    ssh={"default": {"host": "h", "user": "a"}},
+                    roles={"daemon": {"python": "/opt/old/python2"}},
+                ), token="t")
+        self.assertIn("2.6.9", str(ctx.exception))
+        self.assertIn("2.7+", str(ctx.exception))
+
     def test_remote_explicit_python_invalid_is_rejected(self):
         from unittest import mock
         from register import probe_user

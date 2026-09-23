@@ -386,6 +386,23 @@ def _probe_gui_display(
     entry_role.display = detected
 
 
+def _validated_daemon_python(
+    version: tuple[int, int, int] | None, *, target: str
+) -> int:
+    """r17: role 机器 Python 2.7+ / 3.6.8+，否则注册失败。"""
+    if version is None:
+        raise RegistrationProbeError(
+            f"cannot determine explicit daemon python version: {target}"
+        )
+    if not probes.python_version_supported(version):
+        shown = ".".join(str(part) for part in version)
+        raise RegistrationProbeError(
+            f"daemon python {target} is Python {shown}; role machines require "
+            "Python 2.7+ or 3.6.8+"
+        )
+    return version[0]
+
+
 def _probe(
     request: RegistrationRequest,
     token: str,
@@ -495,11 +512,10 @@ def _probe(
                     raise RegistrationProbeError(
                         f"explicit daemon python is not executable: {explicit_python}"
                     )
-                python_major = probes.local_python_major(explicit_python)
-                if python_major is None:
-                    raise RegistrationProbeError(
-                        f"cannot determine explicit daemon python major: {explicit_python}"
-                    )
+                python_major = _validated_daemon_python(
+                    probes.local_python_version(explicit_python),
+                    target=explicit_python,
+                )
                 python_cmd = explicit_python
             else:
                 python_cmd = sys.executable
@@ -554,18 +570,17 @@ def _probe(
                         f"explicit daemon python is not executable on "
                         f"{daemon.host}: {explicit_python}"
                     )
-                python_major = probes.remote_python_major(runner, explicit_python)
-                if python_major is None:
-                    raise RegistrationProbeError(
-                        f"cannot determine explicit daemon python major on "
-                        f"{daemon.host}: {explicit_python}"
-                    )
+                python_major = _validated_daemon_python(
+                    probes.remote_python_version(runner, explicit_python),
+                    target=f"{explicit_python} on {daemon.host}",
+                )
                 python_cmd = explicit_python
             else:
                 python = probes.detect_remote_python(runner)
                 if python is None:
                     raise RegistrationProbeError(
-                        f"no usable python found on daemon role {daemon.host}"
+                        f"no usable python found on daemon role {daemon.host} "
+                        "(need Python 2.7+ or 3.6.8+)"
                     )
                 python_cmd, python_major = python
             entry.roles.daemon.python = python_cmd

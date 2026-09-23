@@ -117,7 +117,10 @@ def main(argv: list[str] | None = None) -> int:
                 proc.wait(timeout=5)
             except subprocess.TimeoutExpired:
                 proc.kill()
-    version = subprocess.run([args.py27, "-V"], capture_output=True, text=True).stderr.strip()
+    # py2 prints ``-V`` to stderr, py3.4+ to stdout: accept either so the
+    # evidence records the interpreter even when this probe drives python3.6.
+    banner = subprocess.run([args.py27, "-V"], capture_output=True, text=True)
+    version = (banner.stdout or banner.stderr).strip()
     payload = {"interpreter": args.py27, "version": version, "cases": cases,
                "passed": sum(1 for c in cases if c["ok"]), "total": len(cases),
                "daemon_log": str(log)}
