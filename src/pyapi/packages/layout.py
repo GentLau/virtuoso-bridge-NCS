@@ -1356,6 +1356,12 @@ class Package:
         """Copy ``remote`` to a remote ``dest``; returns an error string or None."""
         if not posixpath.isabs(dest):
             return f"file_is_local=false requires an absolute remote path: {dest}"
+        prepared = self.middle.run_command(
+            f"mkdir -p {shlex.quote(posixpath.dirname(dest))}",
+            timeout=request.timeout, token=request.token,
+        )
+        if prepared.returncode != 0:
+            return prepared.stderr or f"mkdir failed: {posixpath.dirname(dest)}"
         outcome = self.middle.run_command(
             f"cp {shlex.quote(remote)} {shlex.quote(dest)} && "
             f"test -s {shlex.quote(dest)}",
