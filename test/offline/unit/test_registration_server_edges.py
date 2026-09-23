@@ -377,6 +377,70 @@ class TestConfigEdges(_EdgeBase):
 
 
 class TestRegisterCommandEdges(_EdgeBase):
+    def _register_holder(self, token="holder-tok"):
+        self.registry.register("holder", UserEntry(token=token, mode="local"))
+        return token
+
+    def _apply_local(self, srv, user="enhanced-user", **extra):
+        body = {"user": user, "action": "apply", "mode": "local"}
+        body.update(extra)
+        return srv.request("POST", "/api/register", body)
+
+    def test_apply_accepts_enhanced_token_from_holder_or_admin(self):
+        """r22: enhanced_token 可选；提供了就用（任一已登记 holder token 或管理员 token）。"""
+        holder = self._register_holder()
+        srv = self.start()
+        for label, token in (("holder", holder), ("admin", _ADMIN_TOKEN)):
+            with self.subTest(kind=label):
+                status, raw, _resp = self._apply_local(
+                    srv, user=f"user-{label}", enhanced_token=token
+                )
+                self.assertEqual(status, 200, raw)
+                self.assertEqual(json.loads(raw)["stage"], "applied")
+
+    def test_apply_rejects_unknown_enhanced_token(self):
+        srv = self.start()
+        status, raw, _resp = self._apply_local(
+            srv, enhanced_token="not-a-known-token"
+        )
+        self.assertEqual(status, 401, raw)
+        self.assertIn("invalid enhanced_token", raw)
+        self.assertNotIn("enhanced-user", srv.server.flows)
+
+    def test_apply_without_enhanced_token_keeps_legacy_path(self):
+        srv = self.start()
+        status, raw, _resp = self._apply_local(srv)
+        self.assertEqual(status, 200, raw)
+        self.assertEqual(json.loads(raw)["stage"], "applied")
+
+    def test_enhanced_token_is_not_echoed_in_state(self):
+        holder = self._register_holder()
+        srv = self.start()
+        status, raw, _resp = self._apply_local(srv, enhanced_token=holder)
+        self.assertEqual(status, 200, raw)
+        session_token = json.loads(raw)["token"]
+        status, state_raw, _resp = srv.request(
+            "GET", f"/api/register/enhanced-user?token={session_token}"
+        )
+        self.assertEqual(status, 200, state_raw)
+        self.assertNotIn(holder, state_raw)
+        self.assertNotIn("enhanced_token", state_raw)
+
+    def test_bug_report_masks_enhanced_token_key(self):
+        holder = self._register_holder()
+        srv = self.start()
+        body = json.dumps({
+            "token": holder,
+            "enhanced_token": "top-secret-enhanced-value",
+        }).encode("utf-8")
+        status, raw = srv.request_raw("POST", "/api/bug", body)
+        self.assertEqual(status, 200, raw)
+        saved = (Path(self.wd) / json.loads(raw)["path"]).read_text(
+            encoding="utf-8"
+        )
+        self.assertNotIn("top-secret-enhanced-value", saved)
+        self.assertIn("***", saved)
+
     def test_apply_on_committed_flow_is_rejected(self):
         srv = self.start()
         with srv.server.flow_lock:

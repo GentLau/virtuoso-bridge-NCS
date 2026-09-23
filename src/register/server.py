@@ -162,13 +162,22 @@ class RegistrationHandler(BaseHTTPRequestHandler):
         """单管理员 token 校验：只比对代码内 SHA-256 哈希，凭据不进日志。"""
         header = self.headers.get("Authorization", "")
         presented = header.removeprefix("Bearer ").strip() if header else ""
-        digest = hashlib.sha256(presented.encode("utf-8")).hexdigest() if presented else ""
-        ok = bool(presented) and hmac.compare_digest(digest, _ADMIN_TOKEN_HASH)
-        if not ok:
+        if not self._is_admin_token(presented):
             self._send_json(401, {"error": "unauthorized"})
             return False
         self.log_message("admin authorized")
         return True
+
+    @staticmethod
+    def _is_admin_token(presented: str) -> bool:
+        digest = hashlib.sha256(presented.encode("utf-8")).hexdigest() if presented else ""
+        return bool(presented) and hmac.compare_digest(digest, _ADMIN_TOKEN_HASH)
+
+    def _enhanced_token_ok(self, presented: str) -> bool:
+        """r22: 加强凭据 = 管理员 token 或任一已登记持有者的 token。"""
+        if self._is_admin_token(presented):
+            return True
+        return self.server.registry.user_of(presented) is not None  # type: ignore[attr-defined]
 
     @staticmethod
     def _redacted(entry) -> dict:
@@ -336,6 +345,12 @@ class RegistrationHandler(BaseHTTPRequestHandler):
                 self._send_json(400, {"error": "invalid request",
                                       "detail": [str(e) for e in exc.errors()]})
                 return
+            if request.enhanced_token is not None and not self._enhanced_token_ok(
+                request.enhanced_token
+            ):
+                # 只校验、不落盘、不回显、不进日志（spec r22）
+                self._send_json(401, {"error": "invalid enhanced_token"})
+                return
             # 检查“无同名进行中会话”与创建/登记必须是一个原子步骤，否则两个
             # 并发 apply 会各自看到空会话并互相覆盖（顶层补充 §3）。
             error_payload = None
@@ -463,7 +478,7 @@ class RegistrationHandler(BaseHTTPRequestHandler):
         self._send_json(200, payload)
 
     _CREDENTIAL_KEY_RE = re.compile(
-        r'("(?P<key>token|authorization|password|passwd|secret|api_key|apikey|credential)"'
+        r'("(?P<key>token|enhanced_token|authorization|password|passwd|secret|api_key|apikey|credential)"'
         r'\s*:\s*)'
         r'("(?:\\.|[^"\\])*"|true|false|null|'
         r'-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?)',

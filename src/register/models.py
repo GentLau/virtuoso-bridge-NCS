@@ -125,6 +125,9 @@ class RegistrationRequest(BaseModel):
 
     user: str = Field(min_length=1, max_length=64, pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
     token: str | None = Field(default=None, pattern=r"^[A-Za-z0-9._-]{1,64}$")
+    #: 加强凭据（spec r22）：管理员 token 或任一已登记持有者的 token。
+    #: 可选：不提供走老路子；提供了就在 apply 时校验，只校验、不落盘、不回显。
+    enhanced_token: str | None = Field(default=None, min_length=1, max_length=64)
     # mode.default is required; a bare "local"/"remote" is accepted as shorthand.
     mode: RequestMode | Literal["local", "remote"]
     ssh: RequestSsh = Field(default_factory=RequestSsh)
@@ -168,6 +171,8 @@ class RegistrationRequest(BaseModel):
         validate_user_name(self.user)
         if self.token is not None:
             validate_token(self.token)
+        if self.enhanced_token is not None:
+            validate_token(self.enhanced_token)
         for name in ("gui", "daemon", "command", "file", "spectre"):
             role = getattr(self.roles, name)
             role_mode = role.mode or self.mode.default
