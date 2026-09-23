@@ -451,30 +451,21 @@ class Package:
                 work_dir, ".vb_verilog",
                 f"{_safe_name(request.library)}__{_safe_name(request.cell)}",
             )
-            self.middle.run_command(
-                f"mkdir -p {shlex.quote(run_dir)}",
+            cdslib = posixpath.join(work_dir, "cds.lib")
+            staged_cdslib = self.middle.run_command(
+                f"test -s {shlex.quote(cdslib)} && "
+                f"mkdir -p {shlex.quote(run_dir)} && "
+                f"cp {shlex.quote(cdslib)} {shlex.quote(posixpath.join(run_dir, 'cds.lib'))}",
                 timeout=60, token=request.token,
             )
-            # 不依赖 CIW cwd 里的 cds.lib：按目标库与 ref 库的 readPath 自己生成。
-            cdslib_lines: list[str] = []
-            for name in [request.library, *request.ref_libs]:
-                read_path = self._q(
-                    f"let((lib) lib = ddGetObj({basic.q(name)}) "
-                    'unless(lib error("library not found")) ddGetObjReadPath(lib))',
-                    request.token, timeout,
-                ).strip().strip('"')
-                if not read_path or read_path == "nil":
-                    return Result(
-                        False, steps,
-                        f"cds.lib generation failed: no read path for {name}",
-                    )
-                cdslib_lines.append(f"DEFINE {name} {read_path}\n")
-            self._write_remote(
-                posixpath.join(run_dir, "cds.lib"),
-                "".join(cdslib_lines), request,
-            )
-            steps.append(_step("stage_cdslib", True,
-                               {"libraries": [request.library, *request.ref_libs]}))
+            steps.append(_step("stage_cdslib", staged_cdslib.returncode == 0,
+                               staged_cdslib))
+            if staged_cdslib.returncode != 0:
+                return Result(
+                    False, steps,
+                    f"cdslib_missing: {cdslib} not found — "
+                    "start Virtuoso from a project dir that contains cds.lib",
+                )
 
             source_name = _safe_name(Path(request.file_path).name, "design.v")
             remote_source = posixpath.join(run_dir, source_name)
