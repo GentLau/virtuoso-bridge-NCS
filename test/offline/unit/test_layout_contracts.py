@@ -414,6 +414,10 @@ class OrchestrationMiddle:
             return VirtuosoResult(status=ExecutionStatus.SUCCESS, output=self.view_state)
         if "dbSave(" in code:                      # _save_expr
             return VirtuosoResult(status=ExecutionStatus.SUCCESS, output=self.save_output)
+        if '"open-ok"' in code:                    # _open_for_edit_error 探测
+            return VirtuosoResult(
+                status=ExecutionStatus.SUCCESS,
+                output='"open-failed"' if self.lock_files else '"open-ok"')
         if "ddGetObjReadPath" in code:             # 锁检查前的库 readPath 探测
             return VirtuosoResult(status=ExecutionStatus.SUCCESS, output='"/lib"')
         if not self.command_ok:
@@ -499,6 +503,16 @@ class TestLayoutWriteOrchestration(unittest.TestCase):
         result = self._write(middle)
         self.assertFalse(result.ok)
         self.assertIn("locked by another session", result.error)
+
+    def test_second_write_is_not_false_locked(self):
+        """P-044 回归：本会话自己的锁不能挡第二次写，且每次写后要 dbClose。"""
+        middle = OrchestrationMiddle()
+        first = self._write(middle)
+        second = self._write(middle)
+        self.assertTrue(first.ok, first.error)
+        self.assertTrue(second.ok, second.error)
+        self.assertTrue(any("dbClose(vbLayoutCv)" in code
+                            for code in middle.calls))
 
     def test_save_without_saved_marker_fails(self):
         """layout 的正确对照：保存步必须看到 "saved"，否则判失败。"""
@@ -639,6 +653,10 @@ class GdsMiddle:
     def execute_skill(self, code, timeout=None, *, token):
         from pyapi.models import ExecutionStatus, VirtuosoResult
         self.skills.append(code)
+        if '"open-ok"' in code:                    # _open_for_edit_error 探测
+            return VirtuosoResult(
+                status=ExecutionStatus.SUCCESS,
+                output='"open-failed"' if self.lock_files else '"open-ok"')
         if "dbSave(" in code:
             return VirtuosoResult(status=ExecutionStatus.SUCCESS, output=self.flush_output)
         return VirtuosoResult(status=ExecutionStatus.SUCCESS, output=self.launch_output)

@@ -383,14 +383,36 @@ class Package:
             raise RuntimeError(f"library {request.library!r} read path unavailable")
         return posixpath.join(root.rstrip("/"), request.cell, request.view)
 
-    def _is_locked(self, request: Any) -> bool:
-        """True when another session holds an edit lock on the cellview."""
+    def _lock_files_exist(self, request: Any) -> bool:
+        """True when the cellview directory contains ``*.cdslck`` lock files."""
         view_dir = self._view_dir_path(request)
         probe = self.middle.run_command(
             f"ls -A {shlex.quote(view_dir)}/*.cdslck 2>/dev/null",
             timeout=60, token=request.token,
         )
         return probe.returncode == 0 and bool((probe.stdout or "").strip())
+
+    def _open_for_edit_error(self, request: Any) -> str | None:
+        """Probe an edit-open with immediate close; return a clear error or None.
+
+        同一会话自己持有的锁不算冲突：以“能否 append-open 成功”为准，而不是
+        看目录里有没有 ``*.cdslck``（锁文件对 owner 来说总是存在）。
+        """
+        probe = self._q(
+            "let((vbCv) "
+            f"vbCv = {self._open_expr(request.library, request.cell, request.view, request.view_type, 'a')} "
+            'if(vbCv then progn(dbClose(vbCv) "open-ok") else "open-failed"))',
+            request.token,
+            request.timeout,
+        )
+        if basic.parse_sexpr(probe.strip()) == "open-ok":
+            return None
+        if self._lock_files_exist(request):
+            return (
+                f"layout view {request.library}/{request.cell}/{request.view} "
+                "is locked by another session"
+            )
+        return f"failed to open layout view {request.library}/{request.cell}/{request.view} for edit"
 
     def _save_expr(self, request: Any) -> str:
         return (
@@ -483,11 +505,9 @@ class Package:
         try:
             self._require_view_exists(request)
             steps.append(_step("view_exists", True, request.view))
-            if self._is_locked(request):
-                raise RuntimeError(
-                    f"layout view {request.library}/{request.cell}/{request.view} "
-                    "is locked by another session"
-                )
+            edit_error = self._open_for_edit_error(request)
+            if edit_error:
+                raise RuntimeError(edit_error)
             if request.strict_lpp:
                 lpp_steps = self._check_lpp(request, planned)
                 steps.append(_step("strict_lpp", True, lpp_steps))
@@ -499,7 +519,9 @@ class Package:
                 "let((vbLayoutCv) "
                 f"vbLayoutCv = {self._open_expr(request.library, request.cell, request.view, request.view_type, 'a')} "
                 'unless(vbLayoutCv error("layout view not found")) '
-                f"{expr})"
+                "unwindProtect("
+                f"progn({expr}) "
+                "progn(when(vbLayoutCv dbClose(vbLayoutCv)))))"
             )
             run = self._skill(wrapped, request.token, request.timeout)
             steps.append(_step(f"command:{command['op']}", run.ok, run))
@@ -1022,12 +1044,9 @@ class Package:
                     f"layout view {request.library}/{request.cell}/{request.view} "
                     f"is not view type {request.view_type}",
                 )
-            if self._is_locked(request):
-                return Result(
-                    False, steps,
-                    f"layout view {request.library}/{request.cell}/{request.view} "
-                    "is locked by another session",
-                )
+            edit_error = self._open_for_edit_error(request)
+            if edit_error:
+                return Result(False, steps, edit_error)
             # XStream Out translates the *saved* cellview; a dirty cellview in the
             # session is not exported and can raise a modal "Save All" dialog that
             # blocks the whole SKILL channel.

@@ -452,11 +452,29 @@ class Package:
                 f"{_safe_name(request.library)}__{_safe_name(request.cell)}",
             )
             self.middle.run_command(
-                f"mkdir -p {shlex.quote(run_dir)} && "
-                f"cp {shlex.quote(posixpath.join(work_dir, 'cds.lib'))} "
-                f"{shlex.quote(posixpath.join(run_dir, 'cds.lib'))}",
+                f"mkdir -p {shlex.quote(run_dir)}",
                 timeout=60, token=request.token,
             )
+            # 不依赖 CIW cwd 里的 cds.lib：按目标库与 ref 库的 readPath 自己生成。
+            cdslib_lines: list[str] = []
+            for name in [request.library, *request.ref_libs]:
+                read_path = self._q(
+                    f"let((lib) lib = ddGetObj({basic.q(name)}) "
+                    'unless(lib error("library not found")) ddGetObjReadPath(lib))',
+                    request.token, timeout,
+                ).strip().strip('"')
+                if not read_path or read_path == "nil":
+                    return Result(
+                        False, steps,
+                        f"cds.lib generation failed: no read path for {name}",
+                    )
+                cdslib_lines.append(f"DEFINE {name} {read_path}\n")
+            self._write_remote(
+                posixpath.join(run_dir, "cds.lib"),
+                "".join(cdslib_lines), request,
+            )
+            steps.append(_step("stage_cdslib", True,
+                               {"libraries": [request.library, *request.ref_libs]}))
 
             source_name = _safe_name(Path(request.file_path).name, "design.v")
             remote_source = posixpath.join(run_dir, source_name)
@@ -514,12 +532,21 @@ class Package:
             steps.append(_step("ihdl", run.returncode == 0, run))
 
             log_path = posixpath.join(run_dir, "verilogIn.batch.log")
-            log_text = self._read_remote(log_path, request) if run.returncode == 0 else ""
+            try:
+                log_text = self._read_remote(log_path, request)
+            except Exception:  # noqa: BLE001 - 失败时日志可能不存在
+                log_text = ""
             failure = ""
+            reason = ""
             if "ERROR (VERILOGIN-547)" in log_text:
                 failure = "parse_failed"
+                reason = "parse_failed"
+            elif run.returncode != 0:
+                reason = "ihdl_failed"
+                failure = (run.stderr or "").strip() or f"rc={run.returncode}"
             elif "End of Logfile." not in log_text:
                 failure = "incomplete_log"
+                reason = "incomplete_log"
             if failure:
                 xmvlog_text = ""
                 try:
@@ -531,7 +558,7 @@ class Package:
                     if line.strip().startswith(("xmvlog: *E", "xmvlog: *W"))
                 ][:20]
                 return Result(False, steps, failure, {
-                    "reason": failure,
+                    "reason": reason or failure,
                     "log_path": log_path,
                     "diagnostics": diagnostics,
                 })

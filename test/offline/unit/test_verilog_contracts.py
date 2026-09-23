@@ -508,10 +508,11 @@ class TestVerilogImport(unittest.TestCase):
     def test_ihdl_nonzero_exit_and_validation(self):
         import tempfile
         with tempfile.TemporaryDirectory(prefix="vb-") as tmp:
-            # ihdl 非 0 → 不读日志 → incomplete_log（且能看出 run.returncode）
+            # ihdl 非 0 → 原样回显 stderr，不再伪装成 incomplete_log（P-047）
             failed = self._import(CellModeMiddle(ihdl_rc=2), tmp)
             self.assertFalse(failed.ok)
-            self.assertEqual(failed.error, "incomplete_log")
+            self.assertEqual(failed.error, "ihdl boom")
+            self.assertEqual(failed.value["reason"], "ihdl_failed")
 
             with self.assertRaises(ValueError):
                 V.Package(CellModeMiddle()).import_verilog(V.ImportRequest(
