@@ -330,14 +330,14 @@ def local_python_version(python_cmd: str) -> tuple[int, int, int] | None:
 
 
 def detect_remote_python(runner: SSHRunner) -> tuple[str, int] | None:
-    """Find a *supported* remote interpreter and pin its absolute path.
+    """Find a usable remote interpreter and pin its absolute path.
 
     Prefers the Cadence-bundled interpreters under ``$CDSHOME`` (which are
     usually absent from PATH), then falls back to PATH names.  The probe runs
     as one remote command so registration stays a single SSH round trip.
-    r17: role machines require Python 2.7+ or 3.6.8+, so interpreters that
-    exist but fall outside that window are skipped, never deployed to.
-    Returns ``None`` when no supported interpreter is found.
+    r17: the found interpreter must be Python 2.7+ or 3.6.8+; otherwise this
+    returns ``None`` and the caller asks the user to set
+    ``role.daemon.python`` explicitly (which is then validated).
     """
     script = (
         "for p in "
@@ -346,21 +346,18 @@ def detect_remote_python(runner: SSHRunner) -> tuple[str, int] | None:
         '"$CDSHOME/tools.lnx86/python2.7/bin/python2.7" '
         "python3 python python2.7 python2; do "
         'if [ -x "$p" ] || command -v "$p" >/dev/null 2>&1; then '
-        f"v=$(\"$p\" -c '{_PYTHON_VERSION_CODE}' 2>/dev/null) || v=; "
-        '[ -n "$v" ] && echo "CMD:$p $v"; '
+        f"v=$(\"$p\" -c '{_PYTHON_VERSION_CODE}' 2>/dev/null) && "
+        '{ echo "CMD:$p $v"; break; } || true; '
         "fi; done"
     )
     r = runner.run_command(script, timeout=20)
-    for line in (r.stdout or "").strip().splitlines():
-        if not line.startswith("CMD:"):
-            continue
+    lines = (r.stdout or "").strip().splitlines()
+    line = lines[-1] if lines else ""
+    if line.startswith("CMD:"):
         parts = line[4:].strip().split()
-        if not parts:
-            continue
-        cmd = parts[0]
-        version = _parse_python_version(" ".join(parts[1:]))
-        if cmd and python_version_supported(version):
-            return cmd, version[0]
+        version = _parse_python_version(" ".join(parts[1:])) if parts else None
+        if parts and version and python_version_supported(version):
+            return parts[0], version[0]
     # Fallback: individual PATH probes for hosts without a Bourne-style shell.
     for cmd in ("python3", "python", "python2.7", "python2"):
         version = remote_python_version(runner, cmd)

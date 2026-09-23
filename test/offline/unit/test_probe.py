@@ -192,28 +192,10 @@ class TestProbeHelpers(unittest.TestCase):
         runner = FakeRunner([CommandResult(0, "CMD:/opt/x/python3.6 3.6.8\n", "")])
         self.assertEqual(detect_remote_python(runner), ("/opt/x/python3.6", 3))
 
-    def test_detect_skips_unsupported_then_picks_supported(self) -> None:
-        """r17: 3.5 存在也要跳过，不能被部署。"""
-        runner = FakeRunner([CommandResult(
-            0,
-            "CMD:/opt/old/python3 3.5.9\n"
-            "CMD:/opt/new/python3 3.9.18\n",
-            "",
-        )])
-        self.assertEqual(detect_remote_python(runner), ("/opt/new/python3", 3))
-
-    def test_detect_prefers_first_supported_candidate(self) -> None:
-        """2.7.x 任意 micro 都合格，先命中的就是被固定的解释器。"""
-        runner = FakeRunner([CommandResult(
-            0,
-            "CMD:/opt/python27 2.7.5\nCMD:/opt/new/python3 3.9.18\n",
-            "",
-        )])
-        self.assertEqual(detect_remote_python(runner), ("/opt/python27", 2))
-
-    def test_detect_rejects_only_unsupported_candidates(self) -> None:
+    def test_detect_unsupported_version_returns_none(self) -> None:
+        """r17: 探测到的解释器不在窗口内 → 返回 None，由注册报错让用户显式指定。"""
         runner = FakeRunner([
-            CommandResult(0, "CMD:/opt/old/python 2.6.9\nCMD:/opt/old3 3.6.7\n", ""),
+            CommandResult(0, "CMD:/opt/old/python 2.6.9\n", ""),
             CommandResult(1, "", "missing"),   # fallback python3
             CommandResult(1, "", "missing"),   # fallback python
             CommandResult(1, "", "missing"),   # fallback python2.7

@@ -390,15 +390,11 @@ def _validated_daemon_python(
     version: tuple[int, int, int] | None, *, target: str
 ) -> int:
     """r17: role 机器 Python 2.7+ / 3.6.8+，否则注册失败。"""
-    if version is None:
+    if version is None or not probes.python_version_supported(version):
+        shown = "" if version is None else ".".join(map(str, version))
         raise RegistrationProbeError(
-            f"cannot determine explicit daemon python version: {target}"
-        )
-    if not probes.python_version_supported(version):
-        shown = ".".join(str(part) for part in version)
-        raise RegistrationProbeError(
-            f"daemon python {target} is Python {shown}; role machines require "
-            "Python 2.7+ or 3.6.8+"
+            f"daemon python {target} {shown}".rstrip()
+            + " must be Python 2.7+ or 3.6.8+"
         )
     return version[0]
 
@@ -580,7 +576,8 @@ def _probe(
                 if python is None:
                     raise RegistrationProbeError(
                         f"no usable python found on daemon role {daemon.host} "
-                        "(need Python 2.7+ or 3.6.8+)"
+                        "(need Python 2.7+ or 3.6.8+); set role.daemon.python "
+                        "explicitly and it will be validated"
                     )
                 python_cmd, python_major = python
             entry.roles.daemon.python = python_cmd
