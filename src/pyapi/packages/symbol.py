@@ -1057,29 +1057,30 @@ def _screenshot_skill(request: ScreenshotRequest, region: tuple[float, float, fl
         )
     else:
         target = (
-            "let((vbW) vbW = car(setof(x hiGetWindowList() "
+            "let((vbTmp) vbTmp = car(setof(x hiGetWindowList() "
             "x~>cellView && "
             f"x~>cellView~>libName == {basic.q(request.library)} && "
             f"x~>cellView~>cellName == {basic.q(request.cell)} && "
             f"x~>cellView~>viewName == {basic.q(request.view)})) "
-            "unless(vbW vbW = geOpen(?lib "
+            "unless(vbTmp progn(vbTmp = geOpen(?lib "
             f"{basic.q(request.library)} ?cell {basic.q(request.cell)} "
             f"?view {basic.q(request.view)} ?viewType {basic.q(request.view_type)} "
-            '?mode "r")) vbW)'
+            '?mode "r") vbOpened = t)) vbTmp)'
         )
     zoom = ""
     if region is not None:
         x0, y0, x1, y1 = region
         zoom = f"hiZoomIn(vbW list({x0:g}:{y0:g} {x1:g}:{y1:g})) "
     return (
-        "let((vbW vbRc) "
+        "let((vbW vbRc vbOpened) "
+        "vbOpened = nil "
         f"vbW = {target} "
         'unless(vbW error("symbol window not found")) '
         f"{zoom}"
         f"vbRc = hiWindowSaveImage(?target vbW ?path {basic.q(remote_path)} "
         f"?format \"png\" ?toplevel {'t' if request.toplevel else 'nil'} "
         f"?centralWidget {'t' if request.central_widget else 'nil'}) "
-        f"unless({'t' if request.leave_open else 'nil'} when(vbW hiCloseWindow(vbW))) "
+        f"unless({'t' if request.leave_open else 'nil'} when(vbOpened hiCloseWindow(vbW))) "
         'if(vbRc "saved" "capture-failed"))'
     )
 

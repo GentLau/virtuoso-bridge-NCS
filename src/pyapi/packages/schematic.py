@@ -847,12 +847,12 @@ def _screenshot_skill(request: ScreenshotRequest, remote_path: str) -> str:
         target_expr = f"window({int(request.window_id)})"
     else:
         target_expr = (
-            f'let((vbW) vbW = car(setof(x hiGetWindowList() '
+            f'let((vbTmp) vbTmp = car(setof(x hiGetWindowList() '
             f'x~>cellView && x~>cellView~>libName == {_q(request.library)} '
             f'&& x~>cellView~>cellName == {_q(request.cell)} '
             f'&& x~>cellView~>viewName == {_q(request.view)})) '
-            f'unless(vbW vbW = geOpen(?lib {_q(request.library)} ?cell {_q(request.cell)} '
-            f'?view {_q(request.view)} ?viewType "schematic" ?mode "r")) vbW)'
+            f'unless(vbTmp progn(vbTmp = geOpen(?lib {_q(request.library)} ?cell {_q(request.cell)} '
+            f'?view {_q(request.view)} ?viewType "schematic" ?mode "r") vbOpened = t)) vbTmp)'
         )
     top = "t" if request.toplevel else "nil"
     central = "t" if request.central_widget else "nil"
@@ -866,12 +866,12 @@ def _screenshot_skill(request: ScreenshotRequest, remote_path: str) -> str:
             raise ValueError("region requires x1 < x2 and y1 < y2")
         zoom_step = f'hiZoomIn(vbW list({x1:g}:{y1:g} {x2:g}:{y2:g})) '
     return (
-        f'let((vbW vbRc) vbW = {target_expr} '
+        f'let((vbW vbRc vbOpened) vbOpened = nil vbW = {target_expr} '
         'unless(vbW error("window not found")) '
         f'{zoom_step}'
         f'vbRc = hiWindowSaveImage(?target vbW ?path {_q(remote_path)} '
         f'?format "png" ?toplevel {top} ?centralWidget {central}) '
-        f'unless({leave} when(vbW hiCloseWindow(vbW))) '
+        f'unless({leave} when(vbOpened hiCloseWindow(vbW))) '
         'if(vbRc "saved" "capture-failed"))'
     )
 

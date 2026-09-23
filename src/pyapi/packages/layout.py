@@ -850,10 +850,12 @@ class Package:
             f"vbMaster = dbOpenCellViewByType({basic.q(master_lib)} {basic.q(master_cell)} "
             f"{basic.q(master_view)} {basic.q(LAYOUT_VIEW_TYPE)} \"r\") "
             'unless(vbMaster error("mosaic master not found")) '
+            "unwindProtect("
+            "progn("
             f"vbMosaic = dbCreateSimpleMosaic(vbLayoutCv vbMaster {basic.q(name)} {xy} "
             f"{basic.q(orient)} {rows} {cols} {row_pitch:g} {col_pitch:g}) "
-            "dbClose(vbMaster) "
-            'unless(vbMosaic error("mosaic not created")) vbMosaic)'
+            'unless(vbMosaic error("mosaic not created")) vbMosaic) '
+            "progn(when(vbMaster dbClose(vbMaster)))))"
         )
 
     def _delete_mosaic_expr(self, command: dict[str, Any]) -> str:
@@ -944,12 +946,16 @@ class Package:
                     raise ValueError("command.scale must be > 0")
                 body = f"hiZoomAbsoluteScale(vbWin {scale:g})"
             return (
+                "unwindProtect("
+                "progn("
+                f"{cv_expr} "
                 "let((vbWin) "
                 f"vbWin = {window} "
                 'unless(vbWin error(strcat("window not found for " '
                 f'{lib}))) '
-                f"{body} "
-                "dbClose(vbLayoutCv))"
+                f"{body}) "
+                ") "
+                "progn(when(vbLayoutCv dbClose(vbLayoutCv)))))"
             )
         layers = command.get("layers")
         if not isinstance(layers, list) or not layers:
@@ -1310,10 +1316,12 @@ class Package:
             f"{basic.q(request.top_cell or '')} {basic.q(request.view)} "
             f"{basic.q(request.view_type)} \"r\") "
             "if(vbCv "
-            "let((vbOut) vbOut = list(length(vbCv~>shapes) length(vbCv~>instances) "
+            "unwindProtect("
+            "progn(let((vbOut) vbOut = list(length(vbCv~>shapes) length(vbCv~>instances) "
             "list(list(xCoord(car(vbCv~>bBox)) yCoord(car(vbCv~>bBox))) "
             "list(xCoord(cadr(vbCv~>bBox)) yCoord(cadr(vbCv~>bBox))))) "
-            "dbClose(vbCv) vbOut) nil))",
+            "vbOut)) "
+            "progn(when(vbCv dbClose(vbCv)))) nil))",
             request.token, request.timeout,
         )
         parsed = basic.parse_sexpr(raw.strip()) if raw.strip() else None
@@ -1631,15 +1639,15 @@ def _screenshot_skill(request: ScreenshotRequest,
         )
     else:
         target = (
-            "let((vbW) vbW = car(setof(x hiGetWindowList() "
+            "let((vbTmp) vbTmp = car(setof(x hiGetWindowList() "
             "x~>cellView && "
             f"x~>cellView~>libName == {basic.q(request.library)} && "
             f"x~>cellView~>cellName == {basic.q(request.cell)} && "
             f"x~>cellView~>viewName == {basic.q(request.view)})) "
-            "unless(vbW vbW = geOpen(?lib "
+            "unless(vbTmp progn(vbTmp = geOpen(?lib "
             f"{basic.q(request.library)} ?cell {basic.q(request.cell)} "
             f"?view {basic.q(request.view)} ?viewType {basic.q(request.view_type)} "
-            '?mode "r")) vbW)'
+            '?mode "r") vbOpened = t)) vbTmp)'
         )
     zoom = ""
     if region is not None:
@@ -1648,14 +1656,15 @@ def _screenshot_skill(request: ScreenshotRequest,
             f"hiZoomIn(vbW list(list({x0:g} {y0:g}) list({x1:g} {y1:g}))) "
         )
     return (
-        "let((vbW vbRc) "
+        "let((vbW vbRc vbOpened) "
+        "vbOpened = nil "
         f"vbW = {target} "
         'unless(vbW error("layout window not found")) '
         f"{zoom}"
         f"vbRc = hiWindowSaveImage(?target vbW ?path {basic.q(remote_path)} "
         f"?format \"png\" ?toplevel {'t' if request.toplevel else 'nil'} "
         f"?centralWidget {'t' if request.central_widget else 'nil'}) "
-        f"unless({'t' if request.leave_open else 'nil'} when(vbW hiCloseWindow(vbW))) "
+        f"unless({'t' if request.leave_open else 'nil'} when(vbOpened hiCloseWindow(vbW))) "
         'if(vbRc "saved" "capture-failed"))'
     )
 

@@ -329,10 +329,13 @@ let((vbLib vbNewLib vbCell vbAll vbSourceCv vbOk)
         vbSourceCv = dbOpenCellViewByType({basic.q(library)} {basic.q(cell)}
                                          vbView~>name vbView~>viewType "r")
         if(vbSourceCv then
-          vbOk = dbCopyCellView(vbSourceCv {basic.q(new_library)}
-                                {basic.q(new_cell)} vbView~>name)
-          dbClose(vbSourceCv)
-          vbOk
+          unwindProtect(
+            progn(
+              vbOk = dbCopyCellView(vbSourceCv {basic.q(new_library)}
+                                    {basic.q(new_cell)} vbView~>name)
+              when(vbOk dbClose(vbOk))
+              vbOk)
+            progn(when(vbSourceCv dbClose(vbSourceCv))))
         else nil))
         vbAll = nil))
     if(vbAll then list("ok") else list("error" "copyFailed")))))))
@@ -414,9 +417,13 @@ let((vbLib vbNewLib vbCell vbView vbSourceCv vbCopied)
                                       {basic.q(view)} vbView~>viewType "r")
     if(!vbSourceCv then list("error" "viewOpenFailed")
     else progn(
-      vbCopied = dbCopyCellView(vbSourceCv {basic.q(new_library)}
-                                {basic.q(new_cell)} {basic.q(new_view)})
-      dbClose(vbSourceCv)
+      vbCopied = unwindProtect(
+        progn(
+          vbCopied = dbCopyCellView(vbSourceCv {basic.q(new_library)}
+                                    {basic.q(new_cell)} {basic.q(new_view)})
+          when(vbCopied dbClose(vbCopied))
+          vbCopied)
+        progn(when(vbSourceCv dbClose(vbSourceCv))))
       if(vbCopied then list("ok") else list("error" "copyFailed")))))))))
 '''.strip()
 
@@ -533,10 +540,12 @@ let((vbLib vbExisting vbCat vbRemoved vbClosed vbVerify)
         if(!vbCat then list("error" "categoryReopenFailed")
         else progn(
           vbRemoved = ddCatRemove(vbCat)
-          if(!vbRemoved then list("error" "categoryDeleteFailed")
+          if(!vbRemoved then progn(ddCatClose(vbCat)
+            list("error" "categoryDeleteFailed"))
           else progn(
             vbVerify = ddCatOpen(vbLib {basic.q(category)} "r")
-            if(vbVerify then list("partial" "categoryDeleteVerificationFailed")
+            if(vbVerify then progn(ddCatClose(vbVerify)
+              list("partial" "categoryDeleteVerificationFailed"))
             else list("ok")))))))))))
 ))'''.strip()
 
@@ -559,7 +568,8 @@ let((vbLib vbSource vbDestination vbExisting vbMember vbMembers vbDestinationMem
       else if(vbUnsupported then list("error" "categoryContainsSubcategories")
       else progn(
         vbExisting = ddCatOpen(vbLib {basic.q(new_name)} "r")
-        if(vbExisting then list("error" "destinationCategoryExists")
+        if(vbExisting then progn(ddCatClose(vbExisting)
+          list("error" "destinationCategoryExists"))
         else progn(
           vbDestination = ddCatOpenEx(vbLib {basic.q(new_name)} "w" 1)
           if(!vbDestination then list("error" "categoryRenameCreateFailed")
@@ -584,10 +594,12 @@ let((vbLib vbSource vbDestination vbExisting vbMember vbMembers vbDestinationMem
                   if(!vbSource then list("partial" "categoryRenameSourceReopenFailed")
                   else progn(
                     vbRemoved = ddCatRemove(vbSource)
-                    if(!vbRemoved then list("partial" "categoryRenameSourceRemovalFailed")
+                    if(!vbRemoved then progn(ddCatClose(vbSource)
+                      list("partial" "categoryRenameSourceRemovalFailed"))
                     else progn(
                       vbVerify = ddCatOpen(vbLib {basic.q(category)} "r")
-                      if(vbVerify then list("partial" "categoryRenameSourceVerificationFailed")
+                      if(vbVerify then progn(ddCatClose(vbVerify)
+                        list("partial" "categoryRenameSourceVerificationFailed"))
                       else list("ok" {basic.q(new_name)})))))))))))))))))
 )))))))'''.strip()
 

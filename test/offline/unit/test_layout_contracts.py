@@ -187,6 +187,17 @@ class TestAtomicMatrix(unittest.TestCase):
         with self.assertRaises(ValueError):
             L.Package(FakeMiddle())._atomic_expr({"op": ""})
 
+    def test_handles_are_closed_on_error_paths(self):
+        mosaic = self._expr("place_mosaic")
+        self.assertIn("unwindProtect", mosaic)
+        self.assertIn("dbClose(vbMaster)", mosaic)
+        display = L.Package(FakeMiddle())._display_expr(
+            {"op": "fit_view"},
+            L.DisplayRequest(token="t", library="L", cell="C", commands=[]),
+        )
+        self.assertIn("unwindProtect", display)
+        self.assertIn("dbClose(vbLayoutCv)", display)
+
     def test_place_line_point_count_and_path_width(self):
         with self.assertRaises(ValueError) as ctx:
             self._expr("place_line", points=[[0, 0], [1, 0], [2, 0]])
@@ -925,6 +936,16 @@ class TestLayoutScreenshot(unittest.TestCase):
                 self._shot(ScreenshotMiddle(), tmp, leave_open=None)
             with self.assertRaises(ValueError):
                 self._shot(ScreenshotMiddle(), tmp, timeout=0)
+
+    def test_screenshot_closes_only_window_opened_here(self):
+        shot = L._screenshot_skill(
+            L.ScreenshotRequest(token="t", library="LIB", cell="CELL",
+                                view="layout"),
+            None, "/tmp/x.png",
+        )
+        self.assertIn("when(vbOpened hiCloseWindow", shot)
+        self.assertIn("vbOpened = t", shot)
+        self.assertNotIn("when(vbW hiCloseWindow", shot)
 
 
 class GdsImportMiddle(GdsMiddle):

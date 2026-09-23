@@ -332,6 +332,14 @@ class TestPackageFlow(unittest.TestCase):
             self.assertFalse(result.ok, state)
             self.assertIn(marker, result.error)
 
+    def test_screenshot_closes_only_window_opened_here(self):
+        skill = S._screenshot_skill(
+            S.ScreenshotRequest(token="t", library="L", cell="C"),
+            "/tmp/x.png",
+        )
+        self.assertIn("when(vbOpened hiCloseWindow", skill)
+        self.assertIn("vbOpened = t", skill)
+
     def test_write_rejects_bad_commands_and_open_failure(self):
         with self.assertRaises(ValueError):
             self._pkg().write(S.WriteRequest(token="t", library="L", cell="C", commands=[]))

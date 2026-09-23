@@ -102,7 +102,8 @@ class TestSkillBuilders(unittest.TestCase):
 
     def test_cell_skills(self):
         self.check(C._cell_list_skill("L"), "ddGetObj", '"L"')
-        self.check(C._cell_copy_skill("L", "C", "L2", "C2"), '"L2"', '"C2"')
+        self.check(C._cell_copy_skill("L", "C", "L2", "C2"), '"L2"', '"C2"',
+                   "unwindProtect", "dbClose(vbSourceCv)", "dbClose(vbOk)")
         self.check(C._cell_delete_skill("L", "C"), "ddDeleteObj", '"C"')
         self.check(C._cell_rename_skill("L", "C", "C9"), '"C9"')
 
@@ -110,7 +111,8 @@ class TestSkillBuilders(unittest.TestCase):
         self.check(C._view_list_skill("L", "C"), '"L"', '"C"')
         self.check(C._view_create_skill("L", "C", "layout", "maskLayout"),
                    "maskLayout", '"layout"')
-        self.check(C._view_copy_skill("L", "C", "v", "L2", "C2", "v2"), '"v2"', '"C2"')
+        self.check(C._view_copy_skill("L", "C", "v", "L2", "C2", "v2"), '"v2"', '"C2"',
+                   "unwindProtect", "dbClose(vbSourceCv)", "dbClose(vbCopied)")
         self.check(C._view_delete_skill("L", "C", "v"), '"v"')
         self.check(C._view_rename_skill("L", "C", "v", "v3"), '"v3"')
 
@@ -119,9 +121,11 @@ class TestSkillBuilders(unittest.TestCase):
         self.check(C._cat_list_cells_skill("L", "cat"),
                    '"cat"', "ddCatGetCatMembers")
         self.check(C._cat_create_skill("L", "cat2"), "ddCatOpenEx", '"cat2"')
-        self.check(C._cat_delete_skill("L", "cat3"), "ddCatRemove", '"cat3"')
+        self.check(C._cat_delete_skill("L", "cat3"), "ddCatRemove", '"cat3"',
+                   "ddCatClose(vbCat)")
         self.check(C._cat_rename_skill("L", "cat4", "cat5"),
-                   "ddCatRemove", '"cat5"')
+                   "ddCatRemove", '"cat5"',
+                   "ddCatClose(vbExisting)", "ddCatClose(vbSource)")
 
     def test_category_cell_membership_both_directions(self):
         add = C._cat_change_cell_skill("L", "cat", "C", add=True)

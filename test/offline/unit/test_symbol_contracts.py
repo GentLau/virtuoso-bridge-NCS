@@ -326,6 +326,14 @@ class TestPackageFlows(unittest.TestCase):
         self.assertFalse(bad.ok)
         self.assertIn("pin-list", bad.error)
 
+    def test_screenshot_closes_only_window_opened_here(self):
+        skill = S._screenshot_skill(
+            S.ScreenshotRequest(token="t", library="L", cell="C", view="symbol"),
+            None, "/tmp/x.png",
+        )
+        self.assertIn("when(vbOpened hiCloseWindow", skill)
+        self.assertIn("vbOpened = t", skill)
+
 
 class ScriptedMiddle:
     """按顺序作答的假 middle（symbol.read / symbol.generate 各一次 skill 调用）。"""

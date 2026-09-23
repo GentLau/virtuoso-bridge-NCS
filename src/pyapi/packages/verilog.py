@@ -579,11 +579,13 @@ class Package:
             f"cv = dbOpenCellViewByType({basic.q(request.library)} "
             f"{basic.q(request.cell)} {basic.q(check_view)} nil \"r\") "
             "if(cv "
-            "let((out) out = list(length(cv~>instances) length(cv~>nets) "
+            "unwindProtect("
+            "progn(let((out) out = list(length(cv~>instances) length(cv~>nets) "
             "length(cv~>terminals) "
             "list(list(xCoord(car(cv~>bBox)) yCoord(car(cv~>bBox))) "
             "list(xCoord(cadr(cv~>bBox)) yCoord(cadr(cv~>bBox))))) "
-            "dbClose(cv) out) nil))",
+            "out)) "
+            "progn(when(cv dbClose(cv)))) nil))",
             request.token,
             request.timeout,
         )

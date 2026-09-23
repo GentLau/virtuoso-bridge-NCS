@@ -3133,7 +3133,7 @@ class Package:
                     "waves = append(waves list(w)))"
                 )
             skill = (
-                "let((win waves) "
+                "let((win waves vbPlotted) "
                 f"openResults({q(psf_dir)}) "
                 + (
                     f"selectResults({q(request.analysis)}) "
@@ -3144,8 +3144,12 @@ class Package:
                 + " ".join(signal_blocks)
                 + " win = car(errset(awvCreatePlotWindow() nil)) "
                 "unless(win error(\"create waveform window failed\")) "
-                f"awvPlotWaveform(win waves ?expr "
+                "vbPlotted = errset(awvPlotWaveform(win waves ?expr "
                 f"list({', '.join(q(s) for s in signals)})) "
+                "nil) "
+                "unless(vbPlotted && car(vbPlotted) "
+                "progn(when(win hiCloseWindow(win)) "
+                "error(\"plot waveform failed\"))) "
                 "list(\"opened\" win))"
             )
             raw = self._q(skill, request.token, request.timeout or 60)
