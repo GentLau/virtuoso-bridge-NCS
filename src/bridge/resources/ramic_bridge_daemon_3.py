@@ -121,6 +121,10 @@ def _safe_close(conn):
         conn.shutdown(socket.SHUT_RDWR)
     except OSError:
         pass
+    try:
+        conn.close()
+    except OSError:
+        pass
 
 
 def _temp_dir() -> str:
@@ -134,10 +138,6 @@ def _temp_dir() -> str:
     except OSError:
         pass
     return candidate
-    try:
-        conn.close()
-    except OSError:
-        pass
 
 
 def _valid_timeout(value):

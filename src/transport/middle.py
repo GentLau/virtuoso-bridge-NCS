@@ -484,6 +484,8 @@ class BusinessServer(Middle):
             self._capacity.pop(token, None)
             self._in_flight.pop(token, None)
             self._retire_pending.discard(token)
+            self._local_locks.pop(token, None)
+            self._skill_gates.pop(token, None)
         for resource in (client, session):
             if resource is not None:
                 try:
@@ -531,6 +533,10 @@ class BusinessServer(Middle):
             self._skill_clients.clear()
             self._skill_entries.clear()
             self._capacity.clear()
+            self._local_locks.clear()
+            self._skill_gates.clear()
+            self._in_flight.clear()
+            self._retire_pending.clear()
         for client in clients:
             try:
                 client.close()

@@ -21,6 +21,15 @@ class TestDaemonParity(unittest.TestCase):
     def _classify(self, mod, line):
         return mod.classify_level(line)
 
+    def test_safe_close_shuts_down_and_closes(self):
+        """C1: 连接收尾必须 close()，不能只 shutdown()（fd 不能等 GC）。"""
+        for name, mod in MODULES:
+            with self.subTest(daemon=name):
+                conn = mock.Mock()
+                mod._safe_close(conn)
+                conn.shutdown.assert_called_once_with(socket.SHUT_RDWR)
+                conn.close.assert_called_once()
+
     def test_classify_parity(self):
         for name, mod in MODULES:
             self.assertEqual(mod.classify_level("\\e x"), "error", name)

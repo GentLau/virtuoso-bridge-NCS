@@ -1293,6 +1293,7 @@ class ParamikoSessionBackend:
         acquired = self._session_gate.acquire(timeout=deadline.remaining("shell"))
         if not acquired:
             raise subprocess.TimeoutExpired("paramiko-shell", timeout)
+        channel: Any | None = None
         try:
             transport = self._target_transport()
             channel = self._open_session_channel(transport, deadline, "shell")
@@ -1302,6 +1303,14 @@ class ParamikoSessionBackend:
             stdout = channel.makefile("rb", -1)
             return ParamikoShellProcess(channel, stdin, stdout, self)
         except Exception:
+            # C3: the Transport keeps the channel in its map, so a channel that
+            # never gets close()d is never garbage collected either -- it would
+            # leak one remote session slot per failed open.
+            if channel is not None:
+                try:
+                    channel.close()
+                except Exception:  # noqa: BLE001 - best-effort cleanup
+                    pass
             self._release_shell_gate()
             raise
 

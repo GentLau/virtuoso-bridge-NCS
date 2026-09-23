@@ -2,6 +2,7 @@
 
 import sys
 import tempfile
+import threading
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -65,6 +66,42 @@ class TestRunnerCloseStopsTunnel(unittest.TestCase):
 
 
 class TestBusinessServerClose(unittest.TestCase):
+    def _server_with_token(self, token: str = "tok-x") -> BusinessServer:
+        wd = Path(tempfile.mkdtemp(prefix="vb-"))
+        override_work_dir_for_tests(wd)
+        registry = load_registry(registry_path())
+        entry = UserEntry(token=token, mode="remote")
+        entry.ssh.default.host = "server-a"
+        entry.ssh.default.user = "u"
+        entry.roles.command.host = "server-a"
+        entry.roles.command.user = "u"
+        entry.roles.daemon.host = "server-a"
+        entry.roles.daemon.user = "u"
+        registry.register("alice", entry)
+        return BusinessServer(wd)
+
+    def test_invalidate_token_drops_token_scoped_locks(self):
+        """C4: token 退役必须带走它的内存态（锁/门），不能只清 client 缓存。"""
+        server = self._server_with_token("tok-drop")
+        server._local_locks["tok-drop"] = threading.Lock()
+        server._skill_gates["tok-drop"] = threading.Lock()
+        server.invalidate_token("tok-drop")
+        self.assertNotIn("tok-drop", server._local_locks)
+        self.assertNotIn("tok-drop", server._skill_gates)
+
+    def test_close_clears_in_flight_and_retire_state(self):
+        """C4: close() 后不得残留 per-token 计数/锁字典。"""
+        server = self._server_with_token("tok-close")
+        server._in_flight["tok-close"] = 1
+        server._retire_pending.add("tok-close")
+        server._local_locks["tok-close"] = threading.Lock()
+        server._skill_gates["tok-close"] = threading.Lock()
+        server.close()
+        self.assertEqual(server._in_flight, {})
+        self.assertEqual(server._retire_pending, set())
+        self.assertEqual(server._local_locks, {})
+        self.assertEqual(server._skill_gates, {})
+
     def test_close_releases_clients_once(self):
         wd = Path(tempfile.mkdtemp(prefix="vb-"))
         override_work_dir_for_tests(wd)

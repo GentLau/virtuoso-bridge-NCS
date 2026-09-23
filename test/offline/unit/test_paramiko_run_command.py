@@ -132,6 +132,29 @@ class TestRunCommand(unittest.TestCase):
 
 
 class TestClose(unittest.TestCase):
+    def test_open_shell_failure_closes_channel_and_releases_gate(self):
+        """C3: channel 建好后 exec/makefile 抛错 → 必须 close channel 再放回配额。"""
+        b = backend(max_sessions=2)
+        channel = FakeChannel()
+        channel.exec_command = mock.Mock(side_effect=RuntimeError("no exec"))
+        with mock.patch.object(b, "ensure_connected"), \
+                mock.patch.object(b, "_target_transport",
+                                  return_value=object()), \
+                mock.patch.object(b, "_open_session_channel",
+                                  return_value=channel):
+            with self.assertRaises(RuntimeError):
+                b.open_shell(5)
+        self.assertTrue(
+            channel.closed,
+            "paramiko Transport holds the channel; GC never closes it",
+        )
+        self.assertTrue(b._session_gate.acquire(blocking=False))
+        self.assertTrue(b._session_gate.acquire(blocking=False))
+        self.assertFalse(
+            b._session_gate.acquire(blocking=False),
+            "both max_sessions permits must be back after the failure",
+        )
+
     def test_close_releases_clients_and_jump_channel(self):
         b = backend(jump_host="bastion")
         b._target_client = mock.Mock()

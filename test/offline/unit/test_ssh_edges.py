@@ -1123,6 +1123,19 @@ class TestTunnelBranches(unittest.TestCase):
             runner.stop_port_forward()
         self.assertIsNone(runner._tunnel_pid)
 
+    def test_stop_port_forward_closes_tunnel_stderr_pipe(self):
+        """C2: 成功建立的隧道 stderr=PIPE 必须在 stop 时关闭，不能等 Popen GC。"""
+        runner = _runner()
+        proc = _TunnelProc(rc=None)
+        proc.stderr = mock.Mock()
+        runner._tunnel_proc = proc
+        runner.stop_port_forward()
+        proc.stderr.close.assert_called_once()
+
+        runner._tunnel_proc = proc
+        proc.stderr.close.side_effect = OSError("already closed")
+        runner.stop_port_forward()  # 失败也要吞掉
+
     def test_is_tunnel_alive_and_pid_property(self):
         runner = _runner()
         runner._tunnel_local_port = 6507

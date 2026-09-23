@@ -767,6 +767,15 @@ class SSHRunner:
                 proc.wait(timeout=2)
             except (AttributeError, OSError, subprocess.TimeoutExpired):
                 pass
+            # C2: the long-lived tunnel's stderr pipe is only read on the
+            # failure path; close it here so a successful tunnel does not
+            # hold the fd until the Popen object is collected.
+            stream = getattr(proc, "stderr", None)
+            if stream is not None:
+                try:
+                    stream.close()
+                except (AttributeError, OSError, ValueError):
+                    pass
         elif self._tunnel_pid:
             logger.info("Terminating SSH tunnel (PID %d)", self._tunnel_pid)
             try:
