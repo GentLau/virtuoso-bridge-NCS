@@ -1,9 +1,9 @@
 # 中层配置文档
 
-> 版本：Draft v40
+> 版本：Draft v41
 > 日期：2026-09-23
 > 状态：Normative（字段目录、默认值、探测写回、注册表 schema、reservation 与 endpoint key 的唯一规范源）
-> Supersedes：Draft v39（SSH 凭据 `key_dir`/`key` 与复用判定）
+> Supersedes：Draft v40（`key_dir`/`key` 无缺省，remote role 必填）
 > 定位：本文是[多用户与注册](../其他/1-多用户与注册.md)的**字段与 schema 详细补充**——六步状态机与授权归[多用户与注册](../其他/1-多用户与注册.md)；本文是字段与必填清单 owner（§4），并提供默认值、探测写回、注册表 schema、reservation 与 endpoint key。
 
 ## 1. 总述
@@ -72,7 +72,7 @@
 | `mode.default` | 各 role 缺省 mode（local/remote） | 配置 | **必填，无默认** |
 | `ssh.default.host/user` | 各 role 缺省登录主机/账号 | 配置 | 存在未在 role 级提供的 remote role 时必填 |
 | `ssh.default.jump_host/jump_user/proxy` | 各 role 缺省跳板/代理 | 配置 | 可选 |
-| `ssh.default.key_dir/key` | 各 role 缺省 SSH 凭据目录/文件名；`key_dir` 缺省 = 服务账号 SSH 默认目录 | 配置 | `key_dir` 可选；存在 remote role 时 `key` 必填 |
+| `ssh.default.key_dir/key` | 各 role 缺省 SSH 凭据目录/文件名 | 配置 | 存在 remote role 时 `key_dir`/`key` 必填、无默认 |
 | `root.default` | 各 role 文件根的申请期基准；探测后写回各 `role.*.root`，运行期不依赖本字段 | 配置 | 默认 `~/.virtuoso-bridge/<userid>`（持久化 `null`） |
 
 - 回退是**逐字段**的：role 有值用自己的，否则回退对应全局默认；`null`/空串 = 未提供；
