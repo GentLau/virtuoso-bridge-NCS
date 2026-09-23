@@ -180,8 +180,10 @@ run 类操作默认 `blocking=false`：写 launcher、后台启动、立刻返�
 
 ## 8. 验收
 
-脚本 `test/tb/calibre_e2e_tests.py --transport direct|http`，产物落
-`test/tb/artifacts/calibre-tb/TEST_PLAN.md` + `TEST_REPORT.md`。
+脚本 `test/live/packages/calibre_e2e_tests.py --transport direct|http`（**尚未建**：当前 calibre 的实测入口是
+离线 `test/offline/unit/test_calibre_package.py`、半真机 `test/semi/probes/calibre_env_probe.py` /
+`calibre_cdl_probe.py`、真机 `test/live/flows/lvs_from_schematic_tb.py`；路径按 2026-09-23 `test/` 三级重组更新），
+产物落 `test/artifacts/calibre-tb/TEST_PLAN.md` + `TEST_REPORT.md`（目录待建）。
 
 | 组 | 用例 |
 |---|---|
@@ -197,7 +199,7 @@ run 类操作默认 `blocking=false`：写 launcher、后台启动、立刻返�
 | 证据 | 位置 |
 |---|---|
 | 可行性报告（DRC/LVS/PEX 实跑、CDL 调查、新用户 calprobe 会话） | `doc/report/calibre-可行性报告.md` |
-| Calibre 环境探针 | `test/tb/calibre_env_probe.py` |
-| CDL 批处理探针（si.env/.simrc 生成） | `test/tb/calibre_cdl_probe.py` |
+| Calibre 环境探针 | `test/semi/probes/calibre_env_probe.py` |
+| CDL 批处理探针（si.env/.simrc 生成） | `test/semi/probes/calibre_cdl_probe.py` |
 | 实跑现场（远端） | `/home/Gent/project/vblog/calibre_probe/{drc_run,lvs_run,rcx_run}/` |
 | 新注册用户与独立 env | `/home/Gent/project/calprobe/`（`calprobe`，见可行性报告 §3.4） |

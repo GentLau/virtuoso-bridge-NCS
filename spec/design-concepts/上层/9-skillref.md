@@ -324,8 +324,8 @@ owner 拍板前：实现按 **A** 编写（`doc_token` 缺失时 remote 直接�
 
 ## 8. 验收
 
-脚本 `test/tb/skillref_e2e_tests.py --transport direct|http`，产物落
-`test/tb/artifacts/skillref-tb/TEST_PLAN.md` + `TEST_REPORT.md`。
+脚本 `test/live/packages/skillref_e2e_tests.py --transport direct|http`，产物落
+`test/artifacts/evidence/skillref-tb/TEST_PLAN.md` + `TEST_REPORT.md`。
 
 | 组 | 用例 |
 |---|---|
@@ -342,8 +342,8 @@ owner 拍板前：实现按 **A** 编写（`doc_token` 缺失时 remote 直接�
 |---|---|
 | `src/pyapi/packages/skillref.py` | 两个业务操作 + 数据源解析 + 本地/远端取数 |
 | `src/pyapi/packages/_skillref_docs.py` | stdlib-only 解析层（`.fnd` / `.tgf` / HTML→Markdown / 正文打分） |
-| `test/unit/test_skillref_package.py` | 27 项单元测试（四层匹配、两种模式、配置快照、错误口径） |
-| `test/tb/skillref_probe.py` | 真机探针（`--from-config` 走 config.json 快照） |
+| `test/offline/unit/test_skillref_package.py` | 27 项单元测试（四层匹配、两种模式、配置快照、错误口径） |
+| `test/semi/probes/skillref_probe.py` | 真机探针（`--from-config` 走 config.json 快照） |
 
 **包级真机实测（2026-09-21，探针输出）**：
 
@@ -380,7 +380,7 @@ owner 拍板前：实现按 **A** 编写（`doc_token` 缺失时 remote 直接�
 | 8123 参考实现 | `tools/skill_doc_server.py:34/74/100/118/197/485/523/664` |
 | 调研与方案 | `doc/report/skilltooling-调研与上层包设计方案.md` |
 | 远端取数成本评估（实测） | `doc/report/skillref-远端取数成本评估.md` |
-| 探针 | `test/tb/skill_tooling_probe.py`、`test/tb/docs_search_probe.py` |
+| 探针 | `test/semi/probes/skill_tooling_probe.py`、`test/semi/probes/docs_search_probe.py` |
 | 包实现 | `src/pyapi/packages/skillref.py`、`src/pyapi/packages/_skillref_docs.py` |
-| 包级真机探针与日志 | `test/tb/skillref_probe.py`、`test/tb/artifacts/skill-tooling-tb/skillref-probe-{local,remote,config-local,config-remote}.log` |
-| 实测记录 | `test/tb/artifacts/skill-tooling-tb/docs-search-probe-20260921.log` |
+| 包级真机探针与日志 | `test/semi/probes/skillref_probe.py`、`test/artifacts/evidence/skill-tooling-tb/skillref-probe-{local,remote,config-local,config-remote}.log` |
+| 实测记录 | `test/artifacts/evidence/skill-tooling-tb/docs-search-probe-20260921.log` |
