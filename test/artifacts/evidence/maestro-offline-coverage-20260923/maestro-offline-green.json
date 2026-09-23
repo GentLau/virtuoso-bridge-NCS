@@ -1,0 +1,10 @@
+{
+  "run_id": "maestro-offline-coverage-20260923",
+  "command": "python -m coverage run --source=src/pyapi/packages -m pytest test/offline/unit/test_maestro_command_exprs.py test/offline/unit/test_maestro_util.py test/offline/unit/test_maestro_package_flow.py -q",
+  "expectation": "用离线 fake middle 覆盖 maestro 的读配置/写/历史/结果/导出/运行/GUI 的失败分支与参数分支",
+  "actual": "maestro.py 离线语句覆盖 50.6% -> 67%（新增 21 个流程契约用例）；全量 offline 三级 pytest 全绿",
+  "time": "2026-09-23T12:03:58+08:00",
+  "machine": "DESKTOP-F143LSD（Windows/Python 3.12.10）",
+  "status": "PASS",
+  "attribution": []
+}
