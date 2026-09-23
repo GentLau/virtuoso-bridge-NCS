@@ -502,9 +502,14 @@ class TestOpensshDownloadAttempt(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             plan = self._plan(Path(tmp))
             ssh_proc = _FakeProc(returncode=0)
+
+            def fake_popen(args, **kwargs):
+                if args[0] == "tar":
+                    raise OSError("tar missing")
+                return ssh_proc
+
             with mock.patch.object(
-                subprocess, "Popen",
-                side_effect=[ssh_proc, OSError("tar missing")],
+                subprocess, "Popen", side_effect=fake_popen,
             ):
                 with self.assertRaises(OSError):
                     runner._run_openssh_download_attempt(

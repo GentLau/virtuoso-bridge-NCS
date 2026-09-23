@@ -1,5 +1,7 @@
 """五接口错误契约（spec 三层架构 §4.4）——用假 RemoteClient 覆盖映射分支。"""
 
+from __future__ import annotations
+
 import subprocess
 import json
 import sys

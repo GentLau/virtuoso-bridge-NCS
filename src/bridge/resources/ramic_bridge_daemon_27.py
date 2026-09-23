@@ -1,4 +1,5 @@
 #!/usr/bin/env python2.7
+# -*- coding: utf-8 -*-
 """RAMIC Bridge Daemon (Python 2.7-compatible variant of the v1 protocol).
 
 Same wire protocol as ``ramic_bridge_daemon_3.py``; written with syntax valid
