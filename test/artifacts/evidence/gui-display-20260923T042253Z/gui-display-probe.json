@@ -1,0 +1,13 @@
+{
+  "run_id": "gui-display-20260923T042253Z",
+  "command": "test\\semi\\probes\\gui_display_probe.py --work-dir test\\artifacts\\env\\log-vblog --token vb-vblog",
+  "machine": "DESKTOP-F143LSD -> wsl-gent",
+  "status": "PASS",
+  "results": {
+    "display": ":11",
+    "list_windows": "PASS",
+    "top_level_count": "8",
+    "ciw_detected": "PASS",
+    "screenshot_display": "PASS"
+  }
+}
