@@ -890,6 +890,9 @@ class RegistrationServer(ThreadingHTTPServer):
 
 
 def main(argv: list[str] | None = None) -> None:
+    from common.runtime_env import warn_if_client_python_unsupported
+
+    warn_if_client_python_unsupported()
     parser = argparse.ArgumentParser(description="Virtuoso Bridge registration page")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8124)

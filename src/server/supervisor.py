@@ -427,6 +427,9 @@ def _build_business(
 
 
 def main(argv: list[str] | None = None) -> None:
+    from common.runtime_env import warn_if_client_python_unsupported
+
+    warn_if_client_python_unsupported()
     parser = argparse.ArgumentParser(
         description="virtuoso-bridge management supervisor (parent of business)"
     )
