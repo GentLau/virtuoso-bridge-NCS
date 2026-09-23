@@ -51,10 +51,16 @@ PEX NETLIST FILE = net.dist
 
 class FakeMiddle:
     def __init__(self, *, kind: str = "drc", completed: bool = True,
-                 with_calibre_group: bool = True) -> None:
+                 with_calibre_group: bool = True, root: str | None = ROOT,
+                 upload_rc: int = 0, download_rc: int = 0,
+                 snapshot_rc: int = 0) -> None:
         self.kind = kind
         self.completed = completed
         self.with_calibre_group = with_calibre_group
+        self.root = root
+        self.upload_rc = upload_rc
+        self.download_rc = download_rc
+        self.snapshot_rc = snapshot_rc
         self.calibre_bin = "/opt/eda/mentor/CALIBRE2025/bin/calibre"
         self.commands: list[str] = []
         self.uploads: list[tuple[str, str]] = []
@@ -65,10 +71,10 @@ class FakeMiddle:
     def query(self, *, token: str) -> QueryResult:
         if token != TOKEN:
             return QueryResult(status=ExecutionStatus.ERROR, errors=["invalid token"])
-        role = RoleQuery(root=ROOT)
+        role = RoleQuery(root=self.root)
         if self.with_calibre_group:
             # per-role 用户组（spec 中层配置文档 §2.3）：role.command.calibre = {bin, version}
-            role = RoleQuery(root=ROOT, calibre={"bin": self.calibre_bin,
+            role = RoleQuery(root=self.root, calibre={"bin": self.calibre_bin,
                                                  "version": "v2025.1_16.10"})
         return QueryResult(status=ExecutionStatus.SUCCESS,
                            roles={"command": role})
@@ -81,6 +87,8 @@ class FakeMiddle:
         elif "test -f" in text:
             stdout = "yes\n"
         elif "cd" in text and "job.json" in text and "###JOB" in text:  # status snapshot
+            if self.snapshot_rc != 0:
+                return CommandResult(self.snapshot_rc, "", "snapshot boom", "command")
             marker = "CALIBRE::DRC-H COMPLETED" if self.completed else "FATAL ERROR: license"
             stdout = (
                 "###JOB\n{\"kind\": \"drc\", \"job_id\": \"drc_inv2\"}\n"
@@ -107,6 +115,8 @@ class FakeMiddle:
     def download_file(self, remote_path, local_path, timeout=None, *, token,
                       recursive=False) -> CommandResult:
         self.downloads.append(str(remote_path))
+        if self.download_rc != 0:
+            return CommandResult(self.download_rc, "", "download boom", "command")
         target = Path(local_path)
         if recursive and target.suffix == "":
             target.mkdir(parents=True, exist_ok=True)
@@ -130,8 +140,8 @@ class FakeMiddle:
                     recursive=False) -> CommandResult:
         self.uploads.append((str(local_path), str(remote_path)))
         assert Path(local_path).is_file(), f"upload source missing: {local_path}"
-        return CommandResult(0, "", "", "command")
-
+        return CommandResult(self.upload_rc, "",
+                             "upload boom" if self.upload_rc else "", "command")
 
 class UtilTests(unittest.TestCase):
     def test_deck_rewrite_whitelist(self):
@@ -259,6 +269,28 @@ class PackageTests(unittest.TestCase):
         self.assertFalse(result.ok)
         self.assertIn("cdl", result.error or "")
 
+    def test_pex_requires_lvs_run_dir(self):
+        result = Package(FakeMiddle()).pex(RunRequest(
+            token=TOKEN, gds="/x/ctle.gds", top="ctle",
+            deck="/x/calibre.rcx", cdl="/x/ctle.cdl",
+        ))
+        self.assertFalse(result.ok)
+        self.assertIn("lvs_run_dir", result.error or "")
+
+    def test_run_requires_command_role_root(self):
+        result = Package(FakeMiddle(root=None)).drc(RunRequest(
+            token=TOKEN, gds="/x/lay.gds", top="lay_e2e", deck=DECK,
+        ))
+        self.assertFalse(result.ok)
+        self.assertIn("command role root unavailable", result.error)
+
+    def test_run_upload_deck_failure(self):
+        result = Package(FakeMiddle(upload_rc=1)).drc(RunRequest(
+            token=TOKEN, gds="/x/lay.gds", top="lay_e2e", deck=DECK,
+        ))
+        self.assertFalse(result.ok)
+        self.assertIn("upload deck failed", result.error)
+
     def test_status_completed(self):
         middle = FakeMiddle(completed=True)
         result = Package(middle).status(StatusRequest(
@@ -266,6 +298,13 @@ class PackageTests(unittest.TestCase):
         ))
         self.assertTrue(result.ok)
         self.assertEqual(result.value["status"], "completed")
+
+    def test_status_snapshot_failure(self):
+        result = Package(FakeMiddle(snapshot_rc=1)).status(StatusRequest(
+            token=TOKEN, job_id="drc_lay_e2e", kind="drc",
+        ))
+        self.assertFalse(result.ok)
+        self.assertIn("cannot read job state", result.error)
 
     def test_read_results_drc(self):
         middle = FakeMiddle()
@@ -304,6 +343,15 @@ class PackageTests(unittest.TestCase):
             self.assertTrue(result.value["downloaded"])
             local = Path(result.value["downloaded"][0]["local"])
             self.assertTrue(local.is_file())
+
+    def test_export_download_failure(self):
+        with tempfile.TemporaryDirectory(prefix="vb-cal-") as tmp:
+            result = Package(FakeMiddle(download_rc=1)).export(ExportRequest(
+                token=TOKEN, job_id="drc_lay_e2e", kind="drc",
+                items=("summary",), local_dir=str(Path(tmp) / "out"),
+            ))
+            self.assertFalse(result.ok)
+            self.assertIn("nothing downloaded", result.error or "")
 
     def test_validation(self):
         with self.assertRaises(ValueError):

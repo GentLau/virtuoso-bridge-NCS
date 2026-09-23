@@ -190,7 +190,13 @@ class VaMiddle:
     def __init__(self, *, context_loaded: bool = True, lock: bool = False,
                  current_source: str = "module old; endmodule\n",
                  dpl: str | None = None, parse_ok: bool = True,
-                 refresh_output: str = "t", err_log: str = "") -> None:
+                 refresh_output: str = "t", err_log: str = "",
+                 delete_result: str = "t", ahdl_loaded: bool = True,
+                 ports_output: str = ('("ports" '
+                 '((nil "name" "A" "direction" "input" "width" "1")))'),
+                 views_output: str = '(("veriloga" '
+                 '("veriloga" "text.veriloga" "text" "veriloga.va") '
+                 '("veriloga" "text" nil)))') -> None:
         self.context_loaded = context_loaded
         self.lock = lock
         self.current_source = current_source
@@ -198,6 +204,10 @@ class VaMiddle:
         self.parse_ok = parse_ok
         self.refresh_output = refresh_output
         self.err_log = err_log
+        self.delete_result = delete_result
+        self.ahdl_loaded = ahdl_loaded
+        self.ports_output = ports_output
+        self.views_output = views_output
         self.skills: list[str] = []
         self.commands: list[str] = []
         self.uploads: dict[str, str] = {}
@@ -221,6 +231,15 @@ class VaMiddle:
         if "getd('VerAParseModule)" in code:
             return VirtuosoResult(status=ExecutionStatus.SUCCESS,
                                   output="t" if self.context_loaded else "nil")
+        if "getd('ahdlToPinList)" in code:
+            return VirtuosoResult(status=ExecutionStatus.SUCCESS,
+                                  output="t" if self.ahdl_loaded else "nil")
+        if "ahdlToPinList(" in code:
+            return VirtuosoResult(status=ExecutionStatus.SUCCESS,
+                                  output=self.ports_output)
+        if "ddGetObjFiles" in code:
+            return VirtuosoResult(status=ExecutionStatus.SUCCESS,
+                                  output=self.views_output)
         if "loadContext(" in code:
             self.context_loaded = True
             return VirtuosoResult(status=ExecutionStatus.SUCCESS, output="t")
@@ -233,7 +252,8 @@ class VaMiddle:
         if "ahdlUpdateViewInfo(" in code:
             return VirtuosoResult(status=ExecutionStatus.SUCCESS, output=self.refresh_output)
         if "ddDeleteObj" in code:
-            return VirtuosoResult(status=ExecutionStatus.SUCCESS, output="t")
+            return VirtuosoResult(status=ExecutionStatus.SUCCESS,
+                                  output=self.delete_result)
         if "ddUpdateLibList" in code:
             return VirtuosoResult(status=ExecutionStatus.SUCCESS, output='"ok"')
         return VirtuosoResult(status=ExecutionStatus.SUCCESS, output="t")
@@ -309,6 +329,93 @@ class TestVerilogaWriteOrchestration(unittest.TestCase):
                 "edits": [{"old_text": "b", "new_text": "B"}]}])
             self.assertTrue(out.ok, out.error)
             self.assertEqual(list(patched.uploads.values())[0], "a\nB\n")
+
+    def test_set_source_sha256_guard(self):
+        import hashlib
+        with tempfile.TemporaryDirectory(prefix="vb-") as tmp:
+            good_sha = hashlib.sha256(
+                b"module old; endmodule\n").hexdigest()
+            ok = self._write(VaMiddle(), tmp, [{
+                "op": "set_source", "text": "module new;\n",
+                "expected_sha256": good_sha,
+            }])
+            self.assertTrue(ok.ok, ok.error)
+
+            bad = self._write(VaMiddle(), tmp, [{
+                "op": "set_source", "text": "module new;\n",
+                "expected_sha256": "0" * 64,
+            }])
+            self.assertFalse(bad.ok)
+            self.assertIn("sha256 mismatch", bad.error)
+
+    def test_patch_source_line_range_and_errors(self):
+        with tempfile.TemporaryDirectory(prefix="vb-") as tmp:
+            ranged = VaMiddle(current_source="a\nb\nc\n")
+            out = self._write(ranged, tmp, [{
+                "op": "patch_source",
+                "edits": [{"start_line": 2, "end_line": 2, "new_text": "B"}],
+            }])
+            self.assertTrue(out.ok, out.error)
+            self.assertEqual(list(ranged.uploads.values())[0], "a\nB\nc\n")
+
+            not_found = self._write(VaMiddle(), tmp, [{
+                "op": "patch_source", "edits": [{"old_text": "zzz", "new_text": "x"}],
+            }])
+            self.assertFalse(not_found.ok)
+            self.assertIn("old_text not found", not_found.error)
+
+            multi = VaMiddle(current_source="a\na\n")
+            ambiguous = self._write(multi, tmp, [{
+                "op": "patch_source", "edits": [{"old_text": "a", "new_text": "x"}],
+            }])
+            self.assertFalse(ambiguous.ok)
+            self.assertIn("matches 2 places", ambiguous.error)
+
+            invalid = self._write(VaMiddle(), tmp, [{
+                "op": "patch_source", "edits": [{"bogus": 1}],
+            }])
+            self.assertFalse(invalid.ok)
+            self.assertIn("edit must be", invalid.error)
+
+    def test_delete_view_reports_failure(self):
+        with tempfile.TemporaryDirectory(prefix="vb-") as tmp:
+            result = self._write(VaMiddle(delete_result="nil"), tmp,
+                                 [{"op": "delete_view"}])
+            self.assertFalse(result.ok)
+            self.assertIn("ddDeleteObj returned", result.error)
+
+
+class TestVerilogaReadMode(unittest.TestCase):
+    def _read(self, middle, tmp_root: str, **fields):
+        from unittest import mock
+        fields.setdefault("token", "t")
+        fields.setdefault("library", "LIB")
+        fields.setdefault("cell", "CELL")
+        with mock.patch.object(V, "artifact_dir",
+                               lambda: Path(tmp_root) / "artifact"):
+            return V.Package(middle).read(V.ReadRequest(**fields))
+
+    def test_cell_mode_ports_views_diagnostics(self):
+        with tempfile.TemporaryDirectory(prefix="vb-") as tmp:
+            middle = VaMiddle(err_log="VACOMP-42: bad discipline\n")
+            result = self._read(middle, tmp,
+                                focus=["ports", "views", "diagnostics"])
+        self.assertTrue(result.ok, result.error)
+        self.assertEqual(result.value["ports"],
+                         [{"name": "A", "direction": "input", "width": "1"}])
+        # 3 元素畸形 view 条目被跳过；只有 4 元素条目入列
+        self.assertEqual([v["view"] for v in result.value["views"]],
+                         ["veriloga"])
+        self.assertEqual(result.value["diagnostics"]["errors"],
+                         ["VACOMP-42: bad discipline"])
+
+    def test_ports_unsupported_when_context_missing(self):
+        with tempfile.TemporaryDirectory(prefix="vb-") as tmp:
+            result = self._read(VaMiddle(ahdl_loaded=False), tmp,
+                                focus=["ports"])
+        self.assertTrue(result.ok, result.error)
+        self.assertEqual(result.value["ports"],
+                         [{"unsupported": "AHDL context is not loaded"}])
 
 
 class TestVerilogaCheckAndSave(unittest.TestCase):

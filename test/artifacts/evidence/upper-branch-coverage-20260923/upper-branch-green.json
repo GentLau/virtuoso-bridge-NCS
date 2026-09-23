@@ -1,0 +1,10 @@
+{
+  "run_id": "upper-branch-coverage-20260923",
+  "command": "python -m pytest test/offline/unit test/offline/integration test/offline/scenario -q（离线三级全量）",
+  "expectation": "上层包失败分支与参数分支尽量离线覆盖，不依赖真机",
+  "actual": "全量离线三级全绿；veriloga 语句覆盖 81%→94%（并修 _read_views len>=3 越界）、calibre 88%→90%、spectre 88%→91%；maestro 上一轮已 50.6%→67%",
+  "time": "2026-09-23T12:19:43+08:00",
+  "machine": "DESKTOP-F143LSD（Windows/Python 3.12.10）",
+  "status": "PASS",
+  "attribution": []
+}

@@ -288,7 +288,7 @@ class Package:
             if not isinstance(view_entry, list):
                 continue
             for file_entry in view_entry:
-                if isinstance(file_entry, list) and len(file_entry) >= 3:
+                if isinstance(file_entry, list) and len(file_entry) >= 4:
                     result.append({
                         "view": str(file_entry[0]),
                         "view_type": None if file_entry[1] is None else str(file_entry[1]),

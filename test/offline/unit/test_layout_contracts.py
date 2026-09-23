@@ -396,11 +396,13 @@ class OrchestrationMiddle:
     """layout 编排用假 middle：按 SKILL 文本分派（视图探测 / 命令 / 保存）。"""
 
     def __init__(self, *, view_state: str = '"ok"', save_output: str = '"saved"',
-                 command_ok: bool = True, read_output: str | None = None) -> None:
+                 command_ok: bool = True, read_output: str | None = None,
+                 lock_files: str = "") -> None:
         self.view_state = view_state
         self.save_output = save_output
         self.command_ok = command_ok
         self.read_output = read_output if read_output is not None else TestReadFilters.READ
+        self.lock_files = lock_files
         self.calls: list[str] = []
 
     def execute_skill(self, code, timeout=None, *, token):
@@ -424,6 +426,8 @@ class OrchestrationMiddle:
     def run_command(self, cmd, timeout=None, *, token, parallel=False):
         from pyapi.models import CommandResult
         self.calls.append(cmd)
+        if "*.cdslck" in cmd:
+            return CommandResult(0, self.lock_files, "")
         return CommandResult(0, "", "")
 
 
@@ -489,6 +493,12 @@ class TestLayoutWriteOrchestration(unittest.TestCase):
         self.assertEqual(result.value, {"applied": 1})
         names = [step["name"] for step in result.steps]
         self.assertEqual(names, ["view_exists", "command:place_rect", "dbSave"])
+
+    def test_write_locked_view_reports_lock(self):
+        middle = OrchestrationMiddle(lock_files="layout.oa.cdslck\n")
+        result = self._write(middle)
+        self.assertFalse(result.ok)
+        self.assertIn("locked by another session", result.error)
 
     def test_save_without_saved_marker_fails(self):
         """layout 的正确对照：保存步必须看到 "saved"，否则判失败。"""
