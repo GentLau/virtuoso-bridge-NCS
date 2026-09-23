@@ -1,9 +1,9 @@
 # 顶层补充：控制面与业务面
 
-> 版本：Draft v39
+> 版本：Draft v40
 > 日期：2026-09-23
 > 状态：Normative（顶层 HTTP 端点清单、端口划分与权限口径的唯一 owner）
-> Supersedes：Draft v38（凭据复用授权 token 的承载方式 `reuse_token`）
+> Supersedes：Draft v39（加强凭据统一为 `enhanced_token`）
 > 定位：本文是[顶层](1-顶层.md)的端点补充——[顶层](1-顶层.md)定义顶层职责、调度与响应壳；本文定义顶层开哪些端口、哪些方法、支持哪些请求、每个端点需要什么权限。注册语义见[多用户与注册 §3/§5](../其他/1-多用户与注册.md)。
 
 ## 1. 双面双端口
@@ -24,7 +24,7 @@
 | 个人 token | 目标 user 自己的 token（注册表条目） | 请求携带；结构校验在顶层；业务端口的合法性与路由由中层判定，控制端口 `/api/bug` 例外见 §3 |
 | 管理权限 | 管理员身份 | 本版 = 内置单管理员 token：服务端只存其 **SHA-256 哈希**（不存原文），比较用 `hmac.compare_digest`；私钥签名方案标为**后续版本** |
 
-- 个人/会话 token 随请求传入：POST/DELETE 放请求体；GET 放 `token` 查询参数；凭据复用授权 token 放 `apply` 请求体 `reuse_token`（见 §3）；
+- 个人/会话 token 随请求传入：POST/DELETE 放请求体；GET 放 `token` 查询参数；加强凭据放 `apply` 请求体 `enhanced_token`（管理员 token 或任一已登记持有者 token，见 §3）；
 - 管理权限：`Authorization` 携带内置管理员 token，服务端只比对 SHA-256 哈希；校验失败 401；审计日志只记身份，凭据不进日志；
 - 权限不足 → 4xx，不改变状态。
 
@@ -43,7 +43,7 @@
 
 | 方法 | 路径 | 用途 | 权限 |
 |---|---|---|---|
-| POST | `/api/register` | 注册命令：`{user, action, token?, reuse_token?, 参数}`，`action` ∈ `apply / validate / probe / deploy / verify / commit / cancel` | `apply` 无权限（声明 `mode=local` 需管理权限；复用已登记凭据需 `reuse_token` 或管理权限）；其余 action 会话 token |
+| POST | `/api/register` | 注册命令：`{user, action, token?, enhanced_token?, 参数}`，`action` ∈ `apply / validate / probe / deploy / verify / commit / cancel` | `apply` 无权限（声明 `mode=local` 或复用已登记凭据需 `enhanced_token`）；其余 action 会话 token |
 | GET | `/api/register/<user>` | 查询进行中的注册状态 | 会话 token |
 
 状态机转移（本文是[多用户与注册 §3](../其他/1-多用户与注册.md)六步状态机的 HTTP 投影，语义以该文档为准）：
@@ -61,7 +61,7 @@
 - 非法 action/顺序 → 4xx `{"error": "step order violation", "current_stage": …, "expected": …}`，**不改变会话状态**；
 - 各步失败后候选保留，可**原样重试同一步**（不携带参数修正）；**修正参数必须 `cancel` 后重新 `apply`**；只有 `cancel`（或服务重启）才释放候选；
 - `apply` 响应返回 `token`（用户显式提供则原样，缺省自动生成）；除 `apply` 外的 action 必须携带 `token`，服务端校验其与候选一致，缺失/不一致 → 4xx `invalid token`，**不改变会话状态**；
-- 复用他人已登记凭据的 `apply` 以请求体 `reuse_token` 提供**任一**已登记持有者的 token（管理权限可省略）；`reuse_token` 只作校验、不落盘、不回显、不进日志；校验不通过 → 4xx，**不改变状态**；
+- 声明 `mode=local` 或复用他人已登记凭据的 `apply` 以请求体 `enhanced_token` 提供加强凭据：**管理员 token 或任一已登记持有者的 token**；`enhanced_token` 只作校验、不落盘、不回显、不进日志；校验不通过 → 4xx，**不改变状态**；
 - 六步由该命令端点逐个调用完成：`apply` 以 body 中的 `user` 建**内存候选**（尚未进注册表），后续 action 都以该 `user` 定位候选；`commit` 前 registry 不存在该 user，失败/取消则丢弃候选。
 
 **用户管理**（语义见[多用户与注册 §5](../其他/1-多用户与注册.md)）
