@@ -268,13 +268,20 @@ class TestPackageFlows(unittest.TestCase):
         self.assertFalse(unknown.ok)
         self.assertIn("command 0 invalid", unknown.error)
 
-        pkg = self._pkg(ok('"ok"'), fail("shape not found"))
+        pkg = self._pkg(ok('"ok"'), ok('"open-ok"'), fail("shape not found"))
         failed = pkg.write(S.WriteRequest(
             token="t", library="L", cell="C",
             commands=[{"op": "delete_shape", "kind": "rect", "bbox": [0, 0, 1, 1]}]))
         self.assertFalse(failed.ok)
         self.assertIn("shape not found", failed.error)
         self.assertIn("not transactional", failed.error)
+
+        pkg = self._pkg(ok('"ok"'), ok('"locked"'))
+        locked = pkg.write(S.WriteRequest(
+            token="t", library="L", cell="C",
+            commands=[{"op": "delete_shape", "kind": "rect", "bbox": [0, 0, 1, 1]}]))
+        self.assertFalse(locked.ok)
+        self.assertIn("locked by another session", locked.error)
 
     def test_write_reports_view_probe_results(self):
         missing = self._pkg(ok("missing")).write(S.WriteRequest(
@@ -296,20 +303,25 @@ class TestPackageFlows(unittest.TestCase):
         self.assertIn("unexpected view probe", weird.error)
 
     def test_write_happy_path_reports_applied_count(self):
-        pkg = self._pkg(ok('"ok"'), ok("db:1"), ok('"saved"'))
+        pkg = self._pkg(ok('"ok"'), ok('"open-ok"'), ok("db:1"), ok('"saved"'))
         result = pkg.write(S.WriteRequest(
             token="t", library="L", cell="C",
             commands=[{"op": "delete_shape", "kind": "rect", "bbox": [0, 0, 1, 1]}]))
         self.assertTrue(result.ok, result.error)
         self.assertEqual(result.value, {"applied": 1})
+        names = [step["name"] for step in result.steps]
+        self.assertEqual(names, ["view_exists", "open", "command:delete_shape", "check_and_save"])
+        codes = [code for _token, code in pkg.middle.calls]
+        self.assertNotIn("dbOpenCellViewByType", codes[2])
+        self.assertIn("dbClose(vbSymCv)", codes[3])
 
     def test_check_and_save_probe_and_result(self):
-        good = self._pkg(ok('"ok"'), ok('"saved"')).check_and_save(
+        good = self._pkg(ok('"ok"'), ok('"open-ok"'), ok('"saved"')).check_and_save(
             S.CheckSaveRequest(token="t", library="L", cell="C"))
         self.assertTrue(good.ok, good.error)
         self.assertEqual(good.value, {"saved": True})
 
-        bad = self._pkg(ok('"ok"'), fail("pin-list generation failed")).check_and_save(
+        bad = self._pkg(ok('"ok"'), ok('"open-ok"'), fail("pin-list generation failed")).check_and_save(
             S.CheckSaveRequest(token="t", library="L", cell="C"))
         self.assertFalse(bad.ok)
         self.assertIn("pin-list", bad.error)

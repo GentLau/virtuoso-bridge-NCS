@@ -344,16 +344,33 @@ class Package:
         )
 
     def _check_save_expr(self, lib: str, cell: str, view: str, view_type: str) -> str:
+        """Run on the already-open global ``vbSymCv``; always release it."""
         return (
-            "let((vbCv vbPinList vbSaved) "
-            f"vbCv = {self._open_expr(lib, cell, view, view_type, 'a')} "
-            'unless(vbCv error("symbol view not found")) '
+            "let((vbPinList vbSaved) "
             f"vbPinList = errset(schSymbolToPinList({basic.q(lib)} {basic.q(cell)} {basic.q(view)})) "
-            "vbSaved = errset(dbSave(vbCv)) "
-            "dbClose(vbCv) "
+            "vbSaved = errset(dbSave(vbSymCv)) "
+            "dbClose(vbSymCv) vbSymCv = nil "
             'unless(vbPinList && car(vbPinList) error("symbol pin-list generation failed")) '
             'unless(vbSaved && car(vbSaved) error("symbol save failed")) '
             '"saved")'
+        )
+
+    def _open_edit_expr(self, lib: str, cell: str, view: str, view_type: str) -> str:
+        """Open for edit once, keep the handle in the global ``vbSymCv``.
+
+        Returns ``"open-ok"`` or ``"locked"`` (missing/mismatch are already
+        covered by ``_require_view_exists``).
+        """
+        return (
+            "let((vbEdit) "
+            f"vbEdit = {self._open_expr(lib, cell, view, view_type, 'a')} "
+            'if(vbEdit then vbSymCv = vbEdit "open-ok" else "locked"))'
+        )
+
+    def _close_edit_expr(self) -> str:
+        return (
+            'when(boundp(\'vbSymCv) && vbSymCv dbClose(vbSymCv)) '
+            'vbSymCv = nil t'
         )
 
     def _require_view_exists(self, request: Any) -> None:
@@ -459,16 +476,27 @@ class Package:
         except Exception as exc:  # noqa: BLE001
             return Result(False, steps, f"{type(exc).__name__}: {exc}")
 
-        for index, command, expr in planned:
-            wrapped = (
-                "let((vbSymCv) "
-                f"vbSymCv = {self._open_expr(request.library, request.cell, request.view, request.view_type, 'a')} "
-                'unless(vbSymCv error("symbol view not found")) '
-                f"{expr})"
+        opened = self._skill(
+            self._open_edit_expr(request.library, request.cell, request.view, request.view_type),
+            request.token,
+            request.timeout,
+        )
+        state = (opened.output or "").strip().strip('"')
+        steps.append(_step("open", opened.ok and state == "open-ok", opened))
+        if not opened.ok:
+            return Result(False, steps, "; ".join(opened.errors) or "open failed")
+        if state != "open-ok":
+            return Result(
+                False, steps,
+                f"symbol view {request.library}/{request.cell}/{request.view} "
+                "is locked by another session",
             )
-            run = self._skill(wrapped, request.token, request.timeout)
+
+        for index, command, expr in planned:
+            run = self._skill(expr, request.token, request.timeout)
             steps.append(_step(f"command:{command['op']}", run.ok, run))
             if not run.ok:
+                self._skill(self._close_edit_expr(), request.token, request.timeout)
                 detail = "; ".join(run.errors) or f"command {command['op']} failed"
                 return Result(
                     False, steps,
@@ -483,6 +511,7 @@ class Package:
         )
         steps.append(_step("check_and_save", saved.ok, saved))
         if not saved.ok:
+            self._skill(self._close_edit_expr(), request.token, request.timeout)
             return Result(False, steps, "; ".join(saved.errors) or "symbol check/save failed")
         return Result(True, steps, None, {"applied": len(request.commands)})
 
@@ -496,6 +525,21 @@ class Package:
         steps: list[dict[str, Any]] = []
         try:
             self._require_view_exists(request)
+            opened = self._skill(
+                self._open_edit_expr(request.library, request.cell, request.view, request.view_type),
+                request.token,
+                request.timeout,
+            )
+            state = (opened.output or "").strip().strip('"')
+            steps.append(_step("open", opened.ok and state == "open-ok", opened))
+            if not opened.ok:
+                return Result(False, steps, "; ".join(opened.errors) or "open failed")
+            if state != "open-ok":
+                return Result(
+                    False, steps,
+                    f"symbol view {request.library}/{request.cell}/{request.view} "
+                    "is locked by another session",
+                )
             run = self._skill(
                 self._check_save_expr(request.library, request.cell, request.view, request.view_type),
                 request.token,
@@ -503,6 +547,7 @@ class Package:
             )
             steps.append(_step("check_and_save", run.ok, run))
             if not run.ok:
+                self._skill(self._close_edit_expr(), request.token, request.timeout)
                 return Result(False, steps, "; ".join(run.errors) or "symbol check/save failed")
             return Result(True, steps, None, {"saved": True})
         except Exception as exc:  # noqa: BLE001

@@ -124,17 +124,6 @@ def main(argv: list[str] | None = None) -> int:
         record(f"SELF-{name}", f"{name} 环境自检", "SKILL 可用且库可见", out,
                bool(out) and "dd:" in out)
 
-    # 干净起点：A 删旧视图、重建并保存关闭。
-    _skill(server, args.token_a,
-           f'let((o) o = ddGetObj("{args.lib}" "{args.cell}" "{args.view}") '
-           'when(o unless(ddDeleteObj(o) error("delete failed"))))')
-    _skill(server, args.token_a,
-           f'let((cv) cv = dbOpenCellViewByType("{args.lib}" "{args.cell}" '
-           f'"{args.view}" "schematic" "w") '
-           'unless(cv error("create failed")) '
-           'unless(dbSave(cv) error("save failed")) dbClose(cv) t)')
-    view_dir = _view_dir(server, args.token_a, args.lib, args.cell, args.view)
-
     def write_label(token: str, text: str) -> dict:
         return _op(server, token, "virtuoso.schematic.write",
                    library=args.lib, cell=args.cell, view=args.view,
@@ -144,6 +133,30 @@ def main(argv: list[str] | None = None) -> int:
         return _op(server, token, "virtuoso.schematic.read",
                    library=args.lib, cell=args.cell, view=args.view,
                    focus="positions")
+
+    # 干净起点：两个会话都 purge 掉任何残留 edit 句柄（防上一轮泄漏污染），
+    # 再由 A 删除、重建；最后校验视图确实是空的，否则视为环境污染而非产品缺陷。
+    def fresh_start() -> bool:
+        for token in (args.token_a, args.token_b):
+            _skill(server, token,
+                   f'let((cv) cv = dbOpenCellViewByType("{args.lib}" "{args.cell}" '
+                   f'"{args.view}" "schematic" "a") when(cv dbPurge(cv)) t)')
+        _skill(server, args.token_a,
+               f'let((o) o = ddGetObj("{args.lib}" "{args.cell}" "{args.view}") '
+               'when(o unless(ddDeleteObj(o) error("delete failed"))))')
+        _skill(server, args.token_a,
+               f'let((cv) cv = dbOpenCellViewByType("{args.lib}" "{args.cell}" '
+               f'"{args.view}" "schematic" "w") '
+               'unless(cv error("create failed")) '
+               'unless(dbSave(cv) error("save failed")) dbClose(cv) t)')
+        empty = read_labels(args.token_a)
+        return empty.get("ok") and not _labels_of(empty)
+
+    if not fresh_start() and not fresh_start():
+        raise RuntimeError(
+            f"environment contaminated: {args.lib}/{args.cell}/{args.view} "
+            "still carries stale objects after two purge+delete cycles")
+    view_dir = _view_dir(server, args.token_a, args.lib, args.cell, args.view)
 
     # T1：A 写完，B 读。
     write_label(args.token_a, "A1")

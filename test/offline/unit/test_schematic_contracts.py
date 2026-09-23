@@ -317,6 +317,20 @@ class TestPackageFlow(unittest.TestCase):
         names = [step["name"] for step in result.steps]
         self.assertEqual(names, ["open", "command:place_label", "check_and_save"])
         self.assertEqual(len(middle.calls), 3)
+        codes = [code for _token, code in middle.calls]
+        self.assertNotIn("dbOpenCellViewByType", codes[1])
+        self.assertIn("dbClose(vbSchemCv)", codes[2])
+
+    def test_write_reports_open_state_failures(self):
+        for state, marker in (('"missing"', "not found"),
+                              ('"type-mismatch"', "view type"),
+                              ('"locked"', "locked by another session")):
+            pkg = self._pkg(ok(state))
+            result = pkg.write(S.WriteRequest(
+                token="t", library="L", cell="C",
+                commands=[{"op": "place_label", "text": "A", "x": 0, "y": 0}]))
+            self.assertFalse(result.ok, state)
+            self.assertIn(marker, result.error)
 
     def test_write_rejects_bad_commands_and_open_failure(self):
         with self.assertRaises(ValueError):

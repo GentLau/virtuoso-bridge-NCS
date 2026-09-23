@@ -394,6 +394,7 @@ def _read_skill(request: ReadRequest) -> str:
             '__obj~>theLabel __obj~>xy __obj~>orient __obj~>justify __obj~>font __obj~>height)))'
         )
     parts.append('vbOut = strcat(vbOut "END\\n")')
+    parts.append('dbClose(cv)')
     parts.append('vbOut)')
     parts.append('))')
     return "\n".join(parts)
@@ -401,15 +402,47 @@ def _read_skill(request: ReadRequest) -> str:
 # ---- write atoms -------------------------------------------------------------
 
 def _open_edit_skill(library: str, cell: str, view: str) -> str:
+    """Probe the view and open it for edit in one call; keep the handle in the
+    SKILL global ``vbSchemCv`` so later atoms and the save step can reuse it.
+
+    Returns ``"open-ok"`` / ``"missing"`` / ``"type-mismatch"`` / ``"locked"``.
+    """
     return (
-        f'let((vbSchemCv) vbSchemCv = dbOpenCellViewByType({_q(library)} '
-        f'{_q(cell)} {_q(view)} "schematic" "a") '
-        'if(vbSchemCv "open-ok" "open-failed"))'
+        f'let((vbObj vbCv vbEdit) vbObj = ddGetObj({_q(library)} {_q(cell)} {_q(view)}) '
+        f'if(vbObj then progn('
+        f'vbCv = dbOpenCellViewByType({_q(library)} {_q(cell)} {_q(view)} "schematic" "r") '
+        f'unless(vbCv "type-mismatch") '
+        f'when(vbCv dbClose(vbCv)) '
+        f'vbEdit = dbOpenCellViewByType({_q(library)} {_q(cell)} {_q(view)} "schematic" "a") '
+        f'if(vbEdit then vbSchemCv = vbEdit "open-ok" else "locked")) '
+        'else "missing"))'
+    )
+
+
+def _close_edit_skill() -> str:
+    """Release the global edit handle; safe no-op when it is unset."""
+    return (
+        'when(boundp(\'vbSchemCv) && vbSchemCv dbClose(vbSchemCv)) '
+        'vbSchemCv = nil t'
     )
 
 
 def _save_skill() -> str:
-    return 'let((vbRc) vbRc = schCheck(vbSchemCv) when(vbRc dbSave(vbSchemCv)) if(vbRc "saved" "check-failed"))'
+    """schCheck + dbSave, then always release the global edit handle."""
+    return (
+        'let((vbRc) vbRc = schCheck(vbSchemCv) '
+        'when(vbRc dbSave(vbSchemCv)) '
+        'when(vbSchemCv dbClose(vbSchemCv)) vbSchemCv = nil '
+        'if(vbRc "saved" "check-failed"))'
+    )
+
+
+def _open_failure(state: str, library: str, cell: str, view: str) -> str:
+    return {
+        "missing": f"schematic view {library}/{cell}/{view} not found",
+        "type-mismatch": f"{library}/{cell}/{view} exists but is not view type schematic",
+        "locked": f"schematic view {library}/{cell}/{view} is locked by another session",
+    }.get(state, f"could not open schematic view {library}/{cell}/{view} for edit ({state})")
 
 
 def _point_str(points: list[Any]) -> str:
@@ -421,9 +454,10 @@ def _atomic_skill(op: str, cmd: dict[str, Any]) -> str:
     if op == "place_instance":
         master = f'dbOpenCellViewByType({_q(cmd["master_lib"])} {_q(cmd["master_cell"])} {_q(cmd.get("master_view", "symbol"))} "schematicSymbol" "r")'
         return (
-            f'let((vbMaster) vbMaster = {master} '
-            f'dbCreateInst(vbSchemCv vbMaster {_q(cmd["name"])} '
-            f'{float(cmd["x"]):g}:{float(cmd["y"]):g} {_q(cmd.get("orient", "R0"))}))'
+            f'let((vbMaster vbInst) vbMaster = {master} '
+            f'vbInst = dbCreateInst(vbSchemCv vbMaster {_q(cmd["name"])} '
+            f'{float(cmd["x"]):g}:{float(cmd["y"]):g} {_q(cmd.get("orient", "R0"))}) '
+            'when(vbMaster dbClose(vbMaster)) vbInst)'
         )
     if op == "delete_instance":
         return (
@@ -670,9 +704,15 @@ class Package:
             _open_edit_skill(request.library, request.cell, request.view),
             timeout=request.timeout, token=request.token,
         )
-        steps.append(_step("open", opened.ok and "open-ok" in (opened.output or ""), opened))
+        state = (opened.output or "").strip().strip('"')
+        steps.append(_step("open", opened.ok and state == "open-ok", opened))
         if not opened.ok:
             return Result(False, steps, "; ".join(opened.errors) or "open failed")
+        if state != "open-ok":
+            return Result(
+                False, steps,
+                _open_failure(state, request.library, request.cell, request.view),
+            )
         for index, command in enumerate(request.commands):
             if not isinstance(command, dict) or "op" not in command:
                 return Result(False, steps, f"command {index} must be an object with op")
@@ -680,23 +720,21 @@ class Package:
                 skill = _atomic_skill(command["op"], command)
             except Exception as exc:  # noqa: BLE001 - structural command error
                 return Result(False, steps, f"command {index} invalid: {exc}")
-            wrapped = (
-                f'let((vbSchemCv) vbSchemCv = dbOpenCellViewByType({_q(request.library)} '
-                f'{_q(request.cell)} {_q(request.view)} "schematic" "a") {skill})'
-            )
-            run = self.middle.execute_skill(wrapped, timeout=request.timeout, token=request.token)
+            run = self.middle.execute_skill(skill, timeout=request.timeout, token=request.token)
             steps.append(_step(f"command:{command['op']}", run.ok, run))
             if not run.ok:
+                self.middle.execute_skill(
+                    _close_edit_skill(), timeout=request.timeout, token=request.token,
+                )
                 return Result(False, steps, "; ".join(run.errors) or f"command {command['op']} failed")
-        save_skill = (
-            f'let((vbSchemCv vbRc) vbSchemCv = dbOpenCellViewByType({_q(request.library)} '
-            f'{_q(request.cell)} {_q(request.view)} "schematic" "a") '
-            'vbRc = schCheck(vbSchemCv) when(vbRc dbSave(vbSchemCv)) '
-            'if(vbRc "saved" "check-failed"))'
-        )
+        save_skill = _save_skill()
         saved = self.middle.execute_skill(save_skill, timeout=request.timeout, token=request.token)
         steps.append(_step("check_and_save", saved.ok, saved))
         if not saved.ok or "saved" not in (saved.output or ""):
+            if not saved.ok:
+                self.middle.execute_skill(
+                    _close_edit_skill(), timeout=request.timeout, token=request.token,
+                )
             return Result(
                 False, steps,
                 "; ".join(saved.errors) or (saved.output or "").strip()
@@ -755,18 +793,23 @@ class Package:
             _open_edit_skill(request.library, request.cell, request.view),
             timeout=request.timeout, token=request.token,
         )
-        steps.append(_step("open", opened.ok, opened))
+        state = (opened.output or "").strip().strip('"')
+        steps.append(_step("open", opened.ok and state == "open-ok", opened))
         if not opened.ok:
             return Result(False, steps, "; ".join(opened.errors) or "open failed")
-        save_skill = (
-            f'let((vbSchemCv vbRc) vbSchemCv = dbOpenCellViewByType({_q(request.library)} '
-            f'{_q(request.cell)} {_q(request.view)} "schematic" "a") '
-            'vbRc = schCheck(vbSchemCv) when(vbRc dbSave(vbSchemCv)) '
-            'if(vbRc "saved" "check-failed"))'
-        )
+        if state != "open-ok":
+            return Result(
+                False, steps,
+                _open_failure(state, request.library, request.cell, request.view),
+            )
+        save_skill = _save_skill()
         saved = self.middle.execute_skill(save_skill, timeout=request.timeout, token=request.token)
         steps.append(_step("check_and_save", saved.ok, saved))
         if not saved.ok or "saved" not in (saved.output or ""):
+            if not saved.ok:
+                self.middle.execute_skill(
+                    _close_edit_skill(), timeout=request.timeout, token=request.token,
+                )
             return Result(
                 False, steps,
                 "; ".join(saved.errors) or (saved.output or "").strip()

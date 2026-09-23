@@ -415,14 +415,27 @@ class Package:
         return f"failed to open layout view {request.library}/{request.cell}/{request.view} for edit"
 
     def _save_expr(self, request: Any) -> str:
+        """Save the already-open global ``vbLayoutCv`` and always release it."""
         return (
-            "let((vbCv vbSaved) "
-            f"vbCv = {self._open_expr(request.library, request.cell, request.view, request.view_type, 'a')} "
-            'unless(vbCv error("layout view not found")) '
-            "vbSaved = errset(dbSave(vbCv)) "
-            "dbClose(vbCv) "
+            "let((vbSaved) "
+            "vbSaved = errset(dbSave(vbLayoutCv)) "
+            "dbClose(vbLayoutCv) vbLayoutCv = nil "
             'unless(vbSaved && car(vbSaved) error("layout save failed")) '
             '"saved")'
+        )
+
+    def _open_edit_expr(self, request: Any) -> str:
+        """Open for edit once and keep the handle in the global ``vbLayoutCv``."""
+        return (
+            "let((vbEdit) "
+            f"vbEdit = {self._open_expr(request.library, request.cell, request.view, request.view_type, 'a')} "
+            'if(vbEdit then vbLayoutCv = vbEdit "open-ok" else "locked"))'
+        )
+
+    def _close_edit_expr(self) -> str:
+        return (
+            'when(boundp(\'vbLayoutCv) && vbLayoutCv dbClose(vbLayoutCv)) '
+            'vbLayoutCv = nil t'
         )
 
     def _role_root(self, token: str, role: str) -> str:
@@ -514,18 +527,23 @@ class Package:
         except Exception as exc:  # noqa: BLE001
             return Result(False, steps, f"{type(exc).__name__}: {exc}")
 
-        for index, command, expr in planned:
-            wrapped = (
-                "let((vbLayoutCv) "
-                f"vbLayoutCv = {self._open_expr(request.library, request.cell, request.view, request.view_type, 'a')} "
-                'unless(vbLayoutCv error("layout view not found")) '
-                "unwindProtect("
-                f"progn({expr}) "
-                "progn(when(vbLayoutCv dbClose(vbLayoutCv)))))"
+        opened = self._skill(self._open_edit_expr(request), request.token, request.timeout)
+        state = (opened.output or "").strip().strip('"')
+        steps.append(_step("open", opened.ok and state == "open-ok", opened))
+        if not opened.ok:
+            return Result(False, steps, "; ".join(opened.errors) or "open failed")
+        if state != "open-ok":
+            return Result(
+                False, steps,
+                f"layout view {request.library}/{request.cell}/{request.view} "
+                "is locked by another session",
             )
-            run = self._skill(wrapped, request.token, request.timeout)
+
+        for index, command, expr in planned:
+            run = self._skill(expr, request.token, request.timeout)
             steps.append(_step(f"command:{command['op']}", run.ok, run))
             if not run.ok:
+                self._skill(self._close_edit_expr(), request.token, request.timeout)
                 detail = "; ".join(run.errors) or f"command {command['op']} failed"
                 return Result(
                     False, steps,
@@ -536,6 +554,8 @@ class Package:
         saved = self._skill(self._save_expr(request), request.token, request.timeout)
         steps.append(_step("dbSave", saved.ok, saved))
         if not saved.ok or "saved" not in (saved.output or ""):
+            if not saved.ok:
+                self._skill(self._close_edit_expr(), request.token, request.timeout)
             return Result(False, steps, "; ".join(saved.errors) or "layout save failed")
         return Result(True, steps, None, {"applied": len(request.commands)})
 

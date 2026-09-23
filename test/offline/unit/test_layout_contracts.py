@@ -496,7 +496,7 @@ class TestLayoutWriteOrchestration(unittest.TestCase):
         self.assertTrue(result.ok, result.error)
         self.assertEqual(result.value, {"applied": 1})
         names = [step["name"] for step in result.steps]
-        self.assertEqual(names, ["view_exists", "command:place_rect", "dbSave"])
+        self.assertEqual(names, ["view_exists", "open", "command:place_rect", "dbSave"])
 
     def test_write_locked_view_reports_lock(self):
         middle = OrchestrationMiddle(lock_files="layout.oa.cdslck\n")
