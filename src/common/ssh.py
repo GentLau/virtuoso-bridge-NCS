@@ -39,6 +39,7 @@ from common.transfer import (
 
 logger = logging.getLogger(__name__)
 
+
 def configure_command_log(log_file: Path) -> None:
     """Enable the rotating command log for this process (idempotent).
 
@@ -53,9 +54,10 @@ def _setup_command_log(log_file: Path) -> None:
 
     The handler lives on the root logger (not on a package logger) so both the
     ``transport.*`` loggers used by the middle layer and anything else in the
-    process land in ``<working dir>/log/commands.log`` — that file is the
-    support artifact for "what did the bridge actually run".  Rotation keeps a
-    long-running daemon from filling the disk.
+    process land in ``<working dir>/log/commands.<pid>.log`` — that file is the
+    support artifact for "what did the bridge actually run".  Each process owns
+    its own file so Windows rotation never contends with another process's open
+    handle.
     """
     root = logging.getLogger()
     if any(getattr(h, '_vb_cmd_log', False) for h in root.handlers):
@@ -63,8 +65,12 @@ def _setup_command_log(log_file: Path) -> None:
     try:
         log_file = Path(log_file)
         log_file.parent.mkdir(parents=True, exist_ok=True)
+        process_log = log_file.with_name(
+            f"{log_file.stem}.{os.getpid()}{log_file.suffix}"
+        )
         fh: logging.Handler = logging.handlers.RotatingFileHandler(
-            log_file, maxBytes=5 * 1024 * 1024, backupCount=3, encoding="utf-8"
+            process_log, maxBytes=5 * 1024 * 1024, backupCount=3,
+            encoding="utf-8",
         )
     except OSError as exc:
         logger.debug("Command file logging disabled: %s", exc)
@@ -375,6 +381,7 @@ class SSHRunner:
         self._tunnel_local_port: int | None = None
         self._tunnel_failures = 0
         self._tunnel_next_try_at = 0.0
+        self._tunnel_stderr_path: Path | None = None
 
         self._paramiko_backend: Any | None = None
         if self._backend == "paramiko":
@@ -466,6 +473,16 @@ class SSHRunner:
             self._tunnel_proc = proc
             self._tunnel_pid = proc.pid
             self._tunnel_using_external = False
+
+    def _discard_tunnel_stderr(self) -> None:
+        """Best-effort removal of the current owned-tunnel stderr log."""
+        path = self._tunnel_stderr_path
+        self._tunnel_stderr_path = None
+        if path is not None:
+            try:
+                path.unlink()
+            except OSError:
+                pass
 
     def _note_tunnel_failure(self) -> float:
         """Count a failed start and return the time at which retrying is allowed."""
@@ -583,22 +600,38 @@ class SSHRunner:
                 # Capture stderr so we can surface "banner exchange timeout"
                 # / "permission denied" etc. to the user.  Previously this
                 # was DEVNULL and any failure became an opaque "rc=1".
+                try:
+                    from common.paths import temp_dir
+                    stderr_dir: Path | None = temp_dir()
+                except RuntimeError:
+                    # Isolated unit tests may construct a runner before the
+                    # process-level work dir exists; production always uses
+                    # the injected work root.
+                    stderr_dir = None
                 tunnel_stderr_file = tempfile.NamedTemporaryFile(
-                    prefix="vb_tunnel_stderr_", suffix=".log", delete=False
+                    prefix="vb_tunnel_stderr_", suffix=".log", delete=False,
+                    dir=stderr_dir,
                 )
                 tunnel_stderr_path = tunnel_stderr_file.name
+                self._tunnel_stderr_path = Path(tunnel_stderr_path)
                 tunnel_stderr_file.close()
-                stderr_stream = open(tunnel_stderr_path, "wb")
-                proc = subprocess.Popen(
-                    cmd,
-                    stdin=subprocess.DEVNULL,
-                    stdout=subprocess.DEVNULL,
-                    stderr=stderr_stream,
-                    **_windows_no_window_kwargs(
-                        hidden_console=True, new_process_group=True
-                    ),
-                )
-                stderr_stream.close()  # the child holds its own handle
+                try:
+                    stderr_stream = open(tunnel_stderr_path, "wb")
+                    try:
+                        proc = subprocess.Popen(
+                            cmd,
+                            stdin=subprocess.DEVNULL,
+                            stdout=subprocess.DEVNULL,
+                            stderr=stderr_stream,
+                            **_windows_no_window_kwargs(
+                                hidden_console=True, new_process_group=True
+                            ),
+                        )
+                    finally:
+                        stderr_stream.close()  # the child holds its own handle
+                except Exception:
+                    self._discard_tunnel_stderr()
+                    raise
                 # Jump-host cold handshakes can exceed 10 s (slow PAM,
                 # flaky banner exchange).  The previous 3 s budget was
                 # below the P50 of observed cold handshakes and made the
@@ -623,6 +656,7 @@ class SSHRunner:
                 if self.can_reach_port(port):
                     logger.info("Reusing existing tunnel at localhost:%d", port)
                     self._note_tunnel_ready(port)
+                    self._discard_tunnel_stderr()
                     return None
                 try:
                     proc.terminate()
@@ -644,6 +678,8 @@ class SSHRunner:
                     os.unlink(tunnel_stderr_path)
                 except OSError:
                     pass
+                if self._tunnel_stderr_path == Path(tunnel_stderr_path):
+                    self._tunnel_stderr_path = None
                 if attempt + 1 < attempts and self._transient_tunnel_error(stderr_tail):
                     time.sleep(0.3 * (attempt + 1))
                     continue
@@ -741,6 +777,7 @@ class SSHRunner:
         self._tunnel_pid = None
         self._tunnel_using_external = False
         self._tunnel_local_port = None
+        self._discard_tunnel_stderr()
 
     @property
     def is_tunnel_alive(self) -> bool:

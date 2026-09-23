@@ -30,6 +30,7 @@ from pyapi.models import (
 from transport.budgets import CapacityExceeded
 from common.remote_paths import RemotePathError
 from common.registry import Registry, load_registry
+from common.validation import ROLE_FIXED_FIELDS, ROLE_GROUP_NAME_RE
 from transport.roles import ResolvedTargets, resolve
 from common.paths import (
     command_log_file,
@@ -57,6 +58,10 @@ _MAX_TIMEOUT_SECONDS = 2_147_483.0
 # Local transfers stream in bounded chunks so the call deadline is observed
 # even when the disk is slow; a single shutil.copy2 cannot be interrupted.
 _TRANSFER_CHUNK = 1024 * 1024
+
+# Query may only name execution facts or user groups; connection and
+# registration-verification fields are deliberately not addressable.
+_QUERY_RESERVED_NAMES = ROLE_FIXED_FIELDS - {"root", "display", "bin"}
 
 
 class _DeadlineExceeded(Exception):
@@ -192,11 +197,13 @@ class _LocalCommandSession:
         self._eof = False
         self._current = None
         # 错误临时文件也放在顶层注入的工作目录下（不再直接用系统 temp）
-        if err_dir is not None:
-            err_dir.mkdir(parents=True, exist_ok=True)
-            self._err_dir = Path(tempfile.mkdtemp(prefix="local_err_", dir=err_dir))
-        else:
-            self._err_dir = Path(tempfile.mkdtemp(prefix="vb_local_err_"))
+        # 没有显式注入时必须回退到进程级 work root；缺少 work root 是装配
+        # 错误，不应该静默污染系统 temp。
+        base_dir = Path(err_dir) if err_dir is not None else temp_dir()
+        base_dir.mkdir(parents=True, exist_ok=True)
+        self._err_dir = Path(
+            tempfile.mkdtemp(prefix="local_err_", dir=base_dir)
+        )
         self._cwd = None
         if cwd:
             workdir = Path(cwd).expanduser()
@@ -881,15 +888,33 @@ class BusinessServer(Middle):
 
     # -- read-only companion query (spec §4.2) ---------------------------------
 
-    def query(self, *, token: str) -> QueryResult:
-        """Return the per-role ``root``/``bin`` facts for one token.
+    def query(
+        self,
+        *,
+        token: str,
+        role: str | None = None,
+        name: str | None = None,
+    ) -> QueryResult:
+        """Return the per-role facts for one token.
 
         Read-only: it answers from the in-memory registry snapshot, never
         connects, never caches, never writes, and does not touch the three
         budgets or the delivery queues.  Topology fields are deliberately not
-        exposed.  An unknown token is a structured failure:
+        exposed.  Optional ``role``/``name`` filters select one role or one
+        fact/group.  An unknown token is a structured failure:
         ``{"status": "error", "errors": ["invalid token"]}``.
         """
+        role_names = ("gui", "daemon", "command", "file", "spectre")
+        if role is not None and role not in role_names:
+            raise ValueError(f"unknown role: {role!r}")
+        if name is not None:
+            if role is None:
+                raise ValueError("name requires role")
+            if name in _QUERY_RESERVED_NAMES:
+                raise ValueError(f"query name is not exposed: {name!r}")
+            if name not in {"root", "display", "bin"} and not ROLE_GROUP_NAME_RE.fullmatch(name):
+                raise ValueError(f"invalid query name: {name!r}")
+
         entry = self.registry.by_token(token)
         if entry is None:
             return QueryResult(
@@ -898,13 +923,33 @@ class BusinessServer(Middle):
         user = self.registry.user_of(token) or token
         targets = self._targets(entry, user=user)
         roles: dict[str, RoleQuery] = {}
-        for name in ("gui", "daemon", "command", "file", "spectre"):
-            configured = getattr(entry.roles, name)
-            roles[name] = RoleQuery(
-                root=targets.role(name).root,
-                bin=getattr(configured, "bin", None) if name == "spectre" else None,
-                display=getattr(configured, "display", None) if name == "gui" else None,
-            )
+        selected_roles = (role,) if role is not None else role_names
+        for role_name in selected_roles:
+            configured = getattr(entry.roles, role_name)
+            facts: dict[str, object] = {}
+
+            def add_fact(key: str, value: object) -> None:
+                if value is not None:
+                    facts[key] = value
+
+            if name is None:
+                add_fact("root", targets.role(role_name).root)
+                if role_name == "gui":
+                    add_fact("display", getattr(configured, "display", None))
+                if role_name == "spectre":
+                    add_fact("bin", getattr(configured, "bin", None))
+                for group_name, group_value in (configured.model_extra or {}).items():
+                    add_fact(group_name, group_value)
+            elif name == "root":
+                add_fact("root", targets.role(role_name).root)
+            elif name == "display" and role_name == "gui":
+                add_fact("display", getattr(configured, "display", None))
+            elif name == "bin" and role_name == "spectre":
+                add_fact("bin", getattr(configured, "bin", None))
+            else:
+                add_fact(name, (configured.model_extra or {}).get(name))
+
+            roles[role_name] = RoleQuery(**facts)
         return QueryResult(status=ExecutionStatus.SUCCESS, roles=roles)
 
     # -- one-shot role interfaces (gui / spectre) ------------------------------

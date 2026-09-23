@@ -39,7 +39,7 @@ from register.candidate import (
 from register.reservation import ReservationTable
 from common import config as config_base
 from common.registry import Registry, RegistryError, load_registry
-from common.jsonutil import loads_strict
+from common.jsonutil import dumps_strict, loads_strict
 from common.paths import (  # noqa: E402 - 进程级路径基座（common 层）
     init_work_dir,
     log_dir,
@@ -74,7 +74,15 @@ class RegistrationHandler(BaseHTTPRequestHandler):
     def _send_json(self, status: int, payload: dict, *,
                    allow: str | None = None,
                    close: bool = False) -> None:
-        body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+        try:
+            text = dumps_strict(payload)
+        except (TypeError, ValueError) as exc:
+            status = 500
+            text = dumps_strict({
+                "error": "invalid response payload",
+                "detail": str(exc),
+            })
+        body = text.encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
@@ -628,6 +636,14 @@ class RegistrationHandler(BaseHTTPRequestHandler):
         self.server.registry.remove(user)
         with self.server.flow_lock:
             self.server.flows.pop(user, None)
+        ok, detail = self._reload_business_runtime()
+        if not ok:
+            self._send_json(500, {
+                "error": "user removed but business reload failed",
+                "detail": detail,
+                "user": user,
+            })
+            return
         self._send_json(200, {"user": user, "removed": True})
 
     def _handle_update(self, user: str) -> None:
@@ -678,7 +694,30 @@ class RegistrationHandler(BaseHTTPRequestHandler):
         except (RegistryError, ValueError) as exc:
             self._send_json(400, {"error": "invalid update", "detail": str(exc)})
             return
+        ok, detail = self._reload_business_runtime()
+        if not ok:
+            self._send_json(500, {
+                "error": "user updated but business reload failed",
+                "detail": detail,
+                "user": user,
+            })
+            return
         self._send_json(200, {"user": user, "entry": self._redacted(candidate)})
+
+    def _reload_business_runtime(self) -> tuple[bool, str | None]:
+        """Apply a management write to the business child immediately.
+
+        多用户与注册 §5: successful update/remove must trigger an explicit
+        registry reload and retire the token's cached runtime resources.
+        """
+        manager = getattr(self.server, "process_manager", None)
+        if manager is None:
+            return True, None
+        try:
+            manager.reload()
+        except Exception as exc:  # noqa: BLE001 - surfaced as a structured 500
+            return False, f"{type(exc).__name__}: {exc}"
+        return True, None
 
     def do_PUT(self) -> None:  # noqa: N802
         path = urlparse(self.path).path

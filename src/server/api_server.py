@@ -27,7 +27,7 @@ from server import dispatch as dispatch_module
 from server.dispatch import dispatch
 from common import config as config_base
 from common.paths import config_path, init_work_dir, work_root
-from common.jsonutil import loads_strict
+from common.jsonutil import dumps_strict, loads_strict
 
 
 #: Top-layer overall thread-pool size when ``config.json`` does not set
@@ -72,7 +72,16 @@ class ApiHandler(BaseHTTPRequestHandler):
               retry_after: int | None = None,
               allow: str | None = None,
               close: bool = False) -> None:
-        body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+        try:
+            text = dumps_strict(payload)
+        except (TypeError, ValueError) as exc:
+            status = 500
+            text = dumps_strict({
+                "ok": False,
+                "data": None,
+                "error": f"invalid response payload: {exc}",
+            })
+        body = text.encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
@@ -320,6 +329,7 @@ PACKAGES = (
     ("pyapi.packages.spectre", "Package", "OPERATIONS"),
     ("pyapi.packages.verilog", "Package", "OPERATIONS"),
     ("pyapi.packages.veriloga", "Package", "OPERATIONS"),
+    ("pyapi.packages.calibre", "Package", "OPERATIONS"),
 )
 
 
@@ -362,7 +372,7 @@ def _emit_event(**payload: Any) -> None:
     """Write one control event line for the parent supervisor."""
     try:
         sys.stdout.write(
-            EVENT_PREFIX + json.dumps(payload, ensure_ascii=False) + "\n"
+            EVENT_PREFIX + dumps_strict(payload) + "\n"
         )
         sys.stdout.flush()
     except (OSError, ValueError):

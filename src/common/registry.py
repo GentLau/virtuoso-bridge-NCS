@@ -44,7 +44,12 @@ from pydantic import (
     field_validator,
     model_validator,
 )
-from common.validation import validate_display, validate_user_name
+from common.validation import (
+    ROLE_FIXED_FIELDS,
+    validate_display,
+    validate_role_groups,
+    validate_user_name,
+)
 
 
 
@@ -142,7 +147,10 @@ class RoleConfig(BaseModel):
     verification baselines, not user configuration.
     """
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    # Fixed fields are declared below; every other valid name is a per-role
+    # user group (e.g. role.command.calibre) and is validated by the
+    # model-level validator.
+    model_config = ConfigDict(extra="allow", validate_assignment=True)
 
     mode: Literal["local", "remote"] | None = None
     host: str | None = None
@@ -153,6 +161,20 @@ class RoleConfig(BaseModel):
     root: str | None = None
     expected_fingerprint: str | None = None
     max_sessions: StrictInt = Field(default=10, ge=1)
+
+    @model_validator(mode="after")
+    def _validate_user_groups(self):
+        extras = self.model_extra or {}
+        for name, value in list(extras.items()):
+            if value is None or value == "":
+                # Global empty-string normalization turns an empty group into
+                # None; the spec treats it as "not provided".
+                self.__pydantic_extra__.pop(name, None)
+        validate_role_groups(
+            self.model_extra,
+            reserved=set(ROLE_FIXED_FIELDS),
+        )
+        return self
 
 
 class DaemonRoleConfig(RoleConfig):
@@ -450,6 +472,47 @@ class Registry:
                 out[key] = value
         return out
 
+    @staticmethod
+    def _merge_role_patch(base: dict, patch: dict) -> dict:
+        """Merge one role patch with user-group replace/delete semantics.
+
+        多用户与注册 §5: a group present in the update replaces the whole
+        group; ``null``/empty string deletes it; absent groups are preserved.
+        Fixed role fields keep ordinary assignment semantics.
+        """
+        out = dict(base)
+        for key, value in patch.items():
+            if key in ROLE_FIXED_FIELDS:
+                out[key] = value
+            elif value is None or value == "":
+                out.pop(key, None)
+            else:
+                out[key] = value
+        return out
+
+    @classmethod
+    def _merge_update(cls, base: dict, patch: dict) -> dict:
+        out = dict(base)
+        for key, value in patch.items():
+            if (
+                key == "roles"
+                and isinstance(value, dict)
+                and isinstance(out.get(key), dict)
+            ):
+                roles = dict(out[key])
+                for role_name, role_patch in value.items():
+                    current = roles.get(role_name)
+                    if isinstance(role_patch, dict) and isinstance(current, dict):
+                        roles[role_name] = cls._merge_role_patch(current, role_patch)
+                    else:
+                        roles[role_name] = role_patch
+                out[key] = roles
+            elif isinstance(value, dict) and isinstance(out.get(key), dict):
+                out[key] = cls._deep_merge(out[key], value)
+            else:
+                out[key] = value
+        return out
+
     def update(self, user: str, patch: dict, *, validator=None) -> UserEntry:
         """Atomic read-modify-write of one entry (management phase).
 
@@ -470,7 +533,7 @@ class Registry:
                 previous = entries.get(name)
                 if previous is None:
                     raise KeyError(requested)
-                merged = self._deep_merge(previous.model_dump(), patch)
+                merged = self._merge_update(previous.model_dump(), patch)
                 candidate = UserEntry.model_validate(merged)
                 if candidate.token != previous.token:
                     raise RegistryError(

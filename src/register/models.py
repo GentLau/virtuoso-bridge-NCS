@@ -22,11 +22,19 @@ from pydantic import (
 )
 
 from common.registry import UserEntry
-from common.validation import validate_display, validate_token, validate_user_name
+from common.validation import (
+    ROLE_FIXED_FIELDS,
+    validate_display,
+    validate_role_groups,
+    validate_token,
+    validate_user_name,
+)
 
 
 class RequestRole(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    # Fixed fields are declared below; other valid names are per-role user
+    # groups (role.<role>.<group>) and are checked by the model validator.
+    model_config = ConfigDict(extra="allow")
 
     mode: Literal["local", "remote"] | None = None
     host: str | None = None
@@ -37,6 +45,18 @@ class RequestRole(BaseModel):
     root: str | None = None
     max_sessions: StrictInt | None = Field(default=None, ge=1)
     expected_fingerprint: str | None = None
+
+    @model_validator(mode="after")
+    def _validate_user_groups(self):
+        extras = self.model_extra or {}
+        for name, value in list(extras.items()):
+            if value is None or value == "":
+                self.__pydantic_extra__.pop(name, None)
+        validate_role_groups(
+            self.model_extra,
+            reserved=set(ROLE_FIXED_FIELDS),
+        )
+        return self
 
 
 class RequestDaemonRole(RequestRole):

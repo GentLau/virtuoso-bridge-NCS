@@ -16,7 +16,7 @@
       registry.json
       config.json
       temp/
-      log/commands.log
+      log/commands.<pid>.log
       artifact/
 """
 from __future__ import annotations

@@ -11,7 +11,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, NamedTuple, Protocol
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, model_serializer
 
 
 class ExecutionStatus(str, Enum):
@@ -67,14 +67,25 @@ class CommandResult(NamedTuple):
 class RoleQuery(BaseModel):
     """Parameter facts of one role (spec §4.2).
 
-    Deliberately limited to ``root``/``bin`` and the GUI execution fact
-    ``display``: the upper layer must not be able to infer topology
-    (mode/host/user/jump/proxy) from this query.
+    Deliberately limited to ``root``, the GUI execution fact ``display``,
+    the Spectre ``bin`` fact, and raw per-role user groups: the upper layer
+    must not be able to infer topology (mode/host/user/jump/proxy) from this
+    query.  Unconfigured fixed fields serialize as omitted keys.
     """
+
+    model_config = ConfigDict(extra="allow")
 
     root: str | None = None
     bin: str | None = None
     display: str | None = None
+
+    @model_serializer(mode="wrap")
+    def _omit_unconfigured(self, handler):
+        return {
+            key: value
+            for key, value in handler(self).items()
+            if value is not None
+        }
 
 
 class QueryResult(BaseModel):
@@ -163,7 +174,13 @@ class Middle(Protocol):
     #: Companion read-only query (spec §4.2) — not a sixth business interface:
     #: it never sends, executes or transfers anything, and never consumes the
     #: three budgets or a queue slot.
-    def query(self, *, token: str) -> "QueryResult": ...
+    def query(
+        self,
+        *,
+        token: str,
+        role: str | None = None,
+        name: str | None = None,
+    ) -> "QueryResult": ...
 
 
 __all__ = [

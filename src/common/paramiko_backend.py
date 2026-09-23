@@ -736,14 +736,18 @@ class ParamikoSessionBackend:
                 f"Invalid IdentitiesOnly value for host {host!r}: "
                 f"{identities_only_value!r}"
             )
-        strict_host_key_checking = str(
+        raw_strict_host_key_checking = str(
             lookup.get("stricthostkeychecking") or "yes"
         ).lower()
+        strict_host_key_checking = {
+            "true": "yes",
+            "false": "no",
+        }.get(raw_strict_host_key_checking, raw_strict_host_key_checking)
         if strict_host_key_checking not in ("yes", "ask"):
             raise ValueError(
                 "Paramiko backend requires recorded host keys; "
-                f"StrictHostKeyChecking={strict_host_key_checking} is not supported "
-                f"for host {host!r}"
+                f"StrictHostKeyChecking={raw_strict_host_key_checking!r} is not "
+                f"supported for host {host!r} (supported: yes/ask/true)"
             )
         revoked_host_keys = str(
             lookup.get("revokedhostkeys") or "none"

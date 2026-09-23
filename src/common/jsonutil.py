@@ -4,7 +4,9 @@ Python's stock JSON parser accepts ``NaN``/``Infinity`` extensions and can
 raise implementation exceptions (``ValueError`` for oversized integer
 literals, ``RecursionError`` for deeply nested documents).  The HTTP faces
 must translate all of those into a normal 4xx response instead of dropping the
-connection.
+connection.  Response serialization likewise emits standard JSON only:
+``ensure_ascii=True`` keeps lone surrogates from breaking ``.encode('utf-8')``,
+and ``allow_nan=False`` refuses non-standard ``NaN``/``Infinity`` literals.
 """
 
 from __future__ import annotations
@@ -44,4 +46,19 @@ def loads_strict(text: str) -> Any:
     )
 
 
-__all__ = ["loads_strict"]
+def dumps_strict(value: Any, *, indent: int | None = None) -> str:
+    """Serialize a response body as standard, UTF-8-safe JSON text.
+
+    ``json.dumps(..., allow_nan=False)`` rejects non-finite floats instead of
+    emitting ``-Infinity``/``NaN``.  Lone surrogates are escaped by
+    ``ensure_ascii=True``, so the result can always be encoded as UTF-8.
+    """
+    return json.dumps(
+        value,
+        ensure_ascii=True,
+        allow_nan=False,
+        indent=indent,
+    )
+
+
+__all__ = ["dumps_strict", "loads_strict"]
