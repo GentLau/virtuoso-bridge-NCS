@@ -182,7 +182,8 @@ class Package:
 
     def _write_remote(self, remote: str, content: str, request: Any) -> None:
         local = self._cache_dir() / Path(remote).name
-        local.write_text(content, encoding="utf-8", newline="\n")
+        with open(local, "w", encoding="utf-8", newline="\n") as fh:
+            fh.write(content)
         result = self.middle.upload_file(local, remote, timeout=request.timeout, token=request.token)
         if result.returncode != 0:
             raise RuntimeError(result.stderr or f"upload failed: {remote}")
@@ -269,7 +270,7 @@ class Package:
             if not isinstance(view_entry, list):
                 continue
             for file_entry in view_entry:
-                if isinstance(file_entry, list) and len(file_entry) >= 3:
+                if isinstance(file_entry, list) and len(file_entry) >= 4:
                     result.append({
                         "view": str(file_entry[0]),
                         "view_type": None if file_entry[1] is None else str(file_entry[1]),
@@ -621,7 +622,8 @@ class Package:
             text = self._read_remote(remote_out, request)
             output_path = Path(output)
             output_path.parent.mkdir(parents=True, exist_ok=True)
-            output_path.write_text(text, encoding="utf-8", newline="\n")
+            with open(output_path, "w", encoding="utf-8", newline="\n") as fh:
+                fh.write(text)
             local_log = output_path.with_suffix(".oa2verilog.log")
             local_log.write_text(log_text, encoding="utf-8")
             module_count = len(re.findall(r"^\s*module\s+(\w+)", text, re.MULTILINE))
@@ -638,8 +640,11 @@ def _imported_cells(log_text: str) -> list[str]:
     cells: list[str] = []
     for line in log_text.splitlines():
         match = re.search(r"Checked[- ]in\s+(?:schematic|symbol|functional view)\s+(\S+)", line)
-        if match and match.group(1) not in cells:
-            cells.append(re.sub(r"[.,;:]$", "", match.group(1)))
+        if not match:
+            continue
+        cleaned = re.sub(r"[.,;:]$", "", match.group(1))
+        if cleaned and cleaned not in cells:
+            cells.append(cleaned)
     return cells
 
 

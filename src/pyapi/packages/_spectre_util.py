@@ -727,6 +727,8 @@ def _compute_noise_integral(data: dict[str, Any], spec: dict[str, Any]) -> dict[
             data, spec["signal"], spec.get("start"), spec.get("stop"),
             spec.get("x", "freq"),
         )
+        if not y_values:
+            raise ValueError("signal window is empty")
         power = [abs(item) ** 2 for item in y_values]
         total = 0.0
         for index in range(len(power) - 1):

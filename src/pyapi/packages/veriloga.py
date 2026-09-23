@@ -166,7 +166,8 @@ class Package:
 
     def _write_remote(self, remote: str, content: str, request: Any) -> None:
         local = self._cache_dir() / Path(remote).name
-        local.write_text(content, encoding="utf-8", newline="\n")
+        with open(local, "w", encoding="utf-8", newline="\n") as fh:
+            fh.write(content)
         result = self.middle.upload_file(local, remote, timeout=request.timeout, token=request.token)
         if result.returncode != 0:
             raise RuntimeError(result.stderr or f"upload failed: {remote}")
@@ -203,7 +204,7 @@ class Package:
         _require_timeout(request.timeout)
         cell_target = request.library and request.cell
         file_target = bool(request.file_path)
-        if cell_target == file_target:
+        if bool(cell_target) == bool(file_target):
             raise ValueError("provide either library+cell or file_path, not both/none")
         valid_focus = {"source", "ports", "views", "diagnostics"}
         if request.focus is not None:

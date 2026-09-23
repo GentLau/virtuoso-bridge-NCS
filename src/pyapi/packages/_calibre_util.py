@@ -101,7 +101,15 @@ _DONE_MARKERS = {
     "lvs": ("LVS completed",),
     "pex": ("COMPLETED",),
 }
-_FAIL_MARKERS = ("FATAL ERROR", "ERROR (OSSHNL-", "Error while loading", "Netlist did not complete")
+_FAIL_MARKERS = (
+    "FATAL ERROR",
+    "ERROR (OSSHNL-",
+    "Error while loading",
+    "Netlist did not complete",
+    "stage1_failed",
+    "stage2_failed",
+    "stage3_failed",
+)
 _LICENSE_HINTS = ("license", "licensing", "cannot checkout", "mgcld", "check out")
 
 

@@ -126,9 +126,10 @@ def _shape_filter_expr(flt: Any) -> str:
     raise ValueError("object filter must be all/none/{region:...}")
 
 
-def _term_center_expr(inst_var: str, term_name: str) -> str:
+def _term_geometry_expr(inst_var: str, term_name: str) -> str:
+    """Return ``list(center halfWidth)`` of the transformed pin figure bbox."""
     return (
-        f'let((rbInst rbTerm rbPin rbFig rbBBox rbCtr) '
+        f'let((rbInst rbTerm rbPin rbFig rbBBox rbCtr rbHw) '
         f'rbInst = {inst_var} '
         f'rbTerm = car(setof(x rbInst~>master~>terminals x~>name == {_q(term_name)})) '
         'unless(rbTerm error("terminal not found")) '
@@ -137,7 +138,8 @@ def _term_center_expr(inst_var: str, term_name: str) -> str:
         'rbBBox = when(rbFig dbTransformBBox(rbFig~>bBox rbInst~>transform)) '
         'rbCtr = when(rbBBox list((xCoord(car(rbBBox)) + xCoord(cadr(rbBBox))) / 2.0 '
         '(yCoord(car(rbBBox)) + yCoord(cadr(rbBBox))) / 2.0)) '
-        'rbCtr)'
+        'rbHw = when(rbBBox (xCoord(cadr(rbBBox)) - xCoord(car(rbBBox))) / 2.0) '
+        'when(rbCtr && rbHw list(rbCtr rbHw)))'
     )
 
 
@@ -466,19 +468,24 @@ let((vbInst vbIcd vbCcd vbParamVals vbP vbCb)
         orient = cmd.get("orient", "R0")
         font = cmd.get("font", "stick")
         height = float(cmd.get("height", 0.0625))
-        stub = float(cmd.get("stub_length", 0.5))
+        explicit_stub = "stub_length" in cmd
+        stub = float(cmd["stub_length"]) if explicit_stub else 0.0
         exprs = []
         for term, net in cmd["term_nets"].items():
-            ctr = _term_center_expr(
+            geo = _term_geometry_expr(
                 f'car(setof(x vbSchemCv~>instances x~>name == {_q(cmd["name"])}))',
                 term,
             )
+            # 默认 stub 由引脚几何推出（半宽 + 0.05），避免固定 0.5 跨过相邻引脚；
+            # 显式传 stub_length 时按调用方给定值。
+            stub_expr = f"{stub:g}" if explicit_stub else "rbHw + 0.05"
             exprs.append(
-                f'let((rbCtr rbEnd rbMid) rbCtr = {ctr} '
-                f'when(rbCtr rbEnd = list(xCoord(rbCtr) + {stub:g} yCoord(rbCtr)) '
+                f'let((rbGeo rbCtr rbHw rbEnd rbMid) rbGeo = {geo} '
+                f'when(rbGeo rbCtr = car(rbGeo) rbHw = cadr(rbGeo) '
+                f'rbEnd = list(xCoord(rbCtr) + ({stub_expr}) yCoord(rbCtr)) '
                 f'rbMid = list((xCoord(rbCtr) + xCoord(rbEnd)) / 2.0 '
                 f'(yCoord(rbCtr) + yCoord(rbEnd)) / 2.0) '
-                f'schCreateWire(vbSchemCv "route" "full" list(rbCtr rbEnd) 0 0 0 nil nil) '
+                f'schCreateWire(vbSchemCv "draw" "full" list(rbCtr rbEnd) 0 0 0 nil nil) '
                 f'schCreateWireLabel(vbSchemCv nil rbMid {_q(net)} '
                 f'{_q(just)} {_q(orient)} {_q(font)} {height:g} nil)))'
             )
@@ -689,8 +696,12 @@ class Package:
         )
         saved = self.middle.execute_skill(save_skill, timeout=request.timeout, token=request.token)
         steps.append(_step("check_and_save", saved.ok, saved))
-        if not saved.ok:
-            return Result(False, steps, "; ".join(saved.errors) or "check/save failed")
+        if not saved.ok or "saved" not in (saved.output or ""):
+            return Result(
+                False, steps,
+                "; ".join(saved.errors) or (saved.output or "").strip()
+                or "check/save failed",
+            )
         return Result(True, steps)
 
     def screenshot(self, request: ScreenshotRequest) -> Result:
@@ -755,8 +766,12 @@ class Package:
         )
         saved = self.middle.execute_skill(save_skill, timeout=request.timeout, token=request.token)
         steps.append(_step("check_and_save", saved.ok, saved))
-        if not saved.ok:
-            return Result(False, steps, "; ".join(saved.errors) or "check/save failed")
+        if not saved.ok or "saved" not in (saved.output or ""):
+            return Result(
+                False, steps,
+                "; ".join(saved.errors) or (saved.output or "").strip()
+                or "check/save failed",
+            )
         return Result(True, steps)
 
 

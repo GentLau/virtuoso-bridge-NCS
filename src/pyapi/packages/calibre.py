@@ -9,8 +9,10 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import math
 import posixpath
+import re
 import shlex
 import time
 from dataclasses import dataclass, field
@@ -348,7 +350,7 @@ class Package:
         meta = {
             "kind": kind, "run_dir": run_dir, "top": request.top, "gds": request.gds,
             "cdl": request.cdl, "deck": request.deck, "deck_sha256": cu.deck_sha256(deck_text),
-            "deck_changes": changes, "turbo": request.turbo,
+            "deck_changes": changes, "turbo": request.turbo, "fmt": request.fmt,
         }
         launcher = cu.build_launcher(
             kind=kind, run_dir=run_dir, argv=argv_list[0],
@@ -435,7 +437,8 @@ class Package:
             return Result(False, steps, "run_dir not resolvable", None)
 
         report_rel = {"drc": ("DRC.rep",), "lvs": ("lvs.rep",),
-                      "pex": ("pex.stage2.log", "pex.stage1.log")}.get(kind, ())
+                      "pex": ("pex.stage3.log", "pex.stage2.log",
+                              "pex.stage1.log")}.get(kind, ())
         summary: dict[str, Any] = {}
         report_used: str | None = None
         for rel in report_rel:
@@ -473,6 +476,22 @@ class Package:
         value = {"kind": kind, "run_dir": run_dir, "summary": summary,
                  "report_used": report_used, "log_counters": counters,
                  "log_tail": tail, "artifacts": artifacts}
+        if kind == "pex":
+            if re.search(r"stage\d_failed", tail):
+                return Result(False, steps, "pex stage failed", value)
+            job_text = self._download_text(
+                posixpath.join(run_dir, "job.json"),
+                request.token, request.timeout,
+            )
+            if job_text:
+                try:
+                    job_meta = json.loads(job_text)
+                except ValueError:
+                    job_meta = {}
+                fmt = job_meta.get("fmt")
+                if fmt in ("spice", "simple") and not summary.get("netlist_files"):
+                    return Result(False, steps,
+                                  f"pex {fmt} produced no netlist file", value)
         if report_used is None:
             return Result(False, steps, f"no report found in {run_dir} for kind={kind}", value)
         return Result(True, steps, None, value)
@@ -582,7 +601,8 @@ class Package:
     def _upload_text(self, text: str, remote: str, token: str, timeout: int | None):
         local = _staging_dir() / Path(remote).name
         # 关键：Linux 侧脚本必须 LF 换行；Windows 默认写出 CRLF 会让 bash 报 $'\r'
-        local.write_text(text, encoding="utf-8", newline="\n")
+        with open(local, "w", encoding="utf-8", newline="\n") as fh:
+            fh.write(text)
         return self.middle.upload_file(local, remote, timeout=timeout, token=token)
 
     def _status_snapshot(self, kind: str, run_dir: str, token: str,
@@ -677,7 +697,7 @@ def _argv_for(kind: str, request: RunRequest, binary: str, run_dir: str,
     stage2 = [binary, "-xrc", "-pdb", "-rc", deck_path, "-turbo", str(request.turbo)]
     stages = [stage1, stage2]
     if request.fmt in ("spice", "simple"):
-        stages.append([binary, "-xrc", "-fmt", f"-{request.fmt}", deck_path])
+        stages.append([binary, "-xrc", "-fmt", request.fmt, deck_path])
     return stages
 
 

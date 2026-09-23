@@ -57,39 +57,12 @@ class Package:
 
     def run(self, request: Request) -> Result:
         _validate(request)
-        steps: list[dict[str, Any]] = []
-        remote = f"imports/{request.job}/netlist.scs"
-
-        up = self.middle.upload_file(
-            Path(request.local_netlist), remote,
-            timeout=request.timeout, token=request.token,
+        # 参考实现不落任何 cell/view/symbol：不得伪造成功。
+        return Result(
+            False, [],
+            "virtuoso.netlist.import is a reference stub: "
+            "no cell/view/symbol is created",
         )
-        steps.append({"step": "upload", "ok": up.returncode == 0, "detail": up._asdict()})
-        if up.returncode != 0:
-            return Result(False, steps, up.stderr or "upload failed", remote)
-
-        import_skill = (
-            f'printf("import lib=%s cell=%s file=%s\\n" '
-            f'"{request.library}" "{request.cell}" "{remote}")'
-        )
-        imported = self.middle.execute_skill(
-            import_skill, timeout=request.timeout, token=request.token,
-        )
-        steps.append({"step": "import", "ok": imported.ok, "detail": imported.model_dump()})
-        if not imported.ok:
-            return Result(False, steps, "; ".join(imported.errors) or "import failed", remote)
-
-        symbol_skill = (
-            f'printf("symbol lib=%s cell=%s\\n" "{request.library}" "{request.cell}")'
-        )
-        symbol = self.middle.execute_skill(
-            symbol_skill, timeout=request.timeout, token=request.token,
-        )
-        steps.append({"step": "symbol", "ok": symbol.ok, "detail": symbol.model_dump()})
-        if not symbol.ok:
-            return Result(False, steps, "; ".join(symbol.errors) or "symbol failed", remote)
-
-        return Result(True, steps, None, remote)
 
 
 # 自描述导出：操作名、Request、Result、Package（见 spec 上层 §4.2）

@@ -371,6 +371,27 @@ class Package:
             )
         raise RuntimeError(f"unexpected view probe result: {raw.strip()!r}")
 
+    def _view_dir_path(self, request: Any) -> str:
+        raw = self._q(
+            f"let((lib) lib = ddGetObj({basic.q(request.library)}) "
+            'unless(lib error("library not found")) ddGetObjReadPath(lib))',
+            request.token,
+            request.timeout,
+        )
+        root = raw.strip().strip('"')
+        if not root:
+            raise RuntimeError(f"library {request.library!r} read path unavailable")
+        return posixpath.join(root.rstrip("/"), request.cell, request.view)
+
+    def _is_locked(self, request: Any) -> bool:
+        """True when another session holds an edit lock on the cellview."""
+        view_dir = self._view_dir_path(request)
+        probe = self.middle.run_command(
+            f"ls -A {shlex.quote(view_dir)}/*.cdslck 2>/dev/null",
+            timeout=60, token=request.token,
+        )
+        return probe.returncode == 0 and bool((probe.stdout or "").strip())
+
     def _save_expr(self, request: Any) -> str:
         return (
             "let((vbCv vbSaved) "
@@ -462,6 +483,11 @@ class Package:
         try:
             self._require_view_exists(request)
             steps.append(_step("view_exists", True, request.view))
+            if self._is_locked(request):
+                raise RuntimeError(
+                    f"layout view {request.library}/{request.cell}/{request.view} "
+                    "is locked by another session"
+                )
             if request.strict_lpp:
                 lpp_steps = self._check_lpp(request, planned)
                 steps.append(_step("strict_lpp", True, lpp_steps))
@@ -945,8 +971,16 @@ class Package:
             interval = float(request.poll_interval or 0.5)
             if request.cleanup_policy not in ("success", "always", "never"):
                 raise ValueError("cleanup_policy must be success/always/never")
-            output_path = Path(output)
-            log_path = Path(request.log_path) if request.log_path else output_path.with_suffix(".xstream.log")
+            if request.file_is_local:
+                output_path = Path(output)
+                log_path = (
+                    Path(request.log_path) if request.log_path
+                    else output_path.with_suffix(".xstream.log")
+                )
+            else:
+                # 远端路径必须按原样透传，不能经 Path() 变成本机反斜杠路径
+                output_path = output
+                log_path = request.log_path or f"{output}.xstream.log"
             if str(log_path) == str(output_path):
                 raise ValueError("log_path and file_path must differ")
 
@@ -955,7 +989,9 @@ class Package:
                 root, "xstream",
                 _safe_name(f"{request.library}__{request.cell}__{request.view}"),
             )
-            remote_gds = posixpath.join(remote_dir, _safe_name(output_path.name, "output.gds"))
+            remote_gds = posixpath.join(
+                remote_dir, _safe_name(Path(output).name, "output.gds"),
+            )
             remote_log = posixpath.join(remote_dir, "xstream.log")
             remote_map = posixpath.join(remote_dir, "stream.map")
 
@@ -968,13 +1004,37 @@ class Package:
             if prepared.returncode != 0:
                 return Result(False, steps, prepared.stderr or "prepare failed")
 
+            state_raw = self._q(
+                self._view_state_expr(
+                    request.library, request.cell, request.view, request.view_type,
+                ),
+                request.token, request.timeout,
+            )
+            state = basic.parse_sexpr(state_raw.strip())
+            if state == "missing":
+                return Result(
+                    False, steps,
+                    f"layout view {request.library}/{request.cell}/{request.view} not found",
+                )
+            if state == "mismatch":
+                return Result(
+                    False, steps,
+                    f"layout view {request.library}/{request.cell}/{request.view} "
+                    f"is not view type {request.view_type}",
+                )
+            if self._is_locked(request):
+                return Result(
+                    False, steps,
+                    f"layout view {request.library}/{request.cell}/{request.view} "
+                    "is locked by another session",
+                )
             # XStream Out translates the *saved* cellview; a dirty cellview in the
             # session is not exported and can raise a modal "Save All" dialog that
             # blocks the whole SKILL channel.
             flushed = self._skill(
                 "let((vbCv vbSaved) "
                 f"vbCv = {self._open_expr(request.library, request.cell, request.view, request.view_type, 'a')} "
-                'unless(vbCv error("layout view not found")) '
+                'unless(vbCv error("failed to open layout for edit")) '
                 "vbSaved = errset(dbSave(vbCv)) "
                 "dbClose(vbCv) "
                 'unless(vbSaved && car(vbSaved) error("layout save failed")) '
@@ -1046,7 +1106,12 @@ class Package:
             steps.append(_step("log", not failure, {"reason": reason, "gds_size": gds_size}))
             self._dismiss_xstream_windows(request, steps)
 
-            published_log = self._publish_remote(remote_log, log_path, request)
+            if request.file_is_local:
+                published_log = self._publish_remote(remote_log, log_path, request)
+            else:
+                published_log = self._publish_remote_copy(
+                    remote_log, str(log_path), request,
+                )
             steps.append(_step("publish_log", published_log is None, published_log))
             if published_log is not None and reason == "completed":
                 return Result(False, steps, f"publication_error: {published_log}",
@@ -1058,7 +1123,12 @@ class Package:
                 return Result(False, steps, f"{reason}: {_xstream_summary(log_text)}",
                               {"reason": reason, "gds_size": gds_size})
 
-            published_gds = self._publish_remote(remote_gds, output_path, request)
+            if request.file_is_local:
+                published_gds = self._publish_remote(remote_gds, output_path, request)
+            else:
+                published_gds = self._publish_remote_copy(
+                    remote_gds, output, request,
+                )
             steps.append(_step("publish_gds", published_gds is None, published_gds))
             if published_gds is not None:
                 return Result(False, steps, f"publication_error: {published_gds}",
@@ -1233,6 +1303,20 @@ class Package:
             return None
         except Exception as exc:  # noqa: BLE001
             return f"{type(exc).__name__}: {exc}"
+
+    def _publish_remote_copy(self, remote: str, dest: str,
+                             request: GdsRequest) -> str | None:
+        """Copy ``remote`` to a remote ``dest``; returns an error string or None."""
+        if not posixpath.isabs(dest):
+            return f"file_is_local=false requires an absolute remote path: {dest}"
+        outcome = self.middle.run_command(
+            f"cp {shlex.quote(remote)} {shlex.quote(dest)} && "
+            f"test -s {shlex.quote(dest)}",
+            timeout=request.timeout, token=request.token,
+        )
+        if outcome.returncode != 0:
+            return outcome.stderr or f"remote publish failed: {remote} -> {dest}"
+        return None
 
     def _cleanup(self, remote_dir: str, request: GdsRequest,
                  steps: list[dict[str, Any]]) -> None:

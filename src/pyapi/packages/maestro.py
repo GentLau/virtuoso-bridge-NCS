@@ -248,6 +248,17 @@ def _to_int(value: Any) -> int | None:
         return None
 
 
+def _window_target_fields(title: str) -> list[str] | None:
+    """Parse the ``lib cell view`` tokens after Editing:/Reading: in a title."""
+    for marker in ("Editing:", "Reading:"):
+        if marker in title:
+            tail = title.rsplit(marker, 1)[1].strip()
+            fields = tail.split()
+            if len(fields) >= 3:
+                return fields[:3]
+    return None
+
+
 def _as_list(value: Any) -> list[Any]:
     if value is None:
         return []
@@ -480,8 +491,8 @@ class Package:
         timeout: int | float | None,
     ) -> dict[str, Any] | None:
         for window in self._session_windows(token, timeout):
-            title = window["title"]
-            if library in title and cell in title and view in title:
+            fields = _window_target_fields(window["title"])
+            if fields is not None and fields == [library, cell, view]:
                 return window
         return None
 
@@ -1213,10 +1224,10 @@ class Package:
             ]
             if bounds:
                 key, value = bounds[0]
-                parts.append(f" ?{key} {q(value)}")
+                parts.append(f" ?{key} {_skill_value_expr(value)}")
             for key in ("info", "weight", "corner"):
                 if command.get(key) is not None:
-                    parts.append(f" ?{key} {q(command[key])}")
+                    parts.append(f" ?{key} {_skill_value_expr(command[key])}")
             parts.append(
                 ') if(rc == t t error(if(stringp(rc) rc "spec failed"))))'
             )
