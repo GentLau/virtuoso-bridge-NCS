@@ -1,0 +1,23 @@
+{
+ "token": "vb-vblog",
+ "severity": "P2",
+ "class": "source",
+ "title": "veriloga.read 的 \"provide either library+cell or file_path\" 守卫是死代码（缺 bool()）：两个目标同时给时静默按 file_path 读",
+ "anchor": "src/pyapi/packages/veriloga.py:204-207",
+ "code": "cell_target = request.library and request.cell      # str | None\nfile_target = bool(request.file_path)                 # bool\nif cell_target == file_target:                        # str/None == bool → 恒 False\n    raise ValueError(\"provide either library+cell or file_path, not both/none\")",
+ "contrast": "verilog.py:203 的同类守卫写作 `if bool(request.library and request.cell) == bool(request.file_path):`，bool() 是必需的；veriloga 漏了。",
+ "summary": "`cell_target` 是 `request.library and request.cell` 的结果（字符串或 None），而 `file_target` 是 bool。Python 里 `\"C\" == True`、`None == False` 都是 False，所以这条守卫**永不触发**：既不会拦住『两个都给』，也不会拦住『两个都不给』。",
+ "repro": [
+  "L0（无需真机）：test/offline/unit/test_veriloga_contracts.py",
+  "用例 1：`Package.read(ReadRequest(token='t'))`（两个目标都不给）→ 期望 ValueError，实际不抛，落到远程分支后由 `_view_dir` 报无关错误",
+  "用例 2：`Package.read(ReadRequest(token='t', library='L', cell='C', file_path='/tmp/x.va'))`（两个都给）→ 期望 ValueError，实际不抛，静默走 file_path 分支",
+  "另有衍生现象：两个都给时 `cell_target` 仍为真，line 235 会继续调用 `_read_diagnostics(request)`（针对 library/cell 的远程查询），即 file 模式下掺入 cell 模式的行为",
+  "两条用例现以 @unittest.expectedFailure 钉住，修复后转为 unexpected success 提醒改回普通断言"
+ ],
+ "impact": "调用方把 library/cell 与 file_path 一起传（或都不传）时不会被拒绝：前者静默读另一个文件（读错目标且不报警），后者给出与真实原因无关的报错，故障归因被误导。",
+ "suggested_fix": "与 verilog 对齐：`if bool(request.library and request.cell) == bool(request.file_path):`",
+ "evidence_paths": [
+  "test/offline/unit/test_veriloga_contracts.py（新增 L0 契约 + 2 条 expectedFailure）"
+ ],
+ "reported_by": "test-engineer (首轮全面测试 B2 离线补测)"
+}

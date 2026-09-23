@@ -1,0 +1,47 @@
+{
+ "token": "vb-vblog",
+ "severity": "P2",
+ "class": "source",
+ "title": "schematic.set_term_nets 默认 stub_length=0.5 在真实 PDK 符号上静默产生错误网表",
+ "anchor": "src/pyapi/packages/schematic.py:469（stub 默认值）、:476-483（stub wire + label 生成）",
+ "spec_anchor": "spec/design-concepts/上层/2-schematic.md:48 —— set_term_nets 规定『内部超短 stub + label』，可选 stub_length『不传用默认』",
+ "summary": "默认 stub 长度 0.5 在 65nm PDK 符号（引脚间距 0.25）上跨过相邻引脚，schCreateWire(entry=route) 自动布线后把两个不同网络的引脚连到一起；接口返回 ok=true、无 warning，调用方拿到的是错误网表。",
+ "repro": [
+  "环境：calprobe 真实例（daemon 65122，cds.lib INCLUDE ~/project/test/cds.lib → tsmcN65 可见）",
+  "TB：python test/live/flows/project_flow_tb.py --stage schematic --cell inv1 --stub-length 0.5   # 默认值",
+  "对照：python test/live/flows/project_flow_tb.py --stage schematic --cell inv2 --stub-length 0.05",
+  "两次请求的 term_nets 完全相同：MP{G:VIN,D:VOUT,S:VDD,B:VDD}、MN{G:VIN,D:VOUT,S:VSS,B:VSS}"
+ ],
+ "observed": {
+  "stub_0.5_inv1": {
+   "VIN": ["MN.B", "MP.B"],
+   "VOUT": ["MN.G", "MP.D"],
+   "VDD": ["MP.G"],
+   "VSS": ["MN.S"],
+   "net1": ["MP.S"],
+   "net2": ["MN.D"]
+  },
+  "stub_0.05_inv2": {
+   "VIN": ["MN.G", "MP.G"],
+   "VOUT": ["MN.D", "MP.D"],
+   "VDD": ["MP.B", "MP.S"],
+   "VSS": ["MN.B", "MN.S"]
+  },
+  "device_pin_coords": {
+   "pch_25_at_(0,1)": {"G": [0.0, 1.0], "B": [0.25, 1.0], "D": [0.25, 0.8125], "S": [0.25, 1.1875]},
+   "note": "G 与 B 的间距 0.25；stub 沿 +X 伸 0.5 时 G 的 stub 恰好穿过 B 的引脚点"
+  }
+ },
+ "impact": "用默认参数在真实 PDK 上做原理图，会得到与请求不一致的连通性（栅/衬底互换、源端悬空），且无任何报错；下游 CDL/LVS/仿真全部基于错误网表。属静默数据损坏。",
+ "suggested_fix": [
+  "默认 stub 改为『由符号引脚几何推出』（例如取端子中心到该端子 bbox 边缘的距离，或相邻端子间距的一半），而不是固定 0.5；",
+  "或改用非自动布线（entry=draw）画直线 stub，避免 router 产生穿越相邻引脚的折线；",
+  "或写完后校验：读回各端子所在网络，与请求的 term_nets 不一致时返回失败（把静默错误变成显式错误）。"
+ ],
+ "evidence_paths": [
+  "test/artifacts/env/scenario-project65/evidence-schematic.json（stub 0.5，错误连通性）",
+  "test/artifacts/env/scenario-project65/evidence-schematic-inv2.json（stub 0.05，正确连通性）",
+  "test/live/flows/project_flow_tb.py（S11 流程 TB）"
+ ],
+ "reported_by": "test-engineer (首轮全面测试 B4/S11)"
+}

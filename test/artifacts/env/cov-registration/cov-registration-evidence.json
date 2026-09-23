@@ -1,0 +1,13 @@
+{
+  "ok": true,
+  "token": "cov-token",
+  "user": "covreg",
+  "work_dir": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\evidence\\cov-registration",
+  "stage": "deployed",
+  "step": 4,
+  "errors": [],
+  "warnings": [],
+  "setup_path": "/home/Gent/.virtuoso-bridge/covreg/daemon/setup/virtuoso_setup.il",
+  "registry_written": false,
+  "reservation_file": false
+}

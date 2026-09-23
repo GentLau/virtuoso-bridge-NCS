@@ -1,0 +1,120 @@
+{
+  "ok": true,
+  "failed": 0,
+  "temp_dirs_removed": 9,
+  "results": {
+    "install-crash-safety": {
+      "status": "pass",
+      "detail": {
+        "target_content": "NEW",
+        "leftovers": [],
+        "marker": "crashed-after-first-rename"
+      },
+      "elapsed_s": 1.0320000000065193
+    },
+    "local-download-timeout": {
+      "status": "pass",
+      "detail": {
+        "kind": "timeout",
+        "returncode": 124,
+        "stderr": "command timed out after 0.2s",
+        "clock_calls": 7,
+        "partial_target": false
+      },
+      "elapsed_s": 0.062000000005355105
+    },
+    "local-file-timeout": {
+      "status": "pass",
+      "detail": {
+        "kind": "timeout",
+        "returncode": 124,
+        "stderr": "command timed out after 0.2s",
+        "clock_calls": 7,
+        "partial_target": false
+      },
+      "elapsed_s": 0.046999999991385266
+    },
+    "local-tree-timeout": {
+      "status": "pass",
+      "detail": {
+        "kind": "timeout",
+        "returncode": 124,
+        "stderr": "command timed out after 0.2s",
+        "clock_calls": 7,
+        "partial_target": false
+      },
+      "elapsed_s": 0.046999999991385266
+    },
+    "query-isolation": {
+      "status": "pass",
+      "detail": {
+        "alpha_root": "/srv/alpha/daemon",
+        "beta_root": "/srv/beta/daemon"
+      },
+      "elapsed_s": 0.031000000017229468
+    },
+    "query-no-budget": {
+      "status": "pass",
+      "detail": {
+        "elapsed_s": 0.0,
+        "ok": true
+      },
+      "elapsed_s": 0.0159999999741558
+    },
+    "query-shape": {
+      "status": "pass",
+      "detail": {
+        "roles": [
+          "command",
+          "daemon",
+          "file",
+          "gui",
+          "spectre"
+        ],
+        "spectre_bin": "/cadence/bin/spectre"
+      },
+      "elapsed_s": 0.031000000017229468
+    },
+    "query-unknown-token": {
+      "status": "pass",
+      "detail": {
+        "status": "error",
+        "errors": [
+          "invalid token"
+        ]
+      },
+      "elapsed_s": 0.01600000000325963
+    },
+    "registry-cross-process": {
+      "status": "pass",
+      "detail": {
+        "users": [
+          "seed",
+          "user0",
+          "user1",
+          "user2",
+          "user3"
+        ],
+        "tokens": [
+          "tok-seed",
+          "tok-user0",
+          "tok-user1",
+          "tok-user2",
+          "tok-user3"
+        ]
+      },
+      "elapsed_s": 1.562000000005355
+    },
+    "skill-no-retry-after-delivery": {
+      "status": "pass",
+      "detail": {
+        "deliveries": 1,
+        "errors": [
+          "SKILL execution timed out"
+        ],
+        "elapsed_s": 0.0
+      },
+      "elapsed_s": 0.0
+    }
+  }
+}

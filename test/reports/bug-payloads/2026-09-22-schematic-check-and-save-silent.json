@@ -1,0 +1,25 @@
+{
+ "token": "vb-vblog",
+ "severity": "P2",
+ "class": "source",
+ "title": "schematic 的 check_and_save / write 不检查 schCheck 结果字符串：校验失败仍返回 ok=true",
+ "anchor": [
+  "src/pyapi/packages/schematic.py:410（_save_skill 生成 if(vbRc \"saved\" \"check-failed\")）",
+  "src/pyapi/packages/schematic.py:690-693（write 的保存步只看 saved.ok）",
+  "src/pyapi/packages/schematic.py:756-759（check_and_save 只看 saved.ok）"
+ ],
+ "contrast": "同族包 layout 的正确写法：src/pyapi/packages/layout.py:490 —— `if not saved.ok or \"saved\" not in (saved.output or \"\")` 判为失败。schematic 的三处都没有这一步，属同族实现不一致。",
+ "summary": "SKILL 侧 schCheck 失败时会返回字符串 \"check-failed\"，而 VirtuosoResult.status 仍是 success。schematic 包只看 `saved.ok`（执行状态），不看返回值，于是『校验失败』被当成『成功』返回给调用方。",
+ "repro": [
+  "L0（无需真机）：test/offline/unit/test_schematic_contracts.py",
+  "FakeMiddle 依次返回 output=\"\\\"open-ok\\\"\"、output=\"\\\"check-failed\\\"\"，调用 Package.check_and_save(...) → 期望 ok=False，实际 ok=True，error=None",
+  "write() 路径同理：open-ok → 命令 ok → 保存步返回 \"check-failed\" → write() 仍返回 ok=True"
+ ],
+ "impact": "原理图存在 schCheck 级错误（悬空引脚、网络名冲突、器件未连线等）时，接口与 CI 都会认为『已校验并保存成功』；错误被静默吞掉，直到后续 CDL/LVS/仿真阶段才暴露，且已无法归因到原理图。",
+ "suggested_fix": "按 layout.py:490 的写法，在两处保存步后追加 `or \"saved\" not in (saved.output or \"\")` 判定；_save_skill 保持返回字符串不变。",
+ "evidence_paths": [
+  "test/offline/unit/test_schematic_contracts.py（本次新增的 L0 契约用例，含 expectedFailure 标记）",
+  "test/artifacts/env/scenario-project65/evidence-schematic-inv2.json（真机路径本次返回 \"saved\"，未触发；说明该分支未被真机用例覆盖）"
+ ],
+ "reported_by": "test-engineer (首轮全面测试 B4/S11 补测)"
+}

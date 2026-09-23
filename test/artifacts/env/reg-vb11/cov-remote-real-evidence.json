@@ -1,0 +1,12 @@
+{
+  "steps": [
+    {
+      "name": "skill",
+      "ok": false,
+      "output": ""
+    }
+  ],
+  "ok": false,
+  "token": "vb-vb11",
+  "work_dir": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-vb11"
+}

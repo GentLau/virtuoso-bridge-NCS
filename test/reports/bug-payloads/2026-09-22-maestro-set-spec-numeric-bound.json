@@ -1,0 +1,21 @@
+{
+ "token": "vb-vblog",
+ "severity": "P3",
+ "class": "source",
+ "title": "maestro.set_spec 的 spec bound 只接受字符串：数值 bound 抛 Python 内部 AttributeError（错误信息不可归因）",
+ "anchor": "src/pyapi/packages/maestro.py:1214-1216",
+ "code": "if bounds:\n    key, value = bounds[0]\n    parts.append(f\" ?{key} {q(value)}\")     # q() 只接受 str",
+ "summary": "`basic.q()` 内部调用 `escape_skill_string(value)`，对非字符串直接 `.replace(...)` → 传数值 bound（spec 里写作 `lt / gt`，最自然的写法就是数字）时抛 `AttributeError: 'int' object has no attribute 'replace'`。write() 侧在 maestro.py:1726 捕获后返回 `command {index} invalid: 'int' object has no attribute 'replace'`——调用方拿到的是 Python 内部错误文本，无法据此判断是参数类型问题。",
+ "repro": [
+  "L0（无需真机）：test/offline/unit/test_maestro_command_exprs.py",
+  "`Package._command_exprs({'op':'set_spec','name':'s1','test':'t1','min':0}, '')` → AttributeError（而 `'min': '0'` 正常产出 SKILL）",
+  "另有 expectedFailure 用例断言数值 bound 应当被接受，修复后转 unexpected success"
+ ],
+ "spec_note": "spec/design-concepts/上层/6-maestro.md:76 只写 `set_spec | test | name / lt / gt`，未限定 bound 必须是字符串；同包其它写路径（set_var / set_parameter）用 `_skill_value_expr` 正确处理数字与布尔。",
+ "impact": "数值 bound 完全不可用；用户只能靠试错发现要改用字符串。若 SKILL 侧 `axlAddSpecToOutput` 期望数字而非字符串，则当前的 `q()` 还会把 bound 变成 SKILL 字符串字面量（语义可能不同于数字）——两种口径都需要设计侧确认。",
+ "suggested_fix": "二选一并明确文档：① 用 `_skill_value_expr(value)` 序列化（与 set_var/set_parameter 一致，支持数字/布尔/列表）；② 若要限字符串，先 `_require_text(value, f\"command.{key}\")` 给出可归因的 ValueError。",
+ "evidence_paths": [
+  "test/offline/unit/test_maestro_command_exprs.py（新增：op 矩阵 + 数值 bound 的现状与期望用例）"
+ ],
+ "reported_by": "test-engineer (首轮全面测试 B2 离线补测)"
+}

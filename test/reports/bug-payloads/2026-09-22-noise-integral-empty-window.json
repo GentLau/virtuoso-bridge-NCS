@@ -1,0 +1,22 @@
+{
+ "token": "vb-vblog",
+ "severity": "P3",
+ "class": "source",
+ "title": "spectre.measure 的 noise_integral 在空窗口上静默返回 0.0（同族统计量会报 empty）",
+ "anchor": "src/pyapi/packages/_spectre_util.py:335-355（_compute_noise_integral）",
+ "code": "x_values, y_values = _window_values(data, spec[\"signal\"], spec.get(\"start\"), spec.get(\"stop\"), ...)\npower = [abs(item) ** 2 for item in y_values]\ntotal = 0.0\nfor index in range(len(power) - 1):\n    total += 0.5 * (power[index] + power[index + 1]) * (x_values[index + 1] - x_values[index])\nreturn {\"type\": type_name, \"ok\": True, \"value\": total, \"unit\": \"V^2\", ...}",
+ "summary": "窗口内一个点都没有时 `_window_values` 返回两个空列表，循环不执行，函数返回 `ok=True, value=0.0`。调用方拿到『噪声积分 = 0』这个**看起来合法的结果**，而真实原因是查询频段没有数据。同文件的 `_compute_statistic` 对同样情况显式 `raise ValueError(\"signal window is empty\")` → 两者口径不一致。",
+ "repro": [
+  "L0（无需真机）：test/offline/unit/test_spectre_util_contracts.py",
+  "数据：{\"freq\":[0,1,2], \"onoise\":{\"re\":[0,1,1],\"im\":[0,0,0]}}，spec：{type:'noise_integral', signal:'onoise', start:10, stop:20}",
+  "期望：ok=False（窗口为空）；实际：ok=True、value=0.0、unit='V^2'",
+  "对照：同数据下 {type:'max', signal:'onoise', start:10, stop:20} → ok=False、detail='ValueError: signal window is empty'",
+  "已用 @unittest.expectedFailure 钉住，修复后转 unexpected success"
+ ],
+ "impact": "频段写错 / 数据缺列时，measure 会给出 0 而不是错误：噪声、积分类指标被静默置零，报告与门限判断都会据此得出错误结论。",
+ "suggested_fix": "在 `_compute_noise_integral`（以及其它直接用 `_window_values` 的指标）里补上与 `_compute_statistic` 一致的空窗口判定：`if not values: raise ValueError(\"signal window is empty\")`；或把该判定下沉到 `_window_values` 统一生效。",
+ "evidence_paths": [
+  "test/offline/unit/test_spectre_util_contracts.py（新增：九类指标 + 空窗口现状与期望用例）"
+ ],
+ "reported_by": "test-engineer (首轮全面测试 B2 离线补测)"
+}

@@ -1,0 +1,20 @@
+{
+ "token": "vb-vblog",
+ "severity": "P3",
+ "class": "source",
+ "title": "verilog._read_views 的守卫长度与取值下标不匹配：3 元素 file 条目会 IndexError 而不是被跳过",
+ "anchor": "src/pyapi/packages/verilog.py:272-279（def _read_views 的解析循环）",
+ "code": "for file_entry in view_entry:\n    if isinstance(file_entry, list) and len(file_entry) >= 3:\n        result.append({\n            \"view\": ..., \"view_type\": ..., \"data_type\": ...,\n            \"file\": None if file_entry[3] is None else str(file_entry[3]),   # ← 需要 len >= 4\n        })",
+ "summary": "守卫写的是 `len(file_entry) >= 3`，但同一条记录里读取了 `file_entry[3]`——长度为 3 的条目会抛 `IndexError: list index out of range`，而不是像其它畸形条目那样被 `continue` 跳过。",
+ "repro": [
+  "L0（无需真机）：test/offline/unit/test_verilog_contracts.py::TestVerilogReadCellMode::test_short_view_entry_is_rejected_as_index_error",
+  "构造 views 答案：`( (\"verilog\" (\"verilog\" nil nil)) )`（file 条目只有 3 个元素）",
+  "期望：跳过该条目（result 里 views 为空、整体仍成功）；实际：IndexError 被 read 的外层 try 兜成结构化失败（error 文本含 IndexError）"
+ ],
+ "reachability": "触发条件很窄：views 答案由本包生成的 SKILL 表达式产出，`list(view~>name ddMapGetFileViewType(file) ddMapGetDataType(file) file~>name)` 恒为 4 元素，因此**正常路径不会触发**；只有畸形/被截断的 SKILL 返回值才会命中。故定级 P3（潜在/防御性），不作为线上高危项。",
+ "suggested_fix": "把守卫改成 `len(file_entry) >= 4`（与取值一致），或改用 `file_entry[3] if len(file_entry) > 3 else None` 的容错写法。",
+ "evidence_paths": [
+  "test/offline/unit/test_verilog_contracts.py（新增 read cell-mode 用例，含本条 repro）"
+ ],
+ "reported_by": "test-engineer (首轮全面测试 B2 离线补测)"
+}

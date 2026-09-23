@@ -1,0 +1,133 @@
+{
+  "ok": true,
+  "tokens": [
+    "vb-http-local",
+    "vb-vblog"
+  ],
+  "workers_per_token": 6,
+  "rounds_per_worker": 6,
+  "max_attempts": 12,
+  "requests": 72,
+  "planned_requests": 72,
+  "failed": 0,
+  "elapsed_s": 29.312,
+  "per_kind": {
+    "skill": {
+      "total": 9,
+      "ok": 9,
+      "retries": 0,
+      "rejections": 0,
+      "max_s": 2.343
+    },
+    "download": {
+      "total": 14,
+      "ok": 14,
+      "retries": 0,
+      "rejections": 0,
+      "max_s": 6.391
+    },
+    "gui": {
+      "total": 9,
+      "ok": 9,
+      "retries": 0,
+      "rejections": 0,
+      "max_s": 4.094
+    },
+    "command": {
+      "total": 14,
+      "ok": 14,
+      "retries": 0,
+      "rejections": 0,
+      "max_s": 4.203
+    },
+    "upload": {
+      "total": 10,
+      "ok": 10,
+      "retries": 0,
+      "rejections": 0,
+      "max_s": 7.375
+    },
+    "composite": {
+      "total": 12,
+      "ok": 12,
+      "retries": 0,
+      "rejections": 0,
+      "max_s": 9.5
+    },
+    "spectre": {
+      "total": 4,
+      "ok": 4,
+      "retries": 0,
+      "rejections": 0,
+      "max_s": 4.11
+    }
+  },
+  "failures": [],
+  "ssh_processes_before": 2,
+  "ssh_processes_after": 2,
+  "staging_root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\http-stress2\\stress-tmp",
+  "staging_leftovers": [],
+  "first_errors": {},
+  "samples": [
+    {
+      "token": "vb-http-local",
+      "worker": 5,
+      "kind": "skill",
+      "marker": "VB-ski-5f44a5de08",
+      "attempts": 1,
+      "rejections": 0,
+      "ok": true,
+      "detail": "",
+      "first_error": "",
+      "elapsed_s": 0.391
+    },
+    {
+      "token": "vb-http-local",
+      "worker": 5,
+      "kind": "skill",
+      "marker": "VB-ski-0f10d9b742",
+      "attempts": 1,
+      "rejections": 0,
+      "ok": true,
+      "detail": "",
+      "first_error": "",
+      "elapsed_s": 0.015
+    },
+    {
+      "token": "vb-http-local",
+      "worker": 1,
+      "kind": "download",
+      "marker": "VB-dow-25a38cc53b",
+      "attempts": 1,
+      "rejections": 0,
+      "ok": true,
+      "detail": "",
+      "first_error": "",
+      "elapsed_s": 0.375
+    },
+    {
+      "token": "vb-http-local",
+      "worker": 1,
+      "kind": "skill",
+      "marker": "VB-ski-12779e0a70",
+      "attempts": 1,
+      "rejections": 0,
+      "ok": true,
+      "detail": "",
+      "first_error": "",
+      "elapsed_s": 0.0
+    },
+    {
+      "token": "vb-http-local",
+      "worker": 4,
+      "kind": "gui",
+      "marker": "VB-gui-28907a666d",
+      "attempts": 1,
+      "rejections": 0,
+      "ok": true,
+      "detail": "",
+      "first_error": "",
+      "elapsed_s": 0.625
+    }
+  ]
+}

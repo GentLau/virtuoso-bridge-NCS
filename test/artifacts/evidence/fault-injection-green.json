@@ -1,0 +1,76 @@
+{
+  "ok": true,
+  "failed": 0,
+  "temp_dirs_removed": 4,
+  "results": {
+    "daemon-log-protocol": {
+      "status": "pass",
+      "detail": {
+        "missing_default_off": true,
+        "invalid_level": true,
+        "invalid_max": true
+      },
+      "elapsed_s": 0.062000000005355105
+    },
+    "dead-shell-close": {
+      "status": "pass",
+      "detail": {
+        "dead_shell_closed": true
+      },
+      "elapsed_s": 0.125
+    },
+    "lease-race": {
+      "status": "pass",
+      "detail": {
+        "channels_in_use": 1,
+        "persistent_leases": 1,
+        "threads": 16
+      },
+      "elapsed_s": 0.030999999988125637
+    },
+    "runtime-cache-invalidation": {
+      "status": "pass",
+      "detail": {
+        "recreated": true
+      },
+      "elapsed_s": 0.03200000000651926
+    },
+    "skill-capacity-fields": {
+      "status": "pass",
+      "detail": {
+        "status": "error",
+        "errors": [
+          "thread pool exceeded"
+        ]
+      },
+      "elapsed_s": 0.030999999988125637
+    },
+    "skill-queue-before-delivery": {
+      "status": "pass",
+      "detail": {
+        "errors": [
+          "SKILL execution timed out"
+        ],
+        "metadata": {}
+      },
+      "elapsed_s": 0.07800000000861473
+    },
+    "transport-kind": {
+      "status": "pass",
+      "detail": {
+        "kind": "transport",
+        "returncode": 255
+      },
+      "elapsed_s": 1.3280000000086147
+    },
+    "windows-casefold-overwrite": {
+      "status": "pass",
+      "detail": {
+        "users": [
+          "Alice"
+        ]
+      },
+      "elapsed_s": 0.030999999988125637
+    }
+  }
+}

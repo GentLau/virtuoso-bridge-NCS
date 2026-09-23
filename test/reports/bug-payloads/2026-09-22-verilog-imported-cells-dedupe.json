@@ -1,0 +1,21 @@
+{
+ "token": "vb-vblog",
+ "severity": "P3",
+ "class": "source",
+ "title": "verilog._imported_cells 去重顺序错误：带标点的 cell 名会产生重复项",
+ "anchor": "src/pyapi/packages/verilog.py:262-270（_imported_cells）",
+ "code": "match = re.search(r\"Checked[- ]in\\s+(?:schematic|symbol|functional view)\\s+(\\S+)\", line)\nif match and match.group(1) not in cells:\n    cells.append(re.sub(r\"[.,;:]$\", \"\", match.group(1)))",
+ "summary": "去重判断用的是**未清洗**的捕获串（match.group(1)），而列表里存的是**已清洗**的名字。同一 cell 通常会被 schematic/symbol/functional 三个视图各 check-in 一次（正常流程），此时日志里若带标点（`counter8,` / `counter8;`），三次都会被追加，返回重复项。",
+ "repro": [
+  "L0（无需真机）：test/offline/unit/test_verilog_contracts.py::TestLogParsers",
+  "输入行：'Checked-in schematic counter8 -- ok'、'Checked-in symbol counter8, ok'、'Checked-in functional view counter8; ok'",
+  "期望 ['counter8']，实际 ['counter8','counter8','counter8']（另有 expectedFailure 用例钉住）"
+ ],
+ "reachability_note": "触发条件依赖真实 VERILOGIN 日志里 cell 名后是否带标点——代码里存在 `re.sub(r\"[.,;:]$\", ...)` 说明作者见过带标点的形态。仓库内目前**没有真实 import 日志样本**，因此本条的现场可达性未证实；但『先比较后清洗』的顺序问题是确定的逻辑缺陷。",
+ "impact": "导入接口返回的 imported_cells 元数据出现重复项；调用方/报告据此统计会重复计数。不影响导入本身。",
+ "suggested_fix": "先清洗再比较：`cleaned = re.sub(r\"[.,;:]$\", \"\", match.group(1)); if cleaned and cleaned not in cells: cells.append(cleaned)`",
+ "evidence_paths": [
+  "test/offline/unit/test_verilog_contracts.py（新增：正常形态 + expectedFailure 纠偏用例）"
+ ],
+ "reported_by": "test-engineer (首轮全面测试 B2 离线补测)"
+}

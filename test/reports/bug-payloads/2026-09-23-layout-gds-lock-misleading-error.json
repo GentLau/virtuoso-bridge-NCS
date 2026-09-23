@@ -1,0 +1,28 @@
+{
+ "token": "vb-vblog",
+ "bug_id": "bug-20260922T163705Z-vblog-83ee8603",
+ "token_note": "用户给的管理员 token 在运行中的控制面注册表快照里不存在（POST /api/bug 返回 invalid token），因此按既有惯例用 vb-vblog 提交；本条已在 /api/bug 回执里确认。",
+ "severity": "P3",
+ "class": "source",
+ "title": "layout.gds export 在版图被别的会话加锁时把原因报成 \"layout view not found\"（误导性报错）",
+ "anchor": [
+  "src/pyapi/packages/layout.py:960-975（_gds_export 的 flush 步骤：`unless(vbCv error(\"layout view not found\"))`，vbCv 用 mode='a' 打开）",
+  "src/pyapi/packages/layout.py:339-350（_view_state_expr 已有 ok/mismatch/missing 三态判定，flush 没用它）"
+ ],
+ "code": "flushed = self._skill(\n    \"let((vbCv vbSaved) \"\n    f\"vbCv = {self._open_expr(request.library, request.cell, request.view, request.view_type, 'a')} \"\n    'unless(vbCv error(\"layout view not found\")) ' ...",
+ "summary": "版图 cellview 被另一个 Virtuoso 会话持有（目录里有 `layout.oa.cdslck`）时，`dbOpenCellViewByType(..., \"a\")` 返回 nil——这是**编辑打开失败**，不是视图不存在；但实现只回一句 `*Error* layout view not found`，调用方会误判成“视图没建/名字写错”，把排查方向带偏。实测同一视图用只读模式能打开（`dbOpenCellViewByType(..., \"r\")` → db:0x43e9641a），证明视图存在。",
+ "repro": [
+  "真机（wsl-gent）上 CMP_LIB/cmp_top/layout 的目录里有 vbs11 会话持有的 `layout.oa.cdslck` / `layout.oa.cdslck.RHEL30.*.493252`（`ls -la /home/Gent/project/test/CMP_LIB/cmp_top/layout/`，2026-09-23 00:29 实拍）",
+  "用**另一个**实例（calprobe，token d6af595b342647b58ec63ca6）经 HTTP 调 `virtuoso.layout.gds {action:'export', library:'CMP_LIB', cell:'cmp_top', view:'layout', file_path:<本地路径>, layer_map:'/opt/eda/PDK/CRN65GPNEW/CRN65GPNEW/tsmcN65/tsmcN65.layermap', layer_map_is_local:false}` → 返回 `(\"error\" 0 t nil (\"*Error* layout view not found\"))`",
+  "同实例 SKILL 直查：`dbOpenCellViewByType(\"CMP_LIB\" \"cmp_top\" \"layout\" \"maskLayout\" \"a\")` → `nil`；把 mode 换成 `\"r\"` → `db:0x43e9641a`（视图存在、只是编辑打不开）",
+  "对照：**持有锁的**实例（vbs11）跑同一条 export 成功（2026-09-22 21:40 导出 36864 字节 GDS，sha256 a6e8be1a729690dcda6547dfae03ca7ddbe2bcf74b64361c063d1ef163d37ccd，见 test/artifacts/env/s11/cmp_top.gds）"
+ ],
+ "impact": "① 报错文本与真实原因不一致，把“锁/权限/只读库”误导成“视图不存在”；② 调用方据此去重建视图或改参数，可能覆盖别人的编辑或白跑一轮；③ 本轮 LVS TB 就因此改用 `--local-gds` 复用已导出件（证据 test/artifacts/env/scenario-project65/lvs/MANIFEST.md §2）。",
+ "suggested_fix": "flush 前先跑 `_view_state_expr(...)`：`missing` 才报 not found；`mismatch`（视图在但按 view_type 打不开）和“编辑打开失败”分别给出明确原因（例如 `layout view exists but can not be opened for edit: locked by another session (layout.oa.cdslck) or read-only library`）。另外可考虑：若视图已是保存态（`cellview~>dirty == nil`）允许跳过 dbSave 直接走 xstream，或提供只读导出开关。",
+ "evidence_paths": [
+  "test/artifacts/env/scenario-project65/lvs/MANIFEST.md",
+  "test/artifacts/env/scenario-project65/lvs/run-lvs-from-schematic.log",
+  "test/artifacts/env/s11/cmp_top.gds（sha256 a6e8be1a…，对照：持锁会话导出成功）"
+ ],
+ "reported_by": "test-engineer (首轮全面测试 S11-LVS：源网表改由产品数据生成时的副产物)"
+}

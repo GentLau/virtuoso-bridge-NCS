@@ -1,0 +1,1057 @@
+{
+  "ok": true,
+  "phase": "1-6",
+  "user": "vbsixremote",
+  "token": "vbsix678554-00",
+  "host": "wsl-gent",
+  "daemon_port": 65133,
+  "http_port": 61558,
+  "work_dir": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-remote",
+  "steps": [
+    {
+      "step": 1,
+      "action": "apply",
+      "status": 200,
+      "stage": "applied",
+      "step_field": 1
+    },
+    {
+      "step": 2,
+      "action": "validate",
+      "status": 200,
+      "stage": "validated"
+    },
+    {
+      "step": 3,
+      "action": "probe",
+      "status": 200,
+      "stage": "probed",
+      "daemon_python": "/opt/eda/cadence/IC618/tools.lnx86/python/64bit/bin/python3",
+      "fingerprint": true
+    },
+    {
+      "step": 4,
+      "action": "deploy",
+      "status": 200,
+      "stage": "deployed",
+      "setup_path": "/home/Gent/.virtuoso-bridge/vbsixremote/setup/virtuoso_setup.il"
+    },
+    {
+      "step": 5,
+      "action": "verify",
+      "status": 200,
+      "stage": "committed",
+      "step_field": 6,
+      "report": {
+        "command_ok": true,
+        "skill_ok": true,
+        "token_ok": true,
+        "banner_hostname": null,
+        "expected_hostname": "GLIS-DESKTOP.localdomain",
+        "detail": "",
+        "warnings": []
+      },
+      "errors": []
+    },
+    {
+      "step": 6,
+      "action": "registry-write",
+      "users": [
+        "vbsixremote"
+      ]
+    },
+    {
+      "action": "read-back",
+      "status": 200,
+      "token_matches": true
+    },
+    {
+      "action": "list-users",
+      "status": 200,
+      "count": 1
+    },
+    {
+      "action": "update",
+      "status": 200,
+      "thread_pool_size": 12
+    },
+    {
+      "action": "delete",
+      "status": 200,
+      "removed": true
+    },
+    {
+      "action": "delete-verify",
+      "users": []
+    },
+    {
+      "action": "verify-before-deploy",
+      "status": 200,
+      "stage": "failed",
+      "errors": [
+        "no registration in progress"
+      ]
+    }
+  ],
+  "http_trail": [
+    {
+      "method": "POST",
+      "path": "/api/register/apply",
+      "status": 200,
+      "request": {
+        "user": "vbsixremote",
+        "token": "vbsix678554-00",
+        "mode": "remote",
+        "ssh": {
+          "default": {
+            "host": "wsl-gent",
+            "user": "Gent"
+          }
+        },
+        "root": {
+          "default": "/home/Gent/.virtuoso-bridge/vbsixremote"
+        },
+        "roles": {
+          "daemon": {
+            "daemon_port": 65133,
+            "local_port": 61559,
+            "root": "/home/Gent/.virtuoso-bridge/vbsixremote"
+          }
+        },
+        "log_level": "off",
+        "thread_pool_size": 8,
+        "channel_budget": 8
+      },
+      "response": {
+        "user": "vbsixremote",
+        "stage": "applied",
+        "step": 1,
+        "token": "vbsix678554-00",
+        "errors": [],
+        "warnings": []
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/register/vbsixremote/validate",
+      "status": 200,
+      "request": null,
+      "response": {
+        "user": "vbsixremote",
+        "stage": "validated",
+        "step": 2,
+        "token": "vbsix678554-00",
+        "errors": [],
+        "warnings": []
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/register/vbsixremote/probe",
+      "status": 200,
+      "request": null,
+      "response": {
+        "user": "vbsixremote",
+        "stage": "probed",
+        "step": 3,
+        "token": "vbsix678554-00",
+        "errors": [],
+        "warnings": [],
+        "entry": {
+          "token": "vbsix678554-00",
+          "mode": {
+            "default": "remote"
+          },
+          "ssh": {
+            "default": {
+              "host": "wsl-gent",
+              "user": "Gent",
+              "jump_host": null,
+              "jump_user": null,
+              "proxy": null
+            },
+            "backend": "paramiko",
+            "control_master": "auto",
+            "tool_override": {}
+          },
+          "root": {
+            "default": null
+          },
+          "roles": {
+            "gui": {
+              "mode": null,
+              "host": null,
+              "user": null,
+              "jump_host": null,
+              "jump_user": null,
+              "proxy": null,
+              "root": "/home/Gent/.virtuoso-bridge/vbsixremote/gui",
+              "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
+              "max_sessions": 10
+            },
+            "daemon": {
+              "mode": null,
+              "host": null,
+              "user": null,
+              "jump_host": null,
+              "jump_user": null,
+              "proxy": null,
+              "root": "/home/Gent/.virtuoso-bridge/vbsixremote",
+              "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
+              "max_sessions": 10,
+              "daemon_port": 65133,
+              "local_port": 61559,
+              "python": "/opt/eda/cadence/IC618/tools.lnx86/python/64bit/bin/python3",
+              "expected_hostname": "GLIS-DESKTOP.localdomain",
+              "expected_user": "Gent"
+            },
+            "command": {
+              "mode": null,
+              "host": null,
+              "user": null,
+              "jump_host": null,
+              "jump_user": null,
+              "proxy": null,
+              "root": "/home/Gent/.virtuoso-bridge/vbsixremote/command",
+              "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
+              "max_sessions": 10
+            },
+            "file": {
+              "mode": null,
+              "host": null,
+              "user": null,
+              "jump_host": null,
+              "jump_user": null,
+              "proxy": null,
+              "root": "/home/Gent/.virtuoso-bridge/vbsixremote/file",
+              "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
+              "max_sessions": 10
+            },
+            "spectre": {
+              "mode": null,
+              "host": null,
+              "user": null,
+              "jump_host": null,
+              "jump_user": null,
+              "proxy": null,
+              "root": "/home/Gent/.virtuoso-bridge/vbsixremote/spectre",
+              "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
+              "max_sessions": 10,
+              "bin": "/opt/eda/cadence/SPECTRE241/bin/spectre"
+            }
+          },
+          "runtime": {
+            "thread_pool_size": 8,
+            "channel_budget": 8,
+            "connect_timeout": 15.0
+          },
+          "cdslog": {
+            "log_level": "off",
+            "log_max_bytes": 65536
+          },
+          "registered_at": null
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/register/vbsixremote/deploy",
+      "status": 200,
+      "request": null,
+      "response": {
+        "user": "vbsixremote",
+        "stage": "deployed",
+        "step": 4,
+        "token": "vbsix678554-00",
+        "errors": [],
+        "warnings": [],
+        "setup_path": "/home/Gent/.virtuoso-bridge/vbsixremote/setup/virtuoso_setup.il",
+        "entry": {
+          "token": "vbsix678554-00",
+          "mode": {
+            "default": "remote"
+          },
+          "ssh": {
+            "default": {
+              "host": "wsl-gent",
+              "user": "Gent",
+              "jump_host": null,
+              "jump_user": null,
+              "proxy": null
+            },
+            "backend": "paramiko",
+            "control_master": "auto",
+            "tool_override": {}
+          },
+          "root": {
+            "default": null
+          },
+          "roles": {
+            "gui": {
+              "mode": null,
+              "host": null,
+              "user": null,
+              "jump_host": null,
+              "jump_user": null,
+              "proxy": null,
+              "root": "/home/Gent/.virtuoso-bridge/vbsixremote/gui",
+              "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
+              "max_sessions": 10
+            },
+            "daemon": {
+              "mode": null,
+              "host": null,
+              "user": null,
+              "jump_host": null,
+              "jump_user": null,
+              "proxy": null,
+              "root": "/home/Gent/.virtuoso-bridge/vbsixremote",
+              "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
+              "max_sessions": 10,
+              "daemon_port": 65133,
+              "local_port": 61559,
+              "python": "/opt/eda/cadence/IC618/tools.lnx86/python/64bit/bin/python3",
+              "expected_hostname": "GLIS-DESKTOP.localdomain",
+              "expected_user": "Gent"
+            },
+            "command": {
+              "mode": null,
+              "host": null,
+              "user": null,
+              "jump_host": null,
+              "jump_user": null,
+              "proxy": null,
+              "root": "/home/Gent/.virtuoso-bridge/vbsixremote/command",
+              "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
+              "max_sessions": 10
+            },
+            "file": {
+              "mode": null,
+              "host": null,
+              "user": null,
+              "jump_host": null,
+              "jump_user": null,
+              "proxy": null,
+              "root": "/home/Gent/.virtuoso-bridge/vbsixremote/file",
+              "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
+              "max_sessions": 10
+            },
+            "spectre": {
+              "mode": null,
+              "host": null,
+              "user": null,
+              "jump_host": null,
+              "jump_user": null,
+              "proxy": null,
+              "root": "/home/Gent/.virtuoso-bridge/vbsixremote/spectre",
+              "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
+              "max_sessions": 10,
+              "bin": "/opt/eda/cadence/SPECTRE241/bin/spectre"
+            }
+          },
+          "runtime": {
+            "thread_pool_size": 8,
+            "channel_budget": 8,
+            "connect_timeout": 15.0
+          },
+          "cdslog": {
+            "log_level": "off",
+            "log_max_bytes": 65536
+          },
+          "registered_at": null
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/register/vbsixremote/verify",
+      "status": 200,
+      "request": null,
+      "response": {
+        "user": "vbsixremote",
+        "stage": "committed",
+        "step": 6,
+        "token": "vbsix678554-00",
+        "errors": [],
+        "warnings": [],
+        "setup_path": "/home/Gent/.virtuoso-bridge/vbsixremote/setup/virtuoso_setup.il",
+        "entry": {
+          "token": "vbsix678554-00",
+          "mode": {
+            "default": "remote"
+          },
+          "ssh": {
+            "default": {
+              "host": "wsl-gent",
+              "user": "Gent",
+              "jump_host": null,
+              "jump_user": null,
+              "proxy": null
+            },
+            "backend": "paramiko",
+            "control_master": "auto",
+            "tool_override": {}
+          },
+          "root": {
+            "default": null
+          },
+          "roles": {
+            "gui": {
+              "mode": null,
+              "host": null,
+              "user": null,
+              "jump_host": null,
+              "jump_user": null,
+              "proxy": null,
+              "root": "/home/Gent/.virtuoso-bridge/vbsixremote/gui",
+              "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
+              "max_sessions": 10
+            },
+            "daemon": {
+              "mode": null,
+              "host": null,
+              "user": null,
+              "jump_host": null,
+              "jump_user": null,
+              "proxy": null,
+              "root": "/home/Gent/.virtuoso-bridge/vbsixremote",
+              "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
+              "max_sessions": 10,
+              "daemon_port": 65133,
+              "local_port": 61559,
+              "python": "/opt/eda/cadence/IC618/tools.lnx86/python/64bit/bin/python3",
+              "expected_hostname": "GLIS-DESKTOP.localdomain",
+              "expected_user": "Gent"
+            },
+            "command": {
+              "mode": null,
+              "host": null,
+              "user": null,
+              "jump_host": null,
+              "jump_user": null,
+              "proxy": null,
+              "root": "/home/Gent/.virtuoso-bridge/vbsixremote/command",
+              "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
+              "max_sessions": 10
+            },
+            "file": {
+              "mode": null,
+              "host": null,
+              "user": null,
+              "jump_host": null,
+              "jump_user": null,
+              "proxy": null,
+              "root": "/home/Gent/.virtuoso-bridge/vbsixremote/file",
+              "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
+              "max_sessions": 10
+            },
+            "spectre": {
+              "mode": null,
+              "host": null,
+              "user": null,
+              "jump_host": null,
+              "jump_user": null,
+              "proxy": null,
+              "root": "/home/Gent/.virtuoso-bridge/vbsixremote/spectre",
+              "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
+              "max_sessions": 10,
+              "bin": "/opt/eda/cadence/SPECTRE241/bin/spectre"
+            }
+          },
+          "runtime": {
+            "thread_pool_size": 8,
+            "channel_budget": 8,
+            "connect_timeout": 15.0
+          },
+          "cdslog": {
+            "log_level": "off",
+            "log_max_bytes": 65536
+          },
+          "registered_at": 1789549565
+        },
+        "report": {
+          "command_ok": true,
+          "skill_ok": true,
+          "token_ok": true,
+          "banner_hostname": null,
+          "expected_hostname": "GLIS-DESKTOP.localdomain",
+          "detail": "",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/user/vbsixremote",
+      "status": 200,
+      "request": null,
+      "response": {
+        "user": "vbsixremote",
+        "entry": {
+          "token": "vbsix678554-00",
+          "mode": {
+            "default": "remote"
+          },
+          "ssh": {
+            "default": {
+              "host": "wsl-gent",
+              "user": "Gent",
+              "jump_host": null,
+              "jump_user": null,
+              "proxy": null
+            },
+            "backend": "paramiko",
+            "control_master": "auto",
+            "tool_override": {}
+          },
+          "root": {
+            "default": null
+          },
+          "roles": {
+            "gui": {
+              "mode": null,
+              "host": null,
+              "user": null,
+              "jump_host": null,
+              "jump_user": null,
+              "proxy": null,
+              "root": "/home/Gent/.virtuoso-bridge/vbsixremote/gui",
+              "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
+              "max_sessions": 10
+            },
+            "daemon": {
+              "mode": null,
+              "host": null,
+              "user": null,
+              "jump_host": null,
+              "jump_user": null,
+              "proxy": null,
+              "root": "/home/Gent/.virtuoso-bridge/vbsixremote",
+              "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
+              "max_sessions": 10,
+              "daemon_port": 65133,
+              "local_port": 61559,
+              "python": "/opt/eda/cadence/IC618/tools.lnx86/python/64bit/bin/python3",
+              "expected_hostname": "GLIS-DESKTOP.localdomain",
+              "expected_user": "Gent"
+            },
+            "command": {
+              "mode": null,
+              "host": null,
+              "user": null,
+              "jump_host": null,
+              "jump_user": null,
+              "proxy": null,
+              "root": "/home/Gent/.virtuoso-bridge/vbsixremote/command",
+              "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
+              "max_sessions": 10
+            },
+            "file": {
+              "mode": null,
+              "host": null,
+              "user": null,
+              "jump_host": null,
+              "jump_user": null,
+              "proxy": null,
+              "root": "/home/Gent/.virtuoso-bridge/vbsixremote/file",
+              "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
+              "max_sessions": 10
+            },
+            "spectre": {
+              "mode": null,
+              "host": null,
+              "user": null,
+              "jump_host": null,
+              "jump_user": null,
+              "proxy": null,
+              "root": "/home/Gent/.virtuoso-bridge/vbsixremote/spectre",
+              "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
+              "max_sessions": 10,
+              "bin": "/opt/eda/cadence/SPECTRE241/bin/spectre"
+            }
+          },
+          "runtime": {
+            "thread_pool_size": 8,
+            "channel_budget": 8,
+            "connect_timeout": 15.0
+          },
+          "cdslog": {
+            "log_level": "off",
+            "log_max_bytes": 65536
+          },
+          "registered_at": 1789549565
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/users",
+      "status": 200,
+      "request": null,
+      "response": {
+        "users": [
+          {
+            "user": "vbsixremote",
+            "entry": {
+              "token": "vbsix678554-00",
+              "mode": {
+                "default": "remote"
+              },
+              "ssh": {
+                "default": {
+                  "host": "wsl-gent",
+                  "user": "Gent",
+                  "jump_host": null,
+                  "jump_user": null,
+                  "proxy": null
+                },
+                "backend": "paramiko",
+                "control_master": "auto",
+                "tool_override": {}
+              },
+              "root": {
+                "default": null
+              },
+              "roles": {
+                "gui": {
+                  "mode": null,
+                  "host": null,
+                  "user": null,
+                  "jump_host": null,
+                  "jump_user": null,
+                  "proxy": null,
+                  "root": "/home/Gent/.virtuoso-bridge/vbsixremote/gui",
+                  "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
+                  "max_sessions": 10
+                },
+                "daemon": {
+                  "mode": null,
+                  "host": null,
+                  "user": null,
+                  "jump_host": null,
+                  "jump_user": null,
+                  "proxy": null,
+                  "root": "/home/Gent/.virtuoso-bridge/vbsixremote",
+                  "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
+                  "max_sessions": 10,
+                  "daemon_port": 65133,
+                  "local_port": 61559,
+                  "python": "/opt/eda/cadence/IC618/tools.lnx86/python/64bit/bin/python3",
+                  "expected_hostname": "GLIS-DESKTOP.localdomain",
+                  "expected_user": "Gent"
+                },
+                "command": {
+                  "mode": null,
+                  "host": null,
+                  "user": null,
+                  "jump_host": null,
+                  "jump_user": null,
+                  "proxy": null,
+                  "root": "/home/Gent/.virtuoso-bridge/vbsixremote/command",
+                  "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
+                  "max_sessions": 10
+                },
+                "file": {
+                  "mode": null,
+                  "host": null,
+                  "user": null,
+                  "jump_host": null,
+                  "jump_user": null,
+                  "proxy": null,
+                  "root": "/home/Gent/.virtuoso-bridge/vbsixremote/file",
+                  "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
+                  "max_sessions": 10
+                },
+                "spectre": {
+                  "mode": null,
+                  "host": null,
+                  "user": null,
+                  "jump_host": null,
+                  "jump_user": null,
+                  "proxy": null,
+                  "root": "/home/Gent/.virtuoso-bridge/vbsixremote/spectre",
+                  "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
+                  "max_sessions": 10,
+                  "bin": "/opt/eda/cadence/SPECTRE241/bin/spectre"
+                }
+              },
+              "runtime": {
+                "thread_pool_size": 8,
+                "channel_budget": 8,
+                "connect_timeout": 15.0
+              },
+              "cdslog": {
+                "log_level": "off",
+                "log_max_bytes": 65536
+              },
+              "registered_at": 1789549565
+            }
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/user/vbsixremote",
+      "status": 200,
+      "request": null,
+      "response": {
+        "user": "vbsixremote",
+        "entry": {
+          "token": "vbsix678554-00",
+          "mode": {
+            "default": "remote"
+          },
+          "ssh": {
+            "default": {
+              "host": "wsl-gent",
+              "user": "Gent",
+              "jump_host": null,
+              "jump_user": null,
+              "proxy": null
+            },
+            "backend": "paramiko",
+            "control_master": "auto",
+            "tool_override": {}
+          },
+          "root": {
+            "default": null
+          },
+          "roles": {
+            "gui": {
+              "mode": null,
+              "host": null,
+              "user": null,
+              "jump_host": null,
+              "jump_user": null,
+              "proxy": null,
+              "root": "/home/Gent/.virtuoso-bridge/vbsixremote/gui",
+              "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
+              "max_sessions": 10
+            },
+            "daemon": {
+              "mode": null,
+              "host": null,
+              "user": null,
+              "jump_host": null,
+              "jump_user": null,
+              "proxy": null,
+              "root": "/home/Gent/.virtuoso-bridge/vbsixremote",
+              "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
+              "max_sessions": 10,
+              "daemon_port": 65133,
+              "local_port": 61559,
+              "python": "/opt/eda/cadence/IC618/tools.lnx86/python/64bit/bin/python3",
+              "expected_hostname": "GLIS-DESKTOP.localdomain",
+              "expected_user": "Gent"
+            },
+            "command": {
+              "mode": null,
+              "host": null,
+              "user": null,
+              "jump_host": null,
+              "jump_user": null,
+              "proxy": null,
+              "root": "/home/Gent/.virtuoso-bridge/vbsixremote/command",
+              "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
+              "max_sessions": 10
+            },
+            "file": {
+              "mode": null,
+              "host": null,
+              "user": null,
+              "jump_host": null,
+              "jump_user": null,
+              "proxy": null,
+              "root": "/home/Gent/.virtuoso-bridge/vbsixremote/file",
+              "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
+              "max_sessions": 10
+            },
+            "spectre": {
+              "mode": null,
+              "host": null,
+              "user": null,
+              "jump_host": null,
+              "jump_user": null,
+              "proxy": null,
+              "root": "/home/Gent/.virtuoso-bridge/vbsixremote/spectre",
+              "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
+              "max_sessions": 10,
+              "bin": "/opt/eda/cadence/SPECTRE241/bin/spectre"
+            }
+          },
+          "runtime": {
+            "thread_pool_size": 12,
+            "channel_budget": 8,
+            "connect_timeout": 15.0
+          },
+          "cdslog": {
+            "log_level": "off",
+            "log_max_bytes": 65536
+          },
+          "registered_at": 1789549565
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/user/vbsixremote/update",
+      "status": 200,
+      "request": {
+        "token": "vbsix678554-00",
+        "mode": {
+          "default": "remote"
+        },
+        "ssh": {
+          "default": {
+            "host": "wsl-gent",
+            "user": "Gent",
+            "jump_host": null,
+            "jump_user": null,
+            "proxy": null
+          },
+          "backend": "paramiko",
+          "control_master": "auto",
+          "tool_override": {}
+        },
+        "root": {
+          "default": null
+        },
+        "roles": {
+          "gui": {
+            "mode": null,
+            "host": null,
+            "user": null,
+            "jump_host": null,
+            "jump_user": null,
+            "proxy": null,
+            "root": "/home/Gent/.virtuoso-bridge/vbsixremote/gui",
+            "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
+            "max_sessions": 10
+          },
+          "daemon": {
+            "mode": null,
+            "host": null,
+            "user": null,
+            "jump_host": null,
+            "jump_user": null,
+            "proxy": null,
+            "root": "/home/Gent/.virtuoso-bridge/vbsixremote",
+            "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
+            "max_sessions": 10,
+            "daemon_port": 65133,
+            "local_port": 61559,
+            "python": "/opt/eda/cadence/IC618/tools.lnx86/python/64bit/bin/python3",
+            "expected_hostname": "GLIS-DESKTOP.localdomain",
+            "expected_user": "Gent"
+          },
+          "command": {
+            "mode": null,
+            "host": null,
+            "user": null,
+            "jump_host": null,
+            "jump_user": null,
+            "proxy": null,
+            "root": "/home/Gent/.virtuoso-bridge/vbsixremote/command",
+            "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
+            "max_sessions": 10
+          },
+          "file": {
+            "mode": null,
+            "host": null,
+            "user": null,
+            "jump_host": null,
+            "jump_user": null,
+            "proxy": null,
+            "root": "/home/Gent/.virtuoso-bridge/vbsixremote/file",
+            "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
+            "max_sessions": 10
+          },
+          "spectre": {
+            "mode": null,
+            "host": null,
+            "user": null,
+            "jump_host": null,
+            "jump_user": null,
+            "proxy": null,
+            "root": "/home/Gent/.virtuoso-bridge/vbsixremote/spectre",
+            "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
+            "max_sessions": 10,
+            "bin": "/opt/eda/cadence/SPECTRE241/bin/spectre"
+          }
+        },
+        "runtime": {
+          "thread_pool_size": 12,
+          "channel_budget": 8,
+          "connect_timeout": 15.0
+        },
+        "cdslog": {
+          "log_level": "off",
+          "log_max_bytes": 65536
+        },
+        "registered_at": 1789549565
+      },
+      "response": {
+        "user": "vbsixremote",
+        "entry": {
+          "token": "vbsix678554-00",
+          "mode": {
+            "default": "remote"
+          },
+          "ssh": {
+            "default": {
+              "host": "wsl-gent",
+              "user": "Gent",
+              "jump_host": null,
+              "jump_user": null,
+              "proxy": null
+            },
+            "backend": "paramiko",
+            "control_master": "auto",
+            "tool_override": {}
+          },
+          "root": {
+            "default": null
+          },
+          "roles": {
+            "gui": {
+              "mode": null,
+              "host": null,
+              "user": null,
+              "jump_host": null,
+              "jump_user": null,
+              "proxy": null,
+              "root": "/home/Gent/.virtuoso-bridge/vbsixremote/gui",
+              "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
+              "max_sessions": 10
+            },
+            "daemon": {
+              "mode": null,
+              "host": null,
+              "user": null,
+              "jump_host": null,
+              "jump_user": null,
+              "proxy": null,
+              "root": "/home/Gent/.virtuoso-bridge/vbsixremote",
+              "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
+              "max_sessions": 10,
+              "daemon_port": 65133,
+              "local_port": 61559,
+              "python": "/opt/eda/cadence/IC618/tools.lnx86/python/64bit/bin/python3",
+              "expected_hostname": "GLIS-DESKTOP.localdomain",
+              "expected_user": "Gent"
+            },
+            "command": {
+              "mode": null,
+              "host": null,
+              "user": null,
+              "jump_host": null,
+              "jump_user": null,
+              "proxy": null,
+              "root": "/home/Gent/.virtuoso-bridge/vbsixremote/command",
+              "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
+              "max_sessions": 10
+            },
+            "file": {
+              "mode": null,
+              "host": null,
+              "user": null,
+              "jump_host": null,
+              "jump_user": null,
+              "proxy": null,
+              "root": "/home/Gent/.virtuoso-bridge/vbsixremote/file",
+              "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
+              "max_sessions": 10
+            },
+            "spectre": {
+              "mode": null,
+              "host": null,
+              "user": null,
+              "jump_host": null,
+              "jump_user": null,
+              "proxy": null,
+              "root": "/home/Gent/.virtuoso-bridge/vbsixremote/spectre",
+              "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
+              "max_sessions": 10,
+              "bin": "/opt/eda/cadence/SPECTRE241/bin/spectre"
+            }
+          },
+          "runtime": {
+            "thread_pool_size": 12,
+            "channel_budget": 8,
+            "connect_timeout": 15.0
+          },
+          "cdslog": {
+            "log_level": "off",
+            "log_max_bytes": 65536
+          },
+          "registered_at": 1789549565
+        }
+      }
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/user/vbsixremote",
+      "status": 200,
+      "request": null,
+      "response": {
+        "user": "vbsixremote",
+        "removed": true
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/register/apply",
+      "status": 200,
+      "request": {
+        "user": "vbsixremotebad",
+        "token": "vbsix678554-00-x",
+        "mode": "remote",
+        "ssh": {
+          "default": {
+            "host": "wsl-gent",
+            "user": "Gent"
+          }
+        },
+        "root": {
+          "default": "/home/Gent/.virtuoso-bridge/vbsixremote"
+        },
+        "roles": {
+          "daemon": {
+            "daemon_port": 65133,
+            "local_port": 50596,
+            "root": "/home/Gent/.virtuoso-bridge/vbsixremote"
+          }
+        },
+        "log_level": "off",
+        "thread_pool_size": 8,
+        "channel_budget": 8
+      },
+      "response": {
+        "user": "vbsixremotebad",
+        "stage": "applied",
+        "step": 1,
+        "token": "vbsix678554-00-x",
+        "errors": [],
+        "warnings": []
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/register/vbsixremotebad/verify",
+      "status": 200,
+      "request": null,
+      "response": {
+        "user": "vbsixremotebad",
+        "stage": "failed",
+        "step": 0,
+        "token": null,
+        "errors": [
+          "no registration in progress"
+        ],
+        "warnings": []
+      }
+    }
+  ],
+  "elapsed_s": 33.10900000005495
+}
