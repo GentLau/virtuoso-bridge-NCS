@@ -3,11 +3,12 @@
 每个业务包一个文件；顶层在 ``server/api_server.PACKAGES`` 里显式登记。
 """
 from pyapi.packages import (
-    basic, cellview, demo, gui, layout, maestro, schematic, skillref, spectre,
-    symbol, verilog, veriloga,
+    basic, calibre, cellview, demo, gui, layout, maestro, schematic, skillref,
+    spectre, symbol, verilog, veriloga,
 )
 from pyapi.packages.basic import Package as BasicPackage
 from pyapi.packages.cellview import Package as CellviewPackage
+from pyapi.packages.calibre import Package as CalibrePackage
 from pyapi.packages.layout import Package as LayoutPackage
 from pyapi.packages.schematic import Package as SchematicPackage
 from pyapi.packages.demo import Package as DemoPackage
@@ -34,6 +35,7 @@ from pyapi.packages.skillref import (
 __all__ = [
     "BasicPackage",
     "CellviewPackage",
+    "CalibrePackage",
     "LayoutPackage",
     "SchematicPackage",
     "DemoPackage",
@@ -53,6 +55,7 @@ __all__ = [
     "SkillrefInfoRequest",
     "SkillrefSearchRequest",
     "basic",
+    "calibre",
     "cellview",
     "layout",
     "schematic",
