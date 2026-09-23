@@ -127,7 +127,15 @@ class VirtuosoInterface(ABC):
     def ensure_ready(self, timeout: int = 10) -> VirtuosoResult: ...
 
     @abstractmethod
-    def execute_skill(self, skill_code: str, timeout: float | None = None, *, token: str) -> VirtuosoResult: ...
+    def execute_skill(
+        self,
+        skill_code: str,
+        timeout: float | None = None,
+        *,
+        token: str,
+        log_level: str | None = None,
+        log_max_bytes: int | None = None,
+    ) -> VirtuosoResult: ...
 
     @abstractmethod
     def test_connection(self, timeout: int = 10) -> bool: ...
