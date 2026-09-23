@@ -1,9 +1,9 @@
 # virtuoso-bridge-NCS Spec
 
-> 版本：Release `SPEC-2026-09-22-r16`（送审修订版）
-> 日期：2026-09-22
-> 状态：Normative 基线（取代 r15）
-> Supersedes：`SPEC-2026-09-22-r15`（`user update` 支持增改删各 role 用户组）
+> 版本：Release `SPEC-2026-09-23-r17`（送审修订版）
+> 日期：2026-09-23
+> 状态：Normative 基线（取代 r16）
+> Supersedes：`SPEC-2026-09-22-r16`（运行环境要求：客户端 Python ≥3.9，role 机器 Python 2.7+/3.6.8+）
 
 ## 0. 版本治理（替代“文件修改时间优先”）
 
@@ -98,9 +98,9 @@ CDS.log metadata frame 完整字节格式
 
 ## Release（本基线）
 
-- **Release ID**：`SPEC-2026-09-22-r16`
+- **Release ID**：`SPEC-2026-09-23-r17`
 - **Normative 文件集**（10 份）：四层整体架构与接口、本版范围与明确不支持、中层配置文档、路由设计、多用户与注册、并发设计、日志返回设计标准、顶层：HTTP 入口与业务调度、顶层补充：控制面与业务面、上层：业务包与插件化；
-- **Normative 内容哈希**：`9f264c447650d87e671e5dc9342f6e504d739c0d475faa97c23cad7d149d6d28`
+- **Normative 内容哈希**：`8d19e7afae2bf011d4d901983840133976d1ea4a4ecfe3e648a8d53880b8c5b5`
   - 算法：路径为**相对 `spec/` 目录**并按路径排序；逐文件 SHA-256（**按 Git 提交内容计算，即 LF 行尾**；Windows 工作区受 `core.autocrlf` 影响的行尾差异不计入）；每行 `<相对路径> <hex>` 以 LF 拼接（**行间分隔、末行无尾 LF**），再取一次 SHA-256；
 - **基线 commit**：本 Release 段所在提交即基线（见 `git log -1 -- spec/`）；任何 Normative 文档变更必须同时更新本段哈希。
 
@@ -111,7 +111,7 @@ CDS.log metadata frame 完整字节格式
 | 四层整体架构与接口 | Draft v41 | Normative | Draft v40（query 增加 role/name 过滤条件） |
 | 路由设计 | v22 | Normative | v21（command 工具事实改为 per-role 用户组） |
 | 本版范围与明确不支持 | v10 | Normative | v9（顶层任务等待池本版不实现） |
-| 中层配置文档 | Draft v38 | Normative | Draft v37（command 工具事实改为通用 per-role 用户组） |
+| 中层配置文档 | Draft v39 | Normative | Draft v38（运行环境要求） |
 | 多用户与注册 | Draft v36 | Normative | Draft v35（`user update` 白名单明确支持各 role 用户组） |
 | 并发设计 | Draft v20 | Normative | Draft v19（重试决策单元术语统一为业务操作） |
 | 顶层 | Draft v21 | Normative | Draft v20（白名单加入 common.config） |
