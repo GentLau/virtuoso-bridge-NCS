@@ -1,9 +1,9 @@
 # 中层配置文档
 
-> 版本：Draft v41
+> 版本：Draft v43
 > 日期：2026-09-23
 > 状态：Normative（字段目录、默认值、探测写回、注册表 schema、reservation 与 endpoint key 的唯一规范源）
-> Supersedes：Draft v40（`key_dir`/`key` 无缺省，remote role 必填）
+> Supersedes：Draft v42（`key_dir` 恢复可选）
 > 定位：本文是[多用户与注册](../其他/1-多用户与注册.md)的**字段与 schema 详细补充**——六步状态机与授权归[多用户与注册](../其他/1-多用户与注册.md)；本文是字段与必填清单 owner（§4），并提供默认值、探测写回、注册表 schema、reservation 与 endpoint key。
 
 ## 1. 总述
@@ -72,7 +72,7 @@
 | `mode.default` | 各 role 缺省 mode（local/remote） | 配置 | **必填，无默认** |
 | `ssh.default.host/user` | 各 role 缺省登录主机/账号 | 配置 | 存在未在 role 级提供的 remote role 时必填 |
 | `ssh.default.jump_host/jump_user/proxy` | 各 role 缺省跳板/代理 | 配置 | 可选 |
-| `ssh.default.key_dir/key` | 各 role 缺省 SSH 凭据目录/文件名 | 配置 | 存在 remote role 时 `key_dir`/`key` 必填、无默认 |
+| `ssh.default.key_dir/key` | 各 role 缺省 SSH 凭据目录/文件名 | 配置 | `key_dir` 可选；存在 remote role 时 `key` 必填 |
 | `root.default` | 各 role 文件根的申请期基准；探测后写回各 `role.*.root`，运行期不依赖本字段 | 配置 | 默认 `~/.virtuoso-bridge/<userid>`（持久化 `null`） |
 
 - 回退是**逐字段**的：role 有值用自己的，否则回退对应全局默认；`null`/空串 = 未提供；
@@ -106,7 +106,7 @@
 - `user` 格式 `^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$`；禁止 `/`、`\`、`..`、绝对路径；Windows 大小写不敏感查重；拒绝保留设备名（CON/PRN/AUX/NUL/COM1–9/LPT1–9 及带扩展名）与结尾 `.`/空格；
 - `token` 格式 `^[A-Za-z0-9._-]{1,64}$`；碰撞重生成一次；轮换 = 删除用户重新注册；
 - `local` role 显式提交 `host/user/jump_host/jump_user/proxy` 或 `key_dir/key` → 参数错误；
-- remote role 必须解析出凭据（`key_dir`+`key`），否则拒绝；`key` 只允许文件名、不含目录成分；凭据按**公钥指纹**查重，已被其他条目登记 → 需该凭据原持有者 token 或管理员凭据，否则拒绝（复用规则见[多用户与注册 §3](../其他/1-多用户与注册.md)）；
+- remote role 必须解析出凭据（`key_dir`+`key`），否则拒绝；`key` 只允许文件名、不含目录成分；凭据按**公钥指纹**查重，已被其他条目登记 → 需**任一**已登记持有者的 token 或管理员凭据，否则拒绝（复用规则见[多用户与注册 §3](../其他/1-多用户与注册.md)）；
 - `role.gui.display` 只接受 X display 形式（如 `:11`、`localhost:10.0`、`unix/:0`），禁止空白、引号、`$`、反引号、`;` 等 shell 元字符（防注入）；
 - 未知字段拒绝（`extra=forbid`）；各 role 的用户组例外：组名 `^[a-z][a-z0-9_-]{0,63}$`、不与固定字段重名，值为对象、字段值仅 JSON 标量且不含 NUL，每 role 用户组总大小 ≤ 16 KiB；语义由上层业务包约定；空串视为未提供；
 - host-key 首信任优先级：① known_hosts 匹配 → 记录；② 用户显式指纹 → 校验后记录；③ 两者皆无 → 注册失败；spectre 例外（缺失/失败仅 WARNING、指纹留空）；
