@@ -26,7 +26,7 @@ from common.remote_paths import RemotePathError
 from transport.budgets import CapacityExceeded, TokenBudgets
 from transport.roles import ResolvedRole, ResolvedTargets
 from common.ssh import SSHRunner
-from common.ssh_credentials import credential_identity
+from common.ssh_credentials import credential_path
 
 logger = logging.getLogger(__name__)
 
@@ -45,13 +45,14 @@ def _runner_cache_key(role: ResolvedRole) -> str:
     """Endpoint + resolved credential: same endpoint with a different key must
     not share one connection (路由设计 §4)."""
     if role.credential_dir and role.credential_key:
-        return f"{role.key}|{credential_identity(role.credential_dir, role.credential_key)}"
+        # resolve(): ``~/.ssh/k`` 与 ``/home/u/.ssh/k`` 是同一份凭据，不能各建一条连接
+        return f"{role.key}|{credential_path(role.credential_dir, role.credential_key).resolve()}"
     return f"{role.key}|"
 
 
 def _runner_key_path(role: ResolvedRole) -> Path | None:
     if role.credential_dir and role.credential_key:
-        return Path(credential_identity(role.credential_dir, role.credential_key))
+        return credential_path(role.credential_dir, role.credential_key)
     return None
 
 

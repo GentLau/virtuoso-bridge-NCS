@@ -124,6 +124,21 @@ class TestPerRoleCredentialReuse(unittest.TestCase):
         )
         self.assertFalse(one_shot.kwargs["persistent_shell"])
 
+    def test_equivalent_path_spellings_share_one_runner(self):
+        """`.../sub/../key` 与规范路径是同一份凭据 → 仍只建一条连接。"""
+        entry = _entry()
+        sub = Path(_KEY_A[0]) / "sub"
+        sub.mkdir(exist_ok=True)
+        entry.roles.file.key_dir = str(sub / "..")
+        entry.roles.file.key = _KEY_A[1]
+        with mock.patch("transport.tunnel.SSHRunner", _RecordingRunner):
+            client = self._client(entry)
+            command = client.command_runner
+            file_runner = client.file_runner
+            client.close()
+        self.assertIs(command, file_runner)
+        self.assertEqual(len(_RecordingRunner.created), 1)
+
 
 if __name__ == "__main__":
     unittest.main()
