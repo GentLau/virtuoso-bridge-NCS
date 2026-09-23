@@ -1,9 +1,9 @@
 # 中层配置文档
 
-> 版本：Draft v43
+> 版本：Draft v44
 > 日期：2026-09-23
 > 状态：Normative（字段目录、默认值、探测写回、注册表 schema、reservation 与 endpoint key 的唯一规范源）
-> Supersedes：Draft v42（`key_dir` 恢复可选）
+> Supersedes：Draft v43（`key_dir` 缺省目录；凭据位于客户端侧；endpoint 复用补凭据条件）
 > 定位：本文是[多用户与注册](../其他/1-多用户与注册.md)的**字段与 schema 详细补充**——六步状态机与授权归[多用户与注册](../其他/1-多用户与注册.md)；本文是字段与必填清单 owner（§4），并提供默认值、探测写回、注册表 schema、reservation 与 endpoint key。
 
 ## 1. 总述
@@ -44,9 +44,9 @@
 
 | 字段 | 作用 | 类型 | 默认/必填 |
 |---|---|---|---|
-| `role.<name>.mode` | 投送方式：`local` = 中层就在该 role 目标主机上直接本地执行、不经 SSH；`remote` = 经 SSH 投送；不同 role 可混合 | 配置 | 回退 `mode.default` |
+| `role.<name>.mode` | 投送方式：`local` = 中层就在该 role 目标主机上直接本地执行、不经 SSH（声明需管理权限，见[多用户与注册 §2](../其他/1-多用户与注册.md)）；`remote` = 经 SSH 投送；不同 role 可混合 | 配置 | 回退 `mode.default` |
 | `role.<name>.host/user/jump_host/jump_user/proxy` | 该 role 登录主机/账号/跳板/代理；`local` role 提交即参数错误 | 配置 | 回退 §2.5 全局默认（remote 需可解析） |
-| `role.<name>.key_dir/key` | 该 role 的 SSH 凭据目录/文件名（remote 使用；`local` role 不适用） | 配置 | 回退 §2.5 全局默认 |
+| `role.<name>.key_dir/key` | 该 role 的 SSH 凭据目录/文件名，位于客户端侧（remote 使用；`local` role 不适用） | 配置 | 回退 §2.5 全局默认 |
 | `role.<name>.root` | 该 role 文件根；申请期缺省 `root.default/<role>`，探测后为最终绝对路径 | 配置 | 可选（探测写回，见 §6.2） |
 | `role.<name>.max_sessions` | 该 role 解析到的 endpoint 的并发通道上限（配置在 role、生效在 endpoint；多 role 同 endpoint 取最小值；`local` 不适用） | 配置 | 默认 `10` |
 | `role.<name>.expected_fingerprint` | 该 role endpoint 的 host-key 指纹比对基准（业务 role 必检；spectre 例外，见 §3）；`mode=local` 无 endpoint，省略或为 `null` | 校验 | 探测写入 |
@@ -72,7 +72,7 @@
 | `mode.default` | 各 role 缺省 mode（local/remote） | 配置 | **必填，无默认** |
 | `ssh.default.host/user` | 各 role 缺省登录主机/账号 | 配置 | 存在未在 role 级提供的 remote role 时必填 |
 | `ssh.default.jump_host/jump_user/proxy` | 各 role 缺省跳板/代理 | 配置 | 可选 |
-| `ssh.default.key_dir/key` | 各 role 缺省 SSH 凭据目录/文件名 | 配置 | `key_dir` 可选；存在 remote role 时 `key` 必填 |
+| `ssh.default.key_dir/key` | 各 role 缺省 SSH 凭据目录/文件名，位于客户端侧；`key_dir` 缺省 = 客户端 `~/.ssh` | 配置 | `key_dir` 可选；存在 remote role 时 `key` 必填 |
 | `root.default` | 各 role 文件根的申请期基准；探测后写回各 `role.*.root`，运行期不依赖本字段 | 配置 | 默认 `~/.virtuoso-bridge/<userid>`（持久化 `null`） |
 
 - 回退是**逐字段**的：role 有值用自己的，否则回退对应全局默认；`null`/空串 = 未提供；
@@ -190,5 +190,5 @@ canonical_json = json.dumps([host, user, jump_host, jump_user, proxy], ensure_as
 | 5 | `server-a` | `u` | `bastion` | `jump-user` | — | `178df3e331df40f8d01408ff226fd22e6be04d8033db187f06bc64a5c3512391` |
 | 6 | `server-a` | `u` | — | — | `socks5://Proxy:1080` | `f410f0afc8f618e5230416eb191fa6fcdd5c8313828c2e4c4348eed8cfb33630` |
 
-- 同 key 同 endpoint：共享业务连接与 fingerprint 基准（拓扑见[路由设计 §4](3-路由设计.md)）；不同 key 不共享；key 变更视为新 endpoint，指纹按首信任重建；同 key 多 role 显式 `expected_fingerprint` 不一致 → 注册 ERROR；
+- 同 key 同 endpoint 且**解析后凭据一致**：共享业务连接与 fingerprint 基准（拓扑见[路由设计 §4](3-路由设计.md)）；不同 key 不共享；key 变更视为新 endpoint，指纹按首信任重建；同 key 多 role 显式 `expected_fingerprint` 不一致 → 注册 ERROR；
 - 约束：SSH 端口固定 22（注册期校验目标/jump 解析端口，非 22 拒绝）；proxy 固定 `socks5://host:port`；jump 的 known_hosts 由系统 SSH 配置提供；不接受自定义 known_hosts 路径。
