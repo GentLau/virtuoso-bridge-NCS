@@ -32,6 +32,10 @@ from urllib.parse import parse_qs, unquote, urlparse
 from pydantic import ValidationError
 
 from register import RegistrationFlow, RegistrationRequest
+from register.flow import (
+    credential_reuse_conflicts,
+    entry_credential_details,
+)
 from register.candidate import (
     fingerprint_conflicts_candidate,
     validate_entry_shape,
@@ -160,13 +164,16 @@ class RegistrationHandler(BaseHTTPRequestHandler):
 
     def _require_admin(self) -> bool:
         """单管理员 token 校验：只比对代码内 SHA-256 哈希，凭据不进日志。"""
-        header = self.headers.get("Authorization", "")
-        presented = header.removeprefix("Bearer ").strip() if header else ""
-        if not self._is_admin_token(presented):
+        if not self._is_admin_token(self._presented_admin_token()):
             self._send_json(401, {"error": "unauthorized"})
             return False
         self.log_message("admin authorized")
         return True
+
+    def _presented_admin_token(self) -> str:
+        """Legacy admin route: ``Authorization: Bearer <admin token>``."""
+        header = self.headers.get("Authorization", "")
+        return header.removeprefix("Bearer ").strip() if header else ''
 
     @staticmethod
     def _is_admin_token(presented: str) -> bool:
@@ -345,11 +352,37 @@ class RegistrationHandler(BaseHTTPRequestHandler):
                 self._send_json(400, {"error": "invalid request",
                                       "detail": [str(e) for e in exc.errors()]})
                 return
-            if request.enhanced_token is not None and not self._enhanced_token_ok(
-                request.enhanced_token
+            enhanced_ok = False
+            if request.enhanced_token is not None:
+                if not self._enhanced_token_ok(request.enhanced_token):
+                    self._send_json(401, {"error": "invalid enhanced_token"})
+                    return
+                enhanced_ok = True
+            conflicts = credential_reuse_conflicts(
+                self.server.registry, request  # type: ignore[attr-defined]
+            )
+            if conflicts and not enhanced_ok:
+                self._send_json(401, {
+                    "error": "credential reuse requires enhanced_token",
+                    "registered_users": sorted({
+                        name for users in conflicts.values() for name in users
+                    }),
+                })
+                return
+            local_requested = any(
+                (getattr(request.roles, name).mode or request.mode.default) == "local"
+                for name in ("gui", "daemon", "command", "file", "spectre")
+            )
+            if (
+                local_requested
+                and not enhanced_ok
+                and not self._is_admin_token(self._presented_admin_token())
             ):
-                # 只校验、不落盘、不回显、不进日志（spec r22）
-                self._send_json(401, {"error": "invalid enhanced_token"})
+                # spec r21/r22: local mode needs the enhanced credential; legacy route = admin Authorization
+                self._send_json(401, {
+                    "error": "declaring mode=local requires enhanced_token "
+                             "or admin authorization",
+                })
                 return
             # 检查“无同名进行中会话”与创建/登记必须是一个原子步骤，否则两个
             # 并发 apply 会各自看到空会话并互相覆盖（顶层补充 §3）。
@@ -372,6 +405,7 @@ class RegistrationHandler(BaseHTTPRequestHandler):
                         self.server.registry, self.server.reservations
                     )
                     state = flow.start(request)
+                    state.enhanced_ok = enhanced_ok
                     self.server.flows[user] = flow
             if error_payload is not None:
                 self._send_json(400, error_payload)
@@ -641,9 +675,11 @@ class RegistrationHandler(BaseHTTPRequestHandler):
         })
 
     def _handle_delete(self, user: str) -> None:
-        if self.server.registry.get(user) is None:
+        entry = self.server.registry.get(user)
+        if entry is None:
             self._send_json(404, {"error": "unknown user", "user": user})
             return
+        removed_credentials = entry_credential_details(entry)
         flow = self._flow(user)
         if flow is not None:
             flow.cancel()
@@ -651,6 +687,20 @@ class RegistrationHandler(BaseHTTPRequestHandler):
         self.server.registry.remove(user)
         with self.server.flow_lock:
             self.server.flows.pop(user, None)
+        # report credential identity/fingerprint and remaining users (spec 5)
+        remaining: dict[str, list[str]] = {}
+        for other_user, other_entry in self.server.registry.entries():
+            for detail in entry_credential_details(other_entry):
+                fingerprint = detail.get("fingerprint")
+                if fingerprint and any(
+                    removed.get("fingerprint") == fingerprint
+                    for removed in removed_credentials
+                ):
+                    remaining.setdefault(fingerprint, []).append(other_user)
+        for detail in removed_credentials:
+            detail["still_used_by"] = sorted(
+                set(remaining.get(detail.get("fingerprint", ""), []))
+            )
         ok, detail = self._reload_business_runtime()
         if not ok:
             self._send_json(500, {
@@ -659,7 +709,11 @@ class RegistrationHandler(BaseHTTPRequestHandler):
                 "user": user,
             })
             return
-        self._send_json(200, {"user": user, "removed": True})
+        self._send_json(200, {
+            "user": user,
+            "removed": True,
+            "credentials": removed_credentials,
+        })
 
     def _handle_update(self, user: str) -> None:
         entry = self.server.registry.get(user)

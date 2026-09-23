@@ -257,6 +257,9 @@ class _FakeThread:
     def start(self):
         return None
 
+    def join(self, timeout=None):
+        return None
+
 
 class TestMain(unittest.TestCase):
     def _run_main(self, argv, *, serve_error=None, stderr=None):

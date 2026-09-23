@@ -23,6 +23,10 @@ from register import (
 )
 from common.registry import UserEntry, SshDefaults, endpoint_key, load_registry
 from common.paths import registry_path, override_work_dir_for_tests
+from _ssh_cred import make_credential
+
+
+_KEY_DIR, _KEY = make_credential()
 
 
 def _probe_run(cmd, timeout=None):
@@ -39,6 +43,8 @@ def complete_remote_entry(token="tok-1"):
     entry = UserEntry(token=token, mode="remote")
     entry.ssh.default.host = "server-a"
     entry.ssh.default.user = "alice"
+    entry.ssh.default.key_dir = _KEY_DIR
+    entry.ssh.default.key = _KEY
     entry.roles.daemon.daemon_port = 65081
     entry.roles.daemon.local_port = 65082
     entry.roles.daemon.python = "/usr/bin/python3"
@@ -55,9 +61,60 @@ def complete_remote_entry(token="tok-1"):
 def remote_request(**kwargs):
     return RegistrationRequest(
         mode="remote", user="alice", token="tok-1",
-        ssh={"default": {"host": "server-a", "user": "alice"}},
+        ssh={"default": {
+            "host": "server-a", "user": "alice",
+            "key_dir": _KEY_DIR, "key": _KEY,
+        }},
         **kwargs,
     )
+
+
+class TestCredentialValidation(unittest.TestCase):
+    """spec r18+: 客户端凭据文件、公钥指纹与复用授权（第二步校验）。"""
+
+    def setUp(self):
+        self.wd = override_work_dir_for_tests(Path(tempfile.mkdtemp(prefix="vb-")))
+        self.reg = load_registry(registry_path())
+
+    def _request(self, key_dir: str, key: str = "id_rsa"):
+        return RegistrationRequest(
+            mode="remote", user="u", token="tok-cred",
+            ssh={"default": {
+                "host": "h", "user": "a", "key_dir": key_dir, "key": key,
+            }},
+        )
+
+    def test_missing_private_key_is_reported(self):
+        missing = str(Path(tempfile.mkdtemp(prefix="vb-")) / "none")
+        errors = validate_local(self.reg, self._request(missing))
+        self.assertTrue(
+            any("credential for role gui not found" in e for e in errors), errors
+        )
+
+    def test_unreadable_public_key_is_reported(self):
+        key_dir = Path(tempfile.mkdtemp(prefix="vb-"))
+        (key_dir / "id_rsa").write_text("private-only\n", encoding="utf-8")
+        errors = validate_local(self.reg, self._request(str(key_dir)))
+        self.assertTrue(
+            any("cannot read public key for role gui" in e for e in errors), errors
+        )
+
+    def test_registered_credential_requires_enhanced_authorization(self):
+        owner = UserEntry(token="owner-tok", mode="remote")
+        owner.ssh.default.host = "h"
+        owner.ssh.default.user = "a"
+        owner.ssh.default.key_dir = _KEY_DIR
+        owner.ssh.default.key = _KEY
+        self.reg.register("owner", owner)
+
+        errors = validate_local(self.reg, remote_request())
+        self.assertTrue(
+            any("credential already registered by owner" in e for e in errors), errors
+        )
+        authorized = validate_local(self.reg, remote_request(), enhanced_ok=True)
+        self.assertFalse(
+            any("credential already registered" in e for e in authorized), authorized
+        )
 
 
 class TestValidateLocal(unittest.TestCase):
@@ -308,7 +365,7 @@ class TestFlowVerifyAndCommit(unittest.TestCase):
 
         request = RegistrationRequest(
             mode="remote", user="new", token="tok-new",
-            ssh={"default": {"host": "h", "user": "a"}},
+            ssh={"default": {"host": "h", "user": "a", "key_dir": _KEY_DIR, "key": _KEY}},
         )
         flow = RegistrationFlow(self.reg)
         flow.start(request)
@@ -347,7 +404,7 @@ class TestRegisterUserOneShot(unittest.TestCase):
              mock.patch("register.flow.test_connectivity", return_value=report):
             state = register_user(
                 self.reg, mode="remote", user="alice", token="tok-1",
-                ssh={"default": {"host": "server-a", "user": "alice"}},
+                ssh={"default": {"host": "server-a", "user": "alice", "key_dir": _KEY_DIR, "key": _KEY}},
                 confirm_commit=True,
             )
         self.assertEqual(state.stage, "committed")
@@ -364,7 +421,7 @@ class TestRegisterUserOneShot(unittest.TestCase):
             with self.assertRaises(ValueError):
                 register_user(
                     self.reg, mode="remote", user="alice", token="tok-1",
-                    ssh={"default": {"host": "server-a", "user": "alice"}},
+                    ssh={"default": {"host": "server-a", "user": "alice", "key_dir": _KEY_DIR, "key": _KEY}},
                 )
         self.assertIsNone(self.reg.get("alice"))
 
@@ -501,7 +558,7 @@ class TestProbeFailureBranches(unittest.TestCase):
                 probe_user(
                 RegistrationRequest(
                     mode="remote", user="u",
-                    ssh={"default": {"host": "h", "user": "a"}},
+                    ssh={"default": {"host": "h", "user": "a", "key_dir": _KEY_DIR, "key": _KEY}},
                 ), token="t"
             )
 
@@ -519,7 +576,7 @@ class TestProbeFailureBranches(unittest.TestCase):
             runner.return_value.test_connection.return_value = True
             runner.return_value.run_command.side_effect = _probe_run
             with self.assertRaises(RegistrationProbeError):
-                probe_user(RegistrationRequest(mode="remote", user="u", ssh={"default": {"host": "h", "user": "a"}}), token="t")
+                probe_user(RegistrationRequest(mode="remote", user="u", ssh={"default": {"host": "h", "user": "a", "key_dir": _KEY_DIR, "key": _KEY}}), token="t")
 
     def test_remote_daemon_user_unresolvable(self):
         from register import probe_user
@@ -537,7 +594,7 @@ class TestProbeFailureBranches(unittest.TestCase):
                 probe_user(
                 RegistrationRequest(
                     mode="remote", user="u",
-                    ssh={"default": {"host": "h", "user": "a"}},
+                    ssh={"default": {"host": "h", "user": "a", "key_dir": _KEY_DIR, "key": _KEY}},
                 ), token="t"
             )
 
@@ -620,7 +677,7 @@ class TestFlowMoreBranches(unittest.TestCase):
         with mock.patch("register.flow.SSHRunner") as runner:
             runner.return_value.test_connection.return_value = False
             with self.assertRaises(RegistrationProbeError):
-                probe_user(RegistrationRequest(mode="remote", user="u", ssh={"default": {"host": "h", "user": "a"}}), token="t")
+                probe_user(RegistrationRequest(mode="remote", user="u", ssh={"default": {"host": "h", "user": "a", "key_dir": _KEY_DIR, "key": _KEY}}), token="t")
 
     def test_remote_probe_missing_hostname(self):
         from unittest import mock
@@ -631,7 +688,7 @@ class TestFlowMoreBranches(unittest.TestCase):
             runner.return_value.test_connection.return_value = True
             runner.return_value.run_command.side_effect = _probe_run
             with self.assertRaises(RegistrationProbeError):
-                probe_user(RegistrationRequest(mode="remote", user="u", ssh={"default": {"host": "h", "user": "a"}}), token="t")
+                probe_user(RegistrationRequest(mode="remote", user="u", ssh={"default": {"host": "h", "user": "a", "key_dir": _KEY_DIR, "key": _KEY}}), token="t")
 
     def test_remote_probe_no_python(self):
         from unittest import mock
@@ -645,7 +702,7 @@ class TestFlowMoreBranches(unittest.TestCase):
             runner.return_value.test_connection.return_value = True
             runner.return_value.run_command.side_effect = _probe_run
             with self.assertRaises(RegistrationProbeError):
-                probe_user(RegistrationRequest(mode="remote", user="u", ssh={"default": {"host": "h", "user": "a"}}), token="t")
+                probe_user(RegistrationRequest(mode="remote", user="u", ssh={"default": {"host": "h", "user": "a", "key_dir": _KEY_DIR, "key": _KEY}}), token="t")
 
     def test_remote_probe_explicit_port_busy(self):
         from unittest import mock
@@ -660,7 +717,7 @@ class TestFlowMoreBranches(unittest.TestCase):
             runner.return_value.test_connection.return_value = True
             runner.return_value.run_command.side_effect = _probe_run
             with self.assertRaises(RegistrationProbeError):
-                probe_user(RegistrationRequest(mode="remote", user="u", ssh={"default": {"host": "h", "user": "a"}}, roles={"daemon": {"daemon_port": 65081}}), token="t")
+                probe_user(RegistrationRequest(mode="remote", user="u", ssh={"default": {"host": "h", "user": "a", "key_dir": _KEY_DIR, "key": _KEY}}, roles={"daemon": {"daemon_port": 65081}}), token="t")
 
     def test_remote_probe_no_free_port(self):
         from unittest import mock
@@ -675,7 +732,7 @@ class TestFlowMoreBranches(unittest.TestCase):
             runner.return_value.test_connection.return_value = True
             runner.return_value.run_command.side_effect = _probe_run
             with self.assertRaises(RegistrationProbeError):
-                probe_user(RegistrationRequest(mode="remote", user="u", ssh={"default": {"host": "h", "user": "a"}}), token="t")
+                probe_user(RegistrationRequest(mode="remote", user="u", ssh={"default": {"host": "h", "user": "a", "key_dir": _KEY_DIR, "key": _KEY}}), token="t")
 
     def test_remote_role_non_22_port_is_rejected(self):
         """配置一览 §6.5: 目标/jump 解析到非 22 端口必须拒绝。"""
@@ -686,7 +743,7 @@ class TestFlowMoreBranches(unittest.TestCase):
             with self.assertRaises(RegistrationProbeError):
                 probe_user(RegistrationRequest(
                     mode="remote", user="u",
-                    ssh={"default": {"host": "h", "user": "a"}},
+                    ssh={"default": {"host": "h", "user": "a", "key_dir": _KEY_DIR, "key": _KEY}},
                 ), token="t")
 
     def test_local_explicit_python_invalid_is_rejected(self):
@@ -734,7 +791,7 @@ class TestFlowMoreBranches(unittest.TestCase):
             with self.assertRaises(RegistrationProbeError) as ctx:
                 probe_user(RegistrationRequest(
                     mode="remote", user="u",
-                    ssh={"default": {"host": "h", "user": "a"}},
+                    ssh={"default": {"host": "h", "user": "a", "key_dir": _KEY_DIR, "key": _KEY}},
                     roles={"daemon": {"python": "/opt/old/python2"}},
                 ), token="t")
         self.assertIn("2.6.9", str(ctx.exception))
@@ -754,7 +811,7 @@ class TestFlowMoreBranches(unittest.TestCase):
             with self.assertRaises(RegistrationProbeError):
                 probe_user(RegistrationRequest(
                     mode="remote", user="u",
-                    ssh={"default": {"host": "h", "user": "a"}},
+                    ssh={"default": {"host": "h", "user": "a", "key_dir": _KEY_DIR, "key": _KEY}},
                     roles={"daemon": {"python": "/bad/python"}},
                 ), token="t")
 
@@ -774,7 +831,7 @@ class TestFlowMoreBranches(unittest.TestCase):
                 probe_user(
                     RegistrationRequest(
                         mode="remote", user="u",
-                        ssh={"default": {"host": "h", "user": "a"}},
+                        ssh={"default": {"host": "h", "user": "a", "key_dir": _KEY_DIR, "key": _KEY}},
                         roles={"daemon": {"local_port": 65092}},
                     ),
                     token="t",
@@ -858,7 +915,7 @@ class TestRequestAndIdempotence(unittest.TestCase):
         with self.assertRaises(ValidationError):
             RegistrationRequest(user="u", mode="local", roles={"daemon": {"daemon_port": 0}})
         with self.assertRaises(ValidationError):
-            RegistrationRequest(mode="remote", user="u", ssh={"default": {"host": "h", "user": "a"}}, roles={"daemon": {"local_port": 70000}})
+            RegistrationRequest(mode="remote", user="u", ssh={"default": {"host": "h", "user": "a", "key_dir": _KEY_DIR, "key": _KEY}}, roles={"daemon": {"local_port": 70000}})
 
     def test_token_charset_validation(self):
         from pydantic import ValidationError
@@ -943,7 +1000,8 @@ class TestPolicyFieldsApplied(unittest.TestCase):
         request = RegistrationRequest(
             mode="remote", user="u", token="tok",
             ssh={"default": {"host": "h", "user": "a",
-                             "proxy": "socks5://127.0.0.1:1080"}},
+                             "proxy": "socks5://127.0.0.1:1080",
+                             "key_dir": _KEY_DIR, "key": _KEY}},
             roles={"spectre": {"host": "spec-host",
                               "bin": "/opt/spectre/bin/spectre"}},
             ssh_backend="paramiko", ssh_control_master="disable",
@@ -1011,7 +1069,7 @@ class TestSpectreAutoProbe(unittest.TestCase):
     def test_auto_detect_fills_route(self):
         from unittest import mock
         from register import probe_user
-        request = RegistrationRequest(mode="remote", user="u", token="tok", ssh={"default": {"host": "h", "user": "a"}})
+        request = RegistrationRequest(mode="remote", user="u", token="tok", ssh={"default": {"host": "h", "user": "a", "key_dir": _KEY_DIR, "key": _KEY}})
         with mock.patch("register.flow.SSHRunner") as runner, \
              mock.patch("register.probe.host_key_fingerprint", return_value="fp"), \
              mock.patch("register.probe.remote_hostname", return_value="host-a"), \
@@ -1032,7 +1090,7 @@ class TestSpectreAutoProbe(unittest.TestCase):
     def test_explicit_bad_spectre_non_blocking(self):
         from unittest import mock
         from register import probe_user
-        request = RegistrationRequest(mode="remote", user="u", token="tok", ssh={"default": {"host": "h", "user": "a"}}, roles={"spectre": {"bin": "/bad/spectre"}})
+        request = RegistrationRequest(mode="remote", user="u", token="tok", ssh={"default": {"host": "h", "user": "a", "key_dir": _KEY_DIR, "key": _KEY}}, roles={"spectre": {"bin": "/bad/spectre"}})
         with mock.patch("register.flow.SSHRunner") as runner, \
              mock.patch("register.probe.host_key_fingerprint", return_value="fp"), \
              mock.patch("register.probe.remote_hostname", return_value="host-a"), \

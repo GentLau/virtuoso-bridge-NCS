@@ -47,6 +47,7 @@ from pydantic import (
 from common.validation import (
     ROLE_FIXED_FIELDS,
     validate_display,
+    validate_key_name,
     validate_role_groups,
     validate_user_name,
 )
@@ -158,9 +159,17 @@ class RoleConfig(BaseModel):
     jump_host: str | None = None
     jump_user: str | None = None
     proxy: str | None = None
+    #: per-role SSH credential (client side; remote only, spec 2.3).
+    key_dir: str | None = None
+    key: str | None = None
     root: str | None = None
     expected_fingerprint: str | None = None
     max_sessions: StrictInt = Field(default=10, ge=1)
+
+    @field_validator("key")
+    @classmethod
+    def _validate_key(cls, value):
+        return validate_key_name(value) if value else value
 
     @model_validator(mode="after")
     def _validate_user_groups(self):
@@ -240,6 +249,14 @@ class SshDefaults(BaseModel):
     jump_host: str | None = None
     jump_user: str | None = None
     proxy: str | None = None
+    #: 各 role 缺省凭据（客户端侧）；key_dir 缺省 = ~/.ssh。
+    key_dir: str | None = None
+    key: str | None = None
+
+    @field_validator("key")
+    @classmethod
+    def _validate_ssh_key(cls, value):
+        return validate_key_name(value) if value else value
 
 
 class Ssh(BaseModel):
@@ -307,9 +324,11 @@ class UserEntry(BaseModel):
             role = getattr(self.roles, name)
             if (role.mode or self.mode.default) == "local":
                 if any((role.host, role.user, role.jump_host,
-                        role.jump_user, role.proxy)):
+                        role.jump_user, role.proxy,
+                        role.key_dir, role.key)):
                     raise ValueError(
-                        f"role {name} is local: host/user/jump_host/jump_user/proxy must be empty"
+                        f"role {name} is local: host/user/jump_host/jump_user/"
+                        "proxy/key_dir/key must be empty"
                     )
         return self
 

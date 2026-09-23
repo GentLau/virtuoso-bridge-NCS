@@ -27,6 +27,10 @@ from common.registry import (
     load_registry,
 )
 from common.paths import registry_path, override_work_dir_for_tests
+from _ssh_cred import make_credential
+
+
+_KEY_DIR, _KEY = make_credential()
 
 
 class _FakeProbeRunner:
@@ -171,7 +175,7 @@ class TestProbeNeverPersists(unittest.TestCase):
              mock.patch("register.probe.remote_path_writable", return_value=True), \
              mock.patch("register.probe.host_key_fingerprint", return_value="SHA256:abc"):
             result = probe_user(
-                RegistrationRequest(mode="remote", user="alice", ssh={"default": {"host": "compute-a", "user": "alice"}}),
+                RegistrationRequest(mode="remote", user="alice", ssh={"default": {"host": "compute-a", "user": "alice", "key_dir": _KEY_DIR, "key": _KEY}}),
                 token="tok-1",
             )
         self.assertEqual(result.entry.roles.daemon.daemon_port, 65081)

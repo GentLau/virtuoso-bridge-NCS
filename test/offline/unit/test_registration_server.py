@@ -20,6 +20,10 @@ import register.server as register_server
 from register.server import RegistrationServer
 from common.registry import UserEntry, load_registry
 from common.paths import registry_path, override_work_dir_for_tests
+from _ssh_cred import make_credential
+
+
+_KEY_DIR, _KEY = make_credential()
 
 
 #: Throwaway admin credential for this test process only.
@@ -253,6 +257,7 @@ class TestRegistrationServer(unittest.TestCase):
         status, raw = self.srv.request("POST", "/api/register", {
             "user": user,
             "action": "apply",
+            "enhanced_token": _ADMIN_TOKEN,
             **fields,
         })
         data = json.loads(raw)
@@ -376,6 +381,7 @@ class TestRegistrationServer(unittest.TestCase):
             "user": "retry",
             "action": "apply",
             "mode": "local",
+            "enhanced_token": _ADMIN_TOKEN,
             "roles": {
                 "daemon": {"daemon_port": _free_port()},
                 "spectre": {"bin": sys.executable},
@@ -851,6 +857,7 @@ class TestRegistrationServer(unittest.TestCase):
                 "roles": {"spectre": {
                     "mode": "remote", "host": "spectre-a", "user": "alice",
                     "bin": "/opt/spectre",
+                    "key_dir": _KEY_DIR, "key": _KEY,
                 }},
             },
             _admin_auth(),
@@ -899,7 +906,7 @@ class TestRegistrationServer(unittest.TestCase):
         port = _free_port()
         status, raw = self.srv.request("POST", "/api/register", {
             "user": "erin", "action": "apply", "mode": "remote",
-            "ssh": {"default": {"host": "server-a", "user": "alice"}},
+            "ssh": {"default": {"host": "server-a", "user": "alice", "key_dir": _KEY_DIR, "key": _KEY}},
             "roles": {"daemon": {"daemon_port": port}, "command": {"mode": "local", "host": "server-a"}},
         })
         self.assertEqual(status, 400)
@@ -920,7 +927,7 @@ class TestRegistrationServer(unittest.TestCase):
 
         same_host = RegistrationRequest(
             mode="remote", user="henry", token="tok-b",
-            ssh={"default": {"host": "host-a", "user": "u"}},
+            ssh={"default": {"host": "host-a", "user": "u", "key_dir": _KEY_DIR, "key": _KEY}},
             roles={"daemon": {"daemon_port": port}},
         )
         self.assertTrue(any("daemon port" in e for e in validate_local(self.registry, same_host)))
@@ -940,6 +947,7 @@ class TestRegistrationServer(unittest.TestCase):
         self.registry.register("judy", entry)
         status, raw = self.srv.request("POST", "/api/register", {
             "user": "karl", "action": "apply", "mode": "local", "token": "dup-token",
+            "enhanced_token": _ADMIN_TOKEN,
             "roles": {"daemon": {"daemon_port": _free_port()}, "spectre": {"bin": sys.executable}},
         })
         data = json.loads(raw)
@@ -1125,7 +1133,8 @@ class TestRegistrationServer(unittest.TestCase):
         def apply():
             status, _raw = self.srv.request(
                 "POST", "/api/register",
-                {"user": "race", "action": "apply", "mode": "local"},
+                {"user": "race", "action": "apply", "mode": "local",
+                 "enhanced_token": _ADMIN_TOKEN},
             )
             results.append(status)
 
@@ -1142,6 +1151,8 @@ class TestRegistrationServer(unittest.TestCase):
         entry = UserEntry(token=token, mode="remote")
         entry.ssh.default.host = "server-a"
         entry.ssh.default.user = "alice"
+        entry.ssh.default.key_dir = _KEY_DIR
+        entry.ssh.default.key = _KEY
         for name in ("gui", "daemon", "command", "file", "spectre"):
             role = getattr(entry.roles, name)
             role.root = f"/home/alice/.virtuoso-bridge/{user}/{name}"

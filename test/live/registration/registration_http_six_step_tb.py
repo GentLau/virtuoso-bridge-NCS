@@ -257,6 +257,8 @@ def request_payload(
             "user": user,
             "token": token,
             "mode": "local",
+            # spec r21/r22: 声明 mode=local 需加强凭据（admin token 或任一 holder）
+            "enhanced_token": ADMIN_TOKEN,
             "root": {"default": root},
             "roles": {"daemon": {"daemon_port": port, "local_port": port}},
             "log_level": "off",
@@ -267,7 +269,11 @@ def request_payload(
         "user": user,
         "token": token,
         "mode": "remote",
-        "ssh": {"default": {"host": host, "user": ssh_user}},
+        "ssh": {"default": {
+            "host": host, "user": ssh_user,
+            # 客户端侧凭据（spec r18+）：默认身份 key + 同名 .pub 供指纹查重
+            "key_dir": "~/.ssh", "key": "id_ed25519",
+        }},
         "root": {"default": root},
         "roles": {
             "daemon": {

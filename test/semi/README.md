@@ -10,7 +10,7 @@
 | `probes/` | 环境、工具链、包、单阶段探针（只读/一次性） | 原 `test/tb/probes` |
 | `fakevirt/` | fake Virtuoso / CIW 测试替身 | 替掉 CIW，daemon 与链路为真 |
 | `registration/` | `cov_registration_real.py`：注册 **1–4 步**（不 commit） | 覆盖前段流程与零落盘 |
-| `transport/` | `log_matrix_real_tb.py`（CDS.log 单点矩阵）、`one_shot_burst_tb.py`（通道突发）、`ssh_backend_semi_tb.py`（OpenSSH/Paramiko 传输原语） | 真机单点，不构成完整用户流程 |
+| `transport/` | `log_matrix_real_tb.py`（CDS.log 单点矩阵）、`one_shot_burst_tb.py`（通道突发）、`ssh_backend_semi_tb.py`（OpenSSH/Paramiko 传输原语）、`role_credential_isolation_tb.py`（按 role 分离凭据） | 真机单点，不构成完整用户流程 |
 
 ## 怎么跑
 
@@ -26,6 +26,9 @@ python test/semi/transport/one_shot_burst_tb.py  --work-dir test/artifacts/env/o
 # 传输原语：真实 sshd，不需要 Virtuoso；两个后端 × 持久/一次性 shell 共 48 例
 python test/semi/transport/ssh_backend_semi_tb.py `
     --host wsl-gent --ssh-user Gent --out test/artifacts/evidence/ssh-backend-semi.json
+# 按 role 分离凭据：用环境里已整理的双钥（id_ed25519 / vbuser2_ed25519）
+python test/semi/transport/role_credential_isolation_tb.py `
+    --out test/artifacts/evidence/role-credential-isolation.json
 ```
 
 ## 纪律

@@ -27,6 +27,7 @@ import register.server as register_server
 from register.server import RegistrationHandler, RegistrationServer
 from common.registry import UserEntry, load_registry
 from common.paths import registry_path, override_work_dir_for_tests
+from _ssh_cred import make_credential as _make_credential
 
 #: Same throwaway credential as ``test_registration_server.py``; the module
 #: hash is swapped per-test (never at import) so neither file clobbers the
@@ -344,6 +345,117 @@ class TestUpdateAndDeleteEdges(_EdgeBase):
         self.assertIsNone(self.registry.get("edge4"))
 
 
+class TestPerRoleCredentials(_EdgeBase):
+    """spec r18–r22：role.key_dir/key（客户端侧）+ 公钥指纹查重 + enhanced_token 授权。"""
+
+    def _remote_entry(self, user: str, token: str, key: tuple[str, str]) -> UserEntry:
+        entry = UserEntry(token=token, mode="remote")
+        entry.ssh.default.host = "server-a"
+        entry.ssh.default.user = "alice"
+        entry.ssh.default.key_dir, entry.ssh.default.key = key
+        return entry
+
+    def _apply_remote(self, srv, user: str, key: tuple[str, str], **extra):
+        key_dir, key_name = key
+        body = {
+            "user": user, "action": "apply", "mode": "remote",
+            "ssh": {"default": {
+                "host": "server-a", "user": "alice",
+                "key_dir": key_dir, "key": key_name,
+            }},
+        }
+        body.update(extra)
+        return srv.request("POST", "/api/register", body)
+
+    def _apply_local(self, srv, user: str = "local-holder", **extra):
+        body = {"user": user, "action": "apply", "mode": "local"}
+        body.update(extra)
+        return srv.request("POST", "/api/register", body)
+
+    def test_remote_without_credential_is_rejected(self):
+        srv = self.start()
+        status, raw, _resp = srv.request("POST", "/api/register", {
+            "user": "nokey", "action": "apply", "mode": "remote",
+            "ssh": {"default": {"host": "server-a", "user": "alice"}},
+        })
+        self.assertEqual(status, 400, raw)
+        self.assertIn("key_dir/key", raw)
+
+    def test_local_role_with_credential_is_rejected(self):
+        srv = self.start()
+        key = _make_credential()
+        status, raw, _resp = srv.request("POST", "/api/register", {
+            "user": "localkey", "action": "apply", "mode": "local",
+            "roles": {"gui": {"key_dir": key[0], "key": key[1]}},
+        })
+        self.assertEqual(status, 400, raw)
+        self.assertIn("must not be set", raw)
+
+    def test_key_with_directory_component_is_rejected(self):
+        srv = self.start()
+        status, raw, _resp = srv.request("POST", "/api/register", {
+            "user": "pathkey", "action": "apply", "mode": "remote",
+            "ssh": {"default": {
+                "host": "server-a", "user": "alice",
+                "key_dir": "/tmp/keys", "key": "sub/id_rsa",
+            }},
+        })
+        self.assertEqual(status, 400, raw)
+
+    def test_credential_reuse_requires_enhanced_token(self):
+        shared = _make_credential()
+        self.registry.register(
+            "owner", self._remote_entry("owner", "owner-tok", shared)
+        )
+        srv = self.start()
+        status, raw, _resp = self._apply_remote(srv, "newbie", shared)
+        self.assertEqual(status, 401, raw)
+        payload = json.loads(raw)
+        self.assertEqual(payload["error"], "credential reuse requires enhanced_token")
+        self.assertEqual(payload["registered_users"], ["owner"])
+        self.assertNotIn("newbie", srv.server.flows)
+
+        status, raw, _resp = self._apply_remote(
+            srv, "newbie", shared, enhanced_token="owner-tok"
+        )
+        self.assertEqual(status, 200, raw)
+        self.assertEqual(json.loads(raw)["stage"], "applied")
+
+    def test_reuse_with_a_different_key_needs_no_token(self):
+        owner_key = _make_credential()
+        other_key = _make_credential()
+        self.registry.register(
+            "owner", self._remote_entry("owner", "owner-tok", owner_key)
+        )
+        srv = self.start()
+        status, raw, _resp = self._apply_remote(srv, "newbie", other_key)
+        self.assertEqual(status, 200, raw)
+
+    def test_local_declaration_accepts_registered_holder_token(self):
+        holder_key = _make_credential()
+        self.registry.register(
+            "holder", self._remote_entry("holder", "holder-tok", holder_key)
+        )
+        srv = self.start()
+        status, raw, _resp = self._apply_local(srv, enhanced_token="holder-tok")
+        self.assertEqual(status, 200, raw)
+
+    def test_delete_reports_fingerprint_and_remaining_users(self):
+        shared = _make_credential()
+        self.registry.register("owner", self._remote_entry("owner", "owner-tok", shared))
+        self.registry.register("mate", self._remote_entry("mate", "mate-tok", shared))
+        srv = self.start()
+        status, raw, _resp = srv.request(
+            "DELETE", "/api/user/owner", None, _admin_auth()
+        )
+        self.assertEqual(status, 200, raw)
+        payload = json.loads(raw)
+        self.assertEqual(len(payload["credentials"]), 5)  # 五个 remote role
+        fingerprint = payload["credentials"][0]["fingerprint"]
+        self.assertTrue(fingerprint.startswith("SHA256:"))
+        self.assertEqual(payload["credentials"][0]["still_used_by"], ["mate"])
+
+
 class TestConfigEdges(_EdgeBase):
     def test_put_config_oversized_and_non_object(self):
         srv = self.start()
@@ -382,7 +494,10 @@ class TestRegisterCommandEdges(_EdgeBase):
         return token
 
     def _apply_local(self, srv, user="enhanced-user", **extra):
-        body = {"user": user, "action": "apply", "mode": "local"}
+        body = {
+            "user": user, "action": "apply", "mode": "local",
+            "enhanced_token": _ADMIN_TOKEN,
+        }
         body.update(extra)
         return srv.request("POST", "/api/register", body)
 
@@ -408,10 +523,23 @@ class TestRegisterCommandEdges(_EdgeBase):
         self.assertNotIn("enhanced-user", srv.server.flows)
 
     def test_apply_without_enhanced_token_keeps_legacy_path(self):
+        """老路：不带 enhanced_token 时，管理员 Authorization 仍可用于 local 声明。"""
         srv = self.start()
-        status, raw, _resp = self._apply_local(srv)
+        status, raw, _resp = srv.request(
+            "POST", "/api/register",
+            {"user": "legacy-local", "action": "apply", "mode": "local"},
+            _admin_auth(),
+        )
         self.assertEqual(status, 200, raw)
         self.assertEqual(json.loads(raw)["stage"], "applied")
+
+    def test_local_without_any_credential_is_401(self):
+        srv = self.start()
+        status, raw, _resp = srv.request("POST", "/api/register", {
+            "user": "bare-local", "action": "apply", "mode": "local",
+        })
+        self.assertEqual(status, 401, raw)
+        self.assertIn("enhanced_token", raw)
 
     def test_enhanced_token_is_not_echoed_in_state(self):
         holder = self._register_holder()
@@ -449,6 +577,7 @@ class TestRegisterCommandEdges(_EdgeBase):
             )
         status, raw, _resp = srv.request("POST", "/api/register", {
             "user": "done", "action": "apply", "mode": "local",
+            "enhanced_token": _ADMIN_TOKEN,
         })
         self.assertEqual(status, 400, raw)
         self.assertIn("already registered", raw)
@@ -461,6 +590,7 @@ class TestRegisterCommandEdges(_EdgeBase):
             )
         status, raw, _resp = srv.request("POST", "/api/register", {
             "user": "busy", "action": "apply", "mode": "local",
+            "enhanced_token": _ADMIN_TOKEN,
         })
         self.assertEqual(status, 400, raw)
         self.assertIn("step order violation", raw)

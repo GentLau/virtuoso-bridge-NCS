@@ -1489,10 +1489,11 @@ button,input,select {
         <form id="f" class="form-body" autocomplete="off">
           <fieldset id="formFields" style="border:0;margin:0;padding:0;min-width:0">
             <section class="form-section">
-              <div class="section-head"><span class="section-number">01</span><div><h2>身份信息</h2><p>用户名用于注册表索引；Token 可由系统安全生成。</p></div></div>
+              <div class="section-head"><span class="section-number">01</span><div><h2>身份信息</h2><p>用户名用于注册表索引；Token 可由系统安全生成；增强凭据只在本机模式或复用他人凭据时需要。</p></div></div>
               <div class="fields two">
                 <div class="field"><label for="user">用户名 <span class="required" aria-hidden="true">*</span></label><input id="user" name="user" required maxlength="64" placeholder="例如 alice" autocomplete="username"><p class="field-help">1–64 个字符，需与现有注册用户保持唯一。</p></div>
                 <div class="field"><label for="token">Token <span class="optional">可选</span></label><input id="token" name="token" maxlength="64" pattern="[A-Za-z0-9._-]{1,64}" placeholder="留空将自动生成" spellcheck="false"><p class="field-help">仅支持字母、数字、点、下划线和连字符。</p></div>
+                <div class="field"><label for="enhanced_token">增强凭据 <span class="optional" id="enhancedTokenBadge">按需</span><span class="required" id="enhancedTokenStar" aria-hidden="true" hidden>*</span></label><input id="enhanced_token" name="enhanced_token" type="password" maxlength="64" autocomplete="off" spellcheck="false" placeholder="仅本机模式或复用他人凭据时需要"><p class="field-help">仅在声明本机模式（local）或复用他人已登记凭据时需要：填管理员 token 或任一已登记持有者的 token；只用于本次 apply 校验，不落盘、不回显。</p></div>
               </div>
             </section>
             <section class="form-section">
@@ -1508,6 +1509,8 @@ button,input,select {
               <div class="fields two">
                 <div class="field" data-remote-only><label for="host">目标 SSH 主机 <span class="required remote-required" aria-hidden="true">*</span></label><input id="host" name="host" placeholder="主机名或 ~/.ssh/config 别名" spellcheck="false"><p class="field-help">填写运行命令和接收部署文件的主机。</p></div>
                 <div class="field" data-remote-only><label for="ssh_user">SSH 用户 <span class="required remote-required" aria-hidden="true">*</span></label><input id="ssh_user" name="ssh_user" placeholder="例如 designer1" autocomplete="username" spellcheck="false"><p class="field-help">应已配置免交互登录。</p></div>
+                <div class="field" data-remote-only><label for="ssh_key_dir">SSH 私钥目录 <span class="optional">缺省 ~/.ssh</span></label><input id="ssh_key_dir" name="ssh_key_dir" placeholder="~/.ssh" spellcheck="false"><p class="field-help">客户端侧（本机）目录。</p></div>
+                <div class="field" data-remote-only><label for="ssh_key">SSH 私钥文件名 <span class="required remote-required" aria-hidden="true">*</span></label><input id="ssh_key" name="ssh_key" placeholder="例如 id_ed25519" spellcheck="false"><p class="field-help">只填文件名；同目录下的 &lt;key&gt;.pub 用于凭据指纹查重。</p></div>
               </div>
               <details class="subdetails" data-remote-only><summary>分离 daemon / 跳板机配置（可选）</summary><div class="details-body"><div class="fields two">
                 <div class="field"><label for="daemon_host">Daemon 主机 <span class="optional">缺省同 SSH 主机</span></label><input id="daemon_host" name="daemon_host" placeholder="例如 compute-host-b" spellcheck="false"></div>
@@ -1529,7 +1532,7 @@ button,input,select {
                 <p class="field-help">按 <code>role.&lt;name&gt;.&lt;field&gt;</code> 逐字段覆盖全局默认；<code>mode=local</code> 的 role 不得再填 host/user/jump（本地直连，会报参数错误）。daemon 的端口用上面的「Daemon 端口/本地端口」，spectre 的可执行文件用上面的 spectre bin。</p>
                 <div class="table-scroll">
                   <table class="role-table">
-                    <thead><tr><th>role</th><th>mode</th><th>host</th><th>user</th><th>jump_host</th><th>root</th><th>display</th><th>max_sessions</th></tr></thead>
+                    <thead><tr><th>role</th><th>mode</th><th>host</th><th>user</th><th>jump_host</th><th>key_dir</th><th>key</th><th>root</th><th>display</th><th>max_sessions</th></tr></thead>
                     <tbody>
                   <tr>
                     <th scope="row">gui</th>
@@ -1539,6 +1542,8 @@ button,input,select {
                     <td><input id="role_gui_host" name="role_gui_host" placeholder="继承" spellcheck="false"></td>
                     <td><input id="role_gui_user" name="role_gui_user" placeholder="继承" spellcheck="false"></td>
                     <td><input id="role_gui_jump_host" name="role_gui_jump_host" placeholder="继承" spellcheck="false"></td>
+                    <td><input id="role_gui_key_dir" name="role_gui_key_dir" placeholder="继承 ~/.ssh" spellcheck="false"></td>
+                    <td><input id="role_gui_key" name="role_gui_key" placeholder="继承" spellcheck="false"></td>
                     <td><input id="role_gui_root" name="role_gui_root" placeholder="继承 root.default/&lt;role&gt;" spellcheck="false"></td>
                     <td><input id="role_gui_display" name="role_gui_display" placeholder="自动探测，如 :11" spellcheck="false" pattern="[A-Za-z0-9._/-]*:[0-9]+(\.[0-9]+)?" title="X display 形式，例如 :11、localhost:10.0"></td>
                     <td><input id="role_gui_max_sessions" name="role_gui_max_sessions" type="number" min="1" inputmode="numeric" placeholder="默认 10"></td>
@@ -1551,6 +1556,8 @@ button,input,select {
                     <td><input id="role_daemon_host" name="role_daemon_host" placeholder="继承" spellcheck="false"></td>
                     <td><input id="role_daemon_user" name="role_daemon_user" placeholder="继承" spellcheck="false"></td>
                     <td><input id="role_daemon_jump_host" name="role_daemon_jump_host" placeholder="继承" spellcheck="false"></td>
+                    <td><input id="role_daemon_key_dir" name="role_daemon_key_dir" placeholder="继承 ~/.ssh" spellcheck="false"></td>
+                    <td><input id="role_daemon_key" name="role_daemon_key" placeholder="继承" spellcheck="false"></td>
                     <td><input id="role_daemon_root" name="role_daemon_root" placeholder="继承 root.default/&lt;role&gt;" spellcheck="false"></td>
                     <td></td>
                     <td><input id="role_daemon_max_sessions" name="role_daemon_max_sessions" type="number" min="1" inputmode="numeric" placeholder="默认 10"></td>
@@ -1563,6 +1570,8 @@ button,input,select {
                     <td><input id="role_command_host" name="role_command_host" placeholder="继承" spellcheck="false"></td>
                     <td><input id="role_command_user" name="role_command_user" placeholder="继承" spellcheck="false"></td>
                     <td><input id="role_command_jump_host" name="role_command_jump_host" placeholder="继承" spellcheck="false"></td>
+                    <td><input id="role_command_key_dir" name="role_command_key_dir" placeholder="继承 ~/.ssh" spellcheck="false"></td>
+                    <td><input id="role_command_key" name="role_command_key" placeholder="继承" spellcheck="false"></td>
                     <td><input id="role_command_root" name="role_command_root" placeholder="继承 root.default/&lt;role&gt;" spellcheck="false"></td>
                     <td></td>
                     <td><input id="role_command_max_sessions" name="role_command_max_sessions" type="number" min="1" inputmode="numeric" placeholder="默认 10"></td>
@@ -1575,6 +1584,8 @@ button,input,select {
                     <td><input id="role_file_host" name="role_file_host" placeholder="继承" spellcheck="false"></td>
                     <td><input id="role_file_user" name="role_file_user" placeholder="继承" spellcheck="false"></td>
                     <td><input id="role_file_jump_host" name="role_file_jump_host" placeholder="继承" spellcheck="false"></td>
+                    <td><input id="role_file_key_dir" name="role_file_key_dir" placeholder="继承 ~/.ssh" spellcheck="false"></td>
+                    <td><input id="role_file_key" name="role_file_key" placeholder="继承" spellcheck="false"></td>
                     <td><input id="role_file_root" name="role_file_root" placeholder="继承 root.default/&lt;role&gt;" spellcheck="false"></td>
                     <td></td>
                     <td><input id="role_file_max_sessions" name="role_file_max_sessions" type="number" min="1" inputmode="numeric" placeholder="默认 10"></td>
@@ -1587,6 +1598,8 @@ button,input,select {
                     <td><input id="role_spectre_host" name="role_spectre_host" placeholder="继承" spellcheck="false"></td>
                     <td><input id="role_spectre_user" name="role_spectre_user" placeholder="继承" spellcheck="false"></td>
                     <td><input id="role_spectre_jump_host" name="role_spectre_jump_host" placeholder="继承" spellcheck="false"></td>
+                    <td><input id="role_spectre_key_dir" name="role_spectre_key_dir" placeholder="继承 ~/.ssh" spellcheck="false"></td>
+                    <td><input id="role_spectre_key" name="role_spectre_key" placeholder="继承" spellcheck="false"></td>
                     <td><input id="role_spectre_root" name="role_spectre_root" placeholder="继承 root.default/&lt;role&gt;" spellcheck="false"></td>
                     <td></td>
                     <td><input id="role_spectre_max_sessions" name="role_spectre_max_sessions" type="number" min="1" inputmode="numeric" placeholder="默认 10"></td>
@@ -1748,6 +1761,21 @@ function selectedMode() {
   return node ? node.value : ''
 }
 
+// role 未显式选择 mode 时继承全局 mode.default（多用户与注册 §2）。
+function effectiveRoleMode(name) {
+  const selector = byId('role_' + name + '_mode');
+  return (selector && selector.value) || selectedMode()
+}
+
+// 加强凭据（spec r18–r22）：声明本机模式或复用他人已登记凭据时需要；
+// 任一 role 选择 local 同样算声明本机模式。
+function localModeDeclared() {
+  if (selectedMode() === 'local') return true;
+  return ['gui', 'daemon', 'command', 'file', 'spectre'].some(function(name) {
+    return effectiveRoleMode(name) === 'local'
+  })
+}
+
 function setRemoteAvailability(enabled) {
   document.querySelectorAll('[data-remote-only]').forEach(function(wrapper) {
     wrapper.hidden = !enabled;
@@ -1765,6 +1793,11 @@ function updateModeUI() {
   const required = mode === 'remote';
   byId('host').required = required;
   byId('ssh_user').required = required;
+  byId('ssh_key').required = required;
+  const localDeclared = localModeDeclared();
+  byId('enhanced_token').required = localDeclared;
+  byId('enhancedTokenStar').hidden = !localDeclared;
+  byId('enhancedTokenBadge').textContent = localDeclared ? '本机模式必填' : '按需';
   document.querySelectorAll('.remote-required').forEach(function(star) {
     star.hidden = !required
   });
@@ -1786,6 +1819,8 @@ function updateModeUI() {
 function saveDraft() {
   const values = {};
   new FormData(byId('f')).forEach(function(value, key) {
+    // 增强凭据只用于本次 apply：不写进本地草稿，返回页面后需重新填写。
+    if (key === 'enhanced_token') return;
     values[key] = value
   });
   storageSet(DRAFT_KEY, JSON.stringify(values))
@@ -1828,11 +1863,15 @@ function collectPayload() {
   const payload = {};
   if (flat.user) payload.user = flat.user;
   if (flat.token) payload.token = flat.token;
+  if (flat.enhanced_token) payload.enhanced_token = flat.enhanced_token;
   // 多用户与注册 §2: mode.default 必填、不做默认推断；未选择时由
   // validateApplication() + radio required 阻止提交。
   payload.mode = {default: flat.mode};
   payload.root = flat.scratch_root ? {default: flat.scratch_root} : {};
-  payload.ssh = {default: ep(flat.host, flat.ssh_user, flat.jump_host, flat.jump_user, flat.ssh_proxy)};
+  const sshDefault = ep(flat.host, flat.ssh_user, flat.jump_host, flat.jump_user, flat.ssh_proxy);
+  if (flat.ssh_key_dir) sshDefault.key_dir = flat.ssh_key_dir;
+  if (flat.ssh_key) sshDefault.key = flat.ssh_key;
+  payload.ssh = {default: sshDefault};
   const daemon = ep(flat.daemon_host, flat.daemon_user, null, null, null);
   if (flat.daemon_port !== undefined) daemon.daemon_port = flat.daemon_port;
   if (flat.local_port !== undefined) daemon.local_port = flat.local_port;
@@ -1845,7 +1884,7 @@ function collectPayload() {
     Object.keys(flat).forEach(function(key) {
       if (key.indexOf(prefix) !== 0) return;
       const field = key.slice(prefix.length);
-      if (['mode', 'host', 'user', 'jump_host', 'jump_user', 'proxy', 'root', 'display', 'max_sessions'].indexOf(field) < 0) return;
+      if (['mode', 'host', 'user', 'jump_host', 'jump_user', 'proxy', 'key_dir', 'key', 'root', 'display', 'max_sessions'].indexOf(field) < 0) return;
       role[field] = field === 'max_sessions' ? Number(flat[key]) : flat[key]
     })
   });
@@ -1982,8 +2021,12 @@ function renderConfigSummary(data) {
 }
 
 function clearFieldErrors() {
-  ['user', 'host', 'ssh_user'].forEach(function(id) {
+  ['user', 'host', 'ssh_user', 'enhanced_token'].forEach(function(id) {
     byId(id).setCustomValidity('')
+  });
+  // role 级错误同样要能撤销：只清 user/host/ssh_user 会让 role 字段清空后仍卡住提交。
+  document.querySelectorAll('#f [id^="role_"]').forEach(function(node) {
+    if (node.setCustomValidity) node.setCustomValidity('')
   });
   byId('formError').hidden = true;
   byId('formError').textContent = ''
@@ -1998,11 +2041,14 @@ function validateApplication() {
   if (mode === 'remote') {
     if (!byId('host').value.trim()) byId('host').setCustomValidity('远程模式需要目标 SSH 主机。');
     if (!byId('ssh_user').value.trim()) byId('ssh_user').setCustomValidity('远程模式需要 SSH 用户。')
+    if (!byId('ssh_key').value.trim()) byId('ssh_key').setCustomValidity('远程模式需要 SSH 私钥文件名。')
+  }
+  if (localModeDeclared() && !byId('enhanced_token').value.trim()) {
+    byId('enhanced_token').setCustomValidity('本机模式需要增强凭据。')
   }
   ['gui', 'daemon', 'command', 'file', 'spectre'].forEach(function(name) {
-    const mode = (byId('role_' + name + '_mode') || {}).value;
-    if (mode !== 'local') return;
-    ['host', 'user', 'jump_host'].forEach(function(field) {
+    if (effectiveRoleMode(name) !== 'local') return;
+    ['host', 'user', 'jump_host', 'key_dir', 'key'].forEach(function(field) {
       const node = byId('role_' + name + '_' + field);
       if (node && node.value.trim()) node.setCustomValidity('mode=local 的 role 不能填写 ' + field);
     })
@@ -2750,7 +2796,8 @@ function renderRequestFailure(error, info) {
     });
     return
   }
-  if (info.step === 1 && error.status === 400) {
+  // 第 1 步的参数问题（含增强凭据 401）都回到表单，让用户就地修正后重提。
+  if (info.step === 1 && (error.status === 400 || error.status === 401)) {
     renderSteps(null);
     showForm(errorMessages(error).join('\n'));
     return
@@ -2908,6 +2955,9 @@ document.querySelectorAll('input[name="mode"]').forEach(function(radio) {
 });
 ['host', 'ssh_user', 'daemon_host', 'daemon_user', 'jump_host', 'jump_user'].forEach(function(id) {
   byId(id).addEventListener('input', updateModeUI)
+});
+['gui', 'daemon', 'command', 'file', 'spectre'].forEach(function(name) {
+  byId('role_' + name + '_mode').addEventListener('change', updateModeUI)
 });
 ['user', 'host', 'ssh_user'].forEach(function(id) {
   byId(id).addEventListener('input', function() {

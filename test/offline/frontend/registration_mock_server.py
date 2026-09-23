@@ -93,6 +93,8 @@ def _failed_report(*, token_ok: bool = True) -> dict[str, Any]:
 def _normalize_mock_request(request: dict[str, Any]) -> dict[str, Any]:
     """Flatten the production page payload for the mock-only view fields."""
     out = dict(request)
+    # 加强凭据只在 apply 时校验：不落盘、不回显（spec r22），mock 同样不保留。
+    out.pop("enhanced_token", None)
     mode = request.get("mode")
     if isinstance(mode, dict):
         out["mode"] = mode.get("default")

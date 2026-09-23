@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 from common.registry import RoleConfig, UserEntry, endpoint_key
+from common.ssh_credentials import resolve_credential
 
 
 @dataclass(frozen=True)
@@ -23,6 +24,8 @@ class ResolvedRole:
     proxy: str | None
     root: str
     key: str | None
+    credential_dir: str | None
+    credential_key: str | None
     expected_fingerprint: str | None
     max_sessions: int
 
@@ -60,6 +63,8 @@ def _resolve_role(entry: UserEntry, name: str, user: str) -> ResolvedRole:
             proxy=None,
             root=root,
             key=None,
+            credential_dir=None,
+            credential_key=None,
             expected_fingerprint=None,
             max_sessions=role.max_sessions,
         )
@@ -71,6 +76,10 @@ def _resolve_role(entry: UserEntry, name: str, user: str) -> ResolvedRole:
     jump_host = role.jump_host or dflt.jump_host
     jump_user = role.jump_user or dflt.jump_user
     proxy = role.proxy or dflt.proxy
+    credential = resolve_credential(
+        role.key_dir, role.key,
+        default_key_dir=dflt.key_dir, default_key=dflt.key,
+    )
     return ResolvedRole(
         name=name,
         mode=mode,
@@ -81,6 +90,8 @@ def _resolve_role(entry: UserEntry, name: str, user: str) -> ResolvedRole:
         proxy=proxy,
         root=root,
         key=endpoint_key(host, account, jump_host, jump_user, proxy),
+        credential_dir=credential[0] if credential else None,
+        credential_key=credential[1] if credential else None,
         expected_fingerprint=role.expected_fingerprint,
         max_sessions=role.max_sessions,
     )

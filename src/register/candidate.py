@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 from common.registry import RoleConfig, UserEntry, endpoint_key
+from common.ssh_credentials import resolve_credential
 
 _DEFAULT_ROOT = "~/.virtuoso-bridge"
 _DEFAULT_DAEMON_PORT = 65432
@@ -28,6 +29,8 @@ class CandidateRole:
     proxy: str | None
     root: str
     key: str | None
+    credential_dir: str | None
+    credential_key: str | None
     expected_fingerprint: str | None
     max_sessions: int
 
@@ -61,6 +64,7 @@ def _resolve_role(entry: UserEntry, name: str, user: str) -> CandidateRole:
         return CandidateRole(
             name=name, mode=mode, host=None, user=None, jump_host=None,
             jump_user=None, proxy=None, root=root, key=None,
+            credential_dir=None, credential_key=None,
             expected_fingerprint=None, max_sessions=role.max_sessions,
         )
     dflt = entry.ssh.default
@@ -69,10 +73,16 @@ def _resolve_role(entry: UserEntry, name: str, user: str) -> CandidateRole:
     jump_host = role.jump_host or dflt.jump_host
     jump_user = role.jump_user or dflt.jump_user
     proxy = role.proxy or dflt.proxy
+    credential = resolve_credential(
+        role.key_dir, role.key,
+        default_key_dir=dflt.key_dir, default_key=dflt.key,
+    )
     return CandidateRole(
         name=name, mode=mode, host=host, user=account,
         jump_host=jump_host, jump_user=jump_user, proxy=proxy, root=root,
         key=endpoint_key(host, account, jump_host, jump_user, proxy),
+        credential_dir=credential[0] if credential else None,
+        credential_key=credential[1] if credential else None,
         expected_fingerprint=role.expected_fingerprint,
         max_sessions=role.max_sessions,
     )
@@ -129,9 +139,16 @@ def validate_entry_shape(
             if any((configured.host, configured.user, configured.jump_host,
                     configured.jump_user, configured.proxy)):
                 errors.append(f"role {name} is local but has connection fields")
+            if configured.key_dir or configured.key:
+                errors.append(f"role {name} is local but has credential fields")
         else:
             if not role.host or not role.user:
                 errors.append(f"role {name} is remote but host/user is unresolved")
+            if not (role.credential_dir and role.credential_key):
+                errors.append(
+                    f"role {name} is remote but SSH credential (key_dir/key) "
+                    "is unresolved"
+                )
             if name != "spectre" and not configured.expected_fingerprint:
                 errors.append(f"role {name}.expected_fingerprint is required")
     daemon_port = entry.roles.daemon.daemon_port
@@ -153,7 +170,15 @@ def fingerprint_conflicts_candidate(entry: UserEntry, user: str) -> list[str]:
     for name in ("gui", "daemon", "command", "file", "spectre"):
         role = targets.role(name)
         if role.key and role.expected_fingerprint:
-            by_key.setdefault(role.key, []).append((name, role.expected_fingerprint))
+            # 共享 host-key 基准的前提 = 同 endpoint 且解析后凭据一致（路由设计 §4）
+            credential = (
+                f"{role.credential_dir}/{role.credential_key}"
+                if role.credential_dir and role.credential_key
+                else ""
+            )
+            by_key.setdefault(f"{role.key}|{credential}", []).append(
+                (name, role.expected_fingerprint)
+            )
     errors: list[str] = []
     for key, items in by_key.items():
         values = {fp for _, fp in items}

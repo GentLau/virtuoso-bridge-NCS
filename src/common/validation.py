@@ -13,6 +13,7 @@ ROLE_GROUP_NAME_RE = re.compile(r"^[a-z][a-z0-9_-]{0,63}$")
 ROLE_GROUP_MAX_BYTES = 16 * 1024
 ROLE_FIXED_FIELDS = frozenset({
     "mode", "host", "user", "jump_host", "jump_user", "proxy",
+    "key_dir", "key",
     "root", "expected_fingerprint", "max_sessions",
     "daemon_port", "local_port", "python", "expected_hostname",
     "expected_user", "display", "bin",
@@ -39,6 +40,16 @@ def validate_token(value: str) -> str:
     if not TOKEN_RE.fullmatch(value):
         raise ValueError("token format is invalid")
     return value
+
+
+def validate_key_name(value: str) -> str:
+    """Validate ``role.*.key``: a file name only, never a path (spec §5)."""
+    text = str(value or "")
+    if not text or text in (".", ".."):
+        raise ValueError("key must be a file name")
+    if "/" in text or "\\" in text or "\x00" in text:
+        raise ValueError("key must be a file name without directory components")
+    return text
 
 
 def validate_display(value: str | None) -> str | None:
@@ -131,6 +142,7 @@ __all__ = [
     "TOKEN_RE",
     "USER_RE",
     "validate_display",
+    "validate_key_name",
     "validate_role_groups",
     "validate_token",
     "validate_user_name",

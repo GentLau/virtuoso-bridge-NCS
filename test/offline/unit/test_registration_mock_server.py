@@ -102,6 +102,7 @@ class TestRegistrationMockServer(unittest.TestCase):
         self.assertIn('id="configSummaryCard"', page)
         self.assertIn('id="statusCard"', page)
         self.assertIn('id="flowGuide"', page)
+        self.assertIn('id="enhanced_token"', page)
         self.assertIn("配置值 / 探测回填值", page)
 
     def test_production_page_payload_shape_is_accepted(self):
@@ -287,6 +288,57 @@ class TestRegistrationMockServer(unittest.TestCase):
         })
         self.assertEqual(status, 400)
         self.assertIn("unknown mock scenario", data["error"])
+
+    def test_local_apply_payload_carries_enhanced_token_without_echo(self):
+        """spec r18–r22: 本机模式以 enhanced_token 提交加强凭据；不回显、不落盘。"""
+        status, data = self.srv.request("POST", "/api/register", {
+            "user": "local-cred",
+            "action": "apply",
+            "mode": {"default": "local"},
+            "ssh": {"default": {}},
+            "root": {},
+            "roles": {
+                "gui": {},
+                "daemon": {"daemon_port": 65432},
+                "command": {},
+                "file": {},
+                "spectre": {},
+            },
+            "enhanced_token": "admin-token-abc",
+        })
+        self.assertEqual(status, 200)
+        self.assertEqual(data["stage"], "applied")
+        self.assertNotIn("admin-token-abc", json.dumps(data))
+        flow = self.srv.server.flows["local-cred"]
+        self.assertNotIn("enhanced_token", flow.request)
+
+    def test_remote_apply_payload_carries_per_role_credentials(self):
+        """remote role 必须能解析出 key_dir/key；role 覆盖要原样到达服务端。"""
+        status, data = self.srv.request("POST", "/api/register", {
+            "user": "remote-cred",
+            "action": "apply",
+            "mode": {"default": "remote"},
+            "ssh": {"default": {
+                "host": "compute-a",
+                "user": "alice",
+                "key_dir": "~/.ssh",
+                "key": "id_ed25519",
+            }},
+            "root": {},
+            "roles": {
+                "gui": {},
+                "daemon": {"daemon_port": 65432},
+                "command": {"key_dir": "~/.ssh-ops", "key": "ops_ed25519"},
+                "file": {},
+                "spectre": {},
+            },
+        })
+        self.assertEqual(status, 200)
+        flow = self.srv.server.flows["remote-cred"]
+        self.assertEqual(flow.request["ssh"]["default"]["key_dir"], "~/.ssh")
+        self.assertEqual(flow.request["ssh"]["default"]["key"], "id_ed25519")
+        self.assertEqual(flow.request["roles"]["command"]["key_dir"], "~/.ssh-ops")
+        self.assertEqual(flow.request["roles"]["command"]["key"], "ops_ed25519")
 
 
 if __name__ == "__main__":

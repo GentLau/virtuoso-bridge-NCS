@@ -25,6 +25,7 @@ from common.registry import UserEntry
 from common.validation import (
     ROLE_FIXED_FIELDS,
     validate_display,
+    validate_key_name,
     validate_role_groups,
     validate_token,
     validate_user_name,
@@ -42,9 +43,17 @@ class RequestRole(BaseModel):
     jump_host: str | None = None
     jump_user: str | None = None
     proxy: str | None = None
+    #: role 级 SSH 凭据（客户端侧；remote 使用，local 不得提交）。
+    key_dir: str | None = None
+    key: str | None = None
     root: str | None = None
     max_sessions: StrictInt | None = Field(default=None, ge=1)
     expected_fingerprint: str | None = None
+
+    @field_validator("key")
+    @classmethod
+    def _validate_key(cls, value):
+        return validate_key_name(value) if value else value
 
     @model_validator(mode="after")
     def _validate_user_groups(self):
@@ -110,6 +119,14 @@ class RequestEndpoint(BaseModel):
     jump_host: str | None = None
     jump_user: str | None = None
     proxy: str | None = None
+    #: 各 role 缺省凭据（客户端侧）；key_dir 缺省 = ~/.ssh。
+    key_dir: str | None = None
+    key: str | None = None
+
+    @field_validator("key")
+    @classmethod
+    def _validate_key(cls, value):
+        return validate_key_name(value) if value else value
 
 
 class RequestSsh(BaseModel):
@@ -176,11 +193,15 @@ class RegistrationRequest(BaseModel):
         for name in ("gui", "daemon", "command", "file", "spectre"):
             role = getattr(self.roles, name)
             role_mode = role.mode or self.mode.default
-            conn = (role.host, role.user, role.jump_host, role.jump_user, role.proxy)
+            conn = (
+                role.host, role.user, role.jump_host, role.jump_user,
+                role.proxy, role.key_dir, role.key,
+            )
             if role_mode == "local":
                 if any(v for v in conn):
                     raise ValueError(
-                        f"role {name} is local: host/user/jump/proxy must not be set"
+                        f"role {name} is local: host/user/jump/proxy/key_dir/"
+                        "key must not be set"
                     )
             else:
                 host = role.host or self.ssh.default.host
@@ -189,6 +210,11 @@ class RegistrationRequest(BaseModel):
                     raise ValueError(f"role {name} is remote: host is required")
                 if not account:
                     raise ValueError(f"role {name} is remote: user is required")
+                if not (role.key or self.ssh.default.key):
+                    raise ValueError(
+                        f"role {name} is remote: SSH credential (key_dir/key) "
+                        "is required"
+                    )
         return self
 
 
@@ -235,6 +261,8 @@ class RegistrationState:
     errors: list[str] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
     report: ConnectivityReport | None = None
+    #: apply 时提供了有效 enhanced_token（内存态，绝不落盘/回显）。
+    enhanced_ok: bool = False
 
 
 __all__ = [

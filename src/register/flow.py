@@ -62,12 +62,100 @@ from common.deploy import deploy_files
 from common.remote_paths import identity_path
 from common.skill_client import SkillClient
 from common.ssh import SSHRunner
+from common.ssh_credentials import (
+    credential_identity,
+    credential_path,
+    public_key_fingerprint,
+    resolve_credential,
+)
 
 logger = logging.getLogger(__name__)
 
 _LOCAL_DEFAULT_PORT = 65432
 _BUSINESS_ROLES = ("gui", "daemon", "command", "file")
 _ALL_ROLES = ("gui", "daemon", "command", "file", "spectre")
+
+
+def _role_credentials(role, default) -> tuple[str, str] | None:
+    """Resolve one role's credential with the global ssh.default fallback."""
+    return resolve_credential(
+        role.key_dir,
+        role.key,
+        default_key_dir=default.key_dir,
+        default_key=default.key,
+    )
+
+
+def _request_credentials(request: RegistrationRequest) -> dict[str, tuple[str, str]]:
+    """role name -> (key_dir, key) for the remote roles of an apply declaration."""
+    out: dict[str, tuple[str, str]] = {}
+    for name in _ALL_ROLES:
+        role = getattr(request.roles, name)
+        if (role.mode or request.mode.default) == "local":
+            continue
+        resolved = _role_credentials(role, request.ssh.default)
+        if resolved:
+            out[name] = resolved
+    return out
+
+
+def request_credential_fingerprints(request: RegistrationRequest) -> dict[str, str]:
+    """role -> public key fingerprint, read from the client-side key files."""
+    out: dict[str, str] = {}
+    for name, (key_dir, key) in _request_credentials(request).items():
+        fingerprint = public_key_fingerprint(key_dir, key)
+        if fingerprint:
+            out[name] = fingerprint
+    return out
+
+
+def entry_credential_fingerprints(entry: UserEntry) -> dict[str, str]:
+    """role -> public key fingerprint for one registered entry."""
+    out: dict[str, str] = {}
+    for name in _ALL_ROLES:
+        role = getattr(entry.roles, name)
+        if (role.mode or entry.mode.default) == "local":
+            continue
+        resolved = _role_credentials(role, entry.ssh.default)
+        if not resolved:
+            continue
+        fingerprint = public_key_fingerprint(*resolved)
+        if fingerprint:
+            out[name] = fingerprint
+    return out
+
+
+def credential_reuse_conflicts(
+    registry: Registry, request: RegistrationRequest
+) -> dict[str, list[str]]:
+    """fingerprint -> registered users sharing the candidate's public key."""
+    wanted = set(request_credential_fingerprints(request).values())
+    if not wanted:
+        return {}
+    conflicts: dict[str, list[str]] = {}
+    for user, entry in registry.entries():
+        for fingerprint in entry_credential_fingerprints(entry).values():
+            if fingerprint in wanted:
+                conflicts.setdefault(fingerprint, []).append(user)
+    return conflicts
+
+
+def entry_credential_details(entry: UserEntry) -> list[dict[str, str]]:
+    """Report one entry's credentials (identifier + public key fingerprint)."""
+    details: list[dict[str, str]] = []
+    for name in _ALL_ROLES:
+        role = getattr(entry.roles, name)
+        if (role.mode or entry.mode.default) == "local":
+            continue
+        resolved = _role_credentials(role, entry.ssh.default)
+        if not resolved:
+            continue
+        details.append({
+            "role": name,
+            "identifier": credential_identity(*resolved),
+            "fingerprint": public_key_fingerprint(*resolved) or "",
+        })
+    return details
 
 
 class RegistrationProbeError(RuntimeError):
@@ -151,7 +239,13 @@ def daemon_scope_of_entry(entry: UserEntry, user: str) -> str:
     return canonical_host(targets.daemon.host) or "local"
 
 
-def validate_local(registry: Registry, request: RegistrationRequest, token: str | None = None) -> list[str]:
+def validate_local(
+    registry: Registry,
+    request: RegistrationRequest,
+    token: str | None = None,
+    *,
+    enhanced_ok: bool = False,
+) -> list[str]:
     """Pure-local checks: user/token de-dup + port de-dup with correct scope.
 
     ``daemon_port`` is unique **per daemon target host** (two hosts may use the
@@ -179,6 +273,27 @@ def validate_local(registry: Registry, request: RegistrationRequest, token: str 
         if entry.roles.daemon.local_port is not None and local_port is not None:
             if entry.roles.daemon.local_port == local_port:
                 errors.append(f"local port {local_port} conflicts with user {name!r}")
+    # r18+: 每个 remote role 必须能指向客户端侧可读的公钥；凭据按公钥指纹查重，
+    # 命中他人已登记凭据时必须有 enhanced_token（管理员或任一 holder）。
+    for name, (key_dir, key) in _request_credentials(request).items():
+        path = credential_path(key_dir, key)
+        if not path.is_file():
+            errors.append(f"credential for role {name} not found: {path}")
+            continue
+        if public_key_fingerprint(key_dir, key) is None:
+            errors.append(
+                f"cannot read public key for role {name}: {path} (expected "
+                f"{path}.pub)"
+            )
+    if not enhanced_ok:
+        conflicts = credential_reuse_conflicts(registry, request)
+        if conflicts:
+            users = sorted({user for users in conflicts.values() for user in users})
+            errors.append(
+                "credential already registered by "
+                + ", ".join(users)
+                + "; provide enhanced_token (admin or one of the holders)"
+            )
     return errors
 
 
@@ -226,6 +341,8 @@ def _build_entry(request: RegistrationRequest, token: str) -> UserEntry:
                 jump_host=request.ssh.default.jump_host,
                 jump_user=request.ssh.default.jump_user,
                 proxy=request.ssh.default.proxy,
+                key_dir=request.ssh.default.key_dir,
+                key=request.ssh.default.key,
             )
         ),
         root=RootConfig(default=request.root.default),
@@ -1122,7 +1239,10 @@ class RegistrationFlow:
         state = self._ensure("applied", 2)
         if state is None:
             return self.state
-        errors = validate_local(self.registry, state.request, state.token)
+        errors = validate_local(
+            self.registry, state.request, state.token,
+            enhanced_ok=state.enhanced_ok,
+        )
         if not errors:
             errors = self._prepare_local_port(state)
         if not errors:

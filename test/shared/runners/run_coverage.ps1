@@ -149,6 +149,7 @@ Invoke-Step 'one-shot channel burst' { python -m coverage run --branch --source=
 # the only step that measures the Paramiko connect/forward paths, which the
 # offline fakes cannot reach.
 Invoke-Step 'ssh backends semi-real' { python -m coverage run --branch --source=src --append test/semi/transport/ssh_backend_semi_tb.py --host $WslHost --out test/artifacts/evidence/ssh-backend-semi.json | Out-Null }
+Invoke-Step 'role credential isolation semi-real' { python -m coverage run --branch --source=src --append test/semi/transport/role_credential_isolation_tb.py --host $WslHost --out test/artifacts/evidence/role-credential-isolation.json | Out-Null }
 
 # ---- upper-layer package TBs -------------------------------------------------------
 # Run through the *direct* transport on purpose: the package code then executes

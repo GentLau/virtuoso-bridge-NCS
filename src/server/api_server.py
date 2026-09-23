@@ -473,12 +473,14 @@ def main(argv: list[str] | None = None) -> None:
         f"({len(dispatch_module.operations())} operations, "
         f"business_thread_pool_size={pool_size})"
     )
+    loop_thread: threading.Thread | None = None
     if args.supervised:
-        # stdout 留给 VB-EVENT 控制事件；普通日志走 stderr
         print(banner, file=sys.stderr)
-        threading.Thread(
+        # stdout 留给 VB-EVENT 控制事件；普通日志走 stderr
+        loop_thread = threading.Thread(
             target=_supervised_loop, args=(server, middle), daemon=True
-        ).start()
+        )
+        loop_thread.start()
     else:
         print(banner)
     try:
@@ -486,6 +488,10 @@ def main(argv: list[str] | None = None) -> None:
     except KeyboardInterrupt:
         pass
     finally:
+        # server.shutdown() lets serve_forever() return first; wait for the
+        # control loop to finish so drain_done is written before we exit.
+        if loop_thread is not None:
+            loop_thread.join(timeout=DRAIN_TIMEOUT + 5)
         server.server_close()
         middle.close()
 

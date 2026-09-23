@@ -8,6 +8,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src"))
 
 from common.registry import UserEntry
 from register.candidate import validate_commit_shape
+from _ssh_cred import make_credential
+
+
+_KEY_DIR, _KEY = make_credential()
 
 
 def local_entry():
@@ -23,6 +27,7 @@ def local_entry():
 def remote_entry():
     e = UserEntry(token="t", mode="remote")
     e.ssh.default.host = "server-a"; e.ssh.default.user = "u"
+    e.ssh.default.key_dir = _KEY_DIR; e.ssh.default.key = _KEY
     e.roles.daemon.daemon_port = 65081; e.roles.daemon.local_port = 65082
     e.roles.daemon.python = "/usr/bin/python3"
     for name in ("gui", "daemon", "command", "file", "spectre"):

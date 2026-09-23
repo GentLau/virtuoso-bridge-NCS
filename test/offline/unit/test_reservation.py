@@ -22,6 +22,10 @@ from register.models import RegistrationRequest
 from register.reservation import Reservation, ReservationTable
 from common.registry import UserEntry, load_registry
 from common.paths import registry_path, override_work_dir_for_tests
+from _ssh_cred import make_credential
+
+
+_KEY_DIR, _KEY = make_credential()
 
 
 def _table():
@@ -93,7 +97,8 @@ class TestDaemonScope(unittest.TestCase):
     def test_request_scope_uses_host_or_local(self):
         remote = RegistrationRequest(
             mode="remote", user="alice", token="t1",
-            ssh={"default": {"host": " Server-A. ", "user": "alice"}},
+            ssh={"default": {"host": " Server-A. ", "user": "alice",
+                "key_dir": _KEY_DIR, "key": _KEY}},
         )
         self.assertEqual(daemon_scope_of_request(remote), "server-a")
         local = RegistrationRequest(mode="local", user="bob", token="t2")
@@ -110,7 +115,8 @@ class TestFlowReservationLifecycle(unittest.TestCase):
     def _request(self, user="alice", token="t1", port=65081):
         return RegistrationRequest(
             mode="remote", user=user, token=token,
-            ssh={"default": {"host": "server-a", "user": "alice"}},
+            ssh={"default": {"host": "server-a", "user": "alice",
+                                 "key_dir": _KEY_DIR, "key": _KEY}},
             roles={"daemon": {"daemon_port": port}},
         )
 

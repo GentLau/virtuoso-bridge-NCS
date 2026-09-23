@@ -26,6 +26,7 @@ from common.remote_paths import RemotePathError
 from transport.budgets import CapacityExceeded, TokenBudgets
 from transport.roles import ResolvedRole, ResolvedTargets
 from common.ssh import SSHRunner
+from common.ssh_credentials import credential_identity
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +39,20 @@ def _remaining(deadline: float | None, fallback: float | None) -> float | None:
 
 def _norm_host(host: str | None) -> str:
     return (host or "").strip().rstrip(".").lower()
+
+
+def _runner_cache_key(role: ResolvedRole) -> str:
+    """Endpoint + resolved credential: same endpoint with a different key must
+    not share one connection (路由设计 §4)."""
+    if role.credential_dir and role.credential_key:
+        return f"{role.key}|{credential_identity(role.credential_dir, role.credential_key)}"
+    return f"{role.key}|"
+
+
+def _runner_key_path(role: ResolvedRole) -> Path | None:
+    if role.credential_dir and role.credential_key:
+        return Path(credential_identity(role.credential_dir, role.credential_key))
+    return None
 
 
 def remote_root_path(remote_path: str, root: str) -> str:
@@ -92,11 +107,12 @@ class RemoteClient:
         """One SSHRunner per resolved remote endpoint (single-flight)."""
         assert role.mode == "remote", f"role {role.name} is local; no SSH runner"
         assert role.key is not None
-        runner = self._runners.get(role.key)
+        cache_key = _runner_cache_key(role)
+        runner = self._runners.get(cache_key)
         if runner is not None:
             return runner
         with self._runner_lock:
-            runner = self._runners.get(role.key)
+            runner = self._runners.get(cache_key)
             if runner is not None:
                 return runner
             jump_host = role.jump_host
@@ -106,11 +122,12 @@ class RemoteClient:
             kwargs.update(
                 host=role.host, user=role.user, jump_host=jump_host,
                 jump_user=role.jump_user, proxy_url=role.proxy,
+                ssh_key_path=_runner_key_path(role),
                 max_sessions=self.budgets.endpoint_limit(role.key),
                 work_dir=self._role_work_dir(role),
             )
             runner = SSHRunner(**kwargs)
-            self._runners[role.key] = runner
+            self._runners[cache_key] = runner
             return runner
 
     def _one_shot_runner(self, role: ResolvedRole) -> SSHRunner:
@@ -120,11 +137,12 @@ class RemoteClient:
             # Paramiko multiplexes a session per call; the regular runner is
             # already parallel, so no second connection/runner is needed.
             return self._runner(role)
-        runner = self._one_shot_runners.get(role.name)
+        cache_key = _runner_cache_key(role)
+        runner = self._one_shot_runners.get(cache_key)
         if runner is not None:
             return runner
         with self._runner_lock:
-            runner = self._one_shot_runners.get(role.name)
+            runner = self._one_shot_runners.get(cache_key)
             if runner is not None:
                 return runner
             jump_host = role.jump_host
@@ -134,12 +152,13 @@ class RemoteClient:
             kwargs.update(
                 host=role.host, user=role.user, jump_host=jump_host,
                 jump_user=role.jump_user, proxy_url=role.proxy,
+                ssh_key_path=_runner_key_path(role),
                 max_sessions=self.budgets.endpoint_limit(role.key),
                 persistent_shell=False,  # 一次性命令，无常驻 shell
                 work_dir=self._role_work_dir(role),
             )
             runner = SSHRunner(**kwargs)
-            self._one_shot_runners[role.name] = runner
+            self._one_shot_runners[cache_key] = runner
             return runner
 
     def _channel_denial(self, role: ResolvedRole) -> str:
