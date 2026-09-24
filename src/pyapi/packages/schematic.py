@@ -405,6 +405,11 @@ def _open_edit_skill(library: str, cell: str, view: str) -> str:
     SKILL global ``vbSchemCv`` so later atoms and the save step can reuse it.
 
     Returns ``"open-ok"`` / ``"missing"`` / ``"type-mismatch"`` / ``"locked"``.
+
+    不变量：``vbSchemCv`` 是会话级全局、跨多次 ``execute_skill`` 存活，
+    依赖"一个 token 独占一个 CIW"（同一 CIW 的 SKILL 串行且不共享）；
+    若将来多 token 共用一个 CIW，须改按 token 命名全局，或把整批命令与
+    保存收进单条 SKILL。
     """
     return (
         f'let((vbObj vbCv vbEdit) vbObj = ddGetObj({_q(library)} {_q(cell)} {_q(view)}) '
@@ -720,18 +725,24 @@ class Package:
             run = self.middle.execute_skill(skill, timeout=request.timeout, token=request.token)
             steps.append(_step(f"command:{command['op']}", run.ok, run))
             if not run.ok:
-                self.middle.execute_skill(
+                close_run = self.middle.execute_skill(
                     _close_edit_skill(), timeout=request.timeout, token=request.token,
                 )
-                return Result(False, steps, "; ".join(run.errors) or f"command {command['op']} failed")
+                detail = "; ".join(run.errors) or f"command {command['op']} failed"
+                if not close_run.ok:
+                    detail += "; additionally, releasing the edit handle failed: " + (
+                        "; ".join(close_run.errors) or "unknown")
+                return Result(False, steps, detail)
         save_skill = _save_skill()
         saved = self.middle.execute_skill(save_skill, timeout=request.timeout, token=request.token)
         steps.append(_step("check_and_save", saved.ok, saved))
         if not saved.ok or "saved" not in (saved.output or ""):
             if not saved.ok:
-                self.middle.execute_skill(
+                close_run = self.middle.execute_skill(
                     _close_edit_skill(), timeout=request.timeout, token=request.token,
                 )
+                if not close_run.ok:
+                    steps.append(_step("close_edit", False, close_run))
             return Result(
                 False, steps,
                 "; ".join(saved.errors) or (saved.output or "").strip()
@@ -804,9 +815,11 @@ class Package:
         steps.append(_step("check_and_save", saved.ok, saved))
         if not saved.ok or "saved" not in (saved.output or ""):
             if not saved.ok:
-                self.middle.execute_skill(
+                close_run = self.middle.execute_skill(
                     _close_edit_skill(), timeout=request.timeout, token=request.token,
                 )
+                if not close_run.ok:
+                    steps.append(_step("close_edit", False, close_run))
             return Result(
                 False, steps,
                 "; ".join(saved.errors) or (saved.output or "").strip()

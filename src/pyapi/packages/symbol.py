@@ -360,6 +360,9 @@ class Package:
 
         Returns ``"open-ok"`` or ``"locked"`` (missing/mismatch are already
         covered by ``_require_view_exists``).
+
+        不变量：``vbSymCv`` 是会话级全局，依赖"一个 token 独占一个 CIW"；
+        多 token 共用 CIW 时须改按 token 命名全局或收进单条 SKILL。
         """
         return (
             "let((vbEdit) "
@@ -496,8 +499,11 @@ class Package:
             run = self._skill(expr, request.token, request.timeout)
             steps.append(_step(f"command:{command['op']}", run.ok, run))
             if not run.ok:
-                self._skill(self._close_edit_expr(), request.token, request.timeout)
+                close_run = self._skill(self._close_edit_expr(), request.token, request.timeout)
                 detail = "; ".join(run.errors) or f"command {command['op']} failed"
+                if not close_run.ok:
+                    detail += "; additionally, releasing the edit handle failed: " + (
+                        "; ".join(close_run.errors) or "unknown")
                 return Result(
                     False, steps,
                     f"{detail} (commands applied: {index}/{len(planned)}; "
@@ -511,7 +517,9 @@ class Package:
         )
         steps.append(_step("check_and_save", saved.ok, saved))
         if not saved.ok:
-            self._skill(self._close_edit_expr(), request.token, request.timeout)
+            close_run = self._skill(self._close_edit_expr(), request.token, request.timeout)
+            if not close_run.ok:
+                steps.append(_step("close_edit", False, close_run))
             return Result(False, steps, "; ".join(saved.errors) or "symbol check/save failed")
         return Result(True, steps, None, {"applied": len(request.commands)})
 
@@ -547,7 +555,9 @@ class Package:
             )
             steps.append(_step("check_and_save", run.ok, run))
             if not run.ok:
-                self._skill(self._close_edit_expr(), request.token, request.timeout)
+                close_run = self._skill(self._close_edit_expr(), request.token, request.timeout)
+                if not close_run.ok:
+                    steps.append(_step("close_edit", False, close_run))
                 return Result(False, steps, "; ".join(run.errors) or "symbol check/save failed")
             return Result(True, steps, None, {"saved": True})
         except Exception as exc:  # noqa: BLE001

@@ -425,7 +425,11 @@ class Package:
         )
 
     def _open_edit_expr(self, request: Any) -> str:
-        """Open for edit once and keep the handle in the global ``vbLayoutCv``."""
+        """Open for edit once and keep the handle in the global ``vbLayoutCv``.
+
+        不变量：``vbLayoutCv`` 是会话级全局，依赖"一个 token 独占一个 CIW"；
+        多 token 共用 CIW 时须改按 token 命名全局或收进单条 SKILL。
+        """
         return (
             "let((vbEdit) "
             f"vbEdit = {self._open_expr(request.library, request.cell, request.view, request.view_type, 'a')} "
@@ -543,8 +547,11 @@ class Package:
             run = self._skill(expr, request.token, request.timeout)
             steps.append(_step(f"command:{command['op']}", run.ok, run))
             if not run.ok:
-                self._skill(self._close_edit_expr(), request.token, request.timeout)
+                close_run = self._skill(self._close_edit_expr(), request.token, request.timeout)
                 detail = "; ".join(run.errors) or f"command {command['op']} failed"
+                if not close_run.ok:
+                    detail += "; additionally, releasing the edit handle failed: " + (
+                        "; ".join(close_run.errors) or "unknown")
                 return Result(
                     False, steps,
                     f"{detail} (commands applied: {index}/{len(planned)}; "
@@ -555,7 +562,9 @@ class Package:
         steps.append(_step("dbSave", saved.ok, saved))
         if not saved.ok or "saved" not in (saved.output or ""):
             if not saved.ok:
-                self._skill(self._close_edit_expr(), request.token, request.timeout)
+                close_run = self._skill(self._close_edit_expr(), request.token, request.timeout)
+                if not close_run.ok:
+                    steps.append(_step("close_edit", False, close_run))
             return Result(False, steps, "; ".join(saved.errors) or "layout save failed")
         return Result(True, steps, None, {"applied": len(request.commands)})
 
