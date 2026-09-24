@@ -3164,6 +3164,9 @@ class Package:
                 "signals": signals,
             })
         except Exception as exc:  # noqa: BLE001
+            self._close_if_created(
+                session, session_created, request.token, request.timeout, steps,
+            )
             return Result(False, steps, f"{type(exc).__name__}: {exc}")
 
     def close_waveform_gui(self, request: CloseWaveformRequest) -> Result:

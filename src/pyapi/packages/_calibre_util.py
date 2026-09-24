@@ -157,6 +157,11 @@ _DRC_LEGACY_RULE = re.compile(r"^(?:RESULT|CHECK)\s+(\S+)\s+(\d+)", re.M)
 _LVS_STATUS = re.compile(r"LVS completed\.\s*([A-Za-z ]+?)(?:\.|\s*$)", re.I)
 _LVS_TABLE = re.compile(r"^\s*([A-Za-z][A-Za-z ]*?)\s*:\s+(\d+)\s+(\d+)\s*\*?\s*$", re.M)
 _LVS_COUNT = re.compile(r"^\s*(\w[\w ]*?)\s*=\s*(\d+)\s*$", re.M)
+_LVS_VERDICTS = {
+    "NOT COMPARED": "not_compared",
+    "INCORRECT": "incorrect",
+    "CORRECT": "correct",
+}
 _PEX_WARN = re.compile(r"xRC Warnings\s*=\s*(\d+)")
 _PEX_ERR = re.compile(r"xRC Errors\s*=\s*(\d+)")
 _PEX_NETLIST = re.compile(r"PEX NETLIST FILE\s*=\s*(\S+)")
@@ -167,6 +172,10 @@ _LOG_PEX_ERR = re.compile(r"xRC Errors\s*=\s*(\d+)")
 _LOG_PEX_WARN = re.compile(r"xRC Warnings\s*=\s*(\d+)")
 
 
+def _normalize_lvs_verdict(raw: str) -> str:
+    return _LVS_VERDICTS.get(raw.strip().upper(), "unknown")
+
+
 def parse_log_counters(text: str) -> dict[str, Any]:
     """从工具日志里抠出稳定计数（DRC/LVS/PEX 三者通用）。"""
     counters: dict[str, Any] = {}
@@ -175,7 +184,7 @@ def parse_log_counters(text: str) -> dict[str, Any]:
     if match := _LOG_RESULTS.search(text):
         counters["total_results"] = int(match.group(1))
     if match := _LOG_LVS.search(text):
-        counters["lvs_status"] = match.group(1).lower()
+        counters["lvs_status"] = _normalize_lvs_verdict(match.group(1))
     if match := _LOG_PEX_ERR.search(text):
         counters["pex_errors"] = int(match.group(1))
     if match := _LOG_PEX_WARN.search(text):
@@ -273,11 +282,7 @@ def parse_lvs_report(text: str, *, limit: int = 20) -> dict[str, Any]:
             if candidate in text.upper():
                 raw_status = candidate
                 break
-    status = {
-        "NOT COMPARED": "not_compared",
-        "INCORRECT": "incorrect",
-        "CORRECT": "correct",
-    }.get(raw_status, "unknown")
+    status = _normalize_lvs_verdict(raw_status)
     counts: dict[str, int] = {}
     for name, layout, source in _LVS_TABLE.findall(text):
         key = name.strip().lower().replace(" ", "_")

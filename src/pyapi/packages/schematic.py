@@ -287,7 +287,7 @@ def _read_skill(request: ReadRequest) -> str:
         f'cv = dbOpenCellViewByType({_q(request.library)} {_q(request.cell)} '
         f'{_q(request.view)} "schematic" "r")'
     )
-    parts.append('if(!cv "ERROR" progn(')
+    parts.append('if(!cv "ERROR" unwindProtect(progn(')
     parts.append('vbOut = ""')
 
     # INSTANCES (always emitted; filters may reduce it to zero)
@@ -394,9 +394,8 @@ def _read_skill(request: ReadRequest) -> str:
             '__obj~>theLabel __obj~>xy __obj~>orient __obj~>justify __obj~>font __obj~>height)))'
         )
     parts.append('vbOut = strcat(vbOut "END\\n")')
-    parts.append('dbClose(cv)')
     parts.append('vbOut)')
-    parts.append('))')
+    parts.append('progn(when(cv dbClose(cv)))))')
     return "\n".join(parts)
 
 # ---- write atoms -------------------------------------------------------------
@@ -411,10 +410,10 @@ def _open_edit_skill(library: str, cell: str, view: str) -> str:
         f'let((vbObj vbCv vbEdit) vbObj = ddGetObj({_q(library)} {_q(cell)} {_q(view)}) '
         f'if(vbObj then progn('
         f'vbCv = dbOpenCellViewByType({_q(library)} {_q(cell)} {_q(view)} "schematic" "r") '
-        f'unless(vbCv "type-mismatch") '
+        f'if(!vbCv then "type-mismatch" else progn('
         f'when(vbCv dbClose(vbCv)) '
         f'vbEdit = dbOpenCellViewByType({_q(library)} {_q(cell)} {_q(view)} "schematic" "a") '
-        f'if(vbEdit then vbSchemCv = vbEdit "open-ok" else "locked")) '
+        f'if(vbEdit then vbSchemCv = vbEdit "open-ok" else "locked")))) '
         'else "missing"))'
     )
 
@@ -695,6 +694,15 @@ class Package:
         if not isinstance(request.commands, list) or not request.commands:
             raise ValueError("commands must be a non-empty list")
         steps: list[dict[str, Any]] = []
+        planned: list[tuple[int, dict[str, Any], str]] = []
+        for index, command in enumerate(request.commands):
+            if not isinstance(command, dict) or "op" not in command:
+                return Result(False, steps, f"command {index} must be an object with op")
+            try:
+                skill = _atomic_skill(command["op"], command)
+            except Exception as exc:  # noqa: BLE001 - structural command error
+                return Result(False, steps, f"command {index} invalid: {exc}")
+            planned.append((index, command, skill))
         opened = self.middle.execute_skill(
             _open_edit_skill(request.library, request.cell, request.view),
             timeout=request.timeout, token=request.token,
@@ -708,13 +716,7 @@ class Package:
                 False, steps,
                 _open_failure(state, request.library, request.cell, request.view),
             )
-        for index, command in enumerate(request.commands):
-            if not isinstance(command, dict) or "op" not in command:
-                return Result(False, steps, f"command {index} must be an object with op")
-            try:
-                skill = _atomic_skill(command["op"], command)
-            except Exception as exc:  # noqa: BLE001 - structural command error
-                return Result(False, steps, f"command {index} invalid: {exc}")
+        for index, command, skill in planned:
             run = self.middle.execute_skill(skill, timeout=request.timeout, token=request.token)
             steps.append(_step(f"command:{command['op']}", run.ok, run))
             if not run.ok:

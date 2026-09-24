@@ -309,6 +309,11 @@ class TestPackageFlow(unittest.TestCase):
         with self.assertRaises(ValueError):
             pkg.read(S.ReadRequest(token="t", library="L", cell="C", timeout=0))
 
+    def test_read_skill_closes_on_error_paths(self):
+        skill = S._read_skill(S.ReadRequest(token="t", library="L", cell="C"))
+        self.assertIn("unwindProtect", skill)
+        self.assertIn("progn(when(cv dbClose(cv)))", skill)
+
     def test_write_runs_each_command_then_saves(self):
         middle = FakeMiddle(ok("open-ok"), ok("db:1"), ok("saved"))
         pkg = S.Package(middle)
@@ -351,12 +356,14 @@ class TestPackageFlow(unittest.TestCase):
             token="t", library="L", cell="C", commands=[{"noop": 1}]))
         self.assertFalse(bad_cmd.ok)
         self.assertIn("must be an object with op", bad_cmd.error)
+        self.assertEqual(pkg.middle.calls, [], "非法命令不得触发任何 SKILL（含 open）")
 
         pkg = self._pkg(ok("open-ok"), ok("x"))
         unknown = pkg.write(S.WriteRequest(
             token="t", library="L", cell="C", commands=[{"op": "explode"}]))
         self.assertFalse(unknown.ok)
         self.assertIn("command 0 invalid", unknown.error)
+        self.assertEqual(pkg.middle.calls, [], "无效原子不得触发任何 SKILL（含 open）")
 
         pkg = self._pkg(fail("no such cell"))
         opened = pkg.write(S.WriteRequest(

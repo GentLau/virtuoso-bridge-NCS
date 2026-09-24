@@ -333,6 +333,23 @@ class TestReadResultsFlow(unittest.TestCase):
         self.assertFalse(result.ok)
         self.assertIn("no PSF logFile", result.error)
 
+    def test_open_waveform_failure_closes_created_session(self):
+        """R4 回归：新建了只读 session 后流程失败，必须把 session 关掉。"""
+        middle = FakeMiddle()
+        middle.skill_script = [
+            ("maeGetSessions", "nil"),
+            ("maeOpenSetup", '"fnxSession1"'),
+            ("axlGetResultsLocation", '"/res/other"'),
+        ]
+        result = M.Package(middle).open_waveform_gui(M.OpenWaveformRequest(
+            **base_fields(), history="h1", signals=["vout"],
+        ))
+        self.assertFalse(result.ok)
+        self.assertIn("no PSF logFile", result.error)
+        self.assertTrue(any("maeCloseSession" in code
+                            for _kind, code in middle.calls if _kind == "skill"),
+                        "created session must be closed on failure")
+
 
 class TestExportFlow(unittest.TestCase):
     @classmethod

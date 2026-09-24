@@ -92,7 +92,7 @@ def generate_skill(
         "vbOriginalTerms vbOriginalOrder vbBackupCv vbBackupObj vbSortChanged vbCleanup "
         "vbCleanupFailures vbBodyResult vbBodyAttempt vbBodyFailure vbResult vbBackupReady "
         "vbInstallAttempted vbInstalled vbCommitOk vbRollback vbRollbackSucceeded "
-        "vbTargetOpenCv) "
+        "vbTargetOpenCv vbTargetEditCv) "
         f'vbTargetObj = ddGetObj("{escaped_lib}" "{escaped_cell}" "{escaped_symbol_view}") '
         "vbReplacing = if(vbTargetObj t nil) "
         'vbAction = if(vbReplacing "replaced" "created") '
@@ -145,8 +145,6 @@ def generate_skill(
         f'"{escaped_symbol_view}") '
         "when(vbTargetOpenCv && (vbTargetOpenCv~>mode == \"a\" || "
         "vbTargetOpenCv~>mode == \"w\") error(\"target symbol is open in edit mode\")) "
-        "when(vbTargetOpenCv errset(dbClose(vbTargetOpenCv) nil)) "
-        "vbTargetOpenCv = nil "
         "when(vbReplacing "
         f'vbBackupSourceCv = dbOpenCellViewByType("{escaped_lib}" "{escaped_cell}" '
         f'"{escaped_symbol_view}" "schematicSymbol" "r") '
@@ -178,7 +176,12 @@ def generate_skill(
         "unless(member(vbExpectedTerm vbFinalTerms) "
         'error("installed symbol terminals mismatch"))) '
         'unless(equal(vbExpectedOrder vbFinalOrder) error("installed symbol pin order mismatch")) '
-        'unless(dbSave(vbTargetCv) error("installed symbol save failed")) '
+        f'vbTargetEditCv = dbOpenCellViewByType("{escaped_lib}" "{escaped_cell}" '
+        f'"{escaped_symbol_view}" "schematicSymbol" "a") '
+        'unless(vbTargetEditCv error("target symbol edit open failed")) '
+        'unless(dbSave(vbTargetEditCv) error("installed symbol save failed")) '
+        'unless(dbClose(vbTargetEditCv) error("target symbol edit close failed")) '
+        "vbTargetEditCv = nil "
         'unless(dbClose(vbTargetCv) error("installed symbol close failed")) '
         "vbTargetCv = nil "
         'unless(dbClose(vbTempCv) error("temporary symbol close failed")) '
@@ -195,6 +198,7 @@ def generate_skill(
         f'{_cleanup_close_skill("vbTempCv", "temporary symbol cleanup close failed")}'
         f'{_cleanup_close_skill("vbBackupSourceCv", "symbol backup source cleanup close failed")}'
         f'{_cleanup_close_skill("vbBackupCv", "symbol backup cleanup close failed")}'
+        f'{_cleanup_close_skill("vbTargetEditCv", "target symbol edit cleanup close failed")}'
         f'vbTempObj = ddGetObj("{escaped_lib}" "{escaped_cell}" "{escaped_temp_view}") '
         "when(vbTempObj "
         "vbCleanup = errset(ddDeleteObj(vbTempObj) nil) "
