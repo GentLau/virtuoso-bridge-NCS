@@ -329,3 +329,52 @@ MM6 OUT IN VDD VDD pch l=180.0n w=8u m=1
    PEX 拆出 `pdb_mode`/`fmt_mode`/step 开关并写 `PEX NETLIST` 输出格式；launcher 记录每段 rc。
 3. **spec/文档**：`spec/design-concepts/上层/12-calibre.md` 的“验收/不做”部分需要按官方机制更新
    （例如明确 source netlist 的两条官方来源：调用方提供 / Calibre 官方导出链路）。
+
+## 8. 落地 реализации（2026-09-24，上层）
+
+调查结论已落成业务操作 `calibre.export_cdl`（`src/pyapi/packages/calibre.py`，spec `上层/12-calibre.md §4.6`）：
+
+| 项 | 值 |
+|---|---|
+| si.env | `simSimulator="auCdl"`、`simViewList='("auCdl" "schematic")`、`simStopList='("auCdl")`、`hnlNetlistFileName=<cell>.cdl`、**`checkCAPPERI = nil`** |
+| .simrc | 同样注入 `checkCAPPERI = nil`（两处任一即可，双保险） |
+| cds.lib | 默认取 CIW `getWorkingDir()/cds.lib`（`si` 需要），可显式 `cds_lib` 覆盖；复制进 run dir，不改调用方文件 |
+| 命令 | `CDS_Netlisting_Mode=Analog si . -batch -command netlist -cdslib <run_dir>/cds.lib` |
+| 判定 | rc=0 **且**产物非空；失败回带 si.log 尾 |
+| 返回 | `{run_dir, netlist_path, netlist_name, bytes, cds_lib, log_path}` |
+
+真机实测（token `vb-vblog`，wsl-gent，direct dispatch）：
+
+- `CMP_LIB/inv2` → 680 B，含 `.SUBCKT inv2 IN OUT VDD VSS` + `MM5/MM6` 器件行（`nch/pch`）；
+- `CMP_LIB/cmp`、`CMP_LIB/cmp_top`（层次）→ 各 1166/1476 B，子电路实例为 auCdl 形态 `XI0 … / inv2`；
+- **闭环**：`export_cdl(CMP_LIB/inv2)` 的 CDL + `/home/Gent/project/test/inv2.gds` 喂 `calibre.lvs`
+  → `status=completed`，`read_results.summary.status = correct`（P-069 的"源网表从哪来"在业务包侧闭环）。
+
+## 9. runset / control-file 实测（推翻 §5.4 的一处假设）
+
+对"我们不接 runset，参数怎么改"这个问题做了三组真机对照（PDK deck `/opt/eda/.../Calibre/lvs/calibre.lvs`）：
+
+| # | control file 形态 | 结果 |
+|---|---|---|
+| 1 | `INCLUDE <deck>` + `LAYOUT PATH/SOURCE PATH`（GUI 文档的"control file 优先"形态） | **覆盖不生效**：仍找 deck 的 `lvs_top.cdl`（`Can not open source netlist file lvs_top.cdl`） |
+| 2 | 同上，再补 `LAYOUT PRIMARY` | `SPC1 … superfluous specification statement: layout primary` |
+| 3 | 覆盖行放在 `INCLUDE` **之前** | deck 自己的 `LAYOUT PRIMARY` 变成 superfluous → 同样报错 |
+
+结论：Calibre 的 **specification 语句是 first-wins**（手册明确："only the first statement is used and the rest are ignored"，
+见 `calbr_lvl_fdi_gd/…/General_ErrorWarningMessages` 的 SPC1 条目）。GUI 文档说的 "control file takes precedence"
+对本 PDK deck 不成立——deck 里 `lvs_top.*` 先出现就赢。
+
+**因此参数面定为 deck 文件本身**（本包不解析 runset、不暴露 runset 参数）：
+
+1. 要改参数 → 给一份改好的 deck（拷 PDK deck 改两行即可），`deck` 收任意路径；
+2. deck 里没占位符（自包含）时，`gds/top/cdl` 全部可省（步骤记 `self_contained: true`）；
+3. 调用方若坚持用 GUI 的 `.runset`，唯一官方消费入口是 `calibre -gui -<app> -runset <file> -batch`
+   （runset 由 Calibre Interactive 自己合并）；等真有 runset 样本再加这条 argv 分支，不做无样本实现。
+
+## 10. 同批修掉的两个上层问题
+
+- `_LICENSE_HINTS` 过宽：Calibre 日志头固定含 "SUBJECT TO LICENSE TERMS"、启动也会打 "(pending licensing)"，
+  原实现把这些当线索 → control file 语法错被误报 `failure_kind=license`（真机复现）。
+  已收紧为"cannot checkout / failed to check out / license request failed / mgcld …"。
+- `run_dir` 落在 deck 目录之内时 `cp -r` 会自我递归（真机复现：`cp: cannot copy a directory into itself`）：
+  现在前置拒绝并提示换目录（顺带避免 `rm -rf` 波及调用方 deck 目录）。

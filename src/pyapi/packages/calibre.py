@@ -31,6 +31,7 @@ OPERATION_NAMES = (
     "calibre.status",
     "calibre.read_results",
     "calibre.export",
+    "calibre.export_cdl",
 )
 
 _KINDS = ("drc", "lvs", "pex")
@@ -71,12 +72,17 @@ class CheckEnvRequest:
 
 @dataclass(frozen=True)
 class RunRequest:
-    """DRC / LVS / PEX 共用请求（kind 由操作决定）。"""
+    """DRC / LVS / PEX 共用请求（kind 由操作决定）。
+
+    ``gds`` / ``top`` / ``cdl`` 只在 **deck 里真的出现占位符**时才必填：
+    调用方可以直接给一个自包含的 control file（GUI runset 生成的
+    ``INCLUDE 原 deck + 覆盖``形态），此时参数全部由该文件承载。
+    """
 
     token: str
-    gds: str
-    top: str
     deck: str
+    gds: str | None = None
+    top: str | None = None
     cdl: str | None = None
     lvs_run_dir: str | None = None
     job_id: str | None = None
@@ -93,9 +99,9 @@ class RunRequest:
 
     def __post_init__(self) -> None:
         _require_token(self.token)
-        _require_text(self.gds, "gds")
-        _require_text(self.top, "top")
         _require_text(self.deck, "deck")
+        _opt_text(self.gds, "gds")
+        _opt_text(self.top, "top")
         _opt_text(self.cdl, "cdl")
         _opt_text(self.lvs_run_dir, "lvs_run_dir")
         _opt_text(self.job_id, "job_id")
@@ -187,6 +193,32 @@ class ExportRequest:
         _opt_timeout(self.timeout)
 
 
+@dataclass(frozen=True)
+class ExportCdlRequest:
+    """从 schematic 导出 LVS 源网表（CDL）——Virtuoso 官方 auCdl 链路。"""
+
+    token: str
+    library: str
+    cell: str
+    view: str = "schematic"
+    netlist_name: str | None = None
+    run_dir: str | None = None
+    cds_lib: str | None = None
+    timeout: int | None = None
+
+    def __post_init__(self) -> None:
+        _require_token(self.token)
+        _require_text(self.library, "library")
+        _require_text(self.cell, "cell")
+        _require_text(self.view, "view")
+        _opt_text(self.netlist_name, "netlist_name")
+        _opt_text(self.run_dir, "run_dir")
+        _opt_text(self.cds_lib, "cds_lib")
+        _opt_timeout(self.timeout)
+        if self.netlist_name and ("/" in self.netlist_name or "\\" in self.netlist_name):
+            raise ValueError("netlist_name must be a plain file name")
+
+
 @dataclass
 class Result:
     ok: bool
@@ -274,9 +306,89 @@ class Package:
         return self._run("drc", request)
 
     def lvs(self, request: RunRequest) -> Result:
-        if not request.cdl:
-            return Result(False, [], "lvs requires cdl (schematic source netlist)", None)
         return self._run("lvs", request)
+
+    def export_cdl(self, request: ExportCdlRequest) -> Result:
+        """官方 auCdl（CDL Out Analog）链路导出 LVS 源网表。"""
+        steps: list[dict[str, Any]] = []
+        root = self._command_root(request.token, steps)
+        if root is None:
+            return Result(False, steps, "command role root unavailable", None)
+        run_dir = request.run_dir or posixpath.join(
+            root, "calibre", f"cdl_{_slug(request.cell)}")
+        netlist_name = request.netlist_name or f"{request.cell}.cdl"
+        cds_lib = request.cds_lib or self._ciw_cds_lib(
+            request.token, request.timeout, steps)
+        if not cds_lib:
+            return Result(
+                False, steps,
+                "cds.lib not resolved (CIW cwd unavailable; pass cds_lib explicitly)",
+                None,
+            )
+        timeout = request.timeout
+        exists = self.middle.run_command(
+            f"test -f {shlex.quote(cds_lib)} && echo yes || echo no",
+            timeout=timeout, token=request.token,
+        )
+        if "yes" not in (exists.stdout or ""):
+            return Result(False, steps, f"cds.lib not found: {cds_lib}", None)
+
+        remote_cds_lib = posixpath.join(run_dir, "cds.lib")
+        prepare = self.middle.run_command(
+            f"rm -rf {shlex.quote(run_dir)} && mkdir -p {shlex.quote(run_dir)} && "
+            f"cp {shlex.quote(cds_lib)} {shlex.quote(remote_cds_lib)} && echo ready",
+            timeout=timeout or 120, token=request.token,
+        )
+        steps.append({"name": "prepare", "ok": prepare.returncode == 0,
+                      "detail": {"run_dir": run_dir, "cds_lib": cds_lib}})
+        if prepare.returncode != 0:
+            return Result(False, steps, prepare.stderr or "prepare run dir failed", None)
+
+        si_env = _si_env_text(request.library, request.cell, request.view,
+                              netlist_name, run_dir)
+        env_up = self._upload_text(
+            si_env, posixpath.join(run_dir, "si.env"), request.token, timeout)
+        rc_up = self._upload_text(
+            _simrc_text(), posixpath.join(run_dir, ".simrc"), request.token, timeout)
+        upload_ok = env_up.returncode == 0 and rc_up.returncode == 0
+        steps.append({"name": "upload", "ok": upload_ok,
+                      "detail": {"si.env": env_up.returncode, ".simrc": rc_up.returncode}})
+        if not upload_ok:
+            return Result(False, steps, "si.env/.simrc upload failed", None)
+
+        run = self.middle.run_command(
+            f"cd {shlex.quote(run_dir)} && CDS_Netlisting_Mode=Analog "
+            f"si . -batch -command netlist -cdslib {shlex.quote(remote_cds_lib)} "
+            "> si.log 2>&1",
+            timeout=timeout or 600, token=request.token,
+        )
+        netlist_path = posixpath.join(run_dir, netlist_name)
+        size_run = self.middle.run_command(
+            f"test -s {shlex.quote(netlist_path)} && "
+            f"wc -c < {shlex.quote(netlist_path)} || true",
+            timeout=timeout, token=request.token,
+        )
+        size_text = (size_run.stdout or "").strip().splitlines()
+        size = int(size_text[0]) if size_text and size_text[0].isdigit() else 0
+        ok = run.returncode == 0 and size > 0
+        steps.append({"name": "si", "ok": ok,
+                      "detail": {"rc": run.returncode, "bytes": size,
+                                 "netlist_path": netlist_path}})
+        if not ok:
+            tail = self._log_tail(run_dir, request.token, _LOG_TAIL_DEFAULT, timeout)
+            return Result(
+                False, steps,
+                f"si netlisting failed (rc={run.returncode}, bytes={size}): {tail[-400:]}",
+                {"run_dir": run_dir, "log_path": posixpath.join(run_dir, "si.log")},
+            )
+        return Result(True, steps, None, {
+            "run_dir": run_dir,
+            "netlist_path": netlist_path,
+            "netlist_name": netlist_name,
+            "bytes": size,
+            "cds_lib": cds_lib,
+            "log_path": posixpath.join(run_dir, "si.log"),
+        })
 
     def pex(self, request: RunRequest) -> Result:
         if not request.cdl:
@@ -291,7 +403,7 @@ class Package:
         root = self._command_root(request.token, steps)
         if root is None:
             return Result(False, steps, "command role root unavailable", None)
-        job_id = request.job_id or f"{kind}_{_slug(request.top)}"
+        job_id = request.job_id or f"{kind}_{_slug(request.top or posixpath.basename(request.deck))}"
         run_dir = request.run_dir or posixpath.join(root, "calibre", job_id)
         binary = self._calibre_bin(request.token, request.calibre_bin, steps)
         if binary is None:
@@ -303,6 +415,13 @@ class Package:
                           f"job already running in {run_dir}; use a new job_id or check status", None)
 
         deck_dir = posixpath.dirname(request.deck)
+        if run_dir == deck_dir or run_dir.startswith((deck_dir or ".").rstrip("/") + "/"):
+            return Result(
+                False, steps,
+                f"run_dir {run_dir} 在 deck 目录 {deck_dir or '.'} 之内："
+                "stage 会把 deck 目录整份拷进 run_dir，必须先换到目录外的 run_dir",
+                None,
+            )
         stage_cmd = (
             f"rm -rf {shlex.quote(run_dir)} && mkdir -p {shlex.quote(run_dir)} && "
             f"cp -r {shlex.quote(deck_dir)}/. {shlex.quote(run_dir)}/"
@@ -338,7 +457,14 @@ class Package:
         rewritten = self._rewrite_deck(request, kind, steps)
         if rewritten is None:
             return Result(False, steps, "deck rewrite failed", None)
-        deck_text, changes = rewritten
+        deck_text, changes, missing = rewritten
+        if missing:
+            return Result(
+                False, steps,
+                f"deck 需要输入但未提供：{', '.join(missing)}"
+                "（自包含 control file 无占位符时不需要 gds/top/cdl）",
+                None,
+            )
         deck_remote = posixpath.join(run_dir, f"run_{kind}.cal")
         uploaded_deck = self._upload_text(deck_text, deck_remote, request.token, request.timeout)
         steps.append({"name": "upload-deck", "ok": uploaded_deck.returncode == 0,
@@ -570,6 +696,22 @@ class Package:
                                  "calibre_bin": getattr(command, "bin", None)}})
         return root
 
+    def _ciw_cds_lib(self, token: str, timeout: int | None,
+                     steps: list[dict[str, Any]]) -> str | None:
+        """CIW 当前工作目录下的 ``cds.lib``：auCdl 需要它解析 library。"""
+        try:
+            result = self.middle.execute_skill(
+                "getWorkingDir()", timeout=timeout, token=token)
+        except Exception as exc:  # noqa: BLE001
+            steps.append({"name": "ciw-cds-lib", "ok": False,
+                          "detail": f"{type(exc).__name__}: {exc}"})
+            return None
+        cwd = (result.output or "").strip().strip('"') if result.ok else ""
+        path = posixpath.join(cwd, "cds.lib") if cwd else None
+        steps.append({"name": "ciw-cds-lib", "ok": path is not None,
+                      "detail": {"ciw_cwd": cwd or None, "cds_lib": path}})
+        return path
+
     def _run_dir_for(self, token: str, kind: str, job_id: str | None,
                      steps: list[dict[str, Any]]) -> str | None:
         if not job_id:
@@ -580,7 +722,7 @@ class Package:
         return posixpath.join(root, "calibre", job_id)
 
     def _rewrite_deck(self, request: RunRequest, kind: str,
-                      steps: list[dict[str, Any]]) -> tuple[str, list[str]] | None:
+                      steps: list[dict[str, Any]]) -> tuple[str, list[str], list[str]] | None:
         text = self._download_text(request.deck, request.token, request.timeout)
         if text is None:
             steps.append({"name": "read-deck", "ok": False, "detail": request.deck})
@@ -588,9 +730,14 @@ class Package:
         rewritten, changes = cu.deck_rewrite(
             text, gds=request.gds, top=request.top, cdl=request.cdl
         )
+        missing = cu.deck_missing_inputs(
+            text, gds=request.gds, top=request.top, cdl=request.cdl
+        )
         steps.append({"name": "rewrite-deck", "ok": True,
-                      "detail": {"changes": changes, "sha256": cu.deck_sha256(rewritten)[:16]}})
-        return rewritten, changes
+                      "detail": {"changes": changes, "missing": missing,
+                                 "self_contained": not missing and not changes,
+                                 "sha256": cu.deck_sha256(rewritten)[:16]}})
+        return rewritten, changes, missing
 
     def _download_text(self, remote: str, token: str, timeout: int | None) -> str | None:
         exists = self.middle.run_command(
@@ -742,6 +889,41 @@ def _slug(text: str) -> str:
     return cleaned.strip("_") or "cell"
 
 
+def _si_env_quote(value: str) -> str:
+    return value.replace("\\", "\\\\").replace('"', '\\"')
+
+
+def _si_env_text(library: str, cell: str, view: str, netlist_name: str,
+                run_dir: str) -> str:
+    """官方 auCdl（CDL Out Analog 模式）的 si.env；`checkCAPPERI` 见下。"""
+    q = _si_env_quote
+    return (
+        f'simLibName = "{q(library)}"\n'
+        f'simCellName = "{q(cell)}"\n'
+        f'simViewName = "{q(view)}"\n'
+        f'hnlNetlistFileName = "{q(netlist_name)}"\n'
+        f'simRunDir = "{q(run_dir.rstrip("/"))}/"\n'
+        'simSimulator = "auCdl"\n'
+        'simViewList = \'("auCdl" "schematic")\n'
+        'simStopList = \'("auCdl")\n'
+        "simPrintInhConnAttributes = 'nil\n"
+        'simNetNamePrefix = "N"\n'
+        'simInstNamePrefix = "X"\n'
+        'simModelNamePrefix = "M"\n'
+        "hnlMaxLineLength = 79\n"
+        "preserveALL = t\n"
+        "retainBusses = t\n"
+        "CDLUsePortOrderForPinList = 'nil\n"
+        # IC618 auCdl batch header 会 eval 该变量；缺省未绑定 -> OSSHNL-411
+        "checkCAPPERI = nil\n"
+    )
+
+
+def _simrc_text() -> str:
+    """放在 run dir 的 .simrc：覆盖用户级 .simrc，并补上 checkCAPPERI。"""
+    return "checkCAPPERI = nil\n"
+
+
 def _c_path_ok(value: dict[str, Any]) -> bool:
     return bool(value.get("calibre_path"))
 
@@ -772,10 +954,12 @@ OPERATIONS = (
     ("calibre.status", "status", StatusRequest, Result),
     ("calibre.read_results", "read_results", ReadResultsRequest, Result),
     ("calibre.export", "export", ExportRequest, Result),
+    ("calibre.export_cdl", "export_cdl", ExportCdlRequest, Result),
 )
 
 __all__ = [
     "CheckEnvRequest",
+    "ExportCdlRequest",
     "ExportRequest",
     "OPERATION_NAMES",
     "OPERATIONS",

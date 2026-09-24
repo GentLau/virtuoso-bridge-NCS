@@ -29,9 +29,12 @@ calibre 包覆盖 **物理验证三件套：DRC / LVS / PEX**，外加环境体�
 | `calibre.status` | 只读查询：作业状态与进度 | 读 `job.json` + 进程 + 日志尾 + 产物 | C |
 | `calibre.read_results` | 解析结果（DRC/LVS/PEX） | 读报告 → 结构化摘要 | D + 纯 Python |
 | `calibre.export` | 按名下载产物 | report / 结果库 / 网表 / pdb 目录 / 日志尾 | D |
+| `calibre.export_cdl` | 从 schematic 导出 LVS 源网表（CDL），走 Virtuoso 官方 auCdl 机制 | 解析 cds.lib → 生成 `si.env`/`.simrc` → `si -batch -command netlist` → 校验产物 | S+C(+U) |
 
 接口简写：S=`execute_skill`、C=`run_command`、U=`upload_file`、D=`download_file`、G=`run_gui_command`、Sp=`run_spectre_command`。
-Calibre 全部走 **command role**（C/D/U），不使用 S/G/Sp。
+验证类操作（check_env/drc/lvs/pex/status/read_results/export）全部走 **command role**（C/D/U），不使用 S/G/Sp；
+`export_cdl` 额外用一次 S（`getWorkingDir()` 解析 CIW 的 `cds.lib`），si 仍在 command role 执行
+（因此该操作要求 command role 与 CIW 同主机，与 Calibre Interactive 在本机跑 `si` 的形态一致）。
 
 ## 3. 公共契约
 
@@ -123,17 +126,28 @@ run 类操作默认 `blocking=false`：写 launcher、后台启动、立刻返�
 
 | 参数 | 必填 | 默认 | 说明 |
 |---|---|---|---|
-| `gds` | 是 | — | 版图 GDS 路径（可用 `virtuoso.layout.gds` 产出） |
-| `top` | 是 | — | 顶层 cell 名 |
 | `deck` | 是 | — | DRC deck 路径 |
+| `gds` | 条件 | — | 版图 GDS 路径（可用 `virtuoso.layout.gds` 产出）；**只有 deck 里出现 `"GDSFILENAME"`/`"lvs_top.gds"` 等占位符时才必填** |
+| `top` | 条件 | — | 顶层 cell 名；同上（`"TOPCELLNAME"`/`"lvs_top"`） |
 | `job_id` / `run_dir` | 否 | `<kind>_<top>` / role 根下 | 见 §3.1 |
 | `turbo` | 否 | 4 | 传给 `-turbo` |
 | `hier` | 否 | true | `-hier` |
 | `blocking` / `poll_interval` / `timeout` | 否 | false / 5 / 3600 | 见 §3.4 |
 
+**参数面 = deck 文件**：本包不解析、不暴露 runset/控制文件参数，只按白名单占位符改写 deck 文本，
+再把 deck 整目录 stage 到 run dir（相对 `INCLUDE` 照常生效）。
+要改参数就给一份改好的 deck（例如把 PDK deck 拷一份改两行）——`deck` 收任意路径；
+占位符一个都不剩时即"自包含 deck"，`gds`/`top`/`cdl` 全部可省（步骤里记 `self_contained`）。
+
 ### 4.3 `calibre.lvs`
 
-在 DRC 参数基础上：`cdl`（必填，LVS 源网表路径）、`power`/`ground`（可选覆盖 deck 的电源地名）。
+在 DRC 参数基础上：`cdl`（**条件必填**，deck 引用 `"lvs_top.cdl"` 时必填；可由 `calibre.export_cdl` 产出）、
+`power`/`ground`（可选覆盖 deck 的电源地名）。
+
+> 实测（2026-09-24）：`INCLUDE <PDK deck>` + 覆盖 `LAYOUT PATH`/`SOURCE PATH` 的 **control file 形态走不通**——
+> Calibre 的 specification 语句是 **first-wins**（`SPC1 superfluous specification statement`：同一语句只认第一条，
+> 其余忽略/报错），deck 里的 `lvs_top.*` 先出现就赢。要改这类参数只能改 deck 文本本身
+> （或走官方 GUI batch `calibre -gui -<app> -runset <file> -batch`，那时 runset 由 Calibre Interactive 自己消费）。
 
 ### 4.4 `calibre.pex`
 
@@ -153,6 +167,32 @@ run 类操作默认 `blocking=false`：写 launcher、后台启动、立刻返�
 | `read_results` | `job_id`/`run_dir`；`kind`（可自动探测）；`limit`（默认 20）；`log_lines`（默认 40） |
 | `export` | `job_id`/`run_dir`；`items`（`summary`/`results_db`/`netlist`/`pdb_dir`/`log`/`all_small`）；`local_dir`（默认 `artifact_dir()/calibre/`） |
 
+### 4.6 `calibre.export_cdl`（LVS 源网表，官方 auCdl）
+
+背景：Calibre 自身不产源网表；官方 GUI 的 “Export from source viewer” 也是驱动 Virtuoso 的
+**CDL Out / auCdl**（`si -batch -command netlist`，见 `doc/report/calibre-网表导出机制调查报告.md`）。
+本操作实现同一条官方链路的无头版本，产物路径直接喂给 `calibre.lvs` 的 `cdl`。
+
+| 参数 | 必填 | 默认 | 说明 |
+|---|---|---|---|
+| `library` / `cell` | 是 | — | 要导出的 schematic 所在单元 |
+| `view` | 否 | `schematic` | 起始视图 |
+| `netlist_name` | 否 | `<cell>.cdl` | 产物文件名（写入 run dir） |
+| `run_dir` | 否 | `<command root>/calibre/cdl_<cell>` | 导出工作目录 |
+| `cds_lib` | 否 | CIW `getWorkingDir()/cds.lib` | cds.lib 路径；显式给出优先 |
+| `timeout` | 否 | 600 | si 超时 |
+
+行为：
+
+1. 解析 `cds.lib`（显式 > CIW cwd），复制进 run dir；
+2. 生成 `si.env`（`simSimulator="auCdl"`、`simViewList='("auCdl" "schematic")`、`simStopList='("auCdl")`、
+   **`checkCAPPERI=nil`**——IC618 auCdl batch 的默认值缺口，缺失即 `OSSHNL-411`）与一致的 `.simrc`；
+3. `CDS_Netlisting_Mode=Analog si . -batch -command netlist -cdslib <run_dir>/cds.lib`，要求 rc=0 且产物非空；
+4. 返回 `{run_dir, netlist_path, netlist_name, bytes, cds_lib, log_path}`。
+
+不做：GUI 的 runset/control-file/模板机制、Viewer 导出（headless 无意义）；digital（hnl）模式暂不支持，
+需要时再按官方 `hnlCDL*` 属性要求扩展。
+
 ## 5. 不做与本版限制
 
 1. 不解析 Calibre 的二进制结果库（`svdb`/`*.pdb` 只按文件列出与下载，不读内部结构）；
@@ -167,8 +207,10 @@ run 类操作默认 `blocking=false`：写 launcher、后台启动、立刻返�
    中层不探测、不校验语义、`query` 原样返回；本包在 `check_env`/run 类操作里读取，
    缺失即明确失败（§3.3）。**不需要中层改代码**，只需部署方在注册表里给值；
 2. **GDS 来源**：`virtuoso.layout.gds` 已能导出（`src/pyapi/packages/layout.py:924`），本包只接受路径；
-3. **CDL 来源**：调用方提供（已验证）；"从 schematic 自动产 CDL"的路线见可行性报告 §3.4/§3.6，
-   属 `netlist` 补包范畴，不在本包内实现。
+3. **CDL 来源**（两条都要能跑）：
+   1. 调用方提供远端路径（现状）；
+   2. `calibre.export_cdl` 从 schematic 用官方 auCdl 链路现产（§4.6）——
+      2026-09-24 真机闭环：`CMP_LIB/inv2` 导出 → `calibre.lvs` 用 `inv2.gds` 比对 → **CORRECT**。
 
 ## 7. 已知限制
 
@@ -180,19 +222,20 @@ run 类操作默认 `blocking=false`：写 launcher、后台启动、立刻返�
 
 ## 8. 验收
 
-脚本 `test/live/packages/calibre_e2e_tests.py --transport direct|http`（**尚未建**：当前 calibre 的实测入口是
-离线 `test/offline/unit/test_calibre_package.py`、半真机 `test/semi/probes/calibre_env_probe.py` /
-`calibre_cdl_probe.py`、真机 `test/live/flows/lvs_from_schematic_tb.py`；路径按 2026-09-23 `test/` 三级重组更新），
-产物落 `test/artifacts/calibre-tb/TEST_PLAN.md` + `TEST_REPORT.md`（目录待建）。
+常驻真机套件：`python test/live/packages/calibre_e2e_tests.py --transport direct|http`
+（离线矩阵 `test/offline/unit/test_calibre_*.py`；半真机探针 `test/semi/probes/calibre_*.py`）。
 
 | 组 | 用例 |
 |---|---|
 | env | `check_env` 返回路径/版本；deck 不可见时报 `deck_ok=false` 并给原因 |
+| EXPORT | `export_cdl` 产出**含 `.SUBCKT` + 器件行**的 CDL（只出端口壳即失败）；`netlist_name` 只能是纯文件名 |
 | DRC | 小 GDS（`lay_e2e.gds` 顶层 `lay_e2e`）跑通：`status=completed`、`read_results` 给 rules_checked/结果计数；对照可行性报告基线（1737 规则 / 36 结果） |
 | LVS | `ctle.gds`+`ctle.cdl`：`status=completed`、`summary.status ∈ {match, incorrect}`、产物含 `svdb/*.phdb` |
+| LVS 闭环 | `export_cdl` 的 CDL 直接喂 LVS（`CMP_LIB/inv2` + `inv2.gds`）；`VB_CALIBRE_REQUIRE_LVS_VERDICT=1` 时要求 `correct` |
 | PEX | 同组输入跑到 `-pdb`：`svdb/*.pdb/` 存在、`summary.errors==0`；`fmt=spice` 时产出网表 |
 | 三件套 | `blocking=true` 与 `blocking=false`+`status` 轮询两种用法结果一致 |
 | 失败 | deck 路径不存在 → 明确失败；GDS 顶层名错 → 工具原文回带；不给 token → 400 |
+| 参数面 | deck 无占位符（自包含）时 `gds/top/cdl` 可省；deck 引用 `"lvs_top.cdl"` 而没给 `cdl` → 明确失败 |
 
 ## 9. 证据索引
 
@@ -201,5 +244,6 @@ run 类操作默认 `blocking=false`：写 launcher、后台启动、立刻返�
 | 可行性报告（DRC/LVS/PEX 实跑、CDL 调查、新用户 calprobe 会话） | `doc/report/calibre-可行性报告.md` |
 | Calibre 环境探针 | `test/semi/probes/calibre_env_probe.py` |
 | CDL 批处理探针（si.env/.simrc 生成） | `test/semi/probes/calibre_cdl_probe.py` |
+| auCdl 导出机制调查（官方链路、runset/control-file 实测） | `doc/report/calibre-网表导出机制调查报告.md`（§8/§9） |
 | 实跑现场（远端） | `/home/Gent/project/vblog/calibre_probe/{drc_run,lvs_run,rcx_run}/` |
 | 新注册用户与独立 env | `/home/Gent/project/calprobe/`（`calprobe`，见可行性报告 §3.4） |

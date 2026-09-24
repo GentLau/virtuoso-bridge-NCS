@@ -20,8 +20,13 @@ _PLACEHOLDER_KEYS = (
 )
 
 
-def deck_rewrite(text: str, *, gds: str, top: str, cdl: str | None = None) -> tuple[str, list[str]]:
-    """把 deck 里的占位符替换成本次输入；返回 (新文本, 改动清单)。"""
+def deck_rewrite(text: str, *, gds: str | None, top: str | None,
+                 cdl: str | None = None) -> tuple[str, list[str]]:
+    """把 deck 里的占位符替换成本次输入；返回 (新文本, 改动清单)。
+
+    自包含的 control file（GUI 的 ``_<rules>_``：``INCLUDE`` 原 deck + 覆盖路径）
+    不含占位符，此时原样返回、改动清单为空 —— 参数由调用方的文件承载。
+    """
     values = {"gds": gds, "top": top, "cdl": cdl}
     changes: list[str] = []
     output = text
@@ -34,6 +39,19 @@ def deck_rewrite(text: str, *, gds: str, top: str, cdl: str | None = None) -> tu
             output = output.replace(quoted, f'"{replacement}"')
             changes.append(f"{literal} -> {replacement}")
     return output, changes
+
+
+def deck_missing_inputs(text: str, *, gds: str | None, top: str | None,
+                        cdl: str | None) -> list[str]:
+    """deck 里**仍存在**的占位符 → 缺哪个输入（自包含 deck 返回空列表）。"""
+    values = {"gds": gds, "top": top, "cdl": cdl}
+    missing: list[str] = []
+    for literal, key in _PLACEHOLDER_KEYS:
+        if f'"{literal}"' in text and not values.get(key):
+            entry = f'"{literal}"→{key}'
+            if entry not in missing:
+                missing.append(entry)
+    return missing
 
 
 def deck_sha256(text: str) -> str:
@@ -113,7 +131,15 @@ _FAIL_MARKERS = (
     "stage2_failed",
     "stage3_failed",
 )
-_LICENSE_HINTS = ("license", "licensing", "cannot checkout", "mgcld", "check out")
+#: 只认**真的**许可失败措辞。注意 Calibre 日志头固定含 “SUBJECT TO LICENSE TERMS”、
+#: 正常启动也打印 “(pending licensing)”——把它们当线索会把普通输入错误误报成许可问题
+#: （2026-09-24 真机：control file 语法错被报成 failed license）。
+_LICENSE_HINTS = (
+    "cannot checkout", "cannot check out", "failed to checkout", "failed to check out",
+    "unable to checkout", "unable to check out", "license checkout failed",
+    "license request failed", "cannot obtain license", "licensing error",
+    "no license", "mgcld",
+)
 
 
 @dataclass

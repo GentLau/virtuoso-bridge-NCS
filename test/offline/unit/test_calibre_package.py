@@ -11,12 +11,14 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src"))
 
-from common.paths import override_work_dir_for_tests
-from pyapi.models import CommandResult, ExecutionStatus, QueryResult, RoleQuery
+from common.paths import init_work_dir
+from pyapi.models import (CommandResult, ExecutionStatus, QueryResult, RoleQuery,
+                          VirtuosoResult)
 from pyapi.packages import _calibre_util as cu
 from pyapi.packages import calibre as cal
 from pyapi.packages.calibre import (
     CheckEnvRequest,
+    ExportCdlRequest,
     ExportRequest,
     OPERATIONS,
     Package,
@@ -53,7 +55,10 @@ class FakeMiddle:
     def __init__(self, *, kind: str = "drc", completed: bool = True,
                  with_calibre_group: bool = True, root: str | None = ROOT,
                  upload_rc: int = 0, download_rc: int = 0,
-                 snapshot_rc: int = 0) -> None:
+                 snapshot_rc: int = 0, si_rc: int = 0,
+                 netlist_bytes: int = 256, cds_lib_exists: bool = True,
+                 ciw_cwd: str | None = "/home/Gent/proj",
+                 deck_text: str = DECK_TEXT) -> None:
         self.kind = kind
         self.completed = completed
         self.with_calibre_group = with_calibre_group
@@ -61,6 +66,11 @@ class FakeMiddle:
         self.upload_rc = upload_rc
         self.download_rc = download_rc
         self.snapshot_rc = snapshot_rc
+        self.si_rc = si_rc
+        self.netlist_bytes = netlist_bytes
+        self.cds_lib_exists = cds_lib_exists
+        self.ciw_cwd = ciw_cwd
+        self.deck_text = deck_text
         self.calibre_bin = "/opt/eda/mentor/CALIBRE2025/bin/calibre"
         self.commands: list[str] = []
         self.uploads: list[tuple[str, str]] = []
@@ -84,8 +94,12 @@ class FakeMiddle:
         text = cmd
         if "###PATH" in text:  # check_env
             stdout = "###PATH\n/opt/eda/mentor/CALIBRE2025/bin/calibre\n###VERSION\nCalibre v2025.1_16.10\n###DECK\ndeck_file_ok\ndfm_ok\n"
+        elif "si . -batch -command netlist" in text:  # auCdl 导出
+            return CommandResult(self.si_rc, "", "si boom" if self.si_rc else "", "command")
+        elif "wc -c <" in text:
+            stdout = f"{self.netlist_bytes}\n" if self.netlist_bytes else ""
         elif "test -f" in text:
-            stdout = "yes\n"
+            stdout = "yes\n" if self.cds_lib_exists else "no\n"
         elif "cd" in text and "job.json" in text and "###JOB" in text:  # status snapshot
             if self.snapshot_rc != 0:
                 return CommandResult(self.snapshot_rc, "", "snapshot boom", "command")
@@ -124,7 +138,7 @@ class FakeMiddle:
             return CommandResult(0, "", "", "command")
         target.parent.mkdir(parents=True, exist_ok=True)
         if remote_path.endswith(".drc") or "calibre.lvs" in remote_path:
-            content = DECK_TEXT
+            content = self.deck_text
         elif remote_path.endswith("DRC.rep"):
             content = DRC_REPORT
         elif remote_path.endswith("lvs.rep"):
@@ -143,6 +157,14 @@ class FakeMiddle:
         return CommandResult(self.upload_rc, "",
                              "upload boom" if self.upload_rc else "", "command")
 
+    def execute_skill(self, skill_code, timeout=None, *, token,
+                      log_level=None, log_max_bytes=None) -> VirtuosoResult:
+        """CIW 侧事实：只有 `getWorkingDir()`（auCdl 解析 cds.lib 用）。"""
+        self.commands.append(f"SKILL:{skill_code}")
+        if self.ciw_cwd is None:
+            return VirtuosoResult(status=ExecutionStatus.ERROR, errors=["no CIW"])
+        return VirtuosoResult(status=ExecutionStatus.SUCCESS, output=f'"{self.ciw_cwd}"')
+
 class UtilTests(unittest.TestCase):
     def test_deck_rewrite_whitelist(self):
         text, changes = cu.deck_rewrite(DECK_TEXT, gds="/x/lay.gds", top="lay_e2e")
@@ -157,6 +179,18 @@ class UtilTests(unittest.TestCase):
         self.assertIn('"/x/ctle.cdl"', out)
         self.assertIn('"ctle"', out)
 
+    def test_deck_missing_inputs_only_reports_existing_placeholders(self):
+        self.assertEqual(
+            cu.deck_missing_inputs('INCLUDE "/pdk/calibre.lvs"\n', gds=None, top=None, cdl=None),
+            [])
+        self.assertEqual(
+            cu.deck_missing_inputs('SOURCE PATH "lvs_top.cdl"\n', gds="/x/a.gds",
+                                   top="a", cdl=None),
+            ['"lvs_top.cdl"→cdl'])
+        self.assertEqual(
+            cu.deck_missing_inputs('LAYOUT PATH "GDSFILENAME"\n', gds=None, top=None, cdl=None),
+            ['"GDSFILENAME"→gds'])
+
     def test_job_state_completed(self):
         state = cu.job_state("drc", process_alive=False,
                              log_tail="CALIBRE::DRC-H COMPLETED", artifacts=["DRC.rep"])
@@ -168,6 +202,16 @@ class UtilTests(unittest.TestCase):
                              artifacts=[])
         self.assertEqual(state.status, "failed")
         self.assertEqual(state.failure_kind, "license")
+
+    def test_job_state_input_error_keeps_license_banner_out(self):
+        """真机 2026-09-24：control file 语法错被日志头的 LICENSE 字样带偏成 license。"""
+        log_tail = ("//  OR ITS LICENSORS AND IS SUBJECT TO LICENSE TERMS.\n"
+                    "//  Running on 4 CPUs (pending licensing)\n"
+                    "ERROR: Error SYN1 on line 1 of run_lvs.cal - unrecognized operation.\n")
+        state = cu.job_state("lvs", process_alive=False, log_tail=log_tail,
+                             artifacts=["job.json"])
+        self.assertEqual(state.status, "failed")
+        self.assertEqual(state.failure_kind, "input")
 
     def test_job_state_running_and_unknown(self):
         running = cu.job_state("lvs", process_alive=True, log_tail="Running netlist", artifacts=[])
@@ -205,7 +249,7 @@ class UtilTests(unittest.TestCase):
 class PackageTests(unittest.TestCase):
     def setUp(self):
         self._wd = Path(tempfile.mkdtemp(prefix="vb-calibre-wd-"))
-        override_work_dir_for_tests(self._wd)
+        init_work_dir(self._wd)
 
     def test_operations_registered(self):
         self.assertEqual({op[0] for op in OPERATIONS}, set(cal.OPERATION_NAMES))
@@ -261,13 +305,108 @@ class PackageTests(unittest.TestCase):
         self.assertTrue(result.ok, result.error)
         self.assertEqual(result.value["status"], "completed")
 
-    def test_lvs_requires_cdl(self):
-        middle = FakeMiddle()
+    def test_lvs_deck_without_source_fails_only_when_placeholder_present(self):
+        """deck 没给 cdl 又真的引用了 source → 明确失败（不再靠无条件的 cdl 必填）。"""
+        middle = FakeMiddle(deck_text='LAYOUT PATH "/x/ctle.gds"\nSOURCE PATH "lvs_top.cdl"\n')
         result = Package(middle).lvs(RunRequest(
             token=TOKEN, gds="/x/ctle.gds", top="ctle", deck="/x/calibre.lvs",
         ))
         self.assertFalse(result.ok)
         self.assertIn("cdl", result.error or "")
+        self.assertIn("自包含", result.error or "")
+
+    def test_self_contained_control_file_needs_no_gds_top_cdl(self):
+        """GUI runset 生成的 control file（INCLUDE 原 deck + 覆盖）形态：参数全在文件里。"""
+        deck = ('INCLUDE "/pdk/calibre.lvs"\n'
+                'LAYOUT PATH "/x/inv2.gds"\n'
+                'SOURCE PATH "/x/inv2.cdl"\n'
+                'LAYOUT PRIMARY "inv2"\n')
+        middle = FakeMiddle(deck_text=deck)
+        result = Package(middle).lvs(RunRequest(token=TOKEN, deck="/x/ctl/runset.lvs"))
+        self.assertTrue(result.ok, result.error)
+        self.assertEqual(result.value["deck_changes"], [])
+        detail = next(s["detail"] for s in result.steps if s["name"] == "rewrite-deck")
+        self.assertTrue(detail["self_contained"])
+        self.assertEqual(detail["missing"], [])
+        self.assertEqual(result.value["job_id"], "lvs_runset.lvs")
+
+    def test_export_cdl_uses_official_aucdl_link(self):
+        """auCdl：si.env 必须带 auCdl 三件套 + checkCAPPERI（IC618 OSSHNL-411 缺口）。"""
+        middle = FakeMiddle()
+        result = Package(middle).export_cdl(ExportCdlRequest(
+            token=TOKEN, library="CMP_LIB", cell="inv2",
+        ))
+        self.assertTrue(result.ok, result.error)
+        self.assertEqual(result.value["run_dir"], f"{ROOM}/cdl_inv2")
+        self.assertEqual(result.value["cds_lib"], "/home/Gent/proj/cds.lib")
+        self.assertEqual(result.value["bytes"], 256)
+        si_cmd = next(c for c in middle.commands if "si . -batch" in c)
+        self.assertIn("CDS_Netlisting_Mode=Analog", si_cmd)
+        # cds.lib 用 run dir 内的副本（CIW 的 cds.lib 只拷贝，不改写）
+        self.assertIn(f"-cdslib {ROOM}/cdl_inv2/cds.lib", si_cmd)
+        self.assertIn(f"cp /home/Gent/proj/cds.lib {ROOM}/cdl_inv2/cds.lib",
+                      next(c for c in middle.commands if "cp " in c and "mkdir" in c))
+        si_env_local = next(local for local, remote in middle.uploads
+                            if remote.endswith("si.env"))
+        text = Path(si_env_local).read_text(encoding="utf-8")
+        self.assertIn('simSimulator = "auCdl"', text)
+        self.assertIn('simViewList = \'("auCdl" "schematic")', text)
+        self.assertIn('simStopList = \'("auCdl")', text)
+        self.assertIn("checkCAPPERI = nil", text)
+        self.assertIn('simLibName = "CMP_LIB"', text)
+        self.assertIn('hnlNetlistFileName = "inv2.cdl"', text)
+        names = [step["name"] for step in result.steps]
+        self.assertEqual(names, ["query", "ciw-cds-lib", "prepare", "upload", "si"])
+        self.assertTrue(result.value["netlist_path"].endswith("inv2.cdl"))
+
+    def test_export_cdl_explicit_cds_lib_skips_ciw(self):
+        middle = FakeMiddle(ciw_cwd=None)
+        result = Package(middle).export_cdl(ExportCdlRequest(
+            token=TOKEN, library="CMP_LIB", cell="inv2",
+            cds_lib="/proj/cds.lib", run_dir="/r/cdl", netlist_name="src.cdl",
+        ))
+        self.assertTrue(result.ok, result.error)
+        self.assertEqual(result.value["cds_lib"], "/proj/cds.lib")
+        self.assertEqual(result.value["netlist_path"], "/r/cdl/src.cdl")
+        self.assertFalse(any(c.startswith("SKILL:") for c in middle.commands))
+
+    def test_export_cdl_requires_resolvable_cds_lib(self):
+        result = Package(FakeMiddle(ciw_cwd=None)).export_cdl(ExportCdlRequest(
+            token=TOKEN, library="CMP_LIB", cell="inv2",
+        ))
+        self.assertFalse(result.ok)
+        self.assertIn("cds.lib not resolved", result.error or "")
+
+    def test_export_cdl_missing_cds_lib_fails(self):
+        result = Package(FakeMiddle(cds_lib_exists=False)).export_cdl(
+            ExportCdlRequest(token=TOKEN, library="CMP_LIB", cell="inv2"))
+        self.assertFalse(result.ok)
+        self.assertIn("cds.lib not found", result.error or "")
+
+    def test_export_cdl_si_failure_and_empty_netlist(self):
+        failed = Package(FakeMiddle(si_rc=1)).export_cdl(ExportCdlRequest(
+            token=TOKEN, library="CMP_LIB", cell="inv2"))
+        self.assertFalse(failed.ok)
+        self.assertIn("si netlisting failed", failed.error or "")
+        self.assertIn("rc=1", failed.error or "")
+
+        empty = Package(FakeMiddle(netlist_bytes=0)).export_cdl(ExportCdlRequest(
+            token=TOKEN, library="CMP_LIB", cell="inv2"))
+        self.assertFalse(empty.ok)
+        self.assertIn("bytes=0", empty.error or "")
+
+    def test_export_cdl_upload_and_prepare_failures(self):
+        broken = Package(FakeMiddle(upload_rc=1)).export_cdl(ExportCdlRequest(
+            token=TOKEN, library="CMP_LIB", cell="inv2"))
+        self.assertFalse(broken.ok)
+        self.assertIn("si.env/.simrc upload failed", broken.error or "")
+
+    def test_export_cdl_request_validation(self):
+        with self.assertRaises(ValueError):
+            ExportCdlRequest(token=TOKEN, library="CMP_LIB", cell="inv2",
+                             netlist_name="a/b.cdl")
+        with self.assertRaises(ValueError):
+            ExportCdlRequest(token=TOKEN, library="", cell="inv2")
 
     def test_pex_requires_lvs_run_dir(self):
         result = Package(FakeMiddle()).pex(RunRequest(
