@@ -33,8 +33,10 @@ from pydantic import ValidationError
 
 from register import RegistrationFlow, RegistrationRequest
 from register.flow import (
+    RegistrationProbeError,
     credential_reuse_conflicts,
     entry_credential_details,
+    host_key_refresh_patch,
 )
 from register.candidate import (
     fingerprint_conflicts_candidate,
@@ -745,6 +747,29 @@ class RegistrationHandler(BaseHTTPRequestHandler):
                 {"error": "invalid update", "detail": f"unknown fields: {sorted(unknown)}"},
             )
             return
+
+        # spec §6.5: 连接身份/凭据变化的 role 组先探测 host-key，再把基准与新配置
+        # 一起落盘（探测在注册表锁之外进行；失败则整个 update 拒绝、原条目不变）。
+        refresh: dict = {}
+        try:
+            current = self.server.registry.get(user)
+            preview = self.server.registry.preview_update(user, fields)
+            refresh = host_key_refresh_patch(
+                current, preview, patch=fields, user=user
+            )
+        except RegistrationProbeError as exc:
+            self._send_json(400, {"error": "invalid update", "detail": str(exc)})
+            return
+        except KeyError:
+            self._send_json(404, {"error": "unknown user", "user": user})
+            return
+        except ValueError:
+            refresh = {}  # 取值/形状错误交给 registry.update 统一报 400
+        if refresh:
+            roles_patch = dict(fields.get("roles") or {})
+            for name, values in refresh.get("roles", {}).items():
+                roles_patch[name] = {**(roles_patch.get(name) or {}), **values}
+            fields = {**fields, "roles": roles_patch}
 
         try:
             candidate = self.server.registry.update(

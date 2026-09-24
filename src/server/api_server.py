@@ -158,10 +158,20 @@ class ApiHandler(BaseHTTPRequestHandler):
                 "error": None,
             })
             return
+        allowed = self._PATH_ALLOWED.get(path)
+        if allowed is not None:
+            # 已定义路径 + 非支持方法 → 405 + Allow（顶层 §3）
+            self._method_not_allowed(allow=allowed)
+            return
         self._send(404, {"ok": False, "data": None, "error": "not found"})
 
     def do_POST(self) -> None:  # noqa: N802
-        if self.path.split("?")[0] != "/api/operation":
+        path = self.path.split("?")[0]
+        if path != "/api/operation":
+            allowed = self._PATH_ALLOWED.get(path)
+            if allowed is not None:
+                self._method_not_allowed(allow=allowed)
+                return
             self._send(404, {"ok": False, "data": None, "error": "not found"})
             return
         ok, payload = self._read_json()
@@ -198,18 +208,20 @@ class ApiHandler(BaseHTTPRequestHandler):
             server.release_slot()
         self._send(status, body)
 
-    def _method_not_allowed(self, *, body: bool = True) -> None:
+    def _method_not_allowed(
+        self, *, body: bool = True, allow: str = "GET, POST"
+    ) -> None:
         self._drain_request_body()
         if body:
             self._send(405, {
                 "ok": False,
                 "data": None,
                 "error": "method not allowed",
-            }, allow="GET, POST", close=True)
+            }, allow=allow, close=True)
             return
         self.close_connection = True
         self.send_response(405)
-        self.send_header("Allow", "GET, POST")
+        self.send_header("Allow", allow)
         self.send_header("Connection", "close")
         self.send_header("Content-Length", "0")
         self.end_headers()
@@ -236,6 +248,9 @@ class ApiHandler(BaseHTTPRequestHandler):
         self._method_not_allowed(body=False)
 
     _DEFINED_PATHS = frozenset({"/api/operation", "/health", "/help"})
+
+    #: 已定义路径 → 该路径真正支持的方法（405 的 Allow 用）
+    _PATH_ALLOWED = {"/api/operation": "POST", "/health": "GET", "/help": "GET"}
 
     def _unknown_method(self) -> None:
         if self.path.split("?", 1)[0] in self._DEFINED_PATHS:

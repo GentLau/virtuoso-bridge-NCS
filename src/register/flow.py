@@ -158,6 +158,70 @@ def entry_credential_details(entry: UserEntry) -> list[dict[str, str]]:
     return details
 
 
+def _role_group(role) -> tuple:
+    """Connection identity + resolved credential — the §6.5 grouping key."""
+    return role.key, role.credential_dir, role.credential_key
+
+
+def host_key_refresh_patch(
+    current: UserEntry,
+    candidate: UserEntry,
+    *,
+    patch: dict,
+    user: str,
+) -> dict[str, dict[str, dict[str, str | None]]]:
+    """Spec §6.5: rebuild ``expected_fingerprint`` for changed role groups.
+
+    A role "group" is (endpoint + resolved credential).  When an update moves a
+    role into a different group (new host/user/jump/proxy/key), that group is a
+    new endpoint for trust purposes and its host-key baseline is re-read from
+    the trust source (known_hosts).  An explicit ``expected_fingerprint`` in the
+    update patch is the out-of-band "machine reinstall" confirmation path and is
+    never overwritten.  ``spectre`` keeps its registration-time exception: a
+    missing fingerprint is a warning, not a blocker.
+
+    Returns a ``{"roles": {name: {"expected_fingerprint": fp}}}`` fragment.
+    """
+    old_targets = resolve_candidate(current, user)
+    new_targets = resolve_candidate(candidate, user)
+    explicit_roles = patch.get("roles")
+    if not isinstance(explicit_roles, dict):
+        explicit_roles = {}
+    probed: dict[tuple, str | None] = {}
+    fragment: dict[str, dict[str, str | None]] = {}
+    for name in _ALL_ROLES:
+        old_role = old_targets.role(name)
+        new_role = new_targets.role(name)
+        if (
+            new_role.mode != "remote"
+            or _role_group(old_role) == _role_group(new_role)
+        ):
+            continue
+        role_patch = explicit_roles.get(name)
+        if isinstance(role_patch, dict) and role_patch.get("expected_fingerprint"):
+            continue  # 显式确认（机器重装路径）优先，不覆盖
+        group = _role_group(new_role)
+        if group not in probed:
+            if not new_role.host:
+                raise RegistrationProbeError(
+                    f"role {name} is remote but host is unresolved"
+                )
+            probed[group] = probes.host_key_fingerprint(new_role.host)
+        fingerprint = probed[group]
+        if fingerprint is None:
+            if name == "spectre":
+                # 新 endpoint 没有可信基准时留空；不能保留旧主机的指纹
+                fragment[name] = {"expected_fingerprint": None}
+                continue  # spectre 例外：缺失/失败只 warning
+            raise RegistrationProbeError(
+                f"cannot obtain SSH host key fingerprint for role {name} "
+                f"({new_role.host}); record it in known_hosts out-of-band first "
+                "or provide expected_fingerprint explicitly"
+            )
+        fragment[name] = {"expected_fingerprint": fingerprint}
+    return {"roles": fragment} if fragment else {}
+
+
 class RegistrationProbeError(RuntimeError):
     """A required probe failed; registration aborts without persisting."""
 

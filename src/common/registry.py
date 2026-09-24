@@ -565,8 +565,26 @@ class Registry:
                         raise RegistryError("; ".join(errors))
                 entries[name] = candidate
 
-            self._mutate_locked(mutate)
-            return self._entries[self._lookup_name_locked(requested)]
+        self._mutate_locked(mutate)
+        return self._entries[self._lookup_name_locked(requested)]
+
+    def preview_update(self, user: str, patch: dict) -> UserEntry:
+        """Merge a management patch onto the current entry *without* persisting.
+
+        The control plane uses this to run side-effect checks (SSH host-key
+        probes for §6.5) before the locked read-modify-write; the authoritative
+        merge still happens inside :meth:`update` under the file lock.
+        """
+        if not isinstance(patch, dict):
+            raise ValueError("registry update patch must be an object")
+        requested = validate_user_name(str(user))
+        with self._lock:
+            name = self._lookup_name_locked(requested)
+            previous = self._entries.get(name)
+            if previous is None:
+                raise KeyError(requested)
+            merged = self._merge_update(previous.model_dump(), patch)
+            return UserEntry.model_validate(merged)
 
     def remove(self, user: str) -> None:
         """Remove one user and its token mapping (setup-phase write)."""

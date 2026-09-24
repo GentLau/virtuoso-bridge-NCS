@@ -298,12 +298,14 @@ class BusinessProcess:
             except (OSError, subprocess.TimeoutExpired):
                 pass
         if os.name != "nt" and proc.pid:
-            self._signal_process_group(proc.pid, signal.SIGTERM)
+            # ``_force_kill_tree`` is a staticmethod; POSIX signal helpers are
+            # reached through the class (P-056: ``self`` is not defined here).
+            BusinessProcess._signal_process_group(proc.pid, signal.SIGTERM)
             try:
                 proc.wait(timeout=2)
                 return
             except subprocess.TimeoutExpired:
-                self._signal_process_group(proc.pid, signal.SIGKILL)
+                BusinessProcess._signal_process_group(proc.pid, signal.SIGKILL)
                 return
         if job_bound:
             return
