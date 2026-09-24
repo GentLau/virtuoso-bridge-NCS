@@ -133,27 +133,23 @@ run 类操作默认 `blocking=false`：写 launcher、后台启动、立刻返�
 | `turbo` | 否 | 4 | 传给 `-turbo` |
 | `hier` | 否 | true | `-hier` |
 | `blocking` / `poll_interval` / `timeout` | 否 | false / 5 / 3600 | 见 §3.4 |
-| `params` | 否 | — | **带参数**：runset 键 → deck 语句**原位改写**（见下） |
-| `runset` | 否 | — | 远端 `.runset` 文件（`*key: value`），按同一张表翻译 |
+| `params` | 否 | — | 无 set 时的取数口：键=**SVRF 语句头**（含空格），值=整条语句，原位改写 deck |
+| `runset` | 否 | — | 远端 Calibre Interactive set（`.lvs`/`.drc`/`.pex`）：**走官方批处理入口**，参数全交给 Calibre |
 
-**参数怎么带**（真机结论见 `doc/report/calibre-网表导出机制调查报告.md §9`）：Calibre 的 specification 语句
-**first-wins**——`INCLUDE <deck>` + 覆盖行的 control file 对它们**无效**（`SPC1 superfluous specification`）。
-所以本包自己实现"runset 生效"：把参数**原位写进 deck 第一条同名语句**（缺失才追加），
-deck 整目录 stage 到 run dir（相对 `INCLUDE` 照常生效），每处改动记进 `deck_changes`。
+**参数一律用官方机制带**（两条路，互斥）：
 
-| runset 键 | 改写的 SVRF 语句 |
-|---|---|
-| `drcLayoutPaths` / `lvsLayoutPaths` | `LAYOUT PATH "…"` |
-| `drcLayoutPrimary` / `lvsLayoutPrimary` | `LAYOUT PRIMARY "…"` |
-| `drcLayoutSystem` | `LAYOUT SYSTEM …` |
-| `lvsSourcePath` / `lvsSourcePrimary` / `lvsSourceSystem` | `SOURCE PATH/PRIMARY/SYSTEM …` |
-| `lvsSVDBDir` | `MASK SVDB DIRECTORY "…" QUERY` |
+1. **有 set → `runset=<文件>`**：本包执行 `calibre -gui -<app> -runset <file> -batch`，
+   参数的解析、合并、控制文件生成（run dir 里的 `_<rules>_`）全部由 Calibre 自己做；
+   本包**不解析键、不做键→语句映射、不改 deck、不注入命令**，只做三件与结果有关的事：
+   发起（+ 轮询）、定位产物（读 `lvsRunDir`/`drcRunDir`/`pexRunDir` 只为知道去哪儿取报告）、解析报告。
+2. **没有 set → `deck=…`**：`calibre -<app> [options] <deck>` 官方 CLI 形态；deck 目录整份 stage 到 run dir
+   （相对 `INCLUDE` 照常生效），只按白名单占位符改写 deck 文本（PDK 自己的占位符约定），
+   需要额外覆盖时用 `params` 给 **SVRF 语句头**（如 `"LAYOUT PRIMARY"`，值给整条语句），原位替换第一条。
 
-键也可以直接写 **SVRF 语句头**（含空格，例如 `"LAYOUT PRIMARY"`），值给完整语句 → 原样替换/追加（转义舱）。
-**表里没有的键 → 结构化失败并列出支持的键**（不静默丢弃）。`runset` 文件里的键与 `params` 合并，
-`params` 同名优先；文件不可读/没有 `*key: value` 行同样明确失败。
-占位符一个都不剩时即"自包含 deck"，`gds`/`top`/`cdl` 全部可省（步骤里记 `self_contained`）；
-占位符判据在**参数应用之后**的文本上算（参数可能正好覆盖掉带占位符的那一行）。
+> 为什么不做键映射：Calibre 的 specification 语句 first-wins，手工把 runset 键翻译成 SVRF 语句
+> 在不同工艺库会漏（例如 TSMC 65 的电源名在 `VARIABLE POWER_NAME` 且参与 connectivity 规则）。
+> 官方批处理入口不做翻译，直接产出 control file，语义与 GUI 完全一致——实测见调查报告 §11。
+> 占位符一个都不剩时即"自包含 deck"，`gds`/`top`/`cdl` 全部可省（步骤记 `self_contained`）。
 
 ### 4.3 `calibre.lvs`
 
@@ -164,28 +160,25 @@ deck 整目录 stage 到 run dir（相对 `INCLUDE` 照常生效），每处改�
 > `CMP_LIB/inv2` + `inv2.gds` → `summary.status = correct`；同参数走 `.runset` 文件同样 `correct`；
 > 未知键报 `不支持的参数键：…`。**不需要拷改 deck，也不走 GUI batch。**
 
-#### 4.3.1 直接喂 Calibre Interactive 的 `.lvs` set（现场形态）
+#### 4.3.1 直接喂 Calibre Interactive 的 set（现场形态，官方批处理）
 
-`runset=<远端 .lvs 路径>` 可以只给这一个字段（deck / run_dir / 输入路径 / 选项都从 set 里取），
-显式给的字段优先。实测（2026-09-24，token `vb-vblog`）：
+只给 `runset=<远端 set 路径>` 即可（deck / run dir / 输入 / 选项 / hcell / SVDB 都在 set 里）：
 
-| set 里的键 | 归到哪 |
-|---|---|
-| `lvsRulesFile` / `lvsRunDir` | 请求层：`deck` / `run_dir` |
-| `lvsSpiceFile` | argv `-spice <file>`（相对值按 run dir 解析）→ 产出 layout SPICE |
-| `lvsUseHCells` + `lvsHCellsFile` | argv `-hcell <file>`（`lvsUseHCells=0` 则不挂） |
-| `lvsSVRFCmds`（`lvsIncludeCmdsType=SVRF`） | 额外 SVRF，**追加进 TVF 的 `tvf::VERBATIM` 块内**（追加到文件末尾会被 Tcl 当命令：`Error TVF2`） |
-| `lvsLayoutPaths/Primary`、`lvsSourcePath/Primary` | deck 语句原位改写（路径在同 role 内相对 run dir 解析） |
-| `lvsPowerNames` / `lvsGroundNames` | 语句里加引号列表；**deck 用 `VARIABLE POWER_NAME` 时改那一条**（TSMC 65 的写法，变量还参与 connectivity 规则） |
-| `lvsReportFile/MaximumCount/Options`、`lvsAbortOnSupplyError`、`lvsRecognizeGates` | deck 语句原位改写（`1/0` → `YES/NO`） |
-| `lvsLayoutLibrary/View`、`*GetFromViewer`、`cmn*`（含 cluster/prompt/FDI 表） | **GUI-only：不生效，列进 `runset.ignored`** |
-| 其余（如 `lvsSVDBxcal`、`lvsERCDatabase`） | 列进 `runset.unmapped`（默认继续跑；`runset_strict=true` 时判失败） |
+```
+calibre -gui -lvs -runset <set> -batch      # 本包实际执行的命令（drc/pex 同理换 -<app>）
+```
 
-返回里带 `runset: {applied, ignored, unmapped, request_keys}` 便于审计；
-报告改名的情况（set 常把报告写成 `<cell>.lvs.report`）`read_results` 会跟着 `job.json.report_file` 走。
+实测（2026-09-24，token `vb-vblog`，65nm deck + `CMP_LIB/inv2` + `export_cdl` 的 CDL）：
+`completed`、`summary.status = correct`；run dir 里能看到 **Calibre 自己生成的 `_calibre.lvs_` control file**、
+set 指定名字的报告（`inv2.lvs.report`）、`svdb/`、layout SPICE；`read_results` 按 run dir 里实际产物取报告
+（先默认名，再 `job.json.report_file`，最后在 run dir 内扫描 `*.report/*.rep`），与 set 是否改名无关。
 
-> 边界：set 只携带**参数**，不携带数据——`lvsLayoutPaths`/`lvsSourcePath` 指向的文件必须已存在于远端；
-> GUI 的 `*.calibre.db` 布局库由 viewer 导出，本包不产（我们的版图侧产物是 GDS，必要时把 `LAYOUT SYSTEM` 对齐）。
+返回里记 `mode: "official-batch"`、`runset` 路径与 run dir（审计用）；`deck_changes` 恒为空——带 set 时本包
+**不碰 deck**。附带的 `spice_file`/`hcell_file`/`xcell_file` + `params`（SVRF 语句头）只服务没有 set 的路径。
+
+> 边界：set 只携带**参数**，不携带数据——它引用的 layout / 源网表 / hcell 文件必须已存在于远端；
+> GUI 的 `*.calibre.db` 布局库由 viewer 导出，本包不产（我们的版图侧产物是 GDS）。
+> 轮询用 Calibre 自己的日志标记（`LVS completed` 等）；失败同样以日志标记 + 产物为准（§3.4）。
 
 ### 4.4 `calibre.pex`
 

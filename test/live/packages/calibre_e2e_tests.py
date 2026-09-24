@@ -210,11 +210,13 @@ def _case_lvs_chain(transport) -> None:
 
 
 def _case_params(transport) -> None:
-    """PARAM-01：runset 键 → deck 语句原位改写（specification first-wins 的唯一生效写法）。"""
+    """PARAM-01：无 set 的取数口——SVRF 语句头 → deck 原位改写（参数合并仍由 Calibre 自己做）。"""
     exported = _exported.get("cdl")
     _check(exported, "PARAM-01 依赖 EXPORT-01 的 CDL，但 EXPORT-01 未产出")
-    params = {"lvsLayoutPaths": CDL_GDS, "lvsLayoutPrimary": CDL_CELL,
-              "lvsSourcePath": exported, "lvsSourcePrimary": CDL_CELL}
+    params = {"LAYOUT PATH": f'LAYOUT PATH "{CDL_GDS}"',
+              "LAYOUT PRIMARY": f'LAYOUT PRIMARY "{CDL_CELL}"',
+              "SOURCE PATH": f'SOURCE PATH "{exported}"',
+              "SOURCE PRIMARY": f'SOURCE PRIMARY "{CDL_CELL}"'}
     job = _value(transport, "calibre.lvs", deck=LVS_DECK, params=params,
                  run_dir=f"{RUN_DIR}/lvs-params", blocking=True, timeout=900)
     changes = job.get("deck_changes") or []
@@ -227,38 +229,13 @@ def _case_params(transport) -> None:
     if status != "correct" and REQUIRE_LVS_VERDICT:
         raise AssertionError(f"带参数的 LVS 未通过比对: status={status!r}")
 
-    # runset 文件形态（Calibre Interactive `*key: value` 文本，按表翻译）
-    tmp = WORK_DIR / "tmp"
-    tmp.mkdir(parents=True, exist_ok=True)
-    local = tmp / "e2e-lvs.runset"
-    local.write_text("// e2e\n" + "".join(f"*{key}: {value}\n" for key, value in params.items()),
-                     encoding="utf-8", newline="\n")
-    remote = f"{RUN_DIR}/e2e-lvs.runset"
-    _op(transport, "basic.file.upload", local_path=str(local), remote_path=remote, timeout=120)
-    job2 = _value(transport, "calibre.lvs", deck=LVS_DECK, runset=remote,
-                  run_dir=f"{RUN_DIR}/lvs-params-runset", blocking=True, timeout=900)
-    _check(any("SOURCE PATH" in item for item in (job2.get("deck_changes") or [])),
-           f"runset 没翻译成 deck 语句: {job2.get('deck_changes')}")
-
-    # 不认识的键不静默：默认列进 runset.unmapped（继续跑），runset_strict 下判失败
-    loose = transport.call({
-        "operation": "calibre.lvs", "token": TOKEN, "deck": LVS_DECK,
-        "gds": CDL_GDS, "top": CDL_CELL, "cdl": exported,
-        "params": {"lvsNotAThing": "1"},
-        "run_dir": f"{RUN_DIR}/lvs-unmapped", "blocking": False,
-    })
-    _check(loose.get("ok"), f"默认应继续跑并把未支持键记下来: {str(loose)[:300]}")
-    reported = ((loose.get("data") or {}).get("value") or {}).get("runset") or {}
-    _check("lvsNotAThing" in (reported.get("unmapped") or []),
-           f"未支持键要出现在 runset.unmapped: {reported}")
-    strict = transport.call({
-        "operation": "calibre.lvs", "token": TOKEN, "deck": LVS_DECK,
-        "gds": CDL_GDS, "top": CDL_CELL, "cdl": exported,
-        "params": {"lvsNotAThing": "1"}, "runset_strict": True,
-        "run_dir": f"{RUN_DIR}/lvs-bad-param",
-    })
-    _check(not strict.get("ok"), f"strict 模式下未支持键必须失败: {str(strict)[:200]}")
-    _check("未支持的键" in str(strict.get("error") or ""), f"错误要指出未支持的键: {strict}")
+    # 不做 runset 键映射：camelCase 键必须失败并指路官方入口（runset=）
+    bad = transport.call({"operation": "calibre.lvs", "token": TOKEN, "deck": LVS_DECK,
+                          "gds": CDL_GDS, "top": CDL_CELL, "cdl": exported,
+                          "params": {"lvsLayoutPrimary": CDL_CELL},
+                          "run_dir": f"{RUN_DIR}/lvs-bad-param"})
+    _check(not bad.get("ok"), f"runset 键不允许出现在 params: {str(bad)[:200]}")
+    _check("SVRF 语句头" in str(bad.get("error") or ""), f"错误要指路: {bad}")
 
 
 def _case_set_file(transport) -> None:
@@ -300,18 +277,17 @@ def _case_set_file(transport) -> None:
     _op(transport, "basic.file.upload", local_path=str(local), remote_path=remote, timeout=120)
 
     job = _value(transport, "calibre.lvs", runset=remote, blocking=True, timeout=900)
-    report = job.get("runset") or {}
-    _check("lvsRulesFile" in (report.get("request_keys") or []),
-           f"set 里的 lvsRulesFile 没被消费: {report}")
-    _check("cmnRunMT" in (report.get("ignored") or []),
-           f"GUI-only 键要列进 ignored: {report}")
-    _check("lvsSVDBxcal" in (report.get("unmapped") or []),
-           f"未支持键要列进 unmapped: {report}")
-    _check(any("VARIABLE POWER_NAME" == item for item in (report.get("applied") or [])),
-           f"电源名要落到 VARIABLE POWER_NAME: {report}")
+    # 官方批处理入口：参数合并全由 Calibre 做，我们只发起 + 分析
+    _check(job.get("mode") == "official-batch", f"不是官方批处理模式: {job.get('mode')}")
+    _check(job.get("run_dir") == run_dir, f"产物目录应取 set 的 lvsRunDir: {job.get('run_dir')}")
+    probe = _op(transport, "basic.command.run",
+                cmd=f"ls {run_dir}/_calibre.lvs_ >/dev/null 2>&1 && echo ctrl_ok; "
+                    f"ls {run_dir}/inv2.lvs.report >/dev/null 2>&1 && echo report_ok")
+    probe_out = (probe.get("result") or ["", ""])[1]
+    _check("ctrl_ok" in probe_out, f"缺 Calibre 生成的 control file：{probe_out!r}")
+    _check("report_ok" in probe_out, f"缺 set 指定名字的报告：{probe_out!r}")
 
-    read = _value(transport, "calibre.read_results", kind="lvs",
-                  run_dir=job.get("run_dir"), limit=20)
+    read = _value(transport, "calibre.read_results", kind="lvs", run_dir=run_dir, limit=20)
     _check(read.get("report_used"), f"set 改了报告名后 read_results 找不到报告: {read}")
     status = (read.get("summary") or {}).get("status")
     _check(status in KNOWN_VERDICTS, f"set 驱动的 LVS 结论不在已知枚举: {status!r}")
@@ -357,8 +333,8 @@ def run_suite(transport) -> list[tuple[str, str]]:
     run("DRC-02 bad deck fails", lambda: _case_drc_bad_deck(transport))
     run("LVS-01 run + read_results", lambda: _case_lvs(transport))
     run("LVS-02 export_cdl → LVS 闭环", lambda: _case_lvs_chain(transport))
-    run("PARAM-01 带参数（params/runset）", lambda: _case_params(transport))
-    run("SET-01 只给 .lvs set 跑 LVS", lambda: _case_set_file(transport))
+    run("PARAM-01 无 set 取数口（SVRF 语句头）", lambda: _case_params(transport))
+    run("SET-01 只给 .lvs set（官方批处理）", lambda: _case_set_file(transport))
     return results
 
 
@@ -380,3 +356,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

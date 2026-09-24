@@ -15,7 +15,7 @@ import posixpath
 import re
 import shlex
 import time
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -98,8 +98,6 @@ class RunRequest:
     spice_file: str | None = None
     hcell_file: str | None = None
     xcell_file: str | None = None
-    svrf_extra: list[str] | None = None
-    runset_strict: bool = False
     blocking: bool = False
     poll_interval: float = _DEFAULT_POLL
     timeout: int | None = None
@@ -122,14 +120,6 @@ class RunRequest:
         _opt_text(self.spice_file, "spice_file")
         _opt_text(self.hcell_file, "hcell_file")
         _opt_text(self.xcell_file, "xcell_file")
-        _require_bool(self.runset_strict, "runset_strict")
-        if self.svrf_extra is not None:
-            if not isinstance(self.svrf_extra, (list, tuple)):
-                raise ValueError("svrf_extra must be a list of SVRF lines")
-            for line in self.svrf_extra:
-                _require_text(line, "svrf_extra line")
-                if "\n" in line or "\r" in line:
-                    raise ValueError("svrf_extra entries must be single lines")
         if self.params is not None:
             if not isinstance(self.params, dict):
                 raise ValueError("params must be a mapping of name->value")
@@ -420,6 +410,8 @@ class Package:
         })
 
     def pex(self, request: RunRequest) -> Result:
+        if request.runset:
+            return self._run("pex", request)          # 官方批处理：参数由 set 全权携带
         if not request.cdl:
             return Result(False, [], "pex requires cdl (LVS source netlist)", None)
         if not request.lvs_run_dir:
@@ -429,21 +421,35 @@ class Package:
     def _run(self, kind: str, request: RunRequest) -> Result:
         started = time.monotonic()
         steps: list[dict[str, Any]] = []
-        request, runset_applied, runset_error = self._apply_runset(request, steps)
-        if runset_error:
-            return Result(False, steps, runset_error, None)
         root = self._command_root(request.token, steps)
         if root is None:
             return Result(False, steps, "command role root unavailable", None)
-        job_id = request.job_id or f"{kind}_{_slug(request.top or posixpath.basename(request.deck))}"
-        run_dir = request.run_dir or posixpath.join(root, "calibre", job_id)
-        request, path_notes = self._resolve_relative_paths(request, run_dir)
-        if path_notes:
-            steps.append({"name": "runset-paths", "ok": True, "detail": {"resolved": path_notes}})
         binary = self._calibre_bin(request.token, request.calibre_bin, steps)
         if binary is None:
             return Result(False, steps, _MISSING_FACTS, None)
 
+        # ---------------------------------------------------------- 官方批处理入口
+        # 带 set 时**参数合并完全交给 Calibre**（`calibre -gui -<app> -runset <f> -batch`）：
+        # 本包不解析键、不改 deck、不注入命令，只负责发起、轮询、分析结果。
+        if request.runset:
+            run_dir, job_id = self._runset_workspace(kind, request, root, steps)
+            if run_dir is None:
+                return Result(False, steps, "runset 的产物目录不可解析", None)
+            prepared = self.middle.run_command(
+                f"mkdir -p {shlex.quote(run_dir)}", timeout=request.timeout or 60,
+                token=request.token)
+            steps.append({"name": "prepare-run-dir", "ok": prepared.returncode == 0,
+                          "detail": {"run_dir": run_dir, "kind": prepared.kind}})
+            if prepared.returncode != 0:
+                return Result(False, steps, _command_error("prepare run dir", prepared), None)
+            argv = [binary, "-gui", f"-{kind}", "-runset", request.runset, "-batch"]
+            meta = {"kind": kind, "run_dir": run_dir, "mode": "official-batch",
+                    "runset": request.runset, "argv": argv}
+            return self._launch_and_wait(kind, request, steps, run_dir, job_id,
+                                         [argv], meta, started)
+
+        job_id = request.job_id or f"{kind}_{_slug(request.top or posixpath.basename(request.deck))}"
+        run_dir = request.run_dir or posixpath.join(root, "calibre", job_id)
         existing = self._status_snapshot(kind, run_dir, request.token, request.timeout)
         if existing and existing.process_alive:
             return Result(False, steps,
@@ -492,7 +498,7 @@ class Package:
         rewritten = self._rewrite_deck(request, kind, steps)
         if rewritten is None:
             return Result(False, steps, "deck rewrite failed", None)
-        deck_text, changes, missing, param_errors, runset_report = rewritten
+        deck_text, changes, missing, param_errors = rewritten
         if param_errors:
             return Result(False, steps, "; ".join(param_errors), None)
         if missing:
@@ -514,9 +520,16 @@ class Package:
             "kind": kind, "run_dir": run_dir, "top": request.top, "gds": request.gds,
             "cdl": request.cdl, "deck": request.deck, "deck_sha256": cu.deck_sha256(deck_text),
             "deck_changes": changes, "turbo": request.turbo, "fmt": request.fmt,
-            "params": request.params, "runset": request.runset,
+            "params": request.params, "mode": "deck",
             "report_file": cu.report_file_from_deck(kind, deck_text),
         }
+        return self._launch_and_wait(kind, request, steps, run_dir, job_id,
+                                     argv_list, meta, started)
+
+    def _launch_and_wait(self, kind: str, request: RunRequest, steps: list[dict[str, Any]],
+                         run_dir: str, job_id: str, argv_list: list[list[str]],
+                         meta: dict[str, Any], started: float) -> Result:
+        """写 launcher → 后台起 → （可选）轮询到完成/失败；deck 路径与官方批处理共用。"""
         launcher = cu.build_launcher(
             kind=kind, run_dir=run_dir, argv=argv_list[0],
             stages=argv_list if len(argv_list) > 1 else None,
@@ -543,8 +556,7 @@ class Package:
         value = {"job_id": job_id, "run_dir": run_dir, "kind": kind,
                  "pid": int(pid[0]) if pid and pid[0].strip().isdigit() else None,
                  "status": "started" if alive else "unknown",
-                 "deck_changes": changes,
-                 "runset": {**runset_report, "request_keys": runset_applied},
+                 "mode": meta.get("mode"), "deck_changes": meta.get("deck_changes", []),
                  "elapsed_ms": int((time.monotonic() - started) * 1000)}
         if not request.blocking:
             return Result(True, steps, None, value)
@@ -639,6 +651,29 @@ class Package:
                             summary = cu.parse_drc_report(text, limit=request.limit)
                         elif kind == "lvs":
                             summary = cu.parse_lvs_report(text, limit=request.limit)
+        if report_used is None:
+            # 官方批处理（-gui … -runset）不经过我们的 deck 改写，报告名由 set 决定：
+            # 直接在 run dir 里找报告——这属于结果定位，不解释任何 set 参数。
+            patterns = {"drc": ("*.rep", "*.report", "*.sum"),
+                        "lvs": ("*.report", "*.rep"),
+                        "pex": ("*.log",)}.get(kind, ("*.report",))
+            found = self.middle.run_command(
+                f"cd {shlex.quote(run_dir)} 2>/dev/null || exit 0; "
+                f"ls -1t {' '.join(patterns)} 2>/dev/null | head -1",
+                timeout=request.timeout, token=request.token,
+            )
+            name = (found.stdout or "").strip().splitlines()
+            if name and name[0]:
+                text = self._download_text(posixpath.join(run_dir, name[0]),
+                                           request.token, request.timeout)
+                if text is not None:
+                    report_used = name[0]
+                    if kind == "drc":
+                        summary = cu.parse_drc_report(text, limit=request.limit)
+                    elif kind == "lvs":
+                        summary = cu.parse_lvs_report(text, limit=request.limit)
+                    else:
+                        summary = cu.parse_pex_log(text)
         steps.append({"name": "parse", "ok": report_used is not None,
                       "detail": {"report": report_used, "kind": kind}})
         tail = self._log_tail(run_dir, request.token, request.log_lines, request.timeout)
@@ -791,26 +826,17 @@ class Package:
         rewritten, changes = cu.deck_rewrite(
             text, gds=request.gds, top=request.top, cdl=request.cdl
         )
-        overrides, applied, gui_only, unknown = self._collect_overrides(request, steps, text)
-        if unknown and request.runset_strict:
-            supported = ", ".join(sorted(cu.RUNSET_STATEMENTS))
-            return rewritten, changes, [], [
-                f"runset/params 里有未支持的键（strict）：{', '.join(unknown)}；"
-                f"支持：{supported}，或用 SVRF 语句头（含空格）"
-            ], {"applied": applied, "ignored": gui_only, "unmapped": unknown}
-        report = {"applied": applied, "ignored": gui_only, "unmapped": unknown}
+        try:
+            overrides = cu.statements_from_params(dict(request.params or {}), text)
+        except ValueError as exc:
+            return rewritten, changes, [], [str(exc)]
         if overrides:
             rewritten, param_changes, appended = cu.apply_statements(rewritten, overrides)
             changes = changes + param_changes
             steps.append({"name": "params", "ok": True,
                           "detail": {"applied": param_changes, "appended": appended,
                                      "keys": sorted(overrides)}})
-        if request.svrf_extra:
-            rewritten = cu.append_svrf(rewritten, list(request.svrf_extra))
-            changes = changes + [f"svrf_extra: {line}" for line in request.svrf_extra]
-            steps.append({"name": "svrf-extra", "ok": True,
-                          "detail": {"lines": list(request.svrf_extra)}})
-        if not overrides and not request.svrf_extra and (request.params or request.runset):
+        if not overrides and request.params:
             steps.append({"name": "params", "ok": True, "detail": {"applied": []}})
         # 占位符判据在**最终文本**上算：runset/params 可能正好覆盖掉带占位符的那一行
         missing = cu.deck_missing_inputs(
@@ -818,93 +844,34 @@ class Package:
         )
         steps.append({"name": "rewrite-deck", "ok": True,
                       "detail": {"changes": changes, "missing": missing,
-                                 "runset": report,
                                  "self_contained": not missing and not changes,
                                  "sha256": cu.deck_sha256(rewritten)[:16]}})
-        return rewritten, changes, missing, [], report
+        return rewritten, changes, missing, []
 
-    def _collect_overrides(self, request: RunRequest, steps: list[dict[str, Any]]
-                           , deck_text: str = ""
-                           ) -> tuple[dict[str, str], list[str], list[str], list[str]]:
-        """把参数统一成 SVRF 语句覆盖。
+    def _runset_workspace(self, kind: str, request: RunRequest, root: str,
+                          steps: list[dict[str, Any]]) -> tuple[str | None, str]:
+        """定位 set 的产物目录（用于轮询/分析）；**不解析任何参数**。
 
-        返回 ``(overrides, applied, gui_only, unknown)``：GUI-only 与未知键都**不静默**。
+        参数合并全部由 Calibre 的官方批处理入口完成（`-gui -<app> -runset … -batch`），
+        这里只读 set 里的产物目录键（`lvsRunDir`/`drcRunDir`/`pexRunDir`），
+        因为要盯着那个目录轮询、并去那里取报告——这属于结果分析，不是参数映射。
         """
-        overrides, gui_only, unknown = cu.statements_from_params(
-            dict(request.params or {}), deck_text)
-        return overrides, sorted(overrides), gui_only, unknown
-
-    def _apply_runset(self, request: RunRequest, steps: list[dict[str, Any]]
-                      ) -> tuple[RunRequest, list[str], str | None]:
-        """把 runset 文件里**由请求层消费**的键填进请求（显式给的字段优先）。"""
-        if not request.runset:
-            return request, [], None
+        keys: dict[str, str] = {}
         text = self._download_text(request.runset, request.token, request.timeout)
         if text is None:
-            steps.append({"name": "runset", "ok": False, "detail": request.runset})
-            return request, [], f"runset 文件不可读: {request.runset}"
-        keys = cu.parse_runset(text)
+            steps.append({"name": "runset", "ok": False,
+                          "detail": {"path": request.runset, "reason": "unreadable"}})
+        else:
+            keys = cu.parse_runset(text)
+        declared = cu.runset_run_dir(keys)
+        run_dir = request.run_dir or declared or posixpath.join(
+            root, "calibre", request.job_id or f"{kind}_set")
+        job_id = request.job_id or _slug(posixpath.basename(run_dir.rstrip("/")) or kind)
         steps.append({"name": "runset", "ok": bool(keys),
-                      "detail": {"path": request.runset, "keys": len(keys)}})
-        if not keys:
-            return request, [], f"runset 里没有 *key: value 行: {request.runset}"
-
-        updates: dict[str, Any] = {}
-        params = dict(request.params or {})
-        applied: list[str] = []
-        for key, value in keys.items():
-            if key in cu.RUNSET_REQUEST_KEYS:
-                if key == "lvsRulesFile" and not request.deck:
-                    updates["deck"] = value
-                elif key == "lvsRunDir" and not request.run_dir:
-                    updates["run_dir"] = value
-                elif key == "lvsSpiceFile" and not request.spice_file:
-                    updates["spice_file"] = value
-                elif key == "lvsHCellsFile" and not request.hcell_file:
-                    updates["hcell_file"] = value
-                elif key == "lvsUseHCells" and str(value).strip() in ("0", "false", "no"):
-                    updates["hcell_file"] = None
-                elif key == "lvsSVRFCmds" and not request.svrf_extra:
-                    updates["svrf_extra"] = cu.parse_svrf_cmds(value)
-                elif key == "lvsIncludeCmdsType" and str(value).strip().upper() != "SVRF":
-                    return request, applied, \
-                        f"runset 只支持 lvsIncludeCmdsType=SVRF（现值 {value!r}）"
-                applied.append(key)
-                continue
-            params.setdefault(key, value)
-        updates["params"] = params
-        effective = replace(request, **updates) if updates else request
-        if not effective.deck:
-            return request, applied, \
-                "set 里没有 deck：请显式给 deck，或让 runset 带 lvsRulesFile/drcRulesFile"
-        return effective, sorted(applied), None
-
-    #: runset 里语义是"路径"的键：相对值按 run_dir 解析（与 GUI 的 lvsRunDir 基准一致）。
-    _PATH_PARAM_KEYS = frozenset({
-        "drcLayoutPaths", "lvsLayoutPaths", "lvsSourcePath", "lvsSVDBDir",
-        "lvsReportFile", "lvsERCDatabase", "lvsERCSummaryFile", "lvsMaskDBFile",
-    })
-
-    def _resolve_relative_paths(self, request: RunRequest, run_dir: str
-                                ) -> tuple[RunRequest, list[str]]:
-        """把 runset/参数里的相对路径按 run_dir 变成绝对路径（GUI 语义）。"""
-        notes: list[str] = []
-        updates: dict[str, Any] = {}
-        for field_name in ("spice_file", "hcell_file", "xcell_file"):
-            value = getattr(request, field_name)
-            if value and not value.startswith("/"):
-                resolved = posixpath.join(run_dir, value)
-                updates[field_name] = resolved
-                notes.append(f"{field_name}: {value} -> {resolved}")
-        params = dict(request.params or {})
-        for key in list(params):
-            value = params[key]
-            if key in self._PATH_PARAM_KEYS and value and not value.startswith("/"):
-                params[key] = posixpath.join(run_dir, value)
-                notes.append(f"{key}: {value} -> {params[key]}")
-        if params != (request.params or {}):
-            updates["params"] = params
-        return (replace(request, **updates) if updates else request), notes
+                      "detail": {"path": request.runset, "run_dir": run_dir,
+                                 "run_dir_from_set": bool(declared),
+                                 "keys": len(keys)}})
+        return run_dir, job_id
 
     def _download_text(self, remote: str, token: str, timeout: int | None) -> str | None:
         exists = self.middle.run_command(
@@ -1143,3 +1110,4 @@ __all__ = [
     "RunRequest",
     "StatusRequest",
 ]
+

@@ -54,74 +54,9 @@ def deck_missing_inputs(text: str, *, gds: str | None, top: str | None,
     return missing
 
 
-#: Calibre Interactive runset 的键 → SVRF 语句。
-#:
-#: 值是**候选语句头**（按顺序取 deck 里存在的第一个，都没有就用第一个→追加）：
-#: 不同工艺库把同一语义放在不同语句里，例如 TSMC 65 把电源名放在
-#: `VARIABLE POWER_NAME`（该变量还参与 connectivity 规则），只改 `LVS POWER NAME`
-#: 会留下不一致；SMIC 40 这类的 runset 才是直接给 `LVS POWER NAME`。
-#:
-#: 值渲染：quoted=加引号；quoted_list=逐词加引号；bare=原样；yesno=1/0→YES/NO；
-#: svdb=`MASK SVDB DIRECTORY "<v>" QUERY`。
-RUNSET_STATEMENTS: dict[str, tuple[tuple[str, ...], str]] = {
-    "drcLayoutPaths": (("LAYOUT PATH",), "quoted"),
-    "drcLayoutPrimary": (("LAYOUT PRIMARY",), "quoted"),
-    "drcLayoutSystem": (("LAYOUT SYSTEM",), "bare"),
-    "lvsLayoutPaths": (("LAYOUT PATH",), "quoted"),
-    "lvsLayoutPrimary": (("LAYOUT PRIMARY",), "quoted"),
-    "lvsLayoutSystem": (("LAYOUT SYSTEM",), "bare"),
-    "lvsSourcePath": (("SOURCE PATH",), "quoted"),
-    "lvsSourcePrimary": (("SOURCE PRIMARY",), "quoted"),
-    "lvsSourceSystem": (("SOURCE SYSTEM",), "bare"),
-    "lvsPowerNames": (("VARIABLE POWER_NAME", "LVS POWER NAME"), "quoted_list"),
-    "lvsGroundNames": (("VARIABLE GROUND_NAME", "LVS GROUND NAME"), "quoted_list"),
-    "lvsReportFile": (("LVS REPORT",), "quoted"),
-    "lvsReportMaximumCount": (("LVS REPORT MAXIMUM",), "bare"),
-    "lvsReportOptions": (("LVS REPORT OPTION",), "bare"),
-    "lvsAbortOnSupplyError": (("LVS ABORT ON SUPPLY ERROR",), "yesno"),
-    "lvsRecognizeGates": (("LVS RECOGNIZE GATES",), "bare"),
-    "lvsSVDBDir": (("MASK SVDB DIRECTORY",), "svdb"),
-}
-
-#: runset 里只对 GUI/交互态有意义的键：不进 deck、不报错，但**要在响应里列出来**。
-RUNSET_GUI_ONLY_KEYS = frozenset({
-    "lvsLayoutLibrary", "lvsLayoutView", "lvsLayoutGetFromViewer",
-    "lvsSourceLibrary", "lvsSourceView", "lvsSourceGetFromViewer",
-    "lvsViewLVSSummaryFile",
-    "cmnFDILayoutLibrary", "cmnFDILayoutView", "cmnFDIDEFLayoutPath",
-    "cmnConfigureLVSBox", "cmnPromptSaveRunset", "cmnShowOptions",
-    "cmnWarnLayoutOverwrite", "cmnWarnSourceOverwrite", "cmnVconnectColon",
-    "cmnRunMT", "cmnSlaveHosts", "cmnLSFSlaveTbl", "cmnGridSlaveTbl",
-})
-
-#: 这些键由 `calibre.py` 直接消费（不是 deck 语句）：见 `RunRequest`。
-RUNSET_REQUEST_KEYS = frozenset({
-    "lvsRulesFile", "lvsRunDir", "lvsSpiceFile", "lvsUseHCells", "lvsHCellsFile",
-    "lvsSVRFCmds", "lvsIncludeCmdsType",
-})
-
-
-def is_gui_only_key(key: str) -> bool:
-    return key in RUNSET_GUI_ONLY_KEYS or key.startswith("cmn")
-
-
-def _quote_list(value: str) -> str:
-    items = [item.strip().strip('"') for item in value.split()]
-    return " ".join(f'"{item}"' for item in items if item)
-
-
-def render_statement(head: str, value: str, style: str) -> str:
-    """按 head 生成一条完整 SVRF 语句。"""
-    if style == "bare":
-        return f"{head} {value}"
-    if style == "quoted_list":
-        return f"{head} {_quote_list(value)}"
-    if style == "yesno":
-        truthy = str(value).strip().lower() in ("1", "true", "yes", "t")
-        return f"{head} {'YES' if truthy else 'NO'}"
-    if style == "svdb":
-        return f'{head} "{value}" QUERY'
-    return f'{head} "{value}"'
+#: runset 的**键名本身就是参数**（GUI 的 `*key: value`）：本包不解释、不映射任何键。
+#: 参数合并一律交给官方入口 `calibre -gui -<app> -runset <file> -batch`（见 calibre.py）。
+#: 这里只提供两件事：解析出「产物目录」用于轮询/分析，以及通用 SVRF 语句改写（无 set 的路径）。
 
 
 def parse_runset(text: str) -> dict[str, str]:
@@ -143,53 +78,34 @@ def parse_runset(text: str) -> dict[str, str]:
     return values
 
 
-def parse_svrf_cmds(value: str) -> list[str]:
-    """`lvsSVRFCmds: {LVS FILTER C(CP) OPEN} {}` → ``["LVS FILTER C(CP) OPEN"]``。"""
-    groups = re.findall(r"\{([^{}]*)\}", value)
-    if not groups:
-        return [line.strip() for line in value.splitlines() if line.strip()]
-    joined = " ".join(part.strip() for part in groups if part.strip())
-    return [joined] if joined else []
+RUNSET_RUN_DIR_KEYS = ("lvsRunDir", "drcRunDir", "pexRunDir", "lpeRunDir", "runDir")
 
 
-def choose_head(candidates: tuple[str, ...], deck_text: str) -> str:
-    """取 deck 里已存在的第一个候选语句头；都没有就用首选（→ 追加）。"""
-    upper = deck_text.upper()
-    for head in candidates:
-        wanted = head.upper()
-        for line in upper.splitlines():
-            stripped = line.strip()
-            if stripped == wanted or stripped.startswith(wanted + " ") \
-                    or stripped.startswith(wanted + "\t"):
-                return head
-    return candidates[0]
+def runset_run_dir(keys: dict[str, str]) -> str | None:
+    """从 set 里取「产物目录」——**只为定位产物做轮询/分析**，不是参数映射。"""
+    for name in RUNSET_RUN_DIR_KEYS:
+        value = (keys.get(name) or "").strip()
+        if value:
+            return value
+    return None
 
 
-def statements_from_params(
-    params: dict[str, str], deck_text: str = "",
-) -> tuple[dict[str, str], list[str], list[str]]:
-    """把 runset 键 / 裸 SVRF 语句头统一成 ``{语句头: 完整语句}``。
+def statements_from_params(params: dict[str, str], deck_text: str = "") -> dict[str, str]:
+    """通用语句改写：键= SVRF 语句头（如 `"LAYOUT PRIMARY"`），值= 整条语句。
 
-    返回 ``(overrides, gui_only, unknown)``：GUI-only 与未知键都**不静默**——
-    由调用方决定报告还是失败。
+    刻意**不做 runset 键→语句的映射表**：带 set 时参数合并交给官方入口，
+    本函数只服务"没有 set、只有 deck"的路径（PDK 占位符之外的取数口）。
     """
     overrides: dict[str, str] = {}
-    gui_only: list[str] = []
-    unknown: list[str] = []
     for key, value in params.items():
-        mapped = RUNSET_STATEMENTS.get(key)
-        if mapped:
-            candidates, style = mapped
-            head = choose_head(candidates, deck_text)
-            overrides[head] = render_statement(head, value, style)
-        elif is_gui_only_key(key):
-            gui_only.append(key)
-        elif " " in key.strip():
-            # 转义舱：键直接写 SVRF 语句头（如 "LAYOUT PRIMARY"），值给完整语句
-            overrides[key.strip().upper()] = value.strip()
-        else:
-            unknown.append(key)
-    return overrides, gui_only, unknown
+        head = key.strip().upper()
+        if " " not in head:
+            raise ValueError(
+                f"params 的键必须是 SVRF 语句头（含空格，例如 \"LAYOUT PRIMARY\"）：{key!r}"
+                "；要带 Calibre 的 set 请用 runset=<文件>（官方批处理入口）"
+            )
+        overrides[head] = value.strip()
+    return overrides
 
 
 def apply_statements(text: str, overrides: dict[str, str]) -> tuple[str, list[str], list[str]]:

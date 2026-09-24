@@ -389,36 +389,36 @@ MM6 OUT IN VDD VDD pch l=180.0n w=8u m=1
 - `run_dir` 落在 deck 目录之内时 `cp -r` 会自我递归（真机复现：`cp: cannot copy a directory into itself`）：
   现在前置拒绝并提示换目录（顺带避免 `rm -rf` 波及调用方 deck 目录）。
 
-## 11. 直接消费 Calibre Interactive 的 `.lvs` set（2026-09-24 实测）
+## 11. 直接消费 Calibre Interactive 的 set：用官方批处理入口（2026-09-24 定版）
 
 现场给的是一份 SMIC 40LLRF 的完整 `.lvs` set（`*lvs*` / `*cmn*` 约 40 个键）。
-结论：**可以把它当唯一输入跑 LVS**，但必须先把键分成四类，不能整份当参数表吞下去。
+**定版做法：整份 set 交给 Calibre 自己消费，本包不做任何键→语句映射。**
 
-| # | 类别 | 例子 | 处理 |
-|---|---|---|---|
-| 1 | 请求层字段 | `lvsRulesFile`（→deck）、`lvsRunDir`（→run dir）、`lvsSpiceFile`、`lvsUseHCells`+`lvsHCellsFile` | 填进请求/argv；相对路径按 run dir 解析 |
-| 2 | deck 语句 | `lvsLayoutPaths/Primary`、`lvsSourcePath/Primary`、`lvsPower/GroundNames`、`lvsReportFile/MaximumCount/Options`、`lvsAbortOnSupplyError`、`lvsRecognizeGates`、`lvsSVDBDir` | **原位改写**第一条同名语句（first-wins） |
-| 3 | 额外命令 | `lvsSVRFCmds`（`{LVS FILTER C(CP) OPEN} {}`） | 追加进 deck，且**必须落在 TVF 的 `tvf::VERBATIM` 块内** |
-| 4 | GUI-only | `*Library/*View/*GetFromViewer`、`cmn*`（cluster/prompt/FDI/overwrite 警告） | 不生效，列进 `runset.ignored`（不静默） |
+```
+calibre -gui -lvs -runset <set> -batch        # 本包执行的命令（drc/pex 换 -<app>）
+```
 
-真机结果（token `vb-vblog`，65nm deck + `CMP_LIB/inv2` + `export_cdl` 的 CDL）：
+真机（token `vb-vblog`，65nm deck + `CMP_LIB/inv2` + `export_cdl` 的 CDL）：
 
-- 只给 `runset=<file>`（不给 deck/gds/top/cdl）：LVS `completed`，`summary.status = correct`；
-- 生成的 `inv2.sp`（layout SPICE，12 KB）、`inv2.lvs.report`（38 KB）、`svdb/`、ERC 库都在 run dir；
-- `-hcell <PDK hcell 文件>` 形态另跑一次：同样 `correct`，argv 实到 `-hcell '<file>'`；
-- 报告被 set 改名（`inv2.lvs.report`）时 `read_results` 仍能解析出 `ports/nets/instances`。
+- 只给 `runset=<file>`：`completed`，`summary.status = correct`；
+- run dir 里出现 **Calibre 自己生成的 control file `_calibre.lvs_`**（= §5.4 描述的 `_<rules>_`），
+  以及 set 指定名字的 `inv2.lvs.report`、`svdb/`、`inv2.sp`、ERC 库；
+- 报告被 set 改名时 `read_results` 仍能解析（默认名 → `job.json.report_file` → run dir 内扫 `*.report/*.rep`）。
 
-### 11.1 真机踩到的两个坑
+### 11.1 为什么不做键映射（设计裁决）
 
-1. **TVF deck 不能把 SVRF 追加到文件末尾**：65nm 的 `calibre.lvs` 是 `#!tvf` + `tvf::VERBATIM { … }`，
-   VERBATIM 之外是 Tcl（`tvf::SETLAYER …`）。追加到末尾 → `Error TVF2 - invalid command name "::LVS"`；
-   插入点必须取 VERBATIM 的收尾 `}` 之前（本包 `append_svrf()`/`_verbatim_insert_index()` 做这件事）。
-2. **电源/地名的落点随工艺库不同**：TSMC 65 用 `VARIABLE POWER_NAME …` + `LVS POWER NAME POWER_NAME`，
-   且该变量还出现在 connectivity 规则里（`N1tndiff = NET tndiff POWER_NAME`）；只改 `LVS POWER NAME`
-   会留下一半用新名、一半用旧名。映射按“候选语句头”取 deck 里真实存在的那条（VARIABLE 优先）。
+先试过手写映射（键 → SVRF 语句原位改写），真机立刻暴露两类"莫名其妙"的问题——正是不用官方机制的代价：
 
-### 11.2 尚未映射（可见但不生效，需要时再加）
+1. **TVF deck 不能把 SVRF 追加到文件尾**：65nm 的 `calibre.lvs` 是 `#!tvf` + `tvf::VERBATIM { … }`，
+   VERBATIM 之外是 Tcl；追加到末尾 → `Error TVF2 - invalid command name "::LVS"`。
+2. **同一语义在不同库里落在不同语句**：TSMC 65 的电源名在 `VARIABLE POWER_NAME`（该变量还参与
+   connectivity 规则，如 `N1tndiff = NET tndiff POWER_NAME`），只改 `LVS POWER NAME` 会一半新名一半旧名。
 
-`lvsSVDBxcal/cci/xref/nopinloc`（SVDB 内容开关）、`lvsERCDatabase/lvsERCSummaryFile`（ERC 输出路径）、
-`lvsMaskDBFile`、`lvsWriteINXF`、`lvsIncludeCmdsType≠SVRF`（后者直接判失败）。
-`runset_strict=true` 时任何 unmapped 键都判失败，默认只记录。
+映射表永远追不上各工艺库的写法；官方批处理入口不需要我们理解这些——**参数合并、control file 生成、
+TVF 处理都是 Calibre 自己的事**。本包的范围收敛为：发起（+轮询）、定位产物（只为取报告）、解析报告。
+
+### 11.2 无 set 的路径（保留）
+
+`deck=…` + 白名单占位符改写 + `-spice/-hcell/-xcell` argv；需要额外覆盖时用 `params` 给 **SVRF 语句头**
+（键含空格，如 `"LAYOUT PRIMARY"`，值给整条语句）。camelCase 的 runset 键在此路径会**直接报错并指路 `runset=`**，
+避免出现两套并行语义。

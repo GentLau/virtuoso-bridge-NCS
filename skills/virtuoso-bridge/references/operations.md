@@ -239,12 +239,13 @@
 改动在返回的 `deck_changes` 里。不认识的键会直接失败——不要用 `INCLUDE <deck>` + 覆盖行的 control file，
 那对 specification 语句无效（见 `doc/report/calibre-网表导出机制调查报告.md §9`）。
 
-**直接给 Calibre Interactive 的 set**（现场形态，首选）：`runset="/path/xx.lvs"` 一个字段就够——
-`lvsRulesFile`→deck、`lvsRunDir`→run dir、`lvsSpiceFile`→`-spice`、`lvsUseHCells`+`lvsHCellsFile`→`-hcell`、
-`lvsPower/GroundNames`、`lvsReport*`、`lvsAbortOnSupplyError`、`lvsRecognizeGates` 等 → deck 语句原位改写、
-`lvsSVRFCmds` → 追加进 TVF 的 VERBATIM 块。返回 `runset.{applied,ignored,unmapped,request_keys}`：
-`ignored` 是 GUI-only 键（不生效），`unmapped` 是还没支持的键（默认继续跑，`runset_strict=true` 时判失败）。
-set 里相对路径按 run dir 解析；**set 只带参数不带数据**，它引用的 layout / 源网表 / hcell 文件必须已在远端。
+**直接给 Calibre Interactive 的 set**（现场形态，首选）：`runset="/path/xx.lvs"` 一个字段就够。
+本包执行官方批处理 `calibre -gui -lvs -runset <set> -batch`，**参数合并、control file 生成全由 Calibre 做**
+（run dir 里会看到它生成的 `_calibre.lvs_`）；我们只发起、轮询、定位产物、解析报告。
+报告改名也能解析（默认名 → `job.json.report_file` → run dir 内扫 `*.report/*.rep`）。
+**set 只带参数不带数据**：它引用的 layout / 源网表 / hcell 文件必须已在远端。
+没有 set 时才用 `deck=` + 白名单占位符（外加 `spice_file`/`hcell_file`/`xcell_file`）；
+`params` 的键必须是 SVRF 语句头（如 `"LAYOUT PRIMARY"`），camelCase 的 set 键会报错并指路 `runset=`。
 
 ## Verilog / Verilog-A
 

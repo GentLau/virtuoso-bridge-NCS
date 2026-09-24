@@ -249,46 +249,25 @@ class UtilTests(unittest.TestCase):
             cu.deck_missing_inputs('LAYOUT PATH "GDSFILENAME"\n', gds=None, top=None, cdl=None),
             ['"GDSFILENAME"→gds'])
 
-    def test_parse_runset_and_statement_mapping(self):
+    def test_parse_runset_and_locate_run_dir(self):
+        """set 只用来**定位产物目录**（轮询/取报告）；参数一律交给官方入口。"""
         runset = ("// Calibre Interactive runset\n"
                   "*lvsLayoutPrimary: inv2\n"
-                  "*lvsSourcePath: /x/inv2.cdl\n"
-                  "*lvsSVDBDir: /x/svdb\n")
+                  "*lvsRunDir: /simulation/SUSER/extract/lvs\n"
+                  "*cmnRunMT: 1\n")
         parsed = cu.parse_runset(runset)
         self.assertEqual(parsed["lvsLayoutPrimary"], "inv2")
-        deck = ('LAYOUT PRIMARY "lvs_top"\nSOURCE PATH "lvs_top.cdl"\n'
-                'MASK SVDB DIRECTORY "svdb" XRC\n')
-        overrides, gui_only, unknown = cu.statements_from_params(parsed, deck)
-        self.assertEqual(gui_only, [])
-        self.assertEqual(unknown, [])
-        self.assertEqual(overrides["LAYOUT PRIMARY"], 'LAYOUT PRIMARY "inv2"')
-        self.assertEqual(overrides["SOURCE PATH"], 'SOURCE PATH "/x/inv2.cdl"')
-        self.assertEqual(overrides["MASK SVDB DIRECTORY"], 'MASK SVDB DIRECTORY "/x/svdb" QUERY')
+        self.assertEqual(cu.runset_run_dir(parsed), "/simulation/SUSER/extract/lvs")
+        self.assertIsNone(cu.runset_run_dir({"lvsLayoutPrimary": "inv2"}))
 
-    def test_statements_from_params_unknown_key_is_reported(self):
-        overrides, _gui_only, unknown = cu.statements_from_params({"lvsNoSuchOption": "1"})
-        self.assertEqual(overrides, {})
-        self.assertEqual(unknown, ["lvsNoSuchOption"])
-
-    def test_power_names_prefer_variable_statement_when_deck_uses_it(self):
-        """TSMC 65 把电源名放在 VARIABLE（还参与 connectivity 规则）→ 必须改那一条。"""
-        deck = 'VARIABLE POWER_NAME "VDD"\nLVS POWER NAME POWER_NAME\n'
-        overrides, _gui, _unknown = cu.statements_from_params(
-            {"lvsPowerNames": "avdd avs33"}, deck)
-        self.assertEqual(overrides["VARIABLE POWER_NAME"],
-                         'VARIABLE POWER_NAME "avdd" "avs33"')
-        # deck 里没有 VARIABLE 时退回到 LVS POWER NAME
-        overrides2, *_ = cu.statements_from_params(
-            {"lvsPowerNames": "avdd avs33"}, 'LVS POWER NAME "VDD"\n')
-        self.assertEqual(overrides2["LVS POWER NAME"], 'LVS POWER NAME "avdd" "avs33"')
-
-    def test_svrf_cmds_and_yesno_rendering(self):
-        self.assertEqual(cu.parse_svrf_cmds("{LVS FILTER C(CP) OPEN} {}"),
-                         ["LVS FILTER C(CP) OPEN"])
-        self.assertEqual(cu.render_statement("LVS ABORT ON SUPPLY ERROR", "0", "yesno"),
-                         "LVS ABORT ON SUPPLY ERROR NO")
-        self.assertEqual(cu.render_statement("LVS ABORT ON SUPPLY ERROR", "1", "yesno"),
-                         "LVS ABORT ON SUPPLY ERROR YES")
+    def test_params_only_accept_svrf_statement_heads(self):
+        """不做 runset 键→语句的映射表：键必须是 SVRF 语句头（含空格）。"""
+        overrides = cu.statements_from_params(
+            {"LAYOUT PRIMARY": 'LAYOUT PRIMARY "inv2"'})
+        self.assertEqual(overrides, {"LAYOUT PRIMARY": 'LAYOUT PRIMARY "inv2"'})
+        with self.assertRaises(ValueError) as ctx:
+            cu.statements_from_params({"lvsLayoutPrimary": "inv2"})
+        self.assertIn("SVRF 语句头", str(ctx.exception))
 
     def test_apply_statements_replaces_first_occurrence_in_place(self):
         """first-wins：必须改在 deck 里、改在第一条上（GUI 的 INCLUDE+覆盖对 spec 语句无效）。"""
@@ -446,12 +425,14 @@ class PackageTests(unittest.TestCase):
         self.assertEqual(result.value["job_id"], "lvs_runset.lvs")
 
     def test_lvs_params_override_deck_in_place(self):
-        """带参数但不走 GUI：runset 键原位改写 deck（占位符可不给）。"""
+        """无 set 的取数口：SVRF 语句头 → 原位改写 deck（参数合并仍由 Calibre 自己做）。"""
         middle = FakeMiddle()
         result = Package(middle).lvs(RunRequest(
             token=TOKEN, deck="/x/calibre.lvs",
-            params={"lvsLayoutPaths": "/x/inv2.gds", "lvsLayoutPrimary": "inv2",
-                    "lvsSourcePath": "/x/inv2.cdl", "lvsSourcePrimary": "inv2"},
+            params={"LAYOUT PATH": 'LAYOUT PATH "/x/inv2.gds"',
+                    "LAYOUT PRIMARY": 'LAYOUT PRIMARY "inv2"',
+                    "SOURCE PATH": 'SOURCE PATH "/x/inv2.cdl"',
+                    "SOURCE PRIMARY": 'SOURCE PRIMARY "inv2"'},
         ))
         self.assertTrue(result.ok, result.error)
         uploaded = next(local for local, remote in middle.uploads if remote.endswith("run_lvs.cal"))
@@ -464,111 +445,47 @@ class PackageTests(unittest.TestCase):
         self.assertEqual(sorted(detail["keys"]),
                          ["LAYOUT PATH", "LAYOUT PRIMARY", "SOURCE PATH", "SOURCE PRIMARY"])
 
-    def test_lvs_runset_file_is_parsed_and_applied(self):
+    def test_lvs_runset_goes_through_official_batch_entry(self):
+        """带 set：参数合并交给 Calibre（-gui -lvs -runset <f> -batch），我们不碰 deck。"""
         middle = FakeMiddle()
         original = middle.download_file
 
         def with_runset(remote_path, local_path, timeout=None, *, token, recursive=False):
-            if str(remote_path).endswith(".runset"):
+            if str(remote_path) == "/x/calibre.runset":
                 target = Path(local_path)
                 target.parent.mkdir(parents=True, exist_ok=True)
-                target.write_text(
-                    "// Calibre Interactive runset\n"
-                    "*lvsLayoutPaths: /x/inv2.gds\n"
-                    "*lvsLayoutPrimary: inv2\n"
-                    "*lvsSourcePath: /x/inv2.cdl\n"
-                    "*lvsSourcePrimary: inv2\n",
-                    encoding="utf-8")
+                target.write_text("*lvsRulesFile: /pdk/calibre.lvs\n"
+                                  "*lvsRunDir: /simulation/SUSER/extract/lvs\n"
+                                  "*lvsLayoutPrimary: inv2\n", encoding="utf-8")
                 return CommandResult(0, "", "", "command")
             return original(remote_path, local_path, timeout, token=token, recursive=recursive)
 
         middle.download_file = with_runset
-        result = Package(middle).lvs(RunRequest(
-            token=TOKEN, deck="/x/calibre.lvs", runset="/x/calibre.runset",
-        ))
+        result = Package(middle).lvs(RunRequest(token=TOKEN, runset="/x/calibre.runset"))
         self.assertTrue(result.ok, result.error)
-        uploaded = next(local for local, remote in middle.uploads if remote.endswith("run_lvs.cal"))
-        text = Path(uploaded).read_text(encoding="utf-8")
-        self.assertIn('SOURCE PATH "/x/inv2.cdl"', text)
-        self.assertIn('LAYOUT PATH "/x/inv2.gds"', text)     # 覆盖掉了 "GDSFILENAME" 占位符
-        self.assertIn('LAYOUT PRIMARY "inv2"', text)
-        detail = next(s["detail"] for s in result.steps if s["name"] == "runset")
-        self.assertGreaterEqual(detail["keys"], 1)
-        self.assertIn("SOURCE PATH", result.value["runset"]["applied"])
-
-    def test_real_lvs_set_drives_the_whole_run(self):
-        """现场形态的 `.lvs` set 直接喂进来：请求层字段、deck 语句、argv、分类都对上。"""
-        middle = FakeMiddle(deck_text=REAL_LVS_DECK)
-        original = middle.download_file
-
-        def with_runset(remote_path, local_path, timeout=None, *, token, recursive=False):
-            if str(remote_path) == "/x/jy_ctle.lvs":      # 只拦 runset，deck 仍走默认
-                target = Path(local_path)
-                target.parent.mkdir(parents=True, exist_ok=True)
-                target.write_text(REAL_LVS_RUNSET, encoding="utf-8")
-                return CommandResult(0, "", "", "command")
-            return original(remote_path, local_path, timeout, token=token, recursive=recursive)
-
-        middle.download_file = with_runset
-        result = Package(middle).lvs(RunRequest(
-            token=TOKEN, runset="/x/jy_ctle.lvs", run_dir="/r/lvs",
-        ))
-        self.assertTrue(result.ok, result.error)
-
-        # 1) 请求层被 set 填上：deck / run_dir 来自 set（显式给的不覆盖）
-        deck_upload = next(local for local, remote in middle.uploads
-                           if remote.endswith("run_lvs.cal"))
-        deck = Path(deck_upload).read_text(encoding="utf-8")
-        self.assertEqual(result.value["run_dir"], "/r/lvs")
-        self.assertIn("runset", result.value)
-
-        # 2) 语句：相对路径按 run_dir 解析；电源名走 VARIABLE（本 deck 的写法）
-        self.assertIn('LAYOUT PATH "/r/lvs/inv2.gds"', deck)
-        self.assertIn('LAYOUT PRIMARY "inv2"', deck)
-        self.assertIn('SOURCE PATH "/r/lvs/inv2.src.net"', deck)
-        self.assertIn('SOURCE PRIMARY "inv2"', deck)
-        self.assertIn('VARIABLE POWER_NAME "avdd" "avs33"', deck)
-        self.assertIn('VARIABLE GROUND_NAME "avss"', deck)
-        self.assertIn("LVS REPORT MAXIMUM 1000", deck)
-        self.assertIn("LVS REPORT OPTION FX", deck)
-        self.assertIn("LVS ABORT ON SUPPLY ERROR NO", deck)
-        self.assertIn("LVS FILTER C(CP) OPEN", deck)      # lvsSVRFCmds 注入
-
-        # 3) argv：-spice / -hcell 来自 set
         launcher = next(local for local, remote in middle.uploads
                         if remote.endswith("launch.sh"))
         script = Path(launcher).read_text(encoding="utf-8")
-        self.assertIn("-spice", script)
-        self.assertIn("/r/lvs/inv2.sp", script)
-        self.assertIn("-hcell", script)
-        self.assertIn("/pdk/hcelllist", script)
+        self.assertIn("-gui", script)
+        self.assertIn("-runset", script)
+        self.assertIn("/x/calibre.runset", script)
+        self.assertIn("-batch", script)
+        detail = next(s["detail"] for s in result.steps if s["name"] == "runset")
+        self.assertEqual(detail["run_dir"], "/simulation/SUSER/extract/lvs")   # 只用来定位产物
+        self.assertEqual(result.value["run_dir"], "/simulation/SUSER/extract/lvs")
+        self.assertEqual(result.value["mode"], "official-batch")
+        self.assertFalse(any(remote.endswith("run_lvs.cal") for _, remote in middle.uploads),
+                         "带 set 时不允许再自己生成/改写 deck")
 
-        # 4) 分类：GUI-only 记录、未支持键可见（默认不判死）
-        report = result.value["runset"]
-        self.assertIn("lvsRulesFile", report["request_keys"])
-        self.assertIn("VARIABLE POWER_NAME", report["applied"])
-        self.assertIn("cmnRunMT", report["ignored"])
-        self.assertIn("lvsLayoutGetFromViewer", report["ignored"])
-        self.assertIn("lvsERCDatabase", report["unmapped"])
-        self.assertIn("lvsSVDBxcal", report["unmapped"])
-
-    def test_lvs_unknown_param_key_is_visible_and_strict_mode_fails(self):
-        """未知键不静默：默认列进 runset.unmapped；strict 下才判失败。"""
-        middle = FakeMiddle()
-        result = Package(middle).lvs(RunRequest(
+    def test_params_with_runset_keys_are_rejected(self):
+        """不做 runset 键映射：camelCase 键必须报错并指路官方入口。"""
+        result = Package(FakeMiddle()).lvs(RunRequest(
             token=TOKEN, gds="/x/a.gds", top="a", deck="/x/calibre.lvs",
-            params={"lvsNoSuchOption": "1"},
+            params={"lvsLayoutPrimary": "inv2"},
         ))
-        self.assertTrue(result.ok, result.error)
-        self.assertEqual(result.value["runset"]["unmapped"], ["lvsNoSuchOption"])
-
-        strict = Package(FakeMiddle()).lvs(RunRequest(
-            token=TOKEN, gds="/x/a.gds", top="a", deck="/x/calibre.lvs",
-            params={"lvsNoSuchOption": "1"}, runset_strict=True,
-        ))
-        self.assertFalse(strict.ok)
-        self.assertIn("未支持的键", strict.error or "")
-        self.assertIn("lvsNoSuchOption", strict.error or "")
+        self.assertFalse(result.ok)
+        self.assertIn("SVRF 语句头", result.error or "")
+        self.assertIn("runset=", result.error or "")
 
     def test_export_cdl_uses_official_aucdl_link(self):
         """auCdl：si.env 必须带 auCdl 三件套 + checkCAPPERI（IC618 OSSHNL-411 缺口）。"""
@@ -578,6 +495,7 @@ class PackageTests(unittest.TestCase):
         ))
         self.assertTrue(result.ok, result.error)
         self.assertEqual(result.value["run_dir"], f"{ROOM}/cdl_inv2")
+        self.assertEqual(result.value["cds_lib"], "/home/Gent/proj/cds.lib")
         self.assertEqual(result.value["cds_lib"], "/home/Gent/proj/cds.lib")
         self.assertEqual(result.value["bytes"], 256)
         si_cmd = next(c for c in middle.commands if "si . -batch" in c)
@@ -745,3 +663,4 @@ class PackageTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
