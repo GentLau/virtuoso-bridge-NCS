@@ -479,22 +479,17 @@ def _atomic_skill(op: str, cmd: dict[str, Any]) -> str:
             f'setarray(vbParamVals {_q(n)} {_q(v)})' for n, v in params.items()
         )
         return f'''
-let((vbInst vbIcd vbCcd vbParamVals vbP vbCb)
+let((vbInst vbCcd vbParamVals vbP vbProp)
   vbInst = car(setof(x vbSchemCv~>instances x~>name == {_q(cmd["name"])}))
   unless(vbInst error("instance not found"))
   vbParamVals = makeTable('vbParamVals)
   {sets}
-  vbIcd = cdfGetInstCDF(vbInst)
   vbCcd = cdfGetCellCDF(ddGetObj(vbInst~>libName vbInst~>cellName))
   foreach(vbN list({names})
     vbP = get(vbCcd vbN)
     unless(vbP error(sprintf(nil "unknown CDF param: %s" vbN)))
-    vbP~>value = arrayref(vbParamVals vbN))
-  foreach(vbN list({names})
-    vbP = get(vbCcd vbN)
-    vbCb = vbP~>callback
-    when(vbCb && vbCb != "" errset(evalstring(vbCb) t)))
-  cdfUpdateInstParam(vbInst)
+    vbProp = dbReplaceProp(vbInst vbN "string" arrayref(vbParamVals vbN))
+    unless(vbProp error(sprintf(nil "failed to set instance param: %s" vbN))))
   "ok")
 '''.strip()
     if op == "set_term_nets":

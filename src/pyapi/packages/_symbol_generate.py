@@ -91,7 +91,8 @@ def generate_skill(
         "vbExpectedOrder vbActualOrder vbFinalTerms vbFinalOrder vbBackupSourceCv "
         "vbOriginalTerms vbOriginalOrder vbBackupCv vbBackupObj vbSortChanged vbCleanup "
         "vbCleanupFailures vbBodyResult vbBodyAttempt vbBodyFailure vbResult vbBackupReady "
-        "vbInstallAttempted vbInstalled vbCommitOk vbRollback vbRollbackSucceeded) "
+        "vbInstallAttempted vbInstalled vbCommitOk vbRollback vbRollbackSucceeded "
+        "vbTargetOpenCv) "
         f'vbTargetObj = ddGetObj("{escaped_lib}" "{escaped_cell}" "{escaped_symbol_view}") '
         "vbReplacing = if(vbTargetObj t nil) "
         'vbAction = if(vbReplacing "replaced" "created") '
@@ -140,8 +141,12 @@ def generate_skill(
         'unless(equal(vbExpectedOrder vbActualOrder) error("generated symbol pin order mismatch")) '
         f"{sort_finalize}"
         "unless(isCallable('dbCopyCellView) error(\"dbCopyCellView API unavailable\")) "
-        f'when(dbFindOpenCellViewByName("{escaped_lib}" "{escaped_cell}" '
-        f'"{escaped_symbol_view}") error("target symbol is open")) '
+        f'vbTargetOpenCv = dbFindOpenCellViewByName("{escaped_lib}" "{escaped_cell}" '
+        f'"{escaped_symbol_view}") '
+        "when(vbTargetOpenCv && (vbTargetOpenCv~>mode == \"a\" || "
+        "vbTargetOpenCv~>mode == \"w\") error(\"target symbol is open in edit mode\")) "
+        "when(vbTargetOpenCv errset(dbClose(vbTargetOpenCv) nil)) "
+        "vbTargetOpenCv = nil "
         "when(vbReplacing "
         f'vbBackupSourceCv = dbOpenCellViewByType("{escaped_lib}" "{escaped_cell}" '
         f'"{escaped_symbol_view}" "schematicSymbol" "r") '

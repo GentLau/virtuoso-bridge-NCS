@@ -1,0 +1,85 @@
+
+
+==================================================================================
+=== CALIBRE::DRC-H SUMMARY REPORT
+===
+Execution Date/Time:       Wed Sep 23 21:33:56 2026
+Calibre Version:           v2025.1_16.10    Thu Jan 2 11:57:45 PST 2025
+Rule File Pathname:        /home/Gent/.virtuoso-bridge/calprobe/command/calibre/drc_inv/run_drc.cal
+Rule File Title:           
+Layout System:             GDS
+Layout Path(s):            /home/Gent/project/vblog/s11_inv/s11/inv.gds
+Layout Primary Cell:       inv
+Current Directory:         /home/Gent/.virtuoso-bridge/calprobe/command/calibre/drc_inv
+User Name:                 Gent
+Maximum Results/RuleCheck: ALL
+Maximum Result Vertices:   4096
+DRC Results Database:      DRC_RES.db (ASCII)
+Layout Depth:              ALL
+Text Depth:                PRIMARY
+Summary Report File:       DRC.rep (REPLACE)
+Geometry Flagging:         ACUTE = YES  SKEW = YES  ANGLED = NO  OFFGRID = YES
+                           NONSIMPLE POLYGON = YES  NONSIMPLE PATH = NO
+Excluded Cells:           
+CheckText Mapping:         ALL TEXT
+Layers:                    MEMORY-BASED
+Keep Empty Checks:         NO
+----------------------------------------------------------------------------------
+--- RUNTIME WARNINGS
+---
+Cell name parameter   for INSIDE CELL operation not located.
+Cell name parameter   for NOT INSIDE CELL operation not located.
+Cell name parameter   for INSIDE CELL operation not located.
+Cell name parameter   for NOT INSIDE CELL operation not located.
+Cell name parameter   for INSIDE CELL operation not located.
+Cell name parameter   for NOT INSIDE CELL operation not located.
+PROJECTING constraint only supported with PARALLEL ONLY - setting PARALLEL ONLY.
+PROJECTING constraint only supported with PARALLEL ONLY - setting PARALLEL ONLY.
+PROJECTING constraint only supported with PARALLEL ONLY - setting PARALLEL ONLY.
+PROJECTING constraint only supported with PARALLEL ONLY - setting PARALLEL ONLY.
+PROJECTING constraint only supported with PARALLEL ONLY - setting PARALLEL ONLY.
+PROJECTING constraint only supported with PARALLEL ONLY - setting PARALLEL ONLY.
+PROJECTING constraint only supported with PARALLEL ONLY - setting PARALLEL ONLY.
+PROJECTING constraint only supported with PARALLEL ONLY - setting PARALLEL ONLY.
+----------------------------------------------------------------------------------
+--- RULECHECK RESULTS STATISTICS
+---
+RULECHECK M10.WARN ................ TOTAL Result Count = 0 (0)
+RULECHECK G.1.UBMi ................ TOTAL Result Count = 0 (0)
+RULECHECK NW.A.1 .................. TOTAL Result Count = 1 (1)
+RULECHECK NW.A.3 .................. TOTAL Result Count = 1 (1)
+RULECHECK OD.DN.1L ................ TOTAL Result Count = 1 (1)
+RULECHECK DOD.R.1 ................. TOTAL Result Count = 1 (1)
+RULECHECK PO.A.1 .................. TOTAL Result Count = 2 (2)
+RULECHECK PO.DN.1L ................ TOTAL Result Count = 1 (1)
+RULECHECK DPO.R.1 ................. TOTAL Result Count = 1 (1)
+RULECHECK M9.DN.1L ................ TOTAL Result Count = 1 (1)
+RULECHECK CSR.R.1.NWi ............. TOTAL Result Count = 1 (1)
+RULECHECK CSR.R.1.PPi ............. TOTAL Result Count = 1 (1)
+RULECHECK CSR.R.1.NPi ............. TOTAL Result Count = 1 (1)
+RULECHECK CSR.R.1.COi ............. TOTAL Result Count = 4 (4)
+RULECHECK CSR.R.1.M1i ............. TOTAL Result Count = 1 (1)
+RULECHECK CSR.R.1.M1_real ......... TOTAL Result Count = 1 (1)
+RULECHECK CSR.R.1.ODi ............. TOTAL Result Count = 2 (2)
+RULECHECK CSR.R.1.POi ............. TOTAL Result Count = 2 (2)
+RULECHECK DM1.R.1 ................. TOTAL Result Count = 1 (1)
+RULECHECK DM2.R.1 ................. TOTAL Result Count = 1 (1)
+RULECHECK DM3.R.1 ................. TOTAL Result Count = 1 (1)
+RULECHECK DM4.R.1 ................. TOTAL Result Count = 1 (1)
+RULECHECK DM5.R.1 ................. TOTAL Result Count = 1 (1)
+RULECHECK DM6.R.1 ................. TOTAL Result Count = 1 (1)
+RULECHECK DM7.R.1 ................. TOTAL Result Count = 1 (1)
+RULECHECK DM8.R.1 ................. TOTAL Result Count = 1 (1)
+RULECHECK DM9.R.1 ................. TOTAL Result Count = 1 (1)
+RULECHECK LUP.6 ................... TOTAL Result Count = 4 (4)
+RULECHECK ESD.WARN.1 .............. TOTAL Result Count = 1 (1)
+RULECHECK VIA1.S.1 ................ TOTAL Result Count = 0 (0)
+RULECHECK M2.W.1 .................. TOTAL Result Count = 0 (0)
+----------------------------------------------------------------------------------
+--- SUMMARY
+---
+TOTAL CPU Time:                  0
+TOTAL REAL Time:                 2
+TOTAL Original Layer Geometries: 29 (29)
+TOTAL DRC RuleChecks Executed:   1737
+TOTAL DRC Results Generated:     36 (36)

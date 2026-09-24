@@ -404,6 +404,9 @@ def parse_psf_directory(path: Path, analysis: str = "all") -> dict[str, Any]:
 
     if analysis in ("all", "ac"):
         found = _candidate(root, ("ac.ac", "ac.ac.ac"), "*.ac.ac")
+        if found is None:
+            # spectre 按分析名落盘（默认 ac1 等），文件名为 <分析名>.ac
+            found = _candidate(root, (), "*.ac")
         if found:
             _merge_file(data, files, root, found, "ac_")
             analyses.append("ac")
@@ -505,10 +508,21 @@ def detect_layout(path: Path) -> str:
 # Metrics
 # ---------------------------------------------------------------------------
 
+def _resolve_key(data: dict[str, Any], name: str) -> str:
+    """Exact key first; otherwise the unique ``<prefix>_<name>`` key (e.g. ``ac_freq``)."""
+    if name in data:
+        return name
+    suffix = "_" + name
+    candidates = [key for key in data
+                  if isinstance(key, str) and key.endswith(suffix)]
+    if len(candidates) == 1:
+        return candidates[0]
+    raise ValueError(f"signal '{name}' is missing")
+
+
 def _real_vector(data: dict[str, Any], name: str) -> list[float]:
-    if name not in data:
-        raise ValueError(f"signal '{name}' is missing")
-    raw = data[name]
+    key = _resolve_key(data, name)
+    raw = data[key]
     if not isinstance(raw, list) or not raw:
         raise ValueError(f"signal '{name}' must be a non-empty vector")
     try:
@@ -518,9 +532,8 @@ def _real_vector(data: dict[str, Any], name: str) -> list[float]:
 
 
 def _complex_vector(data: dict[str, Any], name: str) -> list[complex]:
-    if name not in data:
-        raise ValueError(f"signal '{name}' is missing")
-    raw = data[name]
+    key = _resolve_key(data, name)
+    raw = data[key]
     try:
         if isinstance(raw, dict) and "re" in raw and "im" in raw:
             real = [float(item) for item in raw["re"]]

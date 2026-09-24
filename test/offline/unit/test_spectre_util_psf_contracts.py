@@ -426,5 +426,44 @@ class TestSweepDirectory(unittest.TestCase):
         self.assertIn("no sweep layout", str(ctx.exception))
 
 
+class TestAcPipelineContract(unittest.TestCase):
+    """P-053 回归：spectre 按分析名落盘（``ac1.ac``），且键带 ``ac_`` 前缀时，
+    measure 的 spec 形状（signal 不带前缀、x 缺省 ``freq``）必须能解析。"""
+
+    AC_PSF = "\n".join([
+        "HEADER",
+        '"PSFversion" "1.00"',
+        "SWEEP",
+        '"freq"',
+        "TRACE",
+        '"out" "V"',
+        "VALUE",
+        '"freq" 1000.0',
+        '"out" (0.9 0.1)',
+        "END",
+    ])
+
+    @staticmethod
+    def _write(path: Path, text: str) -> None:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding="utf-8")
+
+    def test_ac_named_analysis_is_parsed(self):
+        with tempfile.TemporaryDirectory(prefix="vb-") as tmp:
+            root = Path(tmp)
+            self._write(root / "ac1.ac", self.AC_PSF)
+            parsed = util.parse_psf_directory(root, analysis="ac")
+        self.assertEqual(parsed["analyses"], ["ac"])
+        self.assertIn("ac_freq", parsed["data"])
+        self.assertIn("ac_out", parsed["data"])
+
+    def test_measure_spec_shape_resolves_ac_prefix(self):
+        data = {"ac_freq": [1000.0], "ac_out": [0.9]}
+        metric = util.compute_metric(
+            data, {"type": "ac_magnitude", "signal": "out", "frequency": 1000.0})
+        self.assertTrue(metric["ok"], metric)
+        self.assertAlmostEqual(metric["value"], 0.9)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -1,0 +1,73 @@
+
+
+
+                  ##################################################
+                  ##                                              ##
+                  ##         C A L I B R E    S Y S T E M         ##
+                  ##                                              ##
+                  ##             L V S   R E P O R T              ##
+                  ##                                              ##
+                  ##################################################
+
+
+
+REPORT FILE NAME:         lvs.rep
+LAYOUT NAME:              svdb/inv.sp ('inv')
+SOURCE NAME:              /home/Gent/.virtuoso-bridge/calprobe/command/calibre/inv.cdl ('inv')
+RULE FILE:                /home/Gent/.virtuoso-bridge/calprobe/command/calibre/lvs_inv/run_lvs.cal
+CREATION TIME:            Wed Sep 23 21:42:11 2026
+CURRENT DIRECTORY:        /home/Gent/.virtuoso-bridge/calprobe/command/calibre/lvs_inv
+USER NAME:                Gent
+CALIBRE VERSION:          v2025.1_16.10    Thu Jan 2 11:57:45 PST 2025
+
+
+
+                               OVERALL COMPARISON RESULTS
+
+
+
+                 #   #         ########################  
+                  # #          #                      #  
+                   #           #     NOT COMPARED     #  
+                  # #          #                      #  
+                 #   #         ########################  
+
+
+  Error:    Different numbers of ports.
+  Error:    Power or ground net missing.
+
+
+**************************************************************************************************************
+
+
+                   CELL COMPARISON RESULTS ( TOP LEVEL )
+
+
+
+                 #   #         ########################  
+                  # #          #                      #  
+                   #           #     NOT COMPARED     #  
+                  # #          #                      #  
+                 #   #         ########################  
+
+
+  Error:    Different numbers of ports (see below).
+  Error:    Power net missing in layout. Ground net missing in layout.
+
+LAYOUT CELL NAME:         inv
+SOURCE CELL NAME:         inv
+
+--------------------------------------------------------------------------------------------------------------
+
+INITIAL NUMBERS OF OBJECTS
+--------------------------
+
+                Layout    Source         Component Type
+                ------    ------         --------------
+ Ports:              1         4    *
+
+ Nets:               5         4    *
+
+ Instances:          2         2    
+
+ Total:              8         10   

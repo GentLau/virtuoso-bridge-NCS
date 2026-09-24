@@ -189,7 +189,9 @@ class TestAtomicSkill(unittest.TestCase):
 
     def test_set_instance_params_requires_params_mapping(self):
         expr = S._atomic_skill("set_instance_params", {"name": "MP", "params": {"w": "1u"}})
-        self.assertIn("cdfGetInstCDF", expr)
+        self.assertIn("dbReplaceProp", expr)
+        self.assertIn("cdfGetCellCDF", expr)
+        self.assertNotIn("cdfUpdateInstParam", expr)
         self.assertIn('"w"', expr)
 
     def test_set_term_nets_stub_and_label(self):

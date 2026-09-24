@@ -103,6 +103,9 @@ _DONE_MARKERS = {
 }
 _FAIL_MARKERS = (
     "FATAL ERROR",
+    "ERROR:",
+    "Can not open",
+    "FAILED",
     "ERROR (OSSHNL-",
     "Error while loading",
     "Netlist did not complete",
@@ -145,17 +148,21 @@ def job_state(kind: str, *, process_alive: bool, log_tail: str, artifacts: list[
     return JobState("unknown", None, "process gone, no artifacts")
 
 
-_DRC_RULES = re.compile(r"^TOTAL RULECHECKS EXECUTED\s*=\s*(\d+)", re.M)
-_DRC_RESULTS = re.compile(r"^TOTAL RESULTS GENERATED\s*=\s*(\d+)", re.M)
-_DRC_VIOLATION = re.compile(r"^(\S+)\s+.*?(?:CELL|LAYOUT CELL)\s+(\S+)", re.M)
-_LVS_STATUS = re.compile(r"LVS completed\.\s*(\w+)", re.I)
+_DRC_RULES = re.compile(
+    r"^TOTAL (?:RULECHECKS EXECUTED\s*=\s*|DRC RuleChecks Executed:\s*)(\d+)", re.M)
+_DRC_RESULTS = re.compile(
+    r"^TOTAL (?:RESULTS GENERATED\s*=\s*|DRC Results Generated:\s*)(\d+)", re.M)
+_DRC_RULECHECK = re.compile(r"^RULECHECK\s+(\S+)\s.*?TOTAL Result Count\s*=\s*(\d+)", re.M)
+_DRC_LEGACY_RULE = re.compile(r"^(?:RESULT|CHECK)\s+(\S+)\s+(\d+)", re.M)
+_LVS_STATUS = re.compile(r"LVS completed\.\s*([A-Za-z ]+?)(?:\.|\s*$)", re.I)
+_LVS_TABLE = re.compile(r"^\s*([A-Za-z][A-Za-z ]*?)\s*:\s+(\d+)\s+(\d+)\s*\*?\s*$", re.M)
 _LVS_COUNT = re.compile(r"^\s*(\w[\w ]*?)\s*=\s*(\d+)\s*$", re.M)
 _PEX_WARN = re.compile(r"xRC Warnings\s*=\s*(\d+)")
 _PEX_ERR = re.compile(r"xRC Errors\s*=\s*(\d+)")
 _PEX_NETLIST = re.compile(r"PEX NETLIST FILE\s*=\s*(\S+)")
-_LOG_RULES = re.compile(r"TOTAL RULECHECKS EXECUTED\s*=\s*(\d+)")
-_LOG_RESULTS = re.compile(r"TOTAL RESULTS GENERATED\s*=\s*(\d+)")
-_LOG_LVS = re.compile(r"LVS completed\.\s*([A-Za-z]+)", re.I)
+_LOG_RULES = re.compile(r"TOTAL (?:RULECHECKS EXECUTED\s*=\s*|DRC RuleChecks Executed:\s*)(\d+)")
+_LOG_RESULTS = re.compile(r"TOTAL (?:RESULTS GENERATED\s*=\s*|DRC Results Generated:\s*)(\d+)")
+_LOG_LVS = re.compile(r"LVS completed\.\s*([A-Za-z ]+?)(?:\.|\s*$)", re.I)
 _LOG_PEX_ERR = re.compile(r"xRC Errors\s*=\s*(\d+)")
 _LOG_PEX_WARN = re.compile(r"xRC Warnings\s*=\s*(\d+)")
 
@@ -180,31 +187,46 @@ def parse_drc_report(text: str, *, limit: int = 20) -> dict[str, Any]:
     rules = _DRC_RULES.search(text)
     results = _DRC_RESULTS.search(text)
     by_rule: dict[str, int] = {}
-    for match in re.finditer(r"^(?:RESULT|CHECK)\s+(\S+)\s+(\d+)", text, re.M):
-        by_rule[match.group(1)] = int(match.group(2))
-    offenders: list[dict[str, str]] = []
-    for match in _DRC_VIOLATION.finditer(text):
-        offenders.append({"rule": match.group(1), "cell": match.group(2)})
-        if len(offenders) >= limit:
-            break
+    for match in _DRC_RULECHECK.finditer(text):
+        count = int(match.group(2))
+        if count:
+            by_rule[match.group(1)] = count
+    for match in _DRC_LEGACY_RULE.finditer(text):
+        by_rule.setdefault(match.group(1), int(match.group(2)))
     return {
         "rules_checked": int(rules.group(1)) if rules else None,
         "total_results": int(results.group(1)) if results else None,
         "by_rule": by_rule,
-        "first_offenders": offenders,
+        # 坐标级违规明细在 DRC_RES.db；.rep 只有统计表，不臆造条目。
+        "first_offenders": [],
         "report_bytes": len(text),
     }
 
 
 def parse_lvs_report(text: str, *, limit: int = 20) -> dict[str, Any]:
     status_match = _LVS_STATUS.search(text)
-    status = status_match.group(1).lower() if status_match else "unknown"
+    raw_status = (status_match.group(1).strip().upper()
+                  if status_match else "")
+    if not raw_status:
+        for candidate in ("NOT COMPARED", "INCORRECT", "CORRECT"):
+            if candidate in text.upper():
+                raw_status = candidate
+                break
+    status = {
+        "NOT COMPARED": "not_compared",
+        "INCORRECT": "incorrect",
+        "CORRECT": "correct",
+    }.get(raw_status, "unknown")
     counts: dict[str, int] = {}
-    for name, value in _LVS_COUNT.findall(text):
+    for name, layout, source in _LVS_TABLE.findall(text):
         key = name.strip().lower().replace(" ", "_")
+        counts[key] = int(layout)
+        counts[f"{key}_source"] = int(source)
         if len(counts) >= 40:
             break
-        counts[key] = int(value)
+    for name, value in _LVS_COUNT.findall(text):
+        key = name.strip().lower().replace(" ", "_")
+        counts.setdefault(key, int(value))
     differences = [
         line.strip()
         for line in text.splitlines()

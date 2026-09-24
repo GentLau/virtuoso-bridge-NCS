@@ -61,7 +61,8 @@ def skill_value(value: Any) -> str:
         ) + ")"
     if isinstance(value, (list, tuple)):
         return "(" + " ".join(skill_value(item) for item in value) + ")"
-    return q(value)
+    raise TypeError(
+        f"cannot serialize {type(value).__name__} as a SKILL literal")
 
 
 def skill_alist(value: Any, *, name: str = "options") -> str | None:
@@ -196,7 +197,9 @@ def parse_detail_csv(text: str, *, history: str = "") -> dict[str, Any]:
             no_point_detail = True
             continue
         if first.startswith("Parameters:"):
-            params_text = first[len("Parameters:"):].strip()
+            parts = [first[len("Parameters:"):].strip()]
+            parts += [cell.strip() for cell in row[1:] if cell.strip()]
+            params_text = ",".join(part for part in parts if part)
             params: dict[str, str] = {}
             for item in params_text.split(","):
                 item = item.strip()
