@@ -164,6 +164,29 @@ deck 整目录 stage 到 run dir（相对 `INCLUDE` 照常生效），每处改�
 > `CMP_LIB/inv2` + `inv2.gds` → `summary.status = correct`；同参数走 `.runset` 文件同样 `correct`；
 > 未知键报 `不支持的参数键：…`。**不需要拷改 deck，也不走 GUI batch。**
 
+#### 4.3.1 直接喂 Calibre Interactive 的 `.lvs` set（现场形态）
+
+`runset=<远端 .lvs 路径>` 可以只给这一个字段（deck / run_dir / 输入路径 / 选项都从 set 里取），
+显式给的字段优先。实测（2026-09-24，token `vb-vblog`）：
+
+| set 里的键 | 归到哪 |
+|---|---|
+| `lvsRulesFile` / `lvsRunDir` | 请求层：`deck` / `run_dir` |
+| `lvsSpiceFile` | argv `-spice <file>`（相对值按 run dir 解析）→ 产出 layout SPICE |
+| `lvsUseHCells` + `lvsHCellsFile` | argv `-hcell <file>`（`lvsUseHCells=0` 则不挂） |
+| `lvsSVRFCmds`（`lvsIncludeCmdsType=SVRF`） | 额外 SVRF，**追加进 TVF 的 `tvf::VERBATIM` 块内**（追加到文件末尾会被 Tcl 当命令：`Error TVF2`） |
+| `lvsLayoutPaths/Primary`、`lvsSourcePath/Primary` | deck 语句原位改写（路径在同 role 内相对 run dir 解析） |
+| `lvsPowerNames` / `lvsGroundNames` | 语句里加引号列表；**deck 用 `VARIABLE POWER_NAME` 时改那一条**（TSMC 65 的写法，变量还参与 connectivity 规则） |
+| `lvsReportFile/MaximumCount/Options`、`lvsAbortOnSupplyError`、`lvsRecognizeGates` | deck 语句原位改写（`1/0` → `YES/NO`） |
+| `lvsLayoutLibrary/View`、`*GetFromViewer`、`cmn*`（含 cluster/prompt/FDI 表） | **GUI-only：不生效，列进 `runset.ignored`** |
+| 其余（如 `lvsSVDBxcal`、`lvsERCDatabase`） | 列进 `runset.unmapped`（默认继续跑；`runset_strict=true` 时判失败） |
+
+返回里带 `runset: {applied, ignored, unmapped, request_keys}` 便于审计；
+报告改名的情况（set 常把报告写成 `<cell>.lvs.report`）`read_results` 会跟着 `job.json.report_file` 走。
+
+> 边界：set 只携带**参数**，不携带数据——`lvsLayoutPaths`/`lvsSourcePath` 指向的文件必须已存在于远端；
+> GUI 的 `*.calibre.db` 布局库由 viewer 导出，本包不产（我们的版图侧产物是 GDS，必要时把 `LAYOUT SYSTEM` 对齐）。
+
 ### 4.4 `calibre.pex`
 
 在 LVS 参数基础上：`deck` 为 **rcx** deck；**`lvs_run_dir` 必填**（PEX 需要 LVS 结果里的 `svdb/`，

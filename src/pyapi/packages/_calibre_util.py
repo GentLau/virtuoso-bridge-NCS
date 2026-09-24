@@ -54,26 +54,71 @@ def deck_missing_inputs(text: str, *, gds: str | None, top: str | None,
     return missing
 
 
-#: Calibre Interactive runset 的键 → SVRF 语句（只能是我们能安全改写的"规格语句"）。
-#: 依据：调查报告 §5.4 的 runset 字段清单 + PDK deck 实测（LAYOUT/SOURCE/MASK SVDB）。
-#: 值渲染：quoted=加引号；bare=原样；svdb=`MASK SVDB DIRECTORY "<v>" QUERY`。
-RUNSET_STATEMENTS: dict[str, tuple[str, str]] = {
-    "drcLayoutPaths": ("LAYOUT PATH", "quoted"),
-    "drcLayoutPrimary": ("LAYOUT PRIMARY", "quoted"),
-    "drcLayoutSystem": ("LAYOUT SYSTEM", "bare"),
-    "lvsLayoutPaths": ("LAYOUT PATH", "quoted"),
-    "lvsLayoutPrimary": ("LAYOUT PRIMARY", "quoted"),
-    "lvsSourcePath": ("SOURCE PATH", "quoted"),
-    "lvsSourcePrimary": ("SOURCE PRIMARY", "quoted"),
-    "lvsSourceSystem": ("SOURCE SYSTEM", "bare"),
-    "lvsSVDBDir": ("MASK SVDB DIRECTORY", "svdb"),
+#: Calibre Interactive runset 的键 → SVRF 语句。
+#:
+#: 值是**候选语句头**（按顺序取 deck 里存在的第一个，都没有就用第一个→追加）：
+#: 不同工艺库把同一语义放在不同语句里，例如 TSMC 65 把电源名放在
+#: `VARIABLE POWER_NAME`（该变量还参与 connectivity 规则），只改 `LVS POWER NAME`
+#: 会留下不一致；SMIC 40 这类的 runset 才是直接给 `LVS POWER NAME`。
+#:
+#: 值渲染：quoted=加引号；quoted_list=逐词加引号；bare=原样；yesno=1/0→YES/NO；
+#: svdb=`MASK SVDB DIRECTORY "<v>" QUERY`。
+RUNSET_STATEMENTS: dict[str, tuple[tuple[str, ...], str]] = {
+    "drcLayoutPaths": (("LAYOUT PATH",), "quoted"),
+    "drcLayoutPrimary": (("LAYOUT PRIMARY",), "quoted"),
+    "drcLayoutSystem": (("LAYOUT SYSTEM",), "bare"),
+    "lvsLayoutPaths": (("LAYOUT PATH",), "quoted"),
+    "lvsLayoutPrimary": (("LAYOUT PRIMARY",), "quoted"),
+    "lvsLayoutSystem": (("LAYOUT SYSTEM",), "bare"),
+    "lvsSourcePath": (("SOURCE PATH",), "quoted"),
+    "lvsSourcePrimary": (("SOURCE PRIMARY",), "quoted"),
+    "lvsSourceSystem": (("SOURCE SYSTEM",), "bare"),
+    "lvsPowerNames": (("VARIABLE POWER_NAME", "LVS POWER NAME"), "quoted_list"),
+    "lvsGroundNames": (("VARIABLE GROUND_NAME", "LVS GROUND NAME"), "quoted_list"),
+    "lvsReportFile": (("LVS REPORT",), "quoted"),
+    "lvsReportMaximumCount": (("LVS REPORT MAXIMUM",), "bare"),
+    "lvsReportOptions": (("LVS REPORT OPTION",), "bare"),
+    "lvsAbortOnSupplyError": (("LVS ABORT ON SUPPLY ERROR",), "yesno"),
+    "lvsRecognizeGates": (("LVS RECOGNIZE GATES",), "bare"),
+    "lvsSVDBDir": (("MASK SVDB DIRECTORY",), "svdb"),
 }
+
+#: runset 里只对 GUI/交互态有意义的键：不进 deck、不报错，但**要在响应里列出来**。
+RUNSET_GUI_ONLY_KEYS = frozenset({
+    "lvsLayoutLibrary", "lvsLayoutView", "lvsLayoutGetFromViewer",
+    "lvsSourceLibrary", "lvsSourceView", "lvsSourceGetFromViewer",
+    "lvsViewLVSSummaryFile",
+    "cmnFDILayoutLibrary", "cmnFDILayoutView", "cmnFDIDEFLayoutPath",
+    "cmnConfigureLVSBox", "cmnPromptSaveRunset", "cmnShowOptions",
+    "cmnWarnLayoutOverwrite", "cmnWarnSourceOverwrite", "cmnVconnectColon",
+    "cmnRunMT", "cmnSlaveHosts", "cmnLSFSlaveTbl", "cmnGridSlaveTbl",
+})
+
+#: 这些键由 `calibre.py` 直接消费（不是 deck 语句）：见 `RunRequest`。
+RUNSET_REQUEST_KEYS = frozenset({
+    "lvsRulesFile", "lvsRunDir", "lvsSpiceFile", "lvsUseHCells", "lvsHCellsFile",
+    "lvsSVRFCmds", "lvsIncludeCmdsType",
+})
+
+
+def is_gui_only_key(key: str) -> bool:
+    return key in RUNSET_GUI_ONLY_KEYS or key.startswith("cmn")
+
+
+def _quote_list(value: str) -> str:
+    items = [item.strip().strip('"') for item in value.split()]
+    return " ".join(f'"{item}"' for item in items if item)
 
 
 def render_statement(head: str, value: str, style: str) -> str:
     """按 head 生成一条完整 SVRF 语句。"""
     if style == "bare":
         return f"{head} {value}"
+    if style == "quoted_list":
+        return f"{head} {_quote_list(value)}"
+    if style == "yesno":
+        truthy = str(value).strip().lower() in ("1", "true", "yes", "t")
+        return f"{head} {'YES' if truthy else 'NO'}"
     if style == "svdb":
         return f'{head} "{value}" QUERY'
     return f'{head} "{value}"'
@@ -93,31 +138,58 @@ def parse_runset(text: str) -> dict[str, str]:
             continue
         key, _, value = body.partition(":")
         key, value = key.strip(), value.strip()
-        if key and value and key not in values:  # runset 同键语义按首条（与 Calibre 一致）
+        if key and value and key not in values:  # 同键按首条（与 Calibre 一致）
             values[key] = value
     return values
 
 
+def parse_svrf_cmds(value: str) -> list[str]:
+    """`lvsSVRFCmds: {LVS FILTER C(CP) OPEN} {}` → ``["LVS FILTER C(CP) OPEN"]``。"""
+    groups = re.findall(r"\{([^{}]*)\}", value)
+    if not groups:
+        return [line.strip() for line in value.splitlines() if line.strip()]
+    joined = " ".join(part.strip() for part in groups if part.strip())
+    return [joined] if joined else []
+
+
+def choose_head(candidates: tuple[str, ...], deck_text: str) -> str:
+    """取 deck 里已存在的第一个候选语句头；都没有就用首选（→ 追加）。"""
+    upper = deck_text.upper()
+    for head in candidates:
+        wanted = head.upper()
+        for line in upper.splitlines():
+            stripped = line.strip()
+            if stripped == wanted or stripped.startswith(wanted + " ") \
+                    or stripped.startswith(wanted + "\t"):
+                return head
+    return candidates[0]
+
+
 def statements_from_params(
-    params: dict[str, str],
-) -> tuple[dict[str, str], list[str]]:
+    params: dict[str, str], deck_text: str = "",
+) -> tuple[dict[str, str], list[str], list[str]]:
     """把 runset 键 / 裸 SVRF 语句头统一成 ``{语句头: 完整语句}``。
 
-    不认识的键**收集起来**（由调用方报错），不静默丢弃。
+    返回 ``(overrides, gui_only, unknown)``：GUI-only 与未知键都**不静默**——
+    由调用方决定报告还是失败。
     """
     overrides: dict[str, str] = {}
+    gui_only: list[str] = []
     unknown: list[str] = []
     for key, value in params.items():
         mapped = RUNSET_STATEMENTS.get(key)
         if mapped:
-            head, style = mapped
+            candidates, style = mapped
+            head = choose_head(candidates, deck_text)
             overrides[head] = render_statement(head, value, style)
+        elif is_gui_only_key(key):
+            gui_only.append(key)
         elif " " in key.strip():
             # 转义舱：键直接写 SVRF 语句头（如 "LAYOUT PRIMARY"），值给完整语句
             overrides[key.strip().upper()] = value.strip()
         else:
             unknown.append(key)
-    return overrides, unknown
+    return overrides, gui_only, unknown
 
 
 def apply_statements(text: str, overrides: dict[str, str]) -> tuple[str, list[str], list[str]]:
@@ -129,6 +201,7 @@ def apply_statements(text: str, overrides: dict[str, str]) -> tuple[str, list[st
     """
     lines = text.splitlines(keepends=True)
     changed: list[str] = []
+    appended_statements: list[str] = []
     appended: list[str] = []
     for head, statement in overrides.items():
         wanted = head.upper()
@@ -146,10 +219,60 @@ def apply_statements(text: str, overrides: dict[str, str]) -> tuple[str, list[st
                 break
         if not replaced:
             appended.append(f"{head} -> {statement}")
-            lines.append(f"{statement}\n")
+            appended_statements.append(statement)
+    if appended_statements:
+        lines = _insert_statements(lines, appended_statements)
     if appended:
         changed.extend(f"append {entry}" for entry in appended)
     return "".join(lines), changed, appended
+
+
+def _verbatim_insert_index(lines: list[str]) -> int | None:
+    """TVF 文件里 `tvf::VERBATIM {` 块的收尾行下标（普通 SVRF 返回 None）。
+
+    真机教训（2026-09-24）：往 TVF deck **文件末尾**追加 SVRF 语句会被 Tcl 当成命令
+    （`Error TVF2 - invalid command name "::LVS"`）；要追加进 VERBATIM 块内。
+    """
+    start = None
+    for index, line in enumerate(lines):
+        if line.strip().startswith("tvf::VERBATIM"):
+            start = index
+            break
+    if start is None:
+        return None
+    closes = [index for index, line in enumerate(lines[start + 1:], start + 1)
+              if line.strip() == "}"]
+    return closes[-1] if closes else None
+
+
+def _insert_statements(lines: list[str], statements: list[str]) -> list[str]:
+    """把语句插到 deck 的"可执行 SVRF 区"：TVF 插进 VERBATIM 内，普通 SVRF 追加末尾。"""
+    block = [f"{statement}\n" for statement in statements]
+    index = _verbatim_insert_index(lines)
+    if index is None:
+        return lines + block
+    return lines[:index] + block + lines[index:]
+
+
+def append_svrf(text: str, statements: list[str]) -> str:
+    """调用方额外给的 SVRF 命令（runset `lvsSVRFCmds`）→ 追加进 deck。"""
+    if not statements:
+        return text
+    lines = text.splitlines(keepends=True)
+    return "".join(_insert_statements(lines, statements))
+
+
+def report_file_from_deck(kind: str, deck_text: str) -> str | None:
+    """从最终 deck 里读工具产物的路径（真实 set 会改名，read_results 要跟着走）。"""
+    patterns = {
+        "lvs": r'^LVS REPORT\s+"([^"]+)"',
+        "drc": r'^DRC SUMMARY REPORT\s+"([^"]+)"',
+    }
+    pattern = patterns.get(kind)
+    if not pattern:
+        return None
+    match = re.search(pattern, deck_text, re.M | re.I)
+    return match.group(1) if match else None
 
 
 def deck_sha256(text: str) -> str:

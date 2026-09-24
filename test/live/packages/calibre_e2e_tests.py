@@ -240,12 +240,85 @@ def _case_params(transport) -> None:
     _check(any("SOURCE PATH" in item for item in (job2.get("deck_changes") or [])),
            f"runset 没翻译成 deck 语句: {job2.get('deck_changes')}")
 
-    # 不认识的键必须失败并列出支持的键（不静默忽略）
-    bad = transport.call({"operation": "calibre.lvs", "token": TOKEN, "deck": LVS_DECK,
-                          "params": {"lvsNotAThing": "1"},
-                          "run_dir": f"{RUN_DIR}/lvs-bad-param"})
-    _check(not bad.get("ok"), f"未知参数键必须结构化失败: {bad}")
-    _check("不支持的参数键" in str(bad.get("error") or ""), f"错误要指出不支持的键: {bad}")
+    # 不认识的键不静默：默认列进 runset.unmapped（继续跑），runset_strict 下判失败
+    loose = transport.call({
+        "operation": "calibre.lvs", "token": TOKEN, "deck": LVS_DECK,
+        "gds": CDL_GDS, "top": CDL_CELL, "cdl": exported,
+        "params": {"lvsNotAThing": "1"},
+        "run_dir": f"{RUN_DIR}/lvs-unmapped", "blocking": False,
+    })
+    _check(loose.get("ok"), f"默认应继续跑并把未支持键记下来: {str(loose)[:300]}")
+    reported = ((loose.get("data") or {}).get("value") or {}).get("runset") or {}
+    _check("lvsNotAThing" in (reported.get("unmapped") or []),
+           f"未支持键要出现在 runset.unmapped: {reported}")
+    strict = transport.call({
+        "operation": "calibre.lvs", "token": TOKEN, "deck": LVS_DECK,
+        "gds": CDL_GDS, "top": CDL_CELL, "cdl": exported,
+        "params": {"lvsNotAThing": "1"}, "runset_strict": True,
+        "run_dir": f"{RUN_DIR}/lvs-bad-param",
+    })
+    _check(not strict.get("ok"), f"strict 模式下未支持键必须失败: {str(strict)[:200]}")
+    _check("未支持的键" in str(strict.get("error") or ""), f"错误要指出未支持的键: {strict}")
+
+
+def _case_set_file(transport) -> None:
+    """SET-01：现场形态的 `.lvs` set 作为**唯一输入**（deck/输入/选项都在 set 里）。"""
+    exported = _exported.get("cdl")
+    _check(exported, "SET-01 依赖 EXPORT-01 的 CDL，但 EXPORT-01 未产出")
+    run_dir = f"{RUN_DIR}/lvs-set"
+    lines = [
+        f"*lvsRulesFile: {LVS_DECK}",
+        f"*lvsRunDir: {run_dir}",
+        f"*lvsLayoutPrimary: {CDL_CELL}",
+        f"*lvsLayoutPaths: {CDL_GDS}",
+        "*lvsLayoutLibrary: CMP_LIB",
+        "*lvsLayoutView: layout",
+        "*lvsLayoutGetFromViewer: 1",
+        f"*lvsSourcePath: {exported}",
+        f"*lvsSourcePrimary: {CDL_CELL}",
+        "*lvsSourceView: schematic",
+        "*lvsSpiceFile: inv2.sp",
+        "*lvsUseHCells: 0",
+        "*lvsPowerNames: VDD",
+        "*lvsGroundNames: VSS",
+        "*lvsRecognizeGates: NONE",
+        "*lvsIncludeCmdsType: SVRF",
+        "*lvsSVRFCmds: {LVS FILTER C(CP) OPEN} {}",
+        "*lvsReportFile: inv2.lvs.report",
+        "*lvsReportMaximumCount: 1000",
+        "*lvsReportOptions: S",
+        "*lvsAbortOnSupplyError: 0",
+        "*lvsSVDBxcal: 1",
+        "*cmnRunMT: 1",
+        "*cmnPromptSaveRunset: 0",
+    ]
+    tmp = WORK_DIR / "tmp"
+    tmp.mkdir(parents=True, exist_ok=True)
+    local = tmp / "e2e-lvs.lvs"
+    local.write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
+    remote = f"{RUN_DIR}/e2e-lvs.lvs"
+    _op(transport, "basic.file.upload", local_path=str(local), remote_path=remote, timeout=120)
+
+    job = _value(transport, "calibre.lvs", runset=remote, blocking=True, timeout=900)
+    report = job.get("runset") or {}
+    _check("lvsRulesFile" in (report.get("request_keys") or []),
+           f"set 里的 lvsRulesFile 没被消费: {report}")
+    _check("cmnRunMT" in (report.get("ignored") or []),
+           f"GUI-only 键要列进 ignored: {report}")
+    _check("lvsSVDBxcal" in (report.get("unmapped") or []),
+           f"未支持键要列进 unmapped: {report}")
+    _check(any("VARIABLE POWER_NAME" == item for item in (report.get("applied") or [])),
+           f"电源名要落到 VARIABLE POWER_NAME: {report}")
+
+    read = _value(transport, "calibre.read_results", kind="lvs",
+                  run_dir=job.get("run_dir"), limit=20)
+    _check(read.get("report_used"), f"set 改了报告名后 read_results 找不到报告: {read}")
+    status = (read.get("summary") or {}).get("status")
+    _check(status in KNOWN_VERDICTS, f"set 驱动的 LVS 结论不在已知枚举: {status!r}")
+    if status != "correct":
+        if REQUIRE_LVS_VERDICT:
+            raise AssertionError(f"set 驱动的 LVS 未通过比对: status={status!r}")
+        print(f"        WARN   SET-01 结论是 {status}", flush=True)
 
 
 def _case_lvs(transport) -> None:
@@ -285,6 +358,7 @@ def run_suite(transport) -> list[tuple[str, str]]:
     run("LVS-01 run + read_results", lambda: _case_lvs(transport))
     run("LVS-02 export_cdl → LVS 闭环", lambda: _case_lvs_chain(transport))
     run("PARAM-01 带参数（params/runset）", lambda: _case_params(transport))
+    run("SET-01 只给 .lvs set 跑 LVS", lambda: _case_set_file(transport))
     return results
 
 

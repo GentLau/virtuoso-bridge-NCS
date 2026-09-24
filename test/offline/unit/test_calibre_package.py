@@ -50,6 +50,64 @@ xRC Errors  =  0
 PEX NETLIST FILE = net.dist
 """
 
+#: 一份**真实形态**的 Calibre Interactive LVS set（SMIC 40LLRF 现场文件的结构，
+#: 内容换成我们环境里存在的路径）——用来钉住"把 set 直接喂进来"的语义。
+REAL_LVS_RUNSET = "\n".join([
+    "*lvsRulesFile: /opt/eda/PDK/CRN65GPNEW/CRN65GPNEW/Calibre/lvs/calibre.lvs",
+    "*lvsRunDir: /r/lvs",
+    "*lvsLayoutPrimary: inv2",
+    "*lvsLayoutPaths: inv2.gds",
+    "*lvsLayoutLibrary: bonn_controlled_lib",
+    "*lvsLayoutView: layout",
+    "*lvsLayoutGetFromViewer: 1",
+    "*lvsSourcePath: inv2.src.net",
+    "*lvsSourcePrimary: inv2",
+    "*lvsSourceLibrary: bonn_controlled_lib",
+    "*lvsSourceView: schematic",
+    "*lvsSourceGetFromViewer: 1",
+    "*lvsSpiceFile: inv2.sp",
+    "*lvsUseHCells: 1",
+    "*lvsHCellsFile: /pdk/hcelllist",
+    "*lvsPowerNames: avdd avs33",
+    "*lvsGroundNames: avss",
+    "*lvsRecognizeGates: NONE",
+    "*lvsERCDatabase: inv2.erc.results",
+    "*lvsERCSummaryFile: inv2.erc.summary",
+    "*lvsIncludeCmdsType: SVRF",
+    "*lvsSVRFCmds: {LVS FILTER C(CP) OPEN} {}",
+    "*lvsReportFile: inv2.lvs.report",
+    "*lvsReportMaximumCount: 1000",
+    "*lvsReportOptions: FX",
+    "*lvsAbortOnSupplyError: 0",
+    "*lvsSVDBxcal: 1",
+    "*lvsMaskDBFile: metal_c.maskdb",
+    "*cmnWarnLayoutOverwrite: 0",
+    "*cmnPromptSaveRunset: 0",
+    "*cmnRunMT: 1",
+    "*cmnSlaveHosts: {use {}} {hostName {}}",
+    "*cmnFDILayoutLibrary: bonn_controlled_lib",
+    "*cmnFDILayoutView: layout",
+    "*cmnFDIDEFLayoutPath: inv2.def",
+    "*cmnConfigureLVSBox: 1",
+    "",
+])
+REAL_LVS_DECK = "\n".join([
+    'LAYOUT PRIMARY "lvs_top"',
+    'LAYOUT PATH "lvs_top.gds"',
+    'SOURCE PRIMARY "lvs_top"',
+    'SOURCE PATH "lvs_top.cdl"',
+    'VARIABLE POWER_NAME  "VDD"',
+    'VARIABLE GROUND_NAME  "VSS"',
+    "LVS POWER NAME POWER_NAME",
+    "LVS GROUND NAME GROUND_NAME",
+    "LVS RECOGNIZE GATES NONE",
+    'LVS REPORT "lvs.rep"',
+    "LVS REPORT MAXIMUM 1000",
+    "LVS REPORT OPTION S",
+    "LVS ABORT ON SUPPLY ERROR NO",
+    "",
+])
+
 
 class FakeMiddle:
     def __init__(self, *, kind: str = "drc", completed: bool = True,
@@ -198,16 +256,39 @@ class UtilTests(unittest.TestCase):
                   "*lvsSVDBDir: /x/svdb\n")
         parsed = cu.parse_runset(runset)
         self.assertEqual(parsed["lvsLayoutPrimary"], "inv2")
-        overrides, unknown = cu.statements_from_params(parsed)
+        deck = ('LAYOUT PRIMARY "lvs_top"\nSOURCE PATH "lvs_top.cdl"\n'
+                'MASK SVDB DIRECTORY "svdb" XRC\n')
+        overrides, gui_only, unknown = cu.statements_from_params(parsed, deck)
+        self.assertEqual(gui_only, [])
         self.assertEqual(unknown, [])
         self.assertEqual(overrides["LAYOUT PRIMARY"], 'LAYOUT PRIMARY "inv2"')
         self.assertEqual(overrides["SOURCE PATH"], 'SOURCE PATH "/x/inv2.cdl"')
         self.assertEqual(overrides["MASK SVDB DIRECTORY"], 'MASK SVDB DIRECTORY "/x/svdb" QUERY')
 
     def test_statements_from_params_unknown_key_is_reported(self):
-        overrides, unknown = cu.statements_from_params({"lvsNoSuchOption": "1"})
+        overrides, _gui_only, unknown = cu.statements_from_params({"lvsNoSuchOption": "1"})
         self.assertEqual(overrides, {})
         self.assertEqual(unknown, ["lvsNoSuchOption"])
+
+    def test_power_names_prefer_variable_statement_when_deck_uses_it(self):
+        """TSMC 65 把电源名放在 VARIABLE（还参与 connectivity 规则）→ 必须改那一条。"""
+        deck = 'VARIABLE POWER_NAME "VDD"\nLVS POWER NAME POWER_NAME\n'
+        overrides, _gui, _unknown = cu.statements_from_params(
+            {"lvsPowerNames": "avdd avs33"}, deck)
+        self.assertEqual(overrides["VARIABLE POWER_NAME"],
+                         'VARIABLE POWER_NAME "avdd" "avs33"')
+        # deck 里没有 VARIABLE 时退回到 LVS POWER NAME
+        overrides2, *_ = cu.statements_from_params(
+            {"lvsPowerNames": "avdd avs33"}, 'LVS POWER NAME "VDD"\n')
+        self.assertEqual(overrides2["LVS POWER NAME"], 'LVS POWER NAME "avdd" "avs33"')
+
+    def test_svrf_cmds_and_yesno_rendering(self):
+        self.assertEqual(cu.parse_svrf_cmds("{LVS FILTER C(CP) OPEN} {}"),
+                         ["LVS FILTER C(CP) OPEN"])
+        self.assertEqual(cu.render_statement("LVS ABORT ON SUPPLY ERROR", "0", "yesno"),
+                         "LVS ABORT ON SUPPLY ERROR NO")
+        self.assertEqual(cu.render_statement("LVS ABORT ON SUPPLY ERROR", "1", "yesno"),
+                         "LVS ABORT ON SUPPLY ERROR YES")
 
     def test_apply_statements_replaces_first_occurrence_in_place(self):
         """first-wins：必须改在 deck 里、改在第一条上（GUI 的 INCLUDE+覆盖对 spec 语句无效）。"""
@@ -412,15 +493,82 @@ class PackageTests(unittest.TestCase):
         self.assertIn('LAYOUT PATH "/x/inv2.gds"', text)     # 覆盖掉了 "GDSFILENAME" 占位符
         self.assertIn('LAYOUT PRIMARY "inv2"', text)
         detail = next(s["detail"] for s in result.steps if s["name"] == "runset")
-        self.assertIn("lvsSourcePrimary", detail["keys"])
+        self.assertGreaterEqual(detail["keys"], 1)
+        self.assertIn("SOURCE PATH", result.value["runset"]["applied"])
 
-    def test_lvs_unknown_param_key_fails_loudly(self):
-        result = Package(FakeMiddle()).lvs(RunRequest(
-            token=TOKEN, deck="/x/calibre.lvs", params={"lvsNoSuchOption": "1"},
+    def test_real_lvs_set_drives_the_whole_run(self):
+        """现场形态的 `.lvs` set 直接喂进来：请求层字段、deck 语句、argv、分类都对上。"""
+        middle = FakeMiddle(deck_text=REAL_LVS_DECK)
+        original = middle.download_file
+
+        def with_runset(remote_path, local_path, timeout=None, *, token, recursive=False):
+            if str(remote_path) == "/x/jy_ctle.lvs":      # 只拦 runset，deck 仍走默认
+                target = Path(local_path)
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text(REAL_LVS_RUNSET, encoding="utf-8")
+                return CommandResult(0, "", "", "command")
+            return original(remote_path, local_path, timeout, token=token, recursive=recursive)
+
+        middle.download_file = with_runset
+        result = Package(middle).lvs(RunRequest(
+            token=TOKEN, runset="/x/jy_ctle.lvs", run_dir="/r/lvs",
         ))
-        self.assertFalse(result.ok)
-        self.assertIn("不支持的参数键", result.error or "")
-        self.assertIn("lvsLayoutPrimary", result.error or "")   # 给出支持的键
+        self.assertTrue(result.ok, result.error)
+
+        # 1) 请求层被 set 填上：deck / run_dir 来自 set（显式给的不覆盖）
+        deck_upload = next(local for local, remote in middle.uploads
+                           if remote.endswith("run_lvs.cal"))
+        deck = Path(deck_upload).read_text(encoding="utf-8")
+        self.assertEqual(result.value["run_dir"], "/r/lvs")
+        self.assertIn("runset", result.value)
+
+        # 2) 语句：相对路径按 run_dir 解析；电源名走 VARIABLE（本 deck 的写法）
+        self.assertIn('LAYOUT PATH "/r/lvs/inv2.gds"', deck)
+        self.assertIn('LAYOUT PRIMARY "inv2"', deck)
+        self.assertIn('SOURCE PATH "/r/lvs/inv2.src.net"', deck)
+        self.assertIn('SOURCE PRIMARY "inv2"', deck)
+        self.assertIn('VARIABLE POWER_NAME "avdd" "avs33"', deck)
+        self.assertIn('VARIABLE GROUND_NAME "avss"', deck)
+        self.assertIn("LVS REPORT MAXIMUM 1000", deck)
+        self.assertIn("LVS REPORT OPTION FX", deck)
+        self.assertIn("LVS ABORT ON SUPPLY ERROR NO", deck)
+        self.assertIn("LVS FILTER C(CP) OPEN", deck)      # lvsSVRFCmds 注入
+
+        # 3) argv：-spice / -hcell 来自 set
+        launcher = next(local for local, remote in middle.uploads
+                        if remote.endswith("launch.sh"))
+        script = Path(launcher).read_text(encoding="utf-8")
+        self.assertIn("-spice", script)
+        self.assertIn("/r/lvs/inv2.sp", script)
+        self.assertIn("-hcell", script)
+        self.assertIn("/pdk/hcelllist", script)
+
+        # 4) 分类：GUI-only 记录、未支持键可见（默认不判死）
+        report = result.value["runset"]
+        self.assertIn("lvsRulesFile", report["request_keys"])
+        self.assertIn("VARIABLE POWER_NAME", report["applied"])
+        self.assertIn("cmnRunMT", report["ignored"])
+        self.assertIn("lvsLayoutGetFromViewer", report["ignored"])
+        self.assertIn("lvsERCDatabase", report["unmapped"])
+        self.assertIn("lvsSVDBxcal", report["unmapped"])
+
+    def test_lvs_unknown_param_key_is_visible_and_strict_mode_fails(self):
+        """未知键不静默：默认列进 runset.unmapped；strict 下才判失败。"""
+        middle = FakeMiddle()
+        result = Package(middle).lvs(RunRequest(
+            token=TOKEN, gds="/x/a.gds", top="a", deck="/x/calibre.lvs",
+            params={"lvsNoSuchOption": "1"},
+        ))
+        self.assertTrue(result.ok, result.error)
+        self.assertEqual(result.value["runset"]["unmapped"], ["lvsNoSuchOption"])
+
+        strict = Package(FakeMiddle()).lvs(RunRequest(
+            token=TOKEN, gds="/x/a.gds", top="a", deck="/x/calibre.lvs",
+            params={"lvsNoSuchOption": "1"}, runset_strict=True,
+        ))
+        self.assertFalse(strict.ok)
+        self.assertIn("未支持的键", strict.error or "")
+        self.assertIn("lvsNoSuchOption", strict.error or "")
 
     def test_export_cdl_uses_official_aucdl_link(self):
         """auCdl：si.env 必须带 auCdl 三件套 + checkCAPPERI（IC618 OSSHNL-411 缺口）。"""
