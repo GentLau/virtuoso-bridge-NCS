@@ -14,6 +14,7 @@ result is unusual rather than wrong:
 """
 from __future__ import annotations
 
+import math
 import sys
 import tempfile
 import unittest
@@ -122,6 +123,34 @@ class TestSectionHelpers(unittest.TestCase):
         self.assertEqual(names, ["a"])
 
 
+class TestExternalJsonSafety(unittest.TestCase):
+    """`psf_external()` 是唯一的对外转换边界（spec 7-spectre §9）：
+    缺失哨兵与非有限值都必须收敛成 `null`，不能出现在出参里。"""
+
+    def test_non_finite_float_vector_becomes_null(self):
+        out = util.psf_external([math.nan, 1.0, math.inf, -math.inf])
+        self.assertEqual(out, [None, 1.0, None, None])
+
+    def test_complex_vector_components_are_cleaned_independently(self):
+        out = util.psf_external([complex(math.nan, 0.5), complex(1.0, math.inf)])
+        self.assertEqual(out, {"re": [None, 1.0], "im": [0.5, None]})
+
+    def test_scalar_complex_and_nested_dicts_are_cleaned(self):
+        self.assertEqual(util.psf_external(complex(math.inf, 0.0)),
+                         {"re": None, "im": 0.0})
+        self.assertEqual(util.psf_external({"a": [math.nan], "b": {"c": math.inf}}),
+                         {"a": [None], "b": {"c": None}})
+
+    def test_output_stays_strictly_serialisable(self):
+        from common.jsonutil import dumps_strict
+
+        payload = util.psf_external({"vout": [math.nan, 0.9],
+                                     "iout": {"re": [math.nan], "im": [0.0]}})
+        self.assertEqual(payload, {"vout": [None, 0.9],
+                                   "iout": {"re": [None], "im": [0.0]}})
+        dumps_strict(payload)      # 出现 NaN 会抛 ValueError
+
+
 class TestScalar(unittest.TestCase):
     def test_quoted_number_stays_a_string(self):
         self.assertEqual(util._scalar('"12.5"'), "12.5")
@@ -192,13 +221,13 @@ class TestSweptParsing(unittest.TestCase):
         # keeps its previous value, so iout repeats its first sample.
         self.assertEqual(data["iout"], {"re": [0.0, 0.0], "im": [-1.0, -1.0]})
 
-    def test_unmapped_trace_is_filled_with_nan(self):
+    def test_unmapped_trace_is_filled_with_null(self):
         with tempfile.TemporaryDirectory(prefix="vb-") as tmp:
             path = Path(tmp) / "tran1.tran.tran"
             path.write_text(SWEPT_PSF, encoding="utf-8")
             _, data = util.parse_psf_file(path)
         self.assertEqual(len(data["bare_net"]), 2)
-        self.assertTrue(all(value != value for value in data["bare_net"]))  # NaN
+        self.assertEqual(data["bare_net"], [None, None])
 
     def test_malformed_and_foreign_lines_are_skipped(self):
         # "1" (1.0e 0.5) -> complex regex matches, float() fails;

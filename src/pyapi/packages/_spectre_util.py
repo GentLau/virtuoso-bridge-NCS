@@ -26,6 +26,9 @@ def psf_external(value: Any) -> Any:
     scalar becomes ``{"re": ..., "im": ...}``.  Real PSF vectors stay lists of
     numbers, so transient consumers keep the historical ``data["signal"]``
     shape.
+
+    对外边界（spec 7-spectre §9）：**非有限值一律 `null`**——缺失点（哨兵 `None`）
+    与任何 NaN/±Inf 都在这里收敛成 JSON-safe，内部语义不变。
     """
     if isinstance(value, list):
         has_complex = any(isinstance(item, complex) for item in value)
@@ -45,20 +48,27 @@ def psf_external(value: Any) -> Any:
                     real.append(None)
                     imag.append(None)
                 elif isinstance(item, complex):
-                    real.append(item.real)
-                    imag.append(item.imag)
+                    real.append(_finite(item.real))
+                    imag.append(_finite(item.imag))
                 else:
-                    real.append(float(item))
+                    real.append(_finite(float(item)))
                     imag.append(0.0)
             return {"re": real, "im": imag}
         return [psf_external(item) for item in value]
     if isinstance(value, complex):
-        return {"re": value.real, "im": value.imag}
+        return {"re": _finite(value.real), "im": _finite(value.imag)}
     if isinstance(value, dict):
         return {str(key): psf_external(item) for key, item in value.items()}
-    if value is None or isinstance(value, (bool, int, float, str)):
+    if isinstance(value, float):
+        return _finite(value)
+    if value is None or isinstance(value, (bool, int, str)):
         return value
     return str(value)
+
+
+def _finite(value: float) -> float | None:
+    """NaN/±Inf → ``None``（JSON-safe）；有限值原样返回。"""
+    return value if math.isfinite(value) else None
 
 
 # ---------------------------------------------------------------------------
