@@ -60,11 +60,23 @@ def deck_missing_inputs(text: str, *, gds: str | None, top: str | None,
 
 
 def parse_runset(text: str) -> dict[str, str]:
-    """解析 Calibre Interactive runset（``*key: value`` 文本）；注释/空行跳过。"""
+    """解析 Calibre Interactive runset；**两种格式都收**，注释/空行跳过。
+
+    * classic：``*lvsRunDir: /path``（README/案例里的 `*key: value`）
+    * 新式：``xrc.runDir.value = "/path"``（CI 2023 起的主力格式，可选 `.specified` 行忽略）
+
+    只为**定位产物目录**服务；参数本身不进本包（见 calibre.py 的官方批处理入口）。
+    """
     values: dict[str, str] = {}
     for raw in text.splitlines():
         line = raw.strip()
         if not line or line.startswith("//") or line.startswith("#"):
+            continue
+        if not line.startswith("*") and ".value" in line and "=" in line:
+            key, _, value = line.partition("=")
+            key, value = key.strip(), value.strip().strip('"')
+            if key.endswith(".value") and value and key not in values:
+                values[key] = value
             continue
         if not line.startswith("*"):
             continue
@@ -78,7 +90,13 @@ def parse_runset(text: str) -> dict[str, str]:
     return values
 
 
-RUNSET_RUN_DIR_KEYS = ("lvsRunDir", "drcRunDir", "pexRunDir", "lpeRunDir", "runDir")
+RUNSET_RUN_DIR_KEYS = (
+    # classic
+    "lvsRunDir", "drcRunDir", "pexRunDir", "lpeRunDir", "runDir",
+    # 新式（prefix.group.option.value）
+    "xrc.runDir.value", "lvs.runDir.value", "drc.runDir.value",
+    "pex.runDir.value", "cmn.runDir.value",
+)
 
 
 def runset_run_dir(keys: dict[str, str]) -> str | None:

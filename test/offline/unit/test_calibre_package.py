@@ -260,6 +260,21 @@ class UtilTests(unittest.TestCase):
         self.assertEqual(cu.runset_run_dir(parsed), "/simulation/SUSER/extract/lvs")
         self.assertIsNone(cu.runset_run_dir({"lvsLayoutPrimary": "inv2"}))
 
+    def test_parse_new_style_runset_locates_run_dir(self):
+        """新式 `prefix.group.option.value = …`（CI 2023 主力格式）也要能定位产物目录。"""
+        runset = "\n".join([
+            'cmn.showOptionPages.value = [ "Database", "Options" ]',
+            'xrc.rulesFile.value = "/pdk/SMIC_CalPEX_40ULP.lvs"',
+            'xrc.runDir.value = "/simulation/$USER/extract/pex"',
+            'xrc.source.extraSourceFiles.specified = true',
+            'xrc.pexNetlist.netlistFile.value = "ncs_rx_core_tna0.pex.netlist"',
+        ])
+        parsed = cu.parse_runset(runset)
+        self.assertEqual(cu.runset_run_dir(parsed), "/simulation/$USER/extract/pex")
+        self.assertEqual(parsed["xrc.pexNetlist.netlistFile.value"],
+                         "ncs_rx_core_tna0.pex.netlist")
+        self.assertNotIn("xrc.source.extraSourceFiles.specified", parsed)   # .specified 不是 .value
+
     def test_params_only_accept_svrf_statement_heads(self):
         """不做 runset 键→语句的映射表：键必须是 SVRF 语句头（含空格）。"""
         overrides = cu.statements_from_params(
@@ -342,8 +357,8 @@ class UtilTests(unittest.TestCase):
 
 class PackageTests(unittest.TestCase):
     def setUp(self):
-        self._wd = Path(tempfile.mkdtemp(prefix="vb-calibre-wd-"))
-        init_work_dir(self._wd)
+        # work root 由 test/conftest.py 的 session fixture 绑定一次（产品口径：一进程一根）
+        pass
 
     def test_operations_registered(self):
         self.assertEqual({op[0] for op in OPERATIONS}, set(cal.OPERATION_NAMES))
