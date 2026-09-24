@@ -14,7 +14,7 @@ calibre 包覆盖 **物理验证三件套：DRC / LVS / PEX**，外加环境体�
 
 1. **一个动作一个操作**：`calibre.drc` / `calibre.lvs` / `calibre.pex`，用户只需给"版图 + 顶层名 + deck"，不必懂 deck 内部的占位符与相对 include；
 2. **默认非阻塞 + 三件套**：run 类操作默认立即返回 `job_id`（Calibre 动辄几十分钟），用 `calibre.status` 看进度、`calibre.read_results` 拿结构化结论；需要阻塞时用 `blocking=true`（包内轮询，形态同 maestro）；
-3. **结果要"能读"**：`read_results` 直接给分类计数（DRC 按规则条数、LVS 对象计数）、LVS match/差异点、PEX warning 清单，而不是让用户去啃 100 KB 报告；DRC 的坐标级违规明细在 `DRC_RES.db`，`.rep` 不含，本版不解析；
+3. **结果要"能读"**：`read_results` 直接给分类计数（DRC 按规则条数、LVS 对象计数）、LVS match/差异点、PEX warning 清单，而不是让用户去啃 100 KB 报告；DRC 的前 N 条违规（规则名/bbox/cell）从 ASCII 的 `DRC_RES.db` 有界读取解析（layer 不在该文件中）；
 4. **不碰共享配置**：所有运行期文件落在 run dir（deck 副本 + DFM、日志、报告、svdb/pdb），不改 `cds.lib`/PDK 配置，包是可插拔的插件；
 5. **失败可定位**：错误带 `kind`、工具原文片段、run dir 路径；`unknown-effect` 一律不自动重试。
 
@@ -101,8 +101,8 @@ run 类操作默认 `blocking=false`：写 launcher、后台启动、立刻返�
 | 字段 | 内容 |
 |---|---|
 | `kind` | `drc` / `lvs` / `pex` |
-| `summary` | DRC：`{total_results, rules_checked, by_rule:{规则名:条数}, first_offenders:[]}`；LVS：`{status: correct/incorrect/not_compared/unknown, counts:{对象:layout 数, *_source:source 数}, differences:[…]}`；PEX：`{errors, warnings, netlist_files, pdb_dirs}` |
-| `first_offenders` | DRC 恒为空列表：`.rep` 只有按规则统计表，坐标级明细在 `DRC_RES.db`（本版不解析）；LVS 差异点在 `summary.differences` |
+| `summary` | DRC：`{total_results, rules_checked, by_rule:{规则名:条数}, first_offenders:[…]}`；LVS：`{status: correct/incorrect/not_compared/unknown, counts:{对象:layout 数, *_source:source 数}, differences:[…]}`；PEX：`{errors, warnings, netlist_files, pdb_dirs}` |
+| `first_offenders` | DRC：前 `limit` 条 `{rule, cell, bbox, count}`（来自 `DRC_RES.db`，layer 不含）；LVS 差异点在 `summary.differences` |
 | `log_tail` | 有界日志尾（默认 40 行） |
 | `artifacts` | 已产出的关键文件清单（名 + 字节数 + mtime） |
 

@@ -22,11 +22,17 @@ ROOT = Path(__file__).resolve().parents[3]
 if str(ROOT / "src") not in sys.path:
     sys.path.insert(0, str(ROOT / "src"))
 
-from pyapi.packages._calibre_util import parse_drc_report, parse_lvs_report  # noqa: E402
+from pyapi.packages._calibre_util import (  # noqa: E402
+    parse_drc_report,
+    parse_drc_results_db,
+    parse_lvs_report,
+)
 
 REPORT = (ROOT / "test" / "shared" / "fixtures" / "calibre_drc_rep_sample.txt").read_text(
     encoding="utf-8")
 LVS_REPORT = (ROOT / "test" / "shared" / "fixtures" / "calibre_lvs_rep_sample.txt").read_text(
+    encoding="utf-8")
+DRC_DB = (ROOT / "test" / "shared" / "fixtures" / "calibre_drc_db_sample.txt").read_text(
     encoding="utf-8")
 
 EXPECTED_BY_RULE = {
@@ -98,3 +104,51 @@ def test_real_lvs_report_counts_table_is_parsed():
     counts = summary["counts"]
     assert counts.get("ports") == 1 and counts.get("ports_source") == 4, counts
     assert counts.get("nets") == 5 and counts.get("nets_source") == 4, counts
+
+
+def test_drc_results_db_yields_first_offenders():
+    """DRC_RES.db（ASCII）里的坐标多边形要能转成 first_offenders。"""
+    offenders = parse_drc_results_db(DRC_DB)
+    assert offenders, "db 样本应解析出违规"
+    first = offenders[0]
+    assert first["rule"] == "NW.A.1"
+    assert first["cell"] == "inv"
+    assert first["bbox"] == [-395.0, 5780.0, 455.0, 6420.0]
+    assert first["count"] == 1
+    by_rule = {item["rule"]: item for item in offenders}
+    assert by_rule["PO.A.1"]["count"] == 2
+    assert by_rule["PO.A.1"]["bbox"] == [0.0, -140.0, 60.0, 340.0]
+    assert all(item["cell"] == "inv" for item in offenders)
+    assert all(item["rule"] != "Cell" for item in offenders)
+
+
+def test_drc_results_db_skips_rules_without_polygons_and_caps_limit():
+    text = (
+        "inv 1000\n"
+        "EMPTY.RULE\n"
+        "1 1 3 Sep 24 11:13:11 2026\n"
+        "EMPTY.RULE { no geometry }\n"
+        "A.R.1\n"
+        "1 1 3 Sep 24 11:13:11 2026\n"
+        "A.R.1 { @ area }\n"
+        "p 1 4\n"
+        "0 0\n"
+        "1 0\n"
+        "1 1\n"
+        "0 1\n"
+        "B.R.2\n"
+        "2 2 3 Sep 24 11:13:11 2026\n"
+        "B.R.2 { @ area }\n"
+        "p 1 4\n"
+        "2 2\n"
+        "3 2\n"
+        "3 3\n"
+        "2 3\n"
+        "p 2 4\n"
+        "5 5\n"
+        "6 5\n"
+        "6 6\n"
+        "5 6\n"
+    )
+    offenders = parse_drc_results_db(text, limit=1)
+    assert [item["rule"] for item in offenders] == ["A.R.1"]

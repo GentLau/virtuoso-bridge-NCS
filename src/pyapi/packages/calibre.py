@@ -465,6 +465,13 @@ class Package:
                 summary["rules_checked"] = counters.get("rules_checked")
             if summary.get("total_results") is None:
                 summary["total_results"] = counters.get("total_results")
+            db_text = self._head_text(
+                posixpath.join(run_dir, "DRC_RES.db"), 262144,
+                request.token, request.timeout,
+            )
+            if db_text:
+                summary["first_offenders"] = cu.parse_drc_results_db(
+                    db_text, limit=request.limit)
         elif kind == "lvs" and counters.get("lvs_status"):
             summary["status"] = counters["lvs_status"]
         elif kind == "pex":
@@ -640,6 +647,16 @@ class Package:
             timeout=timeout, token=token,
         )
         return (outcome.stdout or "")[-4000:]
+
+    def _head_text(self, remote: str, max_bytes: int, token: str,
+                   timeout: int | None) -> str | None:
+        """有界读取远端 ASCII 文件头部（DRC_RES.db 可能 MB 级，不整份下载）。"""
+        outcome = self.middle.run_command(
+            f"test -f {shlex.quote(remote)} && head -c {int(max_bytes)} "
+            f"{shlex.quote(remote)} || true",
+            timeout=timeout, token=token,
+        )
+        return (outcome.stdout or "") or None
 
     def _log_counters(self, run_dir: str, token: str, timeout: int | None) -> str:
         """只回传计数行（日志是 MB 级，不整份下载）。"""

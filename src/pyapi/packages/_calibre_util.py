@@ -197,10 +197,71 @@ def parse_drc_report(text: str, *, limit: int = 20) -> dict[str, Any]:
         "rules_checked": int(rules.group(1)) if rules else None,
         "total_results": int(results.group(1)) if results else None,
         "by_rule": by_rule,
-        # 坐标级违规明细在 DRC_RES.db；.rep 只有统计表，不臆造条目。
+        # 坐标级明细在 DRC_RES.db（ASCII），由 parse_drc_results_db 解析；
+        # .rep 只有统计表，这里不臆造条目。
         "first_offenders": [],
         "report_bytes": len(text),
     }
+
+
+def parse_drc_results_db(text: str, *, limit: int = 20) -> list[dict[str, Any]]:
+    """Parse the ASCII ``DRC_RES.db`` detail file into first offenders.
+
+    结构：首行 `<top cell> <scale>`；每个违规块 = 规则名行（无空格）→
+    可选 `N X 3 <date>` 头与 `{ ... }` 规则文本 → 若干 `p <idx> <n>` +
+    ``n`` 个坐标点。只取坐标多边形，不解析 layer（db 不携带）。
+    """
+    lines = text.splitlines()
+    cell: str | None = None
+    for line in lines:
+        if line.strip():
+            cell = line.split()[0]
+            break
+
+    offenders: list[dict[str, Any]] = []
+    index = 0
+    while index < len(lines) and len(offenders) < limit:
+        rule = lines[index].strip()
+        index += 1
+        if not rule or " " in rule or not re.fullmatch(r"[A-Za-z0-9_.\-]+", rule):
+            continue
+        polygons: list[list[tuple[float, float]]] = []
+        while index < len(lines):
+            stripped = lines[index].strip()
+            if not stripped:
+                index += 1
+                continue
+            if re.fullmatch(r"[A-Za-z0-9_.\-]+", stripped):  # 下一个规则名
+                break
+            if stripped.startswith("p "):
+                parts = stripped.split()
+                point_count = int(parts[2]) if len(parts) >= 3 else 0
+                points: list[tuple[float, float]] = []
+                index += 1
+                while index < len(lines) and len(points) < point_count:
+                    tokens = lines[index].split()
+                    index += 1
+                    if len(tokens) >= 2:
+                        try:
+                            points.append((float(tokens[0]), float(tokens[1])))
+                        except ValueError:
+                            pass
+                if points:
+                    polygons.append(points)
+            else:
+                index += 1
+        if not polygons:
+            continue
+        first = polygons[0]
+        xs = [point[0] for point in first]
+        ys = [point[1] for point in first]
+        offenders.append({
+            "rule": rule,
+            "cell": cell,
+            "bbox": [min(xs), min(ys), max(xs), max(ys)],
+            "count": len(polygons),
+        })
+    return offenders
 
 
 def parse_lvs_report(text: str, *, limit: int = 20) -> dict[str, Any]:
@@ -276,6 +337,7 @@ __all__ = [
     "deck_sha256",
     "job_state",
     "parse_drc_report",
+    "parse_drc_results_db",
     "parse_job_json",
     "parse_lvs_report",
     "parse_pex_log",
