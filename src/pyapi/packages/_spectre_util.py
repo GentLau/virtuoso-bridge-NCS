@@ -30,14 +30,21 @@ def psf_external(value: Any) -> Any:
     if isinstance(value, list):
         has_complex = any(isinstance(item, complex) for item in value)
         all_numeric = all(
-            not isinstance(item, bool) and isinstance(item, (int, float, complex))
+            item is None
+            or (
+                not isinstance(item, bool)
+                and isinstance(item, (int, float, complex))
+            )
             for item in value
         )
         if has_complex and all_numeric:
-            real: list[float] = []
-            imag: list[float] = []
+            real: list[float | None] = []
+            imag: list[float | None] = []
             for item in value:
-                if isinstance(item, complex):
+                if item is None:
+                    real.append(None)
+                    imag.append(None)
+                elif isinstance(item, complex):
                     real.append(item.real)
                     imag.append(item.imag)
                 else:
@@ -178,7 +185,7 @@ def _parse_swept_data(lines: list[str], sections: dict[str, int], n: int) -> dic
 
     time_values: list[float | complex] = []
     signal_state: dict[str, float | complex] = {}
-    signal_series: dict[str, list[float | complex]] = {
+    signal_series: dict[str, list[float | complex | None]] = {
         name: [] for name in trace_names
     }
 
@@ -186,14 +193,14 @@ def _parse_swept_data(lines: list[str], sections: dict[str, int], n: int) -> dic
         if key is None:
             if time_values:
                 for name in trace_names:
-                    signal_series[name].append(signal_state.get(name, math.nan))
+                    signal_series[name].append(signal_state.get(name))
             time_values.append(value)
         else:
             signal_state[key] = value
 
     if time_values:
         for name in trace_names:
-            signal_series[name].append(signal_state.get(name, math.nan))
+            signal_series[name].append(signal_state.get(name))
 
     data: dict[str, Any] = {sweep_var: time_values}
     data.update(signal_series)

@@ -304,7 +304,7 @@ Request：`token`、`format`（`csv|json`）、`data` 或 `source_path`、`outpu
 
 PSF 解析约定：
 
-- swept 数据支持 delta 压缩：后续 step 缺省信号沿用前值；首个 step 未出现信号用 `NaN`，不得静默填 0。
+- swept 数据支持 delta 压缩：后续 step 缺省信号沿用前值；首个 step 未出现信号**内部**用 `NaN`（不得静默填 0），**对外 `value.data` 一律转成 `null`/省略**（保持 JSON-safe）。
 - AC 复数相量不得被破坏；对外 `value.data` 必须 JSON-safe：复数向量用 `{"re": [...], "im": [...]}`，单值用 `{"re": ..., "im": ...}`。
 - 非 swept 的 STRUCT OP 展平为 `"instance:member"`，例如 `"M0:gm"`。
 - `single` 可解析任意 swept/non-swept PSF ASCII；`raw` 自动识别的分析限于 tran/dc/ac/info。
