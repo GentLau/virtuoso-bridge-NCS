@@ -93,6 +93,8 @@ class RunRequest:
     fmt: str = "none"
     power: str | None = None
     ground: str | None = None
+    params: dict[str, str] | None = None
+    runset: str | None = None
     blocking: bool = False
     poll_interval: float = _DEFAULT_POLL
     timeout: int | None = None
@@ -109,6 +111,15 @@ class RunRequest:
         _opt_text(self.calibre_bin, "calibre_bin")
         _opt_text(self.power, "power")
         _opt_text(self.ground, "ground")
+        _opt_text(self.runset, "runset")
+        if self.params is not None:
+            if not isinstance(self.params, dict):
+                raise ValueError("params must be a mapping of name->value")
+            for key, value in self.params.items():
+                _require_text(key, "params key")
+                _require_text(value, "params value")
+                if "\n" in value or "\r" in value:
+                    raise ValueError(f"params[{key}] must be a single line")
         if isinstance(self.turbo, bool) or not isinstance(self.turbo, int) or not 1 <= self.turbo <= 64:
             raise ValueError("turbo must be an integer in [1, 64]")
         _require_bool(self.hier, "hier")
@@ -457,7 +468,9 @@ class Package:
         rewritten = self._rewrite_deck(request, kind, steps)
         if rewritten is None:
             return Result(False, steps, "deck rewrite failed", None)
-        deck_text, changes, missing = rewritten
+        deck_text, changes, missing, param_errors = rewritten
+        if param_errors:
+            return Result(False, steps, "; ".join(param_errors), None)
         if missing:
             return Result(
                 False, steps,
@@ -477,6 +490,7 @@ class Package:
             "kind": kind, "run_dir": run_dir, "top": request.top, "gds": request.gds,
             "cdl": request.cdl, "deck": request.deck, "deck_sha256": cu.deck_sha256(deck_text),
             "deck_changes": changes, "turbo": request.turbo, "fmt": request.fmt,
+            "params": request.params, "runset": request.runset,
         }
         launcher = cu.build_launcher(
             kind=kind, run_dir=run_dir, argv=argv_list[0],
@@ -722,7 +736,8 @@ class Package:
         return posixpath.join(root, "calibre", job_id)
 
     def _rewrite_deck(self, request: RunRequest, kind: str,
-                      steps: list[dict[str, Any]]) -> tuple[str, list[str], list[str]] | None:
+                      steps: list[dict[str, Any]]
+                      ) -> tuple[str, list[str], list[str], list[str]] | None:
         text = self._download_text(request.deck, request.token, request.timeout)
         if text is None:
             steps.append({"name": "read-deck", "ok": False, "detail": request.deck})
@@ -730,14 +745,52 @@ class Package:
         rewritten, changes = cu.deck_rewrite(
             text, gds=request.gds, top=request.top, cdl=request.cdl
         )
+        overrides, errors = self._collect_overrides(request, steps)
+        if errors:
+            steps.append({"name": "params", "ok": False, "detail": {"errors": errors}})
+            return rewritten, changes, [], errors
+        if overrides:
+            rewritten, param_changes, appended = cu.apply_statements(rewritten, overrides)
+            changes = changes + param_changes
+            steps.append({"name": "params", "ok": True,
+                          "detail": {"applied": param_changes, "appended": appended,
+                                     "keys": sorted(overrides)}})
+        elif request.params or request.runset:
+            steps.append({"name": "params", "ok": True, "detail": {"applied": []}})
+        # 占位符判据在**最终文本**上算：runset/params 可能正好覆盖掉带占位符的那一行
         missing = cu.deck_missing_inputs(
-            text, gds=request.gds, top=request.top, cdl=request.cdl
+            rewritten, gds=request.gds, top=request.top, cdl=request.cdl
         )
         steps.append({"name": "rewrite-deck", "ok": True,
                       "detail": {"changes": changes, "missing": missing,
                                  "self_contained": not missing and not changes,
                                  "sha256": cu.deck_sha256(rewritten)[:16]}})
-        return rewritten, changes, missing
+        return rewritten, changes, missing, errors
+
+    def _collect_overrides(self, request: RunRequest, steps: list[dict[str, Any]]
+                           ) -> tuple[dict[str, str], list[str]]:
+        """把 `params` + `runset` 文件统一成 SVRF 语句覆盖；未知键原样返回给调用方报错。"""
+        params: dict[str, str] = dict(request.params or {})
+        if request.runset:
+            text = self._download_text(request.runset, request.token, request.timeout)
+            if text is None:
+                steps.append({"name": "runset", "ok": False, "detail": request.runset})
+                return {}, [f"runset 文件不可读: {request.runset}"]
+            from_file = cu.parse_runset(text)
+            steps.append({"name": "runset", "ok": bool(from_file),
+                          "detail": {"path": request.runset, "keys": sorted(from_file)}})
+            if not from_file:
+                return {}, [f"runset 里没有 *key: value 行: {request.runset}"]
+            for key, value in from_file.items():
+                params.setdefault(key, value)
+        overrides, unknown = cu.statements_from_params(params)
+        if unknown:
+            supported = ", ".join(sorted(cu.RUNSET_STATEMENTS))
+            return overrides, [
+                f"不支持的参数键：{', '.join(unknown)}；支持：{supported}，"
+                "或直接用 SVRF 语句头（含空格，例如 \"LAYOUT PRIMARY\"）"
+            ]
+        return overrides, []
 
     def _download_text(self, remote: str, token: str, timeout: int | None) -> str | None:
         exists = self.middle.run_command(

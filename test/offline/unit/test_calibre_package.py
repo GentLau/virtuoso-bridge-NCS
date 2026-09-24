@@ -191,6 +191,40 @@ class UtilTests(unittest.TestCase):
             cu.deck_missing_inputs('LAYOUT PATH "GDSFILENAME"\n', gds=None, top=None, cdl=None),
             ['"GDSFILENAME"→gds'])
 
+    def test_parse_runset_and_statement_mapping(self):
+        runset = ("// Calibre Interactive runset\n"
+                  "*lvsLayoutPrimary: inv2\n"
+                  "*lvsSourcePath: /x/inv2.cdl\n"
+                  "*lvsSVDBDir: /x/svdb\n")
+        parsed = cu.parse_runset(runset)
+        self.assertEqual(parsed["lvsLayoutPrimary"], "inv2")
+        overrides, unknown = cu.statements_from_params(parsed)
+        self.assertEqual(unknown, [])
+        self.assertEqual(overrides["LAYOUT PRIMARY"], 'LAYOUT PRIMARY "inv2"')
+        self.assertEqual(overrides["SOURCE PATH"], 'SOURCE PATH "/x/inv2.cdl"')
+        self.assertEqual(overrides["MASK SVDB DIRECTORY"], 'MASK SVDB DIRECTORY "/x/svdb" QUERY')
+
+    def test_statements_from_params_unknown_key_is_reported(self):
+        overrides, unknown = cu.statements_from_params({"lvsNoSuchOption": "1"})
+        self.assertEqual(overrides, {})
+        self.assertEqual(unknown, ["lvsNoSuchOption"])
+
+    def test_apply_statements_replaces_first_occurrence_in_place(self):
+        """first-wins：必须改在 deck 里、改在第一条上（GUI 的 INCLUDE+覆盖对 spec 语句无效）。"""
+        deck = ('INCLUDE "/other"\n'
+                'LAYOUT PRIMARY "lvs_top"\n'
+                'LAYOUT PATH "lvs_top.gds"\n'
+                'LAYOUT PRIMARY "second"\n')
+        out, changed, appended = cu.apply_statements(deck, {
+            "LAYOUT PRIMARY": 'LAYOUT PRIMARY "inv2"',
+            "MASK SVDB DIRECTORY": 'MASK SVDB DIRECTORY "/x/svdb" QUERY',
+        })
+        self.assertEqual(appended, ['MASK SVDB DIRECTORY -> MASK SVDB DIRECTORY "/x/svdb" QUERY'])
+        self.assertIn('LAYOUT PRIMARY "inv2"\n', out)
+        self.assertIn('LAYOUT PRIMARY "second"\n', out)      # 后面的重复行不动
+        self.assertTrue(out.endswith('MASK SVDB DIRECTORY "/x/svdb" QUERY\n'))
+        self.assertIn('LAYOUT PRIMARY -> LAYOUT PRIMARY "inv2"', changed)
+
     def test_job_state_completed(self):
         state = cu.job_state("drc", process_alive=False,
                              log_tail="CALIBRE::DRC-H COMPLETED", artifacts=["DRC.rep"])
@@ -329,6 +363,64 @@ class PackageTests(unittest.TestCase):
         self.assertTrue(detail["self_contained"])
         self.assertEqual(detail["missing"], [])
         self.assertEqual(result.value["job_id"], "lvs_runset.lvs")
+
+    def test_lvs_params_override_deck_in_place(self):
+        """带参数但不走 GUI：runset 键原位改写 deck（占位符可不给）。"""
+        middle = FakeMiddle()
+        result = Package(middle).lvs(RunRequest(
+            token=TOKEN, deck="/x/calibre.lvs",
+            params={"lvsLayoutPaths": "/x/inv2.gds", "lvsLayoutPrimary": "inv2",
+                    "lvsSourcePath": "/x/inv2.cdl", "lvsSourcePrimary": "inv2"},
+        ))
+        self.assertTrue(result.ok, result.error)
+        uploaded = next(local for local, remote in middle.uploads if remote.endswith("run_lvs.cal"))
+        text = Path(uploaded).read_text(encoding="utf-8")
+        self.assertIn('LAYOUT PATH "/x/inv2.gds"', text)
+        self.assertIn('LAYOUT PRIMARY "inv2"', text)
+        self.assertIn('SOURCE PATH "/x/inv2.cdl"', text)
+        self.assertIn("LAYOUT SYSTEM GDSII", text)   # 没被点名的语句保持原样
+        detail = next(s["detail"] for s in result.steps if s["name"] == "params")
+        self.assertEqual(sorted(detail["keys"]),
+                         ["LAYOUT PATH", "LAYOUT PRIMARY", "SOURCE PATH", "SOURCE PRIMARY"])
+
+    def test_lvs_runset_file_is_parsed_and_applied(self):
+        middle = FakeMiddle()
+        original = middle.download_file
+
+        def with_runset(remote_path, local_path, timeout=None, *, token, recursive=False):
+            if str(remote_path).endswith(".runset"):
+                target = Path(local_path)
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text(
+                    "// Calibre Interactive runset\n"
+                    "*lvsLayoutPaths: /x/inv2.gds\n"
+                    "*lvsLayoutPrimary: inv2\n"
+                    "*lvsSourcePath: /x/inv2.cdl\n"
+                    "*lvsSourcePrimary: inv2\n",
+                    encoding="utf-8")
+                return CommandResult(0, "", "", "command")
+            return original(remote_path, local_path, timeout, token=token, recursive=recursive)
+
+        middle.download_file = with_runset
+        result = Package(middle).lvs(RunRequest(
+            token=TOKEN, deck="/x/calibre.lvs", runset="/x/calibre.runset",
+        ))
+        self.assertTrue(result.ok, result.error)
+        uploaded = next(local for local, remote in middle.uploads if remote.endswith("run_lvs.cal"))
+        text = Path(uploaded).read_text(encoding="utf-8")
+        self.assertIn('SOURCE PATH "/x/inv2.cdl"', text)
+        self.assertIn('LAYOUT PATH "/x/inv2.gds"', text)     # 覆盖掉了 "GDSFILENAME" 占位符
+        self.assertIn('LAYOUT PRIMARY "inv2"', text)
+        detail = next(s["detail"] for s in result.steps if s["name"] == "runset")
+        self.assertIn("lvsSourcePrimary", detail["keys"])
+
+    def test_lvs_unknown_param_key_fails_loudly(self):
+        result = Package(FakeMiddle()).lvs(RunRequest(
+            token=TOKEN, deck="/x/calibre.lvs", params={"lvsNoSuchOption": "1"},
+        ))
+        self.assertFalse(result.ok)
+        self.assertIn("不支持的参数键", result.error or "")
+        self.assertIn("lvsLayoutPrimary", result.error or "")   # 给出支持的键
 
     def test_export_cdl_uses_official_aucdl_link(self):
         """auCdl：si.env 必须带 auCdl 三件套 + checkCAPPERI（IC618 OSSHNL-411 缺口）。"""

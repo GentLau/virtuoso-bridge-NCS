@@ -54,6 +54,104 @@ def deck_missing_inputs(text: str, *, gds: str | None, top: str | None,
     return missing
 
 
+#: Calibre Interactive runset 的键 → SVRF 语句（只能是我们能安全改写的"规格语句"）。
+#: 依据：调查报告 §5.4 的 runset 字段清单 + PDK deck 实测（LAYOUT/SOURCE/MASK SVDB）。
+#: 值渲染：quoted=加引号；bare=原样；svdb=`MASK SVDB DIRECTORY "<v>" QUERY`。
+RUNSET_STATEMENTS: dict[str, tuple[str, str]] = {
+    "drcLayoutPaths": ("LAYOUT PATH", "quoted"),
+    "drcLayoutPrimary": ("LAYOUT PRIMARY", "quoted"),
+    "drcLayoutSystem": ("LAYOUT SYSTEM", "bare"),
+    "lvsLayoutPaths": ("LAYOUT PATH", "quoted"),
+    "lvsLayoutPrimary": ("LAYOUT PRIMARY", "quoted"),
+    "lvsSourcePath": ("SOURCE PATH", "quoted"),
+    "lvsSourcePrimary": ("SOURCE PRIMARY", "quoted"),
+    "lvsSourceSystem": ("SOURCE SYSTEM", "bare"),
+    "lvsSVDBDir": ("MASK SVDB DIRECTORY", "svdb"),
+}
+
+
+def render_statement(head: str, value: str, style: str) -> str:
+    """按 head 生成一条完整 SVRF 语句。"""
+    if style == "bare":
+        return f"{head} {value}"
+    if style == "svdb":
+        return f'{head} "{value}" QUERY'
+    return f'{head} "{value}"'
+
+
+def parse_runset(text: str) -> dict[str, str]:
+    """解析 Calibre Interactive runset（``*key: value`` 文本）；注释/空行跳过。"""
+    values: dict[str, str] = {}
+    for raw in text.splitlines():
+        line = raw.strip()
+        if not line or line.startswith("//") or line.startswith("#"):
+            continue
+        if not line.startswith("*"):
+            continue
+        body = line[1:]
+        if ":" not in body:
+            continue
+        key, _, value = body.partition(":")
+        key, value = key.strip(), value.strip()
+        if key and value and key not in values:  # runset 同键语义按首条（与 Calibre 一致）
+            values[key] = value
+    return values
+
+
+def statements_from_params(
+    params: dict[str, str],
+) -> tuple[dict[str, str], list[str]]:
+    """把 runset 键 / 裸 SVRF 语句头统一成 ``{语句头: 完整语句}``。
+
+    不认识的键**收集起来**（由调用方报错），不静默丢弃。
+    """
+    overrides: dict[str, str] = {}
+    unknown: list[str] = []
+    for key, value in params.items():
+        mapped = RUNSET_STATEMENTS.get(key)
+        if mapped:
+            head, style = mapped
+            overrides[head] = render_statement(head, value, style)
+        elif " " in key.strip():
+            # 转义舱：键直接写 SVRF 语句头（如 "LAYOUT PRIMARY"），值给完整语句
+            overrides[key.strip().upper()] = value.strip()
+        else:
+            unknown.append(key)
+    return overrides, unknown
+
+
+def apply_statements(text: str, overrides: dict[str, str]) -> tuple[str, list[str], list[str]]:
+    """把语句覆盖写进 deck 文本：**原位替换第一条**，缺失则追加到末尾。
+
+    原位替换是刻意的：Calibre 的 specification 语句 first-wins
+    （`INCLUDE deck` + 覆盖行不生效），改必须改在 deck 里、改在第一条上。
+    返回 ``(新文本, 改动清单, 追加清单)``。
+    """
+    lines = text.splitlines(keepends=True)
+    changed: list[str] = []
+    appended: list[str] = []
+    for head, statement in overrides.items():
+        wanted = head.upper()
+        replaced = False
+        for index, line in enumerate(lines):
+            stripped = line.strip()
+            if not stripped or stripped.startswith(("//", "#")):
+                continue
+            upper = stripped.upper()
+            if upper == wanted or upper.startswith(wanted + " ") or upper.startswith(wanted + "\t"):
+                ending = "\n" if line.endswith("\n") else ""
+                lines[index] = f"{statement}{ending}"
+                changed.append(f"{head} -> {statement}")
+                replaced = True
+                break
+        if not replaced:
+            appended.append(f"{head} -> {statement}")
+            lines.append(f"{statement}\n")
+    if appended:
+        changed.extend(f"append {entry}" for entry in appended)
+    return "".join(lines), changed, appended
+
+
 def deck_sha256(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8", errors="replace")).hexdigest()
 

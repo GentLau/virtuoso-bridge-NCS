@@ -133,21 +133,36 @@ run 类操作默认 `blocking=false`：写 launcher、后台启动、立刻返�
 | `turbo` | 否 | 4 | 传给 `-turbo` |
 | `hier` | 否 | true | `-hier` |
 | `blocking` / `poll_interval` / `timeout` | 否 | false / 5 / 3600 | 见 §3.4 |
+| `params` | 否 | — | **带参数**：runset 键 → deck 语句**原位改写**（见下） |
+| `runset` | 否 | — | 远端 `.runset` 文件（`*key: value`），按同一张表翻译 |
 
-**参数面 = deck 文件**：本包不解析、不暴露 runset/控制文件参数，只按白名单占位符改写 deck 文本，
-再把 deck 整目录 stage 到 run dir（相对 `INCLUDE` 照常生效）。
-要改参数就给一份改好的 deck（例如把 PDK deck 拷一份改两行）——`deck` 收任意路径；
-占位符一个都不剩时即"自包含 deck"，`gds`/`top`/`cdl` 全部可省（步骤里记 `self_contained`）。
+**参数怎么带**（真机结论见 `doc/report/calibre-网表导出机制调查报告.md §9`）：Calibre 的 specification 语句
+**first-wins**——`INCLUDE <deck>` + 覆盖行的 control file 对它们**无效**（`SPC1 superfluous specification`）。
+所以本包自己实现"runset 生效"：把参数**原位写进 deck 第一条同名语句**（缺失才追加），
+deck 整目录 stage 到 run dir（相对 `INCLUDE` 照常生效），每处改动记进 `deck_changes`。
+
+| runset 键 | 改写的 SVRF 语句 |
+|---|---|
+| `drcLayoutPaths` / `lvsLayoutPaths` | `LAYOUT PATH "…"` |
+| `drcLayoutPrimary` / `lvsLayoutPrimary` | `LAYOUT PRIMARY "…"` |
+| `drcLayoutSystem` | `LAYOUT SYSTEM …` |
+| `lvsSourcePath` / `lvsSourcePrimary` / `lvsSourceSystem` | `SOURCE PATH/PRIMARY/SYSTEM …` |
+| `lvsSVDBDir` | `MASK SVDB DIRECTORY "…" QUERY` |
+
+键也可以直接写 **SVRF 语句头**（含空格，例如 `"LAYOUT PRIMARY"`），值给完整语句 → 原样替换/追加（转义舱）。
+**表里没有的键 → 结构化失败并列出支持的键**（不静默丢弃）。`runset` 文件里的键与 `params` 合并，
+`params` 同名优先；文件不可读/没有 `*key: value` 行同样明确失败。
+占位符一个都不剩时即"自包含 deck"，`gds`/`top`/`cdl` 全部可省（步骤里记 `self_contained`）；
+占位符判据在**参数应用之后**的文本上算（参数可能正好覆盖掉带占位符的那一行）。
 
 ### 4.3 `calibre.lvs`
 
 在 DRC 参数基础上：`cdl`（**条件必填**，deck 引用 `"lvs_top.cdl"` 时必填；可由 `calibre.export_cdl` 产出）、
 `power`/`ground`（可选覆盖 deck 的电源地名）。
 
-> 实测（2026-09-24）：`INCLUDE <PDK deck>` + 覆盖 `LAYOUT PATH`/`SOURCE PATH` 的 **control file 形态走不通**——
-> Calibre 的 specification 语句是 **first-wins**（`SPC1 superfluous specification statement`：同一语句只认第一条，
-> 其余忽略/报错），deck 里的 `lvs_top.*` 先出现就赢。要改这类参数只能改 deck 文本本身
-> （或走官方 GUI batch `calibre -gui -<app> -runset <file> -batch`，那时 runset 由 Calibre Interactive 自己消费）。
+> 实测（2026-09-24）：`params={lvsLayoutPaths, lvsLayoutPrimary, lvsSourcePath, lvsSourcePrimary}` 跑
+> `CMP_LIB/inv2` + `inv2.gds` → `summary.status = correct`；同参数走 `.runset` 文件同样 `correct`；
+> 未知键报 `不支持的参数键：…`。**不需要拷改 deck，也不走 GUI batch。**
 
 ### 4.4 `calibre.pex`
 

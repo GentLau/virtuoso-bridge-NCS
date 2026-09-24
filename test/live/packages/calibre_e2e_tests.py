@@ -11,6 +11,7 @@
 * `DRC-02`  坏 deck 必须**结构化失败**（不挂死、不崩）—— P-061 的同类防线；
 * `LVS-01`  LVS 跑完 + `read_results`（结论枚举 + 计数表格 + **两条路径同一枚举**）—— P-062/P-071 的验收；
 * `LVS-02`  **闭环**：`EXPORT-01` 的 CDL 直接喂 `calibre.lvs`，`VB_CALIBRE_REQUIRE_LVS_VERDICT=1` 下要求 `correct`。
+* `PARAM-01` **带参数**（不改 deck、不走 GUI）：`params` 内联 / `.runset` 文件原位改写 deck；未知键结构化失败。
 
 `LVS-01` 的口径：默认只断言**结构契约**（status 属已知枚举、`log_counters.lvs_status` 与
 `summary.status` 一致、counts 已解出），并在 `status == "not_compared"` 时打印 WARN 指向 **P-069**
@@ -208,6 +209,45 @@ def _case_lvs_chain(transport) -> None:
               "结构契约已通过", flush=True)
 
 
+def _case_params(transport) -> None:
+    """PARAM-01：runset 键 → deck 语句原位改写（specification first-wins 的唯一生效写法）。"""
+    exported = _exported.get("cdl")
+    _check(exported, "PARAM-01 依赖 EXPORT-01 的 CDL，但 EXPORT-01 未产出")
+    params = {"lvsLayoutPaths": CDL_GDS, "lvsLayoutPrimary": CDL_CELL,
+              "lvsSourcePath": exported, "lvsSourcePrimary": CDL_CELL}
+    job = _value(transport, "calibre.lvs", deck=LVS_DECK, params=params,
+                 run_dir=f"{RUN_DIR}/lvs-params", blocking=True, timeout=900)
+    changes = job.get("deck_changes") or []
+    _check(any("LAYOUT PRIMARY" in item for item in changes),
+           f"参数没落进 deck（deck_changes={changes}）")
+    read = _value(transport, "calibre.read_results", kind="lvs",
+                  run_dir=job.get("run_dir"), limit=20)
+    status = (read.get("summary") or {}).get("status")
+    _check(status in KNOWN_VERDICTS, f"带参数的 LVS 结论不在已知枚举: {status!r}")
+    if status != "correct" and REQUIRE_LVS_VERDICT:
+        raise AssertionError(f"带参数的 LVS 未通过比对: status={status!r}")
+
+    # runset 文件形态（Calibre Interactive `*key: value` 文本，按表翻译）
+    tmp = WORK_DIR / "tmp"
+    tmp.mkdir(parents=True, exist_ok=True)
+    local = tmp / "e2e-lvs.runset"
+    local.write_text("// e2e\n" + "".join(f"*{key}: {value}\n" for key, value in params.items()),
+                     encoding="utf-8", newline="\n")
+    remote = f"{RUN_DIR}/e2e-lvs.runset"
+    _op(transport, "basic.file.upload", local_path=str(local), remote_path=remote, timeout=120)
+    job2 = _value(transport, "calibre.lvs", deck=LVS_DECK, runset=remote,
+                  run_dir=f"{RUN_DIR}/lvs-params-runset", blocking=True, timeout=900)
+    _check(any("SOURCE PATH" in item for item in (job2.get("deck_changes") or [])),
+           f"runset 没翻译成 deck 语句: {job2.get('deck_changes')}")
+
+    # 不认识的键必须失败并列出支持的键（不静默忽略）
+    bad = transport.call({"operation": "calibre.lvs", "token": TOKEN, "deck": LVS_DECK,
+                          "params": {"lvsNotAThing": "1"},
+                          "run_dir": f"{RUN_DIR}/lvs-bad-param"})
+    _check(not bad.get("ok"), f"未知参数键必须结构化失败: {bad}")
+    _check("不支持的参数键" in str(bad.get("error") or ""), f"错误要指出不支持的键: {bad}")
+
+
 def _case_lvs(transport) -> None:
     _, read = _run_and_read(transport, "lvs", deck=LVS_DECK,
                             run_dir=f"{RUN_DIR}/lvs", cdl=CDL)
@@ -244,6 +284,7 @@ def run_suite(transport) -> list[tuple[str, str]]:
     run("DRC-02 bad deck fails", lambda: _case_drc_bad_deck(transport))
     run("LVS-01 run + read_results", lambda: _case_lvs(transport))
     run("LVS-02 export_cdl → LVS 闭环", lambda: _case_lvs_chain(transport))
+    run("PARAM-01 带参数（params/runset）", lambda: _case_params(transport))
     return results
 
 

@@ -225,7 +225,7 @@
 | operation | 必备 | 可选 | 说明 |
 |---|---|---|---|
 | `calibre.check_env` | — | `calibre_bin`, `deck` | 查环境/许可 |
-| `calibre.drc` | `deck` | `gds`, `top`（deck 有占位符时才必需）, `job_id`, `run_dir`, `turbo`（默认 4）、`hier`, `blocking`（默认 `false`）, `poll_interval` | 跑 DRC；默认后台，先用返回的 `job_id` |
+| `calibre.drc` | `deck` | `gds`, `top`（deck 有占位符时才必需）, `params`/`runset`, `job_id`, `run_dir`, `turbo`（默认 4）、`hier`, `blocking`（默认 `false`）, `poll_interval` | 跑 DRC；默认后台，先用返回的 `job_id` |
 | `calibre.lvs` | `deck` | 同上 + `cdl`（deck 引用 `lvs_top.cdl` 时必需）, `lvs_run_dir`, `power`, `ground` | 跑 LVS；`cdl` 可用 `calibre.export_cdl` 现产 |
 | `calibre.pex` | `gds`, `top`, `deck` | 同上 + `cdl`, `lvs_run_dir`, `fmt` | 跑 PEX |
 | `calibre.status` | `job_id` 或 `run_dir` | `kind`（默认 `drc`） | 查进度 |
@@ -233,8 +233,11 @@
 | `calibre.export` | `job_id` 或 `run_dir` | `kind`, `items`（默认 `["summary"]`）、`local_dir` | 导出报告到本机 |
 | `calibre.export_cdl` | `library`, `cell` | `view`（默认 `schematic`）, `netlist_name`, `run_dir`, `cds_lib`, `timeout` | 用 Virtuoso 官方 auCdl 从 schematic 现产 CDL 源网表（LVS 的 source 侧） |
 
-参数改法：Calibre 的 deck 就是参数文件——要改参数就给一份改好的 deck（`deck` 收任意路径）；
-不要用 `INCLUDE <deck>` + 覆盖行的 control file（specification 语句 first-wins，覆盖不生效，见 `doc/report/calibre-网表导出机制调查报告.md §9`）。
+**改参数**：`params={"lvsLayoutPrimary":"inv2", "lvsSourcePath":"/x/inv2.cdl", …}`（也收 `runset=<远端 .runset 路径>`）。
+支持的键：`drcLayoutPaths/drcLayoutPrimary/drcLayoutSystem/lvsLayoutPaths/lvsLayoutPrimary/lvsSourcePath/lvsSourcePrimary/lvsSourceSystem/lvsSVDBDir`；
+键写成 SVRF 语句头（如 `"LAYOUT PRIMARY"`，值给整条语句）可改表外的语句。参数会被**原位写进 deck**（first-wins 语义），
+改动在返回的 `deck_changes` 里。不认识的键会直接失败——不要用 `INCLUDE <deck>` + 覆盖行的 control file，
+那对 specification 语句无效（见 `doc/report/calibre-网表导出机制调查报告.md §9`）。
 
 ## Verilog / Verilog-A
 

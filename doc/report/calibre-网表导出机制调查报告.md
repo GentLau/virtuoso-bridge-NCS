@@ -364,12 +364,22 @@ MM6 OUT IN VDD VDD pch l=180.0n w=8u m=1
 见 `calbr_lvl_fdi_gd/…/General_ErrorWarningMessages` 的 SPC1 条目）。GUI 文档说的 "control file takes precedence"
 对本 PDK deck 不成立——deck 里 `lvs_top.*` 先出现就赢。
 
-**因此参数面定为 deck 文件本身**（本包不解析 runset、不暴露 runset 参数）：
+**因此本包自己实现"runset 生效"（不走 GUI）**：既然覆盖行只能改在 deck 里、改在第一条上，
+那就由我们把参数**原位写进 deck 的第一条同名语句**（缺失才追加），行为即 GUI 的合并结果：
 
-1. 要改参数 → 给一份改好的 deck（拷 PDK deck 改两行即可），`deck` 收任意路径；
-2. deck 里没占位符（自包含）时，`gds/top/cdl` 全部可省（步骤记 `self_contained: true`）；
-3. 调用方若坚持用 GUI 的 `.runset`，唯一官方消费入口是 `calibre -gui -<app> -runset <file> -batch`
-   （runset 由 Calibre Interactive 自己合并）；等真有 runset 样本再加这条 argv 分支，不做无样本实现。
+- `params={"lvsLayoutPrimary": "inv2", "lvsSourcePath": "/x/inv2.cdl", …}`（runset 键，见下表）；
+- 或 `runset=<远端 .runset 文件路径>`（Calibre Interactive 的 `*key: value` 文本，按同一张表翻译）；
+- 键也可直接写 SVRF 语句头（含空格，如 `"LAYOUT PRIMARY"`）作转义舱，值给整条语句；
+- 表外/未知键 → 结构化失败并列出支持的键（不静默忽略）；每处改动记进 `deck_changes` 供审计；
+- deck 里没占位符（自包含）时 `gds/top/cdl` 全部可省（步骤记 `self_contained: true`）。
+
+支持键 → SVRF 语句：`drcLayoutPaths`/`lvsLayoutPaths`→`LAYOUT PATH`；`drcLayoutPrimary`/`lvsLayoutPrimary`→`LAYOUT PRIMARY`；
+`drcLayoutSystem`→`LAYOUT SYSTEM`；`lvsSourcePath`/`lvsSourcePrimary`/`lvsSourceSystem`→`SOURCE PATH/PRIMARY/SYSTEM`；
+`lvsSVDBDir`→`MASK SVDB DIRECTORY "…" QUERY`。
+
+真机验证（token `vb-vblog`，2026-09-24）：同一份 PDK deck 不拷贝、不修改，
+`params` 内联与 `.runset` 文件两种形态各跑一次 LVS（`inv2.gds` + `export_cdl` 的 CDL）→ **两次都是 `correct`**；
+`params={"lvsNotAThing":"1"}` → 明确失败并回带支持的键。
 
 ## 10. 同批修掉的两个上层问题
 
