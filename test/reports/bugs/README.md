@@ -13,29 +13,22 @@
 3. **刷新方式**：改 `test/shared/runners/make_bug_cards.py` 的 `OPEN` / `CLOSED_RECENT` 段，
    然后 `python test/shared/runners/make_bug_cards.py`（幂等；`--check` 只校验不写盘）。
 
-## 1. 未关闭（14 条）
+## 1. 未关闭（7 条）
 
 | ID | 级别 | 归属 | 状态 | 一句话 | 卡片 |
 |---|---|---|---|---|---|
-| **P-026** | P2（同名/子串命名在真机很常见，一旦并存必然失败） | 设计侧（`maestro.py` 窗口匹配） | 待设计修（已报 `bug-20260922T121908Z-vblog-b06063ab`） | maestro 会话匹配用子串：`view="maestro"` 命中库名 `maestro_tb` 的 Reading 窗口 → `maestro.run` 整体报错 | [P-026-maestro-session-title-substring-match.md](P-026-maestro-session-title-substring-match.md) |
-| **P-027** | P2（静默假成功会污染后续 symbol/LVS/仿真） | 设计侧（`netlist_import.py`） | 待设计修（已报 `bug-20260922T123859Z-vblog-202c4e37`） | `virtuoso.netlist.import` 假成功：对不存在的目标库仍返回 ok=true（三步全绿但什么都没建） | [P-027-netlist-import-false-success.md](P-027-netlist-import-false-success.md) |
-| **P-029** | P2（调用方意图被静默忽略；客户端被写陌生绝对路径） | 设计侧（`layout.py` 发布路径） | 待设计修（已报 `bug-20260922T123712Z-vblog-afac3523`） | `layout.gds` 导出忽略 `file_is_local=False`：产物被下载到客户端假路径树，靶机不留文件仍报 completed | [P-029-layout-gds-ignores-file-is-local.md](P-029-layout-gds-ignores-file-is-local.md) |
-| **P-030** | P2（生成的原理图连接关系错误，会带到 CDL/LVS/仿真） | 设计侧（`schematic.py` 默认值策略） | 待设计修（已报 `bug-20260922T122850Z-vblog-b7ed6176`） | `schematic.set_term_nets` 默认 `stub_length=0.5` 对 65nm PDK 过大 → 端子被路由到错误网络且静默通过 | [P-030-set-term-nets-stub-length-unsafe.md](P-030-set-term-nets-stub-length-unsafe.md) |
-| **P-031** | P2（电气检查失败（悬空/短路/未连线）被静默当成功保存） | 设计侧（`schematic.py`） | 待设计修（已报 `bug-20260922T124018Z-vblog-0584e46b`） | schematic `check_and_save`/`write` 忽略 `schCheck` 失败：返回 check-failed 仍 ok=true | [P-031-schematic-check-and-save-silent.md](P-031-schematic-check-and-save-silent.md) |
-| **P-032** | P2/P3（返回元数据被污染；当前无真实 VERILOGIN 日志样本，可达性待现场确认） | 设计侧（`verilog.py`） | 待设计修（已报 `bug-20260922T124456Z-vblog-70645f43`） | `verilog._imported_cells` 去重顺序错误：未清洗 token 与已清洗列表比较 → 同一 cell 多视图被重复计入 | [P-032-verilog-imported-cells-dedupe-order.md](P-032-verilog-imported-cells-dedupe-order.md) |
 | **P-038** | P2（任何 3.9 客户端/CI 作业不可用；跨客户端一致性在 3.9 上不成立） | 设计侧（打包/依赖或 requires-python 口径） | 待设计修（已报 `bug-20260922T141119Z-vblog-5e939e33`） | 声明支持 Python 3.9，但裸装 3.9 无法导入（pydantic 求值 PEP 604 注解；pyproject 未声明 `eval_type_backport`） | [P-038-py39-pep604-needs-backport.md](P-038-py39-pep604-needs-backport.md) |
 | **P-077** | P3（口径不一致：注册探测 vs 运行时；会绊住手写配置的用户） | 设计侧（定口径：探测接受 PATH 名 or spec 写明必须绝对路径） | 待归属 | 显式 `role.daemon.python` 传裸命令名（如 `python3`）时注册第 3 步失败；运行时可解析 PATH | [P-077-explicit-daemon-python-bare-name-rejected.md](P-077-explicit-daemon-python-bare-name-rejected.md) |
 | **P-076** | P2（间歇性挂起；占住 in_flight 线程，客户端只能杀进程） | 设计侧（上层 spectre 包的 run 路径：等待完成/递归下载） | 观察（1 次复现，待设计侧定位） | 间歇：`spectre.run` 请求永不返回（spectre 已 0 error 跑完；服务端线程不释放，需重启业务面） | [P-076-spectre-run-request-never-returns.md](P-076-spectre-run-request-never-returns.md) |
 | **P-075** | P1（会话被挂死；多用户/GDS 后继续操作的流程直接卡住） | 设计侧（上层 layout.gds / strmout 调用路径） | 待设计修 | `virtuoso.layout.gds` 导出后会话残留模态对话框（"Stream out translation complete"）→ 同会话 SKILL 通道挂死，必须重启实例 | [P-075-gds-export-modal-blocks-session.md](P-075-gds-export-modal-blocks-session.md) |
 | **C0** | P2（测试规范缺陷；导致覆盖系统性缺口 + 缺陷漏检） | 测试侧（规范制定 + 覆盖补齐） | 规范已落地（2026-09-28）；覆盖补齐进行中（B1–B4） | 测试规范缺失：无显式 TB 流程约定（环境检查→构建→完备校验→执行→比对），delete/rename/set 类原子在 semi/live 层系统性无覆盖 | [C0-测试规范-AAA与状态还原缺失.md](C0-测试规范-AAA与状态还原缺失.md) |
 | **P-073** | P2（写操作语义错误；set_pin_properties 静默改坏用户数据） | 设计侧（上层 schematic 包 `_atomic_skill`） | 待设计修 | 原理图 pin 原子操作与「pin 有效名」不一致：rename_pin 静默无效、set_pin_properties 把 pin 名改成自动名 | [P-073-pin-atomic-ops-name-mismatch.md](P-073-pin-atomic-ops-name-mismatch.md) |
-| **P-074** | P3（文档口径不一致，会绊住所有写 TB 的人） | 设计侧（spec 或实现，二选一改齐） | 待归属 | spec 表格把 pin 的索引写成 `xy`，实现要 `x`/`y`（delete/rename/set_pin_properties） | [P-074-pin-index-xy-doc-mismatch.md](P-074-pin-index-xy-doc-mismatch.md) |
 | **P-070** | P2（能力缺失） | 待决策（产品口径：支持驱动 MC or 明确不做）→ 设计侧实现/写 spec | 待决策 | 蒙特卡洛能力缺失：只能读回 MC 结果，不能驱动 MC 仿真 | [P-070-monte-carlo-missing.md](P-070-monte-carlo-missing.md) |
 
 > 优先级口径：**P1** = Linux 侧资源/安全或核心指标链路断（P-056、P-053）；
 > **P2** = 真实设计流会给出错的/空的结果，且多数**静默**；**P3/观察** = 非阻塞但建议顺手修。
 
-## 2. 本轮/近期已关闭（38 条，保留记录）
+## 2. 本轮/近期已关闭（45 条，保留记录）
 
 | ID | 事项 | 关闭依据（证据） |
 |---|---|---|
@@ -77,6 +70,13 @@
 | P-042 | `layout.gds` 遇版图锁时误报 "layout view not found" | **已修**：导出先走 `_view_state_expr` 三态（missing/mismatch/locked），锁冲突单独报 "is locked by another session"（`layout.py:1008-1030`） |
 | P-046 | S10 e2e 引导源未固定 → `RBStop()+load()` 会覆盖别人的 CIW（测试侧缺陷） | **已修（测试侧）**：默认不再自动挑实例 —— `test_e2e_live.py` 用 `VB_E2E_BOOTSTRAP_TOKEN/PORT` 固定引导，未固定且未显式 `VB_E2E_ALLOW_AUTO_DISCOVER=1` 时直接拒绝（`test/live/e2e/test_e2e_live.py:56-63`） |
 | P-069 | Calibre LVS 全链跑不通：auCdl 对含 PDK 器件的 cell 导出 CDL 失败 → 无源网表 | **测试侧复验通过（第七轮）**：`round7/design-iterate/iterate-lvs.json` —— `calibre.export_cdl(CMP_LIB/inv2, 680 B)` → `layout.gds` → `calibre.lvs(deck+cdl)` → `read_results`：**`status=correct`**、ports 4/4、nets 4/4、inst 1/1、`differences=[]`；S11 全链也拿到确定结论（`cdl` 693 B、lvs rc=0）。等上层销案；注意 `_calibre.lvs_`（tvf）不是合法 runset，用它当失败证据属用错文件 |
+| P-026 | maestro 会话匹配用子串（view=maestro 误命中库名 maestro_tb） | **已修（`b36bade`）**：GUI 会话按标题 token 精确匹配 —— `_window_target_fields()` 解析 Editing:/Reading: 后的 `lib cell view` 并逐字段比较（`maestro.py:251-260,494`），不再用 `in` 子串。验证：round7 11 套包 `all_passed=true`（含用 `maestro_tb` 库的 maestro 套件，`round7/live-run-all-http.log`） |
+| P-027 | `virtuoso.netlist.import` 假成功（对不存在的库也返回 ok=true） | **已修（`b36bade`）**：参考桩不再伪造成功；该操作已不在运营面（`netlist_import.py` 从生产源码移除、ops 列表无 netlist）。验证：`test/shared/runners/ops_matrix.py` 无 netlist 条目；infra 包 E2E 通过 |
+| P-029 | `layout.gds` 导出忽略 `file_is_local=False`（产物下到客户端假路径树） | **已修（`b36bade`）**：gds export 支持 `file_is_local=false` 远端落盘且不拍平路径（`layout.py:1043,1175,1192,1244`）。验证（2026-09-28 复跑）：`test_layout_publish_contracts.py` 4/4、`test_layout_contracts.py` 67/67 绿 |
+| P-030 | `set_term_nets` 默认 `stub_length=0.5` 对 65nm 过大 → 端子接错网且静默 | **已修（`b36bade` + `bd75d3d`）**：默认 stub 由引脚几何推导 `(rbHw + 0.05)`，不再固定 0.5；显式值的 SKILL 括号 bug（`(0.5)` 被当函数调用）同批修掉（`schematic.py:540-556`）。验证：`test_schematic_contracts.py` 37/37 绿 |
+| P-031 | schematic `check_and_save`/`write` 忽略 `schCheck` 失败（check-failed 仍 ok） | **已修（`b36bade` + `bd75d3d`）**：保存前校验 output 含 saved 标记（`schematic.py:785,862`），并在保存路径补 `dbSetConnCurrent`（避免 si -batch OSSHNL-108/109）。验证：`test_schematic_contracts.py` 37/37 绿（无 xfail 残留） |
+| P-032 | `verilog._imported_cells` 去重顺序错误（未清洗 token 参与比较） | **已修（`b36bade`）**：先清洗 `[.,;:]` 尾字符再去重（`verilog.py:659-667`）。验证：`test_verilog_contracts.py` 28/28 绿 |
+| P-074 | pin 坐标口径三处不一致（read `xy` / write `x`,`y` / spec `xy`） | **已修（`48fc800`）**：实现统一为 `pos: [x, y]`，`xy`/拆开的 `x`/`y` 一律拒绝并点名违规字段（`schematic.py:480-487`）；spec《2-schematic》已改「单点一律 pos、弃用 xy」。验证：`schematic_pin_ops_probe` 以 `pos` 形状跑通写路径（`round7/pin-ops.json`，2026-09-28 复跑） |
 
 详见 [已关闭-近期.md](已关闭-近期.md)。
 

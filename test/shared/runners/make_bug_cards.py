@@ -27,106 +27,6 @@ BUGS_DIR = ROOT / "test" / "reports" / "bugs"
 #: 未关闭条目。状态只允许：待设计修 / 待测试侧 / 待归属 / 待决策 / 观察
 OPEN = [
     {
-        "id": "P-026",
-        "slug": "maestro-session-title-substring-match",
-        "reported": "第五轮（2026-09-22；已报 `bug-20260922T121908Z-vblog-b06063ab`）",
-        "updated": "2026-09-28（补齐卡片）",
-        "title": "maestro 会话匹配用子串：`view=\"maestro\"` 命中库名 `maestro_tb` 的 Reading 窗口 → `maestro.run` 整体报错",
-        "level": "P2（同名/子串命名在真机很常见，一旦并存必然失败）",
-        "owner": "设计侧（`maestro.py` 窗口匹配）",
-        "status": "待设计修（已报 `bug-20260922T121908Z-vblog-b06063ab`）",
-        "where": "`src/pyapi/packages/maestro.py:472-486`（`library/cell/view in title` 子串判断）、抛错点 `:572-579`",
-        "symptom": "窗口快照里 `(\"fnxSession160\" 23 \"…Reading: maestro_tb opamp_probe schematic…\")` 与 "
-                   "`(\"fnxSession160\" 12 \"…Editing: maestro_tb opamp_probe maestro\")` 并存时，"
-                   "`view=\"maestro\"` 命中的是 Reading 窗口 → 走 reading 分支调 `maeMakeEditable` 失败 → `maestro.run` 报错。",
-        "repro": "真机 maestro 场景：库名含 maestro（maestro_tb）+ view=maestro；见台账 P-026 行窗口快照",
-        "evidence": "`test/reports/问题登记.md` P-026 行（窗口快照）；bug id `bug-20260922T121908Z-vblog-b06063ab`",
-        "accept": "解析窗口标题结构（Editing/Reading 后三个 token 逐字段相等），不再用 `in` 子串匹配；同名库/cell 场景 maestro.run 通过",
-        "next": "设计侧修；测试侧复验 maestro 包 E2E + 同名 cell 场景后移入已关闭",
-    },
-    {
-        "id": "P-027",
-        "slug": "netlist-import-false-success",
-        "reported": "第五轮（2026-09-22；已报 `bug-20260922T123859Z-vblog-202c4e37`）",
-        "updated": "2026-09-28（补齐卡片）",
-        "title": "`virtuoso.netlist.import` 假成功：对不存在的目标库仍返回 ok=true（三步全绿但什么都没建）",
-        "level": "P2（静默假成功会污染后续 symbol/LVS/仿真）",
-        "owner": "设计侧（`netlist_import.py`）",
-        "status": "待设计修（已报 `bug-20260922T123859Z-vblog-202c4e37`）",
-        "where": "`src/pyapi/packages/netlist_import.py:70-90`",
-        "symptom": "upload/import/symbol 三步全 ok=true，实际 SKILL 只是 `printf(\"import lib=…\")` / `printf(\"symbol lib=…\")`，"
-                   "不建 view、不建 symbol；同库 `view.list`/`cell.list` → `libraryNotFound`。",
-        "repro": "`netlist.import` 到一个不存在的库；证据 `test/artifacts/evidence/s11-probe/netlist-import-false-success.json`",
-        "evidence": "`test/artifacts/evidence/s11-probe/netlist-import-false-success.json`；bug id `bug-20260922T123859Z-vblog-202c4e37`",
-        "accept": "摘出运营面，或真正导入并用 `view.list` 校验后再返回成功；TB 断言改为「view 真实存在且内容非空」",
-        "next": "设计侧修；测试侧把 `infra_e2e_tests.py` 断言改为「必须失败且 error 明说 reference stub」（已改，见 round7）",
-    },
-    {
-        "id": "P-029",
-        "slug": "layout-gds-ignores-file-is-local",
-        "reported": "第五轮（2026-09-22；已报 `bug-20260922T123712Z-vblog-afac3523`）",
-        "updated": "2026-09-28（补齐卡片）",
-        "title": "`layout.gds` 导出忽略 `file_is_local=False`：产物被下载到客户端假路径树，靶机不留文件仍报 completed",
-        "level": "P2（调用方意图被静默忽略；客户端被写陌生绝对路径）",
-        "owner": "设计侧（`layout.py` 发布路径）",
-        "status": "待设计修（已报 `bug-20260922T123712Z-vblog-afac3523`）",
-        "where": "`src/pyapi/packages/layout.py:1061`（export 分支 `_publish_remote`）、`:1219-1238`（`_publish_remote` 无条件在客户端建目录+下载）、字段定义 `:84`",
-        "symptom": "靶机产物被\"下载\"到客户端假路径树（`C:\\home\\Gent\\...`），靶机上不留文件，返回值仍报 `reason=completed`；"
-                   "后续依赖靶机产物的步骤（LVS 取 GDS）必然失败。",
-        "repro": "`virtuoso.layout.gds` 带 `file_is_local=False` 导出到不存在目录；现场保留 `C:\\home\\Gent\\.virtuoso-bridge\\vbs11\\tmp\\cmp_top.gds`",
-        "evidence": "台账 P-029 行；bug id `bug-20260922T123712Z-vblog-afac3523`",
-        "accept": "按 `file_is_local` 分流，或明确报「该参数在导出方向不支持」+ 客户端路径合法性校验",
-        "next": "设计侧修；测试侧复验 S11 gds 阶段 + 路径边界探针",
-    },
-    {
-        "id": "P-030",
-        "slug": "set-term-nets-stub-length-unsafe",
-        "reported": "第五轮（2026-09-22；已报 `bug-20260922T122850Z-vblog-b7ed6176`）",
-        "updated": "2026-09-28（补齐卡片）",
-        "title": "`schematic.set_term_nets` 默认 `stub_length=0.5` 对 65nm PDK 过大 → 端子被路由到错误网络且静默通过",
-        "level": "P2（生成的原理图连接关系错误，会带到 CDL/LVS/仿真）",
-        "owner": "设计侧（`schematic.py` 默认值策略）",
-        "status": "待设计修（已报 `bug-20260922T122850Z-vblog-b7ed6176`）",
-        "where": "`src/pyapi/packages/schematic.py:469`（默认值）、`:476-483`（stub wire + label）",
-        "symptom": "`schCreateWire(entry=route)` 连不上，端子被路由到 `net1/net2` 等错误网络；接口仍 `ok=true`、无 warning。",
-        "repro": "`test/artifacts/env/scenario-project65/evidence-schematic*.json`（stub 0.5 vs 0.05 的 term→net 映射不同）",
-        "evidence": "`test/artifacts/env/scenario-project65/evidence-schematic*.json`；bug id `bug-20260922T122850Z-vblog-b7ed6176`",
-        "accept": "默认值改为与 PDK 无关的安全策略（由调用方显式给，或按 tech 的 minWidth 计算）",
-        "next": "设计侧修；测试侧在 65nm 环境复验 term→net 映射",
-    },
-    {
-        "id": "P-031",
-        "slug": "schematic-check-and-save-silent",
-        "reported": "第五轮（2026-09-22；已报 `bug-20260922T124018Z-vblog-0584e46b`）",
-        "updated": "2026-09-28（补齐卡片）",
-        "title": "schematic `check_and_save`/`write` 忽略 `schCheck` 失败：返回 check-failed 仍 ok=true",
-        "level": "P2（电气检查失败（悬空/短路/未连线）被静默当成功保存）",
-        "owner": "设计侧（`schematic.py`）",
-        "status": "待设计修（已报 `bug-20260922T124018Z-vblog-0584e46b`）",
-        "where": "`src/pyapi/packages/schematic.py:410`、`:690-693`、`:756-759`（layout 同路径有 `\"saved\" in output` 校验，属实现不一致）",
-        "symptom": "SKILL 返回 `\"check-failed\"` 时仍 `ok=true`。",
-        "repro": "`test/offline/unit/test_schematic_contracts.py`（`unittest.expectedFailure`×2）",
-        "evidence": "`test/offline/unit/test_schematic_contracts.py`；bug id `bug-20260922T124018Z-vblog-0584e46b`",
-        "accept": "比对 `output` 是否含 `\"saved\"`，与 `layout.py:490` 对齐；两条 xfail 转绿",
-        "next": "设计侧修；测试侧把 xfail 改回正常断言",
-    },
-    {
-        "id": "P-032",
-        "slug": "verilog-imported-cells-dedupe-order",
-        "reported": "第五轮（2026-09-22；已报 `bug-20260922T124456Z-vblog-70645f43`）",
-        "updated": "2026-09-28（补齐卡片）",
-        "title": "`verilog._imported_cells` 去重顺序错误：未清洗 token 与已清洗列表比较 → 同一 cell 多视图被重复计入",
-        "level": "P2/P3（返回元数据被污染；当前无真实 VERILOGIN 日志样本，可达性待现场确认）",
-        "owner": "设计侧（`verilog.py`）",
-        "status": "待设计修（已报 `bug-20260922T124456Z-vblog-70645f43`）",
-        "where": "`src/pyapi/packages/verilog.py:637-643`",
-        "symptom": "用未清洗 token（`counter8,`）与已清洗列表（`counter8`）比较 → 同一 cell 多视图导入时重复计入，调用方统计/后续处理受污染。",
-        "repro": "`test/offline/unit/test_verilog_contracts.py`（`expectedFailure`）",
-        "evidence": "`test/offline/unit/test_verilog_contracts.py`；bug id `bug-20260922T124456Z-vblog-70645f43`",
-        "accept": "先清洗再比较；xfail 转绿",
-        "next": "设计侧修；测试侧复验 verilog 包 E2E",
-    },
-    {
         "id": "P-038",
         "slug": "py39-pep604-needs-backport",
         "reported": "第五轮（2026-09-22；已报 `bug-20260922T141119Z-vblog-5e939e33`）",
@@ -368,53 +268,6 @@ OPEN = [
                 "`schematic_pin_ops_probe`（本轮这两处是**已登记的预期红**）",
     },
     {
-        "id": "P-074",
-        "slug": "pin-index-xy-doc-mismatch",
-        "title": "spec 表格把 pin 的索引写成 `xy`，实现要 `x`/`y`（delete/rename/set_pin_properties）",
-        "level": "P3（文档口径不一致，会绊住所有写 TB 的人）",
-        "owner": "设计侧（spec 或实现，二选一改齐）",
-        "status": "待归属",
-        "where": "`spec/design-concepts/上层/2-schematic.md:59`（`delete_pin | xy` / `rename_pin | xy` / "
-                 "`set_pin_properties | xy`）vs `src/pyapi/packages/schematic.py:615-616`"
-                 "（`float(cmd[\"x\"])` / `float(cmd[\"y\"])`）",
-        "symptom": "按 spec 表格写 `{\"op\":\"rename_pin\",\"xy\":[6.0,0.0],\"new_name\":\"vout_main\"}` → "
-                   "`virtuoso.schematic.write` 直接失败：`command 5 invalid: 'x'`（KeyError('x')）。"
-                   "只有 label/note/wire 一族用 `xy`，pin 用 `x`/`y` —— 表格与实现相反，"
-                   "使用者照表格写必然踩坑（本轮就踩到，见 R7-TB 修正记录）。",
-        "repro": "把 `test/live/flows/design_iterate_tb.py` 的 `R2_RENAME` 改回 `xy` 形状即复现；"
-                 "或任何 `{\"op\":\"delete_pin\",\"xy\":[...]}` 的 write",
-        "evidence": "`test/artifacts/evidence/round7/design-iterate/iterate-r2_edit.json`（早期失败版本的错误串）、"
-                    "`test/reports/round7-TB修正.md`（R7-TB-03）",
-        "accept": "spec 表格与实现同口径（建议实现同时接受 `xy` 与 `x`/`y`，或 spec 明确写 pin 用 `x`/`y`），"
-                  "且校验失败信息能指出「缺 x/y」而不是裸露 KeyError",
-        "next": "设计侧定口径；测试侧已按实现口径写 TB（并在 TB 注释里标注）",
-        # 09-25 设计侧/评审在卡片上追加的讨论被 09-28 的一次刷新误删，这里回填进数据源，
-        # 以后刷新不会再丢（见 CARD_BODY 末尾的生成物警告）。
-        "extra": (
-            "## 讨论决策（2026-09-25，补充）\n"
-            "\n"
-            "**定性升级**：本条不是「文档抄错字段名」，而是**坐标表示口径没统一**——三个口径在打架：\n"
-            "\n"
-            "| 场景 | 坐标表示 |\n"
-            "|---|---|\n"
-            "| `read` 返回 | `xy: [x, y]`（整体数组） |\n"
-            "| `write` 输入（实现） | `x`、`y`（拆开两个字段） |\n"
-            "| spec 内部 | place 用 `x,y`，delete/rename/set 索引用 `xy`（自相矛盾） |\n"
-            "\n"
-            "**核心共识**：坐标本质是一个点，不该拆开写。`read` 已证明正确形态是「一个字段承载 `[x, y]`」；"
-            "`write` 把坐标拆成 `x`/`y` 才是别扭、且与 read 不对称的根源。\n"
-            "\n"
-            "**命名**：弃 `xy`，改 `pos`（或 `position`）。`xy` 字面像「两个分量」、又与 `x`/`y` 视觉太近，"
-            "是这类坑的诱因；`pos` 简洁、与 `op` 风格一致、坐标语境无歧义。\n"
-            "\n"
-            "**落地建议（给设计侧拍板）**：\n"
-            "\n"
-            "- 统一为 `pos: [x, y]`（两元素数组），read 与 write 同一口径，**不保留兼容**，彻底消灭 `x`/`y` 拆开写法；\n"
-            "- 验收：照 spec 写 `{\"op\":\"rename_pin\",\"pos\":[6.0,0.0]}` 能跑通，且校验失败信息指名缺哪个字段"
-            "（不再裸报 `KeyError('x')`）。\n"
-        ),
-    },
-    {
         "id": "P-070",
         "slug": "monte-carlo-missing",
         "title": "蒙特卡洛能力缺失：只能读回 MC 结果，不能驱动 MC 仿真",
@@ -556,6 +409,20 @@ CLOSED_RECENT = [
      "`read_results`：**`status=correct`**、ports 4/4、nets 4/4、inst 1/1、`differences=[]`；"
      "S11 全链也拿到确定结论（`cdl` 693 B、lvs rc=0）。等上层销案；"
      "注意 `_calibre.lvs_`（tvf）不是合法 runset，用它当失败证据属用错文件"),
+    ("P-026", "maestro 会话匹配用子串（view=maestro 误命中库名 maestro_tb）",
+     "**已修（`b36bade`）**：GUI 会话按标题 token 精确匹配 —— `_window_target_fields()` 解析 Editing:/Reading: 后的 `lib cell view` 并逐字段比较（`maestro.py:251-260,494`），不再用 `in` 子串。验证：round7 11 套包 `all_passed=true`（含用 `maestro_tb` 库的 maestro 套件，`round7/live-run-all-http.log`）"),
+    ("P-027", "`virtuoso.netlist.import` 假成功（对不存在的库也返回 ok=true）",
+     "**已修（`b36bade`）**：参考桩不再伪造成功；该操作已不在运营面（`netlist_import.py` 从生产源码移除、ops 列表无 netlist）。验证：`test/shared/runners/ops_matrix.py` 无 netlist 条目；infra 包 E2E 通过"),
+    ("P-029", "`layout.gds` 导出忽略 `file_is_local=False`（产物下到客户端假路径树）",
+     "**已修（`b36bade`）**：gds export 支持 `file_is_local=false` 远端落盘且不拍平路径（`layout.py:1043,1175,1192,1244`）。验证（2026-09-28 复跑）：`test_layout_publish_contracts.py` 4/4、`test_layout_contracts.py` 67/67 绿"),
+    ("P-030", "`set_term_nets` 默认 `stub_length=0.5` 对 65nm 过大 → 端子接错网且静默",
+     "**已修（`b36bade` + `bd75d3d`）**：默认 stub 由引脚几何推导 `(rbHw + 0.05)`，不再固定 0.5；显式值的 SKILL 括号 bug（`(0.5)` 被当函数调用）同批修掉（`schematic.py:540-556`）。验证：`test_schematic_contracts.py` 37/37 绿"),
+    ("P-031", "schematic `check_and_save`/`write` 忽略 `schCheck` 失败（check-failed 仍 ok）",
+     "**已修（`b36bade` + `bd75d3d`）**：保存前校验 output 含 saved 标记（`schematic.py:785,862`），并在保存路径补 `dbSetConnCurrent`（避免 si -batch OSSHNL-108/109）。验证：`test_schematic_contracts.py` 37/37 绿（无 xfail 残留）"),
+    ("P-032", "`verilog._imported_cells` 去重顺序错误（未清洗 token 参与比较）",
+     "**已修（`b36bade`）**：先清洗 `[.,;:]` 尾字符再去重（`verilog.py:659-667`）。验证：`test_verilog_contracts.py` 28/28 绿"),
+    ("P-074", "pin 坐标口径三处不一致（read `xy` / write `x`,`y` / spec `xy`）",
+     "**已修（`48fc800`）**：实现统一为 `pos: [x, y]`，`xy`/拆开的 `x`/`y` 一律拒绝并点名违规字段（`schematic.py:480-487`）；spec《2-schematic》已改「单点一律 pos、弃用 xy」。验证：`schematic_pin_ops_probe` 以 `pos` 形状跑通写路径（`round7/pin-ops.json`，2026-09-28 复跑）"),
 ]
 
 #: 非缺陷跟踪项（文档/环境/审计/覆盖度）：不建卡，只在 README 索引，避免与缺陷视图混淆
