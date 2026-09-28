@@ -11,7 +11,8 @@
   **calibre.export / calibre.pex 两个零调用 op 也首次有了 TB 调用（NO-OP-TB 归零）**；
   GAP 从 46 回升到 59 是**口径解释**：新扫到的 pex 调用点把该 op 的 12 个参数行首次纳入矩阵（此前无任何调用点）。
   PEX 本体被 P-102 阻塞（spec 也标「禁止交付」），这些行**如实计为未覆盖**，不并入 direct。
-- 三层回归：离线 **1807 例 / 0 红**（Windows 21 skip / Linux py3.9 31 skip，**两平台计数一致**）；
+- 三层回归：离线 **1805 例 / 0 红**（Windows 21 skip / Linux py3.9 31 skip，**两平台计数一致**；
+  = 前值 1807 − 去重删 5 + review-D 新补 3 例）；
   半真机 **39 探针（32 绿 + 7 个预期红钉）**；真机 base 五接口 + 文件族 + Linux 客户侧全栈全绿，
   **11 套包 = 10 稳定绿 + 1 被缺陷阻塞**（maestro 卡 P-086/P-095；calibre 初跑红已定性为同一根因的连带，
   恢复实例后复跑 **8/8**，见 §4.4）；
@@ -83,15 +84,15 @@
 
 ### 4.1 离线（Windows，最新树）
 
-- `pytest test/offline -q` → **1807 例 / 0 红 / 21 skip**（`evidence/round8/offline-win-final2.xml`，2026-09-29 00:26 复跑；
+- `pytest test/offline -q` → **1805 例 / 0 红 / 21 skip（13 xfail）**（`evidence/round8/offline-win-final3.xml`，2026-09-29 01:0x 终版复跑；
   用 `--collect-only` 逐文件核对：**108 个文件、每文件计数与 Linux 完全一致**）。
   口径提醒：该 XML 的 `tests` 属性由 pytest 写成了 2456，但其中 `<testcase>` 元素实测 **1800 条、无重复**
   （`collection` 与 `testcase` 双口径以 1800 为准）。
 
 ### 4.2 离线（Linux py3.9）
 
-- 同一份树（tar 同步后）在 wsl-gent 仓库副本上跑 → **1807 例 / 0 红 / 31 skip**（`evidence/round8/offline-linux-py39-final2.xml`）；
-- **两平台计数完全一致（1807 / 0 红）**；skip 差 10 条均为平台门控（Windows 侧多跑 10 条路径类用例），
+- 同一份树（tar 同步后）在 wsl-gent 仓库副本上跑 → **1805 例 / 0 红 / 31 skip（11 xfail）**（`evidence/round8/offline-linux-py39-final3.xml`）；
+- **两平台计数完全一致（1805 / 0 红）**；skip 差 10 条均为平台门控（Windows 侧多跑 10 条路径类用例），
   ⇒ Linux/Windows 客户端离线一致性本轮成立；
 - 上一份旧树里的 3 红（P-079 两条 XPASS(strict) 平台门控 + P-078 断言）已由对应子代理处理。
 

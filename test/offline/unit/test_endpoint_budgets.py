@@ -1,4 +1,6 @@
 """Endpoint-scoped max_sessions accounting (spec v24 / concurrency v17)."""
+from __future__ import annotations
+
 import sys
 import unittest
 from pathlib import Path

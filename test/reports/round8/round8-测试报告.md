@@ -23,8 +23,8 @@
 
 | 平台 | 命令 | 结果 | 证据 |
 |---|---|---|---|
-| Windows py3.12 | `python -m pytest test/offline/unit test/offline/integration test/offline/scenario` | **1807 用例 / 0 失败 / 0 错误 / 21 skip（含 13 xfail）** | `evidence/round8/offline-win-final.xml` |
-| Linux py3.9（wsl-gent 仓库副本） | `test/shared/runners/sync_linux_client.ps1 -Run` | **1800 用例 / 0 失败 / 0 错误 / 31 skip（含 11 xfail）/ 123.4 s** | `evidence/round8/offline-linux-py39-final.xml` |
+| Windows py3.12 | `python -m pytest test/offline/unit test/offline/integration test/offline/scenario` | **1805 用例 / 0 失败 / 0 错误 / 21 skip（含 13 xfail）** | `evidence/round8/offline-win-final3.xml` |
+| Linux py3.9（wsl-gent 仓库副本） | `test/shared/runners/sync_linux_client.ps1 -Run` | **1805 用例 / 0 失败 / 0 错误 / 31 skip（含 11 xfail）/ 123.1 s** | `evidence/round8/offline-linux-py39-final3.xml` |
 
 > `xfail` = 已立卡未修缺陷的钉住用例（P-078/P-079/P-080/P-081/P-082 家族），带 `reason="P-08x: …"`；
 > 修复后自动 XPASS，**不改判据**。离线层不得落盘/起服务的纪律由 `test/conftest.py` 强制。
@@ -126,8 +126,8 @@
 
 | 项 | 数字 | 证据文件 |
 |---|---|---|
-| 离线 Win py3.12 | 1807 / 0 红 / 21 skip（13 xfail） | `evidence/round8/offline-win-final.xml` |
-| 离线 Linux py3.9 | 1800 / 0 红 / 31 skip（11 xfail） | `evidence/round8/offline-linux-py39-final.xml` |
+| 离线 Win py3.12 | 1805 / 0 红 / 21 skip（13 xfail） | `evidence/round8/offline-win-final3.xml` |
+| 离线 Linux py3.9 | 1805 / 0 红 / 31 skip（11 xfail） | `evidence/round8/offline-linux-py39-final3.xml` |
 | 半真机 | 39 探针 / 32 ok / 7 红（全部已立卡） | `evidence/round8/semi-probes-final.json` |
 | 真机包 E2E | 10 套稳定绿 + 1 被阻塞（maestro P-086/P-095/P-096） | `evidence/http-e2e/*.log` |
 | 真机五接口 | 5/5 | `evidence/round8/cov-remote-real-r8.json` |

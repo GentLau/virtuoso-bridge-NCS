@@ -9,7 +9,7 @@
 
 | 项 | 结果 |
 |---|---|
-| 离线 | Win py3.12 **1807/0红/21skip**；Linux py3.9 **1807/0红/31skip**（两平台计数一致） |
+| 离线 | Win py3.12 **1805/0红/21skip**；Linux py3.9 **1805/0红/31skip**（两平台计数一致；1807−去重5+新补3） |
 | 半真机 | **39 探针 / 32 ok / 7 红**（7 条红灯全部对应已立卡缺陷） |
 | 真机 | 10 套稳定绿 + 1 被阻塞（maestro P-086/P-095/P-096）；五接口 5/5；e2e 10 用例 0 红 + local 4/4；压测 108 步 0 失败；业务场景 10 条链全绿；注册 4 条 TB 全绿 |
 | 覆盖率 | 语句 **91.54%** / 分支 **83.62%** / 合并 **89.48%**（离线层已纳入统计） |
@@ -36,8 +36,8 @@
 
 | 层 | 内容 | 证据路径 | 状态 |
 |---|---|---|---|
-| 离线（Win py3.12） | unit+integration+scenario 全量 | `evidence/round8/offline-win-final.xml` | ✅ **1800 例 / 0 红 / 21 skip**（13 条 xfail 钉住） |
-| 离线（Linux py3.9） | 同一份树，跑在 wsl-gent 仓库副本 | `evidence/round8/offline-linux-py39-final.xml` | ✅ **1800 例 / 0 红 / 31 skip**（与 Windows **collect 数一致**） |
+| 离线（Win py3.12） | unit+integration+scenario 全量 | `evidence/round8/offline-win-final3.xml` | ✅ **1805 例 / 0 红 / 21 skip**（13 条 xfail 钉住） |
+| 离线（Linux py3.9） | 同一份树，跑在 wsl-gent 仓库副本 | `evidence/round8/offline-linux-py39-final3.xml` | ✅ **1805 例 / 0 红 / 31 skip**（与 Windows **collect 数一致**） |
 
 > 计数口径：**不要引 pytest 写出的 JUnit `tests=` 属性**（本环境 pytest 9.1.1 会虚高：全量树写 2456，
 > 实际 `<testcase>` 只有 1800）。以 `<testcase>` 元素数 / `--collect-only` 汇总为准（两者与进度点数三处一致）。
