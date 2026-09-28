@@ -7,9 +7,10 @@
 ## 0. 一句话结论
 
 - 三轴里 **B（原子，60 个）gap=0/weak=0**；**A（条款）297 条已逐条裁定，direct 222 / indirect 16 / partial 6 / na 53，gap=0**；
-  **C（op×参数 628 条）最新快照 CANDIDATE 569 / GAP 59 / NO-OP-TB 0**：root / screenshot / verilog.import 三条车道清零，
+  **C（op×参数 628 条）最新快照 CANDIDATE 572 / GAP 56 / NO-OP-TB 0**：root / screenshot / verilog.import 三条车道清零，
   **calibre.export / calibre.pex 两个零调用 op 也首次有了 TB 调用（NO-OP-TB 归零）**；
-  GAP 从 46 回升到 59 是**口径解释**：新扫到的 pex 调用点把该 op 的 12 个参数行首次纳入矩阵（此前无任何调用点）。
+  `drc.runset` 也由真机用例 CAL-DRC-SET-01（官方批处理：`_calibre.drc_` 控制文件 + `drc.summary` + `read_results` 定位）覆盖；
+  `export.job_id` 也已由 EXP-03 覆盖；GAP 从 46 回升到 56 是**口径解释**：新扫到的 pex/export 调用点把它们的参数行首次纳入矩阵（此前无任何调用点）。
   PEX 本体被 P-102 阻塞（spec 也标「禁止交付」），这些行**如实计为未覆盖**，不并入 direct。
 - 三层回归：离线 **1805 例 / 0 红**（Windows 21 skip / Linux py3.9 31 skip，**两平台计数一致**；
   = 前值 1807 − 去重删 5 + review-D 新补 3 例）；
@@ -17,7 +18,7 @@
   **11 套包 = 10 稳定绿 + 1 被缺陷阻塞**（maestro 卡 P-086/P-095；calibre 初跑红已定性为同一根因的连带，
   恢复实例后复跑 **8/8**，见 §4.4）；
   注册/流程/压测场景全绿（明细见 §4）。
-- 本轮新发现并立案 **25 条缺陷**（P-078…P-102 区间：root 侧 P-092/093/094/099/100/101/102，子代理侧 P-095/096/098，
+- 本轮新发现并立案 **26 条缺陷**（P-078…P-103 区间：root 侧 P-092/093/094/099/100/101/102/103，子代理侧 P-095/096/098，
   其余为前序根/其它车道），其中 **P-095 + P-096 是 P-086 的两类 P1 根因**（悬空 Overwrite History / 陈旧 OA 写锁 → 模态框卡死 CIW），
   全部有红灯钉住或显式口径声明；**不声称已排干净**。
 
@@ -50,9 +51,9 @@
 ## 3. 覆盖轴 C：op × 参数（79 个操作 / 628 条）
 
 - 工具：`build_op_param_matrix.py`（AST v2，能解析 `OP + "suffix"` 拼接与跨函数转发）；
-- 最新快照：**CANDIDATE 569 / GAP 59 / NO-OP-TB 0**（本轮起点 GAP 98、NO-OP-TB 29）；
+- 最新快照：**CANDIDATE 572 / GAP 56 / NO-OP-TB 0**（本轮起点 GAP 98、NO-OP-TB 29）；
   `NO-OP-TB` 归零 = 79 个 op **每个都至少有一条 TB 调用**（calibre.export / calibre.pex 由本轮新 TB 补上）；
-  GAP 59 里 25 条是"真正没覆盖的参数行"（其中 pex 12 条因 P-102 阻塞、calibre kind 不适用 11 条、export.job_id 1 条、layout.read.depth 1 条），其余为超时/视图类伪参数（脚本过滤后不计）；
+  GAP 56 里 22 条是"真正没覆盖的参数行"（pex 11 因 P-102/P-103 阻塞、drc 6 + lvs 2 kind 不适用、lvs 2 死参数 P-092、layout.read.depth 1），其余为 34 条 timeout 伪参数（跨 op 合同承担）；
 - root 车道（spectre/maestro/layout 失败分类/注册 token-path）已清零：
   - `spectre_params_e2e_tests.py` **5/5**；`maestro_e2e_tests.py` **23/23**；`layout_geometry_classification_e2e_tests.py` **4/4**；
   - 期间抓出 4 条同源缺陷：P-083（precision 语义未定义）、P-084（include_results 死参数）、**P-088**（delete_var scope=all）、**P-089**（open_waveform_gui.result 死参数）。
@@ -66,10 +67,9 @@
   `import_lib_cells`、`overwrite`、语法错负向、`export(recursive=False/True)` 模块数对照；
   红钉 = IMP-08（P-099 `views` 恒空）、IMP-10（P-100 `cell` 参数不落地）、IMP-07（P-101 `overwrite=False` 未写入却 completed 且无跳过标记，返回 `cells=[]`）。
   注：00:09 那次复跑整段是 P-086 空响应（实例被 P-095 模态框卡死），已作废；00:15 实例硬重启后的这次才是本报告引用的结果。）
-- 剩余 GAP（最新矩阵 **CANDIDATE 553 / GAP 46**，generic GAP 只剩 12 条）：`calibre.drc` 7 + `calibre.lvs` 4 + `layout.read.depth` 1；
-  其中 **9 条属「kind 不适用」**（spice_file/hcell_file/xcell_file/fmt/lvs_run_dir 只在 lvs/pex 分支消费，见 `calibre.py:987-1013`）、
-  **2 条是死参数**（power/ground，P-092）、**1 条真缺口 = `drc.runset`（set 模式真跑）**；
-  `layout.read.depth`（P-085）与 `verilog.read/write.view_type`（P-080）仍是红钉。**未覆盖项如实列出，不并入 direct**。
+- 剩余 GAP（最新矩阵 **CANDIDATE 572 / GAP 56**，generic GAP 只剩 22 条）：`calibre.pex` 11 + `calibre.drc` 6 + `calibre.lvs` 4 + `layout.read.depth` 1；
+  其中 **pex 11 条被 P-102/P-103 阻塞**（带 fmt 的整链；含 2 条死参数 power/ground = P-092）、**drc 6 + lvs 2 属「kind 不适用」**（spice_file/hcell_file/xcell_file/fmt/lvs_run_dir 只在 lvs/pex 分支消费，见 `calibre.py:987-1013`）、
+  `layout.read.depth`（P-085 红钉）1；`verilog.read/write.view_type`（P-080）仍是红钉。**未覆盖项如实列出，不并入 direct**。
 - **calibre 参数面本轮大补齐**（root 新增 TB）：`calibre_params_e2e_tests.py` **5/5 绿**，
   覆盖 `check_env(calibre_bin/deck 正负)`、`drc(calibre_bin/hier/turbo/poll_interval/job_id/params/run_dir)`、
   `read_results(log_lines=0/5 双向)`、`lvs(spice_file/hcell_file/xcell_file/hier/turbo/poll_interval)`；
@@ -162,6 +162,9 @@
 
 > 口径说明：① **唯一权威口径 = `coverage-main-strict.json`**（`--branch --source=src` 逐层/逐套件合并后 `coverage json --strict`）；
 > 同目录 `coverage-main.json`（非 strict）比 strict 多 14 条语句，**不得混引**（红队 REVIEW-C #7 已把"双口径流通"标为问题）；
+> **数据文件可变性警告（2026-09-29 01:26 实测）**：`cov-main/.coverage` 是共享文件，23:33 之后被一次**部分运行**覆盖过——
+> 我在其上 `--append` 跑了一次离线全量，得到的只是 **86.33%（部分口径）**，已单独存为 `coverage-main-offline-append-0126.json` 并标注**不得引用**；
+> 权威快照仍以 23:33 的 `coverage-main-strict.json`（= `coverage-main-strict-2333.json` 备份）为准。**任何全量重算必须走 `run_main_coverage.ps1` 端到端**（它第一步 `erase`），不允许对共享 `.coverage` 做增量拼接后当全量。
 > ② 与历史 67.19%/50.38%（本轮早前更窄的口径）、79.31%/69.88%（第七轮，合并 ssh/paramiko/supervisor/register 定向运行）、
 > 86.60%/77.39%（再合并真机）**都不可比**——引用时必须带文件与时间；③ **不声称 100%**：本数字只说明"这批用例覆盖到的语句比例"，
 > 未覆盖的 1465 行里包含被缺陷阻塞/环境阻塞的模块，明缺口见 §7 与 `coverage-pack/`。
@@ -194,7 +197,8 @@
 | P-099 | 上层 verilog | 待设计修 | `virtuoso.verilog.import` 返回值 `views` 恒为空（真机已有 functional/symbol/netlist）| IMP-08 红钉 + 同 SKILL 离线解析可用的对照 |
 | P-100 | 上层 verilog | 待设计修 | `import` 的 `cell` 参数不参与落地（ihdl 按源码顶层模块名建 cell）；不同名即整体报 `cell not found` 且**写已发生** | IMP-10 红钉 + mtime 23:12:45→23:13:22 实测 |
 | P-101 | 上层 verilog | 待决策 | `overwrite=False` 对已存在 cell 返回成功但**什么都没写**，且无 skipped/existing 标记（静默 no-op） | **IMP-07 红钉**（mtime 证明未写入 + 断言"必须带跳过标记"→ 当前红）；红队 REVIEW-B #3 指出的"无红灯"已修 |
-| P-102 | 上层 calibre | 待设计修 | `pex` 第三阶段 argv 非法（`-fmt spice`，Calibre 只认 `-fmt -<flag>`）：stage1/2 成功、stage3 打 usage → PEX 整体不可用（spec 已标「禁止交付」，roadmap P0-1 要求改官方 batch） | 实验 run_dir 三份 stage 日志 + `pex.log` 的 `stage3_failed`；TB 的 PEX-01 红钉 |
+| P-102 | 上层 calibre | 待设计修 | `pex` 第三阶段 argv 非法（`-fmt spice`，Calibre 只认 `-fmt -<flag>`）：stage1/2 成功、stage3 打 usage → PEX(带 fmt) 不可用（spec 已标「禁止交付」，roadmap P0-1 要求改官方 batch） | 实验 run_dir 三份 stage 日志 + `pex.log` 的 `stage3_failed`；TB 红钉 PEX-FMT-01 |
+| P-103 | 上层 calibre | 待设计修 | **假绿**：`pex(fmt=…)` 运行期报 `status=completed`，但 stage3 为空、`pex.log=stage3_failed`、无 netlist —— 完成判定被 stage1 的 COMPLETED 标记提前触发 | run_dir `pex-fmt-1790615068023` 实测；PEX-FMT-01 断言"先查 stage3_failed/netlist 再看 status" |
 
 ## 7. 明缺口 / 不覆盖声明（防"虚高"）
 
@@ -211,8 +215,8 @@
 | G9 | **host-key 轮换 TB（P5）** | **TB 未落地** | 测试侧接口已就绪（`w4_hostkey_cycle.sh` status/use-a/use-b/restore + 常驻说明）；设计侧未写 TB |
 | G10 | **maestro 多 corner 扫描整链** | 仅有包级 e2e 与历史探针 | 本轮未做"多 corner 扫描 + 结果比对"整链 |
 | G11 | **`layout.read(depth>0)`** | **确定性不可用**（P-085） | 已红钉；在修复前该参数组合记"未覆盖（被缺陷阻塞）" |
-| G12 | **calibre.export / calibre.pex** | export 已覆盖；pex 被缺陷阻塞（P-102） | `calibre_export_pex_e2e_tests.py`：ENV-01 / EXP-00 / **EXP-01（all_small 三类产物齐）** / **EXP-02（summary 对 LVS run_dir）** 绿；**PEX-01 红** = P-102（stage1/2 成功、stage3 argv 非法）。口径补充：`spec/…/12-calibre.md:7` 已写「`calibre.pex` 未按官方三阶段验收，禁止用于交付/签核」，`spec/research/calibre/00-下一步开发方向.md` P0-1 要求改官方 batch —— 即 **PEX 的 deck 模式本轮按"禁止交付 + 已钉死"处理，不冒充已覆盖** |
-| G13 | **calibre 参数面剩余 11 条** | 部分覆盖（见 §3） | 已覆盖：calibre_bin/hier/turbo/poll_interval/job_id/params/run_dir/cdl? 与 lvs 的 spice/hcell/xcell、read_results.log_lines（`calibre_params_e2e_tests.py` 5/5）。**仍未覆盖**：`drc.runset`（set 模式真跑）；**kind 不适用（不构成缺口）**：`drc.spice_file/hcell_file/xcell_file/fmt/lvs_run_dir`、`lvs.fmt/lvs_run_dir`（argv 只在 lvs/pex 分支消费）；**死参数红钉**：`drc/lvs.power/ground`（P-092） |
+| G12 | **calibre.export / calibre.pex** | export 全覆盖（含 job_id 定位）；pex 默认档覆盖、带 `fmt` 档被 P-102/P-103 钉死 | `calibre_export_pex_e2e_tests.py`：ENV-01 / EXP-00 / **EXP-01（all_small 三类产物齐）** / **EXP-02（summary 对 LVS run_dir）** / **EXP-03（export 按 job_id 定位）** / **PEX-01（不传 fmt → phdb+pdb 两阶段，status=completed）** 绿；**PEX-FMT-01 红钉** = P-102（stage3 argv 非法）**+ P-103（完成判定被 stage1 标记提前触发 → 报 completed 却 `stage3_failed`、无 netlist）**。口径：`spec/…/12-calibre.md:7` 已写「pex 禁止交付」，roadmap P0-1 要求改官方 batch —— **deck 模式带 fmt 的三阶段按"禁止交付 + 已钉死"处理，不冒充覆盖** |
+| G13 | **calibre 参数面剩余 10 条** | 部分覆盖（见 §3） | 已覆盖：`calibre_params_e2e_tests.py` **6/6 绿** —— check_env(calibre_bin/deck)、drc(calibre_bin/hier/turbo/poll_interval/job_id/params/run_dir)、**drc(runset=) 官方批处理**（CAL-DRC-SET-01，`_calibre.drc_`+`drc.summary`+报告定位）、read_results(log_lines)、lvs(spice/hcell/xcell)。**仍未覆盖**：`drc.cdl/fmt/hcell_file/lvs_run_dir/spice_file/xcell_file`、`lvs.fmt/lvs_run_dir`（**kind 不适用**，argv 只在 lvs/pex 分支消费）、`drc/lvs.power/ground`（**死参数红钉 P-092**） |
 | G14 | **verilog.import 参数面** | **已清零**（本轮补） | `verilog_import_params_e2e_tests.py` 10 绿 + 2 红钉（P-099/P-100）；`import_lib_cells` 只做到"被接受"——「库内 cell 导入」需另写引用 basic 库的源文件才可观察，**该语义仍未覆盖，如实声明** |
 | G15 | **screenshot 远端产物留证** | P-091 待决策 | 实测只有 schematic 留远端；symbol/layout 清理 → 审计无法从远端复核三包截图（本地 PNG 均有） |
 | G16 | **`add-本版范围与明确不支持.md` 的 13 项"明确不做"** | **红队点名的 3 项已补离线契约** | 该文档不在 `extract_spec_clauses.py` 的 13 份 NORMATIVE 输入里，故矩阵没有它的行。红队 REVIEW-B #6 点名的 3 项已有机器判据：`test/offline/unit/test_scope_exclusions.py`（4 例，全绿）——①CLI 无 `--profile/--env/--migrate` 旧迁移入口、②`pyapi/server/register/common.profile` 模块不存在、③`server.dispatch/api_server` 无 `task_pool/wait_pool/job_pool` 等公共入口、④`pyapi.models`/`register.models` 无 `signature/hmac/signed` 字段 |

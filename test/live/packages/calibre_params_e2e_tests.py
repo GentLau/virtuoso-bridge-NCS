@@ -38,6 +38,7 @@ TOP = os.environ.get("VB_CALIBRE_TOP", "inv")
 DRC_DECK = os.environ.get("VB_CALIBRE_DRC_DECK", f"{PDK}/drc/calibre.drc")
 LVS_DECK = os.environ.get("VB_CALIBRE_LVS_DECK", f"{PDK}/lvs/calibre.lvs")
 RUN_DIR = os.environ.get("VB_CALIBRE_RUN_DIR", "/home/Gent/project/vblog/calibre-e2e")
+SCRATCH = Path(__file__).resolve().parents[3] / "test" / "artifacts" / "tmp" / "calibre-params"
 CDL = os.environ.get("VB_CALIBRE_CDL", "/home/Gent/.virtuoso-bridge/calprobe/command/calibre/inv.cdl")
 CALIBRE_BIN = os.environ.get(
     "VB_CALIBRE_BIN", "/opt/eda/mentor/CALIBRE2025/aok_cal_2025.1_16.10/bin/calibre")
@@ -174,11 +175,51 @@ def run_suite(transport) -> list[tuple[str, str]]:
         print("NOTE  P-092: power/ground 已随 DRC 传入（params-drc 的 job.json），"
               "源码内无读取点 → 不作为覆盖判据", flush=True)
 
+    def case_drc_official_set() -> None:
+        """`drc.runset` 走官方批处理（`calibre -gui -drc -runset … -batch`）——本轮 C 轴最后一个真缺口。"""
+        set_dir = f"{RUN_DIR}/drc-set-{stamp}"
+        lines = [
+            f"*drcRulesFile: {DRC_DECK}",
+            f"*drcRunDir: {set_dir}",
+            f"*drcLayoutPaths: {GDS}",
+            f"*drcLayoutPrimary: {TOP}",
+            "*drcLayoutLibrary: schemtest",
+            "*drcLayoutView: layout",
+            "*drcLayoutGetFromViewer: 0",
+            "*drcReportOptions: S",
+            "*cmnRunMT: 1",
+            "*cmnPromptSaveRunset: 0",
+        ]
+        local_set = Path(SCRATCH) / f"drc-set-{stamp}.drc"
+        local_set.parent.mkdir(parents=True, exist_ok=True)
+        local_set.write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
+        remote_set = f"{RUN_DIR}/drc-set-{stamp}.drc"
+        uploaded = _op(transport, "basic.file.upload", local_path=str(local_set),
+                       remote_path=remote_set, timeout=120)
+        _check(uploaded.get("ok"), f"set 上传失败: {uploaded.get('error')}")
+        value = _value(transport, "calibre.drc", runset=remote_set, blocking=True, timeout=1800)
+        _check(value.get("mode") == "official-batch",
+               f"不是官方批处理模式: {value.get('mode')}")
+        _check(value.get("run_dir") == set_dir,
+               f"产物目录应取 set 的 drcRunDir: {value.get('run_dir')}")
+        probe = _command(transport,
+                         f"ls {set_dir}/_calibre.drc_ >/dev/null 2>&1 && echo ctrl_ok; "
+                         f"ls {set_dir}/drc.summary >/dev/null 2>&1 && echo summary_ok")
+        probe_text = str(probe)
+        _check("ctrl_ok" in probe_text, f"缺 Calibre 生成的 control file：{probe!r}")
+        _check("summary_ok" in probe_text, f"缺 drc.summary：{probe!r}")
+        read = _value(transport, "calibre.read_results", kind="drc", run_dir=set_dir,
+                      limit=5, log_lines=5)
+        _check(read.get("report_used"), f"set 驱动的 DRC 报告找不到: {read.get('artifacts')}")
+        _check((read.get("summary") or {}).get("rules_checked"),
+               f"set 驱动的 DRC 未解析出规则数: {read.get('summary')}")
+
     drc = run("CAL-DRC-01 全参数 DRC（calibre_bin/hier/turbo/poll_interval/job_id/params/run_dir）",
               case_drc_full_params)
     run("CAL-ENV-01 check_env(calibre_bin, deck) + 坏值负向", case_check_env)
     run("CAL-READ-01 read_results(log_lines=0/5)", lambda: case_read_results_log_lines(drc))
     run("CAL-LVS-01 lvs(spice_file/hcell_file/xcell_file/hier/turbo/poll_interval)", case_lvs_file_params)
+    run("CAL-DRC-SET-01 drc(runset=…) 官方批处理 + 报告定位", case_drc_official_set)
     run("CAL-P092-01 power/ground 死参数记录", case_dead_params_note)
     return results
 

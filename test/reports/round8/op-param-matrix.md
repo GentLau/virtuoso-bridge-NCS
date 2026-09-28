@@ -1,8 +1,8 @@
 # 操作 × 参数覆盖矩阵（机器，AST 解析；**不是覆盖结论**）
 
-- 条目 628：CANDIDATE 569 / GAP 59 / NO-OP-TB 0
-- 非 CANDIDATE 中：通用 `timeout` 字段 34 条（由 `test/offline/unit/test_param_timeout_contract.py` 的 79/79 op 合同承担）；其余 25 条为逐 op 缺口。
-- 无法静态解析的调用点 83 个 = 管道行 64（op 载体内部把形参转发，真值在调用点已解析）+ **待人工复核 19**（不计覆盖）
+- 条目 628：CANDIDATE 572 / GAP 56 / NO-OP-TB 0
+- 非 CANDIDATE 中：通用 `timeout` 字段 34 条（由 `test/offline/unit/test_param_timeout_contract.py` 的 79/79 op 合同承担）；其余 22 条为逐 op 缺口。
+- 无法静态解析的调用点 82 个 = 管道行 64（op 载体内部把形参转发，真值在调用点已解析）+ **待人工复核 18**（不计覆盖）
 - CANDIDATE = 参数名在目标 op 的调用点出现；是否断言语义仍要逐条看 TB 判据。
 - op 调用点清单见 `op-coverage.json`；未解析明细见本文件末尾。
 
@@ -14,13 +14,8 @@
 - [GAP] `fmt` (str, required=False) — op_tb_files=6
 - [GAP] `hcell_file` (str | None, required=False) — op_tb_files=6
 - [GAP] `lvs_run_dir` (str | None, required=False) — op_tb_files=6
-- [GAP] `runset` (str | None, required=False) — op_tb_files=6
 - [GAP] `spice_file` (str | None, required=False) — op_tb_files=6
 - [GAP] `xcell_file` (str | None, required=False) — op_tb_files=6
-
-### `calibre.export`
-
-- [GAP] `job_id` (str | None, required=False) — op_tb_files=1
 
 ### `calibre.lvs`
 
@@ -31,7 +26,6 @@
 
 ### `calibre.pex`
 
-- [GAP] `fmt` (str, required=False) — op_tb_files=1
 - [GAP] `ground` (str | None, required=False) — op_tb_files=1
 - [GAP] `hcell_file` (str | None, required=False) — op_tb_files=1
 - [GAP] `hier` (bool, required=False) — op_tb_files=1
@@ -50,7 +44,7 @@
 
 ## 未解析调用点（机器，不计覆盖）
 
-### A. 待人工复核（19）——非管道行，需逐条确认是真实调用点还是辅助函数
+### A. 待人工复核（18）——非管道行，需逐条确认是真实调用点还是辅助函数
 
 - test/offline/core/api_server_tb.py:235 `` (how=payload-dict, enclosing=main, params=token)
 - test/offline/core/api_server_tb.py:300 `` (how=payload-dict, enclosing=main, params=token)
@@ -61,7 +55,6 @@
 - test/offline/unit/test_middle_contracts.py:167 `` (how=payload-dict, enclosing=test_invalid_timeout_maps_to_dispatch_400, params=timeout,token)
 - test/offline/unit/test_norm_gap_batch2.py:257 `` (how=payload-dict, enclosing=test_unknown_field_rejected_on_dataclass_request, params=doc_root,query,request_id,source,token)
 - test/offline/unit/test_param_timeout_contract.py:174 `` (how=payload-dict, enclosing=setUpClass, params=timeout,token)
-- test/offline/unit/test_round8_clause_gaps.py:93 `` (how=payload-dict, enclosing=test_request_id_is_unknown_field, params=request_id,token,value)
 - test/offline/unit/test_top_layer_dispatch.py:67 `` (how=payload-dict, enclosing=test_success_shell, params=token,value)
 - test/offline/unit/test_top_layer_dispatch.py:89 `` (how=payload-dict, enclosing=test_unknown_operation_is_404, params=token)
 - test/offline/unit/test_top_layer_dispatch.py:94 `` (how=payload-dict, enclosing=test_invalid_request_fields_are_400, params=token,value)
@@ -100,8 +93,8 @@
 - test/live/packages/calibre_e2e_tests.py:113 `operation` (enclosing=_value, params=token)
 - test/live/packages/calibre_export_pex_e2e_tests.py:65 `` (enclosing=_op, params=token)
 - test/live/packages/calibre_export_pex_e2e_tests.py:69 `operation` (enclosing=_value, params=token)
-- test/live/packages/calibre_params_e2e_tests.py:61 `` (enclosing=_op, params=token)
-- test/live/packages/calibre_params_e2e_tests.py:65 `operation` (enclosing=_value, params=token)
+- test/live/packages/calibre_params_e2e_tests.py:62 `` (enclosing=_op, params=token)
+- test/live/packages/calibre_params_e2e_tests.py:66 `operation` (enclosing=_value, params=token)
 - test/live/packages/cellview_e2e_tests.py:93 `` (enclosing=_call, params=token)
 - test/live/packages/cellview_e2e_tests.py:97 `operation` (enclosing=_op, params=token)
 - test/live/packages/cellview_e2e_tests.py:109 `operation` (enclosing=_expect_fail, params=token)

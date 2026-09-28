@@ -28,6 +28,34 @@ BUGS_DIR = ROOT / "test" / "reports" / "bugs"
 OPEN = [
 
     {
+        "id": "P-103",
+        "layer": "上层（calibre 包）· 完成判定",
+        "slug": "calibre-pex-premature-completion-masks-stage3-failure",
+        "title": "`calibre.pex` 报 `status=completed` 但 stage3 失败：完成判定读到**前一阶段**的 COMPLETED 标记就提前收工（P-102 的真故障被掩盖成绿）",
+        "level": "P2（假绿：调用方按 ok/status 判定会以为 PEX 成功，实际没有网表产物）",
+        "owner": "设计侧（calibre 运行器的 job_state/等待循环按 log 尾部判完成的口径）",
+        "status": "待设计修",
+        "where": "`src/pyapi/packages/_calibre_util.py:317-329`（`job_state` 只按 `log_tail` 里出现 `_DONE_MARKERS` 就判 completed）+ "
+                 "`src/pyapi/packages/calibre.py:574-594`（blocking 循环一见 completed 就 break）；"
+                 "pex 的三阶段日志同名 glob `*.log` 被 `tail -n 40` 合并 → **stage1 的 `CALIBRE xRC::PHDB GENERATOR COMPLETED` 落进 tail**。",
+        "symptom": "真机（vblog，2026-09-29 01:05，`pex(fmt=\"spice\")`）run_dir `/home/Gent/project/vblog/calibre-e2e/pex-fmt-1790615068023/`：\n"
+                   "- `pex.stage1.log` 尾部 `--- CALIBRE xRC::PHDB GENERATOR COMPLETED ---`（stage1 成功）；\n"
+                   "- `pex.stage2.log` 正常结束；\n"
+                   "- **`pex.stage3.log` 为空**、**`pex.log` 末行 `stage3_failed`**、run_dir 里 **没有任何 netlist 产物**；\n"
+                   "- 但 `calibre.pex` 运行期返回 **`ok=true, status=completed`** ⇒ 假绿。\n"
+                   "（同一 run_dir 用 `read_results(kind=pex)` 会因 `stage\\d_failed` 判失败 —— 即**两个入口口径相反**。）",
+        "repro": "`PYTHONPATH=src python test/live/packages/calibre_export_pex_e2e_tests.py --transport http`"
+                 "（PEX-FMT-01 红钉：断言先查 `stage3_failed`/netlist，再查 status，因此今天判红）",
+        "evidence": "run_dir 三份 stage 日志 + `pex.log`（上列实测）；TB 红钉 `PEX-FMT-01`；"
+                    "对照 P-102（stage3 argv 非法的根因）与 `_calibre_util.py:322-324` 的 `classify_log`（只认 `ERROR:` 等标记）。",
+        "accept": "① 完成判定必须**按阶段**取日志（stage3 的完成标记才算 pex completed），或要求产物（netlist/pdb）齐；"
+                  "② `stage\\d_failed` 一旦出现立即判 failed（与 `read_results` 同口径）；③ PEX-FMT-01 转绿。",
+        "next": "设计侧与 P-102 一起改（argv + 完成判定）；测试侧复跑 PEX-01/PEX-FMT-01 确认不再假绿。",
+        "reported": "2026-09-29（第八轮 calibre PEX 参数面实测，root 直接发现）",
+        "updated": "2026-09-29（新立）",
+    },
+
+    {
         "id": "P-102",
         "layer": "上层（calibre 包）· xRC 第三阶段",
         "slug": "calibre-pex-stage3-invalid-fmt-argv",

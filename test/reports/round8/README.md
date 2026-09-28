@@ -21,7 +21,7 @@
 |---|---|---|---|
 | **A. spec 条款** | `spec/design-concepts/**` Normative 全量 → 1131 条 | `extract_spec_clauses.py` + `premap_spec_clauses.py` | **297 条 NORM 逐条裁定完成**：direct 222 / indirect 16 / partial 6 / gap 0 / na 53；OPS 由另两轴承担 |
 | **B. 原子操作** | `src/pyapi/packages/*.py` 的写原子（60 个） | `audit_atom_coverage.py` | **GAP=0**（B1/B2 已闭环，证据树有命中）；每轮复跑 |
-| **C. op × 参数** | `OPERATIONS` 表 + spec 字段表 → 628 条 | `build_op_param_matrix.py` | **CANDIDATE 569 / GAP 59 / NO-OP 0**；59 = 34 条通用 `timeout`（跨 op 合同）+ 25 条逐 op 缺口（pex 12 被 P-102 阻塞 / drc 7 / lvs 4 / export.job_id / layout.depth（P-085））（见 §3） |
+| **C. op × 参数** | `OPERATIONS` 表 + spec 字段表 → 628 条 | `build_op_param_matrix.py` | **CANDIDATE 572 / GAP 56 / NO-OP 0**；56 = 34 条通用 `timeout`（跨 op 合同）+ 22 条逐 op 缺口（pex 11 被 P-102/P-103 阻塞 / drc 6 + lvs 2 kind 不适用 / lvs 2 死参数 P-092 / layout.depth P-085）（见 §3） |
 
 ## 1. 判定口径（防"虚高"）
 

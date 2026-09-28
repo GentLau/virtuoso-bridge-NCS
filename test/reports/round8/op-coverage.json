@@ -30,7 +30,7 @@
    "test/semi/probes/spectre_ac_pipeline_probe.py",
    "test/shared/runners/env_check.py"
   ],
-  "call_sites": 122
+  "call_sites": 125
  },
  "basic.file.download": {
   "package": "basic.py",
@@ -51,12 +51,13 @@
    "test/live/flows/s11_inprocess_lvs_tb.py",
    "test/live/packages/calibre_e2e_tests.py",
    "test/live/packages/calibre_export_pex_e2e_tests.py",
+   "test/live/packages/calibre_params_e2e_tests.py",
    "test/live/packages/infra_e2e_tests.py",
    "test/live/stress/production_face_stress_tb.py",
    "test/offline/core/api_server_tb.py",
    "test/semi/probes/cdl_export_variants_probe.py"
   ],
-  "call_sites": 25
+  "call_sites": 28
  },
  "basic.gui.run": {
   "package": "basic.py",
@@ -126,14 +127,14 @@
    "test/live/packages/calibre_params_e2e_tests.py",
    "test/semi/probes/calibre_flat_turbo_probe.py"
   ],
-  "call_sites": 11
+  "call_sites": 13
  },
  "calibre.export": {
   "package": "calibre.py",
   "files": [
    "test/live/packages/calibre_export_pex_e2e_tests.py"
   ],
-  "call_sites": 4
+  "call_sites": 5
  },
  "calibre.export_cdl": {
   "package": "calibre.py",
@@ -164,7 +165,7 @@
   "files": [
    "test/live/packages/calibre_export_pex_e2e_tests.py"
   ],
-  "call_sites": 3
+  "call_sites": 4
  },
  "calibre.read_results": {
   "package": "calibre.py",
@@ -177,7 +178,7 @@
    "test/live/packages/calibre_params_e2e_tests.py",
    "test/semi/probes/calibre_package_http_probe.py"
   ],
-  "call_sites": 28
+  "call_sites": 29
  },
  "calibre.status": {
   "package": "calibre.py",
@@ -284,7 +285,6 @@
    "test/offline/unit/test_layout_depth_contract.py",
    "test/offline/unit/test_norm_gap_batch2.py",
    "test/offline/unit/test_remote_posix_path_contract.py",
-   "test/offline/unit/test_round8_clause_gaps.py",
    "test/offline/unit/test_symbol_contracts.py",
    "test/offline/unit/test_verilog_contracts.py",
    "test/offline/unit/test_veriloga_contracts.py",
@@ -296,7 +296,7 @@
    "test/semi/probes/symbol_regen_handle_probe.py",
    "test/semi/probes/twouser_same_view_probe.py"
   ],
-  "call_sites": 21
+  "call_sites": 20
  },
  "instance": {
   "package": "(atomic)",
@@ -348,7 +348,6 @@
    "test/offline/unit/test_probe.py",
    "test/offline/unit/test_pyapi_interface_contract.py",
    "test/offline/unit/test_resource_release.py",
-   "test/offline/unit/test_round8_clause_gaps.py",
    "test/offline/unit/test_runner_single_flight.py",
    "test/offline/unit/test_schematic_contracts.py",
    "test/offline/unit/test_spectre_util_psf_contracts.py",
@@ -382,7 +381,7 @@
    "test/shared/runners/run_core_multi.py",
    "test/shared/runners/run_semi_probes.py"
   ],
-  "call_sites": 80
+  "call_sites": 79
  },
  "label": {
   "package": "(atomic)",
@@ -704,10 +703,10 @@
    "test/offline/unit/test_remote_posix_path_contract.py",
    "test/offline/unit/test_reservation.py",
    "test/offline/unit/test_resource_release.py",
-   "test/offline/unit/test_round8_clause_gaps.py",
    "test/offline/unit/test_runner_single_flight.py",
    "test/offline/unit/test_runtime_env.py",
    "test/offline/unit/test_schematic_contracts.py",
+   "test/offline/unit/test_scope_exclusions.py",
    "test/offline/unit/test_skill_admission.py",
    "test/offline/unit/test_skill_text_utils.py",
    "test/offline/unit/test_skillref_docs_contracts.py",
@@ -1023,9 +1022,9 @@
    "test/offline/unit/test_remote_posix_path_contract.py",
    "test/offline/unit/test_reservation.py",
    "test/offline/unit/test_resource_release.py",
-   "test/offline/unit/test_round8_clause_gaps.py",
    "test/offline/unit/test_runner_single_flight.py",
    "test/offline/unit/test_schematic_contracts.py",
+   "test/offline/unit/test_scope_exclusions.py",
    "test/offline/unit/test_skill_admission.py",
    "test/offline/unit/test_skillref_docs_contracts.py",
    "test/offline/unit/test_skillref_package.py",

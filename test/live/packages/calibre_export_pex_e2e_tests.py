@@ -186,13 +186,69 @@ def run_suite(transport) -> list[tuple[str, str]]:
             raise AssertionError(f"PEX 未跑通（如实记录，不假装覆盖）：{str(result.get('error'))[:220]}")
         value_status = value.get("status")
         _check(value_status == "completed", f"PEX 未完成: {value_status} {value.get('progress')}")
+
+    def case_export_by_job_id() -> None:
+        """`export(job_id=…)`：不带 run_dir，让桥自己按 job_id 定位（C 轴最后一条低成本真缺口）。"""
+        job_id = f"export_by_id_{stamp}"
+        value = _value(transport, "calibre.drc", gds=GDS, top=TOP, deck=DRC_DECK,
+                       job_id=job_id, calibre_bin=CALIBRE_BIN, hier=True, turbo=2,
+                       blocking=True, timeout=1800)
+        _check(value.get("status") == "completed", f"job_id 定位用的 DRC 未完成: {value.get('status')}")
+        run_dir = value.get("run_dir")
+        _check(run_dir, f"DRC 未返回 run_dir: {value}")
+        local_dir = SCRATCH / f"by_job_id_{stamp}"
+        exported = _value(transport, "calibre.export", kind="drc", job_id=job_id,
+                          local_dir=str(local_dir), items=["summary"], timeout=600)
+        _check(exported.get("run_dir") == run_dir,
+               f"export 按 job_id 定位到的 run_dir 不一致: {exported.get('run_dir')} vs {run_dir}")
+        downloaded = exported.get("downloaded") or []
+        _check(downloaded, f"export(job_id=…) 什么都没导出: {exported}")
+        for entry in downloaded:
+            _check(Path(entry["local"]).is_file(), f"导出文件缺失: {entry}")
+
+    def case_pex_fmt_red_pin() -> None:
+        """P-102 红钉：`pex(fmt="spice")` 会多跑第三阶段，而 stage3 的 argv 形态非法 → 今天必红。
+
+        说明：不传 `fmt` 时 PEX 只跑 phdb/pdb 两阶段（PEX-01 已绿）；`fmt` 一旦给定，
+        `_argv_for` 会追加 `calibre -xrc -fmt spice <deck>`，Calibre 只接受 `-fmt -<flag>` → usage + stage3_failed。
+        """
+        run_dir = f"{RUN_DIR}/pex-fmt-{stamp}"
+        result = _op(transport, "calibre.pex", gds=GDS, top=TOP, cdl=CDL, deck=RCX_DECK,
+                     lvs_run_dir=lvs_dir, run_dir=run_dir, calibre_bin=CALIBRE_BIN,
+                     fmt="spice", blocking=True, timeout=2400)
+        value = (result.get("data") or {}).get("value") or {}
+        status = value.get("status")
+        # 先判 P-103：桥的完成判定会被 stage1 的 COMPLETED 标记提前触发 → 报 completed 但 stage3_failed。
+        # P-103 让桥在 stage1 的 COMPLETED 标记处就返回，此时 stage2/3 可能还没写完日志 →
+        # 必须限时等一个"终态"再断言，否则会因检查太早而假绿（本轮实测踩到）。
+        import time as _time
+        deadline = _time.monotonic() + 180
+        log_state = ""
+        netlist_state = "0"
+        while _time.monotonic() < deadline:
+            log_state = str(_command(transport,
+                                     f"tail -2 {run_dir}/pex.log 2>/dev/null; "
+                                     f"ls {run_dir}/*.netlist {run_dir}/*.pex.netlist 2>/dev/null | head -2"))
+            netlist_state = str(_command(transport, f"ls -1 {run_dir} | grep -c netlist || true"))
+            if "stage3_failed" in log_state or int((netlist_state.strip("[]', \\n") or "0") or 0) > 0:
+                break
+            _time.sleep(10)
+        _check("stage3_failed" not in log_state,
+               f"P-103：pex.log 记 stage3_failed（无网表，netlist_count={str(netlist_state).strip()[:20]}），"
+               f"但运行期报 status={status} → 完成判定被前一阶段标记提前触发")
+        _check(result.get("ok") and status == "completed",
+               f"P-102：带 fmt=spice 的三阶段 PEX 应完成，实际 ok={result.get('ok')} "
+               f"status={status} err={str(result.get('error'))[:160]}")
         _check(value.get("fmt") in (None, "none", "spice", "simple"), f"fmt 异常: {value}")
 
     run("ENV-01 deck/gds/bin 三件套", case_env)
     run("EXP-00 跑一次 DRC 作为 export 输入", case_drc_for_export)
     run("EXP-01 export(items=all_small) 三类产物齐 + 字节数>0", case_export_all_small)
     run("EXP-02 export(items=summary) 对 LVS run_dir 生效", case_export_summary_only)
+    run("EXP-03 export(job_id=…) 自主定位 run_dir", case_export_by_job_id)
     run("PEX-01 calibre.pex 三阶段（有 svdb 才跑）", case_pex)
+    # 红钉放最后：PEX + fmt 今天必红（P-102），但不许挡住上面的覆盖率
+    run("PEX-FMT-01 fmt=spice 三阶段（P-102 红钉）", case_pex_fmt_red_pin)
     for note in notes:
         print(f"NOTE  {note}", flush=True)
     return results
