@@ -6,5 +6,6 @@
 - `semantics_tb.py`：文件 deadline、注册表跨进程写、安装崩溃安全、query 形状。
 - `fault_injection_tb.py`：租约竞态、shell permit、transport kind、日志参数、缓存失效。
 - `daemon_log_protocol_tb.py`：daemon 日志协议矩阵（off/分级/轮转/降级/截断）。
+- `p076_tar_completion_tb.py`：P-076 确定性回归——channel/tar 已完成时，卡死的 pump 线程不得阻止 install。
 
 运行方式见 [`../README.md`](../README.md)。产物只写 `../artifacts/`。

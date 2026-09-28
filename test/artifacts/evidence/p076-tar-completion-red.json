@@ -1,0 +1,20 @@
+{
+  "tb": "p076_tar_completion_tb",
+  "status": "RED",
+  "passed": 0,
+  "total": 2,
+  "cases": [
+    {
+      "name": "wait_completion_ignores_stuck_pump",
+      "ok": false,
+      "error": "TimeoutExpired: Command 'download' timed out after 2.0 seconds",
+      "elapsed_s": 2.0
+    },
+    {
+      "name": "download_installs_with_stuck_pump",
+      "ok": false,
+      "error": "TimeoutExpired: Command 'bash -c 'eval \"$(printf %s cD0vcmVtb3RlL2RpcjsgZD0kKGRpcm5hbWUgIiRwIik7IGI9JChiYXNlbmFtZSAiJHAiKTsgY2QgIiRkIiAmJiB0YXIgLWMgLWggLXogLWYgLSAtLSAiJGIi | base64 -d)\"'' timed out after 2.0 seconds",
+      "elapsed_s": 3.016
+    }
+  ]
+}

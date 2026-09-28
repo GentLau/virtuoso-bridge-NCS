@@ -477,6 +477,28 @@ class TestBackendExecutionPaths(unittest.TestCase):
         )
         self.assertEqual((rc_r, rc_l), (0, 0))
 
+    def test_wait_tar_transfer_does_not_wait_for_stuck_pump_thread(self):
+        """P-076: channel + local tar are done; a stuck pump must not gate it."""
+        import queue as q
+        import time
+
+        channel = type("C", (), {})()
+        channel.exit_status_ready = lambda: True
+        channel.recv_exit_status = lambda: 0
+        proc = type("P", (), {})()
+        proc.poll = lambda: 0
+        proc.wait = lambda timeout=None: 0
+        worker = type("W", (), {})()
+        worker.is_alive = lambda: True
+        worker.name = "stuck-copy-stream"
+
+        started = time.monotonic()
+        rc_r, rc_l = pb.ParamikoSessionBackend._wait_tar_transfer(
+            channel, proc, [worker], q.Queue(), pb._Deadline.start(5), "download"
+        )
+        self.assertEqual((rc_r, rc_l), (0, 0))
+        self.assertLess(time.monotonic() - started, 1.0)
+
 
 if __name__ == "__main__":
     unittest.main()
