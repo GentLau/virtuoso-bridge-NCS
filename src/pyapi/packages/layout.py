@@ -20,7 +20,7 @@ from typing import Any
 
 from common.paths import artifact_dir
 from pyapi.models import Middle, VirtuosoResult
-from pyapi.packages import basic, gui
+from pyapi.packages import basic
 
 
 LAYOUT_VIEW_TYPE = "maskLayout"
@@ -1114,6 +1114,7 @@ class Package:
                     "; ".join(flushed.errors) or "failed to save the layout before export",
                 )
 
+            map_arg = ""
             if request.layer_map:
                 if request.layer_map_is_local:
                     staged = self.middle.upload_file(
@@ -1127,23 +1128,44 @@ class Package:
                 steps.append(_step("stage_map", staged.returncode == 0, staged))
                 if staged.returncode != 0:
                     return Result(False, steps, staged.stderr or "stream map staging failed")
+                map_arg = f" -layerMap {shlex.quote(remote_map)}"
 
-            launched = self._skill(
-                _xstream_skill(
-                    request.library, request.cell, request.view,
-                    remote_gds, remote_map, remote_log, remote_dir,
-                ),
-                request.token, request.timeout,
+            # The batch translator is the very same XStream Out engine the
+            # "Stream Out" form drives, but it opens no form and therefore
+            # never raises the modal "Stream out translation complete" box
+            # that used to wedge the session's SKILL channel (P-075). It
+            # resolves libraries through the session's own cds.lib, which
+            # confines resolution to the daemon's run directory.
+            run_dir = self._q(
+                "getWorkingDir()", request.token, request.timeout,
+            ).strip().strip('"')
+            steps.append(_step("run_dir", bool(run_dir), run_dir))
+            if not run_dir:
+                return Result(False, steps, "cds_lib_missing: getWorkingDir() returned nothing",
+                              {"reason": "cds_lib_missing"})
+            cds_lib = posixpath.join(run_dir, "cds.lib")
+            has_cds = self.middle.run_command(
+                f"test -f {shlex.quote(cds_lib)}", timeout=60, token=request.token,
             )
-            steps.append(_step("xstream", launched.ok, launched))
-            output_text = (launched.output or "").strip()
-            if not launched.ok or "started" not in output_text:
+            steps.append(_step("cds_lib", has_cds.returncode == 0, cds_lib))
+            if has_cds.returncode != 0:
+                return Result(False, steps, f"cds_lib_missing: {cds_lib}",
+                              {"reason": "cds_lib_missing"})
+
+            launched = self.middle.run_command(
+                f"cd {shlex.quote(run_dir)} && rm -f {shlex.quote(remote_log)} && "
+                f"nohup strmout -library {shlex.quote(request.library)} "
+                f"-strmFile {shlex.quote(remote_gds)} "
+                f"-topCell {shlex.quote(request.cell)} -view {shlex.quote(request.view)} "
+                f"-logFile {shlex.quote(remote_log)} -runDir {shlex.quote(remote_dir)}"
+                f"{map_arg} > /dev/null 2>&1 & echo launched",
+                timeout=60, token=request.token,
+            )
+            steps.append(_step("strmout", launched.returncode == 0, launched))
+            if launched.returncode != 0 or "launched" not in (launched.stdout or ""):
                 reason = "xstream_failure"
-                return Result(
-                    False, steps,
-                    f"{reason}: {output_text or '; '.join(launched.errors)}",
-                    {"reason": reason},
-                )
+                return Result(False, steps, f"{reason}: {launched.stderr or launched.stdout}",
+                              {"reason": reason})
 
             deadline = time.monotonic() + timeout
             log_text, gds_size, failure = "", 0, ""
@@ -1170,7 +1192,6 @@ class Package:
 
             reason = failure or ("completed" if gds_size > 0 else "missing_gds")
             steps.append(_step("log", not failure, {"reason": reason, "gds_size": gds_size}))
-            self._dismiss_xstream_windows(request, steps)
 
             if request.file_is_local:
                 published_log = self._publish_remote(remote_log, log_path, request)
@@ -1402,39 +1423,6 @@ class Package:
         )
         steps.append(_step("cleanup", result.returncode == 0, result))
 
-    def _dismiss_xstream_windows(self, request: GdsRequest,
-                                 steps: list[dict[str, Any]]) -> None:
-        """Close XStream's own dialogs; the completion box is modal to the CIW.
-
-        ``?showCompletionMsgBox "false"`` does not reliably suppress the box on
-        IC6.1.8, and a modal box blocks every later SKILL call, so the export
-        cleans up its own windows (XStream form / completion box) and touches
-        nothing else.
-        """
-        try:
-            listing = gui.Package(self.middle).list_windows(
-                gui.ListWindowsRequest(token=request.token, timeout=request.timeout)
-            )
-            if not listing.ok:
-                return
-            for item in listing.windows:
-                title = str(item.get("title") or "").lower()
-                if "stream out translation complete" in title:
-                    key = "enter"
-                elif title in ("xstream out", "stream out"):
-                    key = "escape"
-                else:
-                    continue
-                result = gui.Package(self.middle).send_key(
-                    gui.SendKeyRequest(
-                        token=request.token, window_id=str(item.get("window_id")),
-                        key=key, timeout=request.timeout,
-                    )
-                )
-                steps.append(_step(f"dismiss:{item.get('title')}", result.ok, item.get("window_id")))
-        except Exception as exc:  # noqa: BLE001 - best effort cleanup
-            steps.append(_step("dismiss", False, f"{type(exc).__name__}: {exc}"))
-
     # -- screenshot -------------------------------------------------------------
 
     def screenshot(self, request: ScreenshotRequest) -> Result:
@@ -1605,55 +1593,6 @@ let((vbCv vbOut vbCollected vbShape vbInst vbVia vbItem vbLpp vbBBox vbPoints vb
   unless(vbCollected error("layout read failed"))
   reverse(car(vbCollected)))
 '''.strip()
-
-
-def _xstream_skill(lib: str, top_cell: str, view: str, stream_file: str,
-                   layer_map: str, log_file: str, run_dir: str) -> str:
-    fields = (
-        ("library", lib, "vbOldLibrary"),
-        ("topCell", top_cell, "vbOldTopCell"),
-        ("view", view, "vbOldView"),
-        ("strmFile", stream_file, "vbOldStreamFile"),
-        ("layerMap", layer_map, "vbOldLayerMap"),
-        ("logFile", log_file, "vbOldLogFile"),
-        ("runDir", run_dir, "vbOldRunDir"),
-        # virtualMemory=false: translate the saved cellview from disk and stay
-        # non-blocking; the completion message box must stay off for batch use.
-        ("virtualMemory", "false", "vbOldVirtualMemory"),
-    )
-    old_vars = " ".join([old for _f, _v, old in fields] + ["vbOldShowMsgBox", "vbCaptured"])
-    captures = "".join(f'{old} = xstGetField("{name}") ' for name, _value, old in fields)
-    captures += 'vbOldShowMsgBox = xstGetField("showCompletionMsgBox") '
-    setters = "".join(f'xstSetField("{name}" {basic.q(value)}) ' for name, value, _old in fields)
-    setters += 'xstSetField("showCompletionMsgBox" "false") '
-    restores = "".join(
-        f'vbCleanup = errset(xstSetField("{name}" {old}) nil) '
-        f'unless(vbCleanup vbFailures = cons("restore {name} failed" vbFailures)) '
-        for name, _value, old in fields
-    )
-    restores += (
-        'vbCleanup = errset(xstSetField("showCompletionMsgBox" vbOldShowMsgBox) nil) '
-        'unless(vbCleanup vbFailures = cons("restore showCompletionMsgBox failed" vbFailures)) '
-    )
-    return (
-        f"let(({old_vars} vbAttempt vbFailure vbCleanup vbFailures) "
-        'vbFailure = "XStream export request failed" '
-        "unwindProtect("
-        "progn("
-        "vbAttempt = errset(progn("
-        "unless(and(isCallable('xstGetField) isCallable('xstSetField) "
-        'isCallable(\'xstOutDoTranslate)) error("XStream APIs unavailable")) '
-        f"{captures}"
-        "vbCaptured = t "
-        f"{setters}"
-        "xstOutDoTranslate()) nil) "
-        'unless(vbAttempt vbFailure = sprintf(nil "%L" errset.errset)) '
-        "vbAttempt) "
-        "progn(when(vbCaptured "
-        f"{restores}"
-        "))) "
-        'if(vbAttempt "started" sprintf(nil "failed: %s" vbFailure)))'
-    )
 
 
 def _screenshot_skill(request: ScreenshotRequest,

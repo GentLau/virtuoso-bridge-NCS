@@ -612,16 +612,18 @@ class TestLayoutDisplayOrchestration(unittest.TestCase):
 
 
 class GdsMiddle:
-    """layout.gds 导出编排的假 middle（prepare/flush/launch/poll/publish/cleanup）。
+    """layout.gds 导出编排的假 middle（prepare/flush/run_dir/strmout/poll/publish/cleanup）。
 
     日志体必须同时含 ``XSTRM-234`` 与 ``Translation completed`` 才会被判定为完成
-    （见 `_gds_export` 的轮询退出条件）。
+    （见 `_gds_export` 的轮询退出条件）。导出走批处理 ``strmout``（P-075 起），
+    因此假 middle 还要回答 ``getWorkingDir()`` 与 ``test -f <run_dir>/cds.lib``。
     """
 
     def __init__(self, *, log_text: str | None = None, gds_size: int = 1234,
-                 launch_output: str = '"started"', flush_output: str = '"saved"',
+                 launch_output: str = "launched", flush_output: str = '"saved"',
                  poll_rc: int = 0, prepare_rc: int = 0, stage_rc: int = 0,
-                 lock_files: str = "") -> None:
+                 lock_files: str = "", run_dir: str = "/run/dir",
+                 cds_lib_rc: int = 0) -> None:
         self.log_text = log_text if log_text is not None else (
             "Translating cellview LIB/CELL/layout as STRUCTURE CELL.\n"
             "XSTRM-234: Translation completed.\n")
@@ -632,6 +634,8 @@ class GdsMiddle:
         self.prepare_rc = prepare_rc
         self.stage_rc = stage_rc
         self.lock_files = lock_files
+        self.run_dir = run_dir
+        self.cds_lib_rc = cds_lib_rc
         self.commands: list[str] = []
         self.skills: list[str] = []
         self.uploads: list[str] = []
@@ -659,6 +663,11 @@ class GdsMiddle:
             return CommandResult(self.prepare_rc, "", "" if self.prepare_rc == 0 else "prepare boom")
         if cmd.startswith("cp "):
             return CommandResult(self.stage_rc, "", "" if self.stage_rc == 0 else "stage boom")
+        if cmd.startswith("test -f ") and cmd.endswith("/cds.lib"):
+            return CommandResult(self.cds_lib_rc, "",
+                                 "" if self.cds_lib_rc == 0 else "no cds.lib")
+        if "nohup strmout" in cmd:
+            return CommandResult(0, self.launch_output, "")
         if "*.cdslck" in cmd:
             return CommandResult(0, self.lock_files, "")
         if "---VBSIZE---" in cmd:
@@ -676,6 +685,8 @@ class GdsMiddle:
                 output='"open-failed"' if self.lock_files else '"open-ok"')
         if "dbSave(" in code:
             return VirtuosoResult(status=ExecutionStatus.SUCCESS, output=self.flush_output)
+        if "getWorkingDir()" in code:
+            return VirtuosoResult(status=ExecutionStatus.SUCCESS, output=f'"{self.run_dir}"')
         return VirtuosoResult(status=ExecutionStatus.SUCCESS, output=self.launch_output)
 
     def upload_file(self, local_path, remote_path, timeout=None, *, token, recursive=False):
@@ -725,9 +736,12 @@ class TestLayoutGdsOrchestration(unittest.TestCase):
             self.assertTrue(log.exists())
             self.assertTrue(str(value["remote_run_dir"]).endswith("LIB__CELL__layout"))
             names = [step["name"] for step in result.steps]
-            for expected in ("prepare", "flush", "xstream", "log", "publish_gds", "cleanup"):
+            for expected in ("prepare", "flush", "run_dir", "cds_lib", "strmout",
+                             "log", "publish_gds", "cleanup"):
                 self.assertIn(expected, names, names)
             self.assertTrue(any(c.startswith("rm -rf") for c in middle.commands))
+            self.assertTrue(any("nohup strmout -library LIB" in c for c in middle.commands),
+                            middle.commands)
 
     def test_export_remote_destination_copies_without_download(self):
         middle = GdsMiddle()
@@ -762,6 +776,13 @@ class TestLayoutGdsOrchestration(unittest.TestCase):
         result = self._export(GdsMiddle(launch_output='"error"'))
         self.assertFalse(result.ok)
         self.assertIn("xstream_failure", result.error)
+
+    def test_missing_cds_lib_is_reported(self):
+        # strmout 靠会话 run 目录的 cds.lib 解析库名；缺了必须结构化失败，
+        # 不能静默回退（回退会变成 XSTRM-21 假成功）。
+        result = self._export(GdsMiddle(cds_lib_rc=1), file_path="out2.gds")
+        self.assertFalse(result.ok)
+        self.assertIn("cds_lib_missing", result.error)
 
     def test_translation_failure_is_reported_and_keeps_dir_by_default(self):
         log = ("Translating cellview LIB/CELL/layout as STRUCTURE CELL.\n"

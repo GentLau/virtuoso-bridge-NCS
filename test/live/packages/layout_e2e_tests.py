@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
 # 作者: 设计/上层开发
-# 最后改动: 2026-09-28 20:05
+# 最后改动: 2026-09-28 16:44
 # 依赖: 无
 # =======================================================================
 
@@ -447,6 +447,15 @@ def _case_gds(transport) -> None:
     for stale in (gds_file, gds_file.with_suffix(".xstream.log")):
         stale.unlink(missing_ok=True)
 
+    def _titles() -> list[str] | None:
+        """窗口标题快照；gui display 事实不可用时返回 None（不是本包判据）。"""
+        try:
+            listed = _op(transport, "virtuoso.gui.list_windows")
+        except AssertionError:
+            return None
+        return [str(w.get("title") or "") for w in (listed.get("windows") or [])]
+
+    before_titles = _titles()
     exported = _value(
         transport, "virtuoso.layout.gds", action="export",
         library=LIB, cell=CELL, view=VIEW,
@@ -458,6 +467,19 @@ def _case_gds(transport) -> None:
            f"translated structures: {exported['translated_structures']}")
     log_text = Path(exported["log_path"]).read_text(encoding="utf-8", errors="replace")
     _check("XSTRM-234" in log_text, "log has no completion marker")
+
+    # P-075 红线：导出必须走批处理 strmout —— 同会话 SKILL 必须立刻可用，
+    # 且不得新增任何 XStream 窗体/模态框（旧 SKILL 窗体路径会留下
+    # "XStream Out" / "strmOut.log" / "Stream out translation complete"）。
+    _check(_skill(transport, "1+2").strip() in ('"3"', "3"), "SKILL wedged after GDS export")
+    after_titles = _titles()
+    fresh = (set(after_titles) - set(before_titles)
+             if before_titles is not None and after_titles is not None else set())
+    leaked = sorted(t for t in fresh
+                    if "stream out translation complete" in t.lower()
+                    or t.lower() in ("xstream out", "stream out")
+                    or t.lower().startswith("strmout.log"))
+    _check(not leaked, f"XStream windows leaked by export: {leaked}")
 
     # Round trip: import the exported GDS into a scratch library so the source
     # layout is not overwritten by the imported structure of the same name.

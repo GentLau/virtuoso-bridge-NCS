@@ -133,14 +133,14 @@
 2. 远端 run 目录取本 token 的 role root（`query`）下的固定子目录（不生成事后不可重建的随机路径）；
 3. **先 `dbSave` 目标 cellview**：XStream 只翻译磁盘上的已保存版本；会话里有未保存改动时
    导出内容不完整，且可能弹 "Save All" 模态框阻塞整个 SKILL 通道；
-4. SKILL 侧：设置 XStream 字段（`library/topCell/view/strmFile/layerMap/logFile/runDir` +
-   `virtualMemory="false"` 非阻塞读盘 + `showCompletionMsgBox="false"`），
-   **先 capture 旧值再改**，用 `unwindProtect` 恢复，然后 `xstOutDoTranslate()`；
+4. 命令侧：**批处理 `strmout`**（与导入同族的 XStream C 程序，不开任何窗体）：
+   `cd <会话 cds.lib 所在目录> && strmout -library <lib> -strmFile <gds> -topCell <cell> -view <view> [-layerMap <map>] -logFile <log> -runDir <run>`；
+   会话 run 目录由 `getWorkingDir()` 取，`<run>/cds.lib` 缺失即 `cds_lib_missing` 结构化失败（不猜、不回退）；
 5. 轮询 XStream log：完成 = `XSTRM-234` + `Translation completed`；
    终态失败 = `XSTRM-273` / `Translation failed` / `OPEN_FAILED`（bounded 匹配，避免误伤 `XSTRM-2730` 等）；
-   `XSTRM-25`（map 记录非法）/ `XSTRM-20`（覆盖已有文件）/ `Dropped Layers` 作为诊断返回；
-6. **导出后收尾自己开的窗口**：IC6.1.8 的完成提示框可能无视 `showCompletionMsgBox`，
-   模态框会阻塞后续 SKILL 调用 → 关闭 "Stream out translation complete" / "XStream Out"；
+    `XSTRM-25`（map 记录非法）/ `XSTRM-20`（覆盖已有文件）/ `Dropped Layers` 作为诊断返回；
+6. **不开窗**：批处理路径不产生 "XStream Out" 窗体与 "Stream out translation complete" 模态框，
+   因此不碰 X11、不依赖 display 事实、不需要事后关窗（P-075）；
 7. **log 先发布、GDS 后发布**；GDS 未通过（缺失/空/未稳定）不覆盖本机既有 GDS；
 8. 返回 `gds_path / log_path / translated_structures / warnings`。
 
@@ -158,9 +158,11 @@
 
 **共用返回**：`ok / action / reason / timed_out / log_path / errors / warnings`；
 `reason` 取值：`completed` / `xstream_failure` / `xstream_errors` / `incomplete_log` / `missing_gds` /
-`empty_gds` / `staging_error` / `publication_error` / `cleanup_error` / `tool_missing` / `target_lib_missing`。
+`empty_gds` / `staging_error` / `publication_error` / `cleanup_error` / `tool_missing` /
+`target_lib_missing` / `cds_lib_missing`。
 
-范围：只承诺 GDS；**不做 OASIS**。export 走 SKILL XStream Out（不是命令行 `strmout`），import 走 `strmin` 命令。
+范围：只承诺 GDS；**不做 OASIS**。export / import 都走命令行 XStream（`strmout` / `strmin`），
+SKILL 侧只负责 `dbSave` 落盘与库名校验。
 
 ### 1.4 screenshot
 
@@ -254,4 +256,8 @@
 13. 依赖 techfile/PDK：via 定义、真实金属层作图；`leGetValidLayerList` 只反映 LSW 可录入层，
     **不能**用来判断 `dbCreate*` 是否接受某 LPP（真机已验证 `("y0" "pin")` 不在列表里但可建）；
 14. XStream Out 走 Virtuoso Framework License，**不需要 PDK、不需要版图窗口**，只需要活着的 CIW 会话；
-    但导出后可能弹 "Stream out translation complete" 模态框（`showCompletionMsgBox` 不可靠），需自行关闭。
+    批处理 `strmout` 按 `CDS_LIBPATH`/当前目录的 `cds.lib` 解析库名（`strmin` 同理），
+    与 SKILL 侧会话的在内存库表**不是**同一份 ⇒ 会话 run 目录的 `cds.lib` 是唯一权威解析入口；
+15. SKILL 窗体路径（`xstOutDoTranslate`）在 IC6.1.8 会留下 "XStream Out" 窗体与
+    "Stream out translation complete" 模态框：`showCompletionMsgBox` 不可靠，且模态框一挂，
+    同会话后续 SKILL 调用全部超时（P-075）。批处理路径从根上避开，别再走窗体。
