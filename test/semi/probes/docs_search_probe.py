@@ -1,3 +1,11 @@
+# === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
+# 作者: 设计/上层开发
+# 最后改动: 2026-09-28 23:00
+# 依赖: 无
+# =======================================================================
+# 六步流程（test/docs/写TB规范.md §1）：本探针是**纯本机取证**——
+#   ① 无需真机/靶机（不连业务面）；②③ 用现成 Cadence 文档树当输入（无持久对象）；
+#   ④ 跑一次 legacy 全文检索；⑤ 打印命中数与耗时（期望 vs 实测）；⑥ 不落盘除 --out 指定的证据。
 """Probe: run the legacy full-text doc search (src_bak docs_search) locally.
 
 Answers "can we do full-text search at all?" without touching 8123: the legacy
