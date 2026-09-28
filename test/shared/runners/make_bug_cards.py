@@ -28,6 +28,36 @@ BUGS_DIR = ROOT / "test" / "reports" / "bugs"
 OPEN = [
 
     {
+        "id": "P-102",
+        "layer": "上层（calibre 包）· xRC 第三阶段",
+        "slug": "calibre-pex-stage3-invalid-fmt-argv",
+        "title": "`calibre.pex` 第三阶段 argv 非法（`-fmt spice`）：stage1/stage2 成功后 stage3 必被 Calibre 拒绝 → PEX 整体不可用",
+        "level": "P2（PEX 作为交付能力不可用；spec 已把它标成「禁止交付」，本条把「为什么」钉到具体 argv 与日志）",
+        "owner": "设计侧（calibre 包 `_argv_for` 的 pex 分支；roadmap P0-1 要求改官方 batch）",
+        "status": "待设计修",
+        "where": "`src/pyapi/packages/calibre.py:1007-1013`（pex 三阶段 argv：stage3 = `[binary, \"-xrc\", \"-fmt\", request.fmt, deck_path]`）；"
+                 "Calibre 用法块（`pex.stage3.log:188-215`）只接受 `-fmt { -c | -r | -rc | … | -simple | -netmodel }`，"
+                 "`spice`/`simple` **不带前导 `-`** 都不匹配。",
+        "symptom": "真机（vblog）实测 2026-09-29 00:05（**用 PDK 的 rcx deck** + LVS 产出的 svdb，其余参数按 spec 12-calibre.md:187）：\n"
+                   "- stage1 `calibre -xrc -phdb …` → `--- CALIBRE xRC::PHDB GENERATOR COMPLETED`（成功）；\n"
+                   "- stage2 `calibre -xrc -pdb -rc …` → 正常结束；\n"
+                   "- stage3 `calibre -xrc -fmt spice …` → 打 usage（`pex.stage3.log:93` 是命令回显，`:188+` 是用法），"
+                   "`pex.log` 末尾 `stage3_failed`，桥返回 `pex did not complete: failed input`。\n"
+                   "⇒ 三阶段里前两阶段产物（phdb/pdb）都正常，**只有 fmt 阶段的命令形态错**。",
+        "repro": "`PYTHONPATH=src python test/artifacts/tmp/pex_rcx_experiment.py`（一次性实验，参数：deck=`/opt/eda/PDK/CRN65GPNEW/CRN65GPNEW/Calibre/rcx/calibre.rcx`、"
+                 "`lvs_run_dir=<含 svdb 的 LVS run>`、`fmt=spice`）",
+        "evidence": "run_dir `/home/Gent/project/vblog/calibre-e2e/pex-rcx-1790611157804/`：`pex.stage1.log` 尾部 COMPLETED、"
+                    "`pex.stage2.log`、`pex.stage3.log`（命令回显 + usage）、`pex.log` 的 `stage3_failed`；"
+                    "TB 侧红钉：`test/live/packages/calibre_export_pex_e2e_tests.py` 的 PEX-01。",
+        "accept": "① 按 `spec/research/calibre/00-下一步开发方向.md` P0-1 改成官方链路（有 set 走 `-gui -pex -runset … -batch`，"
+                  "与 GUI 基线 `.pex.netlist` 逐字节比对）；或 ② 保留 deck 模式但 stage3 用 Calibre 接受的 flag 形态并断言 `.pex.netlist` 存在；"
+                  "③ PEX-01 转绿（或 spec 明确把 deck 模式从接口里删掉）。",
+        "next": "设计侧选 ①/②；测试侧按结论改 `calibre_export_pex_e2e_tests.py` 的 PEX 断言（现在是精确红钉）。",
+        "reported": "2026-09-29（第八轮 calibre 零调用 op 补测，root 直接定位）",
+        "updated": "2026-09-29（新立）",
+    },
+
+    {
         "id": "P-101",
         "layer": "上层（verilog 包）",
         "slug": "verilog-import-overwrite-false-silent-noop",
@@ -40,7 +70,10 @@ OPEN = [
         "symptom": "真机（vblog）实测：同一 cell（`schemtest/vimp_top`）第二次 `import(overwrite=False)`：\n"
                    "- 返回值 `ok=true, reason=completed`；\n"
                    "- `schemtest/vimp_top/functional` 的 mtime **不变**（1790609122 → 1790609122）⇒ 内容没被改写；\n"
-                   "- 结果里没有 `skipped` / `existing` / `warnings` 之类的标记 ⇒ 与真正导入成功无法区分。\n"
+                   "- 结果里 **`cells=[]`、`views=[]`、`warnings=[]`**，但 `reason` 仍是 `completed` ⇒ 与真正导入成功"
+                   "（`cells=['vimp_top_child','vimp_top']`）**只在 cells 的空/非空上有区别**，没有 `skipped`/`existing` 标记；\n"
+                   "- 2026-09-29 00:15 干净复跑已把这条钉成**红钉**：`test/live/packages/verilog_import_params_e2e_tests.py` IMP-07 断言"
+                   "「未写入却 completed 必须带显式跳过标记」→ 当前红（9 绿 + 3 红钉）。\n"
                    "（同一用例另一次运行返回 `RuntimeError: sha256 mismatch`，属 P-090 家族的上传校验抖动，已在 P-090 记录。）",
         "repro": "`PYTHONPATH=src python test/live/packages/verilog_import_params_e2e_tests.py --transport http`（IMP-07 + mtime 对照）",
         "evidence": "`test/artifacts/evidence/round8/verilog-import-params/verilog-import-params.json`；"

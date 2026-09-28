@@ -43,6 +43,7 @@ RUN_DIR = os.environ.get("VB_CALIBRE_RUN_DIR", "/home/Gent/project/vblog/calibre
 CALIBRE_BIN = os.environ.get(
     "VB_CALIBRE_BIN", "/opt/eda/mentor/CALIBRE2025/aok_cal_2025.1_16.10/bin/calibre")
 CDL = os.environ.get("VB_CALIBRE_CDL", "/home/Gent/.virtuoso-bridge/calprobe/command/calibre/inv.cdl")
+RCX_DECK = os.environ.get("VB_CALIBRE_RCX_DECK", f"{PDK}/rcx/calibre.rcx")
 SCRATCH = ROOT / "test" / "artifacts" / "tmp" / "calibre-export-pex"
 
 
@@ -174,19 +175,21 @@ def run_suite(transport) -> list[tuple[str, str]]:
             _value(transport, "calibre.lvs", runset=runset, blocking=True, timeout=1800)
             has_svdb = "yes" in _command(transport, f"test -d {lvs_dir}/svdb && echo yes || echo no")
         _check(has_svdb, f"没有 svdb/，PEX 前提不成立（{lvs_dir}）")
-        result = _op(transport, "calibre.pex", gds=GDS, top=TOP, deck=LVS_DECK,
+        # P-102 红钉：deck 必须是 **rcx deck**（spec 12-calibre.md:187），今天 stage3 的 `-fmt spice` 非法 →
+        # 前两阶段成功、第三阶段打 usage，整体 failed。修好后本条应转绿。
+        result = _op(transport, "calibre.pex", gds=GDS, top=TOP, cdl=CDL, deck=RCX_DECK,
                      lvs_run_dir=lvs_dir, run_dir=f"{RUN_DIR}/pex-run-{stamp}",
                      calibre_bin=CALIBRE_BIN, blocking=True, timeout=2400)
         value = (result.get("data") or {}).get("value") or {}
         if not result.get("ok"):
-            notes.append(f"PEX 未跑通（如实记录，不假装覆盖）：{str(result.get('error'))[:200]}")
-            print(f"NOTE  PEX 失败形态：{str(result.get('error'))[:220]}", flush=True)
-            return
+            # 如实判红：PEX 是零调用 op 之一，跑不通就是未覆盖，不许拿 NOTE 换 PASS
+            raise AssertionError(f"PEX 未跑通（如实记录，不假装覆盖）：{str(result.get('error'))[:220]}")
         value_status = value.get("status")
         _check(value_status == "completed", f"PEX 未完成: {value_status} {value.get('progress')}")
         _check(value.get("fmt") in (None, "none", "spice", "simple"), f"fmt 异常: {value}")
 
     run("ENV-01 deck/gds/bin 三件套", case_env)
+    run("EXP-00 跑一次 DRC 作为 export 输入", case_drc_for_export)
     run("EXP-01 export(items=all_small) 三类产物齐 + 字节数>0", case_export_all_small)
     run("EXP-02 export(items=summary) 对 LVS run_dir 生效", case_export_summary_only)
     run("PEX-01 calibre.pex 三阶段（有 svdb 才跑）", case_pex)

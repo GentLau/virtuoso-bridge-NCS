@@ -15,7 +15,8 @@
 真机（vblog）实测：同一 cell（`schemtest/vimp_top`）第二次 `import(overwrite=False)`：
 - 返回值 `ok=true, reason=completed`；
 - `schemtest/vimp_top/functional` 的 mtime **不变**（1790609122 → 1790609122）⇒ 内容没被改写；
-- 结果里没有 `skipped` / `existing` / `warnings` 之类的标记 ⇒ 与真正导入成功无法区分。
+- 结果里 **`cells=[]`、`views=[]`、`warnings=[]`**，但 `reason` 仍是 `completed` ⇒ 与真正导入成功（`cells=['vimp_top_child','vimp_top']`）**只在 cells 的空/非空上有区别**，没有 `skipped`/`existing` 标记；
+- 2026-09-29 00:15 干净复跑已把这条钉成**红钉**：`test/live/packages/verilog_import_params_e2e_tests.py` IMP-07 断言「未写入却 completed 必须带显式跳过标记」→ 当前红（9 绿 + 3 红钉）。
 （同一用例另一次运行返回 `RuntimeError: sha256 mismatch`，属 P-090 家族的上传校验抖动，已在 P-090 记录。）
 
 ## 复现

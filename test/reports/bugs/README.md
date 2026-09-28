@@ -13,10 +13,11 @@
 3. **刷新方式**：改 `test/shared/runners/make_bug_cards.py` 的 `OPEN` / `CLOSED_RECENT` 段，
    然后 `python test/shared/runners/make_bug_cards.py`（幂等；`--check` 只校验不写盘）。
 
-## 1. 未关闭（25 条）
+## 1. 未关闭（26 条）
 
 | ID | 层 | 级别 | 归属 | 状态 | 一句话 | 卡片 |
 |---|---|---|---|---|---|---|
+| **P-102** | 上层（calibre 包）· xRC 第三阶段 | P2（PEX 作为交付能力不可用；spec 已把它标成「禁止交付」，本条把「为什么」钉到具体 argv 与日志） | 设计侧（calibre 包 `_argv_for` 的 pex 分支；roadmap P0-1 要求改官方 batch） | 待设计修 | `calibre.pex` 第三阶段 argv 非法（`-fmt spice`）：stage1/stage2 成功后 stage3 必被 Calibre 拒绝 → PEX 整体不可用 | [P-102-calibre-pex-stage3-invalid-fmt-argv.md](P-102-calibre-pex-stage3-invalid-fmt-argv.md) |
 | **P-101** | 上层（verilog 包） | P3（静默 no-op：调用方会误以为设计已导入） | 待决策（spec 口径：overwrite=False 语义是 skip 还是拒绝） | 待决策 | `import(overwrite=False)` 对已存在 cell 返回成功但**不写任何内容**，且无 skipped/已存在 标记（用户无法区分「导入成功」与「没做事」） | [P-101-verilog-import-overwrite-false-silent-noop.md](P-101-verilog-import-overwrite-false-silent-noop.md) |
 | **P-100** | 上层（verilog 包）· 与 spec 口径 | P2（spec 说 cell 是显式目标；实际非同名就失败，还会留下已写入的副作用 = 报错但库已改） | 设计侧（verilog 包 `import_verilog` 的 ihdl 调用/参数拼装） | 待设计修 | `virtuoso.verilog.import` 的 `cell` 参数不参与落地：ihdl 只按**源码顶层模块名**建 cell，取值不同即整体报 `*Error* cell not found`（且写已发生） | [P-100-verilog-import-cell-param-not-honored.md](P-100-verilog-import-cell-param-not-honored.md) |
 | **P-099** | 上层（verilog 包） | P2（结构化返回值与事实不符：调用方按 `views` 判断产物会得出「什么都没导入」的结论） | 设计侧（verilog 包 `_read_views`） | 待设计修 | `virtuoso.verilog.import` 返回值里的 `views` 恒为空，与真机实际视图不符（functional/symbol 明明已生成） | [P-099-verilog-import-returns-empty-views.md](P-099-verilog-import-returns-empty-views.md) |

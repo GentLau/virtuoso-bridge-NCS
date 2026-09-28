@@ -1,8 +1,8 @@
 # 操作 × 参数覆盖矩阵（机器，AST 解析；**不是覆盖结论**）
 
-- 条目 628：CANDIDATE 553 / GAP 46 / NO-OP-TB 29
-- 非 CANDIDATE 中：通用 `timeout` 字段 36 条（由 `test/offline/unit/test_param_timeout_contract.py` 的 79/79 op 合同承担）；其余 39 条为逐 op 缺口。
-- 无法静态解析的调用点 81 个 = 管道行 62（op 载体内部把形参转发，真值在调用点已解析）+ **待人工复核 19**（不计覆盖）
+- 条目 628：CANDIDATE 569 / GAP 59 / NO-OP-TB 0
+- 非 CANDIDATE 中：通用 `timeout` 字段 34 条（由 `test/offline/unit/test_param_timeout_contract.py` 的 79/79 op 合同承担）；其余 25 条为逐 op 缺口。
+- 无法静态解析的调用点 83 个 = 管道行 64（op 载体内部把形参转发，真值在调用点已解析）+ **待人工复核 19**（不计覆盖）
 - CANDIDATE = 参数名在目标 op 的调用点出现；是否断言语义仍要逐条看 TB 判据。
 - op 调用点清单见 `op-coverage.json`；未解析明细见本文件末尾。
 
@@ -10,53 +10,39 @@
 
 ### `calibre.drc`
 
-- [GAP] `cdl` (str | None, required=False) — op_tb_files=5
-- [GAP] `fmt` (str, required=False) — op_tb_files=5
-- [GAP] `hcell_file` (str | None, required=False) — op_tb_files=5
-- [GAP] `lvs_run_dir` (str | None, required=False) — op_tb_files=5
-- [GAP] `runset` (str | None, required=False) — op_tb_files=5
-- [GAP] `spice_file` (str | None, required=False) — op_tb_files=5
-- [GAP] `xcell_file` (str | None, required=False) — op_tb_files=5
+- [GAP] `cdl` (str | None, required=False) — op_tb_files=6
+- [GAP] `fmt` (str, required=False) — op_tb_files=6
+- [GAP] `hcell_file` (str | None, required=False) — op_tb_files=6
+- [GAP] `lvs_run_dir` (str | None, required=False) — op_tb_files=6
+- [GAP] `runset` (str | None, required=False) — op_tb_files=6
+- [GAP] `spice_file` (str | None, required=False) — op_tb_files=6
+- [GAP] `xcell_file` (str | None, required=False) — op_tb_files=6
 
 ### `calibre.export`
 
-- [NO-OP-TB] `items` (tuple[str, ...], required=False) — op_tb_files=0
-- [NO-OP-TB] `job_id` (str | None, required=False) — op_tb_files=0
-- [NO-OP-TB] `kind` (str | None, required=False) — op_tb_files=0
-- [NO-OP-TB] `local_dir` (str | None, required=False) — op_tb_files=0
-- [NO-OP-TB] `run_dir` (str | None, required=False) — op_tb_files=0
-- [NO-OP-TB] `token` (str, required=True) — op_tb_files=0
+- [GAP] `job_id` (str | None, required=False) — op_tb_files=1
 
 ### `calibre.lvs`
 
-- [GAP] `fmt` (str, required=False) — op_tb_files=6
-- [GAP] `ground` (str | None, required=False) — op_tb_files=6
-- [GAP] `lvs_run_dir` (str | None, required=False) — op_tb_files=6
-- [GAP] `power` (str | None, required=False) — op_tb_files=6
+- [GAP] `fmt` (str, required=False) — op_tb_files=7
+- [GAP] `ground` (str | None, required=False) — op_tb_files=7
+- [GAP] `lvs_run_dir` (str | None, required=False) — op_tb_files=7
+- [GAP] `power` (str | None, required=False) — op_tb_files=7
 
 ### `calibre.pex`
 
-- [NO-OP-TB] `blocking` (bool, required=False) — op_tb_files=0
-- [NO-OP-TB] `calibre_bin` (str | None, required=False) — op_tb_files=0
-- [NO-OP-TB] `cdl` (str | None, required=False) — op_tb_files=0
-- [NO-OP-TB] `deck` (str | None, required=False) — op_tb_files=0
-- [NO-OP-TB] `fmt` (str, required=False) — op_tb_files=0
-- [NO-OP-TB] `gds` (str | None, required=False) — op_tb_files=0
-- [NO-OP-TB] `ground` (str | None, required=False) — op_tb_files=0
-- [NO-OP-TB] `hcell_file` (str | None, required=False) — op_tb_files=0
-- [NO-OP-TB] `hier` (bool, required=False) — op_tb_files=0
-- [NO-OP-TB] `job_id` (str | None, required=False) — op_tb_files=0
-- [NO-OP-TB] `lvs_run_dir` (str | None, required=False) — op_tb_files=0
-- [NO-OP-TB] `params` (dict[str, str] | None, required=False) — op_tb_files=0
-- [NO-OP-TB] `poll_interval` (float, required=False) — op_tb_files=0
-- [NO-OP-TB] `power` (str | None, required=False) — op_tb_files=0
-- [NO-OP-TB] `run_dir` (str | None, required=False) — op_tb_files=0
-- [NO-OP-TB] `runset` (str | None, required=False) — op_tb_files=0
-- [NO-OP-TB] `spice_file` (str | None, required=False) — op_tb_files=0
-- [NO-OP-TB] `token` (str, required=True) — op_tb_files=0
-- [NO-OP-TB] `top` (str | None, required=False) — op_tb_files=0
-- [NO-OP-TB] `turbo` (int, required=False) — op_tb_files=0
-- [NO-OP-TB] `xcell_file` (str | None, required=False) — op_tb_files=0
+- [GAP] `fmt` (str, required=False) — op_tb_files=1
+- [GAP] `ground` (str | None, required=False) — op_tb_files=1
+- [GAP] `hcell_file` (str | None, required=False) — op_tb_files=1
+- [GAP] `hier` (bool, required=False) — op_tb_files=1
+- [GAP] `job_id` (str | None, required=False) — op_tb_files=1
+- [GAP] `params` (dict[str, str] | None, required=False) — op_tb_files=1
+- [GAP] `poll_interval` (float, required=False) — op_tb_files=1
+- [GAP] `power` (str | None, required=False) — op_tb_files=1
+- [GAP] `runset` (str | None, required=False) — op_tb_files=1
+- [GAP] `spice_file` (str | None, required=False) — op_tb_files=1
+- [GAP] `turbo` (int, required=False) — op_tb_files=1
+- [GAP] `xcell_file` (str | None, required=False) — op_tb_files=1
 
 ### `virtuoso.layout.read`
 
@@ -86,7 +72,7 @@
 - test/live/packages/cellview_e2e_tests.py:277 `operation` (how=helper:_expect_fail, enclosing=_case_negative, params=token)
 - test/shared/fixtures/probe.py:24 `op` (how=helper:call, enclosing=None, params=token)
 
-### B. 管道行（62）——op 载体内部转发形参，真值在调用点已解析，不构成漏测
+### B. 管道行（64）——op 载体内部转发形参，真值在调用点已解析，不构成漏测
 
 - test/offline/unit/test_api_server_main.py:398 `` (enclosing=test_unserializable_result_is_structured_500, params=token)
 - test/offline/unit/test_top_layer_pool.py:61 `` (enclosing=_post, params=token)
@@ -95,7 +81,7 @@
 - test/semi/probes/gds_publish_path_edges_probe.py:46 `` (enclosing=call, params=token)
 - test/semi/probes/gds_then_skill_probe.py:53 `` (enclosing=call, params=token)
 - test/semi/probes/layout_p044_second_write_probe.py:98 `` (enclosing=op, params=token)
-- test/semi/probes/maestro_export_include_results_probe.py:54 `operation` (enclosing=value, params=token)
+- test/semi/probes/maestro_export_include_results_probe.py:55 `operation` (enclosing=value, params=token)
 - test/semi/probes/maestro_screenshot_probe.py:34 `` (enclosing=api_call, params=token)
 - test/semi/probes/maestro_screenshot_probe.py:40 `operation` (enclosing=api_data, params=token)
 - test/semi/probes/shared_cdf_pollution_probe.py:51 `` (enclosing=call, params=token)
@@ -112,6 +98,8 @@
 - test/live/flows/serdes_rx_flow_tb.py:103 `` (enclosing=raw_call, params=token)
 - test/live/packages/calibre_e2e_tests.py:106 `` (enclosing=_op, params=token)
 - test/live/packages/calibre_e2e_tests.py:113 `operation` (enclosing=_value, params=token)
+- test/live/packages/calibre_export_pex_e2e_tests.py:65 `` (enclosing=_op, params=token)
+- test/live/packages/calibre_export_pex_e2e_tests.py:69 `operation` (enclosing=_value, params=token)
 - test/live/packages/calibre_params_e2e_tests.py:61 `` (enclosing=_op, params=token)
 - test/live/packages/calibre_params_e2e_tests.py:65 `operation` (enclosing=_value, params=token)
 - test/live/packages/cellview_e2e_tests.py:93 `` (enclosing=_call, params=token)

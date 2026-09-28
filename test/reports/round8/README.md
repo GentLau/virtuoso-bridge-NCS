@@ -1,17 +1,27 @@
 # 第八轮全量测试 · 工作计划与状态板
 
-> 维护者：测试（root）｜ 2026-09-28 起 ｜ 状态：**进行中**（本文件随进度更新）
+> 维护者：测试（root）｜ 2026-09-28 起 ｜ 状态：**复跑完成，报告定稿**（`round8-测试报告.md`）
 > 目标（用户口径）：**spec 每条要求、每个原子操作、每个可传参数都要有 TB 覆盖并实跑验证**；
 > 发现 bug 全量上报；每阶段由独立子代理评审遗漏，报告不得出现"接口 ok 即覆盖"。
-> 基线：`HEAD=64c803c`，工作区 dirty（`worktree_diff_sha=B691A109…`，设计侧未提交改动一并被测）。
+> 基线：`HEAD=d47dabe` + 工作区（设计侧未提交改动一并被测）。
+
+## 0.0 终态数字（2026-09-28 23:5x 复跑，证据见 `round8-测试报告.md` §7）
+
+| 项 | 结果 |
+|---|---|
+| 离线 | Win py3.12 **1807/0红/21skip**；Linux py3.9 **1807/0红/31skip**（两平台计数一致） |
+| 半真机 | **39 探针 / 32 ok / 7 红**（7 条红灯全部对应已立卡缺陷） |
+| 真机 | 10 套稳定绿 + 1 被阻塞（maestro P-086/P-095/P-096）；五接口 5/5；e2e 10 用例 0 红 + local 4/4；压测 108 步 0 失败；业务场景 10 条链全绿；注册 4 条 TB 全绿 |
+| 覆盖率 | 语句 **91.54%** / 分支 **83.62%** / 合并 **89.48%**（离线层已纳入统计） |
+| 缺陷 | 本轮新增 **24**（P-078…P-101），未关闭 **25**（含待决策 P-070） |
 
 ## 0. 三条覆盖轴（本轮"完整"的定义）
 
 | 轴 | 数据源 | 机器核账工具 | 当前状态 |
 |---|---|---|---|
-| **A. spec 条款** | `spec/design-concepts/**` Normative 全量 → 1131 条 | `extract_spec_clauses.py` + `premap_spec_clauses.py` | 预映射完成；**逐条人工裁定进行中**（本次工作重点） |
+| **A. spec 条款** | `spec/design-concepts/**` Normative 全量 → 1131 条 | `extract_spec_clauses.py` + `premap_spec_clauses.py` | **297 条 NORM 逐条裁定完成**：direct 222 / indirect 16 / partial 6 / gap 0 / na 53；OPS 由另两轴承担 |
 | **B. 原子操作** | `src/pyapi/packages/*.py` 的写原子（60 个） | `audit_atom_coverage.py` | **GAP=0**（B1/B2 已闭环，证据树有命中）；每轮复跑 |
-| **C. op × 参数** | `OPERATIONS` 表 + spec 字段表 → 628 条 | `build_op_param_matrix.py` | 81 条 GAP；**分族补齐进行中**（见 §3） |
+| **C. op × 参数** | `OPERATIONS` 表 + spec 字段表 → 628 条 | `build_op_param_matrix.py` | **CANDIDATE 569 / GAP 59 / NO-OP 0**；59 = 34 条通用 `timeout`（跨 op 合同）+ 25 条逐 op 缺口（pex 12 被 P-102 阻塞 / drc 7 / lvs 4 / export.job_id / layout.depth（P-085））（见 §3） |
 
 ## 1. 判定口径（防"虚高"）
 
@@ -32,7 +42,7 @@
 > 计数口径：**不要引 pytest 写出的 JUnit `tests=` 属性**（本环境 pytest 9.1.1 会虚高：全量树写 2456，
 > 实际 `<testcase>` 只有 1800）。以 `<testcase>` 元素数 / `--collect-only` 汇总为准（两者与进度点数三处一致）。
 | 半真机 | `run_semi_probes.py --group all`（含新增探针） | `evidence/round8/semi-*.json` | 待环境独占窗口 |
-| 真机 | 11 套包 HTTP + cov_remote_real 多 token + 业务场景（SerDes/ADC/design_iterate/多用户/注册/py27/role-split/real-ciw/hostkey） | `evidence/round8/package-e2e-r8.log`、各 live JSON | **11/11 套通过**（gate 10/11，唯一红为 root 的 WRITE-06 旧判据；修正后 maestro 单跑 **22/22**，含 `save=False` 步骤表判据） |
+| 真机 | 11 套包 HTTP + cov_remote_real 多 token + 业务场景（SerDes/ADC/design_iterate/多用户/注册/py27/role-split/real-ciw/hostkey） | `evidence/round8/package-e2e-r8.log`、各 live JSON | **10 套稳定绿 + 1 被阻塞**（批量 gate 9/11；calibre 恢复实例后 8/8；maestro **23/23** 于 21:28 入档 `evidence/round8/maestro-23of23-2128.log`，之后被 P-095 模态框卡死） |
 | 覆盖率 | `run_main_coverage.ps1` 复算（combine 口径） | `evidence/cov-main/`（round8 快照另存） | 全部 TB 稳定后 |
 
 ## 3. op×参数 GAP 分族（81 条）与分工
@@ -83,7 +93,7 @@
 | 2026-09-28 | root（缺口动作 2 条闭环） | `注册#011` 补 `deploy-paths-contain-no-token`；`layout#179` 新建 `layout_geometry_classification_e2e_tests.py` **4/4**（正常 rect 读回 / 零面积→包层预校验可归因失败 / 非法 LPP→SKILL 硬错误+非事务提示）；口径差异（spec 写 nil+WARNING，实现提前预校验）按“实现更严格”记录 | 已写入 `round8-gap-actions.md` 顶部处置记录 |
 | 2026-09-28 | root（抽查审计证据） | 对 `norm-review/g4` 做机器引用检查（89 处引用 / 28 唯一文件，**全部存在**）+ 人工抽样 8 条 `::函数` → 7 命中、1 处函数名过时（`_case_pos_negative` 实为 `_case_negative`，证据本身存在） | 记入 `round8/spot-check-root.md`；其余簇留给红队子代理 |
 | 2026-09-28 | root（真机快照） | 已回真机证据：registration（six-local ok / py27 10/10 / role-split 28/28 / real-ciw 12/12）、multihop 10/10、scale-100 ok、multiuser-layout-handoff 12/12、serdes-multiuser 17/17、adc-sar 24/24、role-credential-isolation 8/8 | 11 套包 gate 进行中（`round8/run-all-http-r8.log`） |
-| 2026-09-28 | root（gate 收口） | gate 结果：**10/11 套 PASS，唯一 FAIL=maestro**（root 的 WRITE-06 旧判据把"会话内存可见"误当"落盘"）；子代理改用步骤表判据（save=True 必有 `save_setup` 步骤、save=False 必无）后 **maestro 22/22 PASS** | 11 套包按"gate 10 绿 + maestro 修正后复跑绿"记为 **11/11**；磁盘级隔离语义由 P-087 红灯探针单独钉住 |
+| 2026-09-28 | root（gate 收口） | gate 结果：**10/11 套 PASS，唯一 FAIL=maestro**（root 的 WRITE-06 旧判据把"会话内存可见"误当"落盘"）；子代理改用步骤表判据（save=True 必有 `save_setup` 步骤、save=False 必无）后 **maestro 23/23 PASS** | ~~11/11~~ **最终口径更正（2026-09-29）**：该次 23/23 于 21:28 入档（`evidence/round8/maestro-23of23-2128.log`），随后 maestro 被 **P-086/P-095/P-096** 卡死 → 本轮定稿为 **10 套稳定绿 + 1 被阻塞**；磁盘级隔离语义由 P-087 红灯探针单独钉住 |
 | 2026-09-28 | root（新缺陷 2 条） | **P-086** 多用户同视图后 ~30–90s 内 `Empty response from daemon`（自愈，观察）；**P-087** `save=False` 改动被后续 save 静默带走（跨请求污染）；root 另立 **P-088**（`delete_var scope=all` 确定性 handle 0，与 P-087 同源但独立钉住） | 均已落卡/台账；P-087/P-088 红灯探针已留证 |
 | 2026-09-28 | root（本线收口） | **root 负责的 op×参数全部清零**：spectre 参数 TB `5/5`；maestro 套件 **23/23**（含 `include_parameters/include_raw`、`write.save`、`notation/precision/width/output_path`、`result=`、`export.output_path`、`open_gui(history=)`）；layout 失败分类 TB `4/4`（layout#179）；P3 注册 **29/29**（+`deploy-paths-contain-no-token`，注册#011）；另立 **P-089**（`open_waveform_gui.result` 死参数，红灯探针） | 剩余非-CANDIDATE 缺口全部落在 calibre（24）/screenshot（14）/verilog（12）三路子代理车道 + `layout.read.depth`（P-085 已红钉） |
 | 2026-09-28 22:4x | root（合并稿机器红队，第一轮） | ① 6 组合并稿的 `evidence` 存在 34 处"路径+括号注解"混写；② g4-edit 的 2 条证据被误存成"单字符数组"（schematic#017/layout#139）；③ 全量 def 扫描发现 1 处**引用不存在的测试**（veriloga#068 → `test_veriloga_contracts.py::test_check_and_save_sequence`） | ① `merge_round8_spec_matrix.py` 增加 evidence 规范化（纯路径 + `evidence_notes`）；② 修复 2 条单字符数组；③ 删除伪引用（保留 `test_veriloga_lazy_editor_contract.py` 的两条真实用例）。复核：**102 条仓库证据路径 0 缺失；91 条 `::用例` 引用 0 失效** | 

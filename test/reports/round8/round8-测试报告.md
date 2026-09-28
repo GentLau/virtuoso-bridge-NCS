@@ -23,7 +23,7 @@
 
 | 平台 | 命令 | 结果 | 证据 |
 |---|---|---|---|
-| Windows py3.12 | `python -m pytest test/offline/unit test/offline/integration test/offline/scenario` | **2456 用例 / 0 失败 / 0 错误 / 21 skip（含 13 xfail）/ 225.0 s** | `evidence/round8/offline-win-final.xml` |
+| Windows py3.12 | `python -m pytest test/offline/unit test/offline/integration test/offline/scenario` | **1807 用例 / 0 失败 / 0 错误 / 21 skip（含 13 xfail）** | `evidence/round8/offline-win-final.xml` |
 | Linux py3.9（wsl-gent 仓库副本） | `test/shared/runners/sync_linux_client.ps1 -Run` | **1800 用例 / 0 失败 / 0 错误 / 31 skip（含 11 xfail）/ 123.4 s** | `evidence/round8/offline-linux-py39-final.xml` |
 
 > `xfail` = 已立卡未修缺陷的钉住用例（P-078/P-079/P-080/P-081/P-082 家族），带 `reason="P-08x: …"`；
@@ -52,10 +52,10 @@
 
 | 套件 | 结果 | 证据 |
 |---|---|---|
-| 11 套包 E2E | **逐套单独复跑全部 PASS**：infra/cellview/schematic/symbol/**layout 11/11**/verilog/veriloga/skillref/spectre/**maestro 22/22**/calibre 8/8 | `evidence/http-e2e/*.log`、`evidence/round8/package-e2e-r8*.log` |
+| 11 套包 E2E | **逐套单独复跑：9 套绿（infra/cellview/schematic/symbol/layout/verilog/veriloga/skillref/spectre）+ calibre 8/8**；**maestro 23/23**（21:28 入档）之后被 P-086/P-095/P-096 阻塞 | `evidence/http-e2e/*.log`、`evidence/round8/package-e2e-r8*.log` |
 | 五接口多 token | skill/command/file/gui/spectre 五接口全 OK（`vb-vblog`，含 query 只读面） | `evidence/round8/cov-remote-real-r8.json` |
 | 真机 pytest | 10 用例 / 0 失败 / 5 skip（skip 均带明确原因）；**local 模式 4 用例在 Linux 侧另跑 4/4 且 teardown 后端口归零** | `evidence/round8/live-e2e.xml`、`local-live-r8b.txt` |
-| 并发压测 | **36/36 轮应答、216 步 0 失败**（6 worker × 6 轮，31.2 s） | `evidence/round8/production-face-stress.json` |
+| 并发压测 | **36/36 轮应答、108 步 0 失败**（6 worker × 6 轮，31.2 s） | `evidence/round8/production-face-stress.json` |
 | 业务场景（flows/） | SerDes RX **11 段全绿**（含 DRC 读回 1737 规则/28 结果、AC 增益 5.06 dB、BW 15.8 GHz）；ADC SAR **24/24**；design_iterate 11 段 + LVS `correct`；两用户共建 **17/17**；版图接力 **12/12**；LVS-from-schematic `correct`；S11 全链；role-split；multihop **10/10**；scale-100 2 轮全对 | `evidence/round8/{serdes/,adc-sar-r8.json,design-iterate-r8/,serdes-multiuser-r8.json,multiuser-layout-handoff-r8.json,lvs-from-schematic-r8.json,s11/,role-split-r8.json,multihop-r8.json,scale-100-r8.json}` |
 | 注册专项（4 条） | 六步 local PASS；py27 **10/10**；真 CIW **12/12**；五 role 跨主机 **28/28** | `evidence/round8/registration-*.json` |
 
@@ -126,13 +126,13 @@
 
 | 项 | 数字 | 证据文件 |
 |---|---|---|
-| 离线 Win py3.12 | 2456 / 0 红 / 21 skip（13 xfail） | `evidence/round8/offline-win-final.xml` |
+| 离线 Win py3.12 | 1807 / 0 红 / 21 skip（13 xfail） | `evidence/round8/offline-win-final.xml` |
 | 离线 Linux py3.9 | 1800 / 0 红 / 31 skip（11 xfail） | `evidence/round8/offline-linux-py39-final.xml` |
 | 半真机 | 39 探针 / 32 ok / 7 红（全部已立卡） | `evidence/round8/semi-probes-final.json` |
-| 真机包 E2E | 11/11 套逐套 PASS | `evidence/http-e2e/*.log` |
+| 真机包 E2E | 10 套稳定绿 + 1 被阻塞（maestro P-086/P-095/P-096） | `evidence/http-e2e/*.log` |
 | 真机五接口 | 5/5 | `evidence/round8/cov-remote-real-r8.json` |
 | 真机 e2e + local | 10 用例 0 红（5 skip）+ local 4/4 | `evidence/round8/live-e2e.xml`、`local-live-r8b.txt` |
-| 压测 | 216 步 / 0 失败 | `evidence/round8/production-face-stress.json` |
+| 压测 | 108 步 / 0 失败 | `evidence/round8/production-face-stress.json` |
 | 业务场景 | 10 条链全绿（见 §1.3） | `evidence/round8/*` |
 | 注册专项 | 4 条 TB 全绿（28/28、12/12、10/10、六步） | `evidence/round8/registration-*.json` |
 | 覆盖率 | 语句 91.54% / 分支 83.62% / 合并 89.48% | `evidence/cov-main/coverage-main-strict.json` + `test/reports/coverage-pack/summary.json` |

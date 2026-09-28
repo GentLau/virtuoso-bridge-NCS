@@ -273,8 +273,23 @@ def run_suite(transport) -> list[tuple[str, str]]:
                   f"（变化={'是' if before != after else '否'}）", flush=True)
             _check(before == after,
                    f"P-101：overwrite=False 却改写了已存在 cell（mtime {before} → {after}）")
+            # P-101 红钉：什么都没写就必须有"跳过/已存在"的显式标记，否则调用方无法区分
+            # 「导入成功」与「静默 no-op」。今天的结果里既没有 skipped/existing，也没有 warning。
+            value = (response.get("data") or {}).get("value") or {}
+            marked = bool(value.get("skipped") or value.get("existing") or value.get("warnings"))
+            _check(marked,
+                   "P-101：overwrite=False 未写入却返回 completed，且无 skipped/existing 标记"
+                   f"（返回值 {str(value)[:200]}）")
         else:
-            print(f"NOTE  overwrite=False 结构化失败：{str(response.get('error'))[:120]}", flush=True)
+            # 红队 REVIEW（红_team 终稿第 3 条）指出：原来"任何失败都 NOTE+PASS"会把环境抖动当通过。
+            # 只有"已存在/跳过"语义的结构化拒绝才算符合 overwrite=False 的预期；其它失败必须红。
+            error = str(response.get("error") or "")
+            expected = any(word in error.lower()
+                           for word in ("exist", "skip", "already", "覆盖", "跳过"))
+            _check(expected,
+                   "overwrite=False 的失败与『已存在/跳过』语义无关（疑似环境或其它缺陷，不得算通过）："
+                   f"{error[:200]}")
+            print(f"NOTE  overwrite=False 结构化拒绝（符合语义）：{error[:120]}", flush=True)
 
     def case_export_recursive() -> None:
         # 用 IMP-09 的 cell：它有 schematic 档（structural_views=5）且顶层实例化了子模块 → 层级可观察

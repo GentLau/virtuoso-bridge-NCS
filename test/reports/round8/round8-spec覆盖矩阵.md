@@ -156,7 +156,7 @@
 | 上层#031 | 上层/1-上层.md | **direct** |  | 每步 {step, ok, detail} 记录 + 任一步失败即停（后续不执行），包级用例有断言 | test/offline/unit/test_maestro_package_flow.py<br>test/offline/unit/test_veriloga_contracts.py |
 | 上层#032 | 上层/1-上层.md | **direct** |  | 失败保留 steps 痕迹、不以成功形态返回（ok=false + error），有断言；P-027 类假成功已被禁止 | test/offline/unit/test_veriloga_contracts.py<br>test/offline/unit/test_maestro_package_flow.py |
 | 上层#042 | 上层/1-上层.md | **direct** |  | 领域校验/执行失败一律 Result(ok=false)（多条 assertFalse(result.ok)），不抛异常 | test/offline/unit/test_veriloga_contracts.py<br>test/offline/unit/test_maestro_package_flow.py |
-| 上层#043 | 上层/1-上层.md | **direct** |  | checksum 不一致不忽略（结构化失败）+ 传输层重试透明、业务重试由包决定，均有断言 | test/offline/unit/test_middle_contracts.py<br>test/offline/unit/test_pyapi_packages.py |
+| 上层#043 | 上层/1-上层.md | **direct** |  | checksum 不一致不忽略（结构化失败）+ 传输层重试透明、业务重试由包决定，均有断言 | test/offline/unit/test_tunnel_transfer.py::test_upload_checksum_mismatch_does_not_move_stage<br>test/offline/unit/test_tunnel_transfer.py::test_verify_mismatch<br>test/offline/unit/test_ssh_edges.py::test_retryable_predicate_matrix |
 | 上层#045 | 上层/1-上层.md | **direct** |  | 登记单元=业务操作级 tuple（含重复登记启动错误），有断言 | test/offline/unit/test_top_layer_dispatch.py<br>test/offline/unit/test_pyapi_packages.py |
 | 上层#063 | 上层/1-上层.md | **na** |  | 索引/定位/关联声明，无独立可测行为 |  |
 | 上层#066 | 上层/1-上层.md | **na** |  | 索引/定位/关联声明，无独立可测行为 |  |
