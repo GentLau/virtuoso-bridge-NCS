@@ -36,6 +36,7 @@ from common.transfer import (
     install_staged_item,
     install_staged_path,
 )
+from common.streams import iter_lines
 
 logger = logging.getLogger(__name__)
 
@@ -367,6 +368,7 @@ class SSHRunner:
             )
 
         self._shell_proc: subprocess.Popen[Any] | None = None
+        self._shell_stop: threading.Event | None = None
         self._shell_queue: queue.Queue[str | None] | None = None
         self._shell_reader: threading.Thread | None = None
         self._shell_lock = threading.RLock()
@@ -1762,9 +1764,10 @@ class SSHRunner:
 
             self._shell_proc = proc
             self._shell_queue = queue.Queue()
+            self._shell_stop = threading.Event()
             self._shell_reader = threading.Thread(
                 target=self._pump_shell_output,
-                args=(proc.stdout, self._shell_queue),
+                args=(proc.stdout, self._shell_queue, self._shell_stop),
                 daemon=True,
                 name=f"ssh-shell-{self._host}",
             )
@@ -1977,10 +1980,14 @@ class SSHRunner:
         raise RuntimeError("Persistent SSH shell retry path failed without an exception.")
 
     @staticmethod
-    def _pump_shell_output(stream, out_queue: queue.Queue[str | None]) -> None:
+    def _pump_shell_output(
+        stream,
+        out_queue: queue.Queue[str | None],
+        stop_event: threading.Event | None = None,
+    ) -> None:
         try:
-            for line in stream:
-                out_queue.put(line.decode("utf-8", errors="replace"))
+            for line in iter_lines(stream, stop_event):
+                out_queue.put(line)
         finally:
             out_queue.put(None)
 
@@ -2167,6 +2174,9 @@ class SSHRunner:
     ) -> None:
         proc = self._shell_proc
         reader = self._shell_reader
+        stop = self._shell_stop
+        if stop is not None:
+            stop.set()
         # ParamikoShellProcess owns a session-gate permit.  It must be closed
         # even when the underlying channel has already reached EOF, otherwise
         # repeated shell deaths permanently leak max_sessions permits.
@@ -2200,7 +2210,14 @@ class SSHRunner:
             join_timeout = 1.0 if _budget is None else min(1.0, _budget.available())
             if join_timeout > 0.0:
                 reader.join(timeout=join_timeout)
+            if reader.is_alive():
+                logger.warning(
+                    "persistent shell reader did not stop for %s: %s",
+                    self._host,
+                    getattr(reader, "name", repr(reader)),
+                )
         self._shell_proc = None
+        self._shell_stop = None
         self._shell_queue = None
         self._shell_reader = None
 

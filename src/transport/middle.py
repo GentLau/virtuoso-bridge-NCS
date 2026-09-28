@@ -34,10 +34,10 @@ from common.validation import ROLE_FIXED_FIELDS, ROLE_GROUP_NAME_RE
 from transport.roles import ResolvedTargets, resolve
 from common.paths import (
     command_log_file,
-    override_work_dir_for_tests,
     registry_path,
     temp_dir,
 )
+from common.streams import iter_lines
 from common.skill_client import SkillClient
 from common.ssh import (
     UnknownEffectError,
@@ -193,6 +193,7 @@ class _LocalCommandSession:
         self._seq = 0
         self._proc = None
         self._reader = None
+        self._stop: threading.Event | None = None
         self._dead = False
         self._eof = False
         self._current = None
@@ -255,7 +256,10 @@ class _LocalCommandSession:
         self._dead = False
         self._eof = False
         self._seq = 0
-        self._reader = threading.Thread(target=self._read_loop, daemon=True)
+        self._stop = threading.Event()
+        self._reader = threading.Thread(
+            target=self._read_loop, args=(self._stop,), daemon=True
+        )
         self._reader.start()
         try:
             time.sleep(0.1)
@@ -289,9 +293,9 @@ class _LocalCommandSession:
                 f"(cwd={self._cwd!r}, output={output[-500:]!r})"
             )
 
-    def _read_loop(self) -> None:
+    def _read_loop(self, stop_event: threading.Event | None = None) -> None:
         try:
-            for line in self._proc.stdout:  # type: ignore[union-attr]
+            for line in iter_lines(self._proc.stdout, stop_event):  # type: ignore[union-attr]
                 stripped = line.strip()
                 if os.name == "nt":
                     while stripped.startswith("__VBPS__"):
@@ -341,7 +345,11 @@ class _LocalCommandSession:
         self._dead = True
         proc = self._proc
         reader = self._reader
+        stop = self._stop
+        if stop is not None:
+            stop.set()
         self._proc = None
+        self._stop = None
         self._reader = None
         # 先终止子进程（其 stdout 随进程退出 EOF，读取线程随之结束），再
         # 关闭流。若反过来在阻塞读取期间 close()，Windows 上会等待读锁，
@@ -358,6 +366,11 @@ class _LocalCommandSession:
                     pass
         if reader is not None:
             reader.join(timeout=1)
+            if reader.is_alive():
+                logger.warning(
+                    "local command session reader did not stop: %s",
+                    getattr(reader, "name", repr(reader)),
+                )
         if proc is not None and (reader is None or not reader.is_alive()):
             for stream in (proc.stdin, proc.stdout):
                 try:
@@ -451,14 +464,8 @@ class _LocalCommandSession:
 
 
 class BusinessServer(Middle):
-    def __init__(self, work_dir: str | Path | None = None) -> None:
-        """Work root comes from the ``common.paths`` base (entry initializes it).
-
-        ``work_dir`` is the test/tool convenience that switches the base to an
-        explicit directory; production callers pass nothing.
-        """
-        if work_dir is not None:
-            override_work_dir_for_tests(work_dir)
+    def __init__(self) -> None:
+        """Work root comes from the process-wide ``common.paths`` base."""
         configure_command_log(command_log_file())
         self.registry: Registry = load_registry(registry_path())
         self._clients: dict[str, RemoteClient] = {}

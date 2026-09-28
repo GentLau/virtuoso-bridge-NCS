@@ -29,6 +29,7 @@ from common.transfer import (
     install_staged_item,
     install_staged_path,
 )
+from common.streams import read_chunk
 
 logger = logging.getLogger(__name__)
 
@@ -177,7 +178,11 @@ class ParamikoTunnel:
 
     def _handle_connection(self, client: Any) -> None:
         channel = None
+        left = None
+        right = None
         try:
+            if hasattr(client, "settimeout"):
+                client.settimeout(0.5)
             transport = self._transport_getter()
             if transport is None or not transport.is_active():
                 raise OSError("Paramiko transport is not active")
@@ -189,12 +194,15 @@ class ParamikoTunnel:
             )
             if channel is None:
                 raise OSError("Paramiko direct-tcpip channel was refused")
+            if hasattr(channel, "settimeout"):
+                channel.settimeout(0.5)
             with self._lock:
                 self._channels.add(channel)
             left = self._spawn(self._pump_local_to_channel, client, channel)
             right = self._spawn(self._pump_channel_to_local, channel, client)
-            left.join()
-            right.join()
+            deadline = time.monotonic() + 2.0
+            for thread in (left, right):
+                thread.join(timeout=max(0.0, deadline - time.monotonic()))
         except Exception:  # noqa: BLE001 - one forwarded connection failed
             logger.debug("Paramiko forwarded connection failed", exc_info=True)
         finally:
@@ -211,14 +219,30 @@ class ParamikoTunnel:
                 client.close()
             except Exception:  # noqa: BLE001
                 pass
+            for thread in (left, right):
+                if thread is None:
+                    continue
+                if thread.is_alive():
+                    thread.join(timeout=1.0)
+                if thread.is_alive():
+                    logger.warning("Paramiko tunnel pump did not stop: %s",
+                                   getattr(thread, "name", repr(thread)))
 
     def _pump_local_to_channel(self, client: Any, channel: Any) -> None:
         try:
             while not self._stop.is_set():
-                data = client.recv(65536)
+                try:
+                    data = client.recv(65536)
+                except socket.timeout:
+                    continue
+                except (OSError, ValueError):
+                    break
                 if not data:
                     break
-                channel.sendall(data)
+                try:
+                    channel.sendall(data)
+                except (socket.timeout, OSError, ValueError):
+                    break
         except Exception:  # noqa: BLE001 - peer closed
             pass
         finally:
@@ -230,10 +254,18 @@ class ParamikoTunnel:
     def _pump_channel_to_local(self, channel: Any, client: Any) -> None:
         try:
             while not self._stop.is_set():
-                data = channel.recv(65536)
+                try:
+                    data = channel.recv(65536)
+                except socket.timeout:
+                    continue
+                except (OSError, ValueError):
+                    break
                 if not data:
                     break
-                client.sendall(data)
+                try:
+                    client.sendall(data)
+                except (socket.timeout, OSError, ValueError):
+                    break
         except Exception:  # noqa: BLE001 - peer closed
             pass
         finally:
@@ -285,11 +317,21 @@ class ParamikoTunnel:
 
     def wait(self, timeout: float | None = None) -> int:
         deadline = None if timeout is None else time.monotonic() + timeout
+        stopping = self._stop.is_set()
         with self._lock:
             threads = list(self._threads)
         for thread in threads:
             remaining = None if deadline is None else max(0.0, deadline - time.monotonic())
             thread.join(remaining)
+        alive = [thread for thread in threads if thread.is_alive()]
+        if stopping and alive:
+            logger.warning(
+                "Paramiko tunnel wait left %d thread(s) alive: %s",
+                len(alive),
+                ", ".join(getattr(thread, "name", repr(thread)) for thread in alive),
+            )
+            if deadline is not None:
+                return 124
         return int(self._returncode or 0)
 
 
@@ -421,7 +463,7 @@ def _read_stream(
 ) -> None:
     try:
         while stop_event is None or not stop_event.is_set():
-            chunk = stream.read(65536)
+            chunk = read_chunk(stream, 65536, stop_event)
             if not chunk:
                 return
             chunks.append(chunk)
@@ -437,7 +479,7 @@ def _send_stream_to_channel(
 ) -> None:
     try:
         while stop_event is None or not stop_event.is_set():
-            chunk = stream.read(65536)
+            chunk = read_chunk(stream, 65536, stop_event)
             if not chunk:
                 break
             channel.sendall(chunk)
