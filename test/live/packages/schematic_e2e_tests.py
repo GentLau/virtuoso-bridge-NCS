@@ -275,7 +275,12 @@ def _case_label_atoms(transport, ev: Evidence) -> None:
 
 
 def _case_pin_atoms(transport, ev: Evidence) -> None:
-    """pin：place → rename → set_pin_properties → delete（pos 索引）。"""
+    """pin：place → rename → set_pin_properties → delete（pos 索引）。
+
+    P-073 验收口径：判据必须落在**下游可见的 pin 名（terminal 名）**上，
+    不是自动生成的 pin 实例名（PIN0）。所以改名/改方向后同时查
+    `read(connectivity)` 与 `symbol.generate` 出来的端口名。
+    """
     case = "ATOM-pin"
     _baseline(transport, "ATOM-pin", ev)
     pos = [-3.0, 0.0]
@@ -290,19 +295,26 @@ def _case_pin_atoms(transport, ev: Evidence) -> None:
     ev.check(case, "place_pin business name", ["P1"], sorted(item.get("name") for item in conn))
 
     _write(transport, [{"op": "rename_pin", "pos": pos, "new_name": "P2"}])
-    ev.check(case, "rename_pin", ["P2"],
-             sorted(item.get("name") for item in
-                    _read(transport, focus="positions").get("pins", [])))
+    conn = _read(transport, focus="connectivity").get("pins", [])
+    ev.check(case, "rename_pin (read 的业务名)", ["P2"],
+             sorted(item.get("name") for item in conn))
+    _op(transport, "virtuoso.symbol.generate", library=LIB, cell=CELL,
+        schematic_view=VIEW, symbol_view="symbol", overwrite=True)
+    terms = _value(transport, "virtuoso.symbol.read", library=LIB, cell=CELL,
+                   view="symbol", focus=["terms"]).get("terms", [])
+    ev.check(case, "rename_pin（symbol 端口名）", ["P2"],
+             sorted(item.get("name") for item in terms))
 
     _write(transport, [{"op": "set_pin_properties", "pos": pos, "direction": "output"}])
-    # 索引是 pos（图形实例名由底层决定，可能随删建变化，不拿它当索引）
-    pin = next((item for item in _read(transport, focus="positions").get("pins", [])
-                if _near(item.get("pos"), pos)), {})
-    ev.check(case, "set_pin_properties direction", "output", pin.get("direction"))
-    ev.check_true(case, "set_pin_properties keeps pos", bool(pin), pin)
+    conn = _read(transport, focus="connectivity").get("pins", [])
+    ev.check(case, "set_pin_properties direction", ["output"],
+             sorted(item.get("direction") for item in conn))
+    ev.check(case, "set_pin_properties 不改名（P-073）", ["P2"],
+             sorted(item.get("name") for item in conn))
 
     _write(transport, [{"op": "delete_pin", "pos": pos}])
-    ev.check(case, "delete_pin", [], _read(transport, focus="positions").get("pins", []))
+    ev.check(case, "delete_pin", [],
+             _read(transport, focus="connectivity").get("pins", []))
 
 
 def _case_note_atoms(transport, ev: Evidence) -> None:

@@ -669,15 +669,30 @@ let((vbInst vbCcd vbParamVals vbP vbProp)
         if op == "delete_pin":
             return f'let((vbN) vbN = 0 foreach(__obj setof(x vbSchemCv~>instances {pred}) when(dbDeleteObject(__obj) vbN = vbN + 1)) vbN)'
         if op == "rename_pin":
-            return f'let((vbObj) vbObj = car(setof(x vbSchemCv~>instances {pred})) unless(vbObj error("pin not found")) vbObj~>name = {_q(cmd["new_name"])} vbObj~>name)'
+            # P-073：pin 的**有效名（业务名）是 terminal 名**，不是自动生成的 pin 实例名（PIN0）。
+            # 实测：实例 ↔ terminal 的关联是 `inst~>pin`（pin 对象）↔ `terminal~>pins`。
+            # 改 `inst~>name` 对 read(connectivity)/symbol 端口完全不可见 = 静默无操作。
+            return (
+                f'let((vbInst vbTerm) vbInst = car(setof(x vbSchemCv~>instances {pred})) '
+                'unless(vbInst error("pin not found")) '
+                'vbTerm = car(setof(tx vbSchemCv~>terminals member(vbInst~>pin tx~>pins))) '
+                'unless(vbTerm error("pin terminal not found")) '
+                f'vbTerm~>name = {_q(cmd["new_name"])} '
+                'vbTerm~>name)'
+            )
         direction = _q(cmd["direction"])
-        master_cell = 'if("input" == {d} "ipin" if("output" == {d} "opin" "iopin"))'.format(d=direction)
+        # P-073：只改方向、**不得改名字**。旧实现拿 pin 实例名（PIN0）去 schCreatePin →
+        # 等于新建了一个叫 PIN0 的 terminal，用户的端口名被换掉。
+        # 正确做法（真机验证）：找出该 pin 的 terminal → 用它的名字重建 pin（先删实例与旧 terminal）。
         return (
-            f'let((vbObj vbName vbOrient vbXy vbNew) '
-            f'vbObj = car(setof(x vbSchemCv~>instances {pred})) '
-            'unless(vbObj error("pin not found")) '
-            'vbName = vbObj~>name vbOrient = vbObj~>orient vbXy = vbObj~>xy '
-            'dbDeleteObject(vbObj) '
+            f'let((vbInst vbTerm vbName vbXy vbOrient vbNew) '
+            f'vbInst = car(setof(x vbSchemCv~>instances {pred})) '
+            'unless(vbInst error("pin not found")) '
+            'vbTerm = car(setof(tx vbSchemCv~>terminals member(vbInst~>pin tx~>pins))) '
+            'vbName = if(vbTerm vbTerm~>name vbInst~>name) '
+            'vbXy = vbInst~>xy vbOrient = vbInst~>orient '
+            'dbDeleteObject(vbInst) '
+            'when(vbTerm dbDeleteObject(vbTerm)) '
             f'vbNew = schCreatePin(vbSchemCv nil vbName {direction} nil vbXy vbOrient) '
             'vbNew)'
         )
