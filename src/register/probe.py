@@ -192,10 +192,22 @@ def remote_path_writable(runner: SSHRunner, path: str) -> bool:
 
 
 def remote_executable_exists(runner: SSHRunner, path: str) -> bool:
-    """Validate an explicitly supplied remote tool path (daemon-independent)."""
-    r = runner.run_command(
-        f"test -x {shlex.quote(path)}", timeout=15
-    )
+    """Validate an explicit remote tool: PATH name or filesystem path.
+
+    ``role.daemon.python`` and ``role.spectre.bin`` are consumed through
+    ``/usr/bin/env <value>`` by the deployed daemon, so a bare command name
+    such as ``python3`` is valid at runtime.  Mirror that behavior here while
+    still requiring a real executable file (not an alias/function/builtin).
+    """
+    quoted = shlex.quote(path)
+    if "/" in path:
+        command = f"test -f {quoted} && test -x {quoted}"
+    else:
+        command = (
+            f"resolved=$(command -v {quoted} 2>/dev/null) && "
+            f"[ -n \"$resolved\" ] && [ -f \"$resolved\" ] && [ -x \"$resolved\" ]"
+        )
+    r = runner.run_command(command, timeout=15)
     return r.returncode == 0
 
 
