@@ -1,0 +1,24 @@
+{
+  "tb": "p076_tar_completion_tb",
+  "status": "PASS",
+  "passed": 2,
+  "total": 2,
+  "cases": [
+    {
+      "name": "wait_completion_ignores_stuck_pump",
+      "ok": true,
+      "remote_rc": 0,
+      "local_rc": 0,
+      "elapsed_s": 0.0
+    },
+    {
+      "name": "download_installs_with_stuck_pump",
+      "ok": true,
+      "rc": 0,
+      "stderr": "",
+      "target": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-p076-vib3v28h\\out",
+      "installed": true,
+      "elapsed_s": 1.031
+    }
+  ]
+}

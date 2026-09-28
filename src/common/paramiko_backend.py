@@ -1394,11 +1394,7 @@ class ParamikoSessionBackend:
                 pass
             else:
                 raise worker_failure
-            if (
-                channel.exit_status_ready()
-                and process.poll() is not None
-                and all(not worker.is_alive() for worker in workers)
-            ):
+            if channel.exit_status_ready() and process.poll() is not None:
                 break
             deadline.remaining(command)
             time.sleep(0.01)
