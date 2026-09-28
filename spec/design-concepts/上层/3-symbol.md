@@ -1,9 +1,9 @@
 # 上层业务包：symbol
 
-> 版本：Draft v2
+> 版本：Draft v3
 > 日期：2026-09-21
 > 状态：Draft（待共同修订，暂未纳入 README 治理）
-> Supersedes：Draft v1（操作收敛为 read/write/check_and_save/generate/screenshot；write 只 append）
+> Supersedes：Draft v2（坐标口径对齐 [2-schematic.md §1.3](2-schematic.md)：单点一律 `pos`，弃用 `xy`、不拆字段）
 > 定位：业务包/业务操作一般契约见[1-上层.md](1-上层.md)；五业务接口见[四层整体架构与接口 §4](../总览/1-四层整体架构与接口.md)。
 
 ## 1. 总述
@@ -30,7 +30,7 @@ symbol 包覆盖 **符号语义读回、手工批写、校验保存、从原理�
 | focus | 返回 |
 |---|---|
 | `terms` | 每个 terminal：`name / direction / num_bits / bbox / access_dir` |
-| `labels` | 每个 label：`text / label_type / xy / layer / purpose / justify / orient / font / height / bbox` |
+| `labels` | 每个 label：`text / label_type / pos / layer / purpose / justify / orient / font / height / bbox` |
 | `shapes` | 已知类型 line / rect / polygon / ellipse 及兜底类型（path / arc / inst / textDisplay 等）：`kind / layer / purpose / bbox / points` |
 | `orders` | `pin_order`（权威，`schGetPinOrder`）；`port_order` / `term_order` raw（兼容旧 reader） |
 | `selection_boxes` | `instance/drawing` 矩形列表 |
@@ -41,7 +41,7 @@ symbol 包覆盖 **符号语义读回、手工批写、校验保存、从原理�
 `screenshot` 与 schematic 同口径：
 
 - `view_type` 默认 `schematicSymbol`；格式固定 PNG；
-- 可选 `window_id`、`region=[x1,y1,x2,y2]`（截前 `hiZoomIn`）、`toplevel`、`central_widget`、`leave_open`；
+- 可选 `window_id`、`region=[pos0, pos1]`（截前 `hiZoomIn`）、`toplevel`、`central_widget`、`leave_open`；
 - 远端存 daemon/gui role root，本地存客户端工作目录 artifact/screenshots/；
 - `hiWindowSaveImage` 失败直接业务失败，不做 X11/display 回退。
 
@@ -67,10 +67,10 @@ cellview，但在 `dbSave` 前磁盘上不存在。
 
 | 原子名 | 索引 | 附加参数 |
 |---|---|---|
-| `place_line` | —（新建） | `layer, purpose, points[[x,y],...]` |
-| `place_rect` | —（新建） | `layer, purpose, bbox=[x0,y0,x1,y1]` |
-| `place_polygon` | —（新建） | `layer, purpose, points[[x,y],...]` |
-| `place_ellipse` | —（新建） | `layer, purpose, bbox=[x0,y0,x1,y1]` |
+| `place_line` | —（新建） | `layer, purpose, points=[pos, …]`（=2 点） |
+| `place_rect` | —（新建） | `layer, purpose, bbox=[pos0, pos1]`（对角两点，与 read 同形） |
+| `place_polygon` | —（新建） | `layer, purpose, points=[pos, …]`（≥3 点） |
+| `place_ellipse` | —（新建） | `layer, purpose, bbox=[pos0, pos1]` |
 | `delete_shape` | `kind + bbox/points` | — |
 | `set_shape_properties` | `kind + bbox/points`（旧值定位） | `layer?, purpose?, new_bbox?, new_points?`（按 kind 取合法项） |
 
@@ -93,10 +93,10 @@ cellview，但在 `dbSave` 前磁盘上不存在。
 
 | 原子名 | 索引 | 附加参数 |
 |---|---|---|
-| `place_label` | —（新建） | `label_kind, text, x, y, layer?, purpose?, justify?, orient?, font?, height?` |
-| `delete_label` | `label_kind + xy`（可加 `text` 消歧） | — |
-| `rename_label` | `label_kind + xy`（可加 `old_text`） | `new_text` |
-| `set_label_properties` | `label_kind + xy`（可加 `text`） | `justify?, orient?, font?, height?`；`drawing` 可额外 `layer?, purpose?` |
+| `place_label` | —（新建） | `label_kind, text, pos, layer?, purpose?, justify?, orient?, font?, height?` |
+| `delete_label` | `label_kind + pos`（可加 `text` 消歧） | — |
+| `rename_label` | `label_kind + pos`（可加 `old_text`） | `new_text` |
+| `set_label_properties` | `label_kind + pos`（可加 `text`） | `justify?, orient?, font?, height?`；`drawing` 可额外 `layer?, purpose?` |
 
 #### 2.2.3 引脚原子
 
@@ -105,7 +105,7 @@ name 检查 terminal 是否存在。
 
 | 原子名 | 索引 | 附加参数 |
 |---|---|---|
-| `place_pin` | —（新建） | `name, x, y, direction="inputOutput", half_size=0.0625, label=True, label_x?, label_y?, label_justify?, label_orient?, label_font?, label_height?` |
+| `place_pin` | —（新建） | `name, pos, direction="inputOutput", half_size=0.0625, label=True, label_pos?, label_justify?, label_orient?, label_font?, label_height?` |
 | `delete_pin` | `name` | — |
 | `rename_pin` | `name` | `new_name`（同步 terminal/net/pin 与 pin-name label） |
 | `set_pin_properties` | `name` | `direction?, access_dir?, label?, label_justify?, label_orient?, label_font?, label_height?` |
@@ -132,7 +132,7 @@ name 检查 terminal 是否存在。
 
 | 原子名 | 索引 | 附加参数 |
 |---|---|---|
-| `set_selection_box` | 单例 | `bbox=[x0,y0,x1,y1]`（`instance/drawing` 矩形，替换旧框） |
+| `set_selection_box` | 单例 | `bbox=[pos0, pos1]`（`instance/drawing` 矩形，替换旧框） |
 | `set_pin_order` | —（整体） | `term_names=[...]`；底层 `schEditPinOrder`，不是写 `cv~>termOrder` |
 
 `port_order` / `term_order` 本版只做 raw 读回；设置统一走 `set_pin_order`

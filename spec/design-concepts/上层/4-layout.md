@@ -1,9 +1,9 @@
 # 上层业务包：layout
 
-> 版本：Draft v4
+> 版本：Draft v5
 > 日期：2026-09-21
 > 状态：Draft（待共同修订，暂未纳入 README 治理）
-> Supersedes：Draft v3（GDS 导入/导出收拢为本包一个 `gds` 操作；截图口径对齐 schematic/maestro；组织方式对齐 schematic）
+> Supersedes：Draft v4（坐标口径对齐 [2-schematic.md §1.3](2-schematic.md)：单点一律 `pos`，弃用 `xy`、不拆字段）
 > 定位：业务包/业务操作一般契约见[1-上层.md](1-上层.md)；五业务接口见[四层整体架构与接口 §4](../总览/1-四层整体架构与接口.md)。
 
 ## 1. 业务操作
@@ -29,11 +29,11 @@
 | screenshot | 版图截图：默认 `lib/cell/view`，可选 `window_id`；格式 PNG | 找/开窗口 → hiWindowSaveImage → 下载 | S+D |
 
 - focus 取值：`summary`（bbox、各类计数、按 LPP 的 shape 计数）、`shapes`（几何 + label 属性）、
-  `instances`（name/master/xy/orient/num_inst/bbox）、`vias`；不填=全部；
+  `instances`（name/master/`pos`/orient/num_inst/bbox）、`vias`；不填=全部；
 - focus 支持组合，例如 `shapes,instances`；
 - 可选 `detail`：`geometry`（默认，含坐标与属性）/ `index`（只回 type + LPP，供大版图廉价索引）；
 - 可选 `object_filter`：每个对象一个条目，**不写默认 `all`**；条目可以是 `none`（该类一个都不读）；
-  - `shape`：`all` / `none` / `{"layers":[["M1","drawing"],...]}` / `{"types":["rect","polygon","path","line","label"]}` / `{"region":[x0,y0,x1,y1]}`（可组合）；
+  - `shape`：`all` / `none` / `{"layers":[["M1","drawing"],...]}` / `{"types":["rect","polygon","path","line","label"]}` / `{"region":[pos0, pos1]}`（可组合）；
   - `instance`：`all` / `none` / `{"names":["I1","M0<0:3>"]}` / `{"region":[...]}`；
   - `via`：`all` / `none` / `{"region":[...]}`；
 - 可选 `region_mode`：`intersect`（默认）/ `contain`，作用于 object_filter 里的 region；
@@ -46,9 +46,9 @@
 | focus | 字段 |
 |---|---|
 | `summary` | `bbox`、`shape_count`、`instance_count`、`via_count`、按 LPP 的 shape 计数 |
-| `shapes` | `obj_type / layer / purpose / lpp / bbox / points / width / path_style`；label 额外 `text / xy / height / justify / orient / font` |
-| `instances` | `name / master(lib,cell,view) / xy / orient / num_inst / bbox` |
-| `vias` | `via_name / xy / orient / bbox` |
+| `shapes` | `obj_type / layer / purpose / lpp / bbox / points / width / path_style`；label 额外 `text / pos / height / justify / orient / font` |
+| `instances` | `name / master(lib,cell,view) / pos / orient / num_inst / bbox` |
+| `vias` | `via_name / pos / orient / bbox` |
 
 ### 1.2 写操作（改变业务服务器状态）
 
@@ -68,28 +68,29 @@
 
 | 对象 | 原子名 | 索引（动哪个） | 附加参数 |
 |---|---|---|---|
-| rect | `place_rect` | —（新建） | `layer, purpose, bbox=[x0,y0,x1,y1]` |
-| polygon | `place_polygon` | —（新建） | `layer, purpose, points[[x,y],...]`（≥3 点，去重后非退化） |
-| path | `place_path` | —（新建） | `layer, purpose, points[[x,y],...]`（≥2 点）, `width>0`；可选 `style`（7 个合法值，不传用 `truncateExtend`） |
-| line | `place_line` | —（新建） | `layer, purpose, points[[x,y],...]`（=2 点） |
+| rect | `place_rect` | —（新建） | `layer, purpose, bbox=[pos0, pos1]`（对角两点，**与 read 同形**） |
+| ellipse | `place_ellipse` | —（新建） | `layer, purpose, bbox=[pos0, pos1]`（同上） |
+| polygon | `place_polygon` | —（新建） | `layer, purpose, points=[pos, …]`（≥3 点，去重后非退化） |
+| path | `place_path` | —（新建） | `layer, purpose, points=[pos, …]`（≥2 点）, `width>0`；可选 `style`（7 个合法值，不传用 `truncateExtend`） |
+| line | `place_line` | —（新建） | `layer, purpose, points=[pos, …]`（=2 点） |
 | shape（通用） | `delete_shape` | `kind + layer/purpose + (bbox\|points)`；`all=false` 默认唯一命中 | — |
-| shape（通用） | `set_shape_properties` | 同 `delete_shape` | `new_bbox?, new_points?, new_width?` |
+| shape（通用） | `set_shape_properties` | 同 `delete_shape` | `new_bbox?（=[pos0, pos1]）, new_points?, new_width?` |
 | shape（按层批量） | `delete_shapes_on_layer` | `layer, purpose` | `types?`（缺省=该 LPP 全部类型） |
-| label | `place_label` | —（新建） | `layer, purpose, xy, text`；可选 `justify/orient/font/height`（不传用底层默认） |
-| label | `delete_label` | `xy`（可选加 `text`/`layer` 消歧义） | — |
-| label | `rename_label` | `xy`（可选加 `old_text`） | `new_text` |
-| label | `set_label_properties` | `xy`（可选加 `text`） | `xy?, height?, justify?, orient?, font?` |
-| instance | `place_instance` | —（新建） | `master_lib, master_cell, master_view="layout", name, xy, orient="R0"`；可选 `num_inst`（数组实例，name 变 `A<0:n>`） |
+| label | `place_label` | —（新建） | `layer, purpose, pos, text`；可选 `justify/orient/font/height`（不传用底层默认） |
+| label | `delete_label` | `pos`（可选加 `text`/`layer` 消歧义） | — |
+| label | `rename_label` | `pos`（可选加 `old_text`） | `new_text` |
+| label | `set_label_properties` | `pos`（可选加 `text`） | `pos?, height?, justify?, orient?, font?` |
+| instance | `place_instance` | —（新建） | `master_lib, master_cell, master_view="layout", name, pos, orient="R0"`；可选 `num_inst`（数组实例，name 变 `A<0:n>`） |
 | instance | `delete_instance` | `name` | — |
 | instance | `rename_instance` | `name` | `new_name` |
-| instance | `set_instance_properties` | `name` | `xy?, orient?`（`xy` 必须写 point；`mag`/`master` 只读，不在本版） |
-| mosaic | `place_mosaic` | —（新建） | `master_lib, master_cell, master_view="layout", name, xy, orient` , `rows, cols, row_pitch, col_pitch` |
+| instance | `set_instance_properties` | `name` | `pos?, orient?`（`pos` 必须写 point；`mag`/`master` 只读，不在本版） |
+| mosaic | `place_mosaic` | —（新建） | `master_lib, master_cell, master_view="layout", name, pos, orient` , `rows, cols, row_pitch, col_pitch` |
 | mosaic | `delete_mosaic` | `name` | — |
-| via | `place_via` | —（新建） | `via_name, xy, orient="R0"`；techfile-gated（§1.2.2） |
-| via | `delete_via` | `via_name + xy + orient` | — |
+| via | `place_via` | —（新建） | `via_name, pos, orient="R0"`；techfile-gated（§1.2.2） |
+| via | `delete_via` | `via_name + pos + orient` | — |
 
 索引约定：`rect`/`ellipse` 按 `bbox`；`polygon`/`path`/`line` 按 `points`（逐点比对，容差 0.001）；
-`label` 按 `xy`（可加 `text`/`layer` 消歧义）；`instance`/`mosaic` 按 `name`；`via` 按 `via_name + xy + orient`。
+`label` 按 `pos`（可加 `text`/`layer` 消歧义）；`instance`/`mosaic` 按 `name`；`via` 按 `via_name + pos + orient`。
 命中多于一个且未给 `all=true` → 失败（fail closed）。
 
 #### 1.2.1 LPP 与失败语义
@@ -169,7 +170,7 @@
 |---|---|
 | `lib / cell / view` | 默认目标；用于在窗口列表里按 `w~>cellView` 的 lib/cell/view 匹配已开窗口 |
 | `window_id` | 可选显式目标；**显式给了坏 id 直接业务失败，不做 X11/display 回退** |
-| `region` | `[x0,y0,x1,y1]`（user units）；截前 `hiZoomIn(window bbox)` 把区域填满窗口 |
+| `region` | `[pos0, pos1]`（user units）；截前 `hiZoomIn(window bbox)` 把区域填满窗口 |
 | `toplevel` / `central_widget` | 透传给 `hiWindowSaveImage` |
 | `leave_open` | 默认 `false`；只关闭本操作自己打开的窗口，不动别人已开的窗口 |
 
@@ -228,14 +229,14 @@
 | 8 | **GDS 导入与导出都归本包**，收拢为一个 `gds` 操作（`action=export\|import`）；digital-import 只保留 `ihdl` / PG label / 标签后处理 |
 | 9 | 截图口径**参考 schematic + maestro**：cellView 匹配窗口 → `geOpen` 兜底、`window_id` 显式则坏 id 直接失败、`region` 用 `hiZoomIn(bbox)`、`toplevel/central_widget` 透传、PNG 落 role root `screenshots/` 与本地 `artifact/screenshots/`、无 X11 回退 |
 | 10 | `gds` 的参数按 vendor 选项拆开：`layer_map`（导出/导入的层映射）与 `ref_lib_file`（仅导入 `-refLibList`）；导入选 cell 用 `-topCell` |
-| 11 | 索引容差由 0.001 收敛为 **0.0005**（半个 dbu）；via 索引改为 `xy + orient`（viaDef/name 不可回读） |
+| 11 | 索引容差由 0.001 收敛为 **0.0005**（半个 dbu）；via 索引改为 `pos + orient`（viaDef/name 不可回读） |
 
 ## 5. 真机事实（IC6.1.8，2026-09-21 实测）
 
 1. `a` 模式对不存在的 view 会**创建**；`w` 会**清空**已存在内容 → write 固定 `a` 且先探测；
 2. `cv~>cellViewType` 才是 viewType（`~>viewType` / `~>viewTypeName` 都是 nil）；
 3. `dbCreateXxx` 失败分两类：**非法 LPP → 抛 SKILL 硬错误**；**几何非法 → nil + WARNING** →
-   上层既要判返回值也要能收错误；`xy` 写 **point**（`7:8`），`bBox`/`points` 写 list；
+   上层既要判返回值也要能收错误；`pos` 写 **point**（`7:8`），`bBox`/`points` 写 list；
 4. **`dbClose` 不落盘**：必须显式 `dbSave` 后再 `dbClose`；未保存的 cellview 留在会话里会污染导出
    （只导出磁盘旧版本）并可能弹模态框；
 5. `cv~>shapes` 只含**顶层图形**；via / instance / mosaic 分别在 `cv~>vias` / `~>instances` / `~>mosaics`；
@@ -244,7 +245,7 @@
 7. 坐标按 **0.001 网格**吸附 ⇒ 索引容差取 **0.0005（半格）**；用 0.001 会把相邻两格误判为相等；
 8. rect **没有 `points`**（用 `bBox`）；path 的 `points` 是中心线、宽度走 `~>width`，`bBox` 含半宽；
    label 文本在 `~>theLabel`，其 `bBox` 由字体度量推导；
-9. via 的 `~>viaDef` / `~>name` **不可读**（都是 nil）⇒ 只能按 `xy + orient` 索引；
+9. via 的 `~>viaDef` / `~>name` **不可读**（都是 nil）⇒ 只能按 `pos + orient` 索引；
 10. via 不属于 `cv~>shapes`，但 `dbShapeQuery` 会以 `(via shape)` 形式返回其生成图形；
 11. `hiGetCurrentWindow()` 返回的是 CIW（可能未实例化），开窗口用 `geOpen`；
 12. IC6.1.8 **不存在**：`dbDeleteObj`、`leDeleteFig`、`dbGetLayer*`、`dbCreateMosaic`、`dbCreateViaByName`、

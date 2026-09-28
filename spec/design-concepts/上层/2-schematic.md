@@ -1,9 +1,9 @@
 # 上层业务包：schematic
 
-> 版本：Draft v3
+> 版本：Draft v4
 > 日期：2026-09-28
 > 状态：Draft（待共同修订，暂未纳入 README 治理）
-> Supersedes：Draft v2（坐标索引口径收口：label/note/pin 索引统一 `xy: [x,y]`，禁止拆成 `x`/`y`）
+> Supersedes：Draft v3（坐标口径再收口：**单点一律 `pos`**，弃用 `xy`，**不拆成两个字段**；见 §1.3）
 > 定位：业务包/业务操作一般契约见[1-上层.md](1-上层.md)；五业务接口见[四层整体架构与接口 §4](../总览/1-四层整体架构与接口.md)。
 
 ## 1. 业务操作
@@ -17,14 +17,14 @@
 | read | `focus` 可选，可组合；不填=全部；可带实例过滤与参数白名单 | 开只读 → 按 focus 执行对应 SKILL 段 → 解析 | S |
 | screenshot | 原理图截图：默认 `lib/cell/view`，可选 `window_id`；格式 PNG | 找/开窗口 → hiWindowSaveImage → 下载 | S+D |
 
-- focus 取值：`positions`（实例 xy/orient + labels + wires + **每个实例端子的实际中心坐标**）、`connectivity`（实例 + nets + pins）、`params`（每实例 CDF 参数）；不填=全部（实例/terms/params/nets/pins/notes）；
+- focus 取值：`positions`（实例 `pos`/orient + labels + wires + **每个实例端子的实际中心坐标**）、`connectivity`（实例 + nets + pins）、`params`（每实例 CDF 参数）；不填=全部（实例/terms/params/nets/pins/notes）；
 - focus 支持组合，例如 `positions,connectivity`；
 - 可选 `param_filter`：参数名列表，只返回白名单内 CDF 参数，防参数淹死；
 - 可选 `object_filter`：每个对象一个条目，**不写默认 `all`**；条目可以是 `none`（该类一个都不读）。重点是"只看某实例的端子/位置"，不把整图读一遍：
-  - `instance`：`all`（默认）/ `none` / `{"names":[...]}` / `{"region":[x1,y1,x2,y2]}`；
-  - `wire` / `label` / `pin` / `note`：`all`（默认）/ `none` / `{"region":[...]}`。
+  - `instance`：`all`（默认）/ `none` / `{"names":[...]}` / `{"region":[pos0, pos1]}`；
+  - `wire` / `label` / `pin` / `note`：`all`（默认）/ `none` / `{"region":[pos0, pos1]}`。
 - object_filter 只对 `positions`、`params`、不填=全部生效；`focus` 含 `connectivity` 时忽略（连接关系必须全量）。
-- `screenshot`：目标默认 `lib/cell/view`，可选 `window_id`；可选 `region=[x1,y1,x2,y2]`（user units，截前 `hiZoomIn(window, bBox)` 把区域填满窗口）；`toplevel` / `centralWidget` 暴露；`leave_open` 默认关窗；格式固定 PNG；远端存 daemon role root 的 screenshots/；本地存客户端工作目录 artifact/screenshots/。
+- `screenshot`：目标默认 `lib/cell/view`，可选 `window_id`；可选 `region=[pos0, pos1]`（user units，截前 `hiZoomIn(window, bBox)` 把区域填满窗口）；`toplevel` / `centralWidget` 暴露；`leave_open` 默认关窗；格式固定 PNG；远端存 daemon role root 的 screenshots/；本地存客户端工作目录 artifact/screenshots/。
 
 ### 1.2 写操作（改变业务服务器状态）
 
@@ -41,28 +41,33 @@
 
 | 原子名 | 索引（动哪个） | 附加参数 |
 |---|---|---|
-| place_instance | —（新建） | `master_lib, master_cell, master_view="symbol", name, x, y, orient="R0"` |
+| place_instance | —（新建） | `master_lib, master_cell, master_view="symbol", name, pos, orient="R0"` |
 | delete_instance | `name` | — |
 | rename_instance | `name` | `new_name` |
 | set_instance_params | `name` | `params: dict` |
 | set_term_nets | `name` | `term_nets: {term: net}`；内部超短 stub + label；可选样式 `justify/orient/font/height/stub_length`（不传用默认） |
-| place_wire | —（新建） | `points[[x,y],...]`；可选 `entry/route/width/color/line_style`（传了才拼，不传用底层默认） |
-| delete_wire | `points`（wire 是多个 2 点 line segment，按端点匹配） | — |
+| place_wire | —（新建） | `points: [pos, …]`（≥2 点）；可选 `entry/route/width/color/line_style`（传了才拼，不传用底层默认） |
+| delete_wire | `points`（wire 是多个 2 点 line segment，按 `pos` 端点匹配） | — |
 | set_wire_properties | `points` | `width?, color?, line_style?` |
-| place_label | —（新建） | `text, x, y`；可选样式 `justify/orient/font/height/alias`（不传用默认） |
-| delete_label | `xy`（可选加 `text` 消歧义） | — |
-| rename_label | `xy`（可选加 `old_text` 消歧义） | `new_text` |
-| set_label_properties | `xy`（可选加 `text`） | `justify?, orient?, font?, height?` |
-| place_pin | —（新建） | `name, x, y`；可选 `direction/orient/off_sheet/power_sens/ground_sens/sig_type`（不传用默认/不拼） |
-| delete_pin | `xy` | — |
-| rename_pin | `xy` | `new_name` |
-| set_pin_properties | `xy` | `direction?` |
-| place_note | —（新建） | `text, x, y, justify="lowerLeft", orient="R0", font="stick", height=0.0625, type="normalLabel"` |
-| delete_note | `xy`（可选加 `text`） | — |
-| rename_note | `xy`（可选加 `old_text`） | `new_text` |
-| set_note_properties | `xy`（可选加 `text`） | `justify?, orient?, font?, height?` |
+| place_label | —（新建） | `text, pos`；可选样式 `justify/orient/font/height/alias`（不传用默认） |
+| delete_label | `pos`（可选加 `text` 消歧义） | — |
+| rename_label | `pos`（可选加 `old_text` 消歧义） | `new_text` |
+| set_label_properties | `pos`（可选加 `text`） | `justify?, orient?, font?, height?` |
+| place_pin | —（新建） | `name, pos`；可选 `direction/orient/off_sheet/power_sens/ground_sens/sig_type`（不传用默认/不拼） |
+| delete_pin | `pos` | — |
+| rename_pin | `pos` | `new_name` |
+| set_pin_properties | `pos` | `direction?` |
+| place_note | —（新建） | `text, pos, justify="lowerLeft", orient="R0", font="stick", height=0.0625, type="normalLabel"` |
+| delete_note | `pos`（可选加 `text`） | — |
+| rename_note | `pos`（可选加 `old_text`） | `new_text` |
+| set_note_properties | `pos`（可选加 `text`） | `justify?, orient?, font?, height?` |
 
-- 坐标索引口径：label/note/pin 的 delete/rename/set 一律用 `xy: [x, y]`（与 read 同形），**不拆成 `x`/`y`**；`place_*` 新建仍用 `x, y`；缺坐标字段时校验报错必须指明缺失字段名（不得裸 `KeyError`）；
+#### 1.3 坐标口径（P-074 定版）
+
+- **单点坐标一律一个字段 `pos`**，值是两元素数组 `[x, y]`（user units）：索引（delete/rename/set_*）、新建（place_*）、读回（read 的实例/端子/label/pin/note）**同一口径**；
+- **不再出现 `xy` 字段**；**不把坐标拆成两个字段**（`{"x":…,"y":…}` 一律非法）；`pos` 缺字段/形状不对时校验必须报明缺哪个字段（不得裸 `KeyError`）；
+- 多点：`points: [pos, …]`；区域/矩形：`region` / `bbox` 一律**对角两点** `[pos0, pos1]`（read 与 write 同形，**不再用四元组**）；
+- 与 `read` 对称：read 返回的点（实例、端子、label、pin、note、wire 的顶点）全部用 `pos`/`points`，写回时可直接复用，不需要字段换算。
 
 接口简写：S=execute_skill、C=run_command、U=upload_file、D=download_file、G=run_gui_command、Sp=run_spectre_command。
 
@@ -75,9 +80,12 @@
 
 ## 3. 待修订
 
-- 唯一 name 索引只有 instance；wire=line segment 列表（无 name），label/note/pin 均按 xy 索引（可加 text/name 消歧义）；
-- wire 的 points 匹配需要定义容差；pin 是 purpose=pin 的实例图形，按 xy 定位；
-- `region` 的判定用对象 bBox 还是 xy 待定。
+- **实现与 TB 尚未跟进本版 `pos` 口径**（P-074 剩余项）：`src/pyapi/packages/schematic.py` 目前
+  label/note/wire 收 `xy`、pin 收拆开的 `x`/`y`；`symbol`/`layout` 的标签/实例/via 也仍是 `xy`。
+  跟进时**不做兼容层**（`xy`/拆字段直接判非法），校验错误必须点名缺哪个字段；
+- 唯一 name 索引只有 instance；wire=line segment 列表（无 name），label/note/pin 均按 `pos` 索引（可加 text/name 消歧义）；
+- wire 的 `points` 匹配需要定义容差；pin 是 purpose=pin 的实例图形，按 `pos` 定位；
+- `region` 的判定用对象 bBox 还是 `pos` 待定。
 - rename_label / rename_pin / rename_note / set_* 在旧代码中没有公开 builder，SKILL 机制需真机验证后再定实现；
 - delete_wire / delete_label 的定位参数（points / bbox / text）待定；
 - `param_whitelist` 用请求内联 `list[str]` 还是沿用 YAML 过滤文件，待定；
