@@ -1,3 +1,12 @@
+# === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
+# 作者: 设计/上层开发
+# 最后改动: 2026-09-28 20:45
+# 依赖: 无
+# =======================================================================
+# 六步流程（test/docs/写TB规范.md §1）：
+#   ① 环境/前置：见正文的 require_environment 或首段只读探测（本节不适用时正文写明）；
+#   ②③ 构建/校验被改对象：由用例内建前置保证；④ 只做被测动作；
+#   ⑤ 打印期望 vs 实测（判据见正文）；⑥ 半真机不清理现场，留下状态便于复核。
 """Repro: capture the raw 8127 response for the symbol GEN same-view case.
 
 The E2E suite's HttpTransport does not tolerate 4xx (urllib raises), so the

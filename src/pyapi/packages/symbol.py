@@ -133,11 +133,12 @@ def _point(value: Any, name: str = "point") -> tuple[float, float]:
 
 
 def _bbox(value: Any, name: str = "bbox") -> tuple[float, float, float, float]:
-    if not isinstance(value, (list, tuple)) or len(value) != 4:
-        raise ValueError(f"{name} must be [x0, y0, x1, y1]")
-    x0, y0, x1, y1 = (_number(item, name) for item in value)
+    """框统一为**对角两点** `[pos0, pos1]`（P-074，与 read 同形）。"""
+    if not isinstance(value, (list, tuple)) or len(value) != 2:
+        raise ValueError(f"{name} must be [ [x, y], [x, y] ] (对角两点)")
+    (x0, y0), (x1, y1) = _point(value[0], f"{name}[0]"), _point(value[1], f"{name}[1]")
     if x0 >= x1 or y0 >= y1:
-        raise ValueError(f"{name} requires x0 < x1 and y0 < y1")
+        raise ValueError(f"{name} requires pos0 < pos1（对角两点，先小后大）")
     return x0, y0, x1, y1
 
 
@@ -260,9 +261,14 @@ def _shape_match_expr(kind: str, command: dict[str, Any]) -> str:
 
 
 def _label_xy(command: dict[str, Any]) -> tuple[float, float]:
-    if "xy" in command:
-        return _point(command["xy"], "command.xy")
-    return _number(command.get("x"), "command.x"), _number(command.get("y"), "command.y")
+    """label 坐标（P-074）：统一 `pos: [x, y]`；`xy`/拆开的 `x`/`y` 一律非法并点名。"""
+    for legacy in ("xy", "x", "y"):
+        if legacy in command:
+            raise ValueError(
+                f"command field '{legacy}' is not allowed：坐标统一用 'pos': [x, y]"
+                "（见 spec 上层/2-schematic.md §1.3）"
+            )
+    return _point(command.get("pos"), "command.pos")
 
 
 def _label_match_expr(label_kind: str, command: dict[str, Any]) -> str:
@@ -716,16 +722,27 @@ class Package:
 
     def _place_pin_expr(self, command: dict[str, Any]) -> str:
         name = _require_text(command.get("name"), "command.name")
-        x = _number(command.get("x"), "command.x")
-        y = _number(command.get("y"), "command.y")
+        for legacy in ("xy", "x", "y"):
+            if legacy in command:
+                raise ValueError(
+                    f"command field '{legacy}' is not allowed：坐标统一用 'pos': [x, y]"
+                    "（见 spec 上层/3-symbol.md）"
+                )
+        x, y = _point(command.get("pos"), "command.pos")
         direction = command.get("direction", "inputOutput")
         if direction not in ("input", "output", "inputOutput", "switch", "jumper"):
             raise ValueError(f"invalid terminal direction: {direction}")
         half = _number(command.get("half_size", 0.0625), "command.half_size")
         label = command.get("label", True)
         _require_bool(label, "command.label")
-        label_x = _number(command.get("label_x", x), "command.label_x")
-        label_y = _number(command.get("label_y", y), "command.label_y")
+        if "label_x" in command or "label_y" in command:
+            raise ValueError(
+                "command fields 'label_x'/'label_y' are not allowed："
+                "统一用 'label_pos': [x, y]"
+            )
+        label_pos = command.get("label_pos")
+        label_x, label_y = _point(label_pos, "command.label_pos") if label_pos \
+            else (x, y)
         label_justify = command.get("label_justify", "centerLeft")
         label_orient = command.get("label_orient", "R0")
         label_font = command.get("label_font", "stick")
@@ -1118,7 +1135,7 @@ def _parse_read(raw: str) -> dict[str, Any]:
         elif kind == "label" and len(record) >= 11:
             result["labels"].append({
                 "text": _s(record[1]), "label_type": _s(record[2]),
-                "xy": _point_value(record[3]), "layer": _s(record[4]), "purpose": _s(record[5]),
+                "pos": _point_value(record[3]), "layer": _s(record[4]), "purpose": _s(record[5]),
                 "justify": _s(record[6]), "orient": _s(record[7]),
                 "font": _s(record[8]), "height": _f(record[9]), "bbox": _bbox_value(record[10]),
             })

@@ -1,3 +1,13 @@
+六步流程（test/docs/写TB规范.md §1）：
+① `require_environment`（真机/靶机指纹）；②③ 每个用例自建并校验基线；
+④ 只做被测动作；⑤ 读回比对（期望/实际入证据）；⑥ 跑完不清理现场。
+（某步不适用时，下文会有一行注释说明原因。）
+
+# === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
+# 作者: 设计/上层开发
+# 最后改动: 2026-09-28 20:05
+# 依赖: 无
+# =======================================================================
 """End-to-end acceptance tests for ``virtuoso.layout.*``.
 
 Run with ``--transport direct`` (in-process dispatch) or ``--transport http``
@@ -21,7 +31,7 @@ if hasattr(sys.stdout, "reconfigure"):
 
 API = "http://127.0.0.1:8127/api/operation"
 TOKEN = "vb-vblog"
-WORK_DIR = ROOT / "test" / "artifacts" / "log-vblog"
+WORK_DIR = ROOT / "test" / "artifacts" / "env" / "log-vblog"
 LIB = "schemtest"
 CELL = "lay_e2e"
 MASTER = "lay_master"
@@ -132,7 +142,7 @@ def _shape_kinds(value: dict[str, Any]) -> dict[str, int]:
 
 
 SHAPE_COMMANDS: list[dict[str, Any]] = [
-    {"op": "place_rect", "layer": "y0", "purpose": "drawing", "bbox": [0, 0, 2, 1]},
+    {"op": "place_rect", "layer": "y0", "purpose": "drawing", "bbox": [[0, 0], [2, 1]]},
     {"op": "place_polygon", "layer": "y1", "purpose": "drawing",
      "points": [[3, 0], [4, 0], [4, 1]]},
     {"op": "place_path", "layer": "y2", "purpose": "drawing",
@@ -140,7 +150,7 @@ SHAPE_COMMANDS: list[dict[str, Any]] = [
     {"op": "place_line", "layer": "y3", "purpose": "drawing",
      "points": [[0, 3], [5, 3]]},
     {"op": "place_label", "layer": "text", "purpose": "drawing",
-     "xy": [1, 4], "text": "LBL", "height": 0.5},
+     "pos": [1, 4], "text": "LBL", "height": 0.5},
 ]
 
 
@@ -215,9 +225,9 @@ def _case_instances(transport) -> None:
         transport, "virtuoso.layout.write", library=LIB, cell=CELL, view=VIEW,
         commands=[
             {"op": "place_instance", "master_lib": LIB, "master_cell": MASTER,
-             "master_view": VIEW, "name": "I1", "xy": [10, 0], "orient": "R0"},
+             "master_view": VIEW, "name": "I1", "pos": [10, 0], "orient": "R0"},
             {"op": "place_mosaic", "master_lib": LIB, "master_cell": MASTER,
-             "master_view": VIEW, "name": "M1", "xy": [20, 0], "orient": "R0",
+             "master_view": VIEW, "name": "M1", "pos": [20, 0], "orient": "R0",
              "rows": 2, "cols": 3, "row_pitch": 4, "col_pitch": 4},
         ],
     )
@@ -235,26 +245,45 @@ def _case_instances(transport) -> None:
         commands=[
             {"op": "rename_instance", "name": "I1", "new_name": "I1X"},
             {"op": "set_instance_properties", "name": "I1X",
-             "new_xy": [12, 3], "new_orient": "MX"},
+             "new_pos": [12, 3], "new_orient": "MX"},
         ],
     )
     value = _value(transport, "virtuoso.layout.read", library=LIB, cell=CELL, view=VIEW,
                    focus=["instances"],
                    object_filter={"instance": {"names": ["I1X"]}, "shape": "none", "via": "none"})
     inst = value["instances"][0]
-    _check(inst["xy"] == [12.0, 3.0], f"instance xy: {inst}")
+    _check(inst["pos"] == [12.0, 3.0], f"instance pos: {inst}")
     _check(inst["orient"] == "MX", f"instance orient: {inst}")
+
+    # 原子：delete_instance / delete_mosaic（读回实例列表）
+    _value(
+        transport, "virtuoso.layout.write", library=LIB, cell=CELL, view=VIEW,
+        commands=[{"op": "delete_instance", "name": "I1X"}],
+    )
+    names = {item["name"] for item in
+             _value(transport, "virtuoso.layout.read", library=LIB, cell=CELL, view=VIEW,
+                    focus=["instances"])["instances"]}
+    _check(names == {"M1"}, f"delete_instance: {names}")
+
+    _value(
+        transport, "virtuoso.layout.write", library=LIB, cell=CELL, view=VIEW,
+        commands=[{"op": "delete_mosaic", "name": "M1"}],
+    )
+    names = {item["name"] for item in
+             _value(transport, "virtuoso.layout.read", library=LIB, cell=CELL, view=VIEW,
+                    focus=["instances"])["instances"]}
+    _check(names == set(), f"delete_mosaic: {names}")
 
 
 def _case_mutate(transport) -> None:
     _value(
         transport, "virtuoso.layout.write", library=LIB, cell=CELL, view=VIEW,
         commands=[
-            {"op": "set_shape_properties", "kind": "rect", "bbox": [0, 0, 2, 1],
-             "new_bbox": [0, 0, 2.5, 1.5]},
+            {"op": "set_shape_properties", "kind": "rect", "bbox": [[0, 0], [2, 1]],
+             "new_bbox": [[0, 0], [2.5, 1.5]]},
             {"op": "set_shape_properties", "kind": "path",
              "points": [[0, 2], [5, 2]], "new_width": 0.4},
-            {"op": "rename_label", "xy": [1, 4], "text": "LBL", "new_text": "LBL2"},
+            {"op": "rename_label", "pos": [1, 4], "text": "LBL", "new_text": "LBL2"},
             {"op": "delete_shape", "kind": "line", "points": [[0, 3], [5, 3]]},
         ],
     )
@@ -282,7 +311,7 @@ def _case_guards(transport) -> None:
         "operation": "virtuoso.layout.write", "token": TOKEN,
         "library": LIB, "cell": "lay_no_such_cell", "view": VIEW,
         "commands": [{"op": "place_rect", "layer": "y0", "purpose": "drawing",
-                      "bbox": [0, 0, 1, 1]}],
+                      "bbox": [[0, 0], [1, 1]]}],
     })
     _check(not missing.get("ok"), "write on missing view must fail")
 
@@ -290,7 +319,7 @@ def _case_guards(transport) -> None:
         "operation": "virtuoso.layout.write", "token": TOKEN,
         "library": LIB, "cell": CELL, "view": VIEW, "view_type": "schematicSymbol",
         "commands": [{"op": "place_rect", "layer": "y0", "purpose": "drawing",
-                      "bbox": [0, 0, 1, 1]}],
+                      "bbox": [[0, 0], [1, 1]]}],
     })
     _check(not wrong.get("ok"), "write with wrong view_type must fail")
     _check("view type" in (wrong.get("error") or ""),
@@ -300,7 +329,7 @@ def _case_guards(transport) -> None:
         "operation": "virtuoso.layout.write", "token": TOKEN,
         "library": LIB, "cell": CELL, "view": VIEW, "strict_lpp": True,
         "commands": [{"op": "place_rect", "layer": "zzNoLayer", "purpose": "drawing",
-                      "bbox": [0, 0, 1, 1]}],
+                      "bbox": [[0, 0], [1, 1]]}],
     })
     _check(not bad_lpp.get("ok"), "strict_lpp must reject unknown layer")
     _check("unknown layer" in (bad_lpp.get("error") or ""),
@@ -320,6 +349,28 @@ def _case_display(transport) -> None:
                               "sprintf(nil \"%L\" leGetEntryLayer(tf)))")
     _check("y0" in entry, f"entry layer not set: {entry}")
 
+    # 原子：fit_view / zoom —— 判据是「窗口画面变化」（间接判据，证据里标注）
+    before = _screenshot_sha(transport)
+    _value(
+        transport, "virtuoso.layout.display", library=LIB, cell=CELL, view=VIEW,
+        commands=[{"op": "fit_view"}, {"op": "zoom", "scale": 2.0}],
+    )
+    after = _screenshot_sha(transport)
+    _check(bool(before) and bool(after), f"fit/zoom screenshot empty: {before} / {after}")
+    _check(before != after, "zoom 后窗口画面应变化（间接判据）")
+
+
+def _screenshot_sha(transport) -> str:
+    """截当前 layout 窗口取 sha256（用于 fit_view/zoom 的间接读回）。"""
+    import hashlib
+
+    value = _value(transport, "virtuoso.layout.screenshot",
+                   library=LIB, cell=CELL, view=VIEW, leave_open=True)
+    path = Path(str(value.get("local_path") or ""))
+    if not path.is_file():
+        return ""
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
 
 def _case_via(transport) -> None:
     """Session-only viaDef is enough: create it, place/read/delete a via, drop it."""
@@ -336,16 +387,16 @@ def _case_via(transport) -> None:
         _value(
             transport, "virtuoso.layout.write", library=LIB, cell=CELL, view=VIEW,
             commands=[{"op": "place_via", "via_name": "lay_e2e_via",
-                       "xy": [30, 30], "orient": "R0"}],
+                       "pos": [30, 30], "orient": "R0"}],
         )
         value = _value(transport, "virtuoso.layout.read", library=LIB, cell=CELL, view=VIEW,
                        focus=["vias"])
         _check(len(value["vias"]) == 1, f"via not read back: {value['vias']}")
-        _check(value["vias"][0]["xy"] == [30.0, 30.0], f"via xy: {value['vias'][0]}")
+        _check(value["vias"][0]["pos"] == [30.0, 30.0], f"via pos: {value['vias'][0]}")
 
         _value(
             transport, "virtuoso.layout.write", library=LIB, cell=CELL, view=VIEW,
-            commands=[{"op": "delete_via", "xy": [30, 30], "orient": "R0"}],
+            commands=[{"op": "delete_via", "pos": [30, 30], "orient": "R0"}],
         )
         value = _value(transport, "virtuoso.layout.read", library=LIB, cell=CELL, view=VIEW,
                        focus=["vias"])
@@ -388,7 +439,7 @@ def _write_stream_map(path: Path) -> None:
 
 
 def _case_gds(transport) -> None:
-    artifact = ROOT / "test" / "artifacts" / "layout-tb"
+    artifact = ROOT / "test" / "artifacts" / "evidence" / "layout-tb"
     map_file = artifact / "y_map.map"
     gds_file = artifact / f"{CELL}.gds"
     _write_stream_map(map_file)

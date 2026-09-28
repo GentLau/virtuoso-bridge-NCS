@@ -1,3 +1,12 @@
+# === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
+# 作者: 设计/上层开发
+# 最后改动: 2026-09-28 20:45
+# 依赖: 无
+# =======================================================================
+# 六步流程（test/docs/写TB规范.md §1）：
+#   ① 环境/前置：见正文的 require_environment 或首段只读探测（本节不适用时正文写明）；
+#   ②③ 构建/校验被改对象：由用例内建前置保证；④ 只做被测动作；
+#   ⑤ 打印期望 vs 实测（判据见正文）；⑥ 半真机不清理现场，留下状态便于复核。
 """探针：找出 tsmcN65 下能真正产出 CDL 的 si.env/.simrc 组合。
 
 背景：S11 流程 TB 用 `simViewList=("auCdl" "schematic")` + `cdlNetlistType='hnl`
@@ -27,7 +36,7 @@ if hasattr(sys.stdout, "reconfigure"):
 
 API = "http://127.0.0.1:8127/api/operation"
 TOKEN = "d6af595b342647b58ec63ca6"          # calprobe：带 tsmcN65 的真实例
-OUT = ROOT / "test" / "artifacts" / "scenario-project65"
+OUT = ROOT / "test" / "artifacts" / "env" / "scenario-project65"
 
 #: 变体矩阵。stop list 只能写在 .simrc（Cadence CDL Out Task Assistant 文档
 #: “How to Set Default View List / Stop List / Netlist Type”），**必须每个变体

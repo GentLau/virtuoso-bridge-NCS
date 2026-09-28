@@ -158,12 +158,24 @@ def _point(value: Any, name: str = "point") -> tuple[float, float]:
 
 
 def _bbox(value: Any, name: str = "bbox") -> tuple[float, float, float, float]:
-    if not isinstance(value, (list, tuple)) or len(value) != 4:
-        raise ValueError(f"{name} must be [x0, y0, x1, y1]")
-    x0, y0, x1, y1 = (_number(item, f"{name}[{index}]") for index, item in enumerate(value))
+    """框统一为**对角两点** `[pos0, pos1]`（P-074，与 read 同形）。"""
+    if not isinstance(value, (list, tuple)) or len(value) != 2:
+        raise ValueError(f"{name} must be [ [x, y], [x, y] ] (对角两点)")
+    (x0, y0), (x1, y1) = _point(value[0], f"{name}[0]"), _point(value[1], f"{name}[1]")
     if not x0 < x1 or not y0 < y1:
-        raise ValueError(f"{name} must satisfy x0 < x1 and y0 < y1")
+        raise ValueError(f"{name} requires pos0 < pos1（对角两点，先小后大）")
     return x0, y0, x1, y1
+
+
+def _pos_of(command: dict[str, Any]) -> tuple[float, float]:
+    """单点参数：`pos: [x, y]`（P-074）。`xy`/拆开的 `x`/`y` 一律非法并点名。"""
+    for legacy in ("xy", "x", "y"):
+        if legacy in command:
+            raise ValueError(
+                f"command field '{legacy}' is not allowed：坐标统一用 'pos': [x, y]"
+                "（见 spec 上层/4-layout.md）"
+            )
+    return _point(command.get("pos"), "command.pos")
 
 
 def _points(value: Any, name: str, *, minimum: int = 2) -> list[tuple[float, float]]:
@@ -625,7 +637,7 @@ class Package:
     def _place_expr(self, op: str, command: dict[str, Any]) -> str:
         if op == "place_label":
             layer, purpose = _lpp(command.get("layer"), command.get("purpose"))
-            xy = _point_expr(_point(command.get("xy"), "command.xy"))
+            xy = _point_expr(_pos_of(command))
             text = _require_text(command.get("text"), "command.text")
             justify = str(command.get("justify", "lowerLeft"))
             orient = str(command.get("orient", "R0"))
@@ -743,7 +755,7 @@ class Package:
         )
 
     def _label_match_expr(self, command: dict[str, Any]) -> str:
-        xy = _point(command.get("xy"), "command.xy")
+        xy = _pos_of(command)
         parts = [
             'x~>objType == "label"',
             f"abs(xCoord(x~>xy) - {xy[0]:g}) <= {TOLERANCE:g}",
@@ -774,8 +786,8 @@ class Package:
         else:
             if "new_text" in command:
                 assigns.append(f"vbLabel~>theLabel = {basic.q(str(command['new_text']))}")
-            if "new_xy" in command:
-                assigns.append(f"vbLabel~>xy = {_point_expr(_point(command['new_xy'], 'command.new_xy'))}")
+            if "new_pos" in command:
+                assigns.append(f"vbLabel~>xy = {_point_expr(_point(command['new_pos'], 'command.new_pos'))}")
             if "new_height" in command:
                 height = _number(command["new_height"], "command.new_height")
                 if height <= 0:
@@ -793,7 +805,7 @@ class Package:
         master_cell = _require_text(command.get("master_cell"), "command.master_cell")
         master_view = _require_text(command.get("master_view", "layout"), "command.master_view")
         name = _require_text(command.get("name"), "command.name")
-        xy = _point_expr(_point(command.get("xy"), "command.xy"))
+        xy = _point_expr(_pos_of(command))
         orient = str(command.get("orient", "R0"))
         num_inst = command.get("num_inst")
         extra = ""
@@ -833,8 +845,8 @@ class Package:
             new_name = _require_text(command.get("new_name"), "command.new_name")
             assigns.append(f"vbInst~>name = {basic.q(new_name)}")
         else:
-            if "new_xy" in command:
-                assigns.append(f"vbInst~>xy = {_point_expr(_point(command['new_xy'], 'command.new_xy'))}")
+            if "new_pos" in command:
+                assigns.append(f"vbInst~>xy = {_point_expr(_point(command['new_pos'], 'command.new_pos'))}")
             if command.get("new_orient"):
                 assigns.append(f"vbInst~>orient = {basic.q(str(command['new_orient']))}")
             if not assigns:
@@ -846,7 +858,7 @@ class Package:
         master_cell = _require_text(command.get("master_cell"), "command.master_cell")
         master_view = _require_text(command.get("master_view", "layout"), "command.master_view")
         name = _require_text(command.get("name"), "command.name")
-        xy = _point_expr(_point(command.get("xy"), "command.xy"))
+        xy = _point_expr(_pos_of(command))
         orient = str(command.get("orient", "R0"))
         rows = int(_number(command.get("rows"), "command.rows"))
         cols = int(_number(command.get("cols"), "command.cols"))
@@ -879,7 +891,7 @@ class Package:
 
     def _place_via_expr(self, command: dict[str, Any]) -> str:
         via_name = _require_text(command.get("via_name"), "command.via_name")
-        xy = _point_expr(_point(command.get("xy"), "command.xy"))
+        xy = _point_expr(_pos_of(command))
         orient = str(command.get("orient", "R0"))
         return (
             "let((vbTf vbViaDef vbVia) "
@@ -893,7 +905,7 @@ class Package:
         )
 
     def _delete_via_expr(self, command: dict[str, Any]) -> str:
-        xy = _point(command.get("xy"), "command.xy")
+        xy = _pos_of(command)
         orient = str(command.get("orient", "R0"))
         # A via's viaDef/name is not readable after creation (both are nil on the
         # instantiated object), so vias are indexed by position + orientation.
@@ -964,7 +976,7 @@ class Package:
                 f'{lib}))) '
                 f"{body}) "
                 ") "
-                "progn(when(vbLayoutCv dbClose(vbLayoutCv)))))"
+                "progn(when(vbLayoutCv dbClose(vbLayoutCv))))"
             )
         layers = command.get("layers")
         if not isinstance(layers, list) or not layers:
@@ -1711,7 +1723,7 @@ def _parse_read(raw: str) -> dict[str, Any]:
                 "lpp": [_s(record[2]), _s(record[3])],
                 "bbox": _bbox_value(record[4]), "points": _points_value(record[5]),
                 "width": _f(record[6]) or None, "text": _s(record[7]) or None,
-                "xy": _point_value(record[8]), "height": _f(record[9]) or None,
+                "pos": _point_value(record[8]), "height": _f(record[9]) or None,
                 "justify": _s(record[10]) or None, "orient": _s(record[11]) or None,
                 "font": _s(record[12]) or None, "path_style": _s(record[13]) or None,
             })
@@ -1719,14 +1731,14 @@ def _parse_read(raw: str) -> dict[str, Any]:
             result["instances"].append({
                 "kind": _s(record[1]) or "inst", "name": _s(record[2]),
                 "master_lib": _s(record[3]), "master_cell": _s(record[4]),
-                "master_view": _s(record[5]), "xy": _point_value(record[6]),
+                "master_view": _s(record[5]), "pos": _point_value(record[6]),
                 "orient": _s(record[7]) or None, "num_inst": _i(record[8], 1),
                 "bbox": _bbox_value(record[9]),
                 "rows": _i(record[10], 0) or None, "cols": _i(record[11], 0) or None,
             })
         elif kind == "via" and len(record) >= 5:
             result["vias"].append({
-                "xy": _point_value(record[1]),
+                "pos": _point_value(record[1]),
                 "orient": _s(record[2]) or None, "bbox": _bbox_value(record[3]),
                 "cut_layer": _i(record[4], 0) or None,
             })

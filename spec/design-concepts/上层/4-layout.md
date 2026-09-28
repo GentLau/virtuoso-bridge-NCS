@@ -79,11 +79,11 @@
 | label | `place_label` | —（新建） | `layer, purpose, pos, text`；可选 `justify/orient/font/height`（不传用底层默认） |
 | label | `delete_label` | `pos`（可选加 `text`/`layer` 消歧义） | — |
 | label | `rename_label` | `pos`（可选加 `old_text`） | `new_text` |
-| label | `set_label_properties` | `pos`（可选加 `text`） | `pos?, height?, justify?, orient?, font?` |
+| label | `set_label_properties` | `pos`（可选加 `text`） | `new_pos?, new_height?, new_justify?, new_orient?, new_font?`（至少给一个） |
 | instance | `place_instance` | —（新建） | `master_lib, master_cell, master_view="layout", name, pos, orient="R0"`；可选 `num_inst`（数组实例，name 变 `A<0:n>`） |
 | instance | `delete_instance` | `name` | — |
 | instance | `rename_instance` | `name` | `new_name` |
-| instance | `set_instance_properties` | `name` | `pos?, orient?`（`pos` 必须写 point；`mag`/`master` 只读，不在本版） |
+| instance | `set_instance_properties` | `name` | `new_pos?, new_orient?`（`new_pos` 必须写 point；`mag`/`master` 只读，不在本版） |
 | mosaic | `place_mosaic` | —（新建） | `master_lib, master_cell, master_view="layout", name, pos, orient` , `rows, cols, row_pitch, col_pitch` |
 | mosaic | `delete_mosaic` | `name` | — |
 | via | `place_via` | —（新建） | `via_name, pos, orient="R0"`；techfile-gated（§1.2.2） |

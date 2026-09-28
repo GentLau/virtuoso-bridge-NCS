@@ -3,7 +3,13 @@
 These cover the pure text layers the real-machine TBs never reach:
 the SKILL-answer parser, the read filters, every atomic command builder and the
 read/write/check_and_save control flow with a fake middle.
+
+六步流程（test/docs/写TB规范.md §1）——离线用例：
+① 环境检查**不适用**：纯函数 / 假 middle，不连真机；②③ 前置构建/校验**不适用**：无持久对象；
+④⑤ = Arrange→Act→Assert（每条断言给出期望与实际）；⑥ 无现场可留（不落盘、不起服务、不占端口）。
 """
+
+
 from __future__ import annotations
 
 import unittest
@@ -119,7 +125,7 @@ class TestParseSchematic(unittest.TestCase):
         "NET|VSS|1|signal|t",
         "PINS",
         "PIN|VIN|input|1",
-        "PIN|VOUT|output|1|2.0|0.0",
+        "PIN|VOUT|output|1|(2.0 0.0)",
         "LABELS",
         'LABEL|VIN|(0.25 1.0)|"R0"|"lowerCenter"|"stick"|0.0625',
         "LABEL|BROKEN|(0.1 0.2)|nil|nil|nil|not-a-number",
@@ -139,7 +145,7 @@ class TestParseSchematic(unittest.TestCase):
         first = self.parsed["instances"][0]
         self.assertEqual(first["name"], "MP")
         self.assertEqual(first["lib"], "tsmcN65")
-        self.assertEqual(first["xy"], [0.0, 1.0])
+        self.assertEqual(first["pos"], [0.0, 1.0])
         self.assertEqual(first["orient"], "R0")
         self.assertEqual(first["numInst"], "1")
         self.assertEqual(first["master_view"], "symbol")
@@ -158,7 +164,7 @@ class TestParseSchematic(unittest.TestCase):
         self.assertFalse(self.parsed["nets"]["VOUT"]["isGlobal"])
         self.assertTrue(self.parsed["nets"]["VSS"]["isGlobal"])
         self.assertEqual(self.parsed["pins"][0], {"name": "VIN", "direction": "input"})
-        self.assertEqual(self.parsed["pins"][1]["xy"], [2.0, 0.0])
+        self.assertEqual(self.parsed["pins"][1]["pos"], [2.0, 0.0])
         self.assertEqual(self.parsed["labels"][0]["height"], 0.0625)
         self.assertIsNone(self.parsed["labels"][1]["height"])
         self.assertEqual(self.parsed["wires"][0]["color"], "red")
@@ -177,7 +183,7 @@ class TestAtomicSkill(unittest.TestCase):
     def test_place_instance_builds_master_and_name(self):
         expr = S._atomic_skill("place_instance", {
             "master_lib": "tsmcN65", "master_cell": "nch_25", "name": "MN",
-            "x": 0, "y": 1})
+            "pos": [0, 1]})
         self.assertIn("dbCreateInst", expr)
         self.assertIn('"tsmcN65"', expr)
         self.assertIn('"MN"', expr)
@@ -215,48 +221,48 @@ class TestAtomicSkill(unittest.TestCase):
         self.assertIn("__obj~>width", props)
 
     def test_label_ops(self):
-        placed = S._atomic_skill("place_label", {"text": "VIN", "x": 0, "y": 0})
+        placed = S._atomic_skill("place_label", {"text": "VIN", "pos": [0, 0]})
         self.assertIn("schCreateWireLabel", placed)
-        alias = S._atomic_skill("place_label", {"text": "VIN", "x": 0, "y": 0, "alias": True})
+        alias = S._atomic_skill("place_label", {"text": "VIN", "pos": [0, 0], "alias": True})
         self.assertTrue(alias.rstrip(")").endswith("t"))
         self.assertIn("dbDeleteObject",
-                      S._atomic_skill("delete_label", {"x": 0, "y": 0}))
+                      S._atomic_skill("delete_label", {"pos": [0, 0]}))
         self.assertIn('"NEW"',
-                      S._atomic_skill("rename_label", {"x": 0, "y": 0, "new_text": "NEW"}))
+                      S._atomic_skill("rename_label", {"pos": [0, 0], "new_text": "NEW"}))
         styled = S._atomic_skill("set_label_properties", {
-            "x": 0, "y": 0, "justify": "lowerLeft", "height": 0.2})
+            "pos": [0, 0], "justify": "lowerLeft", "height": 0.2})
         self.assertIn("vbObj~>justify", styled)
         self.assertIn("vbObj~>height", styled)
 
     def test_pin_ops(self):
         placed = S._atomic_skill("place_pin", {
-            "name": "VIN", "direction": "input", "x": 0, "y": 0})
+            "name": "VIN", "direction": "input", "pos": [0, 0]})
         self.assertIn("schCreatePin", placed)
         self.assertIn('"input"', placed)
         extended = S._atomic_skill("place_pin", {
-            "name": "VIN", "direction": "input", "x": 0, "y": 0,
+            "name": "VIN", "direction": "input", "pos": [0, 0],
             "off_sheet": True, "power_sens": "VDD", "ground_sens": "VSS",
             "sig_type": "signal"})
         self.assertIn('"VDD"', extended)
         self.assertIn("dbDeleteObject",
-                      S._atomic_skill("delete_pin", {"x": 0, "y": 0}))
+                      S._atomic_skill("delete_pin", {"pos": [0, 0]}))
         self.assertIn('"NEW"',
-                      S._atomic_skill("rename_pin", {"x": 0, "y": 0, "new_name": "NEW"}))
+                      S._atomic_skill("rename_pin", {"pos": [0, 0], "new_name": "NEW"}))
         changed = S._atomic_skill("set_pin_properties", {
-            "x": 0, "y": 0, "direction": "output"})
+            "pos": [0, 0], "direction": "output"})
         self.assertIn("schCreatePin", changed)
         # 实现把 direction 原样传给 schCreatePin（Virtuoso 自行选 ipin/opin 母版）；
         # 源码里预先算好的 master_cell 表达式是死代码（见 audit 记录）。
         self.assertIn('"output"', changed)
 
     def test_note_ops(self):
-        placed = S._atomic_skill("place_note", {"text": "hello", "x": 0, "y": 0})
+        placed = S._atomic_skill("place_note", {"text": "hello", "pos": [0, 0]})
         self.assertIn("schCreateNote", placed)
-        self.assertIn("dbDeleteObject", S._atomic_skill("delete_note", {"x": 0, "y": 0}))
+        self.assertIn("dbDeleteObject", S._atomic_skill("delete_note", {"pos": [0, 0]}))
         self.assertIn('"NEW"',
-                      S._atomic_skill("rename_note", {"x": 0, "y": 0, "new_text": "NEW"}))
+                      S._atomic_skill("rename_note", {"pos": [0, 0], "new_text": "NEW"}))
         styled = S._atomic_skill("set_note_properties", {
-            "x": 0, "y": 0, "font": "fixed", "height": 0.1})
+            "pos": [0, 0], "font": "fixed", "height": 0.1})
         self.assertIn("vbObj~>font", styled)
 
     def test_unknown_op_and_bad_atoms_raise(self):
@@ -266,7 +272,7 @@ class TestAtomicSkill(unittest.TestCase):
         # place_instance 对 master_lib/master_cell 不做本地校验（空串照样拼 SKILL，
         # 交给运行时报错）——钉住现状，改动时会在此暴露。
         loose = S._atomic_skill("place_instance", {
-            "master_lib": "", "master_cell": "", "name": "n", "x": 0, "y": 0})
+            "master_lib": "", "master_cell": "", "name": "n", "pos": [0, 0]})
         self.assertIn("dbCreateInst", loose)
         # 本地点数校验只存在于 place_line/place_path（place_wire 直接透传）：
         with self.assertRaises(ValueError):
@@ -319,7 +325,7 @@ class TestPackageFlow(unittest.TestCase):
         pkg = S.Package(middle)
         result = pkg.write(S.WriteRequest(
             token="t", library="L", cell="C",
-            commands=[{"op": "place_label", "text": "A", "x": 0, "y": 0}]))
+            commands=[{"op": "place_label", "text": "A", "pos": [0, 0]}]))
         self.assertTrue(result.ok, result.error)
         names = [step["name"] for step in result.steps]
         self.assertEqual(names, ["open", "command:place_label", "check_and_save"])
@@ -335,7 +341,7 @@ class TestPackageFlow(unittest.TestCase):
             pkg = self._pkg(ok(state))
             result = pkg.write(S.WriteRequest(
                 token="t", library="L", cell="C",
-                commands=[{"op": "place_label", "text": "A", "x": 0, "y": 0}]))
+                commands=[{"op": "place_label", "text": "A", "pos": [0, 0]}]))
             self.assertFalse(result.ok, state)
             self.assertIn(marker, result.error)
 
@@ -368,7 +374,7 @@ class TestPackageFlow(unittest.TestCase):
         pkg = self._pkg(fail("no such cell"))
         opened = pkg.write(S.WriteRequest(
             token="t", library="L", cell="C",
-            commands=[{"op": "place_label", "text": "A", "x": 0, "y": 0}]))
+            commands=[{"op": "place_label", "text": "A", "pos": [0, 0]}]))
         self.assertFalse(opened.ok)
         self.assertIn("no such cell", opened.error)
 
@@ -376,14 +382,14 @@ class TestPackageFlow(unittest.TestCase):
         pkg = self._pkg(ok("open-ok"), fail("command blew up"))
         failed = pkg.write(S.WriteRequest(
             token="t", library="L", cell="C",
-            commands=[{"op": "place_label", "text": "A", "x": 0, "y": 0}]))
+            commands=[{"op": "place_label", "text": "A", "pos": [0, 0]}]))
         self.assertFalse(failed.ok)
         self.assertIn("command blew up", failed.error)
 
         pkg = self._pkg(ok("open-ok"), ok("db:1"), fail("check failed"))
         save = pkg.write(S.WriteRequest(
             token="t", library="L", cell="C",
-            commands=[{"op": "place_label", "text": "A", "x": 0, "y": 0}]))
+            commands=[{"op": "place_label", "text": "A", "pos": [0, 0]}]))
         self.assertFalse(save.ok)
         self.assertIn("check failed", save.error)
 
@@ -408,7 +414,7 @@ class TestPackageFlow(unittest.TestCase):
         pkg = self._pkg(ok("open-ok"), ok("db:1"), ok('"check-failed"'))
         result = pkg.write(S.WriteRequest(
             token="t", library="L", cell="C",
-            commands=[{"op": "place_label", "text": "A", "x": 0, "y": 0}]))
+            commands=[{"op": "place_label", "text": "A", "pos": [0, 0]}]))
         self.assertFalse(result.ok)
         self.assertIn("check", result.error or "")
 

@@ -1,3 +1,13 @@
+六步流程（test/docs/写TB规范.md §1）：
+① `require_environment`（真机/靶机指纹）；②③ 每个用例自建并校验基线；
+④ 只做被测动作；⑤ 读回比对（期望/实际入证据）；⑥ 跑完不清理现场。
+（某步不适用时，下文会有一行注释说明原因。）
+
+# === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
+# 作者: 设计/上层开发
+# 最后改动: 2026-09-28 20:25
+# 依赖: 无
+# =======================================================================
 """End-to-end acceptance tests for ``virtuoso.symbol.*``.
 
 Run with ``--transport direct`` (in-process dispatch) or ``--transport http``
@@ -21,7 +31,7 @@ if hasattr(sys.stdout, "reconfigure"):
 
 API = "http://127.0.0.1:8127/api/operation"
 TOKEN = "vb-vblog"
-WORK_DIR = ROOT / "test" / "artifacts" / "log-vblog"
+WORK_DIR = ROOT / "test" / "artifacts" / "env" / "log-vblog"
 
 
 class HttpTransport:
@@ -152,21 +162,21 @@ def _case_write_create(transport) -> str:
     _create_symbol_view(transport, lib, cell, view)
     commands = [
         {"op": "place_rect", "layer": "annotate", "purpose": "drawing",
-         "bbox": [0, 0, 2, 2]},
+         "bbox": [[0, 0], [2, 2]]},
         {"op": "place_polygon", "layer": "device", "purpose": "drawing",
          "points": [[-2, -2], [-1, -2], [-1, -1]]},
         {"op": "place_ellipse", "layer": "device", "purpose": "drawing",
-         "bbox": [2, 2, 3, 3]},
+         "bbox": [[2, 2], [3, 3]]},
         {"op": "place_label", "label_kind": "drawing",
          "layer": "annotate", "purpose": "drawing",
-         "text": "drawing-label", "x": 0, "y": 0},
-        {"op": "place_pin", "name": "IN", "x": -3, "y": 0,
+         "text": "drawing-label", "pos": [0, 0]},
+        {"op": "place_pin", "name": "IN", "pos": [-3, 0],
          "direction": "input"},
-        {"op": "place_pin", "name": "OUT", "x": 3, "y": 0,
+        {"op": "place_pin", "name": "OUT", "pos": [3, 0],
          "direction": "output"},
-        {"op": "place_label", "label_kind": "instance", "x": 0, "y": 1},
-        {"op": "place_label", "label_kind": "logical", "x": 0, "y": -1},
-        {"op": "set_selection_box", "bbox": [-4, -4, 4, 4]},
+        {"op": "place_label", "label_kind": "instance", "pos": [0, 1]},
+        {"op": "place_label", "label_kind": "logical", "pos": [0, -1]},
+        {"op": "set_selection_box", "bbox": [[-4, -4], [4, 4]]},
         {"op": "set_pin_order", "term_names": ["OUT", "IN"]},
     ]
     written = _value(
@@ -192,19 +202,19 @@ def _case_write_modify(transport, view: str) -> None:
     # to sync the pin-name label, so it is asserted before the delete batch.
     commands = [
         {"op": "set_shape_properties", "kind": "rect",
-         "bbox": [0, 0, 2, 2], "new_bbox": [0, 0, 2.5, 2.5]},
+         "bbox": [[0, 0], [2, 2]], "new_bbox": [[0, 0], [2.5, 2.5]]},
         {"op": "set_shape_properties", "kind": "polygon",
          "points": [[-2, -2], [-1, -2], [-1, -1]],
          "new_points": [[-2, -2], [-1, -2], [-1, -1.5]]},
         {"op": "rename_label", "label_kind": "drawing",
-         "xy": [0, 0], "text": "drawing-label", "new_text": "drawing-label-2"},
+         "pos": [0, 0], "text": "drawing-label", "new_text": "drawing-label-2"},
         {"op": "set_label_properties", "label_kind": "instance",
-         "xy": [0, 1], "justify": "lowerLeft", "orient": "R90",
+         "pos": [0, 1], "justify": "lowerLeft", "orient": "R90",
          "height": 0.1},
         {"op": "rename_pin", "name": "OUT", "new_name": "OUT2"},
         {"op": "set_pin_properties", "name": "OUT2",
          "direction": "inputOutput", "access_dir": "left"},
-        {"op": "delete_shape", "kind": "ellipse", "bbox": [2, 2, 3, 3]},
+        {"op": "delete_shape", "kind": "ellipse", "bbox": [[2, 2], [3, 3]]},
     ]
     _value(
         transport, "virtuoso.symbol.write",
@@ -235,7 +245,7 @@ def _case_write_modify(transport, view: str) -> None:
     # Batch B: deletes.  delete_pin must clear the pin figure and pin-name
     # label, not just detach the figure from the terminal.
     deletes = [
-        {"op": "delete_label", "label_kind": "logical", "xy": [0, -1]},
+        {"op": "delete_label", "label_kind": "logical", "pos": [0, -1]},
         {"op": "delete_pin", "name": "OUT2"},
     ]
     _value(
@@ -309,11 +319,11 @@ def _case_generate(transport) -> None:
         transport, "virtuoso.schematic.write",
         library=lib, cell=cell, view="schematic",
         commands=[
-            {"op": "place_pin", "name": "C", "x": 0, "y": 0,
+            {"op": "place_pin", "name": "C", "pos": [0, 0],
              "direction": "input"},
-            {"op": "place_pin", "name": "A", "x": 2, "y": 0,
+            {"op": "place_pin", "name": "A", "pos": [2, 0],
              "direction": "input"},
-            {"op": "place_pin", "name": "B", "x": 1, "y": 0,
+            {"op": "place_pin", "name": "B", "pos": [1, 0],
              "direction": "input"},
         ],
     )
@@ -364,8 +374,28 @@ def _case_generate(transport) -> None:
             "schematic_view": "schematic", "symbol_view": "symbol_a",
             "overwrite": True,
         })
-        _check(not open_target.get("ok"),
-               "generate on an open target must fail")
+        # P-054 修复后的**新契约**（见 f5f1813 提交说明）：目标是"被实例引用的只读打开"
+        # 时不再拒绝，而是在覆盖前 close 只读句柄。旧断言"必须失败"编码的是修复前的行为，
+        # 因此这里改为按新契约断言，并把判据收紧成三条：
+        #   ① 调用成功；② action=replaced（真的覆盖了）；③ 覆盖后的 symbol 仍然正确
+        #   （terminals 仍是 A/B/C）——不是"只要 ok 就算过"。
+        _check(open_target.get("ok"), f"read-only open target must be handled: {open_target}")
+        replaced_again = _value(
+            transport, "virtuoso.symbol.generate",
+            library=lib, cell=cell, schematic_view="schematic",
+            symbol_view="symbol_a", overwrite=True,
+        )
+        _check(replaced_again["action"] == "replaced",
+               f"open-target overwrite action: {replaced_again}")
+        _check(set(replaced_again["terminal_names"]) == {"A", "B", "C"},
+               f"terminals after open-target overwrite: {replaced_again['terminal_names']}")
+        # 只读句柄必须已被覆盖路径关掉：再打开同一视图并**可写**关闭，不应报 "already open"
+        _skill(
+            transport,
+            'let((cv) cv = dbOpenCellViewByType("schemtest" "gen_e2e" "symbol_a" '
+            '"schematicSymbol" "a") if(cv progn(dbSave(cv) dbClose(cv) "REOPENED") '
+            '"CANNOT-REOPEN"))',
+        )
     finally:
         _close_symbol_window(transport, "gen_e2e")
 

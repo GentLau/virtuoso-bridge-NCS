@@ -2,7 +2,13 @@
 
 ``_parse_read`` 的输入样本取自 S11 真机 symbol 读取输出（tsmcN65 反相器），
 保证解析器契约与真实 Cadence 文本一致，而不是自造格式。
+
+六步流程（test/docs/写TB规范.md §1）——离线用例：
+① 环境检查**不适用**：纯函数 / 假 middle，不连真机；②③ 前置构建/校验**不适用**：无持久对象；
+④⑤ = Arrange→Act→Assert（每条断言给出期望与实际）；⑥ 无现场可留（不落盘、不起服务、不占端口）。
 """
+
+
 from __future__ import annotations
 
 import unittest
@@ -104,7 +110,7 @@ class TestValidators(unittest.TestCase):
         self.assertEqual(S._point([1, 2]), (1.0, 2.0))
         with self.assertRaises(ValueError):
             S._point([1, 2, 3])
-        self.assertEqual(S._bbox([0, 0, 1, 1]), (0.0, 0.0, 1.0, 1.0))
+        self.assertEqual(S._bbox([[0, 0], [1, 1]]), (0.0, 0.0, 1.0, 1.0))
         with self.assertRaises(ValueError):
             S._bbox([0, 0, 1])
         with self.assertRaises(ValueError):
@@ -152,7 +158,7 @@ class TestLabelHelpers(unittest.TestCase):
 class TestShapeMatch(unittest.TestCase):
     def test_shape_match_from_bbox_layer_purpose(self):
         expr = S._shape_match_expr("rect", {
-            "layer": "M1", "purpose": "drawing", "bbox": [0, 0, 1, 1]})
+            "layer": "M1", "purpose": "drawing", "bbox": [[0, 0], [1, 1]]})
         self.assertIn('x~>objType == "rect"', expr)
         self.assertIn('x~>layerName == "M1"', expr)
         self.assertIn('x~>purpose == "drawing"', expr)
@@ -257,7 +263,7 @@ class TestPackageFlows(unittest.TestCase):
         pkg = self._pkg(fail("cannot open"))
         opened = pkg.write(S.WriteRequest(
             token="t", library="L", cell="C",
-            commands=[{"op": "delete_shape", "kind": "rect", "bbox": [0, 0, 1, 1]}]))
+            commands=[{"op": "delete_shape", "kind": "rect", "bbox": [[0, 0], [1, 1]]}]))
         self.assertFalse(opened.ok)
         self.assertIn("cannot open", opened.error)
 
@@ -271,7 +277,7 @@ class TestPackageFlows(unittest.TestCase):
         pkg = self._pkg(ok('"ok"'), ok('"open-ok"'), fail("shape not found"))
         failed = pkg.write(S.WriteRequest(
             token="t", library="L", cell="C",
-            commands=[{"op": "delete_shape", "kind": "rect", "bbox": [0, 0, 1, 1]}]))
+            commands=[{"op": "delete_shape", "kind": "rect", "bbox": [[0, 0], [1, 1]]}]))
         self.assertFalse(failed.ok)
         self.assertIn("shape not found", failed.error)
         self.assertIn("not transactional", failed.error)
@@ -279,26 +285,26 @@ class TestPackageFlows(unittest.TestCase):
         pkg = self._pkg(ok('"ok"'), ok('"locked"'))
         locked = pkg.write(S.WriteRequest(
             token="t", library="L", cell="C",
-            commands=[{"op": "delete_shape", "kind": "rect", "bbox": [0, 0, 1, 1]}]))
+            commands=[{"op": "delete_shape", "kind": "rect", "bbox": [[0, 0], [1, 1]]}]))
         self.assertFalse(locked.ok)
         self.assertIn("locked by another session", locked.error)
 
     def test_write_reports_view_probe_results(self):
         missing = self._pkg(ok("missing")).write(S.WriteRequest(
             token="t", library="L", cell="C",
-            commands=[{"op": "delete_shape", "kind": "rect", "bbox": [0, 0, 1, 1]}]))
+            commands=[{"op": "delete_shape", "kind": "rect", "bbox": [[0, 0], [1, 1]]}]))
         self.assertFalse(missing.ok)
         self.assertIn("not found", missing.error)
 
         mismatch = self._pkg(ok("mismatch")).write(S.WriteRequest(
             token="t", library="L", cell="C",
-            commands=[{"op": "delete_shape", "kind": "rect", "bbox": [0, 0, 1, 1]}]))
+            commands=[{"op": "delete_shape", "kind": "rect", "bbox": [[0, 0], [1, 1]]}]))
         self.assertFalse(mismatch.ok)
         self.assertIn("view type", mismatch.error)
 
         weird = self._pkg(ok("banana")).write(S.WriteRequest(
             token="t", library="L", cell="C",
-            commands=[{"op": "delete_shape", "kind": "rect", "bbox": [0, 0, 1, 1]}]))
+            commands=[{"op": "delete_shape", "kind": "rect", "bbox": [[0, 0], [1, 1]]}]))
         self.assertFalse(weird.ok)
         self.assertIn("unexpected view probe", weird.error)
 
@@ -306,7 +312,7 @@ class TestPackageFlows(unittest.TestCase):
         pkg = self._pkg(ok('"ok"'), ok('"open-ok"'), ok("db:1"), ok('"saved"'))
         result = pkg.write(S.WriteRequest(
             token="t", library="L", cell="C",
-            commands=[{"op": "delete_shape", "kind": "rect", "bbox": [0, 0, 1, 1]}]))
+            commands=[{"op": "delete_shape", "kind": "rect", "bbox": [[0, 0], [1, 1]]}]))
         self.assertTrue(result.ok, result.error)
         self.assertEqual(result.value, {"applied": 1})
         names = [step["name"] for step in result.steps]
@@ -568,22 +574,22 @@ ATOM_COMMANDS: dict[str, dict] = {
                    "points": [[0, 0], [1, 1]]},
     "place_polygon": {"layer": "device", "purpose": "drawing",
                       "points": [[0, 0], [1, 0], [0, 1]]},
-    "place_rect": {"layer": "device", "purpose": "drawing", "bbox": [0, 0, 1, 1]},
-    "place_ellipse": {"layer": "device", "purpose": "drawing", "bbox": [0, 0, 1, 1]},
-    "delete_shape": {"kind": "rect", "bbox": [0, 0, 1, 1]},
-    "set_shape_properties": {"kind": "rect", "bbox": [0, 0, 1, 1],
-                             "new_bbox": [0, 0, 2, 2]},
-    "place_label": {"label_kind": "drawing", "text": "A", "x": 0, "y": 0,
+    "place_rect": {"layer": "device", "purpose": "drawing", "bbox": [[0, 0], [1, 1]]},
+    "place_ellipse": {"layer": "device", "purpose": "drawing", "bbox": [[0, 0], [1, 1]]},
+    "delete_shape": {"kind": "rect", "bbox": [[0, 0], [1, 1]]},
+    "set_shape_properties": {"kind": "rect", "bbox": [[0, 0], [1, 1]],
+                             "new_bbox": [[0, 0], [2, 2]]},
+    "place_label": {"label_kind": "drawing", "text": "A", "pos": [0, 0],
                     "layer": "text", "purpose": "drawing"},
-    "delete_label": {"label_kind": "drawing", "x": 0, "y": 0},
-    "rename_label": {"label_kind": "drawing", "x": 0, "y": 0, "new_text": "B"},
-    "set_label_properties": {"label_kind": "drawing", "x": 0, "y": 0,
+    "delete_label": {"label_kind": "drawing", "pos": [0, 0]},
+    "rename_label": {"label_kind": "drawing", "pos": [0, 0], "new_text": "B"},
+    "set_label_properties": {"label_kind": "drawing", "pos": [0, 0],
                              "justify": "lowerLeft"},
-    "place_pin": {"name": "A", "direction": "input", "x": 0, "y": 0},
+    "place_pin": {"name": "A", "direction": "input", "pos": [0, 0]},
     "delete_pin": {"name": "A"},
     "rename_pin": {"name": "A", "new_name": "B"},
     "set_pin_properties": {"name": "A", "direction": "output"},
-    "set_selection_box": {"bbox": [0, 0, 1, 1]},
+    "set_selection_box": {"bbox": [[0, 0], [1, 1]]},
     "set_pin_order": {"term_names": ["A", "B"]},
 }
 
@@ -595,27 +601,32 @@ class TestSymbolExpressionHelpers(unittest.TestCase):
         self.assertEqual(S._points_expr([(0, 0), (1, 1)]), "list(list(0 0) list(1 1))")
         self.assertEqual(S._bbox_expr((0, 0, 1, 1)), "list(list(0 0) list(1 1))")
 
-    def test_label_xy_from_xy_or_x_y(self):
-        self.assertEqual(S._label_xy({"xy": [1, 2]}), (1.0, 2.0))
-        self.assertEqual(S._label_xy({"x": 3, "y": 4}), (3.0, 4.0))
+    def test_label_pos_only(self):
+        """P-074：label 坐标只认 `pos`；`xy` / 拆字段一律点名报错。"""
+        self.assertEqual(S._label_xy({"pos": [1, 2]}), (1.0, 2.0))
+        for legacy in ({"xy": [1, 2]}, {"x": 3, "y": 4}, {"x": 3}, {"y": 4}):
+            with self.subTest(cmd=legacy):
+                with self.assertRaises(ValueError) as ctx:
+                    S._label_xy(legacy)
+                self.assertIn("not allowed", str(ctx.exception))
         with self.assertRaises(ValueError):
-            S._label_xy({"x": 3})
+            S._label_xy({})
 
     def test_label_match_expr_per_kind(self):
-        pin = S._label_match_expr("pin_name", {"x": 0, "y": 0, "text": "A"})
+        pin = S._label_match_expr("pin_name", {"pos": [0, 0], "text": "A"})
         self.assertIn('x~>layerName == "pin"', pin)
         self.assertIn('x~>theLabel == "A"', pin)
 
-        inst = S._label_match_expr("instance", {"x": 0, "y": 0})
+        inst = S._label_match_expr("instance", {"pos": [0, 0]})
         self.assertIn('x~>layerName == "instance"', inst)
         self.assertIn('x~>theLabel == "[@instanceName]"', inst)   # 自动补文案
 
-        drawing = S._label_match_expr("drawing", {"x": 0, "y": 0, "layer": "text",
+        drawing = S._label_match_expr("drawing", {"pos": [0, 0], "layer": "text",
                                                   "purpose": "drawing"})
         self.assertIn('x~>layerName == "text"', drawing)
         self.assertIn('x~>purpose == "drawing"', drawing)
         # labelType 只在**没给 layer** 时兜底（elif 链），这里分开钉
-        no_layer = S._label_match_expr("drawing", {"x": 0, "y": 0})
+        no_layer = S._label_match_expr("drawing", {"pos": [0, 0]})
         self.assertIn('x~>labelType == "normalLabel"', no_layer)
 
     def test_pin_match_and_shape_match_with_points(self):
@@ -660,11 +671,11 @@ class TestSymbolAtomicMatrix(unittest.TestCase):
         with self.assertRaises(ValueError):
             S.Package(FakeMiddle())._atomic_expr({"op": ""})
         with self.assertRaises(ValueError):
-            self._expr("set_shape_properties", new_bbox=[0, 0, 1, 1], kind="line",
+            self._expr("set_shape_properties", new_bbox=[[0, 0], [1, 1]], kind="line",
                        points=[[0, 0], [1, 1]])
         with self.assertRaises(ValueError):
             S.Package(FakeMiddle())._atomic_expr(
-                {"op": "set_shape_properties", "kind": "rect", "bbox": [0, 0, 1, 1]})
+                {"op": "set_shape_properties", "kind": "rect", "bbox": [[0, 0], [1, 1]]})
 
     def test_rename_and_property_guards(self):
         with self.assertRaises(ValueError):

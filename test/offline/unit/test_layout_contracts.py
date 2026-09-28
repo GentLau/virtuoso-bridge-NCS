@@ -2,7 +2,13 @@
 
 layout 包的每次真机调用都要先经过这层"把请求翻成 SKILL"的纯函数；
 真机 TB 只验证了少数几条 happy path，这里把校验分支与全部原子 op 钉死。
+
+六步流程（test/docs/写TB规范.md §1）——离线用例：
+① 环境检查**不适用**：纯函数 / 假 middle，不连真机；②③ 前置构建/校验**不适用**：无持久对象；
+④⑤ = Arrange→Act→Assert（每条断言给出期望与实际）；⑥ 无现场可留（不落盘、不起服务、不占端口）。
 """
+
+
 from __future__ import annotations
 
 import tempfile
@@ -49,29 +55,29 @@ def balanced(text: str) -> bool:
 
 #: op → 最小合法命令
 COMMANDS: dict[str, dict] = {
-    "place_rect": {"layer": "M1", "purpose": "drawing", "bbox": [0, 0, 1, 1]},
+    "place_rect": {"layer": "M1", "purpose": "drawing", "bbox": [[0, 0], [1, 1]]},
     "place_polygon": {"layer": "M1", "purpose": "drawing",
                       "points": [[0, 0], [1, 0], [0, 1]]},
     "place_path": {"layer": "M1", "purpose": "drawing", "points": [[0, 0], [1, 1]],
                    "width": 0.1},
     "place_line": {"layer": "M1", "purpose": "drawing", "points": [[0, 0], [1, 1]]},
-    "place_label": {"layer": "text", "purpose": "drawing", "xy": [0, 0], "text": "A"},
-    "delete_shape": {"kind": "rect", "bbox": [0, 0, 1, 1]},
-    "set_shape_properties": {"kind": "rect", "bbox": [0, 0, 1, 1],
-                             "new_bbox": [0, 0, 2, 2]},
+    "place_label": {"layer": "text", "purpose": "drawing", "pos": [0, 0], "text": "A"},
+    "delete_shape": {"kind": "rect", "bbox": [[0, 0], [1, 1]]},
+    "set_shape_properties": {"kind": "rect", "bbox": [[0, 0], [1, 1]],
+                             "new_bbox": [[0, 0], [2, 2]]},
     "delete_shapes_on_layer": {"layer": "M1", "purpose": "drawing"},
-    "delete_label": {"xy": [0, 0]},
-    "rename_label": {"xy": [0, 0], "new_text": "B"},
-    "set_label_properties": {"xy": [0, 0], "new_height": 0.2},
-    "place_instance": {"master_lib": "L", "master_cell": "C", "name": "I1", "xy": [0, 0]},
+    "delete_label": {"pos": [0, 0]},
+    "rename_label": {"pos": [0, 0], "new_text": "B"},
+    "set_label_properties": {"pos": [0, 0], "new_height": 0.2},
+    "place_instance": {"master_lib": "L", "master_cell": "C", "name": "I1", "pos": [0, 0]},
     "delete_instance": {"name": "I1"},
     "rename_instance": {"name": "I1", "new_name": "I2"},
-    "set_instance_properties": {"name": "I1", "new_xy": [1, 1]},
-    "place_mosaic": {"master_lib": "L", "master_cell": "C", "name": "I3", "xy": [0, 0],
+    "set_instance_properties": {"name": "I1", "new_pos": [1, 1]},
+    "place_mosaic": {"master_lib": "L", "master_cell": "C", "name": "I3", "pos": [0, 0],
                      "rows": 2, "cols": 2, "row_pitch": 1.0, "col_pitch": 1.0},
     "delete_mosaic": {"name": "I3"},
-    "place_via": {"via_name": "V1", "xy": [0, 0]},
-    "delete_via": {"xy": [0, 0]},
+    "place_via": {"via_name": "V1", "pos": [0, 0]},
+    "delete_via": {"pos": [0, 0]},
 }
 
 
@@ -102,13 +108,13 @@ class TestCoordinateHelpers(unittest.TestCase):
         self.assertEqual(L._point([1, 2]), (1.0, 2.0))
         for bad in ([1], [1, 2, 3], "x", None):
             with self.assertRaises(ValueError):
-                L._point(bad, "command.xy")
-        self.assertEqual(L._bbox([0, 0, 1, 1]), (0.0, 0.0, 1.0, 1.0))
+                L._point(bad, "command.pos")
+        self.assertEqual(L._bbox([[0, 0], [1, 1]]), (0.0, 0.0, 1.0, 1.0))
         with self.assertRaises(ValueError):
-            L._bbox([0, 0, 1])
+            L._bbox([[0, 0]])
         with self.assertRaises(ValueError) as ctx:
-            L._bbox([1, 0, 0, 1])
-        self.assertIn("x0 < x1", str(ctx.exception))
+            L._bbox([[1, 0], [0, 1]])
+        self.assertIn("pos0 < pos1", str(ctx.exception))
 
     def test_points_and_bbox_from_points(self):
         self.assertEqual(L._points([[0, 0], [1, 1]], "p"), [(0.0, 0.0), (1.0, 1.0)])
@@ -211,14 +217,14 @@ class TestAtomicMatrix(unittest.TestCase):
     def test_shape_mutation_guards(self):
         with self.assertRaises(ValueError) as ctx:
             self._raw({"op": "set_shape_properties", "kind": "path",
-                       "points": [[0, 0], [1, 0]], "new_bbox": [0, 0, 1, 1]})
+                       "points": [[0, 0], [1, 0]], "new_bbox": [[0, 0], [1, 1]]})
         self.assertIn("rect/ellipse", str(ctx.exception))
         with self.assertRaises(ValueError) as ctx:
             self._raw({"op": "set_shape_properties", "kind": "polygon",
                        "points": [[0, 0], [1, 0], [0, 1]], "new_width": 1})
         self.assertIn("path", str(ctx.exception))
         with self.assertRaises(ValueError) as ctx:
-            self._raw({"op": "set_shape_properties", "kind": "rect", "bbox": [0, 0, 1, 1]})
+            self._raw({"op": "set_shape_properties", "kind": "rect", "bbox": [[0, 0], [1, 1]]})
         self.assertIn("at least one new_*", str(ctx.exception))
         with self.assertRaises(ValueError):
             self._expr("delete_shape", kind="nonsense")
@@ -226,7 +232,7 @@ class TestAtomicMatrix(unittest.TestCase):
 
     def test_label_and_instance_property_guards(self):
         with self.assertRaises(ValueError) as ctx:
-            self._raw({"op": "set_label_properties", "xy": [0, 0]})
+            self._raw({"op": "set_label_properties", "pos": [0, 0]})
         self.assertIn("at least one new_*", str(ctx.exception))
         with self.assertRaises(ValueError):
             self._expr("rename_label", new_text="")
@@ -494,7 +500,7 @@ class TestLayoutReadOrchestration(unittest.TestCase):
 
 
 class TestLayoutWriteOrchestration(unittest.TestCase):
-    CMD = {"op": "place_rect", "layer": "M1", "purpose": "drawing", "bbox": [0, 0, 1, 1]}
+    CMD = {"op": "place_rect", "layer": "M1", "purpose": "drawing", "bbox": [[0, 0], [1, 1]]}
 
     def _write(self, middle, **fields):
         return L.Package(middle).write(L.WriteRequest(

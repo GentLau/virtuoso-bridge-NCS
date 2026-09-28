@@ -1,3 +1,12 @@
+# === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
+# 作者: 设计/上层开发
+# 最后改动: 2026-09-28 20:45
+# 依赖: 无
+# =======================================================================
+# 六步流程（test/docs/写TB规范.md §1）：
+#   ① 环境/前置：见正文的 require_environment 或首段只读探测（本节不适用时正文写明）；
+#   ②③ 构建/校验被改对象：由用例内建前置保证；④ 只做被测动作；
+#   ⑤ 打印期望 vs 实测（判据见正文）；⑥ 半真机不清理现场，留下状态便于复核。
 """调查探针：用 Virtuoso 自带 auCdl（CDL Out）机制生成 LVS 用的 CDL。
 
 官方口径（IC6.1.8 自带文档 ``doc/cdloutta/``）：
@@ -26,8 +35,8 @@ sys.path.insert(0, str(ROOT / "src"))
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 
-WORK_DIR = ROOT / "test" / "artifacts" / "log-vblog"
-STAGE_DIR = ROOT / "test" / "artifacts" / "skill-tooling-tb"
+WORK_DIR = ROOT / "test" / "artifacts" / "env" / "log-vblog"
+STAGE_DIR = ROOT / "test" / "artifacts" / "evidence" / "skill-tooling-tb"
 CDS_LIB = "/home/Gent/project/vblog/cds.lib"
 RUN_ROOT = "/home/Gent/project/vblog/calibre_probe"
 TOKEN = "vb-vblog"

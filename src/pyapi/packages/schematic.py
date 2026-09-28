@@ -171,7 +171,7 @@ def _parse_schematic(raw: str) -> dict[str, Any]:
                 }
                 if len(parts) >= 8:
                     xy = parts[4].strip().strip("()").split()
-                    current_inst["xy"] = [float(x) for x in xy] if len(xy) == 2 else [0.0, 0.0]
+                    current_inst["pos"] = [float(x) for x in xy] if len(xy) == 2 else [0.0, 0.0]
                     current_inst["orient"] = parts[5]
                     current_inst["bBox"] = parts[6]
                     current_inst["numInst"] = parts[7]
@@ -206,8 +206,11 @@ def _parse_schematic(raw: str) -> dict[str, Any]:
                     item = {"name": parts[1]}
                     if len(parts) >= 3:
                         item["direction"] = parts[2]
-                    if len(parts) >= 6:
-                        item["xy"] = [float(parts[4]), float(parts[5])]
+                    # positions 模式：`PIN|<instName>|<dir>|1|(x y)`（P-074：pos 一个字段）
+                    if len(parts) >= 5:
+                        xy = parts[4].strip().strip("()").split()
+                        if len(xy) == 2:
+                            item["pos"] = [float(xy[0]), float(xy[1])]
                     result["pins"].append(item)
         elif section == "labels":
             if line.startswith("LABEL|"):
@@ -216,7 +219,7 @@ def _parse_schematic(raw: str) -> dict[str, Any]:
                     xy = parts[2].strip().strip("()").split()
                     label = {
                         "text": parts[1],
-                        "xy": [float(x) for x in xy] if len(xy) == 2 else [0.0, 0.0],
+                        "pos": [float(x) for x in xy] if len(xy) == 2 else [0.0, 0.0],
                     }
                     if len(parts) >= 7:
                         label["orient"] = _unquote(parts[3])
@@ -249,7 +252,7 @@ def _parse_schematic(raw: str) -> dict[str, Any]:
                     note = {"text": parts[1]}
                     if len(parts) >= 3:
                         xy = parts[2].strip().strip("()").split()
-                        note["xy"] = [float(x) for x in xy] if len(xy) == 2 else [0.0, 0.0]
+                        note["pos"] = [float(x) for x in xy] if len(xy) == 2 else [0.0, 0.0]
                     if len(parts) >= 7:
                         note["orient"] = _unquote(parts[3])
                         note["justify"] = _unquote(parts[4])
@@ -454,13 +457,41 @@ def _point_str(points: list[Any]) -> str:
     return f"list({pairs})"
 
 
+def _points_of(cmd: dict[str, Any], key: str) -> list[tuple[float, float]]:
+    """多点参数（wire 用）：`points: [[x, y], …]`；形状不对时点名 `points`。"""
+    raw = cmd.get(key)
+    if not isinstance(raw, (list, tuple)) or len(raw) < 1:
+        raise ValueError(f"command requires '{key}': [[x, y], ...]")
+    points: list[tuple[float, float]] = []
+    for index, item in enumerate(raw):
+        if not isinstance(item, (list, tuple)) or len(item) != 2:
+            raise ValueError(f"command '{key}' item {index} must be [x, y]")
+        points.append((float(item[0]), float(item[1])))
+    return points
+
+
+def _pos_of(cmd: dict[str, Any]) -> tuple[float, float]:
+    """单点参数：`pos: [x, y]`（P-074）。`xy`/拆开的 `x`/`y` 一律非法，并点名违规字段。"""
+    for legacy in ("xy", "x", "y"):
+        if legacy in cmd:
+            raise ValueError(
+                f"command field '{legacy}' is not allowed：坐标统一用 'pos': [x, y]"
+                "（见 spec 上层/2-schematic.md §1.3）"
+            )
+    raw = cmd.get("pos")
+    if not isinstance(raw, (list, tuple)) or len(raw) != 2:
+        raise ValueError("command requires 'pos': [x, y]")
+    return float(raw[0]), float(raw[1])
+
+
 def _atomic_skill(op: str, cmd: dict[str, Any]) -> str:
     if op == "place_instance":
+        x, y = _pos_of(cmd)
         master = f'dbOpenCellViewByType({_q(cmd["master_lib"])} {_q(cmd["master_cell"])} {_q(cmd.get("master_view", "symbol"))} "schematicSymbol" "r")'
         return (
             f'let((vbMaster vbInst) vbMaster = {master} '
             f'vbInst = dbCreateInst(vbSchemCv vbMaster {_q(cmd["name"])} '
-            f'{float(cmd["x"]):g}:{float(cmd["y"]):g} {_q(cmd.get("orient", "R0"))}) '
+            f'{x:g}:{y:g} {_q(cmd.get("orient", "R0"))}) '
             'when(vbMaster dbClose(vbMaster)) vbInst)'
         )
     if op == "delete_instance":
@@ -524,12 +555,19 @@ let((vbInst vbCcd vbParamVals vbP vbProp)
             )
         return "progn(" + " ".join(exprs) + ' "ok")'
     if op == "place_wire":
-        pts = _point_str(cmd["points"])
+        pts = _point_str(_points_of(cmd, "points"))
+        # 官方签名：schCreateWire(cv entry route points xSpacing ySpacing **width** [color] [lineStyle])
+        # width 必填（0 = narrow wire，与底层默认一致）；color/lineStyle 传了才拼。
         body = (
             f'schCreateWire(vbSchemCv {_q(cmd.get("entry", "route"))} '
             f'{_q(cmd.get("route", "full"))} {pts} '
-            f'{float(cmd.get("x_spacing", 0)):g} {float(cmd.get("y_spacing", 0)):g}'
+            f'{float(cmd.get("x_spacing", 0)):g} {float(cmd.get("y_spacing", 0)):g} '
+            f'{float(cmd.get("width", 0)):g}'
         )
+        if "color" in cmd or "line_style" in cmd:
+            body += f' {_q(cmd["color"]) if "color" in cmd else "nil"}'
+            if "line_style" in cmd:
+                body += f' {_q(cmd["line_style"])}'
         if any(k in cmd for k in ("width", "color", "line_style")):
             body += f' {float(cmd.get("width", 0)):g}'
             body += f' {_q(cmd["color"])}' if "color" in cmd else ' nil'
@@ -538,7 +576,7 @@ let((vbInst vbCcd vbParamVals vbP vbProp)
         body += ')'
         return body
     if op == "delete_wire":
-        pts = cmd["points"]
+        pts = _points_of(cmd, "points")
         x1 = min(x for x, _ in pts) - 0.001
         x2 = max(x for x, _ in pts) + 0.001
         y1 = min(y for _, y in pts) - 0.001
@@ -549,7 +587,7 @@ let((vbInst vbCcd vbParamVals vbP vbProp)
             'when(dbDeleteObject(__obj) vbN = vbN + 1)) vbN)'
         )
     if op == "set_wire_properties":
-        pts = cmd["points"]
+        pts = _points_of(cmd, "points")
         x1 = min(x for x, _ in pts) - 0.001
         x2 = max(x for x, _ in pts) + 0.001
         y1 = min(y for _, y in pts) - 0.001
@@ -568,8 +606,9 @@ let((vbInst vbCcd vbParamVals vbP vbProp)
             f'when(progn({body}) vbN = vbN + 1)) vbN)'
         )
     if op == "place_label":
+        _pos = _pos_of(cmd)
         body = (
-            f'schCreateWireLabel(vbSchemCv nil {float(cmd["x"]):g}:{float(cmd["y"]):g} '
+            f'schCreateWireLabel(vbSchemCv nil {_pos[0]:g}:{_pos[1]:g} '
             f'{_q(cmd["text"])} {_q(cmd.get("justify", "lowerCenter"))} '
             f'{_q(cmd.get("orient", "R0"))} {_q(cmd.get("font", "stick"))} '
             f'{float(cmd.get("height", 0.0625)):g}'
@@ -578,8 +617,7 @@ let((vbInst vbCcd vbParamVals vbP vbProp)
         body += ')'
         return body
     if op in ("delete_label", "rename_label", "set_label_properties"):
-        x = float(cmd["x"])
-        y = float(cmd["y"])
+        x, y = _pos_of(cmd)
         pred = (
             f'x~>objType == "label" && x~>purpose != "drawing" && '
             f'xCoord(x~>xy) >= {x - 0.001:g} && xCoord(x~>xy) <= {x + 0.001:g} && '
@@ -599,10 +637,11 @@ let((vbInst vbCcd vbParamVals vbP vbProp)
         body = " ".join(assignments) + ' vbObj~>theLabel' if assignments else 'vbObj~>theLabel'
         return f'let((vbObj) vbObj = car(setof(x vbSchemCv~>shapes {pred})) unless(vbObj error("label not found")) {body})'
     if op == "place_pin":
+        _pos = _pos_of(cmd)
         body = (
             f'schCreatePin(vbSchemCv nil {_q(cmd["name"])} '
             f'{_q(cmd.get("direction", "inputOutput"))} nil '
-            f'{float(cmd["x"]):g}:{float(cmd["y"]):g} {_q(cmd.get("orient", "R0"))}'
+            f'{_pos[0]:g}:{_pos[1]:g} {_q(cmd.get("orient", "R0"))}'
         )
         if any(k in cmd for k in ("off_sheet", "power_sens", "ground_sens", "sig_type")):
             body += ' t' if cmd.get("off_sheet") else ' nil'
@@ -613,8 +652,7 @@ let((vbInst vbCcd vbParamVals vbP vbProp)
         body += ')'
         return body
     if op in ("delete_pin", "rename_pin", "set_pin_properties"):
-        x = float(cmd["x"])
-        y = float(cmd["y"])
+        x, y = _pos_of(cmd)
         pred = (
             f'x~>purpose == "pin" && xCoord(x~>xy) >= {x - 0.001:g} '
             f'&& xCoord(x~>xy) <= {x + 0.001:g} '
@@ -636,15 +674,15 @@ let((vbInst vbCcd vbParamVals vbP vbProp)
             'vbNew)'
         )
     if op == "place_note":
+        _pos = _pos_of(cmd)
         return (
-            f'schCreateNoteLabel(vbSchemCv {float(cmd["x"]):g}:{float(cmd["y"]):g} '
+            f'schCreateNoteLabel(vbSchemCv {_pos[0]:g}:{_pos[1]:g} '
             f'{_q(cmd["text"])} {_q(cmd.get("justify", "lowerLeft"))} '
             f'{_q(cmd.get("orient", "R0"))} {_q(cmd.get("font", "stick"))} '
             f'{float(cmd.get("height", 0.0625)):g} {_q(cmd.get("type", "normalLabel"))})'
         )
     if op in ("delete_note", "rename_note", "set_note_properties"):
-        x = float(cmd["x"])
-        y = float(cmd["y"])
+        x, y = _pos_of(cmd)
         pred = (
             f'x~>objType == "label" && x~>purpose == "drawing" && '
             f'xCoord(x~>xy) >= {x - 0.001:g} && xCoord(x~>xy) <= {x + 0.001:g} && '
