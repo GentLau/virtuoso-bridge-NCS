@@ -97,7 +97,7 @@ def main(argv: list[str] | None = None) -> int:
             "operation": "virtuoso.layout.write", "token": args.token,
             "library": args.lib, "cell": args.cell, "view": args.view,
             "commands": [{"op": "place_rect", "layer": "M1", "purpose": "drawing",
-                          "bbox": [50.0, 50.0, 51.0, 51.0]}],
+                          "bbox": [[50.0, 50.0], [51.0, 51.0]]}],
             "timeout": 300,
         })
         write_attempted = True

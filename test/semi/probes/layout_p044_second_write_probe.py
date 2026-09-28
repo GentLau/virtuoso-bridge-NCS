@@ -112,14 +112,14 @@ def main(argv: list[str] | None = None) -> int:
     base = {"library": args.lib, "cell": args.cell, "view": args.view}
     first = op("virtuoso.layout.write", **base,
                commands=[{"op": "place_rect", "layer": "y0", "purpose": "drawing",
-                          "bbox": [0, 0, 2, 1]}])
+                          "bbox": [[0, 0], [2, 1]]}])
     view_dir = _view_dir(server, args.token, args.lib, args.cell, args.view)
     owners = _lock_owner_pids(server, args.token, view_dir)
     ciw = _ciw_pid(server, args.token, args.cdslib)
 
     second = op("virtuoso.layout.write", **base,
                 commands=[{"op": "place_rect", "layer": "y1", "purpose": "drawing",
-                           "bbox": [3, 0, 4, 1]}])
+                           "bbox": [[3, 0], [4, 1]]}])
 
     owner_pids = [item["owner_pid"] for item in owners]
     same_session = bool(ciw) and ciw in owner_pids

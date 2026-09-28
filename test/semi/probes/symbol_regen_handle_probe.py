@@ -1,133 +1,131 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
 # 作者: 设计/上层开发
-# 最后改动: 2026-09-28 20:45
+# 最后改动: 2026-09-28 22:05
 # 依赖: 无
 # =======================================================================
-# 六步流程（test/docs/写TB规范.md §1）：
-#   ① 环境/前置：见正文的 require_environment 或首段只读探测（本节不适用时正文写明）；
-#   ②③ 构建/校验被改对象：由用例内建前置保证；④ 只做被测动作；
-#   ⑤ 打印期望 vs 实测（判据见正文）；⑥ 半真机不清理现场，留下状态便于复核。
-"""symbol.generate 句柄/幂等探针（第五轮新增，真机）。
+"""``symbol.generate`` 句柄/幂等半真机探针（真机 direct dispatch）。
 
-现象：同一 CIW 会话里对同一个 cell 第二次 ``virtuoso.symbol.generate`` 会直接报
-``*Error* target symbol is open``（``src/pyapi/packages/_symbol_generate.py:143-144``
-的守卫），而第一次生成**成功后并没有把目标 symbol view 关掉**。
+六步流程（test/docs/写TB规范.md §1）：
+① `require_environment`（靶机指纹 + schemtest 可见）；
+②③ **自己造前置**：`schemtest/sym_regen_probe` 的 schematic（一个 pin）→ 读回确认存在
+   （旧版探针用不存在的库 SRX65，三轮全失败还被判"clean"，是假绿——本版修掉）；
+④ 连续三次 `symbol.generate`（中间含一次人工关窗）；⑤ 每次读回
+   `dbFindOpenCellViewByName(<lib> <cell> "symbol")` 与 generate 的 ok；
+⑥ 不清理现场；证据落 `test/artifacts/evidence/symbol-regen-handle/*.json`。
 
-真实设计迭代（改原理图 → 重新生成 symbol）在第二次就断，属于幂等性/句柄泄漏问题。
-探针把三步都测出来：
+判据（强判据，不再"失败也算 clean"）：
+  三次 generate 都必须 ok；每次 generate 之后 symbol view **不得**处于打开态。
 
-1. 首次 generate → 看 ``dbFindOpenCellViewByName(<lib> <cell> symbol)`` 是否非空；
-2. 再次 generate（overwrite=True）→ 期望成功，实测是否报 "target symbol is open"；
-3. 手工 ``dbClose`` 后再 generate → 确认"关掉就能过"，从而把根因钉在"没关"。
+用法::
 
-verdict ∈ {clean, leaks-open-view, other}
+    PYTHONPATH=src python test/semi/probes/symbol_regen_handle_probe.py
 """
 from __future__ import annotations
 
 import argparse
+import datetime as dt
 import json
 import sys
-import urllib.error
-import urllib.request
 from pathlib import Path
-from typing import Any
 
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "src"))
+sys.path.insert(0, str(ROOT / "test" / "shared" / "runners"))
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 
-API = "http://127.0.0.1:8127/api/operation"
-DEFAULT_TOKEN = "d6af595b342647b58ec63ca6"
-LIB, CELL = "SRX65", "sym_probe"
+TOKEN = "vb-vblog"
+WORK_DIR = ROOT / "test" / "artifacts" / "env" / "log-vblog"
+LIB, CELL = "schemtest", "sym_regen_probe"
 
 
-def call(token: str, operation: str, **fields: Any) -> dict:
-    body = json.dumps({"operation": operation, "token": token, **fields},
-                      ensure_ascii=False).encode("utf-8")
-    request = urllib.request.Request(
-        API, data=body, headers={"Content-Type": "application/json"}, method="POST")
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--token", default=TOKEN)
+    parser.add_argument("--work-dir", default=str(WORK_DIR))
+    parser.add_argument("--out", default="")
+    args = parser.parse_args()
+
+    from common.paths import init_work_dir
+    from pyapi.packages import cellview as cv
+    from pyapi.packages import schematic as sch
+    from pyapi.packages import symbol as sym
+    from transport.middle import BusinessServer
+    from env_check import require_environment
+
+    # ① 环境检查（不通过直接失败并如实上报）
+    env = require_environment(work_dir=args.work_dir, token=args.token,
+                              expect_host="GLIS-DESKTOP", require_lib=[LIB])
+    init_work_dir(args.work_dir)
+    middle = BusinessServer()
+    comparisons: list[dict[str, object]] = []
     try:
-        with urllib.request.urlopen(request, timeout=600) as response:
-            return json.loads(response.read().decode("utf-8"))
-    except urllib.error.HTTPError as error:
-        return json.loads(error.read().decode("utf-8"))
+        def record(name: str, expected: object, actual: object) -> None:
+            comparisons.append({"check": name, "expected": expected, "actual": actual,
+                                "verdict": "PASS" if expected == actual else "FAIL"})
+            if expected != actual:
+                raise AssertionError(f"{name}: expected {expected!r}, actual {actual!r}")
 
+        # ②③ 造前置：先删旧图 → 建 schematic → 放一个 pin → 保存 → 读回确认
+        try:
+            cv.Package(middle).view_delete(cv.ViewDeleteRequest(
+                token=args.token, library=LIB, cell=CELL, view="schematic"))
+        except Exception:  # noqa: BLE001 - 不存在就继续
+            pass
+        created = cv.Package(middle).view_create(cv.ViewCreateRequest(
+            token=args.token, library=LIB, cell=CELL, view="schematic",
+            view_type="schematic"))
+        record("baseline view.create", True, bool(created.ok))
+        wrote = sch.Package(middle).write(sch.WriteRequest(
+            token=args.token, library=LIB, cell=CELL, view="schematic",
+            commands=[{"op": "place_pin", "name": "P1", "direction": "input",
+                       "pos": [0.0, 0.0]}]))
+        record("baseline schematic.write", True, bool(wrote.ok))
+        read = sch.Package(middle).read(sch.ReadRequest(
+            token=args.token, library=LIB, cell=CELL, view="schematic",
+            focus="positions"))
+        pins = (read.value or {}).get("pins") or []
+        record("baseline pin visible", 1, len(pins))
 
-def skill(token: str, code: str) -> str:
-    response = call(token, "basic.skill.execute", skill_code=code, timeout=300)
-    result = ((response.get("data") or {}).get("result") or {})
-    if result.get("status") != "success":
-        raise AssertionError(json.dumps(result, ensure_ascii=False)[:300])
-    return str(result.get("output") or "").strip()
+        def symbol_open() -> str:
+            res = middle.execute_skill(
+                f'if(dbFindOpenCellViewByName("{LIB}" "{CELL}" "symbol") "OPEN" "CLOSED")',
+                timeout=60, token=args.token)
+            return (res.output or "").strip().strip('"')
 
+        results: list[dict[str, object]] = []
+        for attempt in (1, 2, 3):
+            if attempt == 3:
+                # ③ 人为关掉可能残留的 symbol view，再试一次
+                middle.execute_skill(
+                    f'let((cv) cv = dbFindOpenCellViewByName("{LIB}" "{CELL}" "symbol") '
+                    "when(cv dbClose(cv)))", timeout=60, token=args.token)
+            generated = sym.Package(middle).generate(sym.GenerateRequest(
+                token=args.token, library=LIB, cell=CELL,
+                schematic_view="schematic", symbol_view="symbol",
+                overwrite=(attempt > 1)))
+            state = symbol_open()
+            results.append({"attempt": attempt, "generate_ok": bool(generated.ok),
+                            "error": generated.error, "symbol_open_after": state})
+            record(f"generate#{attempt} ok", True, bool(generated.ok))
+            record(f"generate#{attempt} leaves symbol closed", "CLOSED", state)
+        verdict = "PASS" if all(r["generate_ok"] for r in results) else "FAIL"
+    finally:
+        middle.close()
 
-def is_open(token: str) -> str:
-    raw = skill(
-        token,
-        f'if(dbFindOpenCellViewByName("{LIB}" "{CELL}" "symbol") "OPEN" "CLOSED")')
-    return raw.strip().strip('"')
-
-
-def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--token", default=DEFAULT_TOKEN)
-    ap.add_argument("--out", type=Path,
-                    default=ROOT / "test" / "artifacts" / "evidence" / "round4-probes")
-    args = ap.parse_args(argv)
-    token = args.token
-    report: dict[str, Any] = {"token": token}
-
-    try:
-        # 干净的探针 cell（先建视图，schematic.write 是 append 语义）
-        call(token, "virtuoso.cellview.view.create", library=LIB, cell=CELL,
-             view="schematic", view_type="schematic", timeout=120)
-        call(token, "virtuoso.schematic.write", library=LIB, cell=CELL, view="schematic",
-             timeout=300, commands=[
-                 {"op": "place_pin", "name": "vin", "direction": "input",
-                  "pos": [-2.0, 0.0]},
-                 {"op": "place_pin", "name": "vout", "direction": "output",
-                  "pos": [2.0, 0.0]},
-             ])
-        call(token, "virtuoso.schematic.check_and_save", library=LIB, cell=CELL,
-             view="schematic", timeout=180)
-
-        first = call(token, "virtuoso.symbol.generate", library=LIB, cell=CELL,
-                     schematic_view="schematic", symbol_view="symbol",
-                     overwrite=True, timeout=600)
-        report["first_generate_ok"] = bool(first.get("ok"))
-        report["first_generate_error"] = first.get("error")
-        report["open_after_first"] = is_open(token)
-
-        second = call(token, "virtuoso.symbol.generate", library=LIB, cell=CELL,
-                      schematic_view="schematic", symbol_view="symbol",
-                      overwrite=True, timeout=600)
-        report["second_generate_ok"] = bool(second.get("ok"))
-        report["second_generate_error"] = second.get("error")
-
-        # 手工关掉遗留 view 后再试
-        skill(token, f'let((cv) cv = dbFindOpenCellViewByName("{LIB}" "{CELL}" "symbol") '
-                     f'if(cv progn(dbClose(cv) "closed") "none"))')
-        report["open_after_manual_close"] = is_open(token)
-        third = call(token, "virtuoso.symbol.generate", library=LIB, cell=CELL,
-                     schematic_view="schematic", symbol_view="symbol",
-                     overwrite=True, timeout=600)
-        report["third_generate_ok"] = bool(third.get("ok"))
-        report["third_generate_error"] = third.get("error")
-    except Exception as exc:  # noqa: BLE001
-        report["error"] = f"{type(exc).__name__}: {exc}"
-
-    leaks = (report.get("open_after_first") == "OPEN"
-             and report.get("second_generate_ok") is False)
-    report["verdict"] = ("clean" if not leaks else "leaks-open-view")
-    args.out.mkdir(parents=True, exist_ok=True)
-    path = args.out / "round4-symbol-regen-handle.json"
-    path.write_text(json.dumps(report, ensure_ascii=False, indent=1), encoding="utf-8")
-    print(json.dumps(report, ensure_ascii=False))
-    print(f"verdict: {report['verdict']}")
-    print(f"evidence: {path}")
-    return 0 if report["verdict"] == "clean" else 1
+    out = Path(args.out) if args.out else (
+        ROOT / "test" / "artifacts" / "evidence" / "symbol-regen-handle"
+        / f"symbol-regen-{dt.datetime.now():%Y%m%d-%H%M%S}-{verdict.lower()}.json")
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps({
+        "tb": "test/semi/probes/symbol_regen_handle_probe.py",
+        "token": args.token, "lib": LIB, "cell": CELL,
+        "env": env, "results": results, "comparisons": comparisons, "verdict": verdict,
+    }, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(json.dumps({"verdict": verdict, "results": results}, ensure_ascii=False))
+    print(f"evidence: {out}")
+    return 0 if verdict == "PASS" else 1
 
 
 if __name__ == "__main__":
