@@ -706,6 +706,33 @@ def main() -> int:
         server.shutdown()
         server.server_close()
 
+    # C14: after a registration run only registry + deployed files may remain.
+    # The fake daemon must release its listener; no reservation file is allowed.
+    port_released = False
+    if args.local_mode:
+        probe = socket.socket()
+        try:
+            probe.settimeout(0.3)
+            port_released = probe.connect_ex(("127.0.0.1", port)) != 0
+        finally:
+            probe.close()
+    else:
+        deadline = time.monotonic() + 10
+        while time.monotonic() < deadline:
+            probe = subprocess.run(
+                ["ssh", args.host, f"ss -ltn | grep -c ':{port} '"],
+                capture_output=True, text=True, timeout=20, **no_window(),
+            )
+            if (probe.stdout or "").strip() == "0":
+                port_released = True
+                break
+            time.sleep(0.4)
+    results.add("cleanup-daemon-port-released", port_released,
+                port=port, mode="local" if args.local_mode else "remote")
+    reservation_file = work_dir / "registry.reservation"
+    results.add("cleanup-no-reservation-file", not reservation_file.exists(),
+                path=str(reservation_file))
+
     checks_ok = results.passed == len(results.items)
     ok = ok and checks_ok
     evidence = {
