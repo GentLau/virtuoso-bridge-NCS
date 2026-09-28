@@ -13,21 +13,17 @@
 3. **刷新方式**：改 `test/shared/runners/make_bug_cards.py` 的 `OPEN` / `CLOSED_RECENT` 段，
    然后 `python test/shared/runners/make_bug_cards.py`（幂等；`--check` 只校验不写盘）。
 
-## 1. 未关闭（6 条）
+## 1. 未关闭（2 条）
 
 | ID | 层 | 级别 | 归属 | 状态 | 一句话 | 卡片 |
 |---|---|---|---|---|---|---|
-| **P-038** | 其他（公共 / 打包） | P2（任何 3.9 客户端/CI 作业不可用；跨客户端一致性在 3.9 上不成立） | 设计侧（打包/依赖或 requires-python 口径） | 待设计修（已报 `bug-20260922T141119Z-vblog-5e939e33`） | 声明支持 Python 3.9，但裸装 3.9 无法导入（pydantic 求值 PEP 604 注解；pyproject 未声明 `eval_type_backport`） | [P-038-py39-pep604-needs-backport.md](P-038-py39-pep604-needs-backport.md) |
-| **P-077** | 其他（注册 / 控制面） | P3（口径不一致：注册探测 vs 运行时；会绊住手写配置的用户） | 设计侧（定口径：探测接受 PATH 名 or spec 写明必须绝对路径） | 待归属 | 显式 `role.daemon.python` 传裸命令名（如 `python3`）时注册第 3 步失败；运行时可解析 PATH | [P-077-explicit-daemon-python-bare-name-rejected.md](P-077-explicit-daemon-python-bare-name-rejected.md) |
 | **P-076** | 上层（spectre 包；第二嫌疑：中层持久 shell） | P2（间歇性挂起；占住 in_flight 线程，客户端只能杀进程） | 设计侧（上层 spectre 包的 run 路径：等待完成/递归下载） | 观察（1 次复现，待设计侧定位） | 间歇：`spectre.run` 请求永不返回（spectre 已 0 error 跑完；服务端线程不释放，需重启业务面） | [P-076-spectre-run-request-never-returns.md](P-076-spectre-run-request-never-returns.md) |
-| **P-075** | 上层（layout/gui 包） | P1（会话被挂死；多用户/GDS 后继续操作的流程直接卡住） | 设计侧（上层 layout.gds / strmout 调用路径） | 待设计修 | `virtuoso.layout.gds` 导出后会话残留模态对话框（"Stream out translation complete"）→ 同会话 SKILL 通道挂死，必须重启实例 | [P-075-gds-export-modal-blocks-session.md](P-075-gds-export-modal-blocks-session.md) |
-| **P-073** | 上层（schematic 包） | P2（写操作语义错误；set_pin_properties 静默改坏用户数据） | 设计侧（上层 schematic 包 `_atomic_skill`） | 待设计修 | 原理图 pin 原子操作与「pin 有效名」不一致：rename_pin 静默无效、set_pin_properties 把 pin 名改成自动名 | [P-073-pin-atomic-ops-name-mismatch.md](P-073-pin-atomic-ops-name-mismatch.md) |
 | **P-070** | 上层（maestro/spectre 包） | P2（能力缺失） | 待决策（产品口径：支持驱动 MC or 明确不做）→ 设计侧实现/写 spec | 待决策 | 蒙特卡洛能力缺失：只能读回 MC 结果，不能驱动 MC 仿真 | [P-070-monte-carlo-missing.md](P-070-monte-carlo-missing.md) |
 
 > 优先级口径：**P1** = Linux 侧资源/安全或核心指标链路断（P-056、P-053）；
 > **P2** = 真实设计流会给出错的/空的结果，且多数**静默**；**P3/观察** = 非阻塞但建议顺手修。
 
-## 2. 本轮/近期已关闭（46 条，保留记录）
+## 2. 本轮/近期已关闭（50 条，保留记录）
 
 | ID | 事项 | 关闭依据（证据） |
 |---|---|---|
@@ -77,6 +73,10 @@
 | P-032 | `verilog._imported_cells` 去重顺序错误（未清洗 token 参与比较） | **已修（`b36bade`）**：先清洗 `[.,;:]` 尾字符再去重（`verilog.py:659-667`）。验证：`test_verilog_contracts.py` 28/28 绿 |
 | P-074 | pin 坐标口径三处不一致（read `xy` / write `x`,`y` / spec `xy`） | **已修（`48fc800`）**：实现统一为 `pos: [x, y]`，`xy`/拆开的 `x`/`y` 一律拒绝并点名违规字段（`schematic.py:480-487`）；spec《2-schematic》已改「单点一律 pos、弃用 xy」。验证：`schematic_pin_ops_probe` 以 `pos` 形状跑通写路径（`round7/pin-ops.json`，2026-09-28 复跑） |
 | C0 | 测试规范缺失（六步/状态还原）＋ 原子级覆盖系统性缺口 | **已闭环（2026-09-28）**：① 规范落地 `test/docs/写TB规范.md`（六步＋判据强度＋状态还原＋原子级覆盖义务）；② 机器核账 `audit_atom_coverage.py` → **gap=0 / weak=0 / 待分诊 0**（`atom-coverage-2026-09-28.json`）；③ B3 修弱判据：serdes calibre 补 `read_results`（DRC 1737 规则/28 结果；LVS 显式记录 not_compared 局限）、ADC/多用户 SerDes 补 `symbol.read` 端口比对、S11 gds 补 `stat+sha256`（PASS）；④ B4 抽查报告 `test/reports/TB规范抽查-2026-09-28.md`（5 份，发现 design_iterate 缺 §1 env_check → 已修） |
+| P-038 | py3.9 裸装缺 `eval-type-backport` 声明 | **已修（`2ab6acf3`）**：`pyproject.toml:14` 运行时依赖含 `eval-type-backport>=0.2; python_version < '3.10'`（wheel METADATA 同）；CI `uv run --python 3.9 --extra dev` 会装运行时依赖 → 3.9 作业不再缺 backport。测试侧复核：依赖行存在；wsl-gent py3.9（pydantic 2.13.5 + backport）import OK |
+| P-073 | pin 原子操作与「pin 有效名」不一致（rename 静默无效 / set 改坏 pin 名） | **已修（`3e45442`）**：pin 原子改按「有效名(terminal)」而非 pin 实例名操作。`schematic_pin_ops_probe` 复跑 **clean**（rename 生效、set 只改方向保名、delete OK）。注：验证前必须重启 8127 —— 常驻进程只在启动时导入代码，老进程会回旧行为（Runbook §10） |
+| P-075 | `layout.gds` 导出后残留模态框 → 同会话 SKILL 挂死（P1） | **已修**：`layout.gds` 导出收尾自动关 XStream 窗口（`layout.py::_dismiss_xstream_windows`，completion box→Enter / XStream Out→Esc）。`gds_then_skill_probe` 复跑 **clean**（GDS 后 SKILL **0.3s** 返回，此前 30s 超时）；ADC 全链回到 **24/24**（`round8/adc-sar.json`） |
+| P-077 | 注册探测拒绝裸 python 名（`test -x python3`） | **已修（`3886cb4`）**：显式 python/bin 接受 PATH 命令名（`command -v` 解析 + 真实文件/可执行校验），与运行时 `/usr/bin/env <value>` 一致；新增离线用例 3/3。端到端回归：P3 跨主机注册（裸 `python3`）**28/28**、P4 真 CIW **12/12** |
 
 详见 [已关闭-近期.md](已关闭-近期.md)。
 

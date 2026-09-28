@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=====================
 # 作者: 设计/Codex
-# 最后改动: 2026-09-28 15:52
+# 最后改动: 2026-09-28 16:35
 # 依赖: 无
 # =====================================================================
 # 六步流程（按 test/docs/写TB规范.md §1–§6）：
@@ -244,9 +244,8 @@ def main(argv: list[str] | None = None) -> int:
             "ssh": {"default": {"host": args.host, "user": args.ssh_user,
                                 "key_dir": args.ssh_key_dir, "key": args.ssh_key}},
             "root": {"default": root},
-            # 显式 python 必须能被 `test -x` 命中（绝对路径）；裸命令名会
-            # 被注册探测拒绝（P-077）。
-            "roles": {"daemon": {"python": "/usr/local/bin/python3",
+            # P-077 修复后：显式 python 接受 PATH 命令名（回归用例，故意用裸名）。
+            "roles": {"daemon": {"python": "python3",
                                   "daemon_port": daemon_port,
                                   "local_port": local_port},
                       "gui": ({"display": args.display} if args.display else {})},

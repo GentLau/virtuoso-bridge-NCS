@@ -27,51 +27,6 @@ BUGS_DIR = ROOT / "test" / "reports" / "bugs"
 #: 未关闭条目。状态只允许：待设计修 / 待测试侧 / 待归属 / 待决策 / 观察
 OPEN = [
     {
-        "id": "P-038",
-        "layer": "其他（公共 / 打包）",
-        "slug": "py39-pep604-needs-backport",
-        "reported": "第五轮（2026-09-22；已报 `bug-20260922T141119Z-vblog-5e939e33`）",
-        "updated": "2026-09-28（复测：lab py3.9 因已装 backport 能跑，裸装仍会挂）",
-        "title": "声明支持 Python 3.9，但裸装 3.9 无法导入（pydantic 求值 PEP 604 注解；pyproject 未声明 `eval_type_backport`）",
-        "level": "P2（任何 3.9 客户端/CI 作业不可用；跨客户端一致性在 3.9 上不成立）",
-        "owner": "设计侧（打包/依赖或 requires-python 口径）",
-        "status": "待设计修（已报 `bug-20260922T141119Z-vblog-5e939e33`）",
-        "where": "`src/common/registry.py:155`（`mode: Literal[\"local\",\"remote\"] | None`）；`pyproject.toml:9`（`requires-python = \">=3.9\"`）；dev extra 未含 `eval_type_backport`",
-        "symptom": "3.9 上 pydantic 求值 PEP 604 注解直接抛 `TypeError: Unable to evaluate type annotation ... install the eval_type_backport package`；"
-                   "全仓 48 文件 785 处 PEP 604 注解。**2026-09-28 复测**：wsl-gent `/usr/bin/python3.9`（pydantic 2.13.5）因已装 `eval_type_backport` 可正常 import；裸装 3.9 仍会挂。",
-        "repro": "`/usr/bin/python3.9 -c \"from common.registry import UserEntry\"`（未装 backport 时失败）；见 `round7-测试报告.md` §2 Linux 客户端口径",
-        "evidence": "台账 P-038 行；bug id `bug-20260922T141119Z-vblog-5e939e33`；wsl-gent py3.9 复测（`backport: True`、`registry import OK`）",
-        "accept": "二选一：`requires-python>=3.10` 并删 CI 3.9，或把 `eval_type_backport; python_version<\"3.10\"` 写进依赖并让 3.9 作业真跑绿",
-        "next": "设计侧定口径；测试侧按口径复跑 py3.9 离线三层",
-    },
-    {
-        "id": "P-077",
-        "layer": "其他（注册 / 控制面）",
-        "slug": "explicit-daemon-python-bare-name-rejected",
-        "reported": "2026-09-28（注册专项；已报 `bug-20260928T075610Z-vblog-ff0b59eb`）",
-        "updated": "2026-09-28（测试侧 P3/P4 实跑后立卡）",
-        "title": "显式 `role.daemon.python` 传裸命令名（如 `python3`）时注册第 3 步失败；运行时可解析 PATH",
-        "level": "P3（口径不一致：注册探测 vs 运行时；会绊住手写配置的用户）",
-        "owner": "设计侧（定口径：探测接受 PATH 名 or spec 写明必须绝对路径）",
-        "status": "待归属",
-        "where": "`src/register/flow.py:747`（`remote_executable_exists` → `test -x <显式值>`；"
-                 "`src/register/probe.py:194-199`）vs `src/bridge/resources/ramic_bridge.il:259`"
-                 "（daemon 启动走 `/usr/bin/env … <RBPython>`，PATH 可解析）",
-        "symptom": "注册 apply 给 daemon role 显式 `python: \"python3\"` → 第 3 步 probe 失败："
-                   "`explicit daemon python is not executable on wsl-gent: python3`；"
-                   "而同一取值在 daemon 启动路径（IL 里经 env 执行）可用。"
-                   "spec《中层配置文档》只写「显式→校验，缺省→探测」，未写明显式值必须是绝对路径。",
-        "repro": "`PYTHONPATH=src python test/live/registration/registration_role_split_tb.py "
-                 "--work-dir test/artifacts/env/reg-role-split`（改回 `\"python\": \"python3\"` 即复现；"
-                 "改绝对路径后 **28/28 通过**）",
-        "evidence": "`test/artifacts/evidence/tb-sixstep-20260928/registration-role-split.json`（修正后 28/28）、"
-                    "`src/register/flow.py:747`、`src/register/probe.py:194`、"
-                    "`src/bridge/resources/ramic_bridge.il:259`",
-        "accept": "二选一并落到 spec：① 探测用 `command -v <值>` 解析 PATH 名（与运行时一致）；"
-                  "② spec 明确「显式值必须为绝对路径」，注册页/错误信息同步提示",
-        "next": "设计侧定口径；测试侧两个注册 TB 已改绝对路径绕行（`/usr/local/bin/python3`）",
-    },
-    {
         "id": "P-076",
         "layer": "上层（spectre 包；第二嫌疑：中层持久 shell）",
         "slug": "spectre-run-request-never-returns",
@@ -101,88 +56,6 @@ OPEN = [
                   "或用 py-spy 抓卡住线程栈）；③ 修好后连跑 3 次 `design_iterate_tb --stage all` 不再挂。",
         "next": "设计侧定位（样本在 12:59 那次；如需现场可让测试侧重跑并按 py-spy 抓栈）；"
                 "测试侧暂按'间歇挂起'记录，先跑其余 TB。",
-    },
-    {
-        "id": "P-075",
-        "layer": "上层（layout/gui 包）",
-        "slug": "gds-export-modal-blocks-session",
-        "title": "`virtuoso.layout.gds` 导出后会话残留模态对话框（\"Stream out translation complete\"）→ 同会话 SKILL 通道挂死，必须重启实例",
-        "level": "P1（会话被挂死；多用户/GDS 后继续操作的流程直接卡住）",
-        "owner": "设计侧（上层 layout.gds / strmout 调用路径）",
-        "status": "待设计修",
-        "where": "`src/pyapi/packages/layout.py` 的 `virtuoso.layout.gds`（strmout/XStream 调用）＋ `src/pyapi/packages/gui.py` 的 `auto_dismiss`（现有规避手段对它无效）",
-        "symptom": "在**同一会话**里执行 `virtuoso.layout.gds`（导出 GDS 到新目录，XStream/strmout）之后，"
-                   "**该会话若出现模态** `\"Stream out translation complete\"` 窗口（XStream 完成框），"
-                   "该会话的 SKILL 通道被一个**模态对话框**阻塞：窗口列表可见 "
-                   "`\"Stream out translation complete\"`（class `virtuoso`）＋ `\"XStream Out\"`；"
-                   "此后该 token 的任何 `basic.skill.execute` / 依赖 SKILL 的操作都 30s 超时"
-                   "（`SKILL execution timed out`）。实测：`virtuoso.gui.auto_dismiss` 返回 ok 但 "
-                   "`dismissed=null`（关不掉这个窗口），**只能重启该实例**才能恢复。\n"
-                   "受害场景（已复现 3 次）：多用户协同里 A 出完 GDS、B 改同一 cell 的 schematic 后，"
-                   "A 的回读超时；单会话流程里\"出 GDS 后继续写原理图\"同样中招。\n"
-                   "**观察到的差异（待设计侧定位触发条件）**：同一台机器上 `vblog` / `calprobe` 会话"
-                   "导出 GDS 后只有**非模态**的 `\"XStream Out\"` 主窗体、SKILL 仍可用；"
-                   "`vbuser1`（Xvfb `:105`，headless）稳定留下**模态完成框**并挂死 —— "
-                   "可能与 XStream 表单/焦点/headless 显示或 strmout 参数有关。",
-        "repro": "① **最小复现（单会话，无第二用户）**：\n"
-                 "`PYTHONPATH=src python test/semi/probes/gds_then_skill_probe.py --token vb-vbuser1 "
-                 "--file-root /home/vbuser1/.virtuoso-bridge/vbuser1/file --skill-timeout 45`\n"
-                 "→ lib/view/write/read-back/gds-export 全 OK，最后一步 "
-                 "`skill-after-gds` FAIL：`elapsed_s=30.0, SKILL execution timed out`（证据 JSON 见下）。\n"
-                 "② 二分复现脚本（含多用户版本，定位到 --gds 是触发项）：\n"
-                 "`PYTHONPATH=src python test/artifacts/tmp/bisect_cross_user_block.py --cell blk_gds_x "
-                 "--symbol --layout --gds`\n"
-                 "→ 观察最后一步：`A: read after B write (30.0s) ok=False err=SKILL execution timed out`；"
-                 "去掉 `--gds` 的对照组（`--symbol --layout`）通过（0.3s）。\n"
-                 "③ 端到端：`PYTHONPATH=src python test/live/flows/adc_sar_flow_tb.py --work-dir "
-                 "test/artifacts/env/log-vblog --token-a vb-vbuser1 --token-b vb-vbuser2` → 21/22，"
-                 "失败步 `A-see:B's instance`（read_error=SKILL execution timed out）。\n"
-                 "④ 窗口取证：`xwininfo -display <A 的 DISPLAY> -root -tree | grep -E 'Stream|XStream'`。",
-        "evidence": "`test/artifacts/evidence/round7/gds-then-skill.json`（单会话最小复现：RED）；"
-                    "`test/artifacts/evidence/round7/adc-sar-pos2.json`（21/22，失败步带原始 read_error）；"
-                    "窗口列表（A 会话）：`0x4001e9 \"Stream out translation complete\"`、"
-                    "`0x4001e6 \"XStream Out\"`（test/artifacts/tmp/check_wedge_after_gds.sh 的输出）；"
-                    "对照组 E1/E2（symbol / symbol+layout）全绿、E3（+gds）复现。",
-        "accept": "① `virtuoso.layout.gds` 返回后，**同会话**的下一次 SKILL 调用在正常时限内成功（无需重启）——"
-                  "最小复现即 `gds_then_skill_probe` 转绿；"
-                  "② 或由产品在导出结束时关闭自己的 XStream 模态窗口，并让 `gui.auto_dismiss` 能识别/关闭它；"
-                  "③ 回归门：新增探针 `test/semi/probes/gds_then_skill_probe.py` 转绿 + ADC TB 回到 22/22。",
-        "next": "设计侧定位 strmout 调用（是否用了会弹完成框的 XStream UI 路径；建议改批处理/导出后显式关窗）。"
-                "测试侧：新探针先钉住红灯（已加），修好后跑「探针 + ADC TB + 一次多用户 GDS→改单」三轮复验。",
-    },
-    {
-        "id": "P-073",
-        "layer": "上层（schematic 包）",
-        "slug": "pin-atomic-ops-name-mismatch",
-        "title": "原理图 pin 原子操作与「pin 有效名」不一致：rename_pin 静默无效、set_pin_properties 把 pin 名改成自动名",
-        "level": "P2（写操作语义错误；set_pin_properties 静默改坏用户数据）",
-        "owner": "设计侧（上层 schematic 包 `_atomic_skill`）",
-        "status": "待设计修",
-        "where": "`src/pyapi/packages/schematic.py:615-637`（`delete_pin`/`rename_pin`/`set_pin_properties` "
-                 "按 **pin 实例** 匹配并把实例名当 pin 名）、`:601-614`（`place_pin`）；"
-                 "spec `2-schematic.md:59` 表格",
-        "symptom": "真机实测（`DI65` 与 `PINOP` 两个 cell，两种环境）：\n"
-                   "① `rename_pin` 返回 `status=success, output=\"新名\"`、`check_and_save` 返回 `saved`，"
-                   "但 `virtuoso.schematic.read` 的 pin 列表**仍是旧名**、`symbol.generate` 二次出图的端口名"
-                   "**也仍是旧名**（下游网表看到的端口没变）；直接读 DB 才看到只有 **pin 实例名**被改了"
-                   "（`(\"PIN0\" \"ipin\")` → `(\"a2\" \"ipin\")`）——即对用户是**静默无操作**。\n"
-                   "② `set_pin_properties`（改 direction）写成功，但 pin **名字被换成自动名**："
-                   "`y` → `PIN1`，symbol 端口也跟着变成 `PIN1` —— 用户只改方向，端口名被改坏。\n"
-                   "③ `delete_pin` 行为正确（pin 从 read 列表消失）。",
-        "repro": "`python test/semi/probes/schematic_pin_ops_probe.py --token <PDK_TOKEN>`"
-                 "（token 从 `test/artifacts/env/log-vblog/registry.json` 的 calprobe 条目取；报告里不写明文）"
-                 "（四个角度：write 自报 / schematic.read / symbol 端口 / DB 里 pin 实例名）；"
-                 "迭代链侧复现：`python test/live/flows/design_iterate_tb.py --stage all`"
-                 "（`r2_edit` 的 `pin-renamed`、`r2_sym` 的 `symbol-terms-round2` 两条断言）",
-        "evidence": "`test/artifacts/evidence/round7/pin-ops.json`（三轮步骤逐条留证）、"
-                    "`test/artifacts/evidence/round7/design-iterate/iterate-r2_edit.json`、"
-                    "`.../iterate-r2_sym.json`、`test/artifacts/evidence/round7/design_iterate_run.log`",
-        "accept": "三个原子在真实 cell 上语义正确：`rename_pin` 后 read 与 symbol 端口名都变；"
-                  "`set_pin_properties` 只改方向、pin 名保持不变；`delete_pin` 后端口消失；"
-                  "并补离线用例钉住（断言必须落在「下游可见的 pin 名」，不是实例名）",
-        "next": "设计侧：pin 的**有效名**在标签/端口对象上，`rename_pin` 要改的是它（或同步改实例名+标签），"
-                "`set_pin_properties` 不能用实例名去重建 pin。测试侧：修好后重跑 `design_iterate_tb` 与"
-                "`schematic_pin_ops_probe`（本轮这两处是**已登记的预期红**）",
     },
     {
         "id": "P-070",
@@ -347,6 +220,14 @@ CLOSED_RECENT = [
      "③ B3 修弱判据：serdes calibre 补 `read_results`（DRC 1737 规则/28 结果；LVS 显式记录 not_compared 局限）、"
      "ADC/多用户 SerDes 补 `symbol.read` 端口比对、S11 gds 补 `stat+sha256`（PASS）；"
      "④ B4 抽查报告 `test/reports/TB规范抽查-2026-09-28.md`（5 份，发现 design_iterate 缺 §1 env_check → 已修）"),
+    ("P-038", "py3.9 裸装缺 `eval-type-backport` 声明",
+     "**已修（`2ab6acf3`）**：`pyproject.toml:14` 运行时依赖含 `eval-type-backport>=0.2; python_version < '3.10'`（wheel METADATA 同）；CI `uv run --python 3.9 --extra dev` 会装运行时依赖 → 3.9 作业不再缺 backport。测试侧复核：依赖行存在；wsl-gent py3.9（pydantic 2.13.5 + backport）import OK"),
+    ("P-073", "pin 原子操作与「pin 有效名」不一致（rename 静默无效 / set 改坏 pin 名）",
+     "**已修（`3e45442`）**：pin 原子改按「有效名(terminal)」而非 pin 实例名操作。`schematic_pin_ops_probe` 复跑 **clean**（rename 生效、set 只改方向保名、delete OK）。注：验证前必须重启 8127 —— 常驻进程只在启动时导入代码，老进程会回旧行为（Runbook §10）"),
+    ("P-075", "`layout.gds` 导出后残留模态框 → 同会话 SKILL 挂死（P1）",
+     "**已修**：`layout.gds` 导出收尾自动关 XStream 窗口（`layout.py::_dismiss_xstream_windows`，completion box→Enter / XStream Out→Esc）。`gds_then_skill_probe` 复跑 **clean**（GDS 后 SKILL **0.3s** 返回，此前 30s 超时）；ADC 全链回到 **24/24**（`round8/adc-sar.json`）"),
+    ("P-077", "注册探测拒绝裸 python 名（`test -x python3`）",
+     "**已修（`3886cb4`）**：显式 python/bin 接受 PATH 命令名（`command -v` 解析 + 真实文件/可执行校验），与运行时 `/usr/bin/env <value>` 一致；新增离线用例 3/3。端到端回归：P3 跨主机注册（裸 `python3`）**28/28**、P4 真 CIW **12/12**"),
 ]
 
 #: 非缺陷跟踪项（文档/环境/审计/覆盖度）：不建卡，只在 README 索引，避免与缺陷视图混淆

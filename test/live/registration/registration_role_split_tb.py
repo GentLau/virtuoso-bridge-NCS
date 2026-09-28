@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=====================
 # 作者: 设计/Codex
-# 最后改动: 2026-09-28 15:52
+# 最后改动: 2026-09-28 16:35
 # 依赖: 无
 # =====================================================================
 # 六步流程（按 test/docs/写TB规范.md §1–§6）：
@@ -275,9 +275,9 @@ def main(argv: list[str] | None = None) -> int:
                 "daemon": {"host": args.ws_host, "user": args.ws_user,
                            "key_dir": args.ws_key_dir, "key": args.ws_key,
                            "root": f"{ws_root}/daemon",
-                           # 注册探测用 `test -x <显式值>` 校验，裸命令名会被拒（P-077）；
-                           # 这里给绝对路径（= 目标机 `command -v python3`）。
-                           "python": "/usr/local/bin/python3",
+                           # P-077 修复后：显式值接受 PATH 命令名（与运行时 /usr/bin/env 一致）；
+                           # 这里故意用裸名，作为该修复的端到端回归。
+                           "python": "python3",
                            "daemon_port": daemon_port, "local_port": local_port},
                 "command": {"host": args.lab_host, "user": args.lab_user,
                             "key_dir": args.lab_key_dir, "key": args.lab_key,
