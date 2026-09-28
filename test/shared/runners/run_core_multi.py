@@ -17,6 +17,7 @@ DEFAULT = (
     "test/offline/core/api_server_tb.py",
     "test/offline/core/daemon_log_protocol_tb.py",
     "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py",
 )
 
 

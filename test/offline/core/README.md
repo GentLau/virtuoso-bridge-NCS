@@ -7,5 +7,6 @@
 - `fault_injection_tb.py`：租约竞态、shell permit、transport kind、日志参数、缓存失效。
 - `daemon_log_protocol_tb.py`：daemon 日志协议矩阵（off/分级/轮转/降级/截断）。
 - `p076_tar_completion_tb.py`：P-076 确定性回归——channel/tar 已完成时，卡死的 pump 线程不得阻止 install。
+- `thread_lifecycle_tb.py`：自研线程生命周期回归——tunnel pump、持久 shell reader、本地 command session reader 关闭后不得残留。
 
 运行方式见 [`../README.md`](../README.md)。产物只写 `../artifacts/`。

@@ -65,6 +65,7 @@ Step 'offline/core semantics' { python -m coverage run --branch --append --sourc
 Step 'offline/core fault-injection' { python -m coverage run --branch --append --source=src test/offline/core/fault_injection_tb.py --out test/artifacts/evidence/fault-injection-green.json | Out-Null }
 Step 'offline/core daemon-log-protocol' { python -m coverage run --branch --append --source=src test/offline/core/daemon_log_protocol_tb.py --out test/artifacts/evidence/log-protocol.json | Out-Null }
 Step 'offline/core p076-tar-completion' { python -m coverage run --branch --append --source=src test/offline/core/p076_tar_completion_tb.py --out test/artifacts/evidence/p076-tar-completion-green.json | Out-Null }
+Step 'offline/core thread-lifecycle' { python -m coverage run --branch --append --source=src test/offline/core/thread_lifecycle_tb.py --out test/artifacts/evidence/thread-lifecycle-green.json | Out-Null }
 
 foreach ($suite in 'infra','cellview','schematic','symbol','layout','verilog','veriloga','skillref','spectre','maestro','calibre') {
     Step "packages/$suite (direct)" { python -m coverage run --branch --append --source=src "test/live/packages/${suite}_e2e_tests.py" --transport direct | Out-Null }

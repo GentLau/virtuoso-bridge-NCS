@@ -1,8 +1,8 @@
 {
   "tb": "p076_tar_completion_tb",
   "status": "RED",
-  "passed": 2,
-  "total": 3,
+  "passed": 3,
+  "total": 4,
   "cases": [
     {
       "name": "wait_completion_ignores_stuck_pump",
@@ -16,19 +16,23 @@
       "ok": true,
       "rc": 0,
       "stderr": "",
-      "target": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-p076-y9vy8rx6\\out",
+      "target": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-p076-ik7d010x\\out",
       "installed": true,
-      "elapsed_s": 1.015
+      "elapsed_s": 0.015
     },
     {
       "name": "no_residual_pump_after_download",
-      "ok": false,
+      "ok": true,
       "rc": 0,
-      "leaked_threads": [
-        "Thread-4 (_copy_stream)"
-      ],
+      "leaked_threads": [],
       "created_threads": 3,
-      "elapsed_s": 1.531
+      "elapsed_s": 0.016
+    },
+    {
+      "name": "no_residual_local_pipe_worker",
+      "ok": false,
+      "read_stream_alive_after_stop": true,
+      "send_stream_alive_after_stop": true
     }
   ]
 }

@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=====================
 # 作者: 设计/Codex
-# 最后改动: 2026-09-28 17:45
+# 最后改动: 2026-09-28 19:12
 # 依赖: 无
 # =====================================================================
 # 六步流程（按 test/docs/写TB规范.md §1–§6）：
@@ -39,6 +39,7 @@ from __future__ import annotations
 import argparse
 import io
 import json
+import os
 import queue
 import sys
 import tempfile
@@ -302,10 +303,65 @@ def case_no_residual_pump_after_download() -> dict:
         }
 
 
+def case_no_residual_local_pipe_worker() -> dict:
+    """Local pipe workers must stop on stop_event even while read() blocks."""
+    results: dict[str, bool] = {}
+
+    def run_reader() -> bool:
+        read_fd, write_fd = os.pipe()
+        stream = os.fdopen(read_fd, "rb", buffering=0)
+        stop = threading.Event()
+        worker = threading.Thread(
+            target=pb._read_stream,
+            args=(stream, [], queue.Queue(), stop),
+            daemon=True,
+        )
+        worker.start()
+        time.sleep(0.1)
+        stop.set()
+        worker.join(timeout=1.0)
+        alive = worker.is_alive()
+        os.close(write_fd)
+        worker.join(timeout=1.0)
+        stream.close()
+        return alive
+
+    class Channel:
+        def sendall(self, _data):
+            return None
+
+        def shutdown_write(self):
+            return None
+
+    def run_sender() -> bool:
+        read_fd, write_fd = os.pipe()
+        stream = os.fdopen(read_fd, "rb", buffering=0)
+        stop = threading.Event()
+        worker = threading.Thread(
+            target=pb._send_stream_to_channel,
+            args=(stream, Channel(), queue.Queue(), stop),
+            daemon=True,
+        )
+        worker.start()
+        time.sleep(0.1)
+        stop.set()
+        worker.join(timeout=1.0)
+        alive = worker.is_alive()
+        os.close(write_fd)
+        worker.join(timeout=1.0)
+        stream.close()
+        return alive
+
+    results["read_stream_alive_after_stop"] = run_reader()
+    results["send_stream_alive_after_stop"] = run_sender()
+    return {"ok": not any(results.values()), **results}
+
+
 CASES = (
     ("wait_completion_ignores_stuck_pump", case_wait_completion_ignores_stuck_pump),
     ("download_installs_with_stuck_pump", case_download_installs_with_stuck_pump),
     ("no_residual_pump_after_download", case_no_residual_pump_after_download),
+    ("no_residual_local_pipe_worker", case_no_residual_local_pipe_worker),
 )
 
 

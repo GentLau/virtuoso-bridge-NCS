@@ -1,0 +1,16 @@
+{
+  "tb": "thread_lifecycle_tb",
+  "status": "RED",
+  "passed": 0,
+  "total": 1,
+  "cases": [
+    {
+      "name": "paramiko_tunnel_pumps_stop",
+      "ok": false,
+      "handle_alive_after_terminate": true,
+      "pumps_alive_after_terminate": 2,
+      "wait_rc": 0,
+      "leaked_after_release": []
+    }
+  ]
+}
