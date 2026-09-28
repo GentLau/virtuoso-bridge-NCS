@@ -1,9 +1,11 @@
 # 上层业务包：calibre
 
 > 版本：Draft v1
-> 日期：2026-09-22
-> 状态：Draft（待共同修订，暂未纳入 README 治理）
-> Supersedes：无（新包；可行性见 `doc/report/calibre-可行性报告.md`）
+> 日期：2026-09-22（**2026-09-28 起暂缓开发**）
+> 状态：**暂缓**——方向已收敛为"官方入口 + 结果分析"；恢复开发前先读
+> [`spec/research/calibre/00-下一步开发方向.md`](../../research/calibre/00-下一步开发方向.md)（P0：PEX 重做、官方产物解析、输入预检）。
+> **`calibre.pex` 未按官方三阶段验收，禁止用于交付/签核**；DRC/LVS/`export_cdl`/set 直驱已真机验证。
+> Supersedes：无（新包；可行性见 `spec/research/calibre/02-可行性报告.md`）
 > 定位：业务包/业务操作一般契约见[1-上层.md](1-上层.md)；五业务接口见[四层整体架构与接口 §4](../总览/1-四层整体架构与接口.md)；长任务口径参照 [7-spectre.md](7-spectre.md) 与 maestro 的 `run`/`read_history`。
 
 ## 1. 总述
@@ -201,7 +203,7 @@ set 指定名字的报告（`inv2.lvs.report`）、`svdb/`、layout SPICE；`rea
 ### 4.6 `calibre.export_cdl`（LVS 源网表，官方 auCdl）
 
 背景：Calibre 自身不产源网表；官方 GUI 的 “Export from source viewer” 也是驱动 Virtuoso 的
-**CDL Out / auCdl**（`si -batch -command netlist`，见 `doc/report/calibre-网表导出机制调查报告.md`）。
+**CDL Out / auCdl**（`si -batch -command netlist`，见 `spec/research/calibre/03-网表导出机制调查报告.md`）。
 本操作实现同一条官方链路的无头版本，产物路径直接喂给 `calibre.lvs` 的 `cdl`。
 
 | 参数 | 必填 | 默认 | 说明 |
@@ -272,9 +274,9 @@ set 指定名字的报告（`inv2.lvs.report`）、`svdb/`、layout SPICE；`rea
 
 | 证据 | 位置 |
 |---|---|
-| 可行性报告（DRC/LVS/PEX 实跑、CDL 调查、新用户 calprobe 会话） | `doc/report/calibre-可行性报告.md` |
+| 可行性报告（DRC/LVS/PEX 实跑、CDL 调查、新用户 calprobe 会话） | `spec/research/calibre/02-可行性报告.md` |
 | Calibre 环境探针 | `test/semi/probes/calibre_env_probe.py` |
 | CDL 批处理探针（si.env/.simrc 生成） | `test/semi/probes/calibre_cdl_probe.py` |
-| auCdl 导出机制调查（官方链路、runset/control-file 实测） | `doc/report/calibre-网表导出机制调查报告.md`（§8/§9） |
+| auCdl 导出机制调查（官方链路、runset/control-file 实测） | `spec/research/calibre/03-网表导出机制调查报告.md`（§8/§9） |
 | 实跑现场（远端） | `/home/Gent/project/vblog/calibre_probe/{drc_run,lvs_run,rcx_run}/` |
 | 新注册用户与独立 env | `/home/Gent/project/calprobe/`（`calprobe`，见可行性报告 §3.4） |

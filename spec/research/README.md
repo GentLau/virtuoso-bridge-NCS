@@ -31,6 +31,7 @@
 | [07-random-name-generation.md](07-random-name-generation.md) + [random-name-generator.html](random-name-generator.html) | HTML 随机英文名：三种业内方案、无偏随机抽样、三词拼接与混成词算法（含可直接运行的单文件 HTML） | 通用前端零件 |
 | [08-multi-node-topology-research.md](08-multi-node-topology-research.md) | 多节点拓扑调研：历史动机、旧实现事实、当前五 role 的矛盾、必要性与推荐模型 | 架构决策依据 |
 | [three-interface-report.md](three-interface-report.md) | 已存在的 CLI/MCP/Harness 单注册表研究，不属于本次改写范围 | 相关基础设施 |
+| [calibre/](calibre/README.md) | **Calibre 物理验证包（暂缓开发）**：调研/可行性/网表导出机制 + 业务环境"CI=runset→控制文件翻译器"外部报告；恢复方向见 [calibre/00-下一步开发方向.md](calibre/00-下一步开发方向.md) | 上层业务包依据 |
 
 ## 证据等级与来源
 

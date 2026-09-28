@@ -1,5 +1,11 @@
 """``calibre`` business package: DRC / LVS / PEX（物理验证三件套）。
 
+**状态：暂缓开发（2026-09-28）**——方向为"官方入口 + 结果分析"：
+有 set 时走 `calibre -gui -<app> -runset <f> -batch`（本包不翻译参数），
+无 set 时走官方 CLI（deck + 白名单占位符改写）。
+`pex` 的自拼三阶段 argv 与官方不一致（修饰符决定结果），**未验收、禁止使用**；
+恢复开发前先读 ``spec/research/calibre/00-下一步开发方向.md``。
+
 设计口径见 ``spec/design-concepts/上层/12-calibre.md``：
 
 * run 类操作默认**非阻塞**（后台启动 + `job_id`），`calibre.status` 轮询，`calibre.read_results` 出结构化结论；

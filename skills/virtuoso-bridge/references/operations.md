@@ -222,6 +222,10 @@
 
 ## Calibre（DRC / LVS / PEX）
 
+> **状态：暂缓（2026-09-28）**。DRC/LVS/`export_cdl` 与"set 直驱"已真机验证可用；
+> **`calibre.pex` 未按官方三阶段验收（修饰符决定结果），禁止用于交付/签核**。
+> 恢复开发方向见 `spec/research/calibre/00-下一步开发方向.md`。
+
 | operation | 必备 | 可选 | 说明 |
 |---|---|---|---|
 | `calibre.check_env` | — | `calibre_bin`, `deck` | 查环境/许可 |
@@ -237,7 +241,7 @@
 支持的键：`drcLayoutPaths/drcLayoutPrimary/drcLayoutSystem/lvsLayoutPaths/lvsLayoutPrimary/lvsSourcePath/lvsSourcePrimary/lvsSourceSystem/lvsSVDBDir`；
 键写成 SVRF 语句头（如 `"LAYOUT PRIMARY"`，值给整条语句）可改表外的语句。参数会被**原位写进 deck**（first-wins 语义），
 改动在返回的 `deck_changes` 里。不认识的键会直接失败——不要用 `INCLUDE <deck>` + 覆盖行的 control file，
-那对 specification 语句无效（见 `doc/report/calibre-网表导出机制调查报告.md §9`）。
+那对 specification 语句无效（见 `spec/research/calibre/03-网表导出机制调查报告.md §9`）。
 
 **直接给 Calibre Interactive 的 set**（现场形态，首选）：`runset="/path/xx.lvs"` 一个字段就够。
 本包执行官方批处理 `calibre -gui -lvs -runset <set> -batch`，**参数合并、control file 生成全由 Calibre 做**
