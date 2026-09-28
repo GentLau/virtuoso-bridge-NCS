@@ -35,7 +35,7 @@ PYTHONPATH=src python test/semi/probes/maestro_save_false_disk_probe.py   # 期�
 
 ## 下一步 / 责任人
 
-设计侧定 `save` 隔离口径 + 修 delete_var handle 路径；测试侧把磁堢探针纳入半真机层并复跑 live WRITE-06。
+设计侧定 `save` 隔离口径 + 修 delete_var handle 路径；测试侧把磁盘探针纳入半真机层并复跑 live WRITE-06。
 
 
 ---

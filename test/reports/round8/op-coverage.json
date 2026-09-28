@@ -11,21 +11,24 @@
    "test/live/flows/s11_postsim_compare.py",
    "test/live/flows/serdes_rx_flow_tb.py",
    "test/live/packages/calibre_e2e_tests.py",
+   "test/live/packages/calibre_params_e2e_tests.py",
    "test/live/packages/infra_e2e_tests.py",
    "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/screenshot_params_e2e_tests.py",
    "test/live/packages/spectre_params_e2e_tests.py",
    "test/live/stress/production_face_stress_tb.py",
    "test/offline/core/api_server_tb.py",
    "test/offline/integration/test_business_child_supervision.py",
    "test/offline/integration/test_supervisor_process.py",
    "test/semi/probes/_maestro_tb.py",
+   "test/semi/probes/calibre_flat_turbo_probe.py",
    "test/semi/probes/cdl_export_variants_probe.py",
    "test/semi/probes/gds_publish_path_edges_probe.py",
    "test/semi/probes/gds_then_skill_probe.py",
    "test/semi/probes/spectre_ac_pipeline_probe.py",
    "test/shared/runners/env_check.py"
   ],
-  "call_sites": 95
+  "call_sites": 108
  },
  "basic.file.download": {
   "package": "basic.py",
@@ -76,6 +79,7 @@
    "test/live/packages/layout_e2e_tests.py",
    "test/live/packages/maestro_e2e_tests.py",
    "test/live/packages/schematic_e2e_tests.py",
+   "test/live/packages/screenshot_params_e2e_tests.py",
    "test/live/packages/symbol_e2e_tests.py",
    "test/live/packages/verilog_e2e_tests.py",
    "test/live/stress/production_face_stress_tb.py",
@@ -88,7 +92,7 @@
    "test/shared/runners/skill_eval.py",
    "test/shared/runners/skill_query.py"
   ],
-  "call_sites": 167
+  "call_sites": 176
  },
  "basic.spectre.run": {
   "package": "basic.py",
@@ -103,18 +107,21 @@
   "package": "calibre.py",
   "files": [
    "test/live/packages/calibre_e2e_tests.py",
+   "test/live/packages/calibre_params_e2e_tests.py",
    "test/semi/probes/calibre_package_http_probe.py"
   ],
-  "call_sites": 6
+  "call_sites": 10
  },
  "calibre.drc": {
   "package": "calibre.py",
   "files": [
    "test/live/flows/s11_full_flow.py",
    "test/live/flows/serdes_rx_flow_tb.py",
-   "test/live/packages/calibre_e2e_tests.py"
+   "test/live/packages/calibre_e2e_tests.py",
+   "test/live/packages/calibre_params_e2e_tests.py",
+   "test/semi/probes/calibre_flat_turbo_probe.py"
   ],
-  "call_sites": 3
+  "call_sites": 8
  },
  "calibre.export": {
   "package": "calibre.py",
@@ -139,9 +146,10 @@
    "test/live/flows/lvs_from_schematic_tb.py",
    "test/live/flows/s11_full_flow.py",
    "test/live/flows/serdes_rx_flow_tb.py",
-   "test/live/packages/calibre_e2e_tests.py"
+   "test/live/packages/calibre_e2e_tests.py",
+   "test/live/packages/calibre_params_e2e_tests.py"
   ],
-  "call_sites": 15
+  "call_sites": 18
  },
  "calibre.pex": {
   "package": "calibre.py",
@@ -156,16 +164,19 @@
    "test/live/flows/s11_full_flow.py",
    "test/live/flows/serdes_rx_flow_tb.py",
    "test/live/packages/calibre_e2e_tests.py",
+   "test/live/packages/calibre_params_e2e_tests.py",
    "test/semi/probes/calibre_package_http_probe.py"
   ],
-  "call_sites": 23
+  "call_sites": 28
  },
  "calibre.status": {
   "package": "calibre.py",
   "files": [
+   "test/live/packages/calibre_params_e2e_tests.py",
+   "test/semi/probes/calibre_flat_turbo_probe.py",
    "test/semi/probes/calibre_package_http_probe.py"
   ],
-  "call_sites": 2
+  "call_sites": 7
  },
  "check_and_save": {
   "package": "(atomic)",
@@ -182,6 +193,7 @@
    "test/offline/unit/test_schematic_contracts.py",
    "test/offline/unit/test_symbol_contracts.py",
    "test/offline/unit/test_veriloga_contracts.py",
+   "test/offline/unit/test_veriloga_lazy_editor_contract.py",
    "test/offline/unit/test_view_type_param_contract.py",
    "test/semi/probes/schematic_pin_ops_probe.py",
    "test/semi/probes/schematic_wire_style_probe.py",
@@ -189,7 +201,7 @@
    "test/shared/runners/audit_atom_coverage.py",
    "test/shared/runners/make_bug_cards.py"
   ],
-  "call_sites": 18
+  "call_sites": 19
  },
  "delete_instance": {
   "package": "(atomic)",
@@ -351,13 +363,14 @@
    "test/shared/runners/env_check.py",
    "test/shared/runners/env_up.py",
    "test/shared/runners/make_bug_cards.py",
+   "test/shared/runners/merge_round8_spec_matrix.py",
    "test/shared/runners/ops_matrix.py",
    "test/shared/runners/ops_used.py",
    "test/shared/runners/resident_env_check.py",
    "test/shared/runners/run_core_multi.py",
    "test/shared/runners/run_semi_probes.py"
   ],
-  "call_sites": 77
+  "call_sites": 78
  },
  "label": {
   "package": "(atomic)",
@@ -371,6 +384,7 @@
    "test/live/packages/cellview_e2e_tests.py",
    "test/live/packages/layout_e2e_tests.py",
    "test/live/packages/schematic_e2e_tests.py",
+   "test/live/packages/screenshot_params_e2e_tests.py",
    "test/live/packages/symbol_e2e_tests.py",
    "test/live/registration/registration_role_split_tb.py",
    "test/offline/frontend/registration_mock_server.py",
@@ -391,7 +405,7 @@
    "test/semi/registration/registration_failure_matrix_tb.py",
    "test/shared/runners/run_offline_multi.py"
   ],
-  "call_sites": 28
+  "call_sites": 29
  },
  "label_kind": {
   "package": "(atomic)",
@@ -415,6 +429,7 @@
    "test/live/flows/scale_100_tb.py",
    "test/live/flows/serdes_rx_flow_tb.py",
    "test/live/packages/calibre_e2e_tests.py",
+   "test/live/packages/calibre_params_e2e_tests.py",
    "test/live/packages/cellview_e2e_tests.py",
    "test/live/packages/gui_e2e_tests.py",
    "test/live/packages/layout_e2e_tests.py",
@@ -533,7 +548,7 @@
    "test/shared/runners/triage_spec_clauses.py",
    "test/shared/runners/verify_spec_matrix_evidence.py"
   ],
-  "call_sites": 128
+  "call_sites": 129
  },
  "mosaic": {
   "package": "(atomic)",
@@ -563,6 +578,7 @@
    "test/live/flows/scale_100_tb.py",
    "test/live/flows/serdes_rx_flow_tb.py",
    "test/live/packages/calibre_e2e_tests.py",
+   "test/live/packages/calibre_params_e2e_tests.py",
    "test/live/packages/cellview_e2e_tests.py",
    "test/live/packages/gui_e2e_tests.py",
    "test/live/packages/infra_e2e_tests.py",
@@ -570,6 +586,7 @@
    "test/live/packages/layout_geometry_classification_e2e_tests.py",
    "test/live/packages/maestro_e2e_tests.py",
    "test/live/packages/schematic_e2e_tests.py",
+   "test/live/packages/screenshot_params_e2e_tests.py",
    "test/live/packages/skillref_e2e_tests.py",
    "test/live/packages/spectre_e2e_tests.py",
    "test/live/packages/spectre_params_e2e_tests.py",
@@ -700,6 +717,7 @@
    "test/offline/unit/test_validation_roles.py",
    "test/offline/unit/test_verilog_contracts.py",
    "test/offline/unit/test_veriloga_contracts.py",
+   "test/offline/unit/test_veriloga_lazy_editor_contract.py",
    "test/offline/unit/test_view_type_param_contract.py",
    "test/offline/unit/test_workdir_contract.py",
    "test/semi/fakevirt/e2e_check.py",
@@ -708,6 +726,7 @@
    "test/semi/probes/_maestro_tb.py",
    "test/semi/probes/calibre_cdl_probe.py",
    "test/semi/probes/calibre_env_probe.py",
+   "test/semi/probes/calibre_flat_turbo_probe.py",
    "test/semi/probes/calibre_package_http_probe.py",
    "test/semi/probes/cdl_export_variants_probe.py",
    "test/semi/probes/daemon_internal_error_path_probe.py",
@@ -792,7 +811,7 @@
    "test/shared/runners/triage_spec_clauses.py",
    "test/shared/runners/verify_spec_matrix_evidence.py"
   ],
-  "call_sites": 245
+  "call_sites": 249
  },
  "place_instance": {
   "package": "(atomic)",
@@ -897,6 +916,7 @@
    "test/live/flows/scale_100_tb.py",
    "test/live/flows/serdes_rx_flow_tb.py",
    "test/live/packages/calibre_e2e_tests.py",
+   "test/live/packages/calibre_params_e2e_tests.py",
    "test/live/packages/cellview_e2e_tests.py",
    "test/live/packages/gui_e2e_tests.py",
    "test/live/packages/infra_e2e_tests.py",
@@ -904,6 +924,7 @@
    "test/live/packages/layout_geometry_classification_e2e_tests.py",
    "test/live/packages/maestro_e2e_tests.py",
    "test/live/packages/schematic_e2e_tests.py",
+   "test/live/packages/screenshot_params_e2e_tests.py",
    "test/live/packages/skillref_e2e_tests.py",
    "test/live/packages/spectre_e2e_tests.py",
    "test/live/packages/spectre_params_e2e_tests.py",
@@ -1005,10 +1026,12 @@
    "test/offline/unit/test_upper_layer_import_contract.py",
    "test/offline/unit/test_verilog_contracts.py",
    "test/offline/unit/test_veriloga_contracts.py",
+   "test/offline/unit/test_veriloga_lazy_editor_contract.py",
    "test/offline/unit/test_view_type_param_contract.py",
    "test/offline/unit/test_workdir_contract.py",
    "test/semi/fakevirt/fake_virtuoso.py",
    "test/semi/probes/_maestro_tb.py",
+   "test/semi/probes/calibre_flat_turbo_probe.py",
    "test/semi/probes/calibre_package_http_probe.py",
    "test/semi/probes/cdl_export_variants_probe.py",
    "test/semi/probes/daemon_internal_error_path_probe.py",
@@ -1080,7 +1103,7 @@
    "test/shared/runners/triage_spec_clauses.py",
    "test/shared/runners/verify_spec_matrix_evidence.py"
   ],
-  "call_sites": 199
+  "call_sites": 203
  },
  "rect": {
   "package": "(atomic)",
@@ -1159,6 +1182,7 @@
    "test/offline/unit/test_tunnel_transfer.py",
    "test/offline/unit/test_verilog_contracts.py",
    "test/offline/unit/test_veriloga_contracts.py",
+   "test/offline/unit/test_veriloga_lazy_editor_contract.py",
    "test/offline/unit/test_workdir_contract.py",
    "test/semi/fakevirt/e2e_check.py",
    "test/semi/fakevirt/fake_virtuoso.py",
@@ -1193,7 +1217,7 @@
    "test/shared/runners/ops_used.py",
    "test/shared/runners/run_core_multi.py"
   ],
-  "call_sites": 107
+  "call_sites": 108
  },
  "rename_instance": {
   "package": "(atomic)",
@@ -1245,6 +1269,7 @@
    "test/live/packages/layout_e2e_tests.py",
    "test/live/packages/maestro_e2e_tests.py",
    "test/live/packages/schematic_e2e_tests.py",
+   "test/live/packages/screenshot_params_e2e_tests.py",
    "test/live/packages/symbol_e2e_tests.py",
    "test/offline/unit/test_gui_package.py",
    "test/offline/unit/test_layout_contracts.py",
@@ -1256,9 +1281,10 @@
    "test/semi/probes/maestro_screenshot_probe.py",
    "test/semi/probes/symbol_screenshot_probe.py",
    "test/shared/runners/make_bug_cards.py",
+   "test/shared/runners/run_all_http.py",
    "test/shared/runners/run_semi_probes.py"
   ],
-  "call_sites": 17
+  "call_sites": 19
  },
  "set_instance_params": {
   "package": "(atomic)",
@@ -1625,9 +1651,10 @@
  "virtuoso.layout.screenshot": {
   "package": "layout.py",
   "files": [
-   "test/live/packages/layout_e2e_tests.py"
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/screenshot_params_e2e_tests.py"
   ],
-  "call_sites": 8
+  "call_sites": 18
  },
  "virtuoso.layout.write": {
   "package": "layout.py",
@@ -1765,9 +1792,10 @@
  "virtuoso.schematic.screenshot": {
   "package": "schematic.py",
   "files": [
-   "test/live/packages/schematic_e2e_tests.py"
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/live/packages/screenshot_params_e2e_tests.py"
   ],
-  "call_sites": 1
+  "call_sites": 11
  },
  "virtuoso.schematic.write": {
   "package": "schematic.py",
@@ -1837,9 +1865,10 @@
  "virtuoso.symbol.screenshot": {
   "package": "symbol.py",
   "files": [
+   "test/live/packages/screenshot_params_e2e_tests.py",
    "test/live/packages/symbol_e2e_tests.py"
   ],
-  "call_sites": 4
+  "call_sites": 16
  },
  "virtuoso.symbol.write": {
   "package": "symbol.py",
@@ -1917,6 +1946,7 @@
    "test/live/flows/scale_100_tb.py",
    "test/live/flows/serdes_rx_flow_tb.py",
    "test/live/packages/calibre_e2e_tests.py",
+   "test/live/packages/calibre_params_e2e_tests.py",
    "test/live/packages/cellview_e2e_tests.py",
    "test/live/packages/gui_e2e_tests.py",
    "test/live/packages/infra_e2e_tests.py",
@@ -1924,6 +1954,7 @@
    "test/live/packages/layout_geometry_classification_e2e_tests.py",
    "test/live/packages/maestro_e2e_tests.py",
    "test/live/packages/schematic_e2e_tests.py",
+   "test/live/packages/screenshot_params_e2e_tests.py",
    "test/live/packages/spectre_e2e_tests.py",
    "test/live/packages/spectre_params_e2e_tests.py",
    "test/live/packages/symbol_e2e_tests.py",
@@ -2000,10 +2031,12 @@
    "test/offline/unit/test_upper_layer_import_contract.py",
    "test/offline/unit/test_verilog_contracts.py",
    "test/offline/unit/test_veriloga_contracts.py",
+   "test/offline/unit/test_veriloga_lazy_editor_contract.py",
    "test/offline/unit/test_view_type_param_contract.py",
    "test/semi/fakevirt/fake_virtuoso.py",
    "test/semi/fakevirt/skill_ops.py",
    "test/semi/probes/calibre_cdl_probe.py",
+   "test/semi/probes/calibre_flat_turbo_probe.py",
    "test/semi/probes/calibre_package_http_probe.py",
    "test/semi/probes/cdl_export_variants_probe.py",
    "test/semi/probes/daemon_internal_error_path_probe.py",
@@ -2070,6 +2103,6 @@
    "test/shared/runners/triage_spec_clauses.py",
    "test/shared/runners/verify_spec_matrix_evidence.py"
   ],
-  "call_sites": 169
+  "call_sites": 173
  }
 }

@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
 # 作者: 测试/root
-# 最后改动: 2026-09-28 20:23
+# 最后改动: 2026-09-28 22:10
 # 依赖: 无
 # =======================================================================
 # 六步流程（test/docs/写TB规范.md §1）：
@@ -9,12 +9,16 @@
 """End-to-end acceptance tests for basic / gui.
 
 Run with ``--transport direct`` or ``--transport http``.
+
+``--api`` / ``--token`` / ``--work-dir`` 用于换客户端跑同一套用例（例如 Linux
+客户端指向本机业务面），默认值保持 Windows 常驻环境口径不变。
 """
 from __future__ import annotations
 
 import argparse
 import hashlib
 import json
+import platform
 import posixpath
 import sys
 import time
@@ -258,9 +262,21 @@ def run_suite(transport) -> list[tuple[str, str]]:
 
 
 def main() -> int:
+    global API, TOKEN, WORK_DIR, SCRATCH
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--transport", choices=("direct", "http"), default="direct")
+    parser.add_argument("--api", default=API,
+                        help="HTTP business face, e.g. http://127.0.0.1:8127/api/operation")
+    parser.add_argument("--token", default=TOKEN)
+    parser.add_argument("--work-dir", default=str(WORK_DIR))
+    parser.add_argument("--out", default=None, help="write JSON evidence to this path")
     args = parser.parse_args()
+    API = args.api
+    TOKEN = args.token
+    WORK_DIR = Path(args.work_dir)
+    SCRATCH = WORK_DIR / "infra_e2e"
+    SCRATCH.mkdir(parents=True, exist_ok=True)
     transport = HttpTransport() if args.transport == "http" else DirectTransport()
     try:
         results = run_suite(transport)
@@ -270,6 +286,22 @@ def main() -> int:
             middle.close()
     for name, status in results:
         print(f"{status:6}  {name}")
+    if args.out:
+        evidence = {
+            "transport": args.transport,
+            "api": API,
+            "token": TOKEN,
+            "work_dir": str(WORK_DIR),
+            "python": sys.version.split()[0],
+            "platform": platform.platform(),
+            "results": [{"case": name, "status": status} for name, status in results],
+        }
+        out_path = Path(args.out)
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text(
+            json.dumps(evidence, ensure_ascii=False, indent=2) + "\n", encoding="utf-8",
+        )
+        print(f"evidence: {out_path}")
     return 0 if results and all(status == "PASS" for _, status in results) else 1
 
 

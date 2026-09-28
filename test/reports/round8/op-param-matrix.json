@@ -6,7 +6,7 @@
   "param": "cmd",
   "required": true,
   "type": "str",
-  "op_tb_files": 22,
+  "op_tb_files": 25,
   "op_sites": [
    "test/live/flows/adc_sar_flow_tb.py:199",
    "test/live/flows/adc_sar_flow_tb.py:242",
@@ -37,7 +37,7 @@
   "param": "parallel",
   "required": false,
   "type": "bool",
-  "op_tb_files": 22,
+  "op_tb_files": 25,
   "op_sites": [
    "test/live/flows/adc_sar_flow_tb.py:199",
    "test/live/flows/adc_sar_flow_tb.py:242",
@@ -49,7 +49,7 @@
    "test/live/flows/design_iterate_tb.py:426"
   ],
   "param_hits": [
-   "test/live/packages/infra_e2e_tests.py:181"
+   "test/live/packages/infra_e2e_tests.py:185"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -61,7 +61,7 @@
   "param": "timeout",
   "required": false,
   "type": "int | None",
-  "op_tb_files": 22,
+  "op_tb_files": 25,
   "op_sites": [
    "test/live/flows/adc_sar_flow_tb.py:199",
    "test/live/flows/adc_sar_flow_tb.py:242",
@@ -92,7 +92,7 @@
   "param": "token",
   "required": true,
   "type": "str",
-  "op_tb_files": 22,
+  "op_tb_files": 25,
   "op_sites": [
    "test/live/flows/adc_sar_flow_tb.py:199",
    "test/live/flows/adc_sar_flow_tb.py:242",
@@ -131,8 +131,8 @@
    "test/live/flows/project_flow_tb.py:448",
    "test/live/flows/serdes_rx_flow_tb.py:521",
    "test/live/flows/serdes_rx_flow_tb.py:635",
-   "test/live/packages/infra_e2e_tests.py:130",
-   "test/live/packages/infra_e2e_tests.py:163"
+   "test/live/packages/infra_e2e_tests.py:134",
+   "test/live/packages/infra_e2e_tests.py:167"
   ],
   "param_hits": [
    "test/live/flows/lvs_from_schematic_tb.py:365",
@@ -140,8 +140,8 @@
    "test/live/flows/project_flow_tb.py:448",
    "test/live/flows/serdes_rx_flow_tb.py:521",
    "test/live/flows/serdes_rx_flow_tb.py:635",
-   "test/live/packages/infra_e2e_tests.py:130",
-   "test/live/packages/infra_e2e_tests.py:163",
+   "test/live/packages/infra_e2e_tests.py:134",
+   "test/live/packages/infra_e2e_tests.py:167",
    "test/live/stress/production_face_stress_tb.py:185"
   ],
   "status": "CANDIDATE",
@@ -162,11 +162,11 @@
    "test/live/flows/project_flow_tb.py:448",
    "test/live/flows/serdes_rx_flow_tb.py:521",
    "test/live/flows/serdes_rx_flow_tb.py:635",
-   "test/live/packages/infra_e2e_tests.py:130",
-   "test/live/packages/infra_e2e_tests.py:163"
+   "test/live/packages/infra_e2e_tests.py:134",
+   "test/live/packages/infra_e2e_tests.py:167"
   ],
   "param_hits": [
-   "test/live/packages/infra_e2e_tests.py:163"
+   "test/live/packages/infra_e2e_tests.py:167"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -186,8 +186,8 @@
    "test/live/flows/project_flow_tb.py:448",
    "test/live/flows/serdes_rx_flow_tb.py:521",
    "test/live/flows/serdes_rx_flow_tb.py:635",
-   "test/live/packages/infra_e2e_tests.py:130",
-   "test/live/packages/infra_e2e_tests.py:163"
+   "test/live/packages/infra_e2e_tests.py:134",
+   "test/live/packages/infra_e2e_tests.py:167"
   ],
   "param_hits": [
    "test/live/flows/lvs_from_schematic_tb.py:365",
@@ -195,8 +195,8 @@
    "test/live/flows/project_flow_tb.py:448",
    "test/live/flows/serdes_rx_flow_tb.py:521",
    "test/live/flows/serdes_rx_flow_tb.py:635",
-   "test/live/packages/infra_e2e_tests.py:130",
-   "test/live/packages/infra_e2e_tests.py:163",
+   "test/live/packages/infra_e2e_tests.py:134",
+   "test/live/packages/infra_e2e_tests.py:167",
    "test/live/stress/production_face_stress_tb.py:185"
   ],
   "status": "CANDIDATE",
@@ -217,8 +217,8 @@
    "test/live/flows/project_flow_tb.py:448",
    "test/live/flows/serdes_rx_flow_tb.py:521",
    "test/live/flows/serdes_rx_flow_tb.py:635",
-   "test/live/packages/infra_e2e_tests.py:130",
-   "test/live/packages/infra_e2e_tests.py:163"
+   "test/live/packages/infra_e2e_tests.py:134",
+   "test/live/packages/infra_e2e_tests.py:167"
   ],
   "param_hits": [
    "test/live/flows/lvs_from_schematic_tb.py:365",
@@ -226,7 +226,7 @@
    "test/live/flows/project_flow_tb.py:448",
    "test/live/flows/serdes_rx_flow_tb.py:521",
    "test/live/flows/serdes_rx_flow_tb.py:635",
-   "test/live/packages/infra_e2e_tests.py:163"
+   "test/live/packages/infra_e2e_tests.py:167"
   ],
   "status": "CANDIDATE",
   "generic": true
@@ -246,8 +246,8 @@
    "test/live/flows/project_flow_tb.py:448",
    "test/live/flows/serdes_rx_flow_tb.py:521",
    "test/live/flows/serdes_rx_flow_tb.py:635",
-   "test/live/packages/infra_e2e_tests.py:130",
-   "test/live/packages/infra_e2e_tests.py:163"
+   "test/live/packages/infra_e2e_tests.py:134",
+   "test/live/packages/infra_e2e_tests.py:167"
   ],
   "param_hits": [
    "test/live/flows/lvs_from_schematic_tb.py:365",
@@ -256,8 +256,8 @@
    "test/live/flows/project_flow_tb.py:448",
    "test/live/flows/serdes_rx_flow_tb.py:521",
    "test/live/flows/serdes_rx_flow_tb.py:635",
-   "test/live/packages/infra_e2e_tests.py:130",
-   "test/live/packages/infra_e2e_tests.py:163"
+   "test/live/packages/infra_e2e_tests.py:134",
+   "test/live/packages/infra_e2e_tests.py:167"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -285,8 +285,8 @@
    "test/live/flows/lvs_from_schematic_tb.py:317",
    "test/live/flows/s11_inprocess_lvs_tb.py:86",
    "test/live/packages/calibre_e2e_tests.py:285",
-   "test/live/packages/infra_e2e_tests.py:127",
-   "test/live/packages/infra_e2e_tests.py:150",
+   "test/live/packages/infra_e2e_tests.py:131",
+   "test/live/packages/infra_e2e_tests.py:154",
    "test/live/stress/production_face_stress_tb.py:180",
    "test/offline/core/api_server_tb.py:269"
   ],
@@ -312,7 +312,7 @@
    "test/live/packages/calibre_e2e_tests.py:345"
   ],
   "param_hits": [
-   "test/live/packages/infra_e2e_tests.py:150"
+   "test/live/packages/infra_e2e_tests.py:154"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -340,8 +340,8 @@
    "test/live/flows/lvs_from_schematic_tb.py:317",
    "test/live/flows/s11_inprocess_lvs_tb.py:86",
    "test/live/packages/calibre_e2e_tests.py:285",
-   "test/live/packages/infra_e2e_tests.py:127",
-   "test/live/packages/infra_e2e_tests.py:150",
+   "test/live/packages/infra_e2e_tests.py:131",
+   "test/live/packages/infra_e2e_tests.py:154",
    "test/live/stress/production_face_stress_tb.py:180",
    "test/offline/core/api_server_tb.py:269"
   ],
@@ -371,7 +371,7 @@
    "test/live/flows/lvs_from_schematic_tb.py:317",
    "test/live/flows/s11_inprocess_lvs_tb.py:86",
    "test/live/packages/calibre_e2e_tests.py:285",
-   "test/live/packages/infra_e2e_tests.py:150",
+   "test/live/packages/infra_e2e_tests.py:154",
    "test/semi/probes/cdl_export_variants_probe.py:128",
    "test/semi/probes/cdl_export_variants_probe.py:130"
   ],
@@ -404,7 +404,7 @@
    "test/live/flows/s11_inprocess_lvs_tb.py:86",
    "test/live/packages/calibre_e2e_tests.py:285",
    "test/live/packages/calibre_e2e_tests.py:345",
-   "test/live/packages/infra_e2e_tests.py:127"
+   "test/live/packages/infra_e2e_tests.py:131"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -418,16 +418,16 @@
   "type": "str",
   "op_tb_files": 3,
   "op_sites": [
-   "test/live/packages/infra_e2e_tests.py:114",
-   "test/live/packages/infra_e2e_tests.py:251",
-   "test/live/packages/infra_e2e_tests.py:266",
-   "test/live/packages/infra_e2e_tests.py:277",
+   "test/live/packages/infra_e2e_tests.py:118",
+   "test/live/packages/infra_e2e_tests.py:255",
+   "test/live/packages/infra_e2e_tests.py:282",
+   "test/live/packages/infra_e2e_tests.py:309",
    "test/live/stress/production_face_stress_tb.py:195",
    "test/semi/probes/_maestro_tb.py:87",
    "test/semi/probes/_maestro_tb.py:92"
   ],
   "param_hits": [
-   "test/live/packages/infra_e2e_tests.py:114",
+   "test/live/packages/infra_e2e_tests.py:118",
    "test/live/stress/production_face_stress_tb.py:195",
    "test/semi/probes/_maestro_tb.py:87",
    "test/semi/probes/_maestro_tb.py:92"
@@ -444,10 +444,10 @@
   "type": "int | None",
   "op_tb_files": 3,
   "op_sites": [
-   "test/live/packages/infra_e2e_tests.py:114",
-   "test/live/packages/infra_e2e_tests.py:251",
-   "test/live/packages/infra_e2e_tests.py:266",
-   "test/live/packages/infra_e2e_tests.py:277",
+   "test/live/packages/infra_e2e_tests.py:118",
+   "test/live/packages/infra_e2e_tests.py:255",
+   "test/live/packages/infra_e2e_tests.py:282",
+   "test/live/packages/infra_e2e_tests.py:309",
    "test/live/stress/production_face_stress_tb.py:195",
    "test/semi/probes/_maestro_tb.py:87",
    "test/semi/probes/_maestro_tb.py:92"
@@ -468,17 +468,17 @@
   "type": "str",
   "op_tb_files": 3,
   "op_sites": [
-   "test/live/packages/infra_e2e_tests.py:114",
-   "test/live/packages/infra_e2e_tests.py:251",
-   "test/live/packages/infra_e2e_tests.py:266",
-   "test/live/packages/infra_e2e_tests.py:277",
+   "test/live/packages/infra_e2e_tests.py:118",
+   "test/live/packages/infra_e2e_tests.py:255",
+   "test/live/packages/infra_e2e_tests.py:282",
+   "test/live/packages/infra_e2e_tests.py:309",
    "test/live/stress/production_face_stress_tb.py:195",
    "test/semi/probes/_maestro_tb.py:87",
    "test/semi/probes/_maestro_tb.py:92"
   ],
   "param_hits": [
-   "test/live/packages/infra_e2e_tests.py:114",
-   "test/live/packages/infra_e2e_tests.py:251",
+   "test/live/packages/infra_e2e_tests.py:118",
+   "test/live/packages/infra_e2e_tests.py:255",
    "test/live/stress/production_face_stress_tb.py:195",
    "test/semi/probes/_maestro_tb.py:87",
    "test/semi/probes/_maestro_tb.py:92"
@@ -493,7 +493,7 @@
   "param": "skill_code",
   "required": true,
   "type": "str",
-  "op_tb_files": 23,
+  "op_tb_files": 24,
   "op_sites": [
    "test/live/flows/adc_sar_flow_tb.py:115",
    "test/live/flows/adc_sar_flow_tb.py:173",
@@ -524,7 +524,7 @@
   "param": "timeout",
   "required": false,
   "type": "float | None",
-  "op_tb_files": 23,
+  "op_tb_files": 24,
   "op_sites": [
    "test/live/flows/adc_sar_flow_tb.py:115",
    "test/live/flows/adc_sar_flow_tb.py:173",
@@ -541,9 +541,9 @@
    "test/live/flows/serdes_rx_flow_tb.py:107",
    "test/live/packages/gui_e2e_tests.py:170",
    "test/live/packages/layout_e2e_tests.py:669",
-   "test/semi/probes/_maestro_tb.py:51",
-   "test/semi/probes/gds_then_skill_probe.py:122",
-   "test/semi/probes/shared_cdf_pollution_probe.py:63"
+   "test/live/packages/screenshot_params_e2e_tests.py:135",
+   "test/live/packages/screenshot_params_e2e_tests.py:87",
+   "test/semi/probes/_maestro_tb.py:51"
   ],
   "status": "CANDIDATE",
   "generic": true
@@ -555,7 +555,7 @@
   "param": "token",
   "required": true,
   "type": "str",
-  "op_tb_files": 23,
+  "op_tb_files": 24,
   "op_sites": [
    "test/live/flows/adc_sar_flow_tb.py:115",
    "test/live/flows/adc_sar_flow_tb.py:173",
@@ -588,17 +588,17 @@
   "type": "str",
   "op_tb_files": 3,
   "op_sites": [
-   "test/live/packages/infra_e2e_tests.py:117",
-   "test/live/packages/infra_e2e_tests.py:251",
-   "test/live/packages/infra_e2e_tests.py:266",
-   "test/live/packages/infra_e2e_tests.py:277",
+   "test/live/packages/infra_e2e_tests.py:121",
+   "test/live/packages/infra_e2e_tests.py:255",
+   "test/live/packages/infra_e2e_tests.py:282",
+   "test/live/packages/infra_e2e_tests.py:309",
    "test/live/packages/spectre_e2e_tests.py:146",
    "test/live/packages/spectre_e2e_tests.py:192",
    "test/live/packages/spectre_e2e_tests.py:220",
    "test/live/packages/spectre_e2e_tests.py:222"
   ],
   "param_hits": [
-   "test/live/packages/infra_e2e_tests.py:117",
+   "test/live/packages/infra_e2e_tests.py:121",
    "test/live/packages/spectre_e2e_tests.py:146",
    "test/live/packages/spectre_e2e_tests.py:192",
    "test/live/stress/production_face_stress_tb.py:197"
@@ -615,17 +615,17 @@
   "type": "int | None",
   "op_tb_files": 3,
   "op_sites": [
-   "test/live/packages/infra_e2e_tests.py:117",
-   "test/live/packages/infra_e2e_tests.py:251",
-   "test/live/packages/infra_e2e_tests.py:266",
-   "test/live/packages/infra_e2e_tests.py:277",
+   "test/live/packages/infra_e2e_tests.py:121",
+   "test/live/packages/infra_e2e_tests.py:255",
+   "test/live/packages/infra_e2e_tests.py:282",
+   "test/live/packages/infra_e2e_tests.py:309",
    "test/live/packages/spectre_e2e_tests.py:146",
    "test/live/packages/spectre_e2e_tests.py:192",
    "test/live/packages/spectre_e2e_tests.py:220",
    "test/live/packages/spectre_e2e_tests.py:222"
   ],
   "param_hits": [
-   "test/live/packages/infra_e2e_tests.py:117"
+   "test/live/packages/infra_e2e_tests.py:121"
   ],
   "status": "CANDIDATE",
   "generic": true
@@ -639,18 +639,18 @@
   "type": "str",
   "op_tb_files": 3,
   "op_sites": [
-   "test/live/packages/infra_e2e_tests.py:117",
-   "test/live/packages/infra_e2e_tests.py:251",
-   "test/live/packages/infra_e2e_tests.py:266",
-   "test/live/packages/infra_e2e_tests.py:277",
+   "test/live/packages/infra_e2e_tests.py:121",
+   "test/live/packages/infra_e2e_tests.py:255",
+   "test/live/packages/infra_e2e_tests.py:282",
+   "test/live/packages/infra_e2e_tests.py:309",
    "test/live/packages/spectre_e2e_tests.py:146",
    "test/live/packages/spectre_e2e_tests.py:192",
    "test/live/packages/spectre_e2e_tests.py:220",
    "test/live/packages/spectre_e2e_tests.py:222"
   ],
   "param_hits": [
-   "test/live/packages/infra_e2e_tests.py:117",
-   "test/live/packages/infra_e2e_tests.py:251",
+   "test/live/packages/infra_e2e_tests.py:121",
+   "test/live/packages/infra_e2e_tests.py:255",
    "test/live/packages/spectre_e2e_tests.py:146",
    "test/live/packages/spectre_e2e_tests.py:192",
    "test/live/packages/spectre_e2e_tests.py:220",
@@ -667,17 +667,22 @@
   "param": "calibre_bin",
   "required": false,
   "type": "str | None",
-  "op_tb_files": 2,
+  "op_tb_files": 3,
   "op_sites": [
    "test/live/packages/calibre_e2e_tests.py:140",
    "test/live/packages/calibre_e2e_tests.py:338",
    "test/live/packages/calibre_e2e_tests.py:355",
    "test/live/packages/calibre_e2e_tests.py:366",
-   "test/semi/probes/calibre_package_http_probe.py:137",
-   "test/semi/probes/calibre_package_http_probe.py:99"
+   "test/live/packages/calibre_params_e2e_tests.py:103",
+   "test/live/packages/calibre_params_e2e_tests.py:107",
+   "test/live/packages/calibre_params_e2e_tests.py:199",
+   "test/live/packages/calibre_params_e2e_tests.py:221"
   ],
-  "param_hits": [],
-  "status": "GAP",
+  "param_hits": [
+   "test/live/packages/calibre_params_e2e_tests.py:103",
+   "test/live/packages/calibre_params_e2e_tests.py:107"
+  ],
+  "status": "CANDIDATE",
   "generic": false
  },
  {
@@ -687,16 +692,19 @@
   "param": "deck",
   "required": false,
   "type": "str | None",
-  "op_tb_files": 2,
+  "op_tb_files": 3,
   "op_sites": [
    "test/live/packages/calibre_e2e_tests.py:140",
    "test/live/packages/calibre_e2e_tests.py:338",
    "test/live/packages/calibre_e2e_tests.py:355",
    "test/live/packages/calibre_e2e_tests.py:366",
-   "test/semi/probes/calibre_package_http_probe.py:137",
-   "test/semi/probes/calibre_package_http_probe.py:99"
+   "test/live/packages/calibre_params_e2e_tests.py:103",
+   "test/live/packages/calibre_params_e2e_tests.py:107",
+   "test/live/packages/calibre_params_e2e_tests.py:199",
+   "test/live/packages/calibre_params_e2e_tests.py:221"
   ],
   "param_hits": [
+   "test/live/packages/calibre_params_e2e_tests.py:103",
    "test/semi/probes/calibre_package_http_probe.py:99"
   ],
   "status": "CANDIDATE",
@@ -709,14 +717,16 @@
   "param": "timeout",
   "required": false,
   "type": "int | None",
-  "op_tb_files": 2,
+  "op_tb_files": 3,
   "op_sites": [
    "test/live/packages/calibre_e2e_tests.py:140",
    "test/live/packages/calibre_e2e_tests.py:338",
    "test/live/packages/calibre_e2e_tests.py:355",
    "test/live/packages/calibre_e2e_tests.py:366",
-   "test/semi/probes/calibre_package_http_probe.py:137",
-   "test/semi/probes/calibre_package_http_probe.py:99"
+   "test/live/packages/calibre_params_e2e_tests.py:103",
+   "test/live/packages/calibre_params_e2e_tests.py:107",
+   "test/live/packages/calibre_params_e2e_tests.py:199",
+   "test/live/packages/calibre_params_e2e_tests.py:221"
   ],
   "param_hits": [],
   "status": "GAP",
@@ -729,18 +739,23 @@
   "param": "token",
   "required": true,
   "type": "str",
-  "op_tb_files": 2,
+  "op_tb_files": 3,
   "op_sites": [
    "test/live/packages/calibre_e2e_tests.py:140",
    "test/live/packages/calibre_e2e_tests.py:338",
    "test/live/packages/calibre_e2e_tests.py:355",
    "test/live/packages/calibre_e2e_tests.py:366",
-   "test/semi/probes/calibre_package_http_probe.py:137",
-   "test/semi/probes/calibre_package_http_probe.py:99"
+   "test/live/packages/calibre_params_e2e_tests.py:103",
+   "test/live/packages/calibre_params_e2e_tests.py:107",
+   "test/live/packages/calibre_params_e2e_tests.py:199",
+   "test/live/packages/calibre_params_e2e_tests.py:221"
   ],
   "param_hits": [
    "test/live/packages/calibre_e2e_tests.py:140",
    "test/live/packages/calibre_e2e_tests.py:338",
+   "test/live/packages/calibre_params_e2e_tests.py:103",
+   "test/live/packages/calibre_params_e2e_tests.py:107",
+   "test/live/packages/calibre_params_e2e_tests.py:199",
    "test/semi/probes/calibre_package_http_probe.py:137",
    "test/semi/probes/calibre_package_http_probe.py:99"
   ],
@@ -754,16 +769,23 @@
   "param": "blocking",
   "required": false,
   "type": "bool",
-  "op_tb_files": 3,
+  "op_tb_files": 5,
   "op_sites": [
    "test/live/flows/s11_full_flow.py:276",
    "test/live/flows/serdes_rx_flow_tb.py:651",
-   "test/live/packages/calibre_e2e_tests.py:165"
+   "test/live/packages/calibre_e2e_tests.py:165",
+   "test/live/packages/calibre_params_e2e_tests.py:116",
+   "test/live/packages/calibre_params_e2e_tests.py:199",
+   "test/live/packages/calibre_params_e2e_tests.py:221",
+   "test/semi/probes/calibre_flat_turbo_probe.py:127",
+   "test/semi/probes/calibre_flat_turbo_probe.py:78"
   ],
   "param_hits": [
    "test/live/flows/s11_full_flow.py:276",
    "test/live/flows/serdes_rx_flow_tb.py:651",
-   "test/live/packages/calibre_e2e_tests.py:165"
+   "test/live/packages/calibre_e2e_tests.py:165",
+   "test/live/packages/calibre_params_e2e_tests.py:116",
+   "test/semi/probes/calibre_flat_turbo_probe.py:78"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -775,14 +797,21 @@
   "param": "calibre_bin",
   "required": false,
   "type": "str | None",
-  "op_tb_files": 3,
+  "op_tb_files": 5,
   "op_sites": [
    "test/live/flows/s11_full_flow.py:276",
    "test/live/flows/serdes_rx_flow_tb.py:651",
-   "test/live/packages/calibre_e2e_tests.py:165"
+   "test/live/packages/calibre_e2e_tests.py:165",
+   "test/live/packages/calibre_params_e2e_tests.py:116",
+   "test/live/packages/calibre_params_e2e_tests.py:199",
+   "test/live/packages/calibre_params_e2e_tests.py:221",
+   "test/semi/probes/calibre_flat_turbo_probe.py:127",
+   "test/semi/probes/calibre_flat_turbo_probe.py:78"
   ],
-  "param_hits": [],
-  "status": "GAP",
+  "param_hits": [
+   "test/live/packages/calibre_params_e2e_tests.py:116"
+  ],
+  "status": "CANDIDATE",
   "generic": false
  },
  {
@@ -792,11 +821,16 @@
   "param": "cdl",
   "required": false,
   "type": "str | None",
-  "op_tb_files": 3,
+  "op_tb_files": 5,
   "op_sites": [
    "test/live/flows/s11_full_flow.py:276",
    "test/live/flows/serdes_rx_flow_tb.py:651",
-   "test/live/packages/calibre_e2e_tests.py:165"
+   "test/live/packages/calibre_e2e_tests.py:165",
+   "test/live/packages/calibre_params_e2e_tests.py:116",
+   "test/live/packages/calibre_params_e2e_tests.py:199",
+   "test/live/packages/calibre_params_e2e_tests.py:221",
+   "test/semi/probes/calibre_flat_turbo_probe.py:127",
+   "test/semi/probes/calibre_flat_turbo_probe.py:78"
   ],
   "param_hits": [],
   "status": "GAP",
@@ -809,16 +843,23 @@
   "param": "deck",
   "required": false,
   "type": "str | None",
-  "op_tb_files": 3,
+  "op_tb_files": 5,
   "op_sites": [
    "test/live/flows/s11_full_flow.py:276",
    "test/live/flows/serdes_rx_flow_tb.py:651",
-   "test/live/packages/calibre_e2e_tests.py:165"
+   "test/live/packages/calibre_e2e_tests.py:165",
+   "test/live/packages/calibre_params_e2e_tests.py:116",
+   "test/live/packages/calibre_params_e2e_tests.py:199",
+   "test/live/packages/calibre_params_e2e_tests.py:221",
+   "test/semi/probes/calibre_flat_turbo_probe.py:127",
+   "test/semi/probes/calibre_flat_turbo_probe.py:78"
   ],
   "param_hits": [
    "test/live/flows/s11_full_flow.py:276",
    "test/live/flows/serdes_rx_flow_tb.py:651",
-   "test/live/packages/calibre_e2e_tests.py:165"
+   "test/live/packages/calibre_e2e_tests.py:165",
+   "test/live/packages/calibre_params_e2e_tests.py:116",
+   "test/semi/probes/calibre_flat_turbo_probe.py:78"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -830,11 +871,16 @@
   "param": "fmt",
   "required": false,
   "type": "str",
-  "op_tb_files": 3,
+  "op_tb_files": 5,
   "op_sites": [
    "test/live/flows/s11_full_flow.py:276",
    "test/live/flows/serdes_rx_flow_tb.py:651",
-   "test/live/packages/calibre_e2e_tests.py:165"
+   "test/live/packages/calibre_e2e_tests.py:165",
+   "test/live/packages/calibre_params_e2e_tests.py:116",
+   "test/live/packages/calibre_params_e2e_tests.py:199",
+   "test/live/packages/calibre_params_e2e_tests.py:221",
+   "test/semi/probes/calibre_flat_turbo_probe.py:127",
+   "test/semi/probes/calibre_flat_turbo_probe.py:78"
   ],
   "param_hits": [],
   "status": "GAP",
@@ -847,16 +893,23 @@
   "param": "gds",
   "required": false,
   "type": "str | None",
-  "op_tb_files": 3,
+  "op_tb_files": 5,
   "op_sites": [
    "test/live/flows/s11_full_flow.py:276",
    "test/live/flows/serdes_rx_flow_tb.py:651",
-   "test/live/packages/calibre_e2e_tests.py:165"
+   "test/live/packages/calibre_e2e_tests.py:165",
+   "test/live/packages/calibre_params_e2e_tests.py:116",
+   "test/live/packages/calibre_params_e2e_tests.py:199",
+   "test/live/packages/calibre_params_e2e_tests.py:221",
+   "test/semi/probes/calibre_flat_turbo_probe.py:127",
+   "test/semi/probes/calibre_flat_turbo_probe.py:78"
   ],
   "param_hits": [
    "test/live/flows/s11_full_flow.py:276",
    "test/live/flows/serdes_rx_flow_tb.py:651",
-   "test/live/packages/calibre_e2e_tests.py:165"
+   "test/live/packages/calibre_e2e_tests.py:165",
+   "test/live/packages/calibre_params_e2e_tests.py:116",
+   "test/semi/probes/calibre_flat_turbo_probe.py:78"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -868,14 +921,21 @@
   "param": "ground",
   "required": false,
   "type": "str | None",
-  "op_tb_files": 3,
+  "op_tb_files": 5,
   "op_sites": [
    "test/live/flows/s11_full_flow.py:276",
    "test/live/flows/serdes_rx_flow_tb.py:651",
-   "test/live/packages/calibre_e2e_tests.py:165"
+   "test/live/packages/calibre_e2e_tests.py:165",
+   "test/live/packages/calibre_params_e2e_tests.py:116",
+   "test/live/packages/calibre_params_e2e_tests.py:199",
+   "test/live/packages/calibre_params_e2e_tests.py:221",
+   "test/semi/probes/calibre_flat_turbo_probe.py:127",
+   "test/semi/probes/calibre_flat_turbo_probe.py:78"
   ],
-  "param_hits": [],
-  "status": "GAP",
+  "param_hits": [
+   "test/live/packages/calibre_params_e2e_tests.py:116"
+  ],
+  "status": "CANDIDATE",
   "generic": false
  },
  {
@@ -885,11 +945,16 @@
   "param": "hcell_file",
   "required": false,
   "type": "str | None",
-  "op_tb_files": 3,
+  "op_tb_files": 5,
   "op_sites": [
    "test/live/flows/s11_full_flow.py:276",
    "test/live/flows/serdes_rx_flow_tb.py:651",
-   "test/live/packages/calibre_e2e_tests.py:165"
+   "test/live/packages/calibre_e2e_tests.py:165",
+   "test/live/packages/calibre_params_e2e_tests.py:116",
+   "test/live/packages/calibre_params_e2e_tests.py:199",
+   "test/live/packages/calibre_params_e2e_tests.py:221",
+   "test/semi/probes/calibre_flat_turbo_probe.py:127",
+   "test/semi/probes/calibre_flat_turbo_probe.py:78"
   ],
   "param_hits": [],
   "status": "GAP",
@@ -902,14 +967,22 @@
   "param": "hier",
   "required": false,
   "type": "bool",
-  "op_tb_files": 3,
+  "op_tb_files": 5,
   "op_sites": [
    "test/live/flows/s11_full_flow.py:276",
    "test/live/flows/serdes_rx_flow_tb.py:651",
-   "test/live/packages/calibre_e2e_tests.py:165"
+   "test/live/packages/calibre_e2e_tests.py:165",
+   "test/live/packages/calibre_params_e2e_tests.py:116",
+   "test/live/packages/calibre_params_e2e_tests.py:199",
+   "test/live/packages/calibre_params_e2e_tests.py:221",
+   "test/semi/probes/calibre_flat_turbo_probe.py:127",
+   "test/semi/probes/calibre_flat_turbo_probe.py:78"
   ],
-  "param_hits": [],
-  "status": "GAP",
+  "param_hits": [
+   "test/live/packages/calibre_params_e2e_tests.py:116",
+   "test/semi/probes/calibre_flat_turbo_probe.py:78"
+  ],
+  "status": "CANDIDATE",
   "generic": false
  },
  {
@@ -919,14 +992,22 @@
   "param": "job_id",
   "required": false,
   "type": "str | None",
-  "op_tb_files": 3,
+  "op_tb_files": 5,
   "op_sites": [
    "test/live/flows/s11_full_flow.py:276",
    "test/live/flows/serdes_rx_flow_tb.py:651",
-   "test/live/packages/calibre_e2e_tests.py:165"
+   "test/live/packages/calibre_e2e_tests.py:165",
+   "test/live/packages/calibre_params_e2e_tests.py:116",
+   "test/live/packages/calibre_params_e2e_tests.py:199",
+   "test/live/packages/calibre_params_e2e_tests.py:221",
+   "test/semi/probes/calibre_flat_turbo_probe.py:127",
+   "test/semi/probes/calibre_flat_turbo_probe.py:78"
   ],
-  "param_hits": [],
-  "status": "GAP",
+  "param_hits": [
+   "test/live/packages/calibre_params_e2e_tests.py:116",
+   "test/semi/probes/calibre_flat_turbo_probe.py:78"
+  ],
+  "status": "CANDIDATE",
   "generic": false
  },
  {
@@ -936,11 +1017,16 @@
   "param": "lvs_run_dir",
   "required": false,
   "type": "str | None",
-  "op_tb_files": 3,
+  "op_tb_files": 5,
   "op_sites": [
    "test/live/flows/s11_full_flow.py:276",
    "test/live/flows/serdes_rx_flow_tb.py:651",
-   "test/live/packages/calibre_e2e_tests.py:165"
+   "test/live/packages/calibre_e2e_tests.py:165",
+   "test/live/packages/calibre_params_e2e_tests.py:116",
+   "test/live/packages/calibre_params_e2e_tests.py:199",
+   "test/live/packages/calibre_params_e2e_tests.py:221",
+   "test/semi/probes/calibre_flat_turbo_probe.py:127",
+   "test/semi/probes/calibre_flat_turbo_probe.py:78"
   ],
   "param_hits": [],
   "status": "GAP",
@@ -953,14 +1039,21 @@
   "param": "params",
   "required": false,
   "type": "dict[str, str] | None",
-  "op_tb_files": 3,
+  "op_tb_files": 5,
   "op_sites": [
    "test/live/flows/s11_full_flow.py:276",
    "test/live/flows/serdes_rx_flow_tb.py:651",
-   "test/live/packages/calibre_e2e_tests.py:165"
+   "test/live/packages/calibre_e2e_tests.py:165",
+   "test/live/packages/calibre_params_e2e_tests.py:116",
+   "test/live/packages/calibre_params_e2e_tests.py:199",
+   "test/live/packages/calibre_params_e2e_tests.py:221",
+   "test/semi/probes/calibre_flat_turbo_probe.py:127",
+   "test/semi/probes/calibre_flat_turbo_probe.py:78"
   ],
-  "param_hits": [],
-  "status": "GAP",
+  "param_hits": [
+   "test/live/packages/calibre_params_e2e_tests.py:116"
+  ],
+  "status": "CANDIDATE",
   "generic": false
  },
  {
@@ -970,14 +1063,21 @@
   "param": "poll_interval",
   "required": false,
   "type": "float",
-  "op_tb_files": 3,
+  "op_tb_files": 5,
   "op_sites": [
    "test/live/flows/s11_full_flow.py:276",
    "test/live/flows/serdes_rx_flow_tb.py:651",
-   "test/live/packages/calibre_e2e_tests.py:165"
+   "test/live/packages/calibre_e2e_tests.py:165",
+   "test/live/packages/calibre_params_e2e_tests.py:116",
+   "test/live/packages/calibre_params_e2e_tests.py:199",
+   "test/live/packages/calibre_params_e2e_tests.py:221",
+   "test/semi/probes/calibre_flat_turbo_probe.py:127",
+   "test/semi/probes/calibre_flat_turbo_probe.py:78"
   ],
-  "param_hits": [],
-  "status": "GAP",
+  "param_hits": [
+   "test/live/packages/calibre_params_e2e_tests.py:116"
+  ],
+  "status": "CANDIDATE",
   "generic": false
  },
  {
@@ -987,14 +1087,21 @@
   "param": "power",
   "required": false,
   "type": "str | None",
-  "op_tb_files": 3,
+  "op_tb_files": 5,
   "op_sites": [
    "test/live/flows/s11_full_flow.py:276",
    "test/live/flows/serdes_rx_flow_tb.py:651",
-   "test/live/packages/calibre_e2e_tests.py:165"
+   "test/live/packages/calibre_e2e_tests.py:165",
+   "test/live/packages/calibre_params_e2e_tests.py:116",
+   "test/live/packages/calibre_params_e2e_tests.py:199",
+   "test/live/packages/calibre_params_e2e_tests.py:221",
+   "test/semi/probes/calibre_flat_turbo_probe.py:127",
+   "test/semi/probes/calibre_flat_turbo_probe.py:78"
   ],
-  "param_hits": [],
-  "status": "GAP",
+  "param_hits": [
+   "test/live/packages/calibre_params_e2e_tests.py:116"
+  ],
+  "status": "CANDIDATE",
   "generic": false
  },
  {
@@ -1004,14 +1111,21 @@
   "param": "run_dir",
   "required": false,
   "type": "str | None",
-  "op_tb_files": 3,
+  "op_tb_files": 5,
   "op_sites": [
    "test/live/flows/s11_full_flow.py:276",
    "test/live/flows/serdes_rx_flow_tb.py:651",
-   "test/live/packages/calibre_e2e_tests.py:165"
+   "test/live/packages/calibre_e2e_tests.py:165",
+   "test/live/packages/calibre_params_e2e_tests.py:116",
+   "test/live/packages/calibre_params_e2e_tests.py:199",
+   "test/live/packages/calibre_params_e2e_tests.py:221",
+   "test/semi/probes/calibre_flat_turbo_probe.py:127",
+   "test/semi/probes/calibre_flat_turbo_probe.py:78"
   ],
   "param_hits": [
-   "test/live/packages/calibre_e2e_tests.py:165"
+   "test/live/packages/calibre_e2e_tests.py:165",
+   "test/live/packages/calibre_params_e2e_tests.py:116",
+   "test/semi/probes/calibre_flat_turbo_probe.py:78"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -1023,11 +1137,16 @@
   "param": "runset",
   "required": false,
   "type": "str | None",
-  "op_tb_files": 3,
+  "op_tb_files": 5,
   "op_sites": [
    "test/live/flows/s11_full_flow.py:276",
    "test/live/flows/serdes_rx_flow_tb.py:651",
-   "test/live/packages/calibre_e2e_tests.py:165"
+   "test/live/packages/calibre_e2e_tests.py:165",
+   "test/live/packages/calibre_params_e2e_tests.py:116",
+   "test/live/packages/calibre_params_e2e_tests.py:199",
+   "test/live/packages/calibre_params_e2e_tests.py:221",
+   "test/semi/probes/calibre_flat_turbo_probe.py:127",
+   "test/semi/probes/calibre_flat_turbo_probe.py:78"
   ],
   "param_hits": [],
   "status": "GAP",
@@ -1040,11 +1159,16 @@
   "param": "spice_file",
   "required": false,
   "type": "str | None",
-  "op_tb_files": 3,
+  "op_tb_files": 5,
   "op_sites": [
    "test/live/flows/s11_full_flow.py:276",
    "test/live/flows/serdes_rx_flow_tb.py:651",
-   "test/live/packages/calibre_e2e_tests.py:165"
+   "test/live/packages/calibre_e2e_tests.py:165",
+   "test/live/packages/calibre_params_e2e_tests.py:116",
+   "test/live/packages/calibre_params_e2e_tests.py:199",
+   "test/live/packages/calibre_params_e2e_tests.py:221",
+   "test/semi/probes/calibre_flat_turbo_probe.py:127",
+   "test/semi/probes/calibre_flat_turbo_probe.py:78"
   ],
   "param_hits": [],
   "status": "GAP",
@@ -1057,16 +1181,23 @@
   "param": "timeout",
   "required": false,
   "type": "int | None",
-  "op_tb_files": 3,
+  "op_tb_files": 5,
   "op_sites": [
    "test/live/flows/s11_full_flow.py:276",
    "test/live/flows/serdes_rx_flow_tb.py:651",
-   "test/live/packages/calibre_e2e_tests.py:165"
+   "test/live/packages/calibre_e2e_tests.py:165",
+   "test/live/packages/calibre_params_e2e_tests.py:116",
+   "test/live/packages/calibre_params_e2e_tests.py:199",
+   "test/live/packages/calibre_params_e2e_tests.py:221",
+   "test/semi/probes/calibre_flat_turbo_probe.py:127",
+   "test/semi/probes/calibre_flat_turbo_probe.py:78"
   ],
   "param_hits": [
    "test/live/flows/s11_full_flow.py:276",
    "test/live/flows/serdes_rx_flow_tb.py:651",
-   "test/live/packages/calibre_e2e_tests.py:165"
+   "test/live/packages/calibre_e2e_tests.py:165",
+   "test/live/packages/calibre_params_e2e_tests.py:116",
+   "test/semi/probes/calibre_flat_turbo_probe.py:78"
   ],
   "status": "CANDIDATE",
   "generic": true
@@ -1078,16 +1209,25 @@
   "param": "token",
   "required": true,
   "type": "str",
-  "op_tb_files": 3,
+  "op_tb_files": 5,
   "op_sites": [
    "test/live/flows/s11_full_flow.py:276",
    "test/live/flows/serdes_rx_flow_tb.py:651",
-   "test/live/packages/calibre_e2e_tests.py:165"
+   "test/live/packages/calibre_e2e_tests.py:165",
+   "test/live/packages/calibre_params_e2e_tests.py:116",
+   "test/live/packages/calibre_params_e2e_tests.py:199",
+   "test/live/packages/calibre_params_e2e_tests.py:221",
+   "test/semi/probes/calibre_flat_turbo_probe.py:127",
+   "test/semi/probes/calibre_flat_turbo_probe.py:78"
   ],
   "param_hits": [
    "test/live/flows/s11_full_flow.py:276",
    "test/live/flows/serdes_rx_flow_tb.py:651",
-   "test/live/packages/calibre_e2e_tests.py:165"
+   "test/live/packages/calibre_e2e_tests.py:165",
+   "test/live/packages/calibre_params_e2e_tests.py:116",
+   "test/live/packages/calibre_params_e2e_tests.py:199",
+   "test/semi/probes/calibre_flat_turbo_probe.py:127",
+   "test/semi/probes/calibre_flat_turbo_probe.py:78"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -1099,16 +1239,23 @@
   "param": "top",
   "required": false,
   "type": "str | None",
-  "op_tb_files": 3,
+  "op_tb_files": 5,
   "op_sites": [
    "test/live/flows/s11_full_flow.py:276",
    "test/live/flows/serdes_rx_flow_tb.py:651",
-   "test/live/packages/calibre_e2e_tests.py:165"
+   "test/live/packages/calibre_e2e_tests.py:165",
+   "test/live/packages/calibre_params_e2e_tests.py:116",
+   "test/live/packages/calibre_params_e2e_tests.py:199",
+   "test/live/packages/calibre_params_e2e_tests.py:221",
+   "test/semi/probes/calibre_flat_turbo_probe.py:127",
+   "test/semi/probes/calibre_flat_turbo_probe.py:78"
   ],
   "param_hits": [
    "test/live/flows/s11_full_flow.py:276",
    "test/live/flows/serdes_rx_flow_tb.py:651",
-   "test/live/packages/calibre_e2e_tests.py:165"
+   "test/live/packages/calibre_e2e_tests.py:165",
+   "test/live/packages/calibre_params_e2e_tests.py:116",
+   "test/semi/probes/calibre_flat_turbo_probe.py:78"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -1120,14 +1267,22 @@
   "param": "turbo",
   "required": false,
   "type": "int",
-  "op_tb_files": 3,
+  "op_tb_files": 5,
   "op_sites": [
    "test/live/flows/s11_full_flow.py:276",
    "test/live/flows/serdes_rx_flow_tb.py:651",
-   "test/live/packages/calibre_e2e_tests.py:165"
+   "test/live/packages/calibre_e2e_tests.py:165",
+   "test/live/packages/calibre_params_e2e_tests.py:116",
+   "test/live/packages/calibre_params_e2e_tests.py:199",
+   "test/live/packages/calibre_params_e2e_tests.py:221",
+   "test/semi/probes/calibre_flat_turbo_probe.py:127",
+   "test/semi/probes/calibre_flat_turbo_probe.py:78"
   ],
-  "param_hits": [],
-  "status": "GAP",
+  "param_hits": [
+   "test/live/packages/calibre_params_e2e_tests.py:116",
+   "test/semi/probes/calibre_flat_turbo_probe.py:78"
+  ],
+  "status": "CANDIDATE",
   "generic": false
  },
  {
@@ -1137,11 +1292,16 @@
   "param": "xcell_file",
   "required": false,
   "type": "str | None",
-  "op_tb_files": 3,
+  "op_tb_files": 5,
   "op_sites": [
    "test/live/flows/s11_full_flow.py:276",
    "test/live/flows/serdes_rx_flow_tb.py:651",
-   "test/live/packages/calibre_e2e_tests.py:165"
+   "test/live/packages/calibre_e2e_tests.py:165",
+   "test/live/packages/calibre_params_e2e_tests.py:116",
+   "test/live/packages/calibre_params_e2e_tests.py:199",
+   "test/live/packages/calibre_params_e2e_tests.py:221",
+   "test/semi/probes/calibre_flat_turbo_probe.py:127",
+   "test/semi/probes/calibre_flat_turbo_probe.py:78"
   ],
   "param_hits": [],
   "status": "GAP",
@@ -1477,7 +1637,7 @@
   "param": "blocking",
   "required": false,
   "type": "bool",
-  "op_tb_files": 5,
+  "op_tb_files": 6,
   "op_sites": [
    "test/live/flows/design_iterate_tb.py:781",
    "test/live/flows/design_iterate_tb.py:881",
@@ -1495,7 +1655,8 @@
    "test/live/flows/s11_full_flow.py:331",
    "test/live/flows/serdes_rx_flow_tb.py:671",
    "test/live/packages/calibre_e2e_tests.py:228",
-   "test/live/packages/calibre_e2e_tests.py:287"
+   "test/live/packages/calibre_e2e_tests.py:287",
+   "test/live/packages/calibre_params_e2e_tests.py:147"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -1507,7 +1668,7 @@
   "param": "calibre_bin",
   "required": false,
   "type": "str | None",
-  "op_tb_files": 5,
+  "op_tb_files": 6,
   "op_sites": [
    "test/live/flows/design_iterate_tb.py:781",
    "test/live/flows/design_iterate_tb.py:881",
@@ -1519,7 +1680,8 @@
    "test/live/flows/serdes_rx_flow_tb.py:671"
   ],
   "param_hits": [
-   "test/live/flows/lvs_from_schematic_tb.py:326"
+   "test/live/flows/lvs_from_schematic_tb.py:326",
+   "test/live/packages/calibre_params_e2e_tests.py:147"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -1531,7 +1693,7 @@
   "param": "cdl",
   "required": false,
   "type": "str | None",
-  "op_tb_files": 5,
+  "op_tb_files": 6,
   "op_sites": [
    "test/live/flows/design_iterate_tb.py:781",
    "test/live/flows/design_iterate_tb.py:881",
@@ -1549,7 +1711,8 @@
    "test/live/flows/s11_full_flow.py:331",
    "test/live/flows/serdes_rx_flow_tb.py:671",
    "test/live/packages/calibre_e2e_tests.py:241",
-   "test/live/packages/calibre_e2e_tests.py:344"
+   "test/live/packages/calibre_e2e_tests.py:344",
+   "test/live/packages/calibre_params_e2e_tests.py:147"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -1561,7 +1724,7 @@
   "param": "deck",
   "required": false,
   "type": "str | None",
-  "op_tb_files": 5,
+  "op_tb_files": 6,
   "op_sites": [
    "test/live/flows/design_iterate_tb.py:781",
    "test/live/flows/design_iterate_tb.py:881",
@@ -1592,7 +1755,7 @@
   "param": "fmt",
   "required": false,
   "type": "str",
-  "op_tb_files": 5,
+  "op_tb_files": 6,
   "op_sites": [
    "test/live/flows/design_iterate_tb.py:781",
    "test/live/flows/design_iterate_tb.py:881",
@@ -1614,7 +1777,7 @@
   "param": "gds",
   "required": false,
   "type": "str | None",
-  "op_tb_files": 5,
+  "op_tb_files": 6,
   "op_sites": [
    "test/live/flows/design_iterate_tb.py:781",
    "test/live/flows/design_iterate_tb.py:881",
@@ -1632,7 +1795,8 @@
    "test/live/flows/s11_full_flow.py:331",
    "test/live/flows/serdes_rx_flow_tb.py:671",
    "test/live/packages/calibre_e2e_tests.py:241",
-   "test/live/packages/calibre_e2e_tests.py:344"
+   "test/live/packages/calibre_e2e_tests.py:344",
+   "test/live/packages/calibre_params_e2e_tests.py:147"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -1644,7 +1808,7 @@
   "param": "ground",
   "required": false,
   "type": "str | None",
-  "op_tb_files": 5,
+  "op_tb_files": 6,
   "op_sites": [
    "test/live/flows/design_iterate_tb.py:781",
    "test/live/flows/design_iterate_tb.py:881",
@@ -1666,29 +1830,7 @@
   "param": "hcell_file",
   "required": false,
   "type": "str | None",
-  "op_tb_files": 5,
-  "op_sites": [
-   "test/live/flows/design_iterate_tb.py:781",
-   "test/live/flows/design_iterate_tb.py:881",
-   "test/live/flows/lvs_from_schematic_tb.py:326",
-   "test/live/flows/lvs_from_schematic_tb.py:381",
-   "test/live/flows/s11_full_flow.py:311",
-   "test/live/flows/s11_full_flow.py:326",
-   "test/live/flows/s11_full_flow.py:331",
-   "test/live/flows/serdes_rx_flow_tb.py:671"
-  ],
-  "param_hits": [],
-  "status": "GAP",
-  "generic": false
- },
- {
-  "op": "calibre.lvs",
-  "layer": "request",
-  "package": "calibre.py",
-  "param": "hier",
-  "required": false,
-  "type": "bool",
-  "op_tb_files": 5,
+  "op_tb_files": 6,
   "op_sites": [
    "test/live/flows/design_iterate_tb.py:781",
    "test/live/flows/design_iterate_tb.py:881",
@@ -1700,7 +1842,32 @@
    "test/live/flows/serdes_rx_flow_tb.py:671"
   ],
   "param_hits": [
-   "test/live/flows/lvs_from_schematic_tb.py:326"
+   "test/live/packages/calibre_params_e2e_tests.py:147"
+  ],
+  "status": "CANDIDATE",
+  "generic": false
+ },
+ {
+  "op": "calibre.lvs",
+  "layer": "request",
+  "package": "calibre.py",
+  "param": "hier",
+  "required": false,
+  "type": "bool",
+  "op_tb_files": 6,
+  "op_sites": [
+   "test/live/flows/design_iterate_tb.py:781",
+   "test/live/flows/design_iterate_tb.py:881",
+   "test/live/flows/lvs_from_schematic_tb.py:326",
+   "test/live/flows/lvs_from_schematic_tb.py:381",
+   "test/live/flows/s11_full_flow.py:311",
+   "test/live/flows/s11_full_flow.py:326",
+   "test/live/flows/s11_full_flow.py:331",
+   "test/live/flows/serdes_rx_flow_tb.py:671"
+  ],
+  "param_hits": [
+   "test/live/flows/lvs_from_schematic_tb.py:326",
+   "test/live/packages/calibre_params_e2e_tests.py:147"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -1712,7 +1879,7 @@
   "param": "job_id",
   "required": false,
   "type": "str | None",
-  "op_tb_files": 5,
+  "op_tb_files": 6,
   "op_sites": [
    "test/live/flows/design_iterate_tb.py:781",
    "test/live/flows/design_iterate_tb.py:881",
@@ -1724,7 +1891,8 @@
    "test/live/flows/serdes_rx_flow_tb.py:671"
   ],
   "param_hits": [
-   "test/live/flows/lvs_from_schematic_tb.py:326"
+   "test/live/flows/lvs_from_schematic_tb.py:326",
+   "test/live/packages/calibre_params_e2e_tests.py:147"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -1736,7 +1904,7 @@
   "param": "lvs_run_dir",
   "required": false,
   "type": "str | None",
-  "op_tb_files": 5,
+  "op_tb_files": 6,
   "op_sites": [
    "test/live/flows/design_iterate_tb.py:781",
    "test/live/flows/design_iterate_tb.py:881",
@@ -1758,7 +1926,7 @@
   "param": "params",
   "required": false,
   "type": "dict[str, str] | None",
-  "op_tb_files": 5,
+  "op_tb_files": 6,
   "op_sites": [
    "test/live/flows/design_iterate_tb.py:781",
    "test/live/flows/design_iterate_tb.py:881",
@@ -1784,7 +1952,7 @@
   "param": "poll_interval",
   "required": false,
   "type": "float",
-  "op_tb_files": 5,
+  "op_tb_files": 6,
   "op_sites": [
    "test/live/flows/design_iterate_tb.py:781",
    "test/live/flows/design_iterate_tb.py:881",
@@ -1795,8 +1963,10 @@
    "test/live/flows/s11_full_flow.py:331",
    "test/live/flows/serdes_rx_flow_tb.py:671"
   ],
-  "param_hits": [],
-  "status": "GAP",
+  "param_hits": [
+   "test/live/packages/calibre_params_e2e_tests.py:147"
+  ],
+  "status": "CANDIDATE",
   "generic": false
  },
  {
@@ -1806,7 +1976,7 @@
   "param": "power",
   "required": false,
   "type": "str | None",
-  "op_tb_files": 5,
+  "op_tb_files": 6,
   "op_sites": [
    "test/live/flows/design_iterate_tb.py:781",
    "test/live/flows/design_iterate_tb.py:881",
@@ -1828,7 +1998,7 @@
   "param": "run_dir",
   "required": false,
   "type": "str | None",
-  "op_tb_files": 5,
+  "op_tb_files": 6,
   "op_sites": [
    "test/live/flows/design_iterate_tb.py:781",
    "test/live/flows/design_iterate_tb.py:881",
@@ -1843,7 +2013,8 @@
    "test/live/flows/lvs_from_schematic_tb.py:326",
    "test/live/packages/calibre_e2e_tests.py:228",
    "test/live/packages/calibre_e2e_tests.py:241",
-   "test/live/packages/calibre_e2e_tests.py:344"
+   "test/live/packages/calibre_e2e_tests.py:344",
+   "test/live/packages/calibre_params_e2e_tests.py:147"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -1855,7 +2026,7 @@
   "param": "runset",
   "required": false,
   "type": "str | None",
-  "op_tb_files": 5,
+  "op_tb_files": 6,
   "op_sites": [
    "test/live/flows/design_iterate_tb.py:781",
    "test/live/flows/design_iterate_tb.py:881",
@@ -1879,7 +2050,7 @@
   "param": "spice_file",
   "required": false,
   "type": "str | None",
-  "op_tb_files": 5,
+  "op_tb_files": 6,
   "op_sites": [
    "test/live/flows/design_iterate_tb.py:781",
    "test/live/flows/design_iterate_tb.py:881",
@@ -1890,8 +2061,10 @@
    "test/live/flows/s11_full_flow.py:331",
    "test/live/flows/serdes_rx_flow_tb.py:671"
   ],
-  "param_hits": [],
-  "status": "GAP",
+  "param_hits": [
+   "test/live/packages/calibre_params_e2e_tests.py:147"
+  ],
+  "status": "CANDIDATE",
   "generic": false
  },
  {
@@ -1901,7 +2074,7 @@
   "param": "timeout",
   "required": false,
   "type": "int | None",
-  "op_tb_files": 5,
+  "op_tb_files": 6,
   "op_sites": [
    "test/live/flows/design_iterate_tb.py:781",
    "test/live/flows/design_iterate_tb.py:881",
@@ -1919,7 +2092,8 @@
    "test/live/flows/s11_full_flow.py:331",
    "test/live/flows/serdes_rx_flow_tb.py:671",
    "test/live/packages/calibre_e2e_tests.py:228",
-   "test/live/packages/calibre_e2e_tests.py:287"
+   "test/live/packages/calibre_e2e_tests.py:287",
+   "test/live/packages/calibre_params_e2e_tests.py:147"
   ],
   "status": "CANDIDATE",
   "generic": true
@@ -1931,7 +2105,7 @@
   "param": "token",
   "required": true,
   "type": "str",
-  "op_tb_files": 5,
+  "op_tb_files": 6,
   "op_sites": [
    "test/live/flows/design_iterate_tb.py:781",
    "test/live/flows/design_iterate_tb.py:881",
@@ -1962,7 +2136,7 @@
   "param": "top",
   "required": false,
   "type": "str | None",
-  "op_tb_files": 5,
+  "op_tb_files": 6,
   "op_sites": [
    "test/live/flows/design_iterate_tb.py:781",
    "test/live/flows/design_iterate_tb.py:881",
@@ -1980,7 +2154,8 @@
    "test/live/flows/s11_full_flow.py:331",
    "test/live/flows/serdes_rx_flow_tb.py:671",
    "test/live/packages/calibre_e2e_tests.py:241",
-   "test/live/packages/calibre_e2e_tests.py:344"
+   "test/live/packages/calibre_e2e_tests.py:344",
+   "test/live/packages/calibre_params_e2e_tests.py:147"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -1992,7 +2167,7 @@
   "param": "turbo",
   "required": false,
   "type": "int",
-  "op_tb_files": 5,
+  "op_tb_files": 6,
   "op_sites": [
    "test/live/flows/design_iterate_tb.py:781",
    "test/live/flows/design_iterate_tb.py:881",
@@ -2004,7 +2179,8 @@
    "test/live/flows/serdes_rx_flow_tb.py:671"
   ],
   "param_hits": [
-   "test/live/flows/lvs_from_schematic_tb.py:326"
+   "test/live/flows/lvs_from_schematic_tb.py:326",
+   "test/live/packages/calibre_params_e2e_tests.py:147"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -2016,7 +2192,7 @@
   "param": "xcell_file",
   "required": false,
   "type": "str | None",
-  "op_tb_files": 5,
+  "op_tb_files": 6,
   "op_sites": [
    "test/live/flows/design_iterate_tb.py:781",
    "test/live/flows/design_iterate_tb.py:881",
@@ -2027,8 +2203,10 @@
    "test/live/flows/s11_full_flow.py:331",
    "test/live/flows/serdes_rx_flow_tb.py:671"
   ],
-  "param_hits": [],
-  "status": "GAP",
+  "param_hits": [
+   "test/live/packages/calibre_params_e2e_tests.py:147"
+  ],
+  "status": "CANDIDATE",
   "generic": false
  },
  {
@@ -2324,7 +2502,7 @@
   "param": "job_id",
   "required": false,
   "type": "str | None",
-  "op_tb_files": 6,
+  "op_tb_files": 7,
   "op_sites": [
    "test/live/flows/design_iterate_tb.py:797",
    "test/live/flows/design_iterate_tb.py:898",
@@ -2340,6 +2518,8 @@
    "test/live/flows/s11_full_flow.py:338",
    "test/live/flows/s11_full_flow.py:348",
    "test/live/packages/calibre_e2e_tests.py:134",
+   "test/live/packages/calibre_params_e2e_tests.py:131",
+   "test/live/packages/calibre_params_e2e_tests.py:137",
    "test/semi/probes/calibre_package_http_probe.py:121"
   ],
   "status": "CANDIDATE",
@@ -2352,7 +2532,7 @@
   "param": "kind",
   "required": false,
   "type": "str | None",
-  "op_tb_files": 6,
+  "op_tb_files": 7,
   "op_sites": [
    "test/live/flows/design_iterate_tb.py:797",
    "test/live/flows/design_iterate_tb.py:898",
@@ -2369,6 +2549,8 @@
    "test/live/packages/calibre_e2e_tests.py:134",
    "test/live/packages/calibre_e2e_tests.py:233",
    "test/live/packages/calibre_e2e_tests.py:298",
+   "test/live/packages/calibre_params_e2e_tests.py:131",
+   "test/live/packages/calibre_params_e2e_tests.py:137",
    "test/semi/probes/calibre_package_http_probe.py:121"
   ],
   "status": "CANDIDATE",
@@ -2381,7 +2563,7 @@
   "param": "limit",
   "required": false,
   "type": "int",
-  "op_tb_files": 6,
+  "op_tb_files": 7,
   "op_sites": [
    "test/live/flows/design_iterate_tb.py:797",
    "test/live/flows/design_iterate_tb.py:898",
@@ -2396,6 +2578,8 @@
    "test/live/packages/calibre_e2e_tests.py:134",
    "test/live/packages/calibre_e2e_tests.py:233",
    "test/live/packages/calibre_e2e_tests.py:298",
+   "test/live/packages/calibre_params_e2e_tests.py:131",
+   "test/live/packages/calibre_params_e2e_tests.py:137",
    "test/semi/probes/calibre_package_http_probe.py:121"
   ],
   "status": "CANDIDATE",
@@ -2408,7 +2592,7 @@
   "param": "log_lines",
   "required": false,
   "type": "int",
-  "op_tb_files": 6,
+  "op_tb_files": 7,
   "op_sites": [
    "test/live/flows/design_iterate_tb.py:797",
    "test/live/flows/design_iterate_tb.py:898",
@@ -2419,8 +2603,11 @@
    "test/live/flows/serdes_rx_flow_tb.py:664",
    "test/live/flows/serdes_rx_flow_tb.py:685"
   ],
-  "param_hits": [],
-  "status": "GAP",
+  "param_hits": [
+   "test/live/packages/calibre_params_e2e_tests.py:131",
+   "test/live/packages/calibre_params_e2e_tests.py:137"
+  ],
+  "status": "CANDIDATE",
   "generic": false
  },
  {
@@ -2430,7 +2617,7 @@
   "param": "run_dir",
   "required": false,
   "type": "str | None",
-  "op_tb_files": 6,
+  "op_tb_files": 7,
   "op_sites": [
    "test/live/flows/design_iterate_tb.py:797",
    "test/live/flows/design_iterate_tb.py:898",
@@ -2461,7 +2648,7 @@
   "param": "timeout",
   "required": false,
   "type": "int | None",
-  "op_tb_files": 6,
+  "op_tb_files": 7,
   "op_sites": [
    "test/live/flows/design_iterate_tb.py:797",
    "test/live/flows/design_iterate_tb.py:898",
@@ -2486,7 +2673,7 @@
   "param": "token",
   "required": true,
   "type": "str",
-  "op_tb_files": 6,
+  "op_tb_files": 7,
   "op_sites": [
    "test/live/flows/design_iterate_tb.py:797",
    "test/live/flows/design_iterate_tb.py:898",
@@ -2517,12 +2704,19 @@
   "param": "job_id",
   "required": false,
   "type": "str | None",
-  "op_tb_files": 1,
+  "op_tb_files": 3,
   "op_sites": [
+   "test/live/packages/calibre_params_e2e_tests.py:158",
+   "test/live/packages/calibre_params_e2e_tests.py:199",
+   "test/live/packages/calibre_params_e2e_tests.py:221",
+   "test/semi/probes/calibre_flat_turbo_probe.py:100",
+   "test/semi/probes/calibre_flat_turbo_probe.py:127",
    "test/semi/probes/calibre_package_http_probe.py:119",
    "test/semi/probes/calibre_package_http_probe.py:137"
   ],
   "param_hits": [
+   "test/live/packages/calibre_params_e2e_tests.py:158",
+   "test/semi/probes/calibre_flat_turbo_probe.py:100",
    "test/semi/probes/calibre_package_http_probe.py:119"
   ],
   "status": "CANDIDATE",
@@ -2535,8 +2729,13 @@
   "param": "kind",
   "required": false,
   "type": "str",
-  "op_tb_files": 1,
+  "op_tb_files": 3,
   "op_sites": [
+   "test/live/packages/calibre_params_e2e_tests.py:158",
+   "test/live/packages/calibre_params_e2e_tests.py:199",
+   "test/live/packages/calibre_params_e2e_tests.py:221",
+   "test/semi/probes/calibre_flat_turbo_probe.py:100",
+   "test/semi/probes/calibre_flat_turbo_probe.py:127",
    "test/semi/probes/calibre_package_http_probe.py:119",
    "test/semi/probes/calibre_package_http_probe.py:137"
   ],
@@ -2553,12 +2752,19 @@
   "param": "run_dir",
   "required": false,
   "type": "str | None",
-  "op_tb_files": 1,
+  "op_tb_files": 3,
   "op_sites": [
+   "test/live/packages/calibre_params_e2e_tests.py:158",
+   "test/live/packages/calibre_params_e2e_tests.py:199",
+   "test/live/packages/calibre_params_e2e_tests.py:221",
+   "test/semi/probes/calibre_flat_turbo_probe.py:100",
+   "test/semi/probes/calibre_flat_turbo_probe.py:127",
    "test/semi/probes/calibre_package_http_probe.py:119",
    "test/semi/probes/calibre_package_http_probe.py:137"
   ],
   "param_hits": [
+   "test/live/packages/calibre_params_e2e_tests.py:158",
+   "test/semi/probes/calibre_flat_turbo_probe.py:100",
    "test/semi/probes/calibre_package_http_probe.py:119"
   ],
   "status": "CANDIDATE",
@@ -2571,8 +2777,13 @@
   "param": "timeout",
   "required": false,
   "type": "int | None",
-  "op_tb_files": 1,
+  "op_tb_files": 3,
   "op_sites": [
+   "test/live/packages/calibre_params_e2e_tests.py:158",
+   "test/live/packages/calibre_params_e2e_tests.py:199",
+   "test/live/packages/calibre_params_e2e_tests.py:221",
+   "test/semi/probes/calibre_flat_turbo_probe.py:100",
+   "test/semi/probes/calibre_flat_turbo_probe.py:127",
    "test/semi/probes/calibre_package_http_probe.py:119",
    "test/semi/probes/calibre_package_http_probe.py:137"
   ],
@@ -2587,12 +2798,21 @@
   "param": "token",
   "required": true,
   "type": "str",
-  "op_tb_files": 1,
+  "op_tb_files": 3,
   "op_sites": [
+   "test/live/packages/calibre_params_e2e_tests.py:158",
+   "test/live/packages/calibre_params_e2e_tests.py:199",
+   "test/live/packages/calibre_params_e2e_tests.py:221",
+   "test/semi/probes/calibre_flat_turbo_probe.py:100",
+   "test/semi/probes/calibre_flat_turbo_probe.py:127",
    "test/semi/probes/calibre_package_http_probe.py:119",
    "test/semi/probes/calibre_package_http_probe.py:137"
   ],
   "param_hits": [
+   "test/live/packages/calibre_params_e2e_tests.py:158",
+   "test/live/packages/calibre_params_e2e_tests.py:199",
+   "test/semi/probes/calibre_flat_turbo_probe.py:100",
+   "test/semi/probes/calibre_flat_turbo_probe.py:127",
    "test/semi/probes/calibre_package_http_probe.py:119",
    "test/semi/probes/calibre_package_http_probe.py:137"
   ],
@@ -5477,14 +5697,14 @@
   "op_tb_files": 2,
   "op_sites": [
    "test/live/packages/gui_e2e_tests.py:183",
-   "test/live/packages/infra_e2e_tests.py:220",
-   "test/live/packages/infra_e2e_tests.py:256",
-   "test/live/packages/infra_e2e_tests.py:266",
-   "test/live/packages/infra_e2e_tests.py:277"
+   "test/live/packages/infra_e2e_tests.py:224",
+   "test/live/packages/infra_e2e_tests.py:260",
+   "test/live/packages/infra_e2e_tests.py:282",
+   "test/live/packages/infra_e2e_tests.py:309"
   ],
   "param_hits": [
    "test/live/packages/gui_e2e_tests.py:183",
-   "test/live/packages/infra_e2e_tests.py:220"
+   "test/live/packages/infra_e2e_tests.py:224"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -5499,10 +5719,10 @@
   "op_tb_files": 2,
   "op_sites": [
    "test/live/packages/gui_e2e_tests.py:183",
-   "test/live/packages/infra_e2e_tests.py:220",
-   "test/live/packages/infra_e2e_tests.py:256",
-   "test/live/packages/infra_e2e_tests.py:266",
-   "test/live/packages/infra_e2e_tests.py:277"
+   "test/live/packages/infra_e2e_tests.py:224",
+   "test/live/packages/infra_e2e_tests.py:260",
+   "test/live/packages/infra_e2e_tests.py:282",
+   "test/live/packages/infra_e2e_tests.py:309"
   ],
   "param_hits": [],
   "status": "GAP",
@@ -5518,15 +5738,15 @@
   "op_tb_files": 2,
   "op_sites": [
    "test/live/packages/gui_e2e_tests.py:183",
-   "test/live/packages/infra_e2e_tests.py:220",
-   "test/live/packages/infra_e2e_tests.py:256",
-   "test/live/packages/infra_e2e_tests.py:266",
-   "test/live/packages/infra_e2e_tests.py:277"
+   "test/live/packages/infra_e2e_tests.py:224",
+   "test/live/packages/infra_e2e_tests.py:260",
+   "test/live/packages/infra_e2e_tests.py:282",
+   "test/live/packages/infra_e2e_tests.py:309"
   ],
   "param_hits": [
    "test/live/packages/gui_e2e_tests.py:183",
-   "test/live/packages/infra_e2e_tests.py:220",
-   "test/live/packages/infra_e2e_tests.py:256"
+   "test/live/packages/infra_e2e_tests.py:224",
+   "test/live/packages/infra_e2e_tests.py:260"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -5594,14 +5814,14 @@
   "op_tb_files": 2,
   "op_sites": [
    "test/live/packages/gui_e2e_tests.py:195",
-   "test/live/packages/infra_e2e_tests.py:234",
-   "test/live/packages/infra_e2e_tests.py:256",
-   "test/live/packages/infra_e2e_tests.py:266",
-   "test/live/packages/infra_e2e_tests.py:277"
+   "test/live/packages/infra_e2e_tests.py:238",
+   "test/live/packages/infra_e2e_tests.py:260",
+   "test/live/packages/infra_e2e_tests.py:282",
+   "test/live/packages/infra_e2e_tests.py:309"
   ],
   "param_hits": [
    "test/live/packages/gui_e2e_tests.py:195",
-   "test/live/packages/infra_e2e_tests.py:234"
+   "test/live/packages/infra_e2e_tests.py:238"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -5616,14 +5836,14 @@
   "op_tb_files": 2,
   "op_sites": [
    "test/live/packages/gui_e2e_tests.py:195",
-   "test/live/packages/infra_e2e_tests.py:234",
-   "test/live/packages/infra_e2e_tests.py:256",
-   "test/live/packages/infra_e2e_tests.py:266",
-   "test/live/packages/infra_e2e_tests.py:277"
+   "test/live/packages/infra_e2e_tests.py:238",
+   "test/live/packages/infra_e2e_tests.py:260",
+   "test/live/packages/infra_e2e_tests.py:282",
+   "test/live/packages/infra_e2e_tests.py:309"
   ],
   "param_hits": [
    "test/live/packages/gui_e2e_tests.py:195",
-   "test/live/packages/infra_e2e_tests.py:234"
+   "test/live/packages/infra_e2e_tests.py:238"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -5638,10 +5858,10 @@
   "op_tb_files": 2,
   "op_sites": [
    "test/live/packages/gui_e2e_tests.py:195",
-   "test/live/packages/infra_e2e_tests.py:234",
-   "test/live/packages/infra_e2e_tests.py:256",
-   "test/live/packages/infra_e2e_tests.py:266",
-   "test/live/packages/infra_e2e_tests.py:277"
+   "test/live/packages/infra_e2e_tests.py:238",
+   "test/live/packages/infra_e2e_tests.py:260",
+   "test/live/packages/infra_e2e_tests.py:282",
+   "test/live/packages/infra_e2e_tests.py:309"
   ],
   "param_hits": [],
   "status": "GAP",
@@ -5657,15 +5877,15 @@
   "op_tb_files": 2,
   "op_sites": [
    "test/live/packages/gui_e2e_tests.py:195",
-   "test/live/packages/infra_e2e_tests.py:234",
-   "test/live/packages/infra_e2e_tests.py:256",
-   "test/live/packages/infra_e2e_tests.py:266",
-   "test/live/packages/infra_e2e_tests.py:277"
+   "test/live/packages/infra_e2e_tests.py:238",
+   "test/live/packages/infra_e2e_tests.py:260",
+   "test/live/packages/infra_e2e_tests.py:282",
+   "test/live/packages/infra_e2e_tests.py:309"
   ],
   "param_hits": [
    "test/live/packages/gui_e2e_tests.py:195",
-   "test/live/packages/infra_e2e_tests.py:234",
-   "test/live/packages/infra_e2e_tests.py:256"
+   "test/live/packages/infra_e2e_tests.py:238",
+   "test/live/packages/infra_e2e_tests.py:260"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -5680,11 +5900,11 @@
   "op_tb_files": 2,
   "op_sites": [
    "test/live/packages/gui_e2e_tests.py:153",
-   "test/live/packages/infra_e2e_tests.py:225"
+   "test/live/packages/infra_e2e_tests.py:229"
   ],
   "param_hits": [
    "test/live/packages/gui_e2e_tests.py:153",
-   "test/live/packages/infra_e2e_tests.py:225"
+   "test/live/packages/infra_e2e_tests.py:229"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -5699,7 +5919,7 @@
   "op_tb_files": 2,
   "op_sites": [
    "test/live/packages/gui_e2e_tests.py:153",
-   "test/live/packages/infra_e2e_tests.py:225"
+   "test/live/packages/infra_e2e_tests.py:229"
   ],
   "param_hits": [],
   "status": "GAP",
@@ -5715,11 +5935,11 @@
   "op_tb_files": 2,
   "op_sites": [
    "test/live/packages/gui_e2e_tests.py:153",
-   "test/live/packages/infra_e2e_tests.py:225"
+   "test/live/packages/infra_e2e_tests.py:229"
   ],
   "param_hits": [
    "test/live/packages/gui_e2e_tests.py:153",
-   "test/live/packages/infra_e2e_tests.py:225"
+   "test/live/packages/infra_e2e_tests.py:229"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -5734,11 +5954,11 @@
   "op_tb_files": 2,
   "op_sites": [
    "test/live/packages/gui_e2e_tests.py:153",
-   "test/live/packages/infra_e2e_tests.py:225"
+   "test/live/packages/infra_e2e_tests.py:229"
   ],
   "param_hits": [
    "test/live/packages/gui_e2e_tests.py:153",
-   "test/live/packages/infra_e2e_tests.py:225"
+   "test/live/packages/infra_e2e_tests.py:229"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -6782,7 +7002,7 @@
   "param": "cell",
   "required": true,
   "type": "str",
-  "op_tb_files": 1,
+  "op_tb_files": 2,
   "op_sites": [
    "test/live/packages/layout_e2e_tests.py:354",
    "test/live/packages/layout_e2e_tests.py:359",
@@ -6795,7 +7015,13 @@
   ],
   "param_hits": [
    "test/live/packages/layout_e2e_tests.py:368",
-   "test/live/packages/layout_e2e_tests.py:420"
+   "test/live/packages/layout_e2e_tests.py:420",
+   "test/live/packages/screenshot_params_e2e_tests.py:276",
+   "test/live/packages/screenshot_params_e2e_tests.py:281",
+   "test/live/packages/screenshot_params_e2e_tests.py:286",
+   "test/live/packages/screenshot_params_e2e_tests.py:291",
+   "test/live/packages/screenshot_params_e2e_tests.py:297",
+   "test/live/packages/screenshot_params_e2e_tests.py:300"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -6807,7 +7033,7 @@
   "param": "central_widget",
   "required": false,
   "type": "bool",
-  "op_tb_files": 1,
+  "op_tb_files": 2,
   "op_sites": [
    "test/live/packages/layout_e2e_tests.py:354",
    "test/live/packages/layout_e2e_tests.py:359",
@@ -6818,8 +7044,10 @@
    "test/live/packages/layout_e2e_tests.py:679",
    "test/live/packages/layout_e2e_tests.py:690"
   ],
-  "param_hits": [],
-  "status": "GAP",
+  "param_hits": [
+   "test/live/packages/screenshot_params_e2e_tests.py:307"
+  ],
+  "status": "CANDIDATE",
   "generic": false
  },
  {
@@ -6829,7 +7057,7 @@
   "param": "leave_open",
   "required": false,
   "type": "bool",
-  "op_tb_files": 1,
+  "op_tb_files": 2,
   "op_sites": [
    "test/live/packages/layout_e2e_tests.py:354",
    "test/live/packages/layout_e2e_tests.py:359",
@@ -6842,7 +7070,8 @@
   ],
   "param_hits": [
    "test/live/packages/layout_e2e_tests.py:368",
-   "test/live/packages/layout_e2e_tests.py:420"
+   "test/live/packages/layout_e2e_tests.py:420",
+   "test/live/packages/screenshot_params_e2e_tests.py:281"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -6854,7 +7083,7 @@
   "param": "library",
   "required": true,
   "type": "str",
-  "op_tb_files": 1,
+  "op_tb_files": 2,
   "op_sites": [
    "test/live/packages/layout_e2e_tests.py:354",
    "test/live/packages/layout_e2e_tests.py:359",
@@ -6867,7 +7096,13 @@
   ],
   "param_hits": [
    "test/live/packages/layout_e2e_tests.py:368",
-   "test/live/packages/layout_e2e_tests.py:420"
+   "test/live/packages/layout_e2e_tests.py:420",
+   "test/live/packages/screenshot_params_e2e_tests.py:276",
+   "test/live/packages/screenshot_params_e2e_tests.py:281",
+   "test/live/packages/screenshot_params_e2e_tests.py:286",
+   "test/live/packages/screenshot_params_e2e_tests.py:291",
+   "test/live/packages/screenshot_params_e2e_tests.py:297",
+   "test/live/packages/screenshot_params_e2e_tests.py:300"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -6879,7 +7114,7 @@
   "param": "region",
   "required": false,
   "type": "list[float] | None",
-  "op_tb_files": 1,
+  "op_tb_files": 2,
   "op_sites": [
    "test/live/packages/layout_e2e_tests.py:354",
    "test/live/packages/layout_e2e_tests.py:359",
@@ -6890,8 +7125,11 @@
    "test/live/packages/layout_e2e_tests.py:679",
    "test/live/packages/layout_e2e_tests.py:690"
   ],
-  "param_hits": [],
-  "status": "GAP",
+  "param_hits": [
+   "test/live/packages/screenshot_params_e2e_tests.py:297",
+   "test/live/packages/screenshot_params_e2e_tests.py:300"
+  ],
+  "status": "CANDIDATE",
   "generic": false
  },
  {
@@ -6901,7 +7139,7 @@
   "param": "timeout",
   "required": false,
   "type": "int | None",
-  "op_tb_files": 1,
+  "op_tb_files": 2,
   "op_sites": [
    "test/live/packages/layout_e2e_tests.py:354",
    "test/live/packages/layout_e2e_tests.py:359",
@@ -6923,7 +7161,7 @@
   "param": "token",
   "required": true,
   "type": "str",
-  "op_tb_files": 1,
+  "op_tb_files": 2,
   "op_sites": [
    "test/live/packages/layout_e2e_tests.py:354",
    "test/live/packages/layout_e2e_tests.py:359",
@@ -6940,7 +7178,9 @@
    "test/live/packages/layout_e2e_tests.py:368",
    "test/live/packages/layout_e2e_tests.py:420",
    "test/live/packages/layout_e2e_tests.py:666",
-   "test/live/packages/layout_e2e_tests.py:667"
+   "test/live/packages/layout_e2e_tests.py:667",
+   "test/live/packages/screenshot_params_e2e_tests.py:276",
+   "test/live/packages/screenshot_params_e2e_tests.py:281"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -6952,7 +7192,7 @@
   "param": "toplevel",
   "required": false,
   "type": "bool",
-  "op_tb_files": 1,
+  "op_tb_files": 2,
   "op_sites": [
    "test/live/packages/layout_e2e_tests.py:354",
    "test/live/packages/layout_e2e_tests.py:359",
@@ -6963,8 +7203,10 @@
    "test/live/packages/layout_e2e_tests.py:679",
    "test/live/packages/layout_e2e_tests.py:690"
   ],
-  "param_hits": [],
-  "status": "GAP",
+  "param_hits": [
+   "test/live/packages/screenshot_params_e2e_tests.py:304"
+  ],
+  "status": "CANDIDATE",
   "generic": false
  },
  {
@@ -6974,7 +7216,7 @@
   "param": "view",
   "required": false,
   "type": "str",
-  "op_tb_files": 1,
+  "op_tb_files": 2,
   "op_sites": [
    "test/live/packages/layout_e2e_tests.py:354",
    "test/live/packages/layout_e2e_tests.py:359",
@@ -6987,7 +7229,13 @@
   ],
   "param_hits": [
    "test/live/packages/layout_e2e_tests.py:368",
-   "test/live/packages/layout_e2e_tests.py:420"
+   "test/live/packages/layout_e2e_tests.py:420",
+   "test/live/packages/screenshot_params_e2e_tests.py:276",
+   "test/live/packages/screenshot_params_e2e_tests.py:281",
+   "test/live/packages/screenshot_params_e2e_tests.py:286",
+   "test/live/packages/screenshot_params_e2e_tests.py:291",
+   "test/live/packages/screenshot_params_e2e_tests.py:297",
+   "test/live/packages/screenshot_params_e2e_tests.py:300"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -6999,7 +7247,7 @@
   "param": "view_type",
   "required": false,
   "type": "str",
-  "op_tb_files": 1,
+  "op_tb_files": 2,
   "op_sites": [
    "test/live/packages/layout_e2e_tests.py:354",
    "test/live/packages/layout_e2e_tests.py:359",
@@ -7010,8 +7258,11 @@
    "test/live/packages/layout_e2e_tests.py:679",
    "test/live/packages/layout_e2e_tests.py:690"
   ],
-  "param_hits": [],
-  "status": "GAP",
+  "param_hits": [
+   "test/live/packages/screenshot_params_e2e_tests.py:312",
+   "test/live/packages/screenshot_params_e2e_tests.py:315"
+  ],
+  "status": "CANDIDATE",
   "generic": false
  },
  {
@@ -7021,7 +7272,7 @@
   "param": "window_id",
   "required": false,
   "type": "int | None",
-  "op_tb_files": 1,
+  "op_tb_files": 2,
   "op_sites": [
    "test/live/packages/layout_e2e_tests.py:354",
    "test/live/packages/layout_e2e_tests.py:359",
@@ -7032,8 +7283,11 @@
    "test/live/packages/layout_e2e_tests.py:679",
    "test/live/packages/layout_e2e_tests.py:690"
   ],
-  "param_hits": [],
-  "status": "GAP",
+  "param_hits": [
+   "test/live/packages/screenshot_params_e2e_tests.py:286",
+   "test/live/packages/screenshot_params_e2e_tests.py:291"
+  ],
+  "status": "CANDIDATE",
   "generic": false
  },
  {
@@ -7280,15 +7534,15 @@
   "type": "str",
   "op_tb_files": 1,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
-   "test/live/packages/maestro_e2e_tests.py:864",
-   "test/live/packages/maestro_e2e_tests.py:880",
-   "test/live/packages/maestro_e2e_tests.py:990",
-   "test/live/packages/maestro_e2e_tests.py:992"
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
+   "test/live/packages/maestro_e2e_tests.py:867",
+   "test/live/packages/maestro_e2e_tests.py:883",
+   "test/live/packages/maestro_e2e_tests.py:993",
+   "test/live/packages/maestro_e2e_tests.py:995"
   ],
   "param_hits": [
-   "test/live/packages/maestro_e2e_tests.py:864"
+   "test/live/packages/maestro_e2e_tests.py:867"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -7302,15 +7556,15 @@
   "type": "str",
   "op_tb_files": 1,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
-   "test/live/packages/maestro_e2e_tests.py:864",
-   "test/live/packages/maestro_e2e_tests.py:880",
-   "test/live/packages/maestro_e2e_tests.py:990",
-   "test/live/packages/maestro_e2e_tests.py:992"
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
+   "test/live/packages/maestro_e2e_tests.py:867",
+   "test/live/packages/maestro_e2e_tests.py:883",
+   "test/live/packages/maestro_e2e_tests.py:993",
+   "test/live/packages/maestro_e2e_tests.py:995"
   ],
   "param_hits": [
-   "test/live/packages/maestro_e2e_tests.py:864"
+   "test/live/packages/maestro_e2e_tests.py:867"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -7324,12 +7578,12 @@
   "type": "int | None",
   "op_tb_files": 1,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
-   "test/live/packages/maestro_e2e_tests.py:864",
-   "test/live/packages/maestro_e2e_tests.py:880",
-   "test/live/packages/maestro_e2e_tests.py:990",
-   "test/live/packages/maestro_e2e_tests.py:992"
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
+   "test/live/packages/maestro_e2e_tests.py:867",
+   "test/live/packages/maestro_e2e_tests.py:883",
+   "test/live/packages/maestro_e2e_tests.py:993",
+   "test/live/packages/maestro_e2e_tests.py:995"
   ],
   "param_hits": [],
   "status": "GAP",
@@ -7344,18 +7598,18 @@
   "type": "str",
   "op_tb_files": 1,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
-   "test/live/packages/maestro_e2e_tests.py:864",
-   "test/live/packages/maestro_e2e_tests.py:880",
-   "test/live/packages/maestro_e2e_tests.py:990",
-   "test/live/packages/maestro_e2e_tests.py:992"
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
+   "test/live/packages/maestro_e2e_tests.py:867",
+   "test/live/packages/maestro_e2e_tests.py:883",
+   "test/live/packages/maestro_e2e_tests.py:993",
+   "test/live/packages/maestro_e2e_tests.py:995"
   ],
   "param_hits": [
-   "test/live/packages/maestro_e2e_tests.py:864",
-   "test/live/packages/maestro_e2e_tests.py:880",
-   "test/live/packages/maestro_e2e_tests.py:990",
-   "test/live/packages/maestro_e2e_tests.py:992"
+   "test/live/packages/maestro_e2e_tests.py:867",
+   "test/live/packages/maestro_e2e_tests.py:883",
+   "test/live/packages/maestro_e2e_tests.py:993",
+   "test/live/packages/maestro_e2e_tests.py:995"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -7369,12 +7623,12 @@
   "type": "str",
   "op_tb_files": 1,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
-   "test/live/packages/maestro_e2e_tests.py:864",
-   "test/live/packages/maestro_e2e_tests.py:880",
-   "test/live/packages/maestro_e2e_tests.py:990",
-   "test/live/packages/maestro_e2e_tests.py:992"
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
+   "test/live/packages/maestro_e2e_tests.py:867",
+   "test/live/packages/maestro_e2e_tests.py:883",
+   "test/live/packages/maestro_e2e_tests.py:993",
+   "test/live/packages/maestro_e2e_tests.py:995"
   ],
   "param_hits": [],
   "status": "GAP",
@@ -7389,15 +7643,15 @@
   "type": "str | None",
   "op_tb_files": 2,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
-   "test/live/packages/maestro_e2e_tests.py:851",
-   "test/live/packages/maestro_e2e_tests.py:989",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
+   "test/live/packages/maestro_e2e_tests.py:854",
+   "test/live/packages/maestro_e2e_tests.py:992",
    "test/semi/probes/maestro_open_waveform_result_probe.py:70",
    "test/semi/probes/maestro_open_waveform_result_probe.py:87"
   ],
   "param_hits": [
-   "test/live/packages/maestro_e2e_tests.py:851"
+   "test/live/packages/maestro_e2e_tests.py:854"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -7411,10 +7665,10 @@
   "type": "int | None",
   "op_tb_files": 2,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
-   "test/live/packages/maestro_e2e_tests.py:851",
-   "test/live/packages/maestro_e2e_tests.py:989",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
+   "test/live/packages/maestro_e2e_tests.py:854",
+   "test/live/packages/maestro_e2e_tests.py:992",
    "test/semi/probes/maestro_open_waveform_result_probe.py:70",
    "test/semi/probes/maestro_open_waveform_result_probe.py:87"
   ],
@@ -7431,16 +7685,16 @@
   "type": "str",
   "op_tb_files": 2,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
-   "test/live/packages/maestro_e2e_tests.py:851",
-   "test/live/packages/maestro_e2e_tests.py:989",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
+   "test/live/packages/maestro_e2e_tests.py:854",
+   "test/live/packages/maestro_e2e_tests.py:992",
    "test/semi/probes/maestro_open_waveform_result_probe.py:70",
    "test/semi/probes/maestro_open_waveform_result_probe.py:87"
   ],
   "param_hits": [
-   "test/live/packages/maestro_e2e_tests.py:851",
-   "test/live/packages/maestro_e2e_tests.py:989",
+   "test/live/packages/maestro_e2e_tests.py:854",
+   "test/live/packages/maestro_e2e_tests.py:992",
    "test/semi/probes/maestro_open_waveform_result_probe.py:70",
    "test/semi/probes/maestro_open_waveform_result_probe.py:87"
   ],
@@ -7456,15 +7710,15 @@
   "type": "str | None",
   "op_tb_files": 2,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
-   "test/live/packages/maestro_e2e_tests.py:851",
-   "test/live/packages/maestro_e2e_tests.py:989",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
+   "test/live/packages/maestro_e2e_tests.py:854",
+   "test/live/packages/maestro_e2e_tests.py:992",
    "test/semi/probes/maestro_open_waveform_result_probe.py:70",
    "test/semi/probes/maestro_open_waveform_result_probe.py:87"
   ],
   "param_hits": [
-   "test/live/packages/maestro_e2e_tests.py:851"
+   "test/live/packages/maestro_e2e_tests.py:854"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -7478,14 +7732,14 @@
   "type": "str",
   "op_tb_files": 3,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
    "test/live/packages/maestro_e2e_tests.py:543",
    "test/live/packages/maestro_e2e_tests.py:550",
    "test/live/packages/maestro_e2e_tests.py:556",
    "test/live/packages/maestro_e2e_tests.py:611",
    "test/live/packages/maestro_e2e_tests.py:621",
-   "test/live/packages/maestro_e2e_tests.py:717"
+   "test/live/packages/maestro_e2e_tests.py:720"
   ],
   "param_hits": [
    "test/live/packages/maestro_e2e_tests.py:543",
@@ -7493,9 +7747,9 @@
    "test/live/packages/maestro_e2e_tests.py:556",
    "test/live/packages/maestro_e2e_tests.py:611",
    "test/live/packages/maestro_e2e_tests.py:621",
-   "test/live/packages/maestro_e2e_tests.py:717",
-   "test/live/packages/maestro_e2e_tests.py:730",
-   "test/live/packages/maestro_e2e_tests.py:743"
+   "test/live/packages/maestro_e2e_tests.py:720",
+   "test/live/packages/maestro_e2e_tests.py:733",
+   "test/live/packages/maestro_e2e_tests.py:746"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -7509,14 +7763,14 @@
   "type": "str | None",
   "op_tb_files": 3,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
    "test/live/packages/maestro_e2e_tests.py:543",
    "test/live/packages/maestro_e2e_tests.py:550",
    "test/live/packages/maestro_e2e_tests.py:556",
    "test/live/packages/maestro_e2e_tests.py:611",
    "test/live/packages/maestro_e2e_tests.py:621",
-   "test/live/packages/maestro_e2e_tests.py:717"
+   "test/live/packages/maestro_e2e_tests.py:720"
   ],
   "param_hits": [
    "test/live/packages/maestro_e2e_tests.py:556"
@@ -7533,19 +7787,19 @@
   "type": "str | None",
   "op_tb_files": 3,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
    "test/live/packages/maestro_e2e_tests.py:543",
    "test/live/packages/maestro_e2e_tests.py:550",
    "test/live/packages/maestro_e2e_tests.py:556",
    "test/live/packages/maestro_e2e_tests.py:611",
    "test/live/packages/maestro_e2e_tests.py:621",
-   "test/live/packages/maestro_e2e_tests.py:717"
+   "test/live/packages/maestro_e2e_tests.py:720"
   ],
   "param_hits": [
    "test/live/packages/maestro_e2e_tests.py:543",
    "test/live/packages/maestro_e2e_tests.py:611",
-   "test/live/packages/maestro_e2e_tests.py:717",
+   "test/live/packages/maestro_e2e_tests.py:720",
    "test/semi/probes/maestro_export_include_results_probe.py:81"
   ],
   "status": "CANDIDATE",
@@ -7560,14 +7814,14 @@
   "type": "bool",
   "op_tb_files": 3,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
    "test/live/packages/maestro_e2e_tests.py:543",
    "test/live/packages/maestro_e2e_tests.py:550",
    "test/live/packages/maestro_e2e_tests.py:556",
    "test/live/packages/maestro_e2e_tests.py:611",
    "test/live/packages/maestro_e2e_tests.py:621",
-   "test/live/packages/maestro_e2e_tests.py:717"
+   "test/live/packages/maestro_e2e_tests.py:720"
   ],
   "param_hits": [
    "test/semi/probes/maestro_export_include_results_probe.py:81"
@@ -7584,14 +7838,14 @@
   "type": "str",
   "op_tb_files": 3,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
    "test/live/packages/maestro_e2e_tests.py:543",
    "test/live/packages/maestro_e2e_tests.py:550",
    "test/live/packages/maestro_e2e_tests.py:556",
    "test/live/packages/maestro_e2e_tests.py:611",
    "test/live/packages/maestro_e2e_tests.py:621",
-   "test/live/packages/maestro_e2e_tests.py:717"
+   "test/live/packages/maestro_e2e_tests.py:720"
   ],
   "param_hits": [
    "test/live/packages/maestro_e2e_tests.py:543",
@@ -7599,9 +7853,9 @@
    "test/live/packages/maestro_e2e_tests.py:556",
    "test/live/packages/maestro_e2e_tests.py:611",
    "test/live/packages/maestro_e2e_tests.py:621",
-   "test/live/packages/maestro_e2e_tests.py:717",
-   "test/live/packages/maestro_e2e_tests.py:730",
-   "test/live/packages/maestro_e2e_tests.py:743"
+   "test/live/packages/maestro_e2e_tests.py:720",
+   "test/live/packages/maestro_e2e_tests.py:733",
+   "test/live/packages/maestro_e2e_tests.py:746"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -7615,14 +7869,14 @@
   "type": "str",
   "op_tb_files": 3,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
    "test/live/packages/maestro_e2e_tests.py:543",
    "test/live/packages/maestro_e2e_tests.py:550",
    "test/live/packages/maestro_e2e_tests.py:556",
    "test/live/packages/maestro_e2e_tests.py:611",
    "test/live/packages/maestro_e2e_tests.py:621",
-   "test/live/packages/maestro_e2e_tests.py:717"
+   "test/live/packages/maestro_e2e_tests.py:720"
   ],
   "param_hits": [
    "test/live/packages/maestro_e2e_tests.py:543",
@@ -7630,9 +7884,9 @@
    "test/live/packages/maestro_e2e_tests.py:556",
    "test/live/packages/maestro_e2e_tests.py:611",
    "test/live/packages/maestro_e2e_tests.py:621",
-   "test/live/packages/maestro_e2e_tests.py:717",
-   "test/live/packages/maestro_e2e_tests.py:730",
-   "test/live/packages/maestro_e2e_tests.py:743"
+   "test/live/packages/maestro_e2e_tests.py:720",
+   "test/live/packages/maestro_e2e_tests.py:733",
+   "test/live/packages/maestro_e2e_tests.py:746"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -7646,14 +7900,14 @@
   "type": "str | None",
   "op_tb_files": 3,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
    "test/live/packages/maestro_e2e_tests.py:543",
    "test/live/packages/maestro_e2e_tests.py:550",
    "test/live/packages/maestro_e2e_tests.py:556",
    "test/live/packages/maestro_e2e_tests.py:611",
    "test/live/packages/maestro_e2e_tests.py:621",
-   "test/live/packages/maestro_e2e_tests.py:717"
+   "test/live/packages/maestro_e2e_tests.py:720"
   ],
   "param_hits": [
    "test/live/packages/maestro_e2e_tests.py:611",
@@ -7672,17 +7926,17 @@
   "type": "list[float] | None",
   "op_tb_files": 3,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
    "test/live/packages/maestro_e2e_tests.py:543",
    "test/live/packages/maestro_e2e_tests.py:550",
    "test/live/packages/maestro_e2e_tests.py:556",
    "test/live/packages/maestro_e2e_tests.py:611",
    "test/live/packages/maestro_e2e_tests.py:621",
-   "test/live/packages/maestro_e2e_tests.py:717"
+   "test/live/packages/maestro_e2e_tests.py:720"
   ],
   "param_hits": [
-   "test/live/packages/maestro_e2e_tests.py:750",
+   "test/live/packages/maestro_e2e_tests.py:753",
    "test/semi/probes/maestro_screenshot_probe.py:77"
   ],
   "status": "CANDIDATE",
@@ -7697,14 +7951,14 @@
   "type": "str | None",
   "op_tb_files": 3,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
    "test/live/packages/maestro_e2e_tests.py:543",
    "test/live/packages/maestro_e2e_tests.py:550",
    "test/live/packages/maestro_e2e_tests.py:556",
    "test/live/packages/maestro_e2e_tests.py:611",
    "test/live/packages/maestro_e2e_tests.py:621",
-   "test/live/packages/maestro_e2e_tests.py:717"
+   "test/live/packages/maestro_e2e_tests.py:720"
   ],
   "param_hits": [
    "test/live/packages/maestro_e2e_tests.py:543",
@@ -7724,14 +7978,14 @@
   "type": "int | None",
   "op_tb_files": 3,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
    "test/live/packages/maestro_e2e_tests.py:543",
    "test/live/packages/maestro_e2e_tests.py:550",
    "test/live/packages/maestro_e2e_tests.py:556",
    "test/live/packages/maestro_e2e_tests.py:611",
    "test/live/packages/maestro_e2e_tests.py:621",
-   "test/live/packages/maestro_e2e_tests.py:717"
+   "test/live/packages/maestro_e2e_tests.py:720"
   ],
   "param_hits": [],
   "status": "GAP",
@@ -7746,14 +8000,14 @@
   "type": "str",
   "op_tb_files": 3,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
    "test/live/packages/maestro_e2e_tests.py:543",
    "test/live/packages/maestro_e2e_tests.py:550",
    "test/live/packages/maestro_e2e_tests.py:556",
    "test/live/packages/maestro_e2e_tests.py:611",
    "test/live/packages/maestro_e2e_tests.py:621",
-   "test/live/packages/maestro_e2e_tests.py:717"
+   "test/live/packages/maestro_e2e_tests.py:720"
   ],
   "param_hits": [
    "test/live/packages/maestro_e2e_tests.py:543",
@@ -7761,9 +8015,9 @@
    "test/live/packages/maestro_e2e_tests.py:556",
    "test/live/packages/maestro_e2e_tests.py:611",
    "test/live/packages/maestro_e2e_tests.py:621",
-   "test/live/packages/maestro_e2e_tests.py:717",
-   "test/live/packages/maestro_e2e_tests.py:730",
-   "test/live/packages/maestro_e2e_tests.py:743"
+   "test/live/packages/maestro_e2e_tests.py:720",
+   "test/live/packages/maestro_e2e_tests.py:733",
+   "test/live/packages/maestro_e2e_tests.py:746"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -7777,17 +8031,17 @@
   "type": "bool",
   "op_tb_files": 3,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
    "test/live/packages/maestro_e2e_tests.py:543",
    "test/live/packages/maestro_e2e_tests.py:550",
    "test/live/packages/maestro_e2e_tests.py:556",
    "test/live/packages/maestro_e2e_tests.py:611",
    "test/live/packages/maestro_e2e_tests.py:621",
-   "test/live/packages/maestro_e2e_tests.py:717"
+   "test/live/packages/maestro_e2e_tests.py:720"
   ],
   "param_hits": [
-   "test/live/packages/maestro_e2e_tests.py:757",
+   "test/live/packages/maestro_e2e_tests.py:760",
    "test/semi/probes/maestro_screenshot_probe.py:78"
   ],
   "status": "CANDIDATE",
@@ -7802,14 +8056,14 @@
   "type": "str",
   "op_tb_files": 3,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
    "test/live/packages/maestro_e2e_tests.py:543",
    "test/live/packages/maestro_e2e_tests.py:550",
    "test/live/packages/maestro_e2e_tests.py:556",
    "test/live/packages/maestro_e2e_tests.py:611",
    "test/live/packages/maestro_e2e_tests.py:621",
-   "test/live/packages/maestro_e2e_tests.py:717"
+   "test/live/packages/maestro_e2e_tests.py:720"
   ],
   "param_hits": [],
   "status": "GAP",
@@ -7824,21 +8078,21 @@
   "type": "int | None",
   "op_tb_files": 3,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
    "test/live/packages/maestro_e2e_tests.py:543",
    "test/live/packages/maestro_e2e_tests.py:550",
    "test/live/packages/maestro_e2e_tests.py:556",
    "test/live/packages/maestro_e2e_tests.py:611",
    "test/live/packages/maestro_e2e_tests.py:621",
-   "test/live/packages/maestro_e2e_tests.py:717"
+   "test/live/packages/maestro_e2e_tests.py:720"
   ],
   "param_hits": [
-   "test/live/packages/maestro_e2e_tests.py:743",
-   "test/live/packages/maestro_e2e_tests.py:750",
-   "test/live/packages/maestro_e2e_tests.py:757",
-   "test/live/packages/maestro_e2e_tests.py:764",
-   "test/live/packages/maestro_e2e_tests.py:981",
+   "test/live/packages/maestro_e2e_tests.py:746",
+   "test/live/packages/maestro_e2e_tests.py:753",
+   "test/live/packages/maestro_e2e_tests.py:760",
+   "test/live/packages/maestro_e2e_tests.py:767",
+   "test/live/packages/maestro_e2e_tests.py:984",
    "test/semi/probes/maestro_screenshot_probe.py:76",
    "test/semi/probes/maestro_screenshot_probe.py:77",
    "test/semi/probes/maestro_screenshot_probe.py:78"
@@ -7855,19 +8109,19 @@
   "type": "str",
   "op_tb_files": 2,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
-   "test/live/packages/maestro_e2e_tests.py:726",
-   "test/live/packages/maestro_e2e_tests.py:859",
-   "test/live/packages/maestro_e2e_tests.py:875",
-   "test/live/packages/maestro_e2e_tests.py:981",
-   "test/live/packages/maestro_e2e_tests.py:990",
-   "test/live/packages/maestro_e2e_tests.py:992"
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
+   "test/live/packages/maestro_e2e_tests.py:729",
+   "test/live/packages/maestro_e2e_tests.py:862",
+   "test/live/packages/maestro_e2e_tests.py:878",
+   "test/live/packages/maestro_e2e_tests.py:984",
+   "test/live/packages/maestro_e2e_tests.py:993",
+   "test/live/packages/maestro_e2e_tests.py:995"
   ],
   "param_hits": [
-   "test/live/packages/maestro_e2e_tests.py:726",
-   "test/live/packages/maestro_e2e_tests.py:859",
-   "test/live/packages/maestro_e2e_tests.py:981",
+   "test/live/packages/maestro_e2e_tests.py:729",
+   "test/live/packages/maestro_e2e_tests.py:862",
+   "test/live/packages/maestro_e2e_tests.py:984",
    "test/semi/probes/maestro_screenshot_probe.py:67"
   ],
   "status": "CANDIDATE",
@@ -7882,17 +8136,17 @@
   "type": "str | None",
   "op_tb_files": 2,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
-   "test/live/packages/maestro_e2e_tests.py:726",
-   "test/live/packages/maestro_e2e_tests.py:859",
-   "test/live/packages/maestro_e2e_tests.py:875",
-   "test/live/packages/maestro_e2e_tests.py:981",
-   "test/live/packages/maestro_e2e_tests.py:990",
-   "test/live/packages/maestro_e2e_tests.py:992"
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
+   "test/live/packages/maestro_e2e_tests.py:729",
+   "test/live/packages/maestro_e2e_tests.py:862",
+   "test/live/packages/maestro_e2e_tests.py:878",
+   "test/live/packages/maestro_e2e_tests.py:984",
+   "test/live/packages/maestro_e2e_tests.py:993",
+   "test/live/packages/maestro_e2e_tests.py:995"
   ],
   "param_hits": [
-   "test/live/packages/maestro_e2e_tests.py:875"
+   "test/live/packages/maestro_e2e_tests.py:878"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -7906,19 +8160,19 @@
   "type": "str",
   "op_tb_files": 2,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
-   "test/live/packages/maestro_e2e_tests.py:726",
-   "test/live/packages/maestro_e2e_tests.py:859",
-   "test/live/packages/maestro_e2e_tests.py:875",
-   "test/live/packages/maestro_e2e_tests.py:981",
-   "test/live/packages/maestro_e2e_tests.py:990",
-   "test/live/packages/maestro_e2e_tests.py:992"
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
+   "test/live/packages/maestro_e2e_tests.py:729",
+   "test/live/packages/maestro_e2e_tests.py:862",
+   "test/live/packages/maestro_e2e_tests.py:878",
+   "test/live/packages/maestro_e2e_tests.py:984",
+   "test/live/packages/maestro_e2e_tests.py:993",
+   "test/live/packages/maestro_e2e_tests.py:995"
   ],
   "param_hits": [
-   "test/live/packages/maestro_e2e_tests.py:726",
-   "test/live/packages/maestro_e2e_tests.py:859",
-   "test/live/packages/maestro_e2e_tests.py:981",
+   "test/live/packages/maestro_e2e_tests.py:729",
+   "test/live/packages/maestro_e2e_tests.py:862",
+   "test/live/packages/maestro_e2e_tests.py:984",
    "test/semi/probes/maestro_screenshot_probe.py:67"
   ],
   "status": "CANDIDATE",
@@ -7933,14 +8187,14 @@
   "type": "int | None",
   "op_tb_files": 2,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
-   "test/live/packages/maestro_e2e_tests.py:726",
-   "test/live/packages/maestro_e2e_tests.py:859",
-   "test/live/packages/maestro_e2e_tests.py:875",
-   "test/live/packages/maestro_e2e_tests.py:981",
-   "test/live/packages/maestro_e2e_tests.py:990",
-   "test/live/packages/maestro_e2e_tests.py:992"
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
+   "test/live/packages/maestro_e2e_tests.py:729",
+   "test/live/packages/maestro_e2e_tests.py:862",
+   "test/live/packages/maestro_e2e_tests.py:878",
+   "test/live/packages/maestro_e2e_tests.py:984",
+   "test/live/packages/maestro_e2e_tests.py:993",
+   "test/live/packages/maestro_e2e_tests.py:995"
   ],
   "param_hits": [],
   "status": "GAP",
@@ -7955,22 +8209,22 @@
   "type": "str",
   "op_tb_files": 2,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
-   "test/live/packages/maestro_e2e_tests.py:726",
-   "test/live/packages/maestro_e2e_tests.py:859",
-   "test/live/packages/maestro_e2e_tests.py:875",
-   "test/live/packages/maestro_e2e_tests.py:981",
-   "test/live/packages/maestro_e2e_tests.py:990",
-   "test/live/packages/maestro_e2e_tests.py:992"
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
+   "test/live/packages/maestro_e2e_tests.py:729",
+   "test/live/packages/maestro_e2e_tests.py:862",
+   "test/live/packages/maestro_e2e_tests.py:878",
+   "test/live/packages/maestro_e2e_tests.py:984",
+   "test/live/packages/maestro_e2e_tests.py:993",
+   "test/live/packages/maestro_e2e_tests.py:995"
   ],
   "param_hits": [
-   "test/live/packages/maestro_e2e_tests.py:726",
-   "test/live/packages/maestro_e2e_tests.py:859",
-   "test/live/packages/maestro_e2e_tests.py:875",
-   "test/live/packages/maestro_e2e_tests.py:981",
-   "test/live/packages/maestro_e2e_tests.py:990",
-   "test/live/packages/maestro_e2e_tests.py:992",
+   "test/live/packages/maestro_e2e_tests.py:729",
+   "test/live/packages/maestro_e2e_tests.py:862",
+   "test/live/packages/maestro_e2e_tests.py:878",
+   "test/live/packages/maestro_e2e_tests.py:984",
+   "test/live/packages/maestro_e2e_tests.py:993",
+   "test/live/packages/maestro_e2e_tests.py:995",
    "test/semi/probes/maestro_screenshot_probe.py:104",
    "test/semi/probes/maestro_screenshot_probe.py:67"
   ],
@@ -7986,14 +8240,14 @@
   "type": "str",
   "op_tb_files": 2,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
-   "test/live/packages/maestro_e2e_tests.py:726",
-   "test/live/packages/maestro_e2e_tests.py:859",
-   "test/live/packages/maestro_e2e_tests.py:875",
-   "test/live/packages/maestro_e2e_tests.py:981",
-   "test/live/packages/maestro_e2e_tests.py:990",
-   "test/live/packages/maestro_e2e_tests.py:992"
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
+   "test/live/packages/maestro_e2e_tests.py:729",
+   "test/live/packages/maestro_e2e_tests.py:862",
+   "test/live/packages/maestro_e2e_tests.py:878",
+   "test/live/packages/maestro_e2e_tests.py:984",
+   "test/live/packages/maestro_e2e_tests.py:993",
+   "test/live/packages/maestro_e2e_tests.py:995"
   ],
   "param_hits": [],
   "status": "GAP",
@@ -8008,15 +8262,15 @@
   "type": "str | None",
   "op_tb_files": 2,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
-   "test/live/packages/maestro_e2e_tests.py:843",
-   "test/live/packages/maestro_e2e_tests.py:989",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
+   "test/live/packages/maestro_e2e_tests.py:846",
+   "test/live/packages/maestro_e2e_tests.py:992",
    "test/semi/probes/maestro_open_waveform_result_probe.py:63",
    "test/semi/probes/maestro_open_waveform_result_probe.py:87"
   ],
   "param_hits": [
-   "test/live/packages/maestro_e2e_tests.py:843",
+   "test/live/packages/maestro_e2e_tests.py:846",
    "test/semi/probes/maestro_open_waveform_result_probe.py:63"
   ],
   "status": "CANDIDATE",
@@ -8031,15 +8285,15 @@
   "type": "str",
   "op_tb_files": 2,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
-   "test/live/packages/maestro_e2e_tests.py:843",
-   "test/live/packages/maestro_e2e_tests.py:989",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
+   "test/live/packages/maestro_e2e_tests.py:846",
+   "test/live/packages/maestro_e2e_tests.py:992",
    "test/semi/probes/maestro_open_waveform_result_probe.py:63",
    "test/semi/probes/maestro_open_waveform_result_probe.py:87"
   ],
   "param_hits": [
-   "test/live/packages/maestro_e2e_tests.py:843",
+   "test/live/packages/maestro_e2e_tests.py:846",
    "test/semi/probes/maestro_open_waveform_result_probe.py:63"
   ],
   "status": "CANDIDATE",
@@ -8054,15 +8308,15 @@
   "type": "str",
   "op_tb_files": 2,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
-   "test/live/packages/maestro_e2e_tests.py:843",
-   "test/live/packages/maestro_e2e_tests.py:989",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
+   "test/live/packages/maestro_e2e_tests.py:846",
+   "test/live/packages/maestro_e2e_tests.py:992",
    "test/semi/probes/maestro_open_waveform_result_probe.py:63",
    "test/semi/probes/maestro_open_waveform_result_probe.py:87"
   ],
   "param_hits": [
-   "test/live/packages/maestro_e2e_tests.py:843",
+   "test/live/packages/maestro_e2e_tests.py:846",
    "test/semi/probes/maestro_open_waveform_result_probe.py:63"
   ],
   "status": "CANDIDATE",
@@ -8077,15 +8331,15 @@
   "type": "str",
   "op_tb_files": 2,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
-   "test/live/packages/maestro_e2e_tests.py:843",
-   "test/live/packages/maestro_e2e_tests.py:989",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
+   "test/live/packages/maestro_e2e_tests.py:846",
+   "test/live/packages/maestro_e2e_tests.py:992",
    "test/semi/probes/maestro_open_waveform_result_probe.py:63",
    "test/semi/probes/maestro_open_waveform_result_probe.py:87"
   ],
   "param_hits": [
-   "test/live/packages/maestro_e2e_tests.py:843",
+   "test/live/packages/maestro_e2e_tests.py:846",
    "test/semi/probes/maestro_open_waveform_result_probe.py:63"
   ],
   "status": "CANDIDATE",
@@ -8100,10 +8354,10 @@
   "type": "str | None",
   "op_tb_files": 2,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
-   "test/live/packages/maestro_e2e_tests.py:843",
-   "test/live/packages/maestro_e2e_tests.py:989",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
+   "test/live/packages/maestro_e2e_tests.py:846",
+   "test/live/packages/maestro_e2e_tests.py:992",
    "test/semi/probes/maestro_open_waveform_result_probe.py:63",
    "test/semi/probes/maestro_open_waveform_result_probe.py:87"
   ],
@@ -8122,15 +8376,15 @@
   "type": "list[str]",
   "op_tb_files": 2,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
-   "test/live/packages/maestro_e2e_tests.py:843",
-   "test/live/packages/maestro_e2e_tests.py:989",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
+   "test/live/packages/maestro_e2e_tests.py:846",
+   "test/live/packages/maestro_e2e_tests.py:992",
    "test/semi/probes/maestro_open_waveform_result_probe.py:63",
    "test/semi/probes/maestro_open_waveform_result_probe.py:87"
   ],
   "param_hits": [
-   "test/live/packages/maestro_e2e_tests.py:843",
+   "test/live/packages/maestro_e2e_tests.py:846",
    "test/semi/probes/maestro_open_waveform_result_probe.py:63"
   ],
   "status": "CANDIDATE",
@@ -8145,15 +8399,15 @@
   "type": "str | None",
   "op_tb_files": 2,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
-   "test/live/packages/maestro_e2e_tests.py:843",
-   "test/live/packages/maestro_e2e_tests.py:989",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
+   "test/live/packages/maestro_e2e_tests.py:846",
+   "test/live/packages/maestro_e2e_tests.py:992",
    "test/semi/probes/maestro_open_waveform_result_probe.py:63",
    "test/semi/probes/maestro_open_waveform_result_probe.py:87"
   ],
   "param_hits": [
-   "test/live/packages/maestro_e2e_tests.py:843",
+   "test/live/packages/maestro_e2e_tests.py:846",
    "test/semi/probes/maestro_open_waveform_result_probe.py:63"
   ],
   "status": "CANDIDATE",
@@ -8168,10 +8422,10 @@
   "type": "int | None",
   "op_tb_files": 2,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
-   "test/live/packages/maestro_e2e_tests.py:843",
-   "test/live/packages/maestro_e2e_tests.py:989",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
+   "test/live/packages/maestro_e2e_tests.py:846",
+   "test/live/packages/maestro_e2e_tests.py:992",
    "test/semi/probes/maestro_open_waveform_result_probe.py:63",
    "test/semi/probes/maestro_open_waveform_result_probe.py:87"
   ],
@@ -8188,16 +8442,16 @@
   "type": "str",
   "op_tb_files": 2,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
-   "test/live/packages/maestro_e2e_tests.py:843",
-   "test/live/packages/maestro_e2e_tests.py:989",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
+   "test/live/packages/maestro_e2e_tests.py:846",
+   "test/live/packages/maestro_e2e_tests.py:992",
    "test/semi/probes/maestro_open_waveform_result_probe.py:63",
    "test/semi/probes/maestro_open_waveform_result_probe.py:87"
   ],
   "param_hits": [
-   "test/live/packages/maestro_e2e_tests.py:843",
-   "test/live/packages/maestro_e2e_tests.py:989",
+   "test/live/packages/maestro_e2e_tests.py:846",
+   "test/live/packages/maestro_e2e_tests.py:992",
    "test/semi/probes/maestro_open_waveform_result_probe.py:63",
    "test/semi/probes/maestro_open_waveform_result_probe.py:87"
   ],
@@ -8213,10 +8467,10 @@
   "type": "str",
   "op_tb_files": 2,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
-   "test/live/packages/maestro_e2e_tests.py:843",
-   "test/live/packages/maestro_e2e_tests.py:989",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
+   "test/live/packages/maestro_e2e_tests.py:846",
+   "test/live/packages/maestro_e2e_tests.py:992",
    "test/semi/probes/maestro_open_waveform_result_probe.py:63",
    "test/semi/probes/maestro_open_waveform_result_probe.py:87"
   ],
@@ -8233,8 +8487,8 @@
   "type": "str",
   "op_tb_files": 1,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
    "test/live/packages/maestro_e2e_tests.py:168",
    "test/live/packages/maestro_e2e_tests.py:180",
    "test/live/packages/maestro_e2e_tests.py:205",
@@ -8260,8 +8514,8 @@
   "type": "bool",
   "op_tb_files": 1,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
    "test/live/packages/maestro_e2e_tests.py:168",
    "test/live/packages/maestro_e2e_tests.py:180",
    "test/live/packages/maestro_e2e_tests.py:205",
@@ -8284,8 +8538,8 @@
   "type": "bool",
   "op_tb_files": 1,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
    "test/live/packages/maestro_e2e_tests.py:168",
    "test/live/packages/maestro_e2e_tests.py:180",
    "test/live/packages/maestro_e2e_tests.py:205",
@@ -8308,8 +8562,8 @@
   "type": "str",
   "op_tb_files": 1,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
    "test/live/packages/maestro_e2e_tests.py:168",
    "test/live/packages/maestro_e2e_tests.py:180",
    "test/live/packages/maestro_e2e_tests.py:205",
@@ -8335,8 +8589,8 @@
   "type": "int | None",
   "op_tb_files": 1,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
    "test/live/packages/maestro_e2e_tests.py:168",
    "test/live/packages/maestro_e2e_tests.py:180",
    "test/live/packages/maestro_e2e_tests.py:205",
@@ -8357,8 +8611,8 @@
   "type": "str",
   "op_tb_files": 1,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
    "test/live/packages/maestro_e2e_tests.py:168",
    "test/live/packages/maestro_e2e_tests.py:180",
    "test/live/packages/maestro_e2e_tests.py:205",
@@ -8388,8 +8642,8 @@
   "type": "str",
   "op_tb_files": 1,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
    "test/live/packages/maestro_e2e_tests.py:168",
    "test/live/packages/maestro_e2e_tests.py:180",
    "test/live/packages/maestro_e2e_tests.py:205",
@@ -8410,22 +8664,22 @@
   "type": "str",
   "op_tb_files": 3,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
    "test/live/packages/maestro_e2e_tests.py:116",
    "test/live/packages/maestro_e2e_tests.py:156",
    "test/live/packages/maestro_e2e_tests.py:511",
    "test/live/packages/maestro_e2e_tests.py:520",
-   "test/live/packages/maestro_e2e_tests.py:776",
-   "test/live/packages/maestro_e2e_tests.py:809"
+   "test/live/packages/maestro_e2e_tests.py:779",
+   "test/live/packages/maestro_e2e_tests.py:812"
   ],
   "param_hits": [
    "test/live/packages/maestro_e2e_tests.py:116",
    "test/live/packages/maestro_e2e_tests.py:156",
-   "test/live/packages/maestro_e2e_tests.py:901",
-   "test/live/packages/maestro_e2e_tests.py:912",
-   "test/live/packages/maestro_e2e_tests.py:923",
-   "test/live/packages/maestro_e2e_tests.py:942",
+   "test/live/packages/maestro_e2e_tests.py:904",
+   "test/live/packages/maestro_e2e_tests.py:915",
+   "test/live/packages/maestro_e2e_tests.py:926",
+   "test/live/packages/maestro_e2e_tests.py:945",
    "test/semi/probes/maestro_export_include_results_probe.py:67",
    "test/semi/probes/maestro_open_waveform_result_probe.py:52"
   ],
@@ -8441,20 +8695,20 @@
   "type": "str | None",
   "op_tb_files": 3,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
    "test/live/packages/maestro_e2e_tests.py:116",
    "test/live/packages/maestro_e2e_tests.py:156",
    "test/live/packages/maestro_e2e_tests.py:511",
    "test/live/packages/maestro_e2e_tests.py:520",
-   "test/live/packages/maestro_e2e_tests.py:776",
-   "test/live/packages/maestro_e2e_tests.py:809"
+   "test/live/packages/maestro_e2e_tests.py:779",
+   "test/live/packages/maestro_e2e_tests.py:812"
   ],
   "param_hits": [
    "test/live/packages/maestro_e2e_tests.py:156",
-   "test/live/packages/maestro_e2e_tests.py:901",
-   "test/live/packages/maestro_e2e_tests.py:912",
-   "test/live/packages/maestro_e2e_tests.py:923"
+   "test/live/packages/maestro_e2e_tests.py:904",
+   "test/live/packages/maestro_e2e_tests.py:915",
+   "test/live/packages/maestro_e2e_tests.py:926"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -8468,22 +8722,22 @@
   "type": "str",
   "op_tb_files": 3,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
    "test/live/packages/maestro_e2e_tests.py:116",
    "test/live/packages/maestro_e2e_tests.py:156",
    "test/live/packages/maestro_e2e_tests.py:511",
    "test/live/packages/maestro_e2e_tests.py:520",
-   "test/live/packages/maestro_e2e_tests.py:776",
-   "test/live/packages/maestro_e2e_tests.py:809"
+   "test/live/packages/maestro_e2e_tests.py:779",
+   "test/live/packages/maestro_e2e_tests.py:812"
   ],
   "param_hits": [
    "test/live/packages/maestro_e2e_tests.py:116",
    "test/live/packages/maestro_e2e_tests.py:156",
-   "test/live/packages/maestro_e2e_tests.py:901",
-   "test/live/packages/maestro_e2e_tests.py:912",
-   "test/live/packages/maestro_e2e_tests.py:923",
-   "test/live/packages/maestro_e2e_tests.py:942",
+   "test/live/packages/maestro_e2e_tests.py:904",
+   "test/live/packages/maestro_e2e_tests.py:915",
+   "test/live/packages/maestro_e2e_tests.py:926",
+   "test/live/packages/maestro_e2e_tests.py:945",
    "test/semi/probes/maestro_export_include_results_probe.py:67",
    "test/semi/probes/maestro_open_waveform_result_probe.py:52"
   ],
@@ -8499,14 +8753,14 @@
   "type": "int | None",
   "op_tb_files": 3,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
    "test/live/packages/maestro_e2e_tests.py:116",
    "test/live/packages/maestro_e2e_tests.py:156",
    "test/live/packages/maestro_e2e_tests.py:511",
    "test/live/packages/maestro_e2e_tests.py:520",
-   "test/live/packages/maestro_e2e_tests.py:776",
-   "test/live/packages/maestro_e2e_tests.py:809"
+   "test/live/packages/maestro_e2e_tests.py:779",
+   "test/live/packages/maestro_e2e_tests.py:812"
   ],
   "param_hits": [
    "test/live/packages/maestro_e2e_tests.py:520"
@@ -8523,24 +8777,24 @@
   "type": "str",
   "op_tb_files": 3,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
    "test/live/packages/maestro_e2e_tests.py:116",
    "test/live/packages/maestro_e2e_tests.py:156",
    "test/live/packages/maestro_e2e_tests.py:511",
    "test/live/packages/maestro_e2e_tests.py:520",
-   "test/live/packages/maestro_e2e_tests.py:776",
-   "test/live/packages/maestro_e2e_tests.py:809"
+   "test/live/packages/maestro_e2e_tests.py:779",
+   "test/live/packages/maestro_e2e_tests.py:812"
   ],
   "param_hits": [
    "test/live/packages/maestro_e2e_tests.py:116",
    "test/live/packages/maestro_e2e_tests.py:156",
    "test/live/packages/maestro_e2e_tests.py:511",
    "test/live/packages/maestro_e2e_tests.py:520",
-   "test/live/packages/maestro_e2e_tests.py:776",
-   "test/live/packages/maestro_e2e_tests.py:809",
-   "test/live/packages/maestro_e2e_tests.py:874",
-   "test/live/packages/maestro_e2e_tests.py:877"
+   "test/live/packages/maestro_e2e_tests.py:779",
+   "test/live/packages/maestro_e2e_tests.py:812",
+   "test/live/packages/maestro_e2e_tests.py:877",
+   "test/live/packages/maestro_e2e_tests.py:880"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -8554,14 +8808,14 @@
   "type": "str",
   "op_tb_files": 3,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
    "test/live/packages/maestro_e2e_tests.py:116",
    "test/live/packages/maestro_e2e_tests.py:156",
    "test/live/packages/maestro_e2e_tests.py:511",
    "test/live/packages/maestro_e2e_tests.py:520",
-   "test/live/packages/maestro_e2e_tests.py:776",
-   "test/live/packages/maestro_e2e_tests.py:809"
+   "test/live/packages/maestro_e2e_tests.py:779",
+   "test/live/packages/maestro_e2e_tests.py:812"
   ],
   "param_hits": [],
   "status": "GAP",
@@ -8576,8 +8830,8 @@
   "type": "str | None",
   "op_tb_files": 1,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
    "test/live/packages/maestro_e2e_tests.py:528",
    "test/live/packages/maestro_e2e_tests.py:534",
    "test/live/packages/maestro_e2e_tests.py:578",
@@ -8587,8 +8841,8 @@
   ],
   "param_hits": [
    "test/live/packages/maestro_e2e_tests.py:534",
-   "test/live/packages/maestro_e2e_tests.py:799",
-   "test/live/packages/maestro_e2e_tests.py:832"
+   "test/live/packages/maestro_e2e_tests.py:802",
+   "test/live/packages/maestro_e2e_tests.py:835"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -8602,8 +8856,8 @@
   "type": "str",
   "op_tb_files": 1,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
    "test/live/packages/maestro_e2e_tests.py:528",
    "test/live/packages/maestro_e2e_tests.py:534",
    "test/live/packages/maestro_e2e_tests.py:578",
@@ -8614,11 +8868,11 @@
   "param_hits": [
    "test/live/packages/maestro_e2e_tests.py:528",
    "test/live/packages/maestro_e2e_tests.py:534",
-   "test/live/packages/maestro_e2e_tests.py:789",
-   "test/live/packages/maestro_e2e_tests.py:799",
-   "test/live/packages/maestro_e2e_tests.py:822",
-   "test/live/packages/maestro_e2e_tests.py:832",
-   "test/live/packages/maestro_e2e_tests.py:981"
+   "test/live/packages/maestro_e2e_tests.py:792",
+   "test/live/packages/maestro_e2e_tests.py:802",
+   "test/live/packages/maestro_e2e_tests.py:825",
+   "test/live/packages/maestro_e2e_tests.py:835",
+   "test/live/packages/maestro_e2e_tests.py:984"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -8632,8 +8886,8 @@
   "type": "str | None",
   "op_tb_files": 1,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
    "test/live/packages/maestro_e2e_tests.py:528",
    "test/live/packages/maestro_e2e_tests.py:534",
    "test/live/packages/maestro_e2e_tests.py:578",
@@ -8644,10 +8898,10 @@
   "param_hits": [
    "test/live/packages/maestro_e2e_tests.py:528",
    "test/live/packages/maestro_e2e_tests.py:534",
-   "test/live/packages/maestro_e2e_tests.py:789",
-   "test/live/packages/maestro_e2e_tests.py:799",
-   "test/live/packages/maestro_e2e_tests.py:822",
-   "test/live/packages/maestro_e2e_tests.py:832"
+   "test/live/packages/maestro_e2e_tests.py:792",
+   "test/live/packages/maestro_e2e_tests.py:802",
+   "test/live/packages/maestro_e2e_tests.py:825",
+   "test/live/packages/maestro_e2e_tests.py:835"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -8661,8 +8915,8 @@
   "type": "str",
   "op_tb_files": 1,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
    "test/live/packages/maestro_e2e_tests.py:528",
    "test/live/packages/maestro_e2e_tests.py:534",
    "test/live/packages/maestro_e2e_tests.py:578",
@@ -8673,11 +8927,11 @@
   "param_hits": [
    "test/live/packages/maestro_e2e_tests.py:528",
    "test/live/packages/maestro_e2e_tests.py:534",
-   "test/live/packages/maestro_e2e_tests.py:789",
-   "test/live/packages/maestro_e2e_tests.py:799",
-   "test/live/packages/maestro_e2e_tests.py:822",
-   "test/live/packages/maestro_e2e_tests.py:832",
-   "test/live/packages/maestro_e2e_tests.py:981"
+   "test/live/packages/maestro_e2e_tests.py:792",
+   "test/live/packages/maestro_e2e_tests.py:802",
+   "test/live/packages/maestro_e2e_tests.py:825",
+   "test/live/packages/maestro_e2e_tests.py:835",
+   "test/live/packages/maestro_e2e_tests.py:984"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -8691,8 +8945,8 @@
   "type": "str",
   "op_tb_files": 1,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
    "test/live/packages/maestro_e2e_tests.py:528",
    "test/live/packages/maestro_e2e_tests.py:534",
    "test/live/packages/maestro_e2e_tests.py:578",
@@ -8717,8 +8971,8 @@
   "type": "str | None",
   "op_tb_files": 1,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
    "test/live/packages/maestro_e2e_tests.py:528",
    "test/live/packages/maestro_e2e_tests.py:534",
    "test/live/packages/maestro_e2e_tests.py:578",
@@ -8743,8 +8997,8 @@
   "type": "int | None",
   "op_tb_files": 1,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
    "test/live/packages/maestro_e2e_tests.py:528",
    "test/live/packages/maestro_e2e_tests.py:534",
    "test/live/packages/maestro_e2e_tests.py:578",
@@ -8768,8 +9022,8 @@
   "type": "str | None",
   "op_tb_files": 1,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
    "test/live/packages/maestro_e2e_tests.py:528",
    "test/live/packages/maestro_e2e_tests.py:534",
    "test/live/packages/maestro_e2e_tests.py:578",
@@ -8778,8 +9032,8 @@
    "test/live/packages/maestro_e2e_tests.py:601"
   ],
   "param_hits": [
-   "test/live/packages/maestro_e2e_tests.py:706",
-   "test/live/packages/maestro_e2e_tests.py:712"
+   "test/live/packages/maestro_e2e_tests.py:709",
+   "test/live/packages/maestro_e2e_tests.py:715"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -8793,8 +9047,8 @@
   "type": "str | None",
   "op_tb_files": 1,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
    "test/live/packages/maestro_e2e_tests.py:528",
    "test/live/packages/maestro_e2e_tests.py:534",
    "test/live/packages/maestro_e2e_tests.py:578",
@@ -8805,10 +9059,10 @@
   "param_hits": [
    "test/live/packages/maestro_e2e_tests.py:528",
    "test/live/packages/maestro_e2e_tests.py:534",
-   "test/live/packages/maestro_e2e_tests.py:789",
-   "test/live/packages/maestro_e2e_tests.py:799",
-   "test/live/packages/maestro_e2e_tests.py:822",
-   "test/live/packages/maestro_e2e_tests.py:832"
+   "test/live/packages/maestro_e2e_tests.py:792",
+   "test/live/packages/maestro_e2e_tests.py:802",
+   "test/live/packages/maestro_e2e_tests.py:825",
+   "test/live/packages/maestro_e2e_tests.py:835"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -8822,8 +9076,8 @@
   "type": "int | None",
   "op_tb_files": 1,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
    "test/live/packages/maestro_e2e_tests.py:528",
    "test/live/packages/maestro_e2e_tests.py:534",
    "test/live/packages/maestro_e2e_tests.py:578",
@@ -8844,8 +9098,8 @@
   "type": "str",
   "op_tb_files": 1,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
    "test/live/packages/maestro_e2e_tests.py:528",
    "test/live/packages/maestro_e2e_tests.py:534",
    "test/live/packages/maestro_e2e_tests.py:578",
@@ -8860,8 +9114,8 @@
    "test/live/packages/maestro_e2e_tests.py:580",
    "test/live/packages/maestro_e2e_tests.py:582",
    "test/live/packages/maestro_e2e_tests.py:601",
-   "test/live/packages/maestro_e2e_tests.py:705",
-   "test/live/packages/maestro_e2e_tests.py:706"
+   "test/live/packages/maestro_e2e_tests.py:708",
+   "test/live/packages/maestro_e2e_tests.py:709"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -8875,8 +9129,8 @@
   "type": "str",
   "op_tb_files": 1,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
    "test/live/packages/maestro_e2e_tests.py:528",
    "test/live/packages/maestro_e2e_tests.py:534",
    "test/live/packages/maestro_e2e_tests.py:578",
@@ -8897,8 +9151,8 @@
   "type": "str | None",
   "op_tb_files": 1,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
    "test/live/packages/maestro_e2e_tests.py:528",
    "test/live/packages/maestro_e2e_tests.py:534",
    "test/live/packages/maestro_e2e_tests.py:578",
@@ -8908,8 +9162,8 @@
   ],
   "param_hits": [
    "test/live/packages/maestro_e2e_tests.py:534",
-   "test/live/packages/maestro_e2e_tests.py:799",
-   "test/live/packages/maestro_e2e_tests.py:832"
+   "test/live/packages/maestro_e2e_tests.py:802",
+   "test/live/packages/maestro_e2e_tests.py:835"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -8923,8 +9177,8 @@
   "type": "int | None",
   "op_tb_files": 1,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
    "test/live/packages/maestro_e2e_tests.py:528",
    "test/live/packages/maestro_e2e_tests.py:534",
    "test/live/packages/maestro_e2e_tests.py:578",
@@ -8948,19 +9202,19 @@
   "type": "bool",
   "op_tb_files": 1,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
    "test/live/packages/maestro_e2e_tests.py:512",
-   "test/live/packages/maestro_e2e_tests.py:777",
-   "test/live/packages/maestro_e2e_tests.py:810",
-   "test/live/packages/maestro_e2e_tests.py:976",
-   "test/live/packages/maestro_e2e_tests.py:985",
-   "test/live/packages/maestro_e2e_tests.py:987"
+   "test/live/packages/maestro_e2e_tests.py:780",
+   "test/live/packages/maestro_e2e_tests.py:813",
+   "test/live/packages/maestro_e2e_tests.py:979",
+   "test/live/packages/maestro_e2e_tests.py:988",
+   "test/live/packages/maestro_e2e_tests.py:990"
   ],
   "param_hits": [
    "test/live/packages/maestro_e2e_tests.py:512",
-   "test/live/packages/maestro_e2e_tests.py:777",
-   "test/live/packages/maestro_e2e_tests.py:810"
+   "test/live/packages/maestro_e2e_tests.py:780",
+   "test/live/packages/maestro_e2e_tests.py:813"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -8974,19 +9228,19 @@
   "type": "str",
   "op_tb_files": 1,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
    "test/live/packages/maestro_e2e_tests.py:512",
-   "test/live/packages/maestro_e2e_tests.py:777",
-   "test/live/packages/maestro_e2e_tests.py:810",
-   "test/live/packages/maestro_e2e_tests.py:976",
-   "test/live/packages/maestro_e2e_tests.py:985",
-   "test/live/packages/maestro_e2e_tests.py:987"
+   "test/live/packages/maestro_e2e_tests.py:780",
+   "test/live/packages/maestro_e2e_tests.py:813",
+   "test/live/packages/maestro_e2e_tests.py:979",
+   "test/live/packages/maestro_e2e_tests.py:988",
+   "test/live/packages/maestro_e2e_tests.py:990"
   ],
   "param_hits": [
    "test/live/packages/maestro_e2e_tests.py:512",
-   "test/live/packages/maestro_e2e_tests.py:777",
-   "test/live/packages/maestro_e2e_tests.py:810"
+   "test/live/packages/maestro_e2e_tests.py:780",
+   "test/live/packages/maestro_e2e_tests.py:813"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -9000,19 +9254,19 @@
   "type": "str | None",
   "op_tb_files": 1,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
    "test/live/packages/maestro_e2e_tests.py:512",
-   "test/live/packages/maestro_e2e_tests.py:777",
-   "test/live/packages/maestro_e2e_tests.py:810",
-   "test/live/packages/maestro_e2e_tests.py:976",
-   "test/live/packages/maestro_e2e_tests.py:985",
-   "test/live/packages/maestro_e2e_tests.py:987"
+   "test/live/packages/maestro_e2e_tests.py:780",
+   "test/live/packages/maestro_e2e_tests.py:813",
+   "test/live/packages/maestro_e2e_tests.py:979",
+   "test/live/packages/maestro_e2e_tests.py:988",
+   "test/live/packages/maestro_e2e_tests.py:990"
   ],
   "param_hits": [
    "test/live/packages/maestro_e2e_tests.py:512",
-   "test/live/packages/maestro_e2e_tests.py:777",
-   "test/live/packages/maestro_e2e_tests.py:810"
+   "test/live/packages/maestro_e2e_tests.py:780",
+   "test/live/packages/maestro_e2e_tests.py:813"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -9026,19 +9280,19 @@
   "type": "str",
   "op_tb_files": 1,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
    "test/live/packages/maestro_e2e_tests.py:512",
-   "test/live/packages/maestro_e2e_tests.py:777",
-   "test/live/packages/maestro_e2e_tests.py:810",
-   "test/live/packages/maestro_e2e_tests.py:976",
-   "test/live/packages/maestro_e2e_tests.py:985",
-   "test/live/packages/maestro_e2e_tests.py:987"
+   "test/live/packages/maestro_e2e_tests.py:780",
+   "test/live/packages/maestro_e2e_tests.py:813",
+   "test/live/packages/maestro_e2e_tests.py:979",
+   "test/live/packages/maestro_e2e_tests.py:988",
+   "test/live/packages/maestro_e2e_tests.py:990"
   ],
   "param_hits": [
    "test/live/packages/maestro_e2e_tests.py:512",
-   "test/live/packages/maestro_e2e_tests.py:777",
-   "test/live/packages/maestro_e2e_tests.py:810"
+   "test/live/packages/maestro_e2e_tests.py:780",
+   "test/live/packages/maestro_e2e_tests.py:813"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -9052,18 +9306,18 @@
   "type": "float",
   "op_tb_files": 1,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
    "test/live/packages/maestro_e2e_tests.py:512",
-   "test/live/packages/maestro_e2e_tests.py:777",
-   "test/live/packages/maestro_e2e_tests.py:810",
-   "test/live/packages/maestro_e2e_tests.py:976",
-   "test/live/packages/maestro_e2e_tests.py:985",
-   "test/live/packages/maestro_e2e_tests.py:987"
+   "test/live/packages/maestro_e2e_tests.py:780",
+   "test/live/packages/maestro_e2e_tests.py:813",
+   "test/live/packages/maestro_e2e_tests.py:979",
+   "test/live/packages/maestro_e2e_tests.py:988",
+   "test/live/packages/maestro_e2e_tests.py:990"
   ],
   "param_hits": [
-   "test/live/packages/maestro_e2e_tests.py:777",
-   "test/live/packages/maestro_e2e_tests.py:810"
+   "test/live/packages/maestro_e2e_tests.py:780",
+   "test/live/packages/maestro_e2e_tests.py:813"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -9077,19 +9331,19 @@
   "type": "int | None",
   "op_tb_files": 1,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
    "test/live/packages/maestro_e2e_tests.py:512",
-   "test/live/packages/maestro_e2e_tests.py:777",
-   "test/live/packages/maestro_e2e_tests.py:810",
-   "test/live/packages/maestro_e2e_tests.py:976",
-   "test/live/packages/maestro_e2e_tests.py:985",
-   "test/live/packages/maestro_e2e_tests.py:987"
+   "test/live/packages/maestro_e2e_tests.py:780",
+   "test/live/packages/maestro_e2e_tests.py:813",
+   "test/live/packages/maestro_e2e_tests.py:979",
+   "test/live/packages/maestro_e2e_tests.py:988",
+   "test/live/packages/maestro_e2e_tests.py:990"
   ],
   "param_hits": [
    "test/live/packages/maestro_e2e_tests.py:512",
-   "test/live/packages/maestro_e2e_tests.py:777",
-   "test/live/packages/maestro_e2e_tests.py:810"
+   "test/live/packages/maestro_e2e_tests.py:780",
+   "test/live/packages/maestro_e2e_tests.py:813"
   ],
   "status": "CANDIDATE",
   "generic": true
@@ -9103,22 +9357,22 @@
   "type": "str",
   "op_tb_files": 1,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
    "test/live/packages/maestro_e2e_tests.py:512",
-   "test/live/packages/maestro_e2e_tests.py:777",
-   "test/live/packages/maestro_e2e_tests.py:810",
-   "test/live/packages/maestro_e2e_tests.py:976",
-   "test/live/packages/maestro_e2e_tests.py:985",
-   "test/live/packages/maestro_e2e_tests.py:987"
+   "test/live/packages/maestro_e2e_tests.py:780",
+   "test/live/packages/maestro_e2e_tests.py:813",
+   "test/live/packages/maestro_e2e_tests.py:979",
+   "test/live/packages/maestro_e2e_tests.py:988",
+   "test/live/packages/maestro_e2e_tests.py:990"
   ],
   "param_hits": [
    "test/live/packages/maestro_e2e_tests.py:512",
-   "test/live/packages/maestro_e2e_tests.py:777",
-   "test/live/packages/maestro_e2e_tests.py:810",
-   "test/live/packages/maestro_e2e_tests.py:976",
-   "test/live/packages/maestro_e2e_tests.py:985",
-   "test/live/packages/maestro_e2e_tests.py:987"
+   "test/live/packages/maestro_e2e_tests.py:780",
+   "test/live/packages/maestro_e2e_tests.py:813",
+   "test/live/packages/maestro_e2e_tests.py:979",
+   "test/live/packages/maestro_e2e_tests.py:988",
+   "test/live/packages/maestro_e2e_tests.py:990"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -9132,14 +9386,14 @@
   "type": "str",
   "op_tb_files": 1,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
    "test/live/packages/maestro_e2e_tests.py:512",
-   "test/live/packages/maestro_e2e_tests.py:777",
-   "test/live/packages/maestro_e2e_tests.py:810",
-   "test/live/packages/maestro_e2e_tests.py:976",
-   "test/live/packages/maestro_e2e_tests.py:985",
-   "test/live/packages/maestro_e2e_tests.py:987"
+   "test/live/packages/maestro_e2e_tests.py:780",
+   "test/live/packages/maestro_e2e_tests.py:813",
+   "test/live/packages/maestro_e2e_tests.py:979",
+   "test/live/packages/maestro_e2e_tests.py:988",
+   "test/live/packages/maestro_e2e_tests.py:990"
   ],
   "param_hits": [],
   "status": "GAP",
@@ -9154,8 +9408,8 @@
   "type": "str",
   "op_tb_files": 2,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
    "test/live/packages/maestro_e2e_tests.py:201",
    "test/live/packages/maestro_e2e_tests.py:220",
    "test/live/packages/maestro_e2e_tests.py:257",
@@ -9181,8 +9435,8 @@
   "type": "list[dict[str, Any]]",
   "op_tb_files": 2,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
    "test/live/packages/maestro_e2e_tests.py:201",
    "test/live/packages/maestro_e2e_tests.py:220",
    "test/live/packages/maestro_e2e_tests.py:257",
@@ -9212,8 +9466,8 @@
   "type": "str",
   "op_tb_files": 2,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
    "test/live/packages/maestro_e2e_tests.py:201",
    "test/live/packages/maestro_e2e_tests.py:220",
    "test/live/packages/maestro_e2e_tests.py:257",
@@ -9239,8 +9493,8 @@
   "type": "bool",
   "op_tb_files": 2,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
    "test/live/packages/maestro_e2e_tests.py:201",
    "test/live/packages/maestro_e2e_tests.py:220",
    "test/live/packages/maestro_e2e_tests.py:257",
@@ -9263,8 +9517,8 @@
   "type": "int | None",
   "op_tb_files": 2,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
    "test/live/packages/maestro_e2e_tests.py:201",
    "test/live/packages/maestro_e2e_tests.py:220",
    "test/live/packages/maestro_e2e_tests.py:257",
@@ -9285,8 +9539,8 @@
   "type": "str",
   "op_tb_files": 2,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
    "test/live/packages/maestro_e2e_tests.py:201",
    "test/live/packages/maestro_e2e_tests.py:220",
    "test/live/packages/maestro_e2e_tests.py:257",
@@ -9316,8 +9570,8 @@
   "type": "str",
   "op_tb_files": 2,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
    "test/live/packages/maestro_e2e_tests.py:201",
    "test/live/packages/maestro_e2e_tests.py:220",
    "test/live/packages/maestro_e2e_tests.py:257",
@@ -9338,22 +9592,22 @@
   "type": "str",
   "op_tb_files": 1,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
-   "test/live/packages/maestro_e2e_tests.py:889",
-   "test/live/packages/maestro_e2e_tests.py:896",
-   "test/live/packages/maestro_e2e_tests.py:907",
-   "test/live/packages/maestro_e2e_tests.py:918",
-   "test/live/packages/maestro_e2e_tests.py:929",
-   "test/live/packages/maestro_e2e_tests.py:937"
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
+   "test/live/packages/maestro_e2e_tests.py:892",
+   "test/live/packages/maestro_e2e_tests.py:899",
+   "test/live/packages/maestro_e2e_tests.py:910",
+   "test/live/packages/maestro_e2e_tests.py:921",
+   "test/live/packages/maestro_e2e_tests.py:932",
+   "test/live/packages/maestro_e2e_tests.py:940"
   ],
   "param_hits": [
-   "test/live/packages/maestro_e2e_tests.py:889",
-   "test/live/packages/maestro_e2e_tests.py:896",
-   "test/live/packages/maestro_e2e_tests.py:907",
-   "test/live/packages/maestro_e2e_tests.py:918",
-   "test/live/packages/maestro_e2e_tests.py:929",
-   "test/live/packages/maestro_e2e_tests.py:937"
+   "test/live/packages/maestro_e2e_tests.py:892",
+   "test/live/packages/maestro_e2e_tests.py:899",
+   "test/live/packages/maestro_e2e_tests.py:910",
+   "test/live/packages/maestro_e2e_tests.py:921",
+   "test/live/packages/maestro_e2e_tests.py:932",
+   "test/live/packages/maestro_e2e_tests.py:940"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -9367,22 +9621,22 @@
   "type": "list[dict[str, Any]]",
   "op_tb_files": 1,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
-   "test/live/packages/maestro_e2e_tests.py:889",
-   "test/live/packages/maestro_e2e_tests.py:896",
-   "test/live/packages/maestro_e2e_tests.py:907",
-   "test/live/packages/maestro_e2e_tests.py:918",
-   "test/live/packages/maestro_e2e_tests.py:929",
-   "test/live/packages/maestro_e2e_tests.py:937"
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
+   "test/live/packages/maestro_e2e_tests.py:892",
+   "test/live/packages/maestro_e2e_tests.py:899",
+   "test/live/packages/maestro_e2e_tests.py:910",
+   "test/live/packages/maestro_e2e_tests.py:921",
+   "test/live/packages/maestro_e2e_tests.py:932",
+   "test/live/packages/maestro_e2e_tests.py:940"
   ],
   "param_hits": [
-   "test/live/packages/maestro_e2e_tests.py:889",
-   "test/live/packages/maestro_e2e_tests.py:896",
-   "test/live/packages/maestro_e2e_tests.py:907",
-   "test/live/packages/maestro_e2e_tests.py:918",
-   "test/live/packages/maestro_e2e_tests.py:929",
-   "test/live/packages/maestro_e2e_tests.py:937"
+   "test/live/packages/maestro_e2e_tests.py:892",
+   "test/live/packages/maestro_e2e_tests.py:899",
+   "test/live/packages/maestro_e2e_tests.py:910",
+   "test/live/packages/maestro_e2e_tests.py:921",
+   "test/live/packages/maestro_e2e_tests.py:932",
+   "test/live/packages/maestro_e2e_tests.py:940"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -9396,22 +9650,22 @@
   "type": "str",
   "op_tb_files": 1,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
-   "test/live/packages/maestro_e2e_tests.py:889",
-   "test/live/packages/maestro_e2e_tests.py:896",
-   "test/live/packages/maestro_e2e_tests.py:907",
-   "test/live/packages/maestro_e2e_tests.py:918",
-   "test/live/packages/maestro_e2e_tests.py:929",
-   "test/live/packages/maestro_e2e_tests.py:937"
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
+   "test/live/packages/maestro_e2e_tests.py:892",
+   "test/live/packages/maestro_e2e_tests.py:899",
+   "test/live/packages/maestro_e2e_tests.py:910",
+   "test/live/packages/maestro_e2e_tests.py:921",
+   "test/live/packages/maestro_e2e_tests.py:932",
+   "test/live/packages/maestro_e2e_tests.py:940"
   ],
   "param_hits": [
-   "test/live/packages/maestro_e2e_tests.py:889",
-   "test/live/packages/maestro_e2e_tests.py:896",
-   "test/live/packages/maestro_e2e_tests.py:907",
-   "test/live/packages/maestro_e2e_tests.py:918",
-   "test/live/packages/maestro_e2e_tests.py:929",
-   "test/live/packages/maestro_e2e_tests.py:937"
+   "test/live/packages/maestro_e2e_tests.py:892",
+   "test/live/packages/maestro_e2e_tests.py:899",
+   "test/live/packages/maestro_e2e_tests.py:910",
+   "test/live/packages/maestro_e2e_tests.py:921",
+   "test/live/packages/maestro_e2e_tests.py:932",
+   "test/live/packages/maestro_e2e_tests.py:940"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -9425,14 +9679,14 @@
   "type": "int | None",
   "op_tb_files": 1,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
-   "test/live/packages/maestro_e2e_tests.py:889",
-   "test/live/packages/maestro_e2e_tests.py:896",
-   "test/live/packages/maestro_e2e_tests.py:907",
-   "test/live/packages/maestro_e2e_tests.py:918",
-   "test/live/packages/maestro_e2e_tests.py:929",
-   "test/live/packages/maestro_e2e_tests.py:937"
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
+   "test/live/packages/maestro_e2e_tests.py:892",
+   "test/live/packages/maestro_e2e_tests.py:899",
+   "test/live/packages/maestro_e2e_tests.py:910",
+   "test/live/packages/maestro_e2e_tests.py:921",
+   "test/live/packages/maestro_e2e_tests.py:932",
+   "test/live/packages/maestro_e2e_tests.py:940"
   ],
   "param_hits": [],
   "status": "GAP",
@@ -9447,23 +9701,23 @@
   "type": "str",
   "op_tb_files": 1,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
-   "test/live/packages/maestro_e2e_tests.py:889",
-   "test/live/packages/maestro_e2e_tests.py:896",
-   "test/live/packages/maestro_e2e_tests.py:907",
-   "test/live/packages/maestro_e2e_tests.py:918",
-   "test/live/packages/maestro_e2e_tests.py:929",
-   "test/live/packages/maestro_e2e_tests.py:937"
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
+   "test/live/packages/maestro_e2e_tests.py:892",
+   "test/live/packages/maestro_e2e_tests.py:899",
+   "test/live/packages/maestro_e2e_tests.py:910",
+   "test/live/packages/maestro_e2e_tests.py:921",
+   "test/live/packages/maestro_e2e_tests.py:932",
+   "test/live/packages/maestro_e2e_tests.py:940"
   ],
   "param_hits": [
-   "test/live/packages/maestro_e2e_tests.py:889",
-   "test/live/packages/maestro_e2e_tests.py:896",
-   "test/live/packages/maestro_e2e_tests.py:907",
-   "test/live/packages/maestro_e2e_tests.py:918",
-   "test/live/packages/maestro_e2e_tests.py:929",
-   "test/live/packages/maestro_e2e_tests.py:937",
-   "test/live/packages/maestro_e2e_tests.py:993"
+   "test/live/packages/maestro_e2e_tests.py:892",
+   "test/live/packages/maestro_e2e_tests.py:899",
+   "test/live/packages/maestro_e2e_tests.py:910",
+   "test/live/packages/maestro_e2e_tests.py:921",
+   "test/live/packages/maestro_e2e_tests.py:932",
+   "test/live/packages/maestro_e2e_tests.py:940",
+   "test/live/packages/maestro_e2e_tests.py:996"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -9477,14 +9731,14 @@
   "type": "str",
   "op_tb_files": 1,
   "op_sites": [
-   "test/live/packages/maestro_e2e_tests.py:1007",
-   "test/live/packages/maestro_e2e_tests.py:1026",
-   "test/live/packages/maestro_e2e_tests.py:889",
-   "test/live/packages/maestro_e2e_tests.py:896",
-   "test/live/packages/maestro_e2e_tests.py:907",
-   "test/live/packages/maestro_e2e_tests.py:918",
-   "test/live/packages/maestro_e2e_tests.py:929",
-   "test/live/packages/maestro_e2e_tests.py:937"
+   "test/live/packages/maestro_e2e_tests.py:1010",
+   "test/live/packages/maestro_e2e_tests.py:1029",
+   "test/live/packages/maestro_e2e_tests.py:892",
+   "test/live/packages/maestro_e2e_tests.py:899",
+   "test/live/packages/maestro_e2e_tests.py:910",
+   "test/live/packages/maestro_e2e_tests.py:921",
+   "test/live/packages/maestro_e2e_tests.py:932",
+   "test/live/packages/maestro_e2e_tests.py:940"
   ],
   "param_hits": [],
   "status": "GAP",
@@ -9886,12 +10140,26 @@
   "param": "cell",
   "required": true,
   "type": "str",
-  "op_tb_files": 1,
+  "op_tb_files": 2,
   "op_sites": [
-   "test/live/packages/schematic_e2e_tests.py:391"
+   "test/live/packages/schematic_e2e_tests.py:391",
+   "test/live/packages/screenshot_params_e2e_tests.py:162",
+   "test/live/packages/screenshot_params_e2e_tests.py:167",
+   "test/live/packages/screenshot_params_e2e_tests.py:172",
+   "test/live/packages/screenshot_params_e2e_tests.py:177",
+   "test/live/packages/screenshot_params_e2e_tests.py:183",
+   "test/live/packages/screenshot_params_e2e_tests.py:186",
+   "test/live/packages/screenshot_params_e2e_tests.py:188"
   ],
   "param_hits": [
-   "test/live/packages/schematic_e2e_tests.py:391"
+   "test/live/packages/schematic_e2e_tests.py:391",
+   "test/live/packages/screenshot_params_e2e_tests.py:162",
+   "test/live/packages/screenshot_params_e2e_tests.py:167",
+   "test/live/packages/screenshot_params_e2e_tests.py:172",
+   "test/live/packages/screenshot_params_e2e_tests.py:177",
+   "test/live/packages/screenshot_params_e2e_tests.py:183",
+   "test/live/packages/screenshot_params_e2e_tests.py:186",
+   "test/live/packages/screenshot_params_e2e_tests.py:188"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -9903,12 +10171,22 @@
   "param": "central_widget",
   "required": false,
   "type": "bool",
-  "op_tb_files": 1,
+  "op_tb_files": 2,
   "op_sites": [
-   "test/live/packages/schematic_e2e_tests.py:391"
+   "test/live/packages/schematic_e2e_tests.py:391",
+   "test/live/packages/screenshot_params_e2e_tests.py:162",
+   "test/live/packages/screenshot_params_e2e_tests.py:167",
+   "test/live/packages/screenshot_params_e2e_tests.py:172",
+   "test/live/packages/screenshot_params_e2e_tests.py:177",
+   "test/live/packages/screenshot_params_e2e_tests.py:183",
+   "test/live/packages/screenshot_params_e2e_tests.py:186",
+   "test/live/packages/screenshot_params_e2e_tests.py:188"
   ],
-  "param_hits": [],
-  "status": "GAP",
+  "param_hits": [
+   "test/live/packages/screenshot_params_e2e_tests.py:200",
+   "test/live/packages/screenshot_params_e2e_tests.py:203"
+  ],
+  "status": "CANDIDATE",
   "generic": false
  },
  {
@@ -9918,12 +10196,20 @@
   "param": "leave_open",
   "required": false,
   "type": "bool",
-  "op_tb_files": 1,
+  "op_tb_files": 2,
   "op_sites": [
-   "test/live/packages/schematic_e2e_tests.py:391"
+   "test/live/packages/schematic_e2e_tests.py:391",
+   "test/live/packages/screenshot_params_e2e_tests.py:162",
+   "test/live/packages/screenshot_params_e2e_tests.py:167",
+   "test/live/packages/screenshot_params_e2e_tests.py:172",
+   "test/live/packages/screenshot_params_e2e_tests.py:177",
+   "test/live/packages/screenshot_params_e2e_tests.py:183",
+   "test/live/packages/screenshot_params_e2e_tests.py:186",
+   "test/live/packages/screenshot_params_e2e_tests.py:188"
   ],
   "param_hits": [
-   "test/live/packages/schematic_e2e_tests.py:391"
+   "test/live/packages/schematic_e2e_tests.py:391",
+   "test/live/packages/screenshot_params_e2e_tests.py:167"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -9935,12 +10221,26 @@
   "param": "library",
   "required": true,
   "type": "str",
-  "op_tb_files": 1,
+  "op_tb_files": 2,
   "op_sites": [
-   "test/live/packages/schematic_e2e_tests.py:391"
+   "test/live/packages/schematic_e2e_tests.py:391",
+   "test/live/packages/screenshot_params_e2e_tests.py:162",
+   "test/live/packages/screenshot_params_e2e_tests.py:167",
+   "test/live/packages/screenshot_params_e2e_tests.py:172",
+   "test/live/packages/screenshot_params_e2e_tests.py:177",
+   "test/live/packages/screenshot_params_e2e_tests.py:183",
+   "test/live/packages/screenshot_params_e2e_tests.py:186",
+   "test/live/packages/screenshot_params_e2e_tests.py:188"
   ],
   "param_hits": [
-   "test/live/packages/schematic_e2e_tests.py:391"
+   "test/live/packages/schematic_e2e_tests.py:391",
+   "test/live/packages/screenshot_params_e2e_tests.py:162",
+   "test/live/packages/screenshot_params_e2e_tests.py:167",
+   "test/live/packages/screenshot_params_e2e_tests.py:172",
+   "test/live/packages/screenshot_params_e2e_tests.py:177",
+   "test/live/packages/screenshot_params_e2e_tests.py:183",
+   "test/live/packages/screenshot_params_e2e_tests.py:186",
+   "test/live/packages/screenshot_params_e2e_tests.py:188"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -9952,12 +10252,23 @@
   "param": "region",
   "required": false,
   "type": "list[float] | None",
-  "op_tb_files": 1,
+  "op_tb_files": 2,
   "op_sites": [
-   "test/live/packages/schematic_e2e_tests.py:391"
+   "test/live/packages/schematic_e2e_tests.py:391",
+   "test/live/packages/screenshot_params_e2e_tests.py:162",
+   "test/live/packages/screenshot_params_e2e_tests.py:167",
+   "test/live/packages/screenshot_params_e2e_tests.py:172",
+   "test/live/packages/screenshot_params_e2e_tests.py:177",
+   "test/live/packages/screenshot_params_e2e_tests.py:183",
+   "test/live/packages/screenshot_params_e2e_tests.py:186",
+   "test/live/packages/screenshot_params_e2e_tests.py:188"
   ],
-  "param_hits": [],
-  "status": "GAP",
+  "param_hits": [
+   "test/live/packages/screenshot_params_e2e_tests.py:183",
+   "test/live/packages/screenshot_params_e2e_tests.py:186",
+   "test/live/packages/screenshot_params_e2e_tests.py:188"
+  ],
+  "status": "CANDIDATE",
   "generic": false
  },
  {
@@ -9967,9 +10278,16 @@
   "param": "timeout",
   "required": false,
   "type": "int | None",
-  "op_tb_files": 1,
+  "op_tb_files": 2,
   "op_sites": [
-   "test/live/packages/schematic_e2e_tests.py:391"
+   "test/live/packages/schematic_e2e_tests.py:391",
+   "test/live/packages/screenshot_params_e2e_tests.py:162",
+   "test/live/packages/screenshot_params_e2e_tests.py:167",
+   "test/live/packages/screenshot_params_e2e_tests.py:172",
+   "test/live/packages/screenshot_params_e2e_tests.py:177",
+   "test/live/packages/screenshot_params_e2e_tests.py:183",
+   "test/live/packages/screenshot_params_e2e_tests.py:186",
+   "test/live/packages/screenshot_params_e2e_tests.py:188"
   ],
   "param_hits": [],
   "status": "GAP",
@@ -9982,12 +10300,26 @@
   "param": "token",
   "required": true,
   "type": "str",
-  "op_tb_files": 1,
+  "op_tb_files": 2,
   "op_sites": [
-   "test/live/packages/schematic_e2e_tests.py:391"
+   "test/live/packages/schematic_e2e_tests.py:391",
+   "test/live/packages/screenshot_params_e2e_tests.py:162",
+   "test/live/packages/screenshot_params_e2e_tests.py:167",
+   "test/live/packages/screenshot_params_e2e_tests.py:172",
+   "test/live/packages/screenshot_params_e2e_tests.py:177",
+   "test/live/packages/screenshot_params_e2e_tests.py:183",
+   "test/live/packages/screenshot_params_e2e_tests.py:186",
+   "test/live/packages/screenshot_params_e2e_tests.py:188"
   ],
   "param_hits": [
-   "test/live/packages/schematic_e2e_tests.py:391"
+   "test/live/packages/schematic_e2e_tests.py:391",
+   "test/live/packages/screenshot_params_e2e_tests.py:162",
+   "test/live/packages/screenshot_params_e2e_tests.py:167",
+   "test/live/packages/screenshot_params_e2e_tests.py:172",
+   "test/live/packages/screenshot_params_e2e_tests.py:177",
+   "test/live/packages/screenshot_params_e2e_tests.py:183",
+   "test/live/packages/screenshot_params_e2e_tests.py:186",
+   "test/live/packages/screenshot_params_e2e_tests.py:188"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -9999,12 +10331,22 @@
   "param": "toplevel",
   "required": false,
   "type": "bool",
-  "op_tb_files": 1,
+  "op_tb_files": 2,
   "op_sites": [
-   "test/live/packages/schematic_e2e_tests.py:391"
+   "test/live/packages/schematic_e2e_tests.py:391",
+   "test/live/packages/screenshot_params_e2e_tests.py:162",
+   "test/live/packages/screenshot_params_e2e_tests.py:167",
+   "test/live/packages/screenshot_params_e2e_tests.py:172",
+   "test/live/packages/screenshot_params_e2e_tests.py:177",
+   "test/live/packages/screenshot_params_e2e_tests.py:183",
+   "test/live/packages/screenshot_params_e2e_tests.py:186",
+   "test/live/packages/screenshot_params_e2e_tests.py:188"
   ],
-  "param_hits": [],
-  "status": "GAP",
+  "param_hits": [
+   "test/live/packages/screenshot_params_e2e_tests.py:197",
+   "test/live/packages/screenshot_params_e2e_tests.py:203"
+  ],
+  "status": "CANDIDATE",
   "generic": false
  },
  {
@@ -10014,12 +10356,26 @@
   "param": "view",
   "required": false,
   "type": "str",
-  "op_tb_files": 1,
+  "op_tb_files": 2,
   "op_sites": [
-   "test/live/packages/schematic_e2e_tests.py:391"
+   "test/live/packages/schematic_e2e_tests.py:391",
+   "test/live/packages/screenshot_params_e2e_tests.py:162",
+   "test/live/packages/screenshot_params_e2e_tests.py:167",
+   "test/live/packages/screenshot_params_e2e_tests.py:172",
+   "test/live/packages/screenshot_params_e2e_tests.py:177",
+   "test/live/packages/screenshot_params_e2e_tests.py:183",
+   "test/live/packages/screenshot_params_e2e_tests.py:186",
+   "test/live/packages/screenshot_params_e2e_tests.py:188"
   ],
   "param_hits": [
-   "test/live/packages/schematic_e2e_tests.py:391"
+   "test/live/packages/schematic_e2e_tests.py:391",
+   "test/live/packages/screenshot_params_e2e_tests.py:162",
+   "test/live/packages/screenshot_params_e2e_tests.py:167",
+   "test/live/packages/screenshot_params_e2e_tests.py:172",
+   "test/live/packages/screenshot_params_e2e_tests.py:177",
+   "test/live/packages/screenshot_params_e2e_tests.py:183",
+   "test/live/packages/screenshot_params_e2e_tests.py:186",
+   "test/live/packages/screenshot_params_e2e_tests.py:188"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -10031,12 +10387,22 @@
   "param": "window_id",
   "required": false,
   "type": "int | None",
-  "op_tb_files": 1,
+  "op_tb_files": 2,
   "op_sites": [
-   "test/live/packages/schematic_e2e_tests.py:391"
+   "test/live/packages/schematic_e2e_tests.py:391",
+   "test/live/packages/screenshot_params_e2e_tests.py:162",
+   "test/live/packages/screenshot_params_e2e_tests.py:167",
+   "test/live/packages/screenshot_params_e2e_tests.py:172",
+   "test/live/packages/screenshot_params_e2e_tests.py:177",
+   "test/live/packages/screenshot_params_e2e_tests.py:183",
+   "test/live/packages/screenshot_params_e2e_tests.py:186",
+   "test/live/packages/screenshot_params_e2e_tests.py:188"
   ],
-  "param_hits": [],
-  "status": "GAP",
+  "param_hits": [
+   "test/live/packages/screenshot_params_e2e_tests.py:172",
+   "test/live/packages/screenshot_params_e2e_tests.py:177"
+  ],
+  "status": "CANDIDATE",
   "generic": false
  },
  {
@@ -11287,15 +11653,26 @@
   "param": "cell",
   "required": true,
   "type": "str",
-  "op_tb_files": 1,
+  "op_tb_files": 2,
   "op_sites": [
-   "test/live/packages/symbol_e2e_tests.py:414",
-   "test/live/packages/symbol_e2e_tests.py:455",
-   "test/live/packages/symbol_e2e_tests.py:465",
-   "test/live/packages/symbol_e2e_tests.py:476"
+   "test/live/packages/screenshot_params_e2e_tests.py:217",
+   "test/live/packages/screenshot_params_e2e_tests.py:222",
+   "test/live/packages/screenshot_params_e2e_tests.py:227",
+   "test/live/packages/screenshot_params_e2e_tests.py:232",
+   "test/live/packages/screenshot_params_e2e_tests.py:238",
+   "test/live/packages/screenshot_params_e2e_tests.py:241",
+   "test/live/packages/screenshot_params_e2e_tests.py:243",
+   "test/live/packages/screenshot_params_e2e_tests.py:247"
   ],
   "param_hits": [
-   "test/live/packages/symbol_e2e_tests.py:414"
+   "test/live/packages/screenshot_params_e2e_tests.py:217",
+   "test/live/packages/screenshot_params_e2e_tests.py:222",
+   "test/live/packages/screenshot_params_e2e_tests.py:227",
+   "test/live/packages/screenshot_params_e2e_tests.py:232",
+   "test/live/packages/screenshot_params_e2e_tests.py:238",
+   "test/live/packages/screenshot_params_e2e_tests.py:241",
+   "test/live/packages/screenshot_params_e2e_tests.py:243",
+   "test/live/packages/screenshot_params_e2e_tests.py:247"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -11307,15 +11684,22 @@
   "param": "central_widget",
   "required": false,
   "type": "bool",
-  "op_tb_files": 1,
+  "op_tb_files": 2,
   "op_sites": [
-   "test/live/packages/symbol_e2e_tests.py:414",
-   "test/live/packages/symbol_e2e_tests.py:455",
-   "test/live/packages/symbol_e2e_tests.py:465",
-   "test/live/packages/symbol_e2e_tests.py:476"
+   "test/live/packages/screenshot_params_e2e_tests.py:217",
+   "test/live/packages/screenshot_params_e2e_tests.py:222",
+   "test/live/packages/screenshot_params_e2e_tests.py:227",
+   "test/live/packages/screenshot_params_e2e_tests.py:232",
+   "test/live/packages/screenshot_params_e2e_tests.py:238",
+   "test/live/packages/screenshot_params_e2e_tests.py:241",
+   "test/live/packages/screenshot_params_e2e_tests.py:243",
+   "test/live/packages/screenshot_params_e2e_tests.py:247"
   ],
-  "param_hits": [],
-  "status": "GAP",
+  "param_hits": [
+   "test/live/packages/screenshot_params_e2e_tests.py:250",
+   "test/live/packages/screenshot_params_e2e_tests.py:253"
+  ],
+  "status": "CANDIDATE",
   "generic": false
  },
  {
@@ -11325,14 +11709,19 @@
   "param": "leave_open",
   "required": false,
   "type": "bool",
-  "op_tb_files": 1,
+  "op_tb_files": 2,
   "op_sites": [
-   "test/live/packages/symbol_e2e_tests.py:414",
-   "test/live/packages/symbol_e2e_tests.py:455",
-   "test/live/packages/symbol_e2e_tests.py:465",
-   "test/live/packages/symbol_e2e_tests.py:476"
+   "test/live/packages/screenshot_params_e2e_tests.py:217",
+   "test/live/packages/screenshot_params_e2e_tests.py:222",
+   "test/live/packages/screenshot_params_e2e_tests.py:227",
+   "test/live/packages/screenshot_params_e2e_tests.py:232",
+   "test/live/packages/screenshot_params_e2e_tests.py:238",
+   "test/live/packages/screenshot_params_e2e_tests.py:241",
+   "test/live/packages/screenshot_params_e2e_tests.py:243",
+   "test/live/packages/screenshot_params_e2e_tests.py:247"
   ],
   "param_hits": [
+   "test/live/packages/screenshot_params_e2e_tests.py:222",
    "test/live/packages/symbol_e2e_tests.py:414"
   ],
   "status": "CANDIDATE",
@@ -11345,15 +11734,26 @@
   "param": "library",
   "required": true,
   "type": "str",
-  "op_tb_files": 1,
+  "op_tb_files": 2,
   "op_sites": [
-   "test/live/packages/symbol_e2e_tests.py:414",
-   "test/live/packages/symbol_e2e_tests.py:455",
-   "test/live/packages/symbol_e2e_tests.py:465",
-   "test/live/packages/symbol_e2e_tests.py:476"
+   "test/live/packages/screenshot_params_e2e_tests.py:217",
+   "test/live/packages/screenshot_params_e2e_tests.py:222",
+   "test/live/packages/screenshot_params_e2e_tests.py:227",
+   "test/live/packages/screenshot_params_e2e_tests.py:232",
+   "test/live/packages/screenshot_params_e2e_tests.py:238",
+   "test/live/packages/screenshot_params_e2e_tests.py:241",
+   "test/live/packages/screenshot_params_e2e_tests.py:243",
+   "test/live/packages/screenshot_params_e2e_tests.py:247"
   ],
   "param_hits": [
-   "test/live/packages/symbol_e2e_tests.py:414"
+   "test/live/packages/screenshot_params_e2e_tests.py:217",
+   "test/live/packages/screenshot_params_e2e_tests.py:222",
+   "test/live/packages/screenshot_params_e2e_tests.py:227",
+   "test/live/packages/screenshot_params_e2e_tests.py:232",
+   "test/live/packages/screenshot_params_e2e_tests.py:238",
+   "test/live/packages/screenshot_params_e2e_tests.py:241",
+   "test/live/packages/screenshot_params_e2e_tests.py:243",
+   "test/live/packages/screenshot_params_e2e_tests.py:247"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -11365,15 +11765,23 @@
   "param": "region",
   "required": false,
   "type": "list[float] | None",
-  "op_tb_files": 1,
+  "op_tb_files": 2,
   "op_sites": [
-   "test/live/packages/symbol_e2e_tests.py:414",
-   "test/live/packages/symbol_e2e_tests.py:455",
-   "test/live/packages/symbol_e2e_tests.py:465",
-   "test/live/packages/symbol_e2e_tests.py:476"
+   "test/live/packages/screenshot_params_e2e_tests.py:217",
+   "test/live/packages/screenshot_params_e2e_tests.py:222",
+   "test/live/packages/screenshot_params_e2e_tests.py:227",
+   "test/live/packages/screenshot_params_e2e_tests.py:232",
+   "test/live/packages/screenshot_params_e2e_tests.py:238",
+   "test/live/packages/screenshot_params_e2e_tests.py:241",
+   "test/live/packages/screenshot_params_e2e_tests.py:243",
+   "test/live/packages/screenshot_params_e2e_tests.py:247"
   ],
-  "param_hits": [],
-  "status": "GAP",
+  "param_hits": [
+   "test/live/packages/screenshot_params_e2e_tests.py:238",
+   "test/live/packages/screenshot_params_e2e_tests.py:241",
+   "test/live/packages/screenshot_params_e2e_tests.py:243"
+  ],
+  "status": "CANDIDATE",
   "generic": false
  },
  {
@@ -11383,12 +11791,16 @@
   "param": "timeout",
   "required": false,
   "type": "int | None",
-  "op_tb_files": 1,
+  "op_tb_files": 2,
   "op_sites": [
-   "test/live/packages/symbol_e2e_tests.py:414",
-   "test/live/packages/symbol_e2e_tests.py:455",
-   "test/live/packages/symbol_e2e_tests.py:465",
-   "test/live/packages/symbol_e2e_tests.py:476"
+   "test/live/packages/screenshot_params_e2e_tests.py:217",
+   "test/live/packages/screenshot_params_e2e_tests.py:222",
+   "test/live/packages/screenshot_params_e2e_tests.py:227",
+   "test/live/packages/screenshot_params_e2e_tests.py:232",
+   "test/live/packages/screenshot_params_e2e_tests.py:238",
+   "test/live/packages/screenshot_params_e2e_tests.py:241",
+   "test/live/packages/screenshot_params_e2e_tests.py:243",
+   "test/live/packages/screenshot_params_e2e_tests.py:247"
   ],
   "param_hits": [],
   "status": "GAP",
@@ -11401,16 +11813,26 @@
   "param": "token",
   "required": true,
   "type": "str",
-  "op_tb_files": 1,
+  "op_tb_files": 2,
   "op_sites": [
-   "test/live/packages/symbol_e2e_tests.py:414",
-   "test/live/packages/symbol_e2e_tests.py:455",
-   "test/live/packages/symbol_e2e_tests.py:465",
-   "test/live/packages/symbol_e2e_tests.py:476"
+   "test/live/packages/screenshot_params_e2e_tests.py:217",
+   "test/live/packages/screenshot_params_e2e_tests.py:222",
+   "test/live/packages/screenshot_params_e2e_tests.py:227",
+   "test/live/packages/screenshot_params_e2e_tests.py:232",
+   "test/live/packages/screenshot_params_e2e_tests.py:238",
+   "test/live/packages/screenshot_params_e2e_tests.py:241",
+   "test/live/packages/screenshot_params_e2e_tests.py:243",
+   "test/live/packages/screenshot_params_e2e_tests.py:247"
   ],
   "param_hits": [
-   "test/live/packages/symbol_e2e_tests.py:414",
-   "test/live/packages/symbol_e2e_tests.py:455"
+   "test/live/packages/screenshot_params_e2e_tests.py:217",
+   "test/live/packages/screenshot_params_e2e_tests.py:222",
+   "test/live/packages/screenshot_params_e2e_tests.py:227",
+   "test/live/packages/screenshot_params_e2e_tests.py:232",
+   "test/live/packages/screenshot_params_e2e_tests.py:238",
+   "test/live/packages/screenshot_params_e2e_tests.py:241",
+   "test/live/packages/screenshot_params_e2e_tests.py:243",
+   "test/live/packages/screenshot_params_e2e_tests.py:247"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -11422,15 +11844,22 @@
   "param": "toplevel",
   "required": false,
   "type": "bool",
-  "op_tb_files": 1,
+  "op_tb_files": 2,
   "op_sites": [
-   "test/live/packages/symbol_e2e_tests.py:414",
-   "test/live/packages/symbol_e2e_tests.py:455",
-   "test/live/packages/symbol_e2e_tests.py:465",
-   "test/live/packages/symbol_e2e_tests.py:476"
+   "test/live/packages/screenshot_params_e2e_tests.py:217",
+   "test/live/packages/screenshot_params_e2e_tests.py:222",
+   "test/live/packages/screenshot_params_e2e_tests.py:227",
+   "test/live/packages/screenshot_params_e2e_tests.py:232",
+   "test/live/packages/screenshot_params_e2e_tests.py:238",
+   "test/live/packages/screenshot_params_e2e_tests.py:241",
+   "test/live/packages/screenshot_params_e2e_tests.py:243",
+   "test/live/packages/screenshot_params_e2e_tests.py:247"
   ],
-  "param_hits": [],
-  "status": "GAP",
+  "param_hits": [
+   "test/live/packages/screenshot_params_e2e_tests.py:247",
+   "test/live/packages/screenshot_params_e2e_tests.py:253"
+  ],
+  "status": "CANDIDATE",
   "generic": false
  },
  {
@@ -11440,15 +11869,26 @@
   "param": "view",
   "required": false,
   "type": "str",
-  "op_tb_files": 1,
+  "op_tb_files": 2,
   "op_sites": [
-   "test/live/packages/symbol_e2e_tests.py:414",
-   "test/live/packages/symbol_e2e_tests.py:455",
-   "test/live/packages/symbol_e2e_tests.py:465",
-   "test/live/packages/symbol_e2e_tests.py:476"
+   "test/live/packages/screenshot_params_e2e_tests.py:217",
+   "test/live/packages/screenshot_params_e2e_tests.py:222",
+   "test/live/packages/screenshot_params_e2e_tests.py:227",
+   "test/live/packages/screenshot_params_e2e_tests.py:232",
+   "test/live/packages/screenshot_params_e2e_tests.py:238",
+   "test/live/packages/screenshot_params_e2e_tests.py:241",
+   "test/live/packages/screenshot_params_e2e_tests.py:243",
+   "test/live/packages/screenshot_params_e2e_tests.py:247"
   ],
   "param_hits": [
-   "test/live/packages/symbol_e2e_tests.py:414"
+   "test/live/packages/screenshot_params_e2e_tests.py:217",
+   "test/live/packages/screenshot_params_e2e_tests.py:222",
+   "test/live/packages/screenshot_params_e2e_tests.py:227",
+   "test/live/packages/screenshot_params_e2e_tests.py:232",
+   "test/live/packages/screenshot_params_e2e_tests.py:238",
+   "test/live/packages/screenshot_params_e2e_tests.py:241",
+   "test/live/packages/screenshot_params_e2e_tests.py:243",
+   "test/live/packages/screenshot_params_e2e_tests.py:247"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -11460,15 +11900,22 @@
   "param": "view_type",
   "required": false,
   "type": "str",
-  "op_tb_files": 1,
+  "op_tb_files": 2,
   "op_sites": [
-   "test/live/packages/symbol_e2e_tests.py:414",
-   "test/live/packages/symbol_e2e_tests.py:455",
-   "test/live/packages/symbol_e2e_tests.py:465",
-   "test/live/packages/symbol_e2e_tests.py:476"
+   "test/live/packages/screenshot_params_e2e_tests.py:217",
+   "test/live/packages/screenshot_params_e2e_tests.py:222",
+   "test/live/packages/screenshot_params_e2e_tests.py:227",
+   "test/live/packages/screenshot_params_e2e_tests.py:232",
+   "test/live/packages/screenshot_params_e2e_tests.py:238",
+   "test/live/packages/screenshot_params_e2e_tests.py:241",
+   "test/live/packages/screenshot_params_e2e_tests.py:243",
+   "test/live/packages/screenshot_params_e2e_tests.py:247"
   ],
-  "param_hits": [],
-  "status": "GAP",
+  "param_hits": [
+   "test/live/packages/screenshot_params_e2e_tests.py:258",
+   "test/live/packages/screenshot_params_e2e_tests.py:261"
+  ],
+  "status": "CANDIDATE",
   "generic": false
  },
  {
@@ -11478,15 +11925,22 @@
   "param": "window_id",
   "required": false,
   "type": "int | None",
-  "op_tb_files": 1,
+  "op_tb_files": 2,
   "op_sites": [
-   "test/live/packages/symbol_e2e_tests.py:414",
-   "test/live/packages/symbol_e2e_tests.py:455",
-   "test/live/packages/symbol_e2e_tests.py:465",
-   "test/live/packages/symbol_e2e_tests.py:476"
+   "test/live/packages/screenshot_params_e2e_tests.py:217",
+   "test/live/packages/screenshot_params_e2e_tests.py:222",
+   "test/live/packages/screenshot_params_e2e_tests.py:227",
+   "test/live/packages/screenshot_params_e2e_tests.py:232",
+   "test/live/packages/screenshot_params_e2e_tests.py:238",
+   "test/live/packages/screenshot_params_e2e_tests.py:241",
+   "test/live/packages/screenshot_params_e2e_tests.py:243",
+   "test/live/packages/screenshot_params_e2e_tests.py:247"
   ],
-  "param_hits": [],
-  "status": "GAP",
+  "param_hits": [
+   "test/live/packages/screenshot_params_e2e_tests.py:227",
+   "test/live/packages/screenshot_params_e2e_tests.py:232"
+  ],
+  "status": "CANDIDATE",
   "generic": false
  },
  {

@@ -28,6 +28,155 @@ BUGS_DIR = ROOT / "test" / "reports" / "bugs"
 OPEN = [
 
     {
+        "id": "P-092",
+        "layer": "上层（calibre 包）",
+        "slug": "calibre-power-ground-dead-params",
+        "title": "`calibre.drc/lvs/pex` 的 `power` / `ground` 声明并校验，但实现**从不读取**（静默无效）",
+        "level": "P3（静默无效参数，与 P-084 同类；误导调用方以为能指定电源/地网名）",
+        "owner": "设计侧（实现语义或从模型/spec 删除）",
+        "status": "待设计修",
+        "where": "`src/pyapi/packages/calibre.py:100-101`（字段声明）、`:123-124`（`_opt_text` 校验）——全文件再无 `request.power` / `request.ground` 读取点；"
+                 "deck 改写（`:833-849` 的 `rewrite_deck`/`statements_from_params`）也不注入 POWER/GROUND 语句；argv（`:987-1013`）不带对应选项。",
+        "symptom": "真机（vblog）实测：`calibre.drc(power=\"VDD\", ground=\"VSS\", …)` 与不传这两个参数的同参数运行"
+                   "在 job.json / argv / 报告上**无任何差异**（job.json 里连字段都不出现）；DRC/LVS 结论不变。"
+                   "即参数对行为零影响。",
+        "repro": "`PYTHONPATH=src python test/live/packages/calibre_params_e2e_tests.py --transport http`"
+                 "（CAL-DRC-01 带着 power/ground 跑；CAL-P092-01 记录）",
+        "evidence": "`test/artifacts/evidence/round8/calibre-params/calibre-params.json`；"
+                    "对照 run_dir `/home/Gent/project/vblog/calibre-e2e/params-drc-*/job.json`（无 power/ground 键）",
+        "accept": "① 让 power/ground 参与 deck 改写（注入 `LAYOUT POWER`/`LAYOUT GROUND` 或对应 SVRF 语句）并给可观察差异；"
+                  "② 或从模型/spec 删除这两个字段；两者取其一并同步 TB 断言。",
+        "next": "设计侧定口径；测试侧按结论把 CAL-P092-01 从 NOTE 改成正向/负向断言。",
+        "reported": "2026-09-28（第八轮 calibre 参数面实测，root 直接发现）",
+        "updated": "2026-09-28（新立）",
+    },
+
+    {
+        "id": "P-093",
+        "layer": "上层（calibre 包）",
+        "slug": "calibre-flat-drc-turbo-invalid-argv",
+        "title": "`calibre.drc(hier=False)` 命令行非法：`-turbo` 与 flat 模式冲突 → Calibre 打 usage、作业秒退",
+        "level": "P2（该参数组合下 DRC 完全跑不了，且呈现为工具 usage dump 而非可读错误）",
+        "owner": "设计侧（calibre 包 `_argv_for`）",
+        "status": "待设计修",
+        "where": "`src/pyapi/packages/calibre.py:987-997`（`_argv_for`：`-hier` 按 `request.hier` 决定，但 `flags += [\"-turbo\", str(request.turbo)]` 无条件追加）",
+        "symptom": "真机（vblog）实测 `calibre.drc(gds=inv.gds, top=inv, deck=PDK/drc/calibre.drc, hier=False, turbo=2)`：\n"
+                   "`drc.log` 第 2 行 = `ERROR: The -turbo option is not valid with this flat application.`，随后整段 Calibre usage；\n"
+                   "calibre 进程 1s 内退出（`process_alive=false`），run_dir 里只有 usage dump，没有 DRC.rep。\n"
+                   "原因：flat（非 `-hier`）DRC 不接受 `-turbo`；桥只按 hier 切换 `-hier`，却始终追加 `-turbo`。",
+        "repro": "`PYTHONPATH=src python test/semi/probes/calibre_flat_turbo_probe.py`（预期红）\n"
+                 "run_dir 现场：`/home/Gent/project/vblog/calibre-e2e/p093-flat-<ms>/drc.log`",
+        "evidence": "`test/artifacts/evidence/round8/p093-flat-turbo-probe.json`（含 drc.log 的 `ERROR:` 原文与 status 快照）",
+        "accept": "① `hier=False` 时不追加 `-turbo`（或仅 hier/pex 路径追加）；或 ② 提交前对 `hier=False + turbo` 给结构化拒绝；"
+                  "两条任一 + 探针在 flat 模式下能真跑出 DRC.rep（或在非 hier 时明确拒绝）。",
+        "next": "设计侧改 `_argv_for` 的 turbo 条件；测试侧复跑探针与 `calibre_params_e2e_tests.py` 的 flat 分支。",
+        "reported": "2026-09-28（第八轮 calibre 参数面实测，root 直接发现）",
+        "updated": "2026-09-28（新立）",
+    },
+
+    {
+        "id": "P-094",
+        "layer": "上层（calibre 包）· 失败检测",
+        "slug": "calibre-tool-death-not-detected",
+        "title": "工具秒退不被检测：`status` 只报 `unknown`、`blocking=True` 会等满 timeout（日志里的 `ERROR:` 看不见）",
+        "level": "P2（1 秒失败的作业占满 30 分钟预算，且用户拿不到失败原因）",
+        "owner": "设计侧（calibre 运行器轮询/状态判定）",
+        "status": "待设计修",
+        "where": "等待循环 `src/pyapi/packages/calibre.py:574-594`（只在 `completed`/`failed` 时 break）；"
+                 "`src/pyapi/packages/_calibre_util.py:317-329`（`process_alive=false` + 有 artifacts + 尾部无 marker → `unknown`）；"
+                 "`src/pyapi/packages/calibre.py:929-936`（`_log_tail` 只 `tail -n` 尾部，而 `ERROR:` 在日志第 2 行，"
+                 "`classify_log` 的 `_FAIL_MARKERS`（含 `ERROR:`）永远看不到）。",
+        "symptom": "实测（同一个 flat DRC 作业）：日志已含 `ERROR: The -turbo option is not valid …`，但\n"
+                   "`calibre.status` 返回 `{\"status\": \"unknown\", \"failure_kind\": null, \"process_alive\": false}`；\n"
+                   "`calibre.drc(blocking=True, timeout=1800)` 因此蹲满预算（本轮实测 >5 分钟仍停在 poll，被我手工 kill）。\n"
+                   "对照 AGENTS.md 的 dual-defense 要求：轮询必须每轮 tail/grep 工具日志里的终态标记——calibre 运行器没做。",
+        "repro": "`PYTHONPATH=src python test/semi/probes/calibre_flat_turbo_probe.py`（探针判据：15s 内 status 必须报失败并带 ERROR 行；今天红）",
+        "evidence": "`test/artifacts/evidence/round8/p093-flat-turbo-probe.json`（`tool_failed=true` 而 `error_surfaced=false`）",
+        "accept": "① 轮询每轮对整份日志（或 `grep -m1 -E 'ERROR:|FATAL ERROR'`）做终态判定；"
+                  "② `process_alive=false` 且无完成标记 → 归类 `failed`（failure_kind 如 `process_gone_without_report`）并把 ERROR 行放进 value；"
+                  "③ 探针转绿（不再出现秒退作业等满 timeout）。",
+        "next": "设计侧改轮询与 `job_state` 的兜底分类；测试侧复跑探针 + `calibre_e2e_tests.py` 的坏 deck 用例确认无回归。",
+        "reported": "2026-09-28（第八轮 calibre 参数面实测，root 直接发现）",
+        "updated": "2026-09-28（新立）",
+    },
+
+    {
+        "id": "P-091",
+        "layer": "上层（symbol / layout 包）· 与 spec 口径",
+        "slug": "screenshot-remote-artifact-cleanup-inconsistent",
+        "title": "截图远端产物保留策略三包不一致：schematic 保留、symbol/layout 下载后 `rm -f` 删掉（spec 写「远端存 role root screenshots/」）",
+        "level": "P3（口径/文档级：不影响本地产物，但使「远端留证」与审计核对失效）",
+        "owner": "待归属（spec 口径 owner 或三包实现统一）",
+        "status": "待决策",
+        "where": "`src/pyapi/packages/symbol.py:979-987`（finally 里 `rm -f <remote_png>`）；"
+                 "`src/pyapi/packages/layout.py:1480-1487`（同款 finally）；"
+                 "`src/pyapi/packages/schematic.py:814-852`（**不删**，远端长期保留）；"
+                 "spec：`spec/design-concepts/上层/2-schematic.md:27`、`3-symbol.md:41-45`、`4-layout.md:183` 均写「远端存 role root 的 screenshots/」。",
+        "symptom": "真机实测（2026-09-28，`screenshot_params_e2e_tests.py`）：\n"
+                   "- `virtuoso.schematic.screenshot` 跑完后远端 `role_root/screenshots/<cell>_<ms>.png` **留存**；\n"
+                   "- `virtuoso.symbol.screenshot` / `virtuoso.layout.screenshot` 跑完后同名远端文件 **找不到**"
+                   "（`find /home/vbuser2 -name 'rx_fe-*'` 与 `find /home/Gent -name 'lay_e2e-*'` 均 0 命中，"
+                   "而本地 `artifact/screenshots/*.png` 正常且为合法 PNG）。\n"
+                   "⇒ 「远端存 screenshots/」这条 spec 只对 schematic 成立；symbol/layout 把远端当临时暂存并清理。",
+        "hypothesis": "两条候选（未直接观测到设计意图）：① spec 想表达的是「远端暂存于 role root/screenshots 再取回」，"
+                      "那么 schematic 属于多做（泄漏暂存物），应统一成清理；② spec 想表达的是「远端留证」，"
+                      "那么 symbol/layout 属于少做，应去掉 finally 里的 rm。两条都要落成文字或统一实现。",
+        "repro": "PYTHONPATH=src python test/live/packages/screenshot_params_e2e_tests.py --transport http \\\n"
+                 "  --token vb-vbuser2 --lib serdes_rx --cell rx_fe --view symbol --kind symbol \\\n"
+                 "  --out test/artifacts/evidence/round8/screenshot-params/symbol.json\n"
+                 "# 同参数换 --kind layout --token vb-vblog --lib schemtest --cell lay_e2e --view layout",
+        "evidence": "`test/artifacts/evidence/round8/screenshot-params/{schematic,symbol,layout}.json`"
+                    "（SC-01 会把 `remote_present=` 打进 NOTE）；对照 `find` 命令输出见卡片正文。",
+        "accept": "① spec 与实现二选一对齐：要么三包统一清理（改 spec 文案为「远端暂存」），"
+                  "要么三包统一保留（去 symbol/layout 的 rm）；② 新 TB 的 SC-01 不再出现三包口径分叉。",
+        "next": "spec owner 定「暂存 vs 留证」；测试侧按结论改 TB 的 NOTE 为断言。",
+        "reported": "2026-09-28（第八轮 screenshot 参数车道实测发现）",
+        "updated": "2026-09-28（新立）",
+    },
+
+    {
+        "id": "P-090",
+        "layer": "中层传输（tunnel.upload_file）/ 底层 SSH 常驻 shell",
+        "slug": "upload-stage-vanished-before-install",
+        "title": "`basic.file.upload` 偶发 `mv: cannot stat <target>.vbtmp-<hex>`：stage 在 sha256 校验通过后消失，安装步骤报错",
+        "level": "P3（观察：单次复现、40 次同目标 hammer + 套件复跑均未复现；但错误形态误导为「文件不存在」，掩盖真实性质）",
+        "owner": "待归属（中层 tunnel 安装步骤幂等性 / 底层常驻 shell 重试口径，二选一或联合）",
+        "status": "观察",
+        "where": "`src/transport/tunnel.py:487-497`（stage = `<target>.vbtmp-<hex>` → scp → `sha256sum` 比对 → "
+                 "`mv -f -- stage target`）；同一路径被 `src/pyapi/packages/veriloga.py:167-172`（`_write_remote`）与 "
+                 "`src/pyapi/packages/basic.py:173-180`（`basic.file.upload`）共用；"
+                 "`src/common/ssh.py:1941-1981`（`_run_via_persistent_shell_with_retry` 会对同一命令字符串重发一次）",
+        "symptom": "2026-09-28 21:5x：`veriloga_e2e_tests.py --transport http` 的 WRITE-02 patch_source 报 "
+                   "`patch_source failed: mv: cannot stat '/home/Gent/project/vblog/schemtest/va_e2e/veriloga/"
+                   "veriloga.va.vbtmp-8a7782b8f3884a4aa6e2058e9e8db36f': No such file or directory (commands applied: 0/1)`。\n"
+                   "关键点：报错来自 **安装（mv）** 而不是上传或校验——即 upload 已 rc=0、`sha256sum` 已取到并比对通过之后，"
+                   "stage 文件在 mv 前消失。\n"
+                   "复现性：同套件随后复跑 **7/7 全绿**；同目录同目标 40 次连续 upload **0 失败**（60.7s）；"
+                   "同目录 `basic.file.upload`（probe_upload.txt）单次也全绿 ⇒ 非路径/权限/磁盘问题。",
+        "hypothesis": "两条候选（均未直接观测到）：①**重试重发**——`_is_retryable_persistent_shell_error` 把 "
+                      "`unexpected persistent shell protocol line` / `failed to write to persistent ssh shell` 等"
+                      "「已投递但协议异常」判为可重试，重发同一命令串后第二次 `mv` 必然找不到 stage；"
+                      "②外部进程在毫秒级窗口删除了 stage（未发现已知的 stage 清理者，`src/` 内无 `*.vbtmp-*` 清理逻辑）。\n"
+                      "判别手段：daemon 日志里若有 `Retrying persistent SSH shell for <host> after recoverable protocol error` "
+                      "同刻记录，即坐实 ①。",
+        "repro": "`PYTHONPATH=src python test/live/packages/veriloga_e2e_tests.py --transport http`（本文件原始失败日志见证据 1）；"
+                 "定性探针：`PYTHONPATH=src python test/artifacts/tmp/probe_upload_mv_fail.py`（单次 upload 到同目录，绿）；"
+                 "hammer：`PYTHONPATH=src python test/artifacts/tmp/hammer_upload_same_target.py`（40 次同目标覆盖写，绿）",
+        "evidence": "① `test/artifacts/tmp/rerun_veriloga.log`（原始 `mv: cannot stat` traceback）；"
+                    "② `test/artifacts/tmp/rerun_veriloga2.log`（复跑 7/7 PASS）；"
+                    "③ `test/artifacts/tmp/hammer_upload_same_target.py` 输出 `done 40 iters ... fails=0`；"
+                    "④ `test/artifacts/env/log-vblog/api-8127-20260928-195332.err.log`（同窗口多次 ConnectionResetError，"
+                    "说明该时段客户端/服务端连接确实在异常抖动）",
+        "accept": "① 安装步骤幂等化：stage 不存在时若目标文件 digest 与本次 payload 一致，视为已安装并返回成功；"
+                  "② 或把重试严格限定在可证明「未投递」的协议错误，并禁止对已投递命令重发；"
+                  "③ 两者任一 + 失败时日志打印 `stage/target` 与实际重试原因，使该错误形态不再出现或不再误导。",
+        "next": "设计侧评估 `ssh.py` 重试口径与 `tunnel.upload_file` 安装幂等性；测试侧保持观察（本轮 40+1 次未复现），"
+                "若再出现请附 `~/.virtuoso-bridge/vblog/run` 日志定位。",
+        "reported": "2026-09-28（第八轮真机 gate 复跑 veriloga 套件时发现）",
+        "updated": "2026-09-28（新立；含复现性判定：单次/未复现）",
+    },
+
+    {
         "id": "P-089",
         "layer": "上层（maestro 包）",
         "slug": "maestro-open-waveform-result-ignored",
@@ -199,7 +348,7 @@ OPEN = [
     },
     {
         "id": "P-080",
-        "layer": "上层（verilog / veriloga 包）",
+        "layer": "上层（verilog / veriloga / layout 包）",
         "slug": "view-type-read-unvalidated",
         "title": "`view_type` 在 read 路径不校验（空串/整数/bogus 静默接受）；write 校验后取值又被忽略",
         "level": "P2（参数合同不一致 + 死参数）",
@@ -207,10 +356,17 @@ OPEN = [
         "status": "待设计修",
         "where": "`src/pyapi/packages/verilog.py:201-230`（read 不碰 view_type）、`:307`（只有 write 校验）、`_view_dir:161`（不使用 view_type）；"
                  "`src/pyapi/packages/veriloga.py:205-235`、`:476`、`_view_dir:145`。主文件名 `MAIN_FILE` 硬编码，"
-                 "与 spec `8-verilog.md:45`『主文件名由 viewType 决定（`ddMapGetDataTypeFileName` 查）』不一致。",
+                 "与 spec `8-verilog.md:45`『主文件名由 viewType 决定（`ddMapGetDataTypeFileName` 查）』不一致。"
+                 "截图面同族两处：`src/pyapi/packages/symbol.py:84-96`（ScreenshotRequest.view_type，只透传给 geOpen）、"
+                 "`src/pyapi/packages/layout.py:98-109`（同）；两处对 `view_type=\"bogus_type_xyz\"` 都静默成功。",
         "symptom": "真机（vblog）实测：`read(view_type=\"\")`、`read(view_type=123)`、`read(view_type=\"bogus_type_xyz\")` 全部 `ok=true` 且返回默认视图内容（静默忽略取参）；"
                    "同一字段 `write(view_type=\"\")` 返回 400 `invalid request: view_type must be a non-empty string`，而 `write(view_type=\"bogus_type_xyz\")` 返回 ok。"
-                   "read/write 校验口径不一致；非默认取值对寻址/主文件名没有任何可观察影响。",
+                   "read/write 校验口径不一致；非默认取值对寻址/主文件名没有任何可观察影响。\n"
+                   "**同族第三处（2026-09-28 新增，layout 包）**：`virtuoso.layout.screenshot(view_type=\"bogus_type_xyz\")` "
+                   "也返回 ok=true 并出图（`view_type=\"maskLayout\"` 与 bogus 之间无可观察差异）；"
+                   "`virtuoso.symbol.screenshot(view_type=\"bogus_type_xyz\")` 同样 ok=true。"
+                   "两条都被新 TB `test/live/packages/screenshot_params_e2e_tests.py`（SC-06）红钉住"
+                   "（跑 `--kind symbol` / `--kind layout` 会在 SC-06 转红——这是**预期红钉**，不是 TB 坏了）。",
         "repro": "python test/artifacts/tmp/r8_p080_p081_evidence.py（真机；含 read 五态 + write 两态）\n"
                  "python -m pytest test/offline/unit/test_view_type_param_contract.py -q  # 4 条 strict xfail：read 的空串/整数必须 ValueError",
         "evidence": "`test/artifacts/evidence/round8/p080-viewtype-p081-remote-path-2026-09-28.json`（live 五态 + write 两态）；"
@@ -328,7 +484,18 @@ OPEN = [
                    "均在套件中途 `virtuoso.maestro.read_config/write` 报 `RuntimeError: Empty response from daemon`；"
                    "同窗口 CDS.log 出现 `ERROR (ASSEMBLER-8001): Cannot determine a valid ADE Assembler session from "
                    "the supplied argument \"0\"` —— 有调用把**会话句柄 0** 传给了 ADE API（与 `delete_var` 报的 "
-                   "`Cannot find a setup database entry for handle 0` 同源嫌疑）。",
+                   "`Cannot find a setup database entry for handle 0` 同源嫌疑）。\n"
+                   "**第三次/第四次复现（22:06–22:12，HTTP 面，无并发）**：`maestro_e2e_tests.py --transport http` "
+                   "复跑两次，分别在 `virtuoso.maestro.run` 与 `virtuoso.maestro.read_config` 报同一句 "
+                   "`RuntimeError: Empty response from daemon`（证据 `../artifacts/evidence/round8/maestro-rerun3.out.log`）；"
+                   "失败后 3 连发 `1+2` 全部 ~0.3s 成功（自愈成立）。同分钟 CDS.log 出现 "
+                   "`ERROR (ASSEMBLER-2404): Cannot find a setup database entry for handle 0` + "
+                   "`ASSEMBLER-8001 … supplied argument \"0\"`（22:09:06 起同一 session 生命周期）。"
+                   "⇒ **同一实例上只有 maestro 套件稳定触发**，其它 9 套包与 base 五接口全绿，"
+                   "支持「maestro 调用序列把句柄 0 传给 ADE API → daemon 侧空响应」这一解释（待设计侧确认）。\n"
+                   "**持久形态根因（22:48 定位，见 P-095）**：`maestro.run` 的悬空 Overwrite-History 目标触发 "
+                   "`ASSEMBLER-3018` 模态框（CDS.log：`# Displaying modal dbox \"adexlMessageDialog\"`）→ CIW 阻塞；"
+                   "该形态 **8×15s 轮询不自愈**，需按 Runbook §10.3 重启实例。",
         "repro": "python test/semi/probes/twouser_same_view_probe.py --work-dir test/artifacts/env/log-vblog \\\n"
                  "  --token-a vb-vbuser1 --token-b vb-vbuser2 --lib serdes_rx --cell twouser_probe_r8 \\\n"
                  "  --out test/artifacts/evidence/round8/twouser-same-view-r8d.json\n"
@@ -369,8 +536,69 @@ OPEN = [
         "accept": "① spec 明确 `save` 语义（推荐：save=False 的改动必须被隔离 —— 关闭/丢弃或快照-回滚，后续 save 不得带走）；"
                   "② 实测第 3 步泄漏消失（旧变量仍 1.0），删参数则改为负向「传 save 被拒」；"
                   "③ `delete_var` 在复用会话/失败恢复路径可正常清理（或明确报可读错误）；④ 探针转 GREEN。",
-        "next": "设计侧定 `save` 隔离口径 + 修 delete_var handle 路径；测试侧把磁堢探针纳入半真机层并复跑 live WRITE-06。",
+        "next": "设计侧定 `save` 隔离口径 + 修 delete_var handle 路径；测试侧把磁盘探针纳入半真机层并复跑 live WRITE-06。",
         "reported": "2026-09-28（第八轮：live WRITE-06 首红 → 磁盘级探针确认隔离缺失）",
+        "updated": "2026-09-28",
+    },
+    {
+        "id": "P-095",
+        "layer": "上层（maestro 包）· GUI 模态",
+        "slug": "maestro-run-stale-overwrite-history-modal",
+        "title": "`maestro.run` 的 Overwrite History 目标悬空：`ASSEMBLER-3018` 模态框阻塞 CIW → daemon 空响应（watchdog 不处理）",
+        "level": "P1（可把实例 CIW 挂死；P-086 持久形态的直接根因）",
+        "owner": "设计侧（maestro 包 run 流程 + 对话框 watchdog）",
+        "status": "待设计修",
+        "where": "`src/pyapi/packages/maestro.py:2960-2973`（`request.history` 时 `axlSetOverwriteHistory(setup t)` + `axlSetOverwriteHistoryName(...)`，**运行后/无 history 时不清理或复位**）；"
+                 "`_start_simulation_with_watchdog`（未识别/未关闭 `ASSEMBLER-3018` 的 `adexlMessageDialog`）",
+        "symptom": "真机（vblog/maestro_tb rc_probe）实测链：先前 run 把 Overwrite History 设为 `Interactive.8`；该 history 之后不存在（cell 只剩 MonteCarlo.*）；"
+                   "再跑一次**不带 history** 的 `virtuoso.maestro.run` → ADE 弹模态 "
+                   "`ERROR (ASSEMBLER-3018): The history item 'Interactive.8' selected to be overwritten does not exist` + "
+                   "`# Displaying modal dbox \"adexlMessageDialog\", title \"ADE Assembler Message 3018\"` → CIW 阻塞，"
+                   "daemon 进入 **Empty response 窗口且 2 分钟不自愈**（8×15s 轮询全空响应；query 正常）。"
+                   "run 返回 `maeRunSimulation returned nil; diagnosis: {'current_form': None, 'sessions': []}`。",
+        "repro": "1) 复现窗口：`python test/artifacts/tmp/_r8_vblog_wait.py`（8×15s 全 Empty response）\n"
+                 "2) 现场：` ssh wsl-gent 'tail -n 8 ~/.virtuoso-bridge/vblog/run/CDS.log'` → ASSEMBLER-3018 模态行\n"
+                 "3) 恢复：`test/artifacts/tmp/hard_restart_user_instance.sh`（Gent 身份，端口 65121）",
+        "evidence": "CDS.log 22:48:02 现场（ASSEMBLER-3018 + adexlMessageDialog 两行）；"
+                    "`round8/coverage-main-r8.log` 中同族 Empty response 历史；P-086 卡片（本条是其持久形态的根因）",
+        "extra": "## 补充（2026-09-28 22:55，跨重启持久化实证）\n\n"
+                 "- 实例硬重启后，用 `open_gui` 拿到 session 后读 setup 标志：`(t \"Interactive.8\")` —— "
+                 "**悬空目标跨重启持久化在 .sdb 里**；\n"
+                 "- 手动 `axlSetOverwriteHistory(setup nil)` 后复核 `(nil \"Interactive.8\")`，再跑裸 `run` → "
+                 "`status=done, history=Interactive.0`（新 history 正常创建，不再弹框）。\n"
+                 "- 结论：run 流程必须在设置/使用后复位 Overwrite 标志，或运行前校验目标存在。\n",
+        "accept": "① run 结束（成功/失败/超时）后 Overwrite History 状态被复位（或每次 run 前校验目标存在、不存在即清 flag）；"
+                  "② watchdog 能识别并关闭 `adexlMessageDialog`/ASSEMBLER-3018（或在弹框前避免）；"
+                  "③ 复现件：不带 history 的 run 在悬空 overwrite 目标下**不得**挂死 CIW，且返回结构化失败；"
+                  "④ 无窗口期残留（P-086 复跑转绿）。",
+        "next": "设计侧修 run 的 overwrite 生命周期 + watchdog 覆盖 ASSEMBLER 模态；测试侧补红灯探针（悬空目标 → 期望结构化失败而非挂死）。",
+        "reported": "2026-09-28（第八轮：P-084/P-089 fixture 恢复时定位到根因）",
+        "updated": "2026-09-28",
+    },
+    {
+        "id": "P-096",
+        "layer": "上层（maestro 包）· 崩溃恢复 / OA 写锁",
+        "slug": "maestro-stale-write-lock-modal-wedge",
+        "title": "陈旧 OA 写锁（属主进程已死）触发 `axlOpenInRead0` 模态框 → CIW/daemon 再次挂死；应结构化失败或自动强制",
+        "level": "P2（崩溃后该 cell 的 maestro 打不开且会挂死实例，需人工删锁）",
+        "owner": "设计侧（maestro 打开/写路径的锁判定；可参考 schematic 的“locked by another session”结构化失败）",
+        "status": "待设计修",
+        "where": "现场：`/home/Gent/project/vblog/maestro_tb/rc_probe/maestro/maestro.sdb.cdslck`（属主为被 kill 的旧实例）；"
+                 "`src/pyapi/packages/maestro.py` 的 open/ensure-editable 路径（未先把死属主锁转成结构化失败）；"
+                 "CDS.log 弹框：`# Displaying modal dbox \"axlOpenInRead0\", title \"ADE Assembler Open View\"`",
+        "symptom": "实例被 kill 后留下 `maestro.sdb.cdslck`（写锁，属主进程已不存在）。新实例上 `maestro.open_gui` → "
+                   "`deOpenCellView failed ...: Empty response from daemon`，随后**所有 skill 请求空响应**（实例再次挂死）；"
+                   "CDS.log 显示 `Couldn't get a write lock ... currently \"write\" locked by user Gent on machine GLIS-DESKTOP (since …)` + 模态框。"
+                   "手动删除陈旧 `cdslck` 并重启实例后 open_gui 立即恢复成功（session fnxSession0, editing）。",
+        "repro": "1) 手工复现：杀掉带未释放锁的 maestro 实例 → 新实例 `python test/artifacts/tmp/_r8_opengui2.py` → 观察 Empty response + CDS.log 模态行\n"
+                 "2) 恢复：清 `<cellview>/*.cdslck` + 重启实例（见 `round8/../internal/环境Runbook-内部.md` §10.2/§10.3）",
+        "evidence": "CDS.log `Couldn't get a write lock … since Mon Sep 28 22:43:53` + `axlOpenInRead0` 两行；"
+                    "`_r8_opengui2.py` 输出；恢复后 open_gui ok 对照",
+        "accept": "① 打开/编辑前检测写锁属主：属主进程已死（或期望指纹不符）→ 返回结构化失败（或按产品口径自动强制/只读打开），**不得**弹模态；"
+                  "② 回归：`kill -9` 实例 → 新实例 open_gui 要么成功（死锁被正确处理）要么明确失败，CIW/daemon 不挂死；"
+                  "③ 与 P-095 的 watchdog 修复联动（ASSEMBLER/ADE 模态兜底）。",
+        "next": "设计侧定“死属主锁”处置口径并实现；测试侧在 `maestro_pkg_probe`/新探针里补“陈旧锁恢复”回归（先手工造锁再验证行为）。",
+        "reported": "2026-09-28（第八轮：vblog 崩溃恢复时实测）",
         "updated": "2026-09-28",
     },
 ]

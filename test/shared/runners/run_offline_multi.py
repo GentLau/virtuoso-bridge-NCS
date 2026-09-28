@@ -47,8 +47,18 @@ def _env() -> dict[str, str]:
 
 
 def _run(args: list[str]) -> subprocess.CompletedProcess[str]:
+    # 覆盖率口径修正（2026-09-28 第八轮）：离线三层是本仓库最大的一块用例
+    #（2400+），此前用裸 `python -m pytest` 跑，**完全不计入 coverage**，
+    # 导致汇总数字被系统性低估。父进程（run_main_coverage.ps1）设了
+    # COVERAGE_FILE 时，这里就用 `coverage run --branch --append` 跑，
+    # 顺序执行 + append 合并到同一份数据。
+    if os.environ.get("COVERAGE_FILE") and "--collect-only" not in args:
+        argv = [sys.executable, "-m", "coverage", "run", "--branch", "--append",
+                "--source=src", "-m", "pytest", "-p", "no:cacheprovider", *args]
+    else:
+        argv = [sys.executable, "-m", "pytest", "-p", "no:cacheprovider", *args]
     return subprocess.run(
-        [sys.executable, "-m", "pytest", "-p", "no:cacheprovider", *args],
+        argv,
         cwd=ROOT,
         env=_env(),
         text=True,

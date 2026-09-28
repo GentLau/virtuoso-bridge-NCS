@@ -293,3 +293,34 @@ wsl-gent 上还有 vbe2e / vbmu2 / vbmu3 三台非日常 CIW + 一个 65082 孤�
 `maestro_*` / `multiuser` / 长 skill 类用例**不要与另一个 vblog 使用者并发跑**：
 实测两路并发会让同 cell 的 ADE 会话交叉（`asiGet: no applicable method`、`Empty response`），
 表现为随机红但单跑即绿。跑覆盖率/整层前先 `pgrep -f maestro_e2e_tests` 确认没有别的长任务。
+
+### 10.6 vblog（Gent 主实例）的正确重启姿势（2026-09-28 踩坑后固化）
+
+**不要**对 vblog 直接用 `hard_restart_user_instance.sh Gent 65121` —— 它会调 Gent 家目录的
+`~/bringup_user.sh` 模板（期望 `/home/Gent/project/main/cds.lib`），而 vblog 的真实运行目录是
+`/home/Gent/.virtuoso-bridge/vblog/run`，结果把实例**杀掉但起不来**。正确姿势：
+
+```bash
+cd /home/Gent/.virtuoso-bridge/vblog/run
+rm -f CDS.log.cdslck
+nohup xvfb-run -a --server-args="-screen 0 1280x1024x24" \
+    virtuoso -cdslib ./cds.lib -log ./CDS.log > start.log 2>&1 &
+# ~25s 后 ss -ltn | grep 65121；.cdsinit 会自动 load setup → daemon 65121/token vb-vblog
+```
+
+杀旧实例要**按 cwd 精确匹配**（`readlink /proc/<pid>/cwd == .../vblog/run`）：calprobe 等实例
+同样是 Gent 用户，`pkill -f virtuoso` 会误伤。2026-09-28 发现同一 cwd 上残留过**两个** virtuoso
+（一个旧实例的 perfUtil 还在），一并清理后再启动才干净。
+
+**两种"模态挂死"现场与处置（P-095/P-096）**：
+
+1. `ADE Assembler Message 3018`（Overwrite History 目标不存在）：
+   `maestro.run` 设了 `axlSetOverwriteHistory(t)+名字` 但从不复位，目标被删后任何裸 run 都弹框。
+   现场判定：CDS.log `# Displaying modal dbox "adexlMessageDialog"`；恢复：重启实例后 `open_gui`
+   拿 session → `axlSetOverwriteHistory(setup nil)`（实测标志 `(t "Interactive.8")` **跨重启持久**）→
+   裸 `run` 产出新 `Interactive.0`。
+2. `axlOpenInRead0`（陈旧 OA 写锁，属主已死）：kill 实例留下的
+   `<cellview>/maestro.sdb.cdslck` 会让新实例 `deOpenCellView` 挂死。
+   处置：`rm -f <cellview>/*.cdslck` 后重启；Runbook §10.2 的"按 cwd 杀+清锁"同样适用 ADE cellview。
+
+两条都表现为先 `Empty response from daemon`、且**不会自愈**（区别于 §10.3 的 30–90s 窗口）。

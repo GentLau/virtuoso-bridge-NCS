@@ -14,6 +14,7 @@
 from __future__ import annotations
 
 import json
+import re
 import sys
 from collections import Counter, defaultdict
 from pathlib import Path
@@ -44,6 +45,34 @@ def check_evidence_path(token: str) -> str | None:
     return None
 
 
+#: `path/to/file.py (说明)` / `path:517（说明）` → 路径与注解分开，
+#: 让矩阵 JSON 的 evidence 是**纯路径**（第三方脚本可直接 exists 检查）。
+_TAIL_NOTE_RE = re.compile(r"^(?P<path>.+?)\s*[（(](?P<note>[^）)]*)[）)]\s*$")
+
+
+def split_evidence(token: str) -> tuple[str, str | None]:
+    text = str(token).strip()
+    match = _TAIL_NOTE_RE.match(text)
+    if match:
+        text, note = match.group("path").strip(), match.group("note").strip()
+    else:
+        note = None
+    # `path.py::test 说明文字`（无括号）也归一到纯路径
+    if " " in text:
+        text, extra = text.split(" ", 1)
+        note = f"{note}; {extra.strip()}" if note else extra.strip()
+    return text, note
+
+
+def evidence_items(raw) -> list[str]:
+    """group JSON 里 evidence 时而字符串、时而数组 —— 统一成数组再处理。"""
+    if raw is None:
+        return []
+    if isinstance(raw, str):
+        return [raw]
+    return [str(item) for item in raw]
+
+
 def main() -> int:
     rows: list[dict] = []
     group_rows: dict[str, list[dict]] = {}
@@ -53,6 +82,7 @@ def main() -> int:
         rows.extend(sub)
 
     problems: list[str] = []
+    normalized_rows: list[dict] = []
     for r in rows:
         vid = r["id"]
         v = r.get("verdict") or ""
@@ -65,18 +95,30 @@ def main() -> int:
             problems.append(f"{vid}: na 但无 reason")
         if v in ("partial", "gap") and not r.get("gap_test"):
             problems.append(f"{vid}: {v} 但无 gap_test")
-        for token in r.get("evidence") or []:
+        for token in evidence_items(r.get("evidence")):
             missing = check_evidence_path(token)
             if missing:
                 problems.append(f"{vid}: evidence 路径不存在 {missing}")
+        row = dict(r)
+        paths: list[str] = []
+        notes: list[str] = []
+        for token in evidence_items(r.get("evidence")):
+            path, note = split_evidence(token)
+            paths.append(path)
+            if note:
+                notes.append(note)
+        row["evidence"] = paths
+        if notes:
+            row["evidence_notes"] = notes
+        normalized_rows.append(row)
 
-    counts = Counter(r.get("verdict") for r in rows)
+    counts = Counter(r.get("verdict") for r in normalized_rows)
     by_doc: dict[str, Counter] = defaultdict(Counter)
-    for r in rows:
+    for r in normalized_rows:
         by_doc[r["doc"]][r["verdict"]] += 1
 
     (OUT / "round8-spec覆盖矩阵.json").write_text(
-        json.dumps(rows, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+        json.dumps(normalized_rows, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
 
     lines = [
         "# 第八轮 · Spec 条款覆盖矩阵（NORM 297 条逐条裁定）",
@@ -117,7 +159,7 @@ def main() -> int:
     (OUT / "round8-spec覆盖矩阵.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
     # gap actions
-    acts = [r for r in rows if r.get("gap_test")]
+    acts = [r for r in normalized_rows if r.get("gap_test")]
     act_lines = ["# 第八轮条款缺口动作（partial → 待补测试）", "",
                  f"> 共 {len(acts)} 条；完成后把对应行的 verdict 提升并回填证据。", ""]
     for r in acts:
@@ -127,7 +169,7 @@ def main() -> int:
                       f"- 待补：{r.get('gap_test')}", ""]
     (OUT / "round8-gap-actions.md").write_text("\n".join(act_lines) + "\n", encoding="utf-8")
 
-    print(f"merged {len(rows)} rows: {dict(counts)}")
+    print(f"merged {len(normalized_rows)} rows: {dict(counts)}")
     print(f"gap actions: {len(acts)}")
     if problems:
         print(f"VALIDATION PROBLEMS ({len(problems)}):")

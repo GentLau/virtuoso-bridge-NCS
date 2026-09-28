@@ -3,16 +3,17 @@
 | 字段 | 值 |
 |---|---|
 | 级别 | P2（参数合同不一致 + 死参数） |
-| 层 | 上层（verilog / veriloga 包） |
+| 层 | 上层（verilog / veriloga / layout 包） |
 | 归属 | 设计侧（verilog / veriloga 包）；"view_type 是否参与寻址"需 spec owner 定口径 |
 | 状态 | **待设计修** |
-| 位置 | `src/pyapi/packages/verilog.py:201-230`（read 不碰 view_type）、`:307`（只有 write 校验）、`_view_dir:161`（不使用 view_type）；`src/pyapi/packages/veriloga.py:205-235`、`:476`、`_view_dir:145`。主文件名 `MAIN_FILE` 硬编码，与 spec `8-verilog.md:45`『主文件名由 viewType 决定（`ddMapGetDataTypeFileName` 查）』不一致。 |
+| 位置 | `src/pyapi/packages/verilog.py:201-230`（read 不碰 view_type）、`:307`（只有 write 校验）、`_view_dir:161`（不使用 view_type）；`src/pyapi/packages/veriloga.py:205-235`、`:476`、`_view_dir:145`。主文件名 `MAIN_FILE` 硬编码，与 spec `8-verilog.md:45`『主文件名由 viewType 决定（`ddMapGetDataTypeFileName` 查）』不一致。截图面同族两处：`src/pyapi/packages/symbol.py:84-96`（ScreenshotRequest.view_type，只透传给 geOpen）、`src/pyapi/packages/layout.py:98-109`（同）；两处对 `view_type="bogus_type_xyz"` 都静默成功。 |
 | 首报 | 2026-09-28（第八轮 op×param 参数矩阵攻击发现，卡片直报） |
 | 最近更新 | 2026-09-28 |
 
 ## 现象
 
 真机（vblog）实测：`read(view_type="")`、`read(view_type=123)`、`read(view_type="bogus_type_xyz")` 全部 `ok=true` 且返回默认视图内容（静默忽略取参）；同一字段 `write(view_type="")` 返回 400 `invalid request: view_type must be a non-empty string`，而 `write(view_type="bogus_type_xyz")` 返回 ok。read/write 校验口径不一致；非默认取值对寻址/主文件名没有任何可观察影响。
+**同族第三处（2026-09-28 新增，layout 包）**：`virtuoso.layout.screenshot(view_type="bogus_type_xyz")` 也返回 ok=true 并出图（`view_type="maskLayout"` 与 bogus 之间无可观察差异）；`virtuoso.symbol.screenshot(view_type="bogus_type_xyz")` 同样 ok=true。两条都被新 TB `test/live/packages/screenshot_params_e2e_tests.py`（SC-06）红钉住（跑 `--kind symbol` / `--kind layout` 会在 SC-06 转红——这是**预期红钉**，不是 TB 坏了）。
 
 ## 复现
 

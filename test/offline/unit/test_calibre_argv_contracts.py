@@ -16,6 +16,8 @@ import types
 import unittest
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -67,6 +69,21 @@ class TestArgvFor(unittest.TestCase):
     def test_drc_flat_omits_hier_flag(self):
         argv = _argv_for("drc", _request(hier=False), "calibre", "/run", "deck")
         self.assertEqual(argv, [["calibre", "-drc", "-turbo", "4", "/run/run_drc.cal"]])
+
+    @pytest.mark.xfail(strict=True, reason="P-093: flat 模式带 -turbo 非法（Calibre 打 usage）")
+    def test_drc_flat_argv_is_valid(self):
+        """方向无关的红灯钉（P-093）：两种被认可的修法都要让本用例转绿。
+
+        ① 若实现选择"拒绝"该组合 → `_argv_for` 抛 ValueError（本用例直接通过）；
+        ② 若实现选择"flat 时不带 -turbo" → argv 中不得出现 `-turbo`。
+        当前实现两者皆非（flat 仍带 `-turbo 4`）→ 断言失败 → strict-xfail（按预期红）。
+        修复后 XPASS(strict) 会转红提醒删除该标记。
+        """
+        try:
+            argv = _argv_for("drc", _request(hier=False), "calibre", "/run", "deck")
+        except ValueError:
+            return  # 方案①：显式拒绝
+        self.assertNotIn("-turbo", argv[0], f"flat DRC 不得带 -turbo（P-093）: {argv}")
 
     def test_lvs_hierarchical(self):
         argv = _argv_for("lvs", _request(hier=True, turbo=8), "c", "/run", "deck")

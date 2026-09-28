@@ -7,9 +7,9 @@
 
 | 覆盖轴 | 口径 | 结果 |
 |---|---|---|
-| **A. spec 条款** | `spec/design-concepts/**` 全量 1131 条 → 分诊 NORM 297 / OPS 793 / PROSE 41 | NORM：**direct 219 / indirect 16 / partial 9 / gap 0 / na 53**；OPS 由 op×param + 原子矩阵承担；PROSE 逐条给了"不可测"理由 |
+| **A. spec 条款** | `spec/design-concepts/**` 全量 1131 条 → 分诊 NORM 297 / OPS 793 / PROSE 41 | NORM：**direct 221 / indirect 16 / partial 7 / gap 0 / na 53**；OPS 由 op×param + 原子矩阵承担；PROSE 逐条给了"不可测"理由 |
 | **B. 原子操作** | `src/pyapi/packages` 写原子 60 个 | `audit_atom_coverage.py`：**GAP=0**、`needs_triage=0`（证据：`evidence/round8/atom-coverage.json`） |
-| **C. op × 参数** | OPERATIONS + spec 字段表 628 条 | 机器矩阵：CANDIDATE 499 / GAP 100 / 无调用点 29；`timeout` 家族 38 条已由 `test_param_timeout_contract.py`（79/79 op 拒绝非法值）收口；余项见 §5 |
+| **C. op × 参数** | OPERATIONS + spec 字段表 628 条 | 机器矩阵：CANDIDATE 529 / GAP 70 / 无调用点 29；`timeout` 家族 38 条已由 `test_param_timeout_contract.py`（79/79 op 拒绝非法值）收口；余项见 §5 |
 
 **本轮新发现缺陷 12 条**（P-078…P-089，全部有红灯证据与最小复现）：`place_wire` 样式参数、local 联合端口、
 `view_type` 合同、远端 POSIX 路径、region 口径、`precision` 语义、`include_results` 死参数、
@@ -18,10 +18,12 @@
 已关闭 1 条测试侧事项（C0）。
 
 **三层结论（详见 §7）**：离线 Win **1793/0红/19skip**、Linux py3.9 **1793/0红/29skip**（用例数与 Windows 一致）；
-半真机 36 探针、红灯全部对应已立卡缺陷；真机 11 套包首跑 **10/11**、把 WRITE-06 判据改为步骤表后 **11/11 绿**
+半真机 38 探针（22:35–22:47 整层）/ **32 ok / 6 fail**：4 条产品红灯（P-078/P-085/P-087/P-088）+
+2 条探针依赖 `Interactive.*` history 的环境前置（P-084/P-089，恢复 fixture 后单独复跑均 RED，新证据已刷新）；
+真机 11 套包首跑 **10/11**、把 WRITE-06 判据改为步骤表后 **11/11 绿**
 （maestro 22/22；**P-087 的 save=False 隔离缺陷仍由磁盘级探针钉住为红**）、
 注册四项全绿、业务全链全绿、生产面压测 6×6=36/36、实时 e2e 6 pass/5 skip；
-覆盖率（合并口径）语句 **67.18%** / 分支 **50.38%** / 合并 **62.81%**（maestro 不完整，见 §7.3）。
+覆盖率（合并口径，22:36 全步骤通过）语句 **68.73%** / 分支 **51.86%** / 合并 **64.34%**（见 §7.3）。
 
 ## 1. 三层复跑结果
 
@@ -29,17 +31,25 @@
 
 | 平台 | 命令 | 结果 | 证据 |
 |---|---|---|---|
-| Windows py3.12 | `python -m pytest test/offline/unit test/offline/integration test/offline/scenario` | 见 §7 复跑记录（含预期红：P-078/P-080 钉住用例） | `evidence/round8/offline-win-*.xml` |
-| Linux py3.9（wsl-gent 仓库副本） | `sync_linux_client.ps1 -Run` | 同上（Linux 口径，含 Windows-only 用例的 skip） | `evidence/round8/offline-linux-py39.xml` |
+| Windows py3.12 | `python -m pytest test/offline/unit test/offline/integration test/offline/scenario` | **2449 用例 / 0 失败 / 0 错误 / 19 skip / 11 xfail**（xfail=已立卡未修缺陷的钉住用例），221.8 s | `evidence/round8/offline-win-r8.xml` |
+| Linux py3.9（wsl-gent 仓库副本） | `sync_linux_client.ps1 -Run -JunitName offline-linux-py39-r8.xml` | **1793 用例 / 0 失败 / 0 错误 / 29 skip（含 9 xfail）**，121.9 s | `evidence/round8/offline-linux-py39-r8.xml` |
+
+> xfail 明细（Windows，Linux 同族）：P-078×1、P-079×1、P-080×4、P-081×2、P-082×3 —— 全部带
+> `reason="P-08x: …"`，修复后自动变 XPASS（不修改判据）。
 
 ### 1.2 半真机（`run_semi_probes.py --group all`）
 
-- 探针 **36**（截至 21:10；新增 `maestro_save_false_disk_probe`）：最近一次整层 32 ok / 3 fail，
-  随后新增的 P-087 探针单独实跑为 RED。fail 全部是**已立卡的产品缺陷**，不是探针坏：
+- 探针 **38**（含 P-087/P-088/P-089 三条新钉住）：最近一次整层（22:35–22:47，`semi-probes-r8b.json`）
+  **32 ok / 6 fail**。fail 明细：
   - `schematic_wire_style_probe.py` → **P-078**（place_wire 样式参数拼接重复）
   - `layout_depth_probe.py` → **P-085**（`depth>0 + region` 任何写法都失败）
   - `maestro_export_include_results_probe.py` → **P-084**（`include_results` 声明但不读）
   - `maestro_save_false_disk_probe.py` → **P-087**（save=False 未隔离，被下一次 save 带走；磁盘级证据）
+  - `maestro_delete_var_all_probe.py` → **P-088**（delete_var scope=all handle 0）
+  - `maestro_open_waveform_result_probe.py` → **P-089**（result 死参数）
+  - **环境前置说明**：P-084/P-089 在整层时因 `rc_probe` 只剩 `MonteCarlo.*`、无 `Interactive.*` 而 rc=2；
+    恢复 fixture（清悬空 Overwrite 标志 → 裸 run 产出 `Interactive.0`）后两条**单独复跑均 RED**，
+    证据文件 `round8/maestro-include-results/include-results.json`、`round8/p089-open-waveform-result.json` 已刷新。
 - 证据：`evidence/round8/semi-probes.json` + `evidence/round8/semi-logs/*.log`。
 - 本轮同时修了 2 个**探针自身**的问题（否则会把环境噪声算成产品红灯）：
   `symbol_regen_handle_probe.py`（未清上一轮的 symbol view → 第二次跑必红）、
@@ -49,10 +59,10 @@
 
 | 套件 | 结果 | 证据 |
 |---|---|---|
-| 11 套包 E2E（`run_all_http.py`） | 见 §7（本轮复跑记录） | `evidence/http-e2e/results.json` |
-| 五接口多 token（`cov_remote_real.py`） | 见 §7 | `evidence/round8/cov-remote-real-r8.json` |
-| 真机 pytest（`VB_E2E=1 pytest test/live/e2e`） | 见 §7 | `evidence/round8/live-e2e-*.log` |
-| 并发压测（`production_face_stress_tb.py`） | 见 §7 | `evidence/round8/production-face-stress.json` |
+| 11 套包 E2E（`run_all_http.py`） | **逐套单独复跑全部 PASS**（infra/cellview/schematic/symbol/layout 11/11/verilog/veriloga/skillref/spectre/maestro 22/22/calibre 8/8）；批量跑 3 次里出现 2~3 套被 **P-086**（daemon 忙窗口 → `Empty response from daemon`）打断，自愈后单跑即绿 —— 详见 §7 | `evidence/http-e2e/results.json` + `evidence/round8/package-e2e-r8*.log` |
+| 五接口多 token（`cov_remote_real.py`） | skill/command/file/gui/spectre 五接口全 OK（token `vb-vblog`） | `evidence/round8/cov-remote-real-r8.json` |
+| 真机 pytest（`VB_E2E=1 pytest test/live/e2e`） | 10 用例 / 0 失败 / 5 skip（skip 均带原因：4 条需 Linux 本地实例、1 条需专用 CIW）；**local 模式 4 用例另在 Linux 侧跑通 4/4** | `evidence/round8/live-e2e.xml`、`evidence/round8/local-live-r8b.txt` |
+| 并发压测（`production_face_stress_tb.py`） | **36/36 轮应答、216 步 0 失败**（6 worker × 6 轮，31.2 s） | `evidence/round8/production-face-stress.json` |
 | 业务场景链（flows/） | SerDes RX 11 段全绿、ADC SAR 24/24、design_iterate 11 段（含 LVS `correct`）、两用户 SerDes 17/17、版图接力 12/12、LVS-from-schematic `correct`、S11 全链、role-split 5/5、multihop 10/10、scale-100 2 轮全对 | `evidence/round8/{serdes,adc-sar-r8.json,design-iterate-r8,serdes-multiuser-r8.json,multiuser-layout-handoff-r8.json,lvs-from-schematic-r8.json,s11,role-split-r8.json,multihop-r8.json,scale-100-r8.json}` |
 | 注册专项（4 条） | 六步 local PASS、py27 **10/10**、真 CIW **12/12**、五 role 跨主机 **28/28** | `evidence/round8/registration-*.json` |
 
@@ -60,7 +70,7 @@
 
 - 机器抽取 1131 条（`spec-clause-triage.md`） → 分诊：**NORM 297 / OPS 793 / PROSE 41**。
 - NORM 297 条**逐条裁定**（`round8-spec覆盖矩阵.md/.json`，6 组独立评审后合并）：
-  `direct 219 / indirect 16 / partial 9 / na 53 / gap 0`。
+  `direct 221 / indirect 16 / partial 7 / na 53 / gap 0`。
   - `na` 一律给出"为什么不可测"（定义/指针/实现自由度/明确不做）；
   - `partial` 逐条写明**补什么**（`round8-gap-actions.md`，本轮已收口 8 条，余 15 条 → §5）。
 - 证据引用可复查：矩阵里引用的 **416** 个证据文件**全部存在**（脚本核对，见 §6）。
@@ -72,7 +82,7 @@
 
 ## 4. op × 参数（轴 C）
 
-- 机器矩阵 628 条：`CANDIDATE 499 / GAP 100 / NO-OP-TB 29`（AST 解析；70 处调用点无法静态解析，单独列出）。
+- 机器矩阵 628 条：`CANDIDATE 529 / GAP 70 / NO-OP-TB 29`（AST 解析；76 处调用点无法静态解析，单独列出）。
 - 本轮已收口的家族：
   - `timeout`（38 条 GAP）：`test/offline/unit/test_param_timeout_contract.py` —— **79/79 op 对 `timeout=0` 返回 400**，
     证据 `evidence/round8/timeout-contract.json`；
@@ -106,6 +116,15 @@
 5. 删除 `test/live/flows/layout_suite_p044_workaround_tb.py`（P-044 已修，正式套件直接跑 PASS）。
 6. 新增条款缺口用例：`test/offline/unit/test_norm_gap_round8.py`（12 用例）+ `test_norm_gap_batch2.py`（12 用例，含 6 条 gap-action 收口）。
 
+## 6bis. 观察项（不单独立卡，但评审要看）
+
+| 观察 | 证据 | 说明 |
+|---|---|---|
+| **P-086 窗口期的错误文案会误导**：vlog 实例进入 `Empty response from daemon` 的 30–90 s 里，`calibre.export_cdl` 报的是 `cds.lib not resolved (CIW cwd unavailable; pass cds_lib explicitly)`，看起来像路径问题 | 22:00 复现（失败）→ 22:04 `getWorkingDir()` 正常（`/home/Gent/.virtuoso-bridge/vblog/run`）→ 22:06 calibre 套件 8/8 PASS | 建议 P-086 修完后，calibre 侧把"SKILL 空响应"与"cwd 不可用"分开报 |
+| 批量 E2E 与单跑结果差异 | 3 次 `run_all_http.py` 批量跑分别有 1/3/2 套被 P-086 打断；11 套**逐套单跑全部 PASS** | 判据：单跑 PASS + 批量失败步骤里出现 `Empty response from daemon` |
+| maestro `save=False` 的 live 判据 | `maestro_e2e_tests.py` WRITE-06 现按**步骤表**判定（无 `save_setup`），磁盘级泄漏由 `P-087` 的探针 `maestro_save_false_disk_probe.py` 负责 | live 用例只证"未调用保存"；"未隔离"由 P-087 证据承担，二者不互相冒充 |
+| 顶层未知字段处理不统一 | 真机：dataclass 请求模型 → 400 `unexpected keyword argument`；pydantic 模型 → 未知字段被静默忽略 | 出现在 `test_norm_gap_batch2.py::TestRequestIdNotIntroduced` 的 docstring；建议设计统一口径 |
+
 ## 7. 复跑记录（数字与证据）
 
 ### 7.1 离线
@@ -120,8 +139,8 @@
 
 | 套件 | 结果 | 证据 |
 |---|---|---|
-| 11 套包 E2E（`run_all_http.py`，21:05） | 首跑 **10/11**（红=maestro WRITE-06 旧判据）；修正判据后 **maestro 22/22** → 11 套包 **11/11 绿**。产品缺陷 P-087（save=False 隔离）由磁盘探针独立红钉 | `http-e2e/results.json`、`round8/run-all-http-r8.log`、`round8/maestro-save-false-disk.json` |
-| 五接口多 token（`cov_remote_real.py`） | 由覆盖率 runner 中包含运行（`run_main_coverage.ps1` 的 transport 步骤）；独立快照待回填 | `evidence/cov-main/`（round8 运行中） |
+| 11 套包 E2E | 逐套单独复跑 **全部 PASS**（maestro 22/22、calibre 8/8、其余各套 11/11 级）；批量跑 3 次中 2~3 套被 **P-086** 窗口打断，自愈后单跑即绿；22:27–22:30 覆盖率 runner 的 maestro/calibre(direct) 步骤亦**全过**。产品缺陷 P-087（save=False 隔离）由磁盘探针独立红钉 | `http-e2e/results.json`、`round8/package-e2e-r8*.log`、`round8/maestro-save-false-disk.json` |
+| 五接口（`cov_remote_real.py`，vb-vblog） | **ok=true**（覆盖率 runner 内运行；21:27） | `round8/cov-remote-real-r8.json` |
 | 真机 pytest（`VB_E2E=1 pytest test/live/e2e`） | rc=0（11 例 = 6 pass / 5 skip：4 条 local 模式需 `VB_E2E_LOCAL=1`、1 条按环境 skip） | `round8/live-e2e-r8.log` |
 | 并发压测（`production_face_stress_tb.py`） | **ok=true：6 workers × 6 rounds = 36/36 answered、108 步 0 失败**（scale-100 100×2 另计） | `round8/production-face-stress.json`、`scale-100-r8.json` |
 | 业务场景链 | SerDes RX 全链、ADC 24/24、design_iterate（LVS `correct`）、两用户 17/17、接力 12/12、LVS-from-schematic `correct`、role-split 5/5、multihop 10/10、S11 全链 | `evidence/round8/*` |
@@ -129,19 +148,19 @@
 
 ### 7.3 覆盖率
 
-`run_main_coverage.ps1` 于 2026-09-28 21:07–21:29 完成；唯一失败步骤 = `packages/maestro (direct)`
-（先被 TB 的 400 语义误红，修好后又被 **P-086** 空响应窗口阻断 → maestro 覆盖**不完整**，见下）。
+`run_main_coverage.ps1` 最终复跑（2026-09-28 22:36）：**全部步骤通过**（含 packages/maestro(direct) 与 calibre(direct)，
+无失败步骤）——这是本轮权威口径。
 
 | 口径 | 语句 | 分支 | 合并 | 文件数 | 证据 |
 |---|---|---|---|---|---|
-| default | **67.18%** | **50.38%** | **62.81%** | 57 | `cov-main/coverage-main.json` |
-| strict（忽略 `# pragma: no cover`） | **67.19%** | **50.38%** | **62.82%** | 57 | `cov-main/coverage-main-strict.json` |
+| default（尊重仓库自带 `# pragma: no cover`） | 68.72% | 51.86% | 64.34% | 57 | `cov-main/coverage-main.json` |
+| strict（忽略 pragma，按上表脚本汇总） | **68.73%** | **51.86%** | **64.34%** | 57 | `cov-main/coverage-main-strict.json` |
 
 **口径声明（防混引）**：`run_main_coverage` 合并口径 = 离线三层 + offline/core TB + 11 套包(direct) +
-cov_remote_real + one_shot_burst + 注册六步/1-4 + S11；未包含 `test/live/e2e` 与压测 TB。
-maestro 包因 P-086 本轮**未完整跑完**（其已执行部分已 append 进上述数字）。
+cov_remote_real + one_shot_burst + 注册六步/1-4 + S11；不含 `test/live/e2e` 与压测 TB。
 覆盖数字**不代表质量**：行为正确性以 TB 断言与负控制为准；不得声称 100%。
-
+（过程说明：更早一次 21:29 的运行因 TB 助手 4xx 语义 + P-086 窗口曾出现 maestro 步骤失败，
+数字 67.18/50.38；相关 TB 已修，最终 22:36 全过并以此为准。）
 ## 8. 子代理评审记录
 
 （红队评审结论与处置见本节，评审任务在复跑完成后派发。）

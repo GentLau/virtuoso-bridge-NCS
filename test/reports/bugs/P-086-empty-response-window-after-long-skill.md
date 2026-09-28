@@ -14,6 +14,8 @@
 
 复现 4/4（2026-09-28）：跑完 twouser 多用户同视图场景后，**同 token 新请求立即得到 `Empty response from daemon`**；raw socket 新建连接 6s 内未被 accept（daemon 忙，wchan=hrtimer_nanosleep）。CLEAN 步记录 `holder_still_running=false`（holder 已结束）。**约 30–90s 后自愈**（python daemon 回到 `inet_csk_accept`，`1+2` 恢复 SUCCESS='3'），无需重启实例。
 **加强证据（21:30–21:38，无并发）**：`maestro_e2e_tests.py --transport direct` 单独跑两次，均在套件中途 `virtuoso.maestro.read_config/write` 报 `RuntimeError: Empty response from daemon`；同窗口 CDS.log 出现 `ERROR (ASSEMBLER-8001): Cannot determine a valid ADE Assembler session from the supplied argument "0"` —— 有调用把**会话句柄 0** 传给了 ADE API（与 `delete_var` 报的 `Cannot find a setup database entry for handle 0` 同源嫌疑）。
+**第三次/第四次复现（22:06–22:12，HTTP 面，无并发）**：`maestro_e2e_tests.py --transport http` 复跑两次，分别在 `virtuoso.maestro.run` 与 `virtuoso.maestro.read_config` 报同一句 `RuntimeError: Empty response from daemon`（证据 `../artifacts/evidence/round8/maestro-rerun3.out.log`）；失败后 3 连发 `1+2` 全部 ~0.3s 成功（自愈成立）。同分钟 CDS.log 出现 `ERROR (ASSEMBLER-2404): Cannot find a setup database entry for handle 0` + `ASSEMBLER-8001 … supplied argument "0"`（22:09:06 起同一 session 生命周期）。⇒ **同一实例上只有 maestro 套件稳定触发**，其它 9 套包与 base 五接口全绿，支持「maestro 调用序列把句柄 0 传给 ADE API → daemon 侧空响应」这一解释（待设计侧确认）。
+**持久形态根因（22:48 定位，见 P-095）**：`maestro.run` 的悬空 Overwrite-History 目标触发 `ASSEMBLER-3018` 模态框（CDS.log：`# Displaying modal dbox "adexlMessageDialog"`）→ CIW 阻塞；该形态 **8×15s 轮询不自愈**，需按 Runbook §10.3 重启实例。
 
 ## 复现
 

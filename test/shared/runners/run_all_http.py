@@ -27,6 +27,8 @@ SUITES = [
     "skillref_e2e_tests.py",
     "spectre_e2e_tests.py",
     "maestro_e2e_tests.py",
+    # 第八轮新增：screenshot 参数面（window_id/region/toplevel/central_widget/view_type）
+    "screenshot_params_e2e_tests.py",
     # P-060：calibre 进常驻套件（此前 0 真机覆盖）；依赖常驻注册表里的 role.command.calibre.bin
     "calibre_e2e_tests.py",
 ]

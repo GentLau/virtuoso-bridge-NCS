@@ -42,3 +42,13 @@
 
 **处置**：① g4 的函数名过时 → 合并稿时改为 `_case_negative`；② veriloga#068/#096 → 状态下调为 🟡，
 并列入"缺口动作"（补离线生成式缺席断言）；已通知 verilog/veriloga 车道的子代理。
+
+**闭环更新（2026-09-28 22:44）**：
+
+- ① 已修：`norm-review/g4-edit.json` 中 `schematic#048` 证据改为 `schematic_e2e_tests.py::_case_negative`，
+  重新合并后 `merge_round8_spec_matrix.py` 的路径/函数校验通过。
+- ② 已补：车道交付 `test/offline/unit/test_veriloga_lazy_editor_contract.py`（含
+  `test_check_and_save_sequence_and_absence`：对 `FORBIDDEN_CALLS=(ahdlCheckModule, ahdlSaveFile, ahdlEdit)`
+  逐一 `assertNotIn` 生成文本；`test_write_ops_do_not_touch_view_info`；`test_cold_context_uses_full_path_load_context`）。
+  `veriloga#068/#096` 证据已回填该文件，verdict 维持 direct（有真实断言）。
+  全仓 `rg "ahdlCheckModule|ahdlSaveFile|ahdlEdit" test/` 现在命中该专测。

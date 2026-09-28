@@ -99,6 +99,10 @@ PROBES: dict[str, dict] = {
         "maestro", [], "业务面 8127 + rc_probe history（P-084 红灯钉）"),
     "maestro_save_false_disk_probe.py": entry(
         "maestro", [], "业务面 8127 + maestro_tb/rc_probe 磁盘 sdb（P-087 红灯钉）"),
+    "maestro_delete_var_all_probe.py": entry(
+        "maestro", [], "业务面 8127 + maestro_tb/rc_probe（P-088 红灯钉：delete_var scope=all）"),
+    "maestro_open_waveform_result_probe.py": entry(
+        "maestro", [], "业务面 8127 + rc_probe history（P-089 红灯钉：open_waveform_gui.result 被忽略）"),
     "maestro_pkg_probe.py": entry("maestro", [], "真 Virtuoso"),
     "maestro_session_conflict_probe.py": entry("maestro", [], "只读诊断（真 Virtuoso）"),
     "maestro_leak_probe.py": entry("maestro", [], "被 import 的库（无 __main__，单跑会红）"),
@@ -108,6 +112,8 @@ PROBES: dict[str, dict] = {
     "calibre_cdl_probe.py": entry("calibre", [], "PDK 实例 + auCdl"),
     "cdl_export_variants_probe.py": entry("calibre", [], "PDK 实例 + 多参数导出"),
     "calibre_package_http_probe.py": entry("calibre", ["--kind", "env"], "业务面 8127（默认 8127/vb-vblog）"),
+    "calibre_flat_turbo_probe.py": entry(
+        "calibre", [], "业务面 8127（P-093/P-094 红灯钉：flat DRC 的 -turbo 非法 + 工具秒退不报失败）"),
     "spectre_ac_pipeline_probe.py": entry("spectre", [], "PDK 实例"),
     "skill_syntax_matrix_tb.py": entry("skill", [], "业务面 8127"),
     # `--tree` 需要具体目录；主用法是 `--check`（远端树 → 本地解析）

@@ -1,36 +1,36 @@
 {
   "source_json": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\evidence\\cov-main\\coverage-main-strict.json",
   "totals": {
-    "covered_lines": 11641,
+    "covered_lines": 15480,
     "num_statements": 17325,
-    "percent_covered": 62.819800965275704,
-    "percent_covered_display": "63",
-    "missing_lines": 5684,
+    "percent_covered": 87.06274292059966,
+    "percent_covered_display": "87",
+    "missing_lines": 1845,
     "excluded_lines": 58,
-    "percent_statements_covered": 67.1919191919192,
-    "percent_statements_covered_display": "67",
+    "percent_statements_covered": 89.35064935064935,
+    "percent_statements_covered_display": "89",
     "num_branches": 6088,
-    "num_partial_branches": 1477,
-    "covered_branches": 3067,
-    "missing_branches": 3021,
-    "percent_branches_covered": 50.377792378449406,
-    "percent_branches_covered_display": "50"
+    "num_partial_branches": 856,
+    "covered_branches": 4904,
+    "missing_branches": 1184,
+    "percent_branches_covered": 80.55190538764784,
+    "percent_branches_covered_display": "81"
   },
   "derived": {
-    "statement_pct": 67.19,
-    "branch_pct": 50.38,
-    "combined_pct": 62.82,
+    "statement_pct": 89.35,
+    "branch_pct": 80.55,
+    "combined_pct": 87.06,
     "files": 57,
-    "missing_line_entries": 5684,
-    "missing_branch_entries": 3021
+    "missing_line_entries": 1845,
+    "missing_branch_entries": 1184
   },
   "classification": {
     "counts": {
-      "unclassified": 5626,
-      "defensive": 8,
-      "env-blocked": 50
+      "unclassified": 1815,
+      "env-blocked": 26,
+      "defensive": 4
     },
-    "unclassified_count": 5626,
+    "unclassified_count": 1815,
     "invalid_entries": [],
     "stale_rules": [],
     "classification_file": null,

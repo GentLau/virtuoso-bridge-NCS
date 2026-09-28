@@ -991,9 +991,10 @@
   "premap_status": "NONE",
   "verdict": "direct",
   "evidence": [
-   "test/offline/unit/test_veriloga_contracts.py::test_check_and_save_sequence"
+   "test/offline/unit/test_veriloga_lazy_editor_contract.py::test_check_and_save_sequence_and_absence",
+   "test/offline/unit/test_veriloga_lazy_editor_contract.py::test_write_ops_do_not_touch_view_info"
   ],
-  "reason": "check_and_save 序列不含 ahdlCheckModule/SaveFile/Edit（防模态阻塞），有断言",
+  "reason": "check_and_save 序列不含 ahdlCheckModule/SaveFile/Edit（防模态阻塞）：原生成式断言 + 第八轮新增**缺席断言**专测（FORBIDDEN_CALLS 逐一 assertNotIn）",
   "gap_test": ""
  },
  {
@@ -1211,9 +1212,10 @@
   "premap_status": "NONE",
   "verdict": "direct",
   "evidence": [
-   "test/offline/unit/test_veriloga_contracts.py"
+   "test/offline/unit/test_veriloga_contracts.py",
+   "test/offline/unit/test_veriloga_lazy_editor_contract.py::test_check_and_save_sequence_and_absence"
   ],
-  "reason": "不得使用 ahdlCheckModule/ahdlSaveFile 等模态包装：生成式缺席断言",
+  "reason": "不得使用 ahdlCheckModule/ahdlSaveFile 等模态包装：生成式缺席断言 + 第八轮专测（FORBIDDEN_CALLS）",
   "gap_test": ""
  },
  {

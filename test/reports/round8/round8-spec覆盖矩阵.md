@@ -1,7 +1,7 @@
 # 第八轮 · Spec 条款覆盖矩阵（NORM 297 条逐条裁定）
 
 > 生成：`test/shared/runners/merge_round8_spec_matrix.py` ｜ 基线：HEAD=64c803c（工作区被测）
-> 统计：direct 219 / indirect 16 / partial 9 / gap 0 / na 53（共 297）
+> 统计：direct 221 / indirect 16 / partial 7 / gap 0 / na 53（共 297）
 
 判定口径：
 - **direct**：有直接判据（读回/数值/字节/结构化断言）；**indirect**：由下游消费间接体现；
@@ -16,7 +16,7 @@
 | g1-core | 50 | 41 | 2 | 1 | 0 | 6 |
 | g2-mid | 46 | 27 | 2 | 0 | 0 | 17 |
 | g3-reg | 44 | 34 | 1 | 0 | 0 | 9 |
-| g4-edit | 60 | 45 | 5 | 3 | 0 | 7 |
+| g4-edit | 60 | 47 | 5 | 1 | 0 | 7 |
 | g5-sim | 54 | 40 | 4 | 2 | 0 | 8 |
 | g6-calibre | 43 | 32 | 2 | 3 | 0 | 6 |
 
@@ -168,12 +168,12 @@
 | schematic#014 | 上层/2-schematic.md | **direct** | object_filter 逐条目 all/none/names/region 与不写默认 all，有断言 | test/offline/unit/test_schematic_contracts.py::test_instance_filter_all_none_names_region<br>test/offline/unit/test_schematic_contracts.py::test_shape_filter_none_dict_and_invalid |
 | schematic#015 | 上层/2-schematic.md | **direct** | instance 过滤四形态有离线断言 + 真机 read 过滤用例 | test/offline/unit/test_schematic_contracts.py::test_instance_filter_all_none_names_region<br>test/live/packages/schematic_e2e_tests.py |
 | schematic#016 | 上层/2-schematic.md | **direct** | wire/label/pin/note 共用的 shape 过滤 none/region 有断言（names 非法有负控制） | test/offline/unit/test_schematic_contracts.py::test_shape_filter_none_dict_and_invalid |
-| schematic#017 | 上层/2-schematic.md | **direct** | focus=connectivity 时 object_filter 必须被忽略，已由第八轮补测直接断言（connectivity 场景下 SKILL 文本不含 sentinel 过滤名；positions 场景下必须含）。 | t<br>e<br>s<br>t<br>/<br>o<br>f<br>f<br>l<br>i<br>n<br>e<br>/<br>u<br>n<br>i<br>t<br>/<br>t<br>e<br>s<br>t<br>_<br>n<br>o<br>r<br>m<br>_<br>g<br>a<br>p<br>_<br>b<br>a<br>t<br>c<br>h<br>2<br>.<br>p<br>y<br>:<br>:<br>T<br> |
-| schematic#018 | 上层/2-schematic.md | **partial** | screenshot 基本路径（lib/cell/view + PNG）有真机用例；`window_id/region/toplevel/central_widget` 参数属第八轮 op×param GAP（shot_family 子代理补测中）；region 形状同时受 P-082（两点 vs  ｜ **缺口**: shot_family 交付后回填；P-082 修复后 region 用例需改两点 | test/live/packages/schematic_e2e_tests.py::_case_screenshot |
+| schematic#017 | 上层/2-schematic.md | **direct** | focus=connectivity 时 object_filter 必须被忽略，已由第八轮补测直接断言（connectivity 场景下 SKILL 文本不含 sentinel 过滤名；positions 场景下必须含）。 | test/offline/unit/test_norm_gap_batch2.py::TestSchematicConnectivityIgnoresFilter |
+| schematic#018 | 上层/2-schematic.md | **direct** | screenshot 参数面真机 5/5：默认 lib/cell/view、显式 window_id（坏 id 负向）、region 正/反序负向、toplevel/central_widget 取假值均有断言；**口径偏差**：schematic region 当前仅收四元组（与 spec 两点写 | test/live/packages/screenshot_params_e2e_tests.py<br>test/artifacts/evidence/round8/screenshot-params/schematic.json |
 | schematic#019 | 上层/2-schematic.md | **direct** | 对外只有通用 write（一次一组原子、统一 check/save）由契约与真机套件钉住 | test/offline/unit/test_schematic_contracts.py<br>test/live/packages/schematic_e2e_tests.py |
 | schematic#024 | 上层/2-schematic.md | **direct** | commands 每项 {op,...}、按序执行并保留每步痕迹，有断言 | test/offline/unit/test_schematic_contracts.py |
 | schematic#025 | 上层/2-schematic.md | **direct** | 20 个写原子全部有真机读回用例；原子覆盖核账 GAP=0 | test/live/packages/schematic_e2e_tests.py<br>test/artifacts/evidence/atom-coverage-2026-09-28.json |
-| schematic#048 | 上层/2-schematic.md | **direct** | 单点一律 pos（索引/新建/读回同形）由 P-074 实现 + 真机负控制 + 契约钉住 | test/live/packages/schematic_e2e_tests.py::_case_pos_negative<br>test/offline/unit/test_schematic_contracts.py |
+| schematic#048 | 上层/2-schematic.md | **direct** | 单点一律 pos（索引/新建/读回同形）由 P-074 实现 + 真机负控制 + 契约钉住 | test/live/packages/schematic_e2e_tests.py::_case_negative<br>test/offline/unit/test_schematic_contracts.py |
 | schematic#049 | 上层/2-schematic.md | **direct** | xy/拆字段必须被拒且点名 pos：真机负控制逐形态断言（非裸异常） | test/live/packages/schematic_e2e_tests.py (负控制 349-352)<br>test/offline/unit/test_schematic_contracts.py |
 | schematic#050 | 上层/2-schematic.md | **partial** | points=[pos,…] 两点/多点有断言；**region 的对角两点在 read 过滤与 screenshot 仍失败（P-082）**，实现只收四元组，与该条‘不再用四元组’冲突 ｜ **缺口**: P-082 修复后补两点正例（read 过滤 + screenshot）并复跑 | test/offline/unit/test_schematic_contracts.py |
 | schematic#058 | 上层/2-schematic.md | **direct** | 不做兼容层：xy/拆字段直接非法且点名 pos，有真机与离线负控制 | test/live/packages/schematic_e2e_tests.py (负控制)<br>test/offline/unit/test_schematic_contracts.py |
@@ -213,9 +213,9 @@
 | layout#076 | 上层/4-layout.md | **direct** | 默认不做 techfile 预检；strict_lpp=true 拒绝未知 layer，有真机断言 + 类型校验 | test/live/packages/layout_e2e_tests.py (strict_lpp 331-337)<br>test/offline/unit/test_layout_contracts.py |
 | layout#079 | 上层/4-layout.md | **indirect** | 批量删层 stopLevel 覆盖层次为生成式事实；由 delete 系列真机用例间接承担，无专门跨层负向 | test/live/packages/layout_e2e_tests.py<br>test/semi/probes/layout_p044_second_write_probe.py |
 | layout#120 | 上层/4-layout.md | **direct** | XSTRM-234 + Translation completed 完成判定、完成前不读目标 view：契约 + 两条真机探针（P-051/P-075 已闭环） | test/offline/unit/test_layout_publish_contracts.py<br>test/semi/probes/gds_publish_path_edges_probe.py<br>test/semi/probes/gds_then_skill_probe.py |
-| layout#139 | 上层/4-layout.md | **direct** | 禁止无 bbox 的 hiZoomIn/hiZoomOut：fit_view 走 hiZoomIn(win bBox)、zoom 走 hiZoomAbsoluteScale，且不出现裸 hiZoomIn/hiZoomOut，已断言。 | t<br>e<br>s<br>t<br>/<br>o<br>f<br>f<br>l<br>i<br>n<br>e<br>/<br>u<br>n<br>i<br>t<br>/<br>t<br>e<br>s<br>t<br>_<br>n<br>o<br>r<br>m<br>_<br>g<br>a<br>p<br>_<br>b<br>a<br>t<br>c<br>h<br>2<br>.<br>p<br>y<br>:<br>:<br>T<br> |
+| layout#139 | 上层/4-layout.md | **direct** | 禁止无 bbox 的 hiZoomIn/hiZoomOut：fit_view 走 hiZoomIn(win bBox)、zoom 走 hiZoomAbsoluteScale，且不出现裸 hiZoomIn/hiZoomOut，已断言。 | test/offline/unit/test_norm_gap_batch2.py::TestLayoutZoomNeverBboxless |
 | layout#158 | 上层/4-layout.md | **na** | 「不在本版」：路由抽象/clear_routing，明确不做 |  |
-| layout#179 | 上层/4-layout.md | **partial** | 非法 LPP 硬错误有真机用例；几何非法的分类断言已由 root 补齐（**零面积 rect → 包层预校验拦截，错误点名 `bbox requires pos0 < pos1`**；非法 LPP → `Invalid layer/purpose` 硬错误 + 非事务提示）。**口径差异**：spec 写"几何非法 → nil+WARNING"，实测为包层提前预校验（更可归因，建议同步 spec 措辞） | test/live/packages/layout_geometry_classification_e2e_tests.py（**4/4**，`evidence/round8/layout-geometry-classification.json`）<br>test/live/packages/layout_e2e_tests.py (strict_lpp) |
+| layout#179 | 上层/4-layout.md | **direct** | 专属分类 TB 4/4：正常 rect 读回 ✓、零面积几何 → 可归因失败（`bbox requires pos0 < pos1`）✓、非法 LPP → SKILL 硬错误 + 非事务提示 ✓；**口径差异**：实现把几何非法提前到包层预校验，spec 记的 `dbCreateXxx` nil+W | test/live/packages/layout_geometry_classification_e2e_tests.py<br>test/artifacts/evidence/round8/layout-geometry-classification.json<br>test/live/packages/layout_e2e_tests.py (strict_lpp) |
 | layout#180 | 上层/4-layout.md | **direct** | pos 写 point（7:8）、bBox/points 写 list —— 生成式文本断言 | test/offline/unit/test_layout_contracts.py |
 | layout#181 | 上层/4-layout.md | **direct** | dbSave 后才 dbClose（未保存不落盘）由契约 + P-044 探针覆盖 | test/offline/unit/test_layout_contracts.py<br>test/semi/probes/layout_p044_second_write_probe.py |
 | layout#184 | 上层/4-layout.md | **direct** | 区域/层级查询显式给 level（dbShapeQuery … 0 <level>）由生成式与真机用例钉住 | test/offline/unit/test_layout_contracts.py<br>test/live/packages/layout_e2e_tests.py |
@@ -266,7 +266,7 @@
 | veriloga#053 | 上层/11-veriloga.md | **direct** | 文件写路径（临时文件→读回校验→原子替换）有断言 | test/offline/unit/test_veriloga_contracts.py (写临时文件→校验读回→原子替换) |
 | veriloga#055 | 上层/11-veriloga.md | **direct** | master.tag 内容与模块名=cell 名约束有断言 | test/offline/unit/test_veriloga_contracts.py (master.tag 上传断言 321) |
 | veriloga#057 | 上层/11-veriloga.md | **direct** | 编辑器锁存在 → 拒绝外部写且不自动关窗，有断言 | test/offline/unit/test_veriloga_contracts.py (*.cdslck 检测 268)<br>test/live/packages/veriloga_e2e_tests.py |
-| veriloga#068 | 上层/11-veriloga.md | **direct** | check_and_save 序列不含 ahdlCheckModule/SaveFile/Edit（防模态阻塞），有断言 | test/offline/unit/test_veriloga_contracts.py::test_check_and_save_sequence |
+| veriloga#068 | 上层/11-veriloga.md | **direct** | check_and_save 序列不含 ahdlCheckModule/SaveFile/Edit（防模态阻塞）：原生成式断言 + 第八轮新增**缺席断言**专测（FORBIDDEN_CALLS 逐一 assertNotIn） | test/offline/unit/test_veriloga_lazy_editor_contract.py::test_check_and_save_sequence_and_absence<br>test/offline/unit/test_veriloga_lazy_editor_contract.py::test_write_ops_do_not_touch_view_info |
 | veriloga#069 | 上层/11-veriloga.md | **direct** | headless Check and Save 与 GUI 落盘逐文件一致（唯一差别无 symbol）：真机闭环用例 | test/live/packages/veriloga_e2e_tests.py<br>test/artifacts/evidence/round8 (veriloga 段) |
 | veriloga#083 | 上层/11-veriloga.md | **na** | 「不在本版」：并发写同一 cell，明确不做 |  |
 | veriloga#085 | 上层/11-veriloga.md | **direct** | dbOpenCellViewByType(veriloga w) 恒 nil → 必须走文件路径：生成式断言 | test/offline/unit/test_veriloga_contracts.py |
@@ -276,7 +276,7 @@
 | veriloga#092 | 上层/11-veriloga.md | **direct** | 编辑器锁（veriloga.va.cdslck）→ 外部写失效，必须先关编辑器：与 #057 同族断言 | test/offline/unit/test_veriloga_contracts.py<br>test/live/packages/veriloga_e2e_tests.py |
 | veriloga#094 | 上层/11-veriloga.md | **direct** | headless Check and Save 真机闭环（写→VerAParseModule→ahdlUpdateViewInfo）由 E2E + ADC 场景验证 | test/live/packages/veriloga_e2e_tests.py<br>test/live/flows/adc_sar_flow_tb.py |
 | veriloga#095 | 上层/11-veriloga.md | **direct** | CDF + netlist.oa/data.dm 更新与 GUI 保存一致（无 symbol 视图差异）有契约与真机证据 | test/offline/unit/test_veriloga_contracts.py<br>test/live/packages/veriloga_e2e_tests.py |
-| veriloga#096 | 上层/11-veriloga.md | **direct** | 不得使用 ahdlCheckModule/ahdlSaveFile 等模态包装：生成式缺席断言 | test/offline/unit/test_veriloga_contracts.py |
+| veriloga#096 | 上层/11-veriloga.md | **direct** | 不得使用 ahdlCheckModule/ahdlSaveFile 等模态包装：生成式缺席断言 + 第八轮专测（FORBIDDEN_CALLS） | test/offline/unit/test_veriloga_contracts.py<br>test/offline/unit/test_veriloga_lazy_editor_contract.py::test_check_and_save_sequence_and_absence |
 | veriloga#107 | 上层/11-veriloga.md | **na** | 待验证项（实现前 spike：schPinListToSymbol 可行性）。spec 自述待定/待验证（非冻结要求）；已在 round8 报告‘明缺口’登记为待设计定稿 |  |
 | skillref#034 | 上层/9-skillref.md | **direct** | source+doc_root 取值顺序（请求→config）与结果回带 source/doc_root 有断言 | test/offline/unit/test_skillref_package.py |
 | skillref#051 | 上层/9-skillref.md | **direct** | 只有 source/doc_root/doc_token 三字段；remote 必须 doc_token（注册 user 代理）有断言 | test/offline/unit/test_skillref_package.py (partial-request / remote-without-doc_token) |

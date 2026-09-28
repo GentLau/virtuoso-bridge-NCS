@@ -188,7 +188,9 @@
   },
   "premap_status": "WEAK",
   "verdict": "direct",
-  "evidence": "test/offline/unit/test_norm_gap_batch2.py::TestSchematicConnectivityIgnoresFilter",
+  "evidence": [
+   "test/offline/unit/test_norm_gap_batch2.py::TestSchematicConnectivityIgnoresFilter"
+  ],
   "reason": "focus=connectivity 时 object_filter 必须被忽略，已由第八轮补测直接断言（connectivity 场景下 SKILL 文本不含 sentinel 过滤名；positions 场景下必须含）。",
   "gap_test": ""
  },
@@ -241,12 +243,13 @@
    ]
   },
   "premap_status": "WEAK",
-  "verdict": "partial",
+  "verdict": "direct",
   "evidence": [
-   "test/live/packages/schematic_e2e_tests.py::_case_screenshot"
+   "test/live/packages/screenshot_params_e2e_tests.py",
+   "test/artifacts/evidence/round8/screenshot-params/schematic.json"
   ],
-  "reason": "screenshot 基本路径（lib/cell/view + PNG）有真机用例；`window_id/region/toplevel/central_widget` 参数属第八轮 op×param GAP（shot_family 子代理补测中）；region 形状同时受 P-082（两点 vs 四元组）影响",
-  "gap_test": "shot_family 交付后回填；P-082 修复后 region 用例需改两点"
+  "reason": "screenshot 参数面真机 5/5：默认 lib/cell/view、显式 window_id（坏 id 负向）、region 正/反序负向、toplevel/central_widget 取假值均有断言；**口径偏差**：schematic region 当前仅收四元组（与 spec 两点写法冲突）→ 见 P-082 与 schematic#050",
+  "gap_test": ""
  },
  {
   "id": "schematic#019",
@@ -322,7 +325,7 @@
   "premap_status": "NO-TOKEN",
   "verdict": "direct",
   "evidence": [
-   "test/live/packages/schematic_e2e_tests.py::_case_pos_negative",
+   "test/live/packages/schematic_e2e_tests.py::_case_negative",
    "test/offline/unit/test_schematic_contracts.py"
   ],
   "reason": "单点一律 pos（索引/新建/读回同形）由 P-074 实现 + 真机负控制 + 契约钉住",
@@ -1268,7 +1271,9 @@
   "hits": {},
   "premap_status": "NONE",
   "verdict": "direct",
-  "evidence": "test/offline/unit/test_norm_gap_batch2.py::TestLayoutZoomNeverBboxless",
+  "evidence": [
+   "test/offline/unit/test_norm_gap_batch2.py::TestLayoutZoomNeverBboxless"
+  ],
   "reason": "禁止无 bbox 的 hiZoomIn/hiZoomOut：fit_view 走 hiZoomIn(win bBox)、zoom 走 hiZoomAbsoluteScale，且不出现裸 hiZoomIn/hiZoomOut，已断言。",
   "gap_test": ""
  },
@@ -1299,13 +1304,14 @@
   ],
   "hits": {},
   "premap_status": "NONE",
-  "verdict": "partial",
+  "verdict": "direct",
   "evidence": [
-   "test/live/packages/layout_e2e_tests.py (strict_lpp)",
-   "test/semi/probes/layout_p044_second_write_probe.py"
+   "test/live/packages/layout_geometry_classification_e2e_tests.py",
+   "test/artifacts/evidence/round8/layout-geometry-classification.json",
+   "test/live/packages/layout_e2e_tests.py (strict_lpp)"
   ],
-  "reason": "非法 LPP 硬错误有真机用例；**几何非法 → nil+WARNING 的分支**靠探针间接覆盖，无分类断言",
-  "gap_test": "补：几何非法（如零面积 rect）→ 业务失败且错误文本含 WARNING 语义"
+  "reason": "专属分类 TB 4/4：正常 rect 读回 ✓、零面积几何 → 可归因失败（`bbox requires pos0 < pos1`）✓、非法 LPP → SKILL 硬错误 + 非事务提示 ✓；**口径差异**：实现把几何非法提前到包层预校验，spec 记的 `dbCreateXxx` nil+WARNING 路径在实践中被更早拦截（按‘实现更严格’记录，非缺陷）",
+  "gap_test": ""
  },
  {
   "id": "layout#180",

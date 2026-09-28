@@ -1,34 +1,22 @@
 # 操作 × 参数覆盖矩阵（机器，AST 解析；**不是覆盖结论**）
 
-- 条目 628：CANDIDATE 501 / GAP 98 / NO-OP-TB 29
-- 非 CANDIDATE 中：通用 `timeout` 字段 38 条（由 `test/offline/unit/test_param_timeout_contract.py` 的 79/79 op 合同承担）；其余 89 条为逐 op 缺口。
-- 无法静态解析的调用点 71 个（不计覆盖，需人工复核）
+- 条目 628：CANDIDATE 529 / GAP 70 / NO-OP-TB 29
+- 非 CANDIDATE 中：通用 `timeout` 字段 38 条（由 `test/offline/unit/test_param_timeout_contract.py` 的 79/79 op 合同承担）；其余 61 条为逐 op 缺口。
+- 无法静态解析的调用点 76 个（不计覆盖，需人工复核）
 - CANDIDATE = 参数名在目标 op 的调用点出现；是否断言语义仍要逐条看 TB 判据。
 - op 调用点清单见 `op-coverage.json`；未解析明细见本文件末尾。
 
 ## 非 CANDIDATE（按 op 分组）
 
-### `calibre.check_env`
-
-- [GAP] `calibre_bin` (str | None, required=False) — op_tb_files=2
-
 ### `calibre.drc`
 
-- [GAP] `calibre_bin` (str | None, required=False) — op_tb_files=3
-- [GAP] `cdl` (str | None, required=False) — op_tb_files=3
-- [GAP] `fmt` (str, required=False) — op_tb_files=3
-- [GAP] `ground` (str | None, required=False) — op_tb_files=3
-- [GAP] `hcell_file` (str | None, required=False) — op_tb_files=3
-- [GAP] `hier` (bool, required=False) — op_tb_files=3
-- [GAP] `job_id` (str | None, required=False) — op_tb_files=3
-- [GAP] `lvs_run_dir` (str | None, required=False) — op_tb_files=3
-- [GAP] `params` (dict[str, str] | None, required=False) — op_tb_files=3
-- [GAP] `poll_interval` (float, required=False) — op_tb_files=3
-- [GAP] `power` (str | None, required=False) — op_tb_files=3
-- [GAP] `runset` (str | None, required=False) — op_tb_files=3
-- [GAP] `spice_file` (str | None, required=False) — op_tb_files=3
-- [GAP] `turbo` (int, required=False) — op_tb_files=3
-- [GAP] `xcell_file` (str | None, required=False) — op_tb_files=3
+- [GAP] `cdl` (str | None, required=False) — op_tb_files=5
+- [GAP] `fmt` (str, required=False) — op_tb_files=5
+- [GAP] `hcell_file` (str | None, required=False) — op_tb_files=5
+- [GAP] `lvs_run_dir` (str | None, required=False) — op_tb_files=5
+- [GAP] `runset` (str | None, required=False) — op_tb_files=5
+- [GAP] `spice_file` (str | None, required=False) — op_tb_files=5
+- [GAP] `xcell_file` (str | None, required=False) — op_tb_files=5
 
 ### `calibre.export`
 
@@ -41,14 +29,10 @@
 
 ### `calibre.lvs`
 
-- [GAP] `fmt` (str, required=False) — op_tb_files=5
-- [GAP] `ground` (str | None, required=False) — op_tb_files=5
-- [GAP] `hcell_file` (str | None, required=False) — op_tb_files=5
-- [GAP] `lvs_run_dir` (str | None, required=False) — op_tb_files=5
-- [GAP] `poll_interval` (float, required=False) — op_tb_files=5
-- [GAP] `power` (str | None, required=False) — op_tb_files=5
-- [GAP] `spice_file` (str | None, required=False) — op_tb_files=5
-- [GAP] `xcell_file` (str | None, required=False) — op_tb_files=5
+- [GAP] `fmt` (str, required=False) — op_tb_files=6
+- [GAP] `ground` (str | None, required=False) — op_tb_files=6
+- [GAP] `lvs_run_dir` (str | None, required=False) — op_tb_files=6
+- [GAP] `power` (str | None, required=False) — op_tb_files=6
 
 ### `calibre.pex`
 
@@ -74,21 +58,9 @@
 - [NO-OP-TB] `turbo` (int, required=False) — op_tb_files=0
 - [NO-OP-TB] `xcell_file` (str | None, required=False) — op_tb_files=0
 
-### `calibre.read_results`
-
-- [GAP] `log_lines` (int, required=False) — op_tb_files=6
-
 ### `virtuoso.layout.read`
 
 - [GAP] `depth` (int, required=False) — op_tb_files=10
-
-### `virtuoso.layout.screenshot`
-
-- [GAP] `central_widget` (bool, required=False) — op_tb_files=1
-- [GAP] `region` (list[float] | None, required=False) — op_tb_files=1
-- [GAP] `toplevel` (bool, required=False) — op_tb_files=1
-- [GAP] `view_type` (str, required=False) — op_tb_files=1
-- [GAP] `window_id` (int | None, required=False) — op_tb_files=1
 
 ### `virtuoso.maestro.close_gui`
 
@@ -129,21 +101,6 @@
 ### `virtuoso.maestro.write_history`
 
 - [GAP] `view` (str, required=False) — op_tb_files=1
-
-### `virtuoso.schematic.screenshot`
-
-- [GAP] `central_widget` (bool, required=False) — op_tb_files=1
-- [GAP] `region` (list[float] | None, required=False) — op_tb_files=1
-- [GAP] `toplevel` (bool, required=False) — op_tb_files=1
-- [GAP] `window_id` (int | None, required=False) — op_tb_files=1
-
-### `virtuoso.symbol.screenshot`
-
-- [GAP] `central_widget` (bool, required=False) — op_tb_files=1
-- [GAP] `region` (list[float] | None, required=False) — op_tb_files=1
-- [GAP] `toplevel` (bool, required=False) — op_tb_files=1
-- [GAP] `view_type` (str, required=False) — op_tb_files=1
-- [GAP] `window_id` (int | None, required=False) — op_tb_files=1
 
 ### `virtuoso.verilog.export`
 
@@ -212,13 +169,15 @@
 - test/live/packages/calibre_e2e_tests.py:106 `` (how=payload-dict, params=token)
 - test/live/packages/calibre_e2e_tests.py:131 `f"calibre.{kind}"` (how=helper:_value, params=token)
 - test/live/packages/calibre_e2e_tests.py:113 `operation` (how=helper:_op, params=token)
+- test/live/packages/calibre_params_e2e_tests.py:61 `` (how=payload-dict, params=token)
+- test/live/packages/calibre_params_e2e_tests.py:65 `operation` (how=helper:_op, params=token)
 - test/live/packages/cellview_e2e_tests.py:93 `` (how=payload-dict, params=token)
 - test/live/packages/cellview_e2e_tests.py:97 `operation` (how=helper:_call, params=token)
 - test/live/packages/cellview_e2e_tests.py:109 `operation` (how=helper:_call, params=token)
 - test/live/packages/cellview_e2e_tests.py:277 `operation` (how=helper:_expect_fail, params=token)
 - test/live/packages/cellview_e2e_tests.py:105 `operation` (how=helper:_op, params=token)
 - test/live/packages/gui_e2e_tests.py:81 `` (how=payload-dict, params=token)
-- test/live/packages/infra_e2e_tests.py:94 `` (how=payload-dict, params=token)
+- test/live/packages/infra_e2e_tests.py:98 `` (how=payload-dict, params=token)
 - test/live/packages/layout_e2e_tests.py:80 `` (how=payload-dict, params=token)
 - test/live/packages/layout_e2e_tests.py:87 `operation` (how=helper:_op, params=token)
 - test/live/packages/layout_geometry_classification_e2e_tests.py:63 `` (how=payload-dict, params=)
@@ -227,6 +186,9 @@
 - test/live/packages/maestro_e2e_tests.py:97 `operation` (how=helper:_op, params=token)
 - test/live/packages/schematic_e2e_tests.py:86 `` (how=payload-dict, params=token)
 - test/live/packages/schematic_e2e_tests.py:93 `operation` (how=helper:_op, params=token)
+- test/live/packages/screenshot_params_e2e_tests.py:72 `` (how=payload-dict, params=token)
+- test/live/packages/screenshot_params_e2e_tests.py:76 `operation` (how=helper:_op, params=token)
+- test/live/packages/screenshot_params_e2e_tests.py:80 `operation` (how=helper:_op, params=token)
 - test/live/packages/skillref_e2e_tests.py:74 `` (how=payload-dict, params=token)
 - test/live/packages/spectre_e2e_tests.py:76 `` (how=payload-dict, params=token)
 - test/live/packages/spectre_e2e_tests.py:83 `operation` (how=helper:_op, params=token)

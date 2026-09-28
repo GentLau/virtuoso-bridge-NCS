@@ -1,14 +1,6 @@
 # 第八轮条款缺口动作（partial → 待补测试）
 
-> 共 15 条；完成后把对应行的 verdict 提升并回填证据。
-
-> **root 处置记录（2026-09-28 21:0x）**：
-> * `注册#011` → **已完成**：`registration_role_split_tb.py` 新增 `deploy-paths-contain-no-token` 断言（6 条部署路径均不得含 token 值）。
-> * `layout#179` → **已完成**：新增 `test/live/packages/layout_geometry_classification_e2e_tests.py` **4/4**——
->   正常 rect 成功且读回、零面积 rect 被包层预校验拦下（错误点名 `bbox requires pos0 < pos1`）、
->   非法 LPP 给出 SKILL 硬错误 + 非事务提示；证据 `evidence/round8/layout-geometry-classification.json`。
->   **口径差异记录**：spec 写“几何非法 → nil+WARNING”，实测包层提前预校验（更可归因）；
->   报告里按“实现更严格、建议同步 spec 措辞”记，不判缺陷。
+> 共 13 条；完成后把对应行的 verdict 提升并回填证据。
 
 ## 总览#094（总览/1-四层整体架构与接口.md）
 
@@ -40,23 +32,11 @@
 - 现状：部署/根路径按 userid 组织（注册表实际条目可见）；‘token 不得出现在用户可读路径’无单独负向断言
 - 待补：可选：断言注册部署产物路径不含 token 值（六步 TB 内一行）
 
-## schematic#018（上层/2-schematic.md）
-
-- 条款：- `screenshot`：目标默认 `lib/cell/view`，可选 `window_id`；可选 `region=[pos0, pos1]`（user units，截前 `hiZoomIn(window, bBox)` 把区域填满窗口）；`toplevel` / `centralWidget` 暴露；`lea
-- 现状：screenshot 基本路径（lib/cell/view + PNG）有真机用例；`window_id/region/toplevel/central_widget` 参数属第八轮 op×param GAP（shot_family 子代理补测中）；region 形状同时受 P-082（两点 vs 四元组）影响
-- 待补：shot_family 交付后回填；P-082 修复后 region 用例需改两点
-
 ## schematic#050（上层/2-schematic.md）
 
 - 条款：- 多点：`points: [pos, …]`；区域/矩形：`region` / `bbox` 一律**对角两点** `[pos0, pos1]`（read 与 write 同形，**不再用四元组**）；
 - 现状：points=[pos,…] 两点/多点有断言；**region 的对角两点在 read 过滤与 screenshot 仍失败（P-082）**，实现只收四元组，与该条‘不再用四元组’冲突
 - 待补：P-082 修复后补两点正例（read 过滤 + screenshot）并复跑
-
-## layout#179（上层/4-layout.md）
-
-- 条款：3. `dbCreateXxx` 失败分两类：**非法 LPP → 抛 SKILL 硬错误**；**几何非法 → nil + WARNING** →
-- 现状：非法 LPP 硬错误有真机用例；**几何非法 → nil+WARNING 的分支**靠探针间接覆盖，无分类断言
-- 待补：补：几何非法（如零面积 rect）→ 业务失败且错误文本含 WARNING 语义
 
 ## verilog#060（上层/8-verilog.md）
 

@@ -1,18 +1,4 @@
 {
-  "src/bridge/resources/ramic_bridge_daemon_27.py": [
-    {
-      "lines": "550",
-      "category": "defensive",
-      "why": "main-guard: inside `if __name__ == \"__main__\":`"
-    }
-  ],
-  "src/bridge/resources/ramic_bridge_daemon_3.py": [
-    {
-      "lines": "555",
-      "category": "defensive",
-      "why": "main-guard: inside `if __name__ == \"__main__\":`"
-    }
-  ],
   "src/common/paramiko_backend.py": [
     {
       "lines": "447",
@@ -42,7 +28,7 @@
   ],
   "src/common/paths.py": [
     {
-      "lines": "36-39",
+      "lines": "38-39",
       "category": "env-blocked",
       "why": "platform-guarded: guarded by `os.name == 'nt'` (this run: platform=win32, os=nt)"
     },
@@ -64,11 +50,6 @@
       "lines": "113",
       "category": "env-blocked",
       "why": "platform-guarded: guarded by `os.name != 'nt'` (this run: platform=win32, os=nt)"
-    },
-    {
-      "lines": "353-354",
-      "category": "env-blocked",
-      "why": "platform-guarded: guarded by `os.name == 'nt'` (this run: platform=win32, os=nt)"
     },
     {
       "lines": "360",
@@ -99,39 +80,14 @@
   ],
   "src/server/supervisor.py": [
     {
-      "lines": "130",
-      "category": "env-blocked",
-      "why": "platform-guarded: guarded by `os.name == 'nt'` (this run: platform=win32, os=nt)"
-    },
-    {
-      "lines": "134",
-      "category": "env-blocked",
-      "why": "platform-guarded: guarded by `os.name == 'nt'` (this run: platform=win32, os=nt)"
-    },
-    {
-      "lines": "135",
-      "category": "env-blocked",
-      "why": "platform-guarded: guarded by `os.name != 'nt'` (this run: platform=win32, os=nt)"
-    },
-    {
       "lines": "138",
       "category": "env-blocked",
       "why": "platform-guarded: guarded by `os.name != 'nt'` (this run: platform=win32, os=nt)"
     },
     {
-      "lines": "145-146",
+      "lines": "146",
       "category": "env-blocked",
       "why": "platform-guarded: guarded by `os.name != 'nt'` (this run: platform=win32, os=nt)"
-    },
-    {
-      "lines": "147-149",
-      "category": "env-blocked",
-      "why": "platform-guarded: guarded by `os.name == 'nt'` (this run: platform=win32, os=nt)"
-    },
-    {
-      "lines": "152-154",
-      "category": "env-blocked",
-      "why": "platform-guarded: guarded by `os.name == 'nt'` (this run: platform=win32, os=nt)"
     },
     {
       "lines": "159",
@@ -139,29 +95,14 @@
       "why": "platform-guarded: guarded by `os.name == 'nt'` (this run: platform=win32, os=nt)"
     },
     {
-      "lines": "218-219",
+      "lines": "219",
       "category": "env-blocked",
       "why": "platform-guarded: guarded by `os.name != 'nt' and group` (this run: platform=win32, os=nt)"
     },
     {
-      "lines": "277-278",
+      "lines": "278",
       "category": "env-blocked",
       "why": "platform-guarded: guarded by `os.name != 'nt' and posix_group` (this run: platform=win32, os=nt)"
-    },
-    {
-      "lines": "285-287",
-      "category": "env-blocked",
-      "why": "platform-guarded: guarded by `os.name == 'nt' and proc.pid` (this run: platform=win32, os=nt)"
-    },
-    {
-      "lines": "296-299",
-      "category": "env-blocked",
-      "why": "platform-guarded: guarded by `os.name == 'nt' and proc.pid` (this run: platform=win32, os=nt)"
-    },
-    {
-      "lines": "300",
-      "category": "env-blocked",
-      "why": "platform-guarded: guarded by `os.name != 'nt' and proc.pid` (this run: platform=win32, os=nt)"
     },
     {
       "lines": "303-309",
@@ -169,12 +110,7 @@
       "why": "platform-guarded: guarded by `os.name != 'nt' and proc.pid` (this run: platform=win32, os=nt)"
     },
     {
-      "lines": "405",
-      "category": "defensive",
-      "why": "not-implemented: raise NotImplementedError"
-    },
-    {
-      "lines": "506-507",
+      "lines": "507",
       "category": "defensive",
       "why": "main-guard: inside `if __name__ == \"__main__\":`"
     }
