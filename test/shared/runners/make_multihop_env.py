@@ -25,11 +25,9 @@
 from __future__ import annotations
 
 import json
-import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-TEMPLATE = ROOT / "test" / "artifacts" / "env" / "log-vblog" / "registry.json"
 TARGET_DIR = ROOT / "test" / "artifacts" / "env" / "multihop"
 
 KEY_DIR = r"C:\wsl\shared\keys"
@@ -117,18 +115,12 @@ def _entry(token: str, *, jump: bool = False, proxy: bool = False, fake_daemon: 
 
 
 def main() -> int:
-    if not TEMPLATE.is_file():
-        print(f"模板注册表不存在：{TEMPLATE}", file=sys.stderr)
-        return 2
-    registry = json.loads(TEMPLATE.read_text(encoding="utf-8"))
-
-    registry.pop("hop-jump", None)
-    registry.pop("hop-socks", None)
-    registry.pop("hop-fake", None)
-
-    registry["hop-jump"] = _entry("vb-hopjump", jump=True)
-    registry["hop-socks"] = _entry("vb-hopsocks", proxy=True)
-    registry["hop-fake"] = _entry("vb-hopfake", jump=True, fake_daemon=True)
+    # 独立注册表只放本专项的三个用户，不复用 / 泄露常驻环境的其它 token。
+    registry = {
+        "hop-jump": _entry("vb-hopjump", jump=True),
+        "hop-socks": _entry("vb-hopsocks", proxy=True),
+        "hop-fake": _entry("vb-hopfake", jump=True, fake_daemon=True),
+    }
 
     TARGET_DIR.mkdir(parents=True, exist_ok=True)
     out = TARGET_DIR / "registry.json"
