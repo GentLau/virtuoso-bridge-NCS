@@ -112,7 +112,7 @@
 | **新增生产面压测 TB** | `test/live/stress/production_face_stress_tb.py`：**直接压生产面** `POST /api/operation`（dispatch → basic 包 → 中层）。两种模式：① 缺省**自起**一个 `server.api_server`（临时 work-dir + local 注册表，零依赖，上传/下载文件在 TB 自己的临时目录里现造）；② `--base … --token …` 对接既有真机面（额外混 skill/gui/spectre）。实测：自起 4×4 = 16 轮 / 48 步 / **0 失败**；对接 8127 真机 6×6 = 36 轮 / **216 步 / 0 失败**（`round6b-verify/production-stress-{selfstart,real}.json`） |
 | runner 引用 | `scenario.py` 两处 → 换成新 TB；`run_coverage.ps1` 移除 Windows mixed stress / WSL mixed stress / saturation profile 三处，改为一条 `production face stress (self-start)`（PowerShell 语法校验 0 错误） |
 | 文档/README | `test/shared/README.md`、`test/shared/fixtures/README.md`、`test/live/stress/README.md`、`test/live/README.md`、`test/docs/用例分层与归口.md`、`test/docs/推荐测试环境.md`（S3）、`test/reports/覆盖度缺口.md`、`doc/测试覆盖报告.md` 全部同步；覆盖清单**不再包含**该模块 |
-| 残留引用 | 只剩"说明它已删除"的注释 + **历史快照**（`test/reports/coverage-gaps-2026-09-22-v*.md`、`BUG清单-给工程师-第二轮.md` 等按日期的过程资产）。这些是当时的记录，**未改写**；如需一并清掉请说一声 |
+| 残留引用 | 只剩"说明它已删除"的注释；按日期的历史快照（`coverage-gaps-*`、`BUG清单-给工程师-第二轮.md` 等）已随 2026-09-28 报告精简清理，git 历史可查 |
 
 **P-049 口径更正**（设计侧澄清）：① `stress_server` 那一路移出 P-049；② 业务面 `api_server._send` 已用
 `dumps_strict` + 500 兜底（本 TB 保留一条**负控制**证明有效）；③ daemon 响应当前只含字符串，

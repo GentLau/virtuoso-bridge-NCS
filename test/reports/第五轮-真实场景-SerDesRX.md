@@ -57,7 +57,7 @@
    产出 36 条结果、`DRC_RES.db` 落盘，证据 `round5-main/calibre-drc.json`），
    但**结果读取解析不可用**（逐规则计数空、offenders 取到头部告警 → P-059/P-062），
    因此本报告不声称任何设计"DRC 通过"。
-3. **ADC 场景**：**本轮已补齐**（原写作"下一轮候选"）——见 `第五轮-真实场景-ADC.md`：
+3. **ADC 场景**：**第五轮已补齐**——脚本 `test/live/flows/adc_sar_flow_tb.py`，
    比较器原理图/版图/GDS + VerilogA SAR 控制，7/7 阶段绿、`round5-adc-sar.json` 判定 22/22
    （0.2/0.61/0.8·Vref → 码字 3/9/12，与理论逐点相等）。
    仍未做的部分：比较器与 SAR 的**混合仿**（CDAC 开关时序）、PVT/蒙特卡洛——边界写在 ADC 报告 §3。

@@ -11,7 +11,7 @@
 - `resident_env_check.py`：**常驻环境自检**（逐个 token 打通 `1+1` + `/health`，失败时打印该实例怎么起）。
 - `env_check.py`：**TB 第 1 步专用**——"当前环境是不是我需要的环境"一键检测（宿主/用户/token/SKILL 通道/库与工艺可见性/calibre/spectre/解释器版本；`--base` 走 HTTP、`--work-dir` 走进程内并附 `query`；`--json` 落环境证据，退出码非 0 即环境不对）。用法见 [`../../docs/写TB规范.md`](../../docs/写TB规范.md) §1。
 - `check_tb_headers.py`：**TB 注释头核账**（规范 §0）——扫描 `test/{semi,live,offline/core}` 的 TB/探针，校验 3 栏（作者 / 最后改动到分钟 / 依赖），`--emit` 生成补全草案（作者名留空由本人填），`--fail` 预留门禁。
-- `bringup_user.sh` / `start_lab_fakes.sh` / `make_run_env_complete.py`：真机实例与 lab fake 的起法（详见 [`../../docs/环境与场景.md`](../../docs/环境与场景.md) §2 与 [`../reports/internal/环境Runbook-内部.md`](../reports/internal/环境Runbook-内部.md)）。
+- `bringup_user.sh` / `start_lab_fakes.sh` / `make_run_env_complete.py`：真机实例与 lab fake 的起法（详见 [`../../docs/环境与场景.md`](../../docs/环境与场景.md) §2 与 [`../../reports/internal/环境Runbook-内部.md`](../../reports/internal/环境Runbook-内部.md)）。
 - `make_multihop_env.py` / `start_hop_fake.sh`：**多跳（jump/SOCKS5）专项环境**（S15）——生成 `test/artifacts/env/multihop/registry.json`、在 w1-gent 起 65203/`vb-hopfake`；配套 TB `test/live/flows/multihop_jump_tb.py`。
 - `hold_ports.py`：占住一段本机端口，用来复现/回归"机器级端口被占"造成的假红（P-063）。
 - `verify_spec_matrix_evidence.py`：拿最新 JUnit 核对 spec 覆盖矩阵每一行的证据文件**这轮到底跑没跑**（产出矩阵 §14）。

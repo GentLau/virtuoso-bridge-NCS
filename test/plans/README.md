@@ -5,4 +5,4 @@
 - 总览与执行约定：[`总览与执行约定.md`](总览与执行约定.md)
 - 分册：功能正确性 / 路由与多节点 / 注册流程 / 注册页与HTTP层 / 并发与容量 / 等价性 / 日志返回 / 错误与安全 / 可靠性与资源回收 / 输入安全与首信任 / 运维生命周期 / 拓扑与传输后端
 - 计划项是否已进准出集合，以 [`../shared/runners/run_coverage.ps1`](../shared/runners/run_coverage.ps1) 与
-  [`../docs/测试架构.md`](../docs/测试架构.md) §5 为准。
+  [`../docs/README.md`](../docs/README.md) §2 为准。

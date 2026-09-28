@@ -10,8 +10,8 @@
 用法::
 
     python test/shared/runners/verify_spec_matrix_evidence.py \
-        --matrix test/reports/round5-spec覆盖矩阵.md \
-        --junit test/artifacts/evidence/round5-main/offline-final.xml
+        --matrix test/reports/round7-spec覆盖矩阵.md \
+        --junit test/artifacts/evidence/round7/offline2.xml
 """
 from __future__ import annotations
 
@@ -47,8 +47,8 @@ def module_of(test_path: str) -> str:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--matrix", default="test/reports/round5-spec覆盖矩阵.md")
-    parser.add_argument("--junit", default="test/artifacts/evidence/round5-main/offline-final.xml")
+    parser.add_argument("--matrix", default="test/reports/round7-spec覆盖矩阵.md")
+    parser.add_argument("--junit", default="test/artifacts/evidence/round7/offline2.xml")
     parser.add_argument("--md", action="store_true",
                         help="输出可直接贴进矩阵的 Markdown 表（只列离线证据本轮全绿的行）")
     parser.add_argument("--append-to-matrix", action="store_true",

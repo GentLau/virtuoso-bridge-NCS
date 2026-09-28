@@ -228,8 +228,8 @@
 | `calibre`（DRC/LVS/结果读取） | **本轮首次接真机**（专用 work-dir + 业务面；`check_env→drc→status→read_results`） | 首次打通即暴露 4 条：**P-059**（真实 `DRC.rep` 解析失效：逐规则计数认不出 2025 格式、把头部 WARNING 当违规）、**P-060**（calibre 包此前 0 真机覆盖——常驻注册表无 `role.command.calibre`）、**P-061**（阻塞轮询对"工具已死+日志终止性 ERROR"不快失败）、**P-062**（`read_results` 把 `LVS completed. NOT COMPARED.` 截成半个词）。TB：`test/offline/unit/test_calibre_parsers.py`（有意红，钉住 P-059） |
 
 > 口径提醒：上表的"绿"都是**阶段/数值判据**通过，不等于该领域包已覆盖完整（各自的未覆盖项见
-> `test/reports/round5-真机层.md`、`第五轮-真实场景-SerDesRX.md`、`第五轮-真实场景-ADC.md`
-> 与 calibre 线的报告；LVS/DRC 的"工程链跑通"仍受 §11/X 系列环境口径约束）。
+> [round7-测试报告.md](round7-测试报告.md) §8、[第五轮-真实场景-SerDesRX.md](第五轮-真实场景-SerDesRX.md)
+> 与 calibre 线的现状；LVS/DRC 的"工程链跑通"仍受 §11/X 系列环境口径约束）。
 
 > **治理补充（第五轮审计）**：`calibre` 的 spec（`spec/design-concepts/上层/12-calibre.md`）当前仍是
 > **Draft v1、明确未纳入 README 治理**，因此**不在上方 62 条 Normative 统计内**。可本轮它已随
