@@ -155,18 +155,18 @@
 **本轮口径**：`coverage run --branch --source=src` 逐层/逐套件采集后合并（含离线三层 + standalone TB + 11 包 direct +
 真机五接口 + 注册 + S11 等步骤；与历史"再并入 ssh/paramiko/supervisor 定向运行"的合并口径**不同，禁止混引**）。
 
-| 指标 | **本次全量重算（2026-09-29 01:55）** | 上一次全绿快照（2026-09-28 23:33） | 证据 |
+| 指标 | **上次全绿全量（2026-09-28 23:33，主口径）** | 最新一次全量（2026-09-29 01:55，下界） | 证据 |
 |---|---|---|---|
-| 语句 | **90.33%**（15649 / 17325） | 91.54%（15860 / 17325） | `cov-main/coverage-main-strict.json` / `coverage-main-strict-2333.json` |
-| 分支 | **82.26%**（5008 / 6088） | 83.62%（5091 / 6088） | 同上 |
-| combined | **88.23%** | 89.48% | 同上（`totals.percent_covered`） |
+| 语句 | **91.54%**（15860 / 17325） | 90.33%（15649 / 17325） | `cov-main/coverage-main-strict-2333.json`（全绿快照，机器可读）；01:55 的运行输出见 `cov-main/run-full-0129.out.log` |
+| 分支 | **83.62%**（5091 / 6088） | 82.26%（5008 / 6088） | 同上 |
+| combined | **89.48%** | 88.23% | 同上（`totals.percent_covered`） |
 | 模块数 | 57 | 57 | 同上 |
-| 未覆盖分类 | 未分类 1646 / 环境阻塞 26 / 防御性 4（missing_line 1676 / missing_branch 1080） | —— | `coverage-pack/coverage-rules-auto.json`、`coverage-pack/summary.json` |
-| 步骤失败 | **2 步 rc=1**：① `packages/maestro (direct)` = `Interactive.*` history 夹具自毁（TB 已在 02:05 修 fallback，属运行中读到旧版）；② `packages/maestro view-param (direct)` = **P-104** 红钉（read_config 缺失 view 静默成功） | 全步骤通过 | `cov-main/run-full-0129.out.log` |
-| 运行元数据 | `run-meta.json`（本次 head/diff 快照） | `head=a572607…`、`worktree_diff_sha=806874d…` | `cov-main/run-meta.json` |
+| 未覆盖分类 | 未分类 1435 / 环境阻塞 26 / 防御性 4（missing_line 1465 / missing_branch 997） | 未分类 1598 / 环境阻塞 26 / 防御性 4（01:55 下界口径） | `coverage-pack/coverage-rules-auto.json`、`coverage-pack/summary.json`（已按 23:33 主口径重算） |
+| 步骤失败 | 全步骤通过 | **2 步 rc=1**：① `packages/maestro (direct)` = `Interactive.*` history 夹具自毁（TB 已在 02:05 修 fallback，属运行中读到旧版）；② `packages/maestro view-param (direct)` = **P-104** 红钉（read_config 缺失 view 静默成功） | `cov-main/run-full-0129.out.log` |
+| 运行元数据 | `coverage-main-strict-2333.json`（23:33 全绿） | `run-meta.json`（01:42 启动，head/diff 快照） | `cov-main/run-meta.json` |
 
 > 口径说明：① **唯一权威口径 = `coverage-main-strict.json`**（`--branch --source=src` 逐层/逐套件合并后按 `coverage-strict.ini` 出 report/json）；
-> **本次数字 88.23%（语句 90.33%）是下界**：maestro 的两步 rc=1（夹具自毁 + P-104）没有为覆盖贡献完整数据；上一次全绿快照 89.48%（语句 91.54%）在文件夹里保留为 `coverage-main-strict-2333.json`，引用时必须写明是哪一次；
+> **主口径 = 23:33 全绿快照 89.48%（语句 91.54%），该快照已冻结保存为 `coverage-main-strict-2333.json`**；01:55 的 88.23%（语句 90.33%）是**下界**（maestro 两步 rc=1：夹具自毁 + P-104），只作趋势参考，引用时必须写明是哪一次；
 > 同目录 `coverage-main.json`（非 strict）比 strict 多 14 条语句，**不得混引**（红队 REVIEW-C #7 已把"双口径流通"标为问题）；
 > **数据文件可变性警告（2026-09-29 01:26 实测）**：`cov-main/.coverage` 是共享文件，23:33 之后被一次**部分运行**覆盖过——
 > 我在其上 `--append` 跑了一次离线全量，得到的只是 **86.33%（部分口径）**，已单独存为 `coverage-main-offline-append-0126.json` 并标注**不得引用**；
