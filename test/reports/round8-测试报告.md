@@ -18,7 +18,7 @@
   **11 套包 = 10 稳定绿 + 1 被缺陷阻塞**（maestro 卡 P-086/P-095；calibre 初跑红已定性为同一根因的连带，
   恢复实例后复跑 **8/8**，见 §4.4）；
   注册/流程/压测场景全绿（明细见 §4）。
-- 本轮新发现并立案 **26 条缺陷**（P-078…P-103 区间：root 侧 P-092/093/094/099/100/101/102/103，子代理侧 P-095/096/098，
+- 本轮新发现并立案 **27 条缺陷**（P-078…P-104 区间：root 侧 P-092/093/094/099/100/101/102/103/104，子代理侧 P-095/096/098，
   其余为前序根/其它车道），其中 **P-095 + P-096 是 P-086 的两类 P1 根因**（悬空 Overwrite History / 陈旧 OA 写锁 → 模态框卡死 CIW），
   全部有红灯钉住或显式口径声明；**不声称已排干净**。
 
@@ -41,8 +41,12 @@
 
 ## 2. 覆盖轴 B：原子操作（60 个）
 
-- 工具：`audit_atom_coverage.py`；证据 `test/artifacts/evidence/atom-coverage-2026-09-28.json`
-- 结果：**gap=0 / weak=0 / 待分诊=0 / 间接=0**（semi+live 均有引用；"证据树第二来源"同样 0 遗漏）；
+- 工具：`audit_atom_coverage.py`；证据 `test/artifacts/evidence/atom-coverage-2026-09-29.json`（02:15 终检）
+- 结果：**60 原子 / gap=0 / semi+live 无证据文件=0 / 证据树第二来源 0 遗漏 / 待分诊=0**；
+  另有 **11 条写操作被判"弱判据检测"但已在审计器里登记为 false-positive 并写明理由**（探针类 TB 的写只是为了造前置，
+  断言在后续句柄/错误串/下游消费上——逐条理由见该 JSON 的 `write_without_readback`）。
+  本轮补强：`calibre_params` 的 set 上传加远端 `sha256sum` 比对、`calibre_export_pex` 的 DRC 加 `read_results` 读回——
+  两条 `needs-triage` 因此清零（红队/审计器口径）。
 - 本轮补强：serdes calibre 补 `read_results`、ADC/多用户 SerDes 补 `symbol.read` 端口比对、S11 gds 补 stat+sha256。
 - **口径注（红队 REVIEW-C #9 提出）**：同一指标有两份产物 —— `test/reports/round8/atom-coverage.json`（19:51，写原子 `write_without_readback=12`）
   与 `test/artifacts/evidence/atom-coverage-2026-09-28.json`（23:20，`write_without_readback=11`）。本报告引用后者；
@@ -151,16 +155,18 @@
 **本轮口径**：`coverage run --branch --source=src` 逐层/逐套件采集后合并（含离线三层 + standalone TB + 11 包 direct +
 真机五接口 + 注册 + S11 等步骤；与历史"再并入 ssh/paramiko/supervisor 定向运行"的合并口径**不同，禁止混引**）。
 
-| 指标 | 数值 | 证据 |
-|---|---|---|
-| 语句 | **91.54%**（covered 15860 / 17325，miss 1465） | `evidence/cov-main/coverage-main-strict.json`（2026-09-28 23:33:35 重跑） |
-| 分支 | **83.62%**（covered 5091 / 6088，miss 997） | 同上 |
-| combined | **89.48%**（(15860+5091)/(17325+6088)） | 同上（`totals.percent_covered`） |
-| 模块数 | 57 | 同上 |
-| 运行元数据 | `head=a572607…`、`dirty=true`、`worktree_diff_sha=806874d…`、Coverage 7.16.0 | `evidence/cov-main/run-meta.json` |
-| 未覆盖分类 | 见 `coverage-pack/`（本轮分类脚本产物，未在本表内冒充"已解释"） | `coverage-pack/coverage-rules-auto.json` |
+| 指标 | **本次全量重算（2026-09-29 01:55）** | 上一次全绿快照（2026-09-28 23:33） | 证据 |
+|---|---|---|---|
+| 语句 | **90.33%**（15649 / 17325） | 91.54%（15860 / 17325） | `cov-main/coverage-main-strict.json` / `coverage-main-strict-2333.json` |
+| 分支 | **82.26%**（5008 / 6088） | 83.62%（5091 / 6088） | 同上 |
+| combined | **88.23%** | 89.48% | 同上（`totals.percent_covered`） |
+| 模块数 | 57 | 57 | 同上 |
+| 未覆盖分类 | 未分类 1646 / 环境阻塞 26 / 防御性 4（missing_line 1676 / missing_branch 1080） | —— | `coverage-pack/coverage-rules-auto.json`、`coverage-pack/summary.json` |
+| 步骤失败 | **2 步 rc=1**：① `packages/maestro (direct)` = `Interactive.*` history 夹具自毁（TB 已在 02:05 修 fallback，属运行中读到旧版）；② `packages/maestro view-param (direct)` = **P-104** 红钉（read_config 缺失 view 静默成功） | 全步骤通过 | `cov-main/run-full-0129.out.log` |
+| 运行元数据 | `run-meta.json`（本次 head/diff 快照） | `head=a572607…`、`worktree_diff_sha=806874d…` | `cov-main/run-meta.json` |
 
-> 口径说明：① **唯一权威口径 = `coverage-main-strict.json`**（`--branch --source=src` 逐层/逐套件合并后 `coverage json --strict`）；
+> 口径说明：① **唯一权威口径 = `coverage-main-strict.json`**（`--branch --source=src` 逐层/逐套件合并后按 `coverage-strict.ini` 出 report/json）；
+> **本次数字 88.23%（语句 90.33%）是下界**：maestro 的两步 rc=1（夹具自毁 + P-104）没有为覆盖贡献完整数据；上一次全绿快照 89.48%（语句 91.54%）在文件夹里保留为 `coverage-main-strict-2333.json`，引用时必须写明是哪一次；
 > 同目录 `coverage-main.json`（非 strict）比 strict 多 14 条语句，**不得混引**（红队 REVIEW-C #7 已把"双口径流通"标为问题）；
 > **数据文件可变性警告（2026-09-29 01:26 实测）**：`cov-main/.coverage` 是共享文件，23:33 之后被一次**部分运行**覆盖过——
 > 我在其上 `--append` 跑了一次离线全量，得到的只是 **86.33%（部分口径）**，已单独存为 `coverage-main-offline-append-0126.json` 并标注**不得引用**；
@@ -242,6 +248,7 @@
   `credential reuse requires enhanced_token`（复用了对方刚建的 work-dir 凭据）。**单跑结果 29/29**（`registration-role-split-r8b.json`），
   被并发污染的三份产物已移入 `evidence/round8/superseded/`，不得引用。→ 纪律：同一时刻只允许一条注册 TB 占用这两台靶机；
   复用 work-dir 前必须清空 `registered_users`。
+- **TB 夹具自毁（覆盖率补跑时发现并修复）**：`maestro_e2e_tests.py` 的 `_interactive_history` 要求"必须挑一条已存在的 `Interactive.*` 作为覆盖目标"（符合产品语义），但套件自己的 `HISTORY-01` 会 rename/delete 该 history →**跑过一次后共享库里就没有 `Interactive.*` 了**，第二次运行直接 `AssertionError: no Interactive.*`（本轮全量覆盖率两次 maestro 步骤 rc=1 的**第一个**原因）。已修：保留"必须已存在"语义，无 `Interactive.*` 时退回当前存在的任意一条并打印 NOTE（本次退回 `MonteCarlo.2`，作者/最后改动=测试/root 2026-09-29 02:05）；**第二个**原因仍是产品侧 `Empty response from daemon`（P-086/P-095）——修好前覆盖率保持"下界"口径。
 
 ## 9. 复现入口（节选）
 
@@ -289,3 +296,15 @@ python test/shared/runners/build_op_param_matrix.py
   5. `控制面#011`（`src/...:991` 引用形式）→ 行为已由 `TestRegistrationBindsLoopback` AST 断言覆盖；`src/` 锚点本就不在仓库证据检查器范围内，按形式项记录，不改判据。
   6. `layout#180`（`pos` 写 point vs `list(x y)`）→ spec 的 `point（7:8）` 是类型记号，实现 `list(x y)` 即 SKILL point 值；真机写入/读回全绿，**口径措辞级**，登记不改实现。
 - 红队结论：**未再发现"整行假覆盖"**；剩余为设计侧待修的已立卡缺陷与显式声明的环境/能力缺口（§7）。
+
+## 11. 收口自检（2026-09-29 02:14–02:15，全部重跑）
+
+| 轴 | 命令 | 结果 | 证据 |
+|---|---|---|---|
+| A spec 条款 | `merge_round8_spec_matrix.py` | **297 行：direct 222 / indirect 16 / partial 6 / na 53；validation OK**（verdict/证据路径/缺口动作齐全），12 条 gap 动作 | `round8/round8-spec覆盖矩阵.{md,json}` |
+| B 原子 | `audit_atom_coverage.py` | **60 原子 / gap=0 / 待分诊=0**；11 条 false-positive 逐条带理由 | `evidence/atom-coverage-2026-09-29.json` |
+| C op×参数 | `build_op_param_matrix.py` | **628 条：CANDIDATE 572 / GAP 56 / NO-OP-TB 0**（generic 22：pex 11 阻塞 + kind 不适用 8 + 死参数 2 + depth 1） | `round8/op-param-matrix.{md,json}` |
+| TB 规范 | `check_tb_headers.py` | **101 个候选文件全部合格**（缺字段/顺序/格式错 0，全无注释头 0） | `evidence/tb-headers.json` |
+| 缺陷台账 | `make_bug_cards.py --check` | **31 张卡 / 缺失 0 / 重复 0 / 应清理的旧卡片 0**（28 张未关闭） | `bugs/README.md` |
+
+> 口径：以上五项都是**可重跑的脚本**，不是手抄数字；任何一项红即当轮不可送审。本表时间戳=最后一次全绿时间。

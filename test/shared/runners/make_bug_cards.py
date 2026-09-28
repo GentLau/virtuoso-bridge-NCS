@@ -661,6 +661,11 @@ OPEN = [
                    "⇒ **同一实例上只有 maestro 套件稳定触发**，其它 9 套包与 base 五接口全绿，"
                    "支持「maestro 调用序列把句柄 0 传给 ADE API → daemon 侧空响应」这一解释（待设计侧确认）。\n"
                    "**同层第二形态（2026-09-28 23:19 verilog 导入 TB）**：`virtuoso.verilog.import` 在"
+                   "\n**同层第三形态（2026-09-29 02:0x maestro 覆盖补跑）**：`virtuoso.maestro.read_config` 报 "
+                   "`(\"asiGet\" 0 t nil (\"*Error* asiGet: no applicable method for the classes\" list(symbol)))`；"
+                   "同一调用 standalone 复跑立刻 ok=true（同一 sdb、同一 cell）⇒ 归入本卡的瞬时族，不单独立卡。"
+                   "排查中确认共享 `maestro_tb/rc_probe` 的全局变量已累积 ~30 条 `e2e_save_*`/`p086_*` 残留"
+                   "（P-088 `delete_var scope=all` 失效导致清不掉）——**不是**本次 read_config 失败的直接原因，但属同一共享库卫生问题。"
                    "`overwrite=False` 场景返回 `RuntimeError: sha256 mismatch`（上传 stage 的摘要与本地文件不符，"
                    "同一调用前一次却返回 ok=true）—— 与 P-090 同属「上传 staging/校验」路径，一并观察。\n"
                    "**持久形态根因（22:48 定位，见 P-095）**：`maestro.run` 的悬空 Overwrite-History 目标触发 "
@@ -794,6 +799,32 @@ OPEN = [
         "next": "设计侧改收尾口径 → 测试侧复跑该钉与 calibre 套件。",
         "reported": "2026-09-28（第八轮 calibre#069 缺口核账时按 spec 对表发现并复现）",
         "updated": "2026-09-28",
+    },
+    {
+        "id": "P-104",
+        "layer": "上层（maestro 包）· 缺失目标的静默成功",
+        "slug": "read-config-missing-view-silent-empty",
+        "title": "`maestro.read_config` 对**不存在的 view** 静默返回空配置（ok=true）；调用方无法区分「空 setup」与「view 不存在」",
+        "level": "P2（静默假数据：空配置会被当成既有 setup 继续消费）",
+        "owner": "设计侧（maestro 包）；口径二选一需 spec owner 拍板",
+        "status": "待设计修",
+        "where": "`src/pyapi/packages/maestro.py:1321`（`read_config` 入口）→ `:3095-3102`（`maeOpenSetup(...)` 读会话），"
+                 "**不校验 cellview 是否存在**；同包 `read_results` 对缺失结果目录会结构化失败（口径不一致）。",
+        "symptom": "健康真机（vb-s11，2026-09-29 02:2x）实测：`read_config(library=\"maestro_tb\", cell=\"rc_probe\", "
+                   "view=\"no_such_view_p104\")` → **ok=true**，返回空配置（`tests=[]`、`corners=[\"Nominal\"]`、"
+                   "`variables={}`、`run_mode=\"\"`），steps 为 `open_session/setup/options/...`；调用方无法据此判断 view 不存在。"
+                   "同一断言在 `test/live/packages/maestro_view_param_e2e_tests.py` 的只读族（\"不存在的 view 必须结构化失败\"）"
+                   "当前为**红钉**（2026-09-29 01:5x 全量覆盖跑 `packages/maestro view-param (direct)` rc=1，报"
+                   "`read_config expected structured failure, got ok`）。",
+        "repro": "python test/artifacts/tmp/r8_p104_readconfig_probe.py        # vb-vblog 当时被 P-086 卡住，已在 vb-s11 确认\n"
+                 "python test/live/packages/maestro_view_param_e2e_tests.py --transport http  # read 族负例当前红",
+        "evidence": "`test/artifacts/evidence/round8/p104-readconfig-missing-view.json`（vb-s11 原始响应）；"
+                    "`test/artifacts/evidence/round8/coverage-main-r8d.log`（vblog 侧同断言原文）。",
+        "accept": "① `read_config` 对不存在 view 返回结构化失败（点名 library/cell/view）；"
+                  "或 ② spec 明确「不存在即空配置」语义 → TB 按该口径改成断言空配置并加 NOTE，二者取其一并同步报告。",
+        "next": "设计侧定口径；测试侧按结论把 `maestro_view_param_e2e_tests.py` 的 read 族负例改成对应用例后复跑。",
+        "reported": "2026-09-29（第八轮覆盖率重算时由 maestro view-param TB 红钉暴露，root 复核并最小化）",
+        "updated": "2026-09-29（新立）",
     },
 ]
 

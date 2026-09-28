@@ -13,7 +13,7 @@
 3. **刷新方式**：改 `test/shared/runners/make_bug_cards.py` 的 `OPEN` / `CLOSED_RECENT` 段，
    然后 `python test/shared/runners/make_bug_cards.py`（幂等；`--check` 只校验不写盘）。
 
-## 1. 未关闭（27 条）
+## 1. 未关闭（28 条）
 
 | ID | 层 | 级别 | 归属 | 状态 | 一句话 | 卡片 |
 |---|---|---|---|---|---|---|
@@ -44,6 +44,7 @@
 | **P-095** | 上层（maestro 包）· GUI 模态 | P1（可把实例 CIW 挂死；P-086 持久形态的直接根因） | 设计侧（maestro 包 run 流程 + 对话框 watchdog） | 待设计修 | `maestro.run` 的 Overwrite History 目标悬空：`ASSEMBLER-3018` 模态框阻塞 CIW → daemon 空响应（watchdog 不处理） | [P-095-maestro-run-stale-overwrite-history-modal.md](P-095-maestro-run-stale-overwrite-history-modal.md) |
 | **P-096** | 上层（maestro 包）· 崩溃恢复 / OA 写锁 | P2（崩溃后该 cell 的 maestro 打不开且会挂死实例，需人工删锁） | 设计侧（maestro 打开/写路径的锁判定；可参考 schematic 的“locked by another session”结构化失败） | 待设计修 | 陈旧 OA 写锁（属主进程已死）触发 `axlOpenInRead0` 模态框 → CIW/daemon 再次挂死；应结构化失败或自动强制 | [P-096-maestro-stale-write-lock-modal-wedge.md](P-096-maestro-stale-write-lock-modal-wedge.md) |
 | **P-098** | 上层（calibre 包）· 阻塞轮询口径 | P3（口径偏差：调用方按 spec 判 `status=="timeout"` 会永远不成立；作业本身不杀、行为其余正确） | 设计侧（calibre 包轮询收尾） | 待设计修 | `blocking=true` 超时返回最后一次 `status`（running/unknown），未按 spec 返回 `status=timeout` | [P-098-calibre-blocking-timeout-status-not-timeout.md](P-098-calibre-blocking-timeout-status-not-timeout.md) |
+| **P-104** | 上层（maestro 包）· 缺失目标的静默成功 | P2（静默假数据：空配置会被当成既有 setup 继续消费） | 设计侧（maestro 包）；口径二选一需 spec owner 拍板 | 待设计修 | `maestro.read_config` 对**不存在的 view** 静默返回空配置（ok=true）；调用方无法区分「空 setup」与「view 不存在」 | [P-104-read-config-missing-view-silent-empty.md](P-104-read-config-missing-view-silent-empty.md) |
 
 > 优先级口径：**P1** = Linux 侧资源/安全或核心指标链路断（P-056、P-053）；
 > **P2** = 真实设计流会给出错的/空的结果，且多数**静默**；**P3/观察** = 非阻塞但建议顺手修。
