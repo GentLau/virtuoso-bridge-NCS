@@ -14,9 +14,11 @@ from transport.tunnel import RemoteClient
 
 class FakeRunner:
     instances = []
+    start_error: Exception | None = None
 
     def __init__(self, **kwargs):
         self.kwargs = kwargs
+        self.started = False
         FakeRunner.instances.append(self)
 
     @property
@@ -25,6 +27,14 @@ class FakeRunner:
 
     def close(self):
         pass
+
+    def start_port_forward(self, *args, **kwargs):
+        if FakeRunner.start_error is not None:
+            raise FakeRunner.start_error
+        self.started = True
+
+    def stop_port_forward(self):
+        self.started = False
 
 
 class TestEndpointBudgets(unittest.TestCase):
@@ -87,6 +97,44 @@ class TestEndpointBudgets(unittest.TestCase):
             client = RemoteClient(entry, targets, "alice")
         self.assertEqual(client.budgets.endpoint_limit(targets.command.key), 3)
         client.close()
+
+    def test_skill_tunnel_counts_channel_lease_and_releases(self):
+        """并发#022：daemon 专用 Skill 隧道必须计入通道数，关闭时归还。"""
+        entry = UserEntry(token="tok", mode="remote")
+        entry.ssh.default.host = "server-a"
+        entry.ssh.default.user = "alice"
+        entry.roles.daemon.daemon_port = 65081
+        entry.roles.daemon.local_port = 65082
+        targets = resolve(entry, "alice")
+        with mock.patch("transport.tunnel.SSHRunner", FakeRunner):
+            client = RemoteClient(entry, targets, "alice")
+            key = targets.daemon.key
+            self.assertEqual(client.budgets.channels_in_use_for(key), 0)
+            client.ensure_tunnel()
+            self.assertEqual(client.budgets.channels_in_use_for(key), 1,
+                             "Skill 隧道必须占用一条 daemon endpoint 通道")
+            client.close()
+            self.assertEqual(client.budgets.channels_in_use_for(key), 0)
+
+    def test_skill_tunnel_releases_lease_on_start_failure(self):
+        entry = UserEntry(token="tok", mode="remote")
+        entry.ssh.default.host = "server-a"
+        entry.ssh.default.user = "alice"
+        entry.roles.daemon.daemon_port = 65081
+        entry.roles.daemon.local_port = 65082
+        targets = resolve(entry, "alice")
+        FakeRunner.start_error = RuntimeError("port forward refused")
+        try:
+            with mock.patch("transport.tunnel.SSHRunner", FakeRunner):
+                client = RemoteClient(entry, targets, "alice")
+                with self.assertRaises(RuntimeError):
+                    client.ensure_tunnel()
+                self.assertEqual(
+                    client.budgets.channels_in_use_for(targets.daemon.key), 0,
+                    "建隧道失败必须归还通道租约")
+                client.close()
+        finally:
+            FakeRunner.start_error = None
 
 
 if __name__ == "__main__":

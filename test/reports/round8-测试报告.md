@@ -1,6 +1,6 @@
 # 第八轮全面测试报告（2026-09-28）
 
-> 状态：**收尾中**（已并入：Linux 离线/真机客户端两条线、覆盖率终值、缺陷台账；**唯一未完成项 = 红队评审结论**，见 §10）
+> 状态：**定稿**（已并入：Linux 离线/真机客户端两条线、覆盖率终值、缺陷台账、四份独立红队评审与逐条处置；见 §10）
 > 口径：**三轴覆盖**（A spec 条款 / B 原子 / C op×参数）× **三层回归**（离线 / 半真机 / 真机）+ 缺陷与"不覆盖声明"。
 > 原则：只用可复查证据说话；**弱判据（只看 ok/rc）不作为覆盖结论**；未跑到的显式列缺口，不声称 100%。
 
@@ -257,10 +257,12 @@ python test/shared/runners/build_op_param_matrix.py
 ## 10. 红队评审（独立子代理）
 
 - 任务书：`test/reports/round8/red-team-brief.md`（8 条必查清单）。执行方：独立子代理 `/root/verilog_params/red_team`。
-- 产出三份（**不是** brief 要求的单文件全量版，覆盖范围见各文件声明）：
+- 产出四份：
   `review-A-lite-抽查.md`（15 项分层抽样：ok 12 / overclaim 1 / 无法确认 2）、
   `review-B-遗漏审计.md`（必须补 3 / 建议补 4 / 可接受声明 7 + 42 处吞异常扫描）、
-  `review-C-数字复核.md`（12 项一致 / 8 项不符或口径冲突）。
+  `review-C-数字复核.md`（12 项一致 / 8 项不符或口径冲突）、
+  `review-D-direct全量抽样.md`（brief #1 全量补做：42 条 direct 语义核验，g1–g6 每簇 7 条，seed=4092；**36 ok / 6 需处置**）。
+- **brief #1 已补齐**：A(15) + D(42，去重) = **57 条 direct 人工语义核验**，覆盖 6 簇。
 - **红队发现与处置（本报告已同步）**：
   1. **A-上层#043 overclaim（高置信）**：原引用 `test_middle_contracts.py`+`test_pyapi_packages.py` 里根本没有 checksum/重试断言。
      → 已改为 `test_tunnel_transfer.py::test_upload_checksum_mismatch_does_not_move_stage` / `::test_verify_mismatch` +
@@ -273,5 +275,12 @@ python test/shared/runners/build_op_param_matrix.py
   6. **B-#1 calibre.pex 未立卡/矩阵未重建** → 已立 **P-102**（stage3 argv 非法，含三阶段日志证据）并重建矩阵（NO-OP-TB 归零）。
   7. **B-#7 后仿/PVT 口径** → §7 G2 已改为"无寄生后仿对照 match；带寄生未通；PVT 未做"。
   8. **B-#6 "明确不做"清单未登记** → §7 G16 已按 na（范围声明）登记 3 项，不假装覆盖。
-- **仍未做**：brief #1 要求的 **≥40 条 direct 全量抽查只做了 15 条**（子代理线程限），B#6 建议的低成本离线契约（旧入口 import 必失败）未写。
-  这两项是本轮明确的**流程残留**，建议下一轮首项补上；本报告不声称"已通过全量红队"。
+- **原两处残留（已补齐，2026-09-29 00:5x）**：① brief #1 的 ≥40 条全量抽查（review-D 完成 42 条，§上）；② B#6 的低成本离线契约 —— `test/offline/unit/test_scope_exclusions.py` 4 例覆盖旧入口/pending/HMAC 缺失（§7 G16）。
+- **review-D 六项处置**（逐条落地，均已复跑）：
+  1. `总览#175`（RS 终止字节无显式断言）→ 在 `test_daemon_handler.py` 成功/NAK/日志三条路径补 `raw.endswith(RS)` 显式断言（19/19 绿）。
+  2. `总览#206`（跨 token 不共用未断言）→ 矩阵证据补 `test_multi_user_isolation.py::test_two_users_route_to_their_own_daemons`（`assertIsNot(_skill(tok-a), _skill(tok-b))`）。
+  3. `并发#022`（Skill 专用隧道未计入通道数）→ `test_endpoint_budgets.py` 新增 2 例：隧道存活时占用 1 条 daemon 通道；建隧道失败必须归还租约（7/7 绿）。
+  4. `日志#045`（reason 声称的 64KB 默认值测试不存在）→ `test_registry_more.py::test_cdslog_defaults_and_bounds` 断言 `log_level="all"`、`log_max_bytes=65536`、非法值拒绝。
+  5. `控制面#011`（`src/...:991` 引用形式）→ 行为已由 `TestRegistrationBindsLoopback` AST 断言覆盖；`src/` 锚点本就不在仓库证据检查器范围内，按形式项记录，不改判据。
+  6. `layout#180`（`pos` 写 point vs `list(x y)`）→ spec 的 `point（7:8）` 是类型记号，实现 `list(x y)` 即 SKILL point 值；真机写入/读回全绿，**口径措辞级**，登记不改实现。
+- 红队结论：**未再发现"整行假覆盖"**；剩余为设计侧待修的已立卡缺陷与显式声明的环境/能力缺口（§7）。

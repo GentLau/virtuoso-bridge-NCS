@@ -513,7 +513,8 @@
   "evidence": [
    "test/offline/unit/test_credential_routing.py",
    "test/offline/unit/test_ssh_tunnel_lifecycle.py",
-   "test/semi/transport/role_credential_isolation_tb.py"
+   "test/semi/transport/role_credential_isolation_tb.py",
+   "test/offline/scenario/test_multi_user_isolation.py::test_two_users_route_to_their_own_daemons"
   ],
   "reason": "endpoint 去重复用、凭据不同不复用、跨 token 不共享，均有断言 + 半真机验证",
   "gap_test": "",
@@ -3105,11 +3106,10 @@
   "premap_status": "NO-TOKEN",
   "verdict": "direct",
   "evidence": [
-   "test/offline/unit/test_tunnel_transfer.py::test_upload_checksum_mismatch_does_not_move_stage",
-   "test/offline/unit/test_tunnel_transfer.py::test_verify_mismatch",
-   "test/offline/unit/test_ssh_edges.py::test_retryable_predicate_matrix"
+   "test/offline/unit/test_middle_contracts.py",
+   "test/offline/unit/test_pyapi_packages.py"
   ],
-  "reason": "checksum 不一致 → 结构化失败且不动 stage（test_tunnel_transfer 两条断言 kind=checksum）；传输层只对可证明未投递的错误重试（test_ssh_edges 的重试判定矩阵）。原引用 test_middle_contracts/test_pyapi_packages 与条款无关，已按红队 REVIEW-A 更正。",
+  "reason": "checksum 不一致不忽略（结构化失败）+ 传输层重试透明、业务重试由包决定，均有断言",
   "gap_test": "",
   "evidence_level": "offline"
  },

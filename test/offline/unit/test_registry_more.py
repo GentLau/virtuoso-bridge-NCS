@@ -13,7 +13,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src"))
 
 from pydantic import ValidationError
-from common.registry import Registry, RegistryError, UserEntry, load_registry
+from common.registry import CdsLog, Registry, RegistryError, UserEntry, load_registry
 from common.paths import init_work_dir, registry_path, work_root
 
 
@@ -133,6 +133,16 @@ class TestRegistryMore(unittest.TestCase):
     def test_empty_token_rejected(self):
         with self.assertRaises(ValidationError):
             UserEntry(token="", mode="remote")
+
+    def test_cdslog_defaults_and_bounds(self):
+        """日志#045：`log_level` 默认 all、`log_max_bytes` 默认 65536（64KB）且 >=1。"""
+        default = CdsLog()
+        self.assertEqual(default.log_level, "all")
+        self.assertEqual(default.log_max_bytes, 65536)
+        with self.assertRaises(ValidationError):
+            CdsLog(log_max_bytes=0)
+        with self.assertRaises(ValidationError):
+            CdsLog(log_level="verbose")
 
     def test_model_dump_has_no_runtime_state(self):
         entry = UserEntry(token="t", mode="remote")

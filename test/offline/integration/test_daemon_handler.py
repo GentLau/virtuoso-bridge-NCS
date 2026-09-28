@@ -121,6 +121,7 @@ class TestDaemonHandler(DaemonHandlerTestBase):
     def test_valid_single_line_skill_roundtrip(self):
         raw, sent = self._run_handler({"skill": "1+1", "timeout": 5, "token": "tok-1"})
         self.assertTrue(raw.startswith(STX), raw)
+        self.assertTrue(raw.endswith(RS), f"success frame must end with RS: {raw!r}")
         body = json.loads(raw[1:].rstrip(RS).decode("utf-8"))
         self.assertEqual(body["value"], "2")
         self.assertEqual(body["log"], "")
@@ -132,6 +133,7 @@ class TestDaemonHandler(DaemonHandlerTestBase):
             {"skill": "1+1", "timeout": 5, "token": "tok-1", "log_level": "all"}
         )
         self.assertTrue(raw.startswith(STX), raw)
+        self.assertTrue(raw.endswith(RS), f"success frame must end with RS: {raw!r}")
         body = json.loads(raw[1:].rstrip(RS).decode("utf-8"))
         self.assertEqual(body["log"], "")
         warnings = body.get("warnings") or []
@@ -146,6 +148,7 @@ class TestDaemonHandler(DaemonHandlerTestBase):
              "log_level": "verbose"}
         )
         self.assertTrue(raw.startswith(NAK), raw)
+        self.assertTrue(raw.endswith(RS), f"NAK frame must end with RS: {raw!r}")
         self.assertIn("invalid log_level", raw.decode())
         self.assertEqual(sent, b"")
 

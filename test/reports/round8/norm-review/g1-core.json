@@ -497,7 +497,8 @@
   "evidence": [
    "test/offline/unit/test_credential_routing.py",
    "test/offline/unit/test_ssh_tunnel_lifecycle.py",
-   "test/semi/transport/role_credential_isolation_tb.py"
+   "test/semi/transport/role_credential_isolation_tb.py",
+   "test/offline/scenario/test_multi_user_isolation.py::test_two_users_route_to_their_own_daemons"
   ],
   "reason": "endpoint 去重复用、凭据不同不复用、跨 token 不共享，均有断言 + 半真机验证",
   "gap_test": ""

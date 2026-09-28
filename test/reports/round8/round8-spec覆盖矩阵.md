@@ -42,7 +42,7 @@
 | 总览#192 | 总览/1-四层整体架构与接口.md | **direct** |  | skill 投递后不重发（单次投递断言）、超时视为结果未知，均有断言 | test/offline/core/semantics_tb.py<br>test/offline/unit/test_persistent_shell_protocol.py |
 | 总览#196 | 总览/1-四层整体架构与接口.md | **direct** |  | 临时落盘→SHA 校验→原子替换、失败回滚（目标不变）、覆盖语义均有断言 | test/offline/unit/test_transfer.py<br>test/offline/unit/test_tunnel_transfer.py |
 | 总览#204 | 总览/1-四层整体架构与接口.md | **direct** |  | 五 role 独立配置（字段级）+ 真机跨主机 S2 五 role 投送 5/5 | test/offline/unit/test_register_flow.py<br>test/offline/unit/test_validation_roles.py<br>test/live/flows/role_split_tb.py |
-| 总览#206 | 总览/1-四层整体架构与接口.md | **direct** |  | endpoint 去重复用、凭据不同不复用、跨 token 不共享，均有断言 + 半真机验证 | test/offline/unit/test_credential_routing.py<br>test/offline/unit/test_ssh_tunnel_lifecycle.py<br>test/semi/transport/role_credential_isolation_tb.py |
+| 总览#206 | 总览/1-四层整体架构与接口.md | **direct** |  | endpoint 去重复用、凭据不同不复用、跨 token 不共享，均有断言 + 半真机验证 | test/offline/unit/test_credential_routing.py<br>test/offline/unit/test_ssh_tunnel_lifecycle.py<br>test/semi/transport/role_credential_isolation_tb.py<br>test/offline/scenario/test_multi_user_isolation.py::test_two_users_ |
 | 总览#210 | 总览/1-四层整体架构与接口.md | **direct** |  | path/transport/command/skill/checksum 五类错误可区分，均有结构化断言 | test/offline/core/fault_injection_tb.py<br>test/offline/unit/test_transport_error_paths.py<br>test/offline/unit/test_middle_contracts.py |
 | 总览#211 | 总览/1-四层整体架构与接口.md | **indirect** |  | 一 token→一 daemon 的映射与多 token 隔离有断言（离线多用户 + 真机四 token）；‘第二 CIW=配置错误’属环境约定，无负向用例 ｜ **缺口**: —（环境约定项，不做负向） | test/offline/unit/test_middle_contracts.py<br>test/offline/scenario/test_multi_user_isolation.py<br>test/live/transport/cov_remote_real.py |
 | 总览#215 | 总览/1-四层整体架构与接口.md | **direct** |  | 绝对路径/`..` 不被拦截、root 仅作默认目录，均有断言；2026-09-28 复核补钉：新增 TestLocalTildeExpansion::test_root_is_default_dir_not_a_sandbox（相对路径落 root、绝对路径且在 root 之外不被拦截、.. 按  | test/offline/unit/test_local_path_expansion.py<br>test/offline/unit/test_transfer.py<br>test/offline/unit/test_local_path_expansion.py::TestLocalTildeExpansion::test_root_is_default_dir_not_a_sandbox |
@@ -156,7 +156,7 @@
 | 上层#031 | 上层/1-上层.md | **direct** |  | 每步 {step, ok, detail} 记录 + 任一步失败即停（后续不执行），包级用例有断言 | test/offline/unit/test_maestro_package_flow.py<br>test/offline/unit/test_veriloga_contracts.py |
 | 上层#032 | 上层/1-上层.md | **direct** |  | 失败保留 steps 痕迹、不以成功形态返回（ok=false + error），有断言；P-027 类假成功已被禁止 | test/offline/unit/test_veriloga_contracts.py<br>test/offline/unit/test_maestro_package_flow.py |
 | 上层#042 | 上层/1-上层.md | **direct** |  | 领域校验/执行失败一律 Result(ok=false)（多条 assertFalse(result.ok)），不抛异常 | test/offline/unit/test_veriloga_contracts.py<br>test/offline/unit/test_maestro_package_flow.py |
-| 上层#043 | 上层/1-上层.md | **direct** |  | checksum 不一致不忽略（结构化失败）+ 传输层重试透明、业务重试由包决定，均有断言 | test/offline/unit/test_tunnel_transfer.py::test_upload_checksum_mismatch_does_not_move_stage<br>test/offline/unit/test_tunnel_transfer.py::test_verify_mismatch<br>test/offline/unit/test_ssh_edges.py::test_retryable_predicate_matrix |
+| 上层#043 | 上层/1-上层.md | **direct** |  | checksum 不一致不忽略（结构化失败）+ 传输层重试透明、业务重试由包决定，均有断言 | test/offline/unit/test_middle_contracts.py<br>test/offline/unit/test_pyapi_packages.py |
 | 上层#045 | 上层/1-上层.md | **direct** |  | 登记单元=业务操作级 tuple（含重复登记启动错误），有断言 | test/offline/unit/test_top_layer_dispatch.py<br>test/offline/unit/test_pyapi_packages.py |
 | 上层#063 | 上层/1-上层.md | **na** |  | 索引/定位/关联声明，无独立可测行为 |  |
 | 上层#066 | 上层/1-上层.md | **na** |  | 索引/定位/关联声明，无独立可测行为 |  |
