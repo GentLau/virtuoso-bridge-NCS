@@ -1,3 +1,8 @@
+# === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
+# 作者: 设计/上层开发
+# 最后改动: 2026-09-28 23:30
+# 依赖: 无
+# =======================================================================
 """S11-LVS TB：**源网表由 bridge 自读的原理图数据生成**，再跑 Calibre LVS。
 
 与 ``s11_full_flow.py`` 的区别：那份 TB 用的源网表是工程里既有的手写 CDL
@@ -19,6 +24,10 @@
 约定：器件 cell 名（``nch_25``/``pch_25``）到 Calibre deck 的 DEVICE 名
 （``nch``/``pch``）的映射表写在 ``DEVICE_MAP``；依据是 lvs.rep 里的
 ``TRACE PROPERTY mn(nch)`` / ``mp(pch)`` 行（见 evidence 的 deck_devices 字段）。
+六步流程（test/docs/写TB规范.md §1）：
+① `require_environment`（靶机指纹 / 业务面 / 需要的库）；②③ 造并校验基线（专属库、cell、前置对象）；
+④ 只做被测动作；⑤ 读回比对（期望 / 实际入证据）；⑥ 跑完不清理现场。
+某步不适用时，正文有一行注释说明原因。
 """
 from __future__ import annotations
 
@@ -216,8 +225,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--local-gds", default="",
                         help="复用一份**已由产品导出的** GDS（当版图被别的 Virtuoso 会话锁住、"
                              "无法再走 layout.gds export 时使用；sha256 会写进证据）")
-    parser.add_argument("--out", default=str(ROOT / "test" / "artifacts" /
-                                             "scenario-project65" / "lvs" /
+    parser.add_argument("--out", default=str(ROOT / "test" / "artifacts" / "env" / "scenario-project65" / "lvs" /
                                              "evidence-lvs-from-schematic.json"))
     parser.add_argument("--skip-lvs", action="store_true", help="只生成网表，不跑 Calibre")
     args = parser.parse_args(argv)

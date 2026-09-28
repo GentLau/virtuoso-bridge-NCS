@@ -1,3 +1,8 @@
+# === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
+# 作者: 设计/上层开发
+# 最后改动: 2026-09-28 23:30
+# 依赖: 无
+# =======================================================================
 """S11 端到端工程流程 TB：建库 → 原理图 → symbol → CDL → 版图 → GDS → LVS → 仿真。
 
 这是**跨包工程流程**测试（区别于 ``test/live/packages/*`` 的单包验收）：
@@ -12,6 +17,10 @@
 
 证据：``test/artifacts/env/scenario-project65/evidence-<stage>.json``
 远端产物：``<file role root>/project65/``（库、GDS、CDL）
+六步流程（test/docs/写TB规范.md §1）：
+① `require_environment`（靶机指纹 / 业务面 / 需要的库）；②③ 造并校验基线（专属库、cell、前置对象）；
+④ 只做被测动作；⑤ 读回比对（期望 / 实际入证据）；⑥ 跑完不清理现场。
+某步不适用时，正文有一行注释说明原因。
 """
 from __future__ import annotations
 
@@ -31,7 +40,9 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 
 API = "http://127.0.0.1:8127/api/operation"
-WORK_DIR = ROOT / "test" / "artifacts" / "scenario-project65"
+WORK_DIR = ROOT / "test" / "artifacts" / "env" / "scenario-project65"
+#: direct 模式绑定的注册表（含 PDK token 与 vblog token 两个条目）
+DIRECT_WORK_DIR = ROOT / "test" / "artifacts" / "env" / "log-vblog"
 
 #: PDK 实例（带 tsmcN65）与普通实例（vblog）的 token
 PDK_TOKEN = "d6af595b342647b58ec63ca6"
@@ -69,9 +80,39 @@ class HttpTransport:
             return json.loads(error.read().decode("utf-8"))
 
 
+class DirectTransport:
+    """进程内派发（与其它 TB 一致）：不依赖常驻业务面，直接跑工作树里的代码。
+
+    绑定的注册表 = ``DIRECT_WORK_DIR``（含 PDK token 与 vblog token），
+    因此 ``PDK_TOKEN`` / ``VLOG_TOKEN`` 两个身份都能用。
+    """
+
+    middle = None
+
+    def __init__(self, token: str) -> None:
+        from common.paths import init_work_dir
+        from server import dispatch
+        from server.api_server import register_packages
+        from transport.middle import BusinessServer
+
+        init_work_dir(str(DIRECT_WORK_DIR))
+        register_packages()
+        self.dispatch = dispatch
+        self.middle = BusinessServer()
+        self.token = token
+
+    def call(self, payload: dict[str, Any]) -> dict[str, Any]:
+        status, body = self.dispatch.dispatch(self.middle, payload)
+        if status not in (200, 400):
+            raise AssertionError(f"dispatch status {status}: {body}")
+        return body
+
+
 def make_transport(kind: str, token: str):
     if kind == "http":
         return HttpTransport(token)
+    if kind == "direct":
+        return DirectTransport(token)
     raise SystemExit(f"transport {kind!r} not supported yet")
 
 
@@ -199,6 +240,15 @@ def stage_lib(transport, cfg) -> Stage:
     )
     st.ok("remote-root-ready", {"root": remote_root, "stdout": cmd_stdout(prep).strip()})
     lib_path = f"{remote_root}/{PROJ_LIB}"
+    # ②③ 还原基线（幂等）：库已存在时先删掉，保证本 stage 每次都能从零重建
+    #（旧版直接 lib.create，重跑必报 libraryExists —— 违反 §3"下次运行自己还原基线"）
+    if op(transport, "virtuoso.cellview.lib.list", token=PDK_TOKEN,
+          timeout=120).get("value") and PROJ_LIB in op(
+              transport, "virtuoso.cellview.lib.list", token=PDK_TOKEN,
+              timeout=120)["value"]:
+        op(transport, "virtuoso.cellview.lib.delete", token=PDK_TOKEN,
+           library=PROJ_LIB, timeout=120)
+        st.ok("lib-cleanup-existing", {"library": PROJ_LIB})
     data = op(
         transport, "virtuoso.cellview.lib.create", token=PDK_TOKEN,
         library=PROJ_LIB, path=lib_path, technology_library=PDK_LIB,
@@ -214,19 +264,32 @@ def stage_schematic(transport, cfg) -> Stage:
     st = Stage("schematic-" + cfg.cell, cfg.out)
     cfg.created.append(st)
     stub = float(cfg.stub_length)
+    # ②③ 前置：`schematic.write` 只写**已存在**的 view（实现先以 r 模式探测，缺则报 missing），
+    # 所以这里先建 schematic view（重复运行也能自己还原基线：已存在就删掉重建）。
+    try:
+        op(transport, "virtuoso.cellview.view.delete", token=PDK_TOKEN,
+           library=cfg.lib, cell=cfg.cell, view="schematic", timeout=120)
+    except Exception:  # noqa: BLE001 - 不存在即跳过
+        pass
+    created_view = op(
+        transport, "virtuoso.cellview.view.create", token=PDK_TOKEN,
+        library=cfg.lib, cell=cfg.cell, view="schematic", view_type="schematic",
+        timeout=120,
+    )
+    st.ok("schematic-view-create", created_view)
     commands = [
         {"op": "place_instance", "master_lib": PDK_LIB, "master_cell": PCH,
-         "master_view": "symbol", "name": "MP", "x": 0.0, "y": 1.0, "orient": "R0"},
+         "master_view": "symbol", "name": "MP", "pos": [0.0, 1.0], "orient": "R0"},
         {"op": "place_instance", "master_lib": PDK_LIB, "master_cell": NCH,
-         "master_view": "symbol", "name": "MN", "x": 0.0, "y": -1.0, "orient": "R0"},
+         "master_view": "symbol", "name": "MN", "pos": [0.0, -1.0], "orient": "R0"},
         {"op": "set_term_nets", "name": "MP", "stub_length": stub,
          "term_nets": {"G": "VIN", "D": "VOUT", "S": "VDD", "B": "VDD"}},
         {"op": "set_term_nets", "name": "MN", "stub_length": stub,
          "term_nets": {"G": "VIN", "D": "VOUT", "S": "VSS", "B": "VSS"}},
-        {"op": "place_pin", "name": "VIN", "direction": "input", "x": -2.0, "y": 0.0},
-        {"op": "place_pin", "name": "VOUT", "direction": "output", "x": 2.0, "y": 0.0},
-        {"op": "place_pin", "name": "VDD", "direction": "inputOutput", "x": 0.0, "y": 3.0},
-        {"op": "place_pin", "name": "VSS", "direction": "inputOutput", "x": 0.0, "y": -3.0},
+        {"op": "place_pin", "name": "VIN", "direction": "input", "pos": [-2.0, 0.0]},
+        {"op": "place_pin", "name": "VOUT", "direction": "output", "pos": [2.0, 0.0]},
+        {"op": "place_pin", "name": "VDD", "direction": "inputOutput", "pos": [0.0, 3.0]},
+        {"op": "place_pin", "name": "VSS", "direction": "inputOutput", "pos": [0.0, -3.0]},
     ]
     data = op(
         transport, "virtuoso.schematic.write", token=PDK_TOKEN,
@@ -297,54 +360,33 @@ cdlPrintComments = 't
 
 
 def stage_cdl(transport, cfg) -> Stage:
-    """用 Virtuoso 自带 auCdl 机制（si -batch）导出 LVS 用 CDL。"""
+    """用产品操作 ``calibre.export_cdl``（官方 auCdl 链路）导出 LVS 用 CDL。
+
+    旧版这里手写 si.env（Digital/hnl 模式：`simSimulator="cdl"`）并裸跑 si →
+    必踩 `hnlCDLParamList`/`hnlCDLFormatInst` 未定义（见调查报告 §6/§11 的 Digital vs
+    Analog 结论）。现在改调已真机验收的官方链路（auCdl + checkCAPPERI=nil）。
+    """
     st = Stage("cdl-" + cfg.cell, cfg.out)
     cfg.created.append(st)
     run_dir = f"{cfg.command_root}/cdl/{cfg.cell}"
-    stage = cfg.out / "stage"
-    stage.mkdir(parents=True, exist_ok=True)
-
-    prep = op(
-        transport, "basic.command.run", token=PDK_TOKEN,
-        cmd=(f"rm -rf {run_dir} && mkdir -p {run_dir} && "
-             f"cp {cfg.cds_lib_file} {run_dir}/cds.lib && "
-             f"ls -la {run_dir} && echo prep-ok"),
-        timeout=120,
-    )
-    st.ok("prep", {"run_dir": run_dir, "stdout": cmd_stdout(prep)[-400:]})
-
-    si_env = stage / f"{cfg.cell}_si.env"
-    si_env.write_text(
-        SI_ENV.format(lib=cfg.lib, cell=cfg.cell, run_dir=run_dir), encoding="utf-8")
-    simrc = stage / f"{cfg.cell}_simrc"
-    simrc.write_text(SIMRC, encoding="utf-8")
-
-    up1 = op(transport, "basic.file.upload", token=PDK_TOKEN,
-             local_path=str(si_env), remote_path=f"{run_dir}/si.env", timeout=120)
-    up2 = op(transport, "basic.file.upload", token=PDK_TOKEN,
-             local_path=str(simrc), remote_path=f"{run_dir}/.simrc", timeout=120)
-    st.ok("upload-inputs", {"si_env": cmd_stdout(up1).strip(), "simrc": cmd_stdout(up2).strip()})
-
-    run = op(
-        transport, "basic.command.run", token=PDK_TOKEN,
-        cmd=(f"cd {run_dir} && CDS_Netlisting_Mode=Analog timeout 300 "
-             f"si -batch -command netlist > si.log 2>&1; echo si_rc=$?; "
-             f"echo '--- si.log tail ---'; tail -30 si.log; "
-             f"echo '--- files ---'; ls -la; "
-             f"echo '--- netlist ---'; cat {cfg.cell}.cdl 2>/dev/null | head -60"),
+    data = op(
+        transport, "calibre.export_cdl", token=PDK_TOKEN,
+        library=cfg.lib, cell=cfg.cell, view="schematic",
+        netlist_name=f"{cfg.cell}.cdl", run_dir=run_dir, cds_lib=cfg.cds_lib_file,
         timeout=600,
     )
-    text = cmd_stdout(run)
-    st.value["si_output"] = text[-6000:]
-    if "si_rc=0" not in text:
-        st.bad("si-batch", text[-2000:])
-        raise FlowError("cdl-si-batch", "si -batch 未成功", text[-2000:])
-    st.ok("si-batch", "si_rc=0")
+    value = (data or {}).get("value") or {}
+    netlist_path = value.get("netlist_path")
+    st.ok("export-cdl", {"run_dir": run_dir, "netlist_path": netlist_path,
+                         "bytes": value.get("bytes")})
+    if not netlist_path or not value.get("bytes"):
+        st.bad("export-cdl-empty", value)
+        raise FlowError("cdl-export", "export_cdl 未产出非空 CDL", value)
 
     local_cdl = cfg.out / f"{cfg.cell}.cdl"
     try:
         op(transport, "basic.file.download", token=PDK_TOKEN,
-           remote_path=f"{run_dir}/{cfg.cell}.cdl", local_path=str(local_cdl), timeout=180)
+           remote_path=str(netlist_path), local_path=str(local_cdl), timeout=180)
         st.value["cdl_path"] = str(local_cdl)
         st.ok("cdl-downloaded", {"bytes": local_cdl.stat().st_size})
     except Exception as exc:  # noqa: BLE001 - 下载失败不算致命，stdout 已留证
@@ -372,9 +414,9 @@ def stage_layout(transport, cfg) -> Stage:
 
     commands = [
         {"op": "place_instance", "master_lib": PDK_LIB, "master_cell": PCH,
-         "master_view": "layout", "name": "MP", "xy": [0.0, 0.0], "orient": "R0"},
+         "master_view": "layout", "name": "MP", "pos": [0.0, 0.0], "orient": "R0"},
         {"op": "place_instance", "master_lib": PDK_LIB, "master_cell": NCH,
-         "master_view": "layout", "name": "MN", "xy": [0.0, 2.0], "orient": "R0"},
+         "master_view": "layout", "name": "MN", "pos": [0.0, 2.0], "orient": "R0"},
     ]
     data = op(
         transport, "virtuoso.layout.write", token=PDK_TOKEN,
@@ -388,7 +430,7 @@ def stage_layout(transport, cfg) -> Stage:
     )
     value = read.get("value") or {}
     st.value["instances"] = [
-        {k: i.get(k) for k in ("name", "cell", "xy", "bBox", "orient")}
+        {k: i.get(k) for k in ("name", "cell", "pos", "bBox", "orient")}
         for i in (value.get("instances") or [])
     ]
     st.value["shape_count"] = len(value.get("shapes") or [])
@@ -514,7 +556,7 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--stage", default="all",
                     help="probe|lib|schematic|symbol|all")
-    ap.add_argument("--transport", default="http", choices=["http"])
+    ap.add_argument("--transport", default="direct", choices=["http", "direct"])
     ap.add_argument("--token", default=PDK_TOKEN)
     ap.add_argument("--lib", default=PROJ_LIB)
     ap.add_argument("--cell", default=INV_CELL)
@@ -557,3 +599,5 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+

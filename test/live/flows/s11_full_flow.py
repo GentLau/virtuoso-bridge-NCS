@@ -1,3 +1,8 @@
+# === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
+# 作者: 设计/上层开发
+# 最后改动: 2026-09-28 23:30
+# 依赖: 无
+# =======================================================================
 """S11 - end-to-end engineering flow on a real PDK: spec -> schematic -> symbol
 -> layout -> GDS -> DRC -> LVS -> (pre / post) simulation.
 
@@ -20,6 +25,10 @@ so a failure can be replayed without guessing which call produced it.
 Environment: business API on 127.0.0.1:8127 with a token whose registry entry
 points at a real Virtuoso (default ``vb-vblog`` = wsl-gent CIW pid 369800),
 PDK at /opt/eda/PDK/CRN65GPNEW/CRN65GPNEW.
+六步流程（test/docs/写TB规范.md §1）：
+① `require_environment`（靶机指纹 / 业务面 / 需要的库）；②③ 造并校验基线（专属库、cell、前置对象）；
+④ 只做被测动作；⑤ 读回比对（期望 / 实际入证据）；⑥ 跑完不清理现场。
+某步不适用时，正文有一行注释说明原因。
 """
 from __future__ import annotations
 
@@ -133,16 +142,23 @@ def stage_schematic(runner: Runner) -> None:
         ' unless(cv error("cannot open schematic cellview"))'
         ' mn = dbCreateInstByMasterName(cv "' + PDK_LIB + '" "nch_25" "symbol" "MN" 1.0:1.0 "R0")'
         ' mp = dbCreateInstByMasterName(cv "' + PDK_LIB + '" "pch_25" "symbol" "MP" 1.0:3.0 "R0")'
-        ' p1 = dbCreateInstByMasterName(cv "basic" "ipin" "symbol" "IN" -2.0:1.0 "R0")'
-        ' p2 = dbCreateInstByMasterName(cv "basic" "opin" "symbol" "OUT" 4.0:3.0 "R0")'
-        ' p3 = dbCreateInstByMasterName(cv "basic" "ipin" "symbol" "VDD" 1.0:5.0 "R0")'
-        ' p4 = dbCreateInstByMasterName(cv "basic" "ipin" "symbol" "VSS" 1.0:-1.0 "R0")'
+        # 2026-09-24（第七轮）改：pin 必须用 `schCreatePin` 建（真正的 schematic pin），
+        # 不能用 `dbCreateInstByMasterName(cv "basic" "ipin" …)` 摆一个"像 pin 的实例"——
+        # 后者在 auCdl 网表器里是要**下钻**的普通子单元，而 basic/ipin 只有 symbol 视图，
+        # 于是必然报 `OSSHNL-116 Unable to descend into any of the views … for the instance
+        # 'VSS' in cell 'inv'`，LVS 全线拿不到源网表（本轮定位，属 TB 姿势错误）。
+        ' p1 = schCreatePin(cv nil "IN" "input" nil -2.0:1.0 "R0")'
+        ' p2 = schCreatePin(cv nil "OUT" "output" nil 4.0:3.0 "R0")'
+        ' p3 = schCreatePin(cv nil "VDD" "inputOutput" nil 1.0:5.0 "R0")'
+        ' p4 = schCreatePin(cv nil "VSS" "inputOutput" nil 1.0:-1.0 "R0")'
         ' unless(mn error("NMOS instance not created"))'
         ' unless(mp error("PMOS instance not created"))'
         ' dbSave(cv) dbClose(cv)'
-        ' sprintf(nil "devices=MN,MP pins=%s,%s,%s,%s" '
-        ' (if(p1 "IN" "missing") (if(p2 "OUT" "missing")'
-        ' (if(p3 "VDD" "missing") (if(p4 "VSS" "missing")))))'
+        # SKILL 的 if 是特殊形式：嵌套写 if(c1 a if(c2 b …))，不能写成 (if(..)(if(..)))
+        # （后者会被当成"用上一个 if 的结果去调用"→ eval: not a function）。
+        ' sprintf(nil "devices=MN,MP pins=%s,%s,%s,%s"'
+        ' if(p1 "IN" "missing") if(p2 "OUT" "missing")'
+        ' if(p3 "VDD" "missing") if(p4 "VSS" "missing"))'
         ' )'
     )
     response = skill(runner, build)
@@ -158,8 +174,14 @@ def stage_schematic(runner: Runner) -> None:
     value = ((read.get("data") or {}).get("value") or {})
     instances = value.get("instances") or []
     runner.state["schematic_instances"] = len(instances)
-    verdict = "PASS" if check.get("ok") and read.get("ok") and len(instances) >= 2 else "FAIL"
-    note = f"{detail}; check_and_save={check.get('ok')}; read_instances={len(instances)}"
+    # 判据必须覆盖 build 返回的 pin 串：任一 pin 建失败时会变成 `missing`
+    # （真机验证：p1=nil → `pins=missing,OUT,VDD,VSS`）。只数 instance 会在
+    # "实例建出来了但 pin 缺失"时假绿。
+    pins_ok = "pins=IN,OUT,VDD,VSS" in detail
+    verdict = ("PASS" if check.get("ok") and read.get("ok")
+               and len(instances) >= 2 and pins_ok else "FAIL")
+    note = (f"{detail}; check_and_save={check.get('ok')}; "
+            f"read_instances={len(instances)}; pins_ok={pins_ok}")
     runner.record("schematic", {"build": payload, "check": check}, read, verdict, note)
 
 
@@ -185,15 +207,15 @@ def stage_layout(runner: Runner) -> None:
     runner.state["layout_view_create"] = view.get("ok")
     commands = [
         {"op": "place_instance", "master_lib": PDK_LIB, "master_cell": "nch_mac",
-         "master_view": "layout", "name": "MN", "xy": [0, 0], "orient": "R0"},
+         "master_view": "layout", "name": "MN", "pos": [0, 0], "orient": "R0"},
         {"op": "place_instance", "master_lib": PDK_LIB, "master_cell": "pch_mac",
-         "master_view": "layout", "name": "MP", "xy": [0, 6], "orient": "R0"},
+         "master_view": "layout", "name": "MP", "pos": [0, 6], "orient": "R0"},
         {"op": "place_rect", "layer": "M1", "purpose": "drawing",
-         "bbox": [-1.0, -1.0, 1.0, 7.0]},
+         "bbox": [[-1.0, -1.0], [1.0, 7.0]]},
         {"op": "place_label", "layer": "M1", "purpose": "pin", "text": "OUT",
-         "xy": [0.0, 3.0]},
+         "pos": [0.0, 3.0]},
         {"op": "place_label", "layer": "M1", "purpose": "drawing", "text": "OUT",
-         "xy": [0.0, 3.0]},
+         "pos": [0.0, 3.0]},
     ]
     payload = {"operation": "virtuoso.layout.write", "library": LIB, "cell": CELL,
                "commands": commands}
@@ -202,8 +224,12 @@ def stage_layout(runner: Runner) -> None:
     if not response.get("ok"):
         runner.record("layout", payload, response, "FAIL", response.get("error") or "layout.write failed")
         return
+    # layout.read 的 detail 现在只接受 geometry/index（旧值 "summary" 已被
+    # focus=["summary"] 取代）——第五轮实测：带旧值直接 4xx
+    # "invalid request: detail must be geometry or index"，layout 阶段永远红，
+    # 后面的 gds/drc/lvs 全被拖住。这里按当前 API 取 instances 索引。
     read = call("virtuoso.layout.read", runner.token, library=LIB, cell=CELL,
-                view="layout", detail="summary")
+                view="layout", focus=["instances"], detail="index")
     value = ((read.get("data") or {}).get("value") or {})
     instances = value.get("instances") or []
     runner.record("layout", payload, read, "PASS" if read.get("ok") else "FAIL",
@@ -241,14 +267,74 @@ def stage_drc(runner: Runner) -> None:
 def stage_lvs(runner: Runner) -> None:
     gds = runner.state.get("gds") or f"{REMOTE_WORK}/{CELL}.gds"
     deck = f"{PDK}/Calibre/lvs/calibre.lvs"
-    cdl = runner.state.get("cdl") or str(ROOT / "test/artifacts/evidence/s11-probe/inv.scs")
+    # 注意：``cdl`` 必须是**远端路径**（calibre 包不代传源网表；传本地 Windows 路径
+    # 会被 deck 当成相对名，报 "Can not open source netlist file C:Users..."）。
+    #
+    # 2026-09-24（第七轮）改：源网表不再用"本地探针网表"这种必然 FAIL 的兜底，
+    # 改为走产品自己的官方链路 `calibre.export_cdl`（PDK 器件可导出，见 P-069 复验）；
+    # 这样 S11 的 lvs 阶段才是"链路真的通"的证据。
+    cdl = runner.state.get("cdl")
+    if not cdl or not str(cdl).startswith("/"):
+        export_dir = f"{REMOTE_WORK}/cdl"
+        # cds.lib 必须是"带 Cadence 默认库（basic/analogLib）的完整清单"——只有工程
+        # 自己的 cds.lib 时，auCdl 找不到 basic/ipin 的视图，报
+        # `Add one of these views to the cell 'ipin' in the library 'basic'`（实测 2026-09-24）。
+        # 所以这里以 calprobe 的完整 cds.lib 为基底，再补一行本工程库定义。
+        remote_cds_lib = f"{REMOTE_WORK}/s11.cds.lib"
+        prep_cmd = (f"mkdir -p {REMOTE_WORK} && cp /home/Gent/project/calprobe/cds.lib "
+                    f"{remote_cds_lib} && (grep -q 'DEFINE {LIB} ' {remote_cds_lib} || "
+                    f"echo 'DEFINE {LIB} {REMOTE_LIB_DIR}' >> {remote_cds_lib}); "
+                    f"grep -n 'DEFINE {LIB} ' {remote_cds_lib} | tail -1")
+        prep = call("basic.command.run", runner.token, cmd=prep_cmd, timeout=120)
+        prep_out = ((prep.get("data") or {}).get("result") or [None, ""])
+        runner.record("cdl-prep", {"operation": "basic.command.run", "cmd": prep_cmd}, prep,
+                      "PASS" if prep.get("ok") else "FAIL",
+                      f"stdout={(prep_out[1] if isinstance(prep_out, list) else '')[-160:]}")
+        if not prep.get("ok"):
+            runner.record("lvs", {"operation": "calibre.lvs"}, {}, "BLOCKED",
+                          "cds.lib 准备失败，无法导出源网表")
+            return
+        runner.record("cdl-export", {"operation": "calibre.export_cdl"},
+                      {}, "INFO", f"run_dir={export_dir} cds_lib={remote_cds_lib}")
+        export = call("calibre.export_cdl", runner.token, library=LIB, cell=CELL,
+                      view="schematic", netlist_name=CELL, run_dir=export_dir,
+                      cds_lib=remote_cds_lib, timeout=900)
+        export_value = ((export.get("data") or {}).get("value") or {})
+        exported = str(export_value.get("netlist_path") or "")
+        runner.record("cdl", {"operation": "calibre.export_cdl", "library": LIB,
+                              "cell": CELL, "run_dir": export_dir}, export,
+                      "PASS" if (export.get("ok") and exported) else "FAIL",
+                      f"bytes={export_value.get('bytes')} path={exported}")
+        if not (export.get("ok") and exported):
+            runner.record("lvs", {"operation": "calibre.lvs"}, {}, "BLOCKED",
+                          "no remote CDL (export_cdl failed) — see the cdl stage above")
+            return
+        cdl = exported
     payload = {"operation": "calibre.lvs", "gds": gds, "top": CELL, "deck": deck, "cdl": cdl}
     response = call("calibre.lvs", runner.token, gds=gds, top=CELL, deck=deck,
                     cdl=cdl, blocking=True, timeout=1800)
     ok = bool(response.get("ok"))
     value = ((response.get("data") or {}).get("value") or {})
+    job_id = value.get("job_id") if isinstance(value, dict) else None
+    verdict = None
+    if ok and job_id:
+        results = call("calibre.read_results", runner.token, kind="lvs", job_id=job_id,
+                       timeout=300)
+        summary = ((results.get("data") or {}).get("value") or {}).get("summary") or {}
+        verdict = summary.get("status")
+        # 判据（2026-09-24 第七轮定口径）：本 TB 的版图是脚本搭出的最小几何（两个器件 +
+        # M1 矩形 + 标签），**没有真实布线/端口层**，因此"比较得上"是本阶段的正确期望；
+        # "correct" 需要真实版图，已由 design_iterate_tb.py 的 lvs 阶段（CMP_LIB/inv2
+        # 真实 cell）钉住。这里要求的是**确定结论**（correct/incorrect），
+        # 并单独报出 correct 与否，避免拿"not_compared"当通过。
+        definite = str(verdict).lower() in ("correct", "incorrect", "clean")
+        runner.record("lvs-verdict", {"operation": "calibre.read_results", "job_id": job_id},
+                      results, "PASS" if definite else "FAIL",
+                      f"status={verdict} definite={definite} "
+                      f"counts={summary.get('counts')} "
+                      f"(correct 需真实版图，见 design_iterate_tb.py)")
     runner.record("lvs", payload, response, "PASS" if ok else "FAIL",
-                  f"value_keys={sorted(value)[:10] if isinstance(value, dict) else value}")
+                  f"status={verdict} value_keys={sorted(value)[:10] if isinstance(value, dict) else value}")
 
 
 def stage_sim(runner: Runner) -> None:

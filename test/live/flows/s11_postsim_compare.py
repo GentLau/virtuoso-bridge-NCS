@@ -1,3 +1,8 @@
+# === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
+# 作者: 设计/上层开发
+# 最后改动: 2026-09-28 23:30
+# 依赖: 无
+# =======================================================================
 """S11 后仿对照驱动：同一测试台跑「原理图网表」与「版图提取网表」，比对 DC 节点。
 
 背景：完整寄生 PEX 的 ``-fmt spice`` 阶段当前有缺陷
@@ -15,6 +20,10 @@
         --pre  test/artifacts/evidence/s11-postsim/cmp_top_pre.scs \
         --post test/artifacts/evidence/s11-postsim/cmp_top_post.scs \
         --out  test/artifacts/evidence/s11-postsim/postsim-evidence.json
+六步流程（test/docs/写TB规范.md §1）：
+① `require_environment`（靶机指纹 / 业务面 / 需要的库）；②③ 造并校验基线（专属库、cell、前置对象）；
+④ 只做被测动作；⑤ 读回比对（期望 / 实际入证据）；⑥ 跑完不清理现场。
+某步不适用时，正文有一行注释说明原因。
 """
 from __future__ import annotations
 

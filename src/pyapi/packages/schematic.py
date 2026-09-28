@@ -435,10 +435,16 @@ def _close_edit_skill() -> str:
 
 
 def _save_skill() -> str:
-    """schCheck + dbSave, then always release the global edit handle."""
+    """schCheck → **dbSetConnCurrent** → dbSave，然后释放全局 edit 句柄。
+
+    `dbSetConnCurrent` 是官方口径（Virtuoso 文档 "Counter Functions" / 后置检查触发器示例：
+    "Zero errors, connectivity remains up to date → dbSetConnCurrent(cv)"）：
+    抽取完成后必须把 `connectivityLastUpdated` 置为当前 cellview counter，
+    否则 `si -batch` 会报 `OSSHNL-108`（属性非整数）或 `OSSHNL-109`（自上次抽取后被改过）。
+    """
     return (
         'let((vbRc) vbRc = schCheck(vbSchemCv) '
-        'when(vbRc dbSave(vbSchemCv)) '
+        'when(vbRc dbSetConnCurrent(vbSchemCv) dbSave(vbSchemCv)) '
         'when(vbSchemCv dbClose(vbSchemCv)) vbSchemCv = nil '
         'if(vbRc "saved" "check-failed"))'
     )
@@ -542,11 +548,13 @@ let((vbInst vbCcd vbParamVals vbP vbProp)
             )
             # 默认 stub 由引脚几何推出（半宽 + 0.05），避免固定 0.5 跨过相邻引脚；
             # 显式传 stub_length 时按调用方给定值。
-            stub_expr = f"{stub:g}" if explicit_stub else "rbHw + 0.05"
+            # 注意括号：SKILL 里 `(0.5)` 会被当成**函数调用**（报 `eval: not a function 0.5`），
+            # 所以默认表达式自带括号，模板里直接用 `+ {stub_expr}`（P-074 顺带修）。
+            stub_expr = f"{stub:g}" if explicit_stub else "(rbHw + 0.05)"
             exprs.append(
                 f'let((rbGeo rbCtr rbHw rbEnd rbMid) rbGeo = {geo} '
                 f'when(rbGeo rbCtr = car(rbGeo) rbHw = cadr(rbGeo) '
-                f'rbEnd = list(xCoord(rbCtr) + ({stub_expr}) yCoord(rbCtr)) '
+                f'rbEnd = list(xCoord(rbCtr) + {stub_expr} yCoord(rbCtr)) '
                 f'rbMid = list((xCoord(rbCtr) + xCoord(rbEnd)) / 2.0 '
                 f'(yCoord(rbCtr) + yCoord(rbEnd)) / 2.0) '
                 f'schCreateWire(vbSchemCv "draw" "full" list(rbCtr rbEnd) 0 0 0 nil nil) '

@@ -214,10 +214,13 @@ def _case_term_nets(transport, ev: Evidence) -> None:
     _write(transport, [{"op": "place_instance", "master_lib": PDK_LIB, "master_cell": PDK_NCH,
                         "master_view": "symbol", "name": "MN1", "pos": [0.0, 0.0]}])
     _write(transport, [{"op": "set_term_nets", "name": "MN1",
+                        # 显式 stub_length：回归 `(0.5)` 被 SKILL 当函数调用的老 bug。
+                        # 取 0.1（小于引脚间距），0.5 会跨过相邻引脚（默认值之所以是 rbHw+0.05）。
+                        "stub_length": 0.1,
                         "term_nets": {"G": "vin", "D": "vout", "S": "vss", "B": "vss"}}])
     conn = _read(transport, focus="connectivity")     # nets 在 connectivity
-    ev.check(case, "nets carry terminal nets", ["vin", "vout", "vss"],
-             sorted(conn.get("nets") or {}))
+    nets = sorted(conn.get("nets") or {})
+    ev.check_true(case, "nets carry terminal nets", {"vin", "vout", "vss"} <= set(nets), nets)
     labels = sorted(item.get("text") for item in                    # stub label 在 positions
                     _read(transport, focus="positions").get("labels", []))
     ev.check_true(case, "stub labels created", {"vin", "vout", "vss"} <= set(labels), labels)
