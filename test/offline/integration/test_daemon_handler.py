@@ -111,6 +111,13 @@ class TestDaemonHandler(DaemonHandlerTestBase):
         self.assertIn("invalid token", raw.decode())
         self.assertEqual(sent, b"")
 
+    def test_token_is_not_written_into_skill_text(self):
+        """总览 §4.3：token 只供校验，不得进入发往 Virtuoso 的求值文本（第八轮 g1 补测）。"""
+        raw, sent = self._run_handler(
+            {"skill": "let((x) x = 1)", "timeout": 5, "token": "tok-1"})
+        self.assertTrue(raw.startswith(STX), raw)
+        self.assertNotIn(b"tok-1", sent)
+
     def test_valid_single_line_skill_roundtrip(self):
         raw, sent = self._run_handler({"skill": "1+1", "timeout": 5, "token": "tok-1"})
         self.assertTrue(raw.startswith(STX), raw)

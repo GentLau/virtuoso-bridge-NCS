@@ -270,3 +270,26 @@ wsl-gent 上还有 vbe2e / vbmu2 / vbmu3 三台非日常 CIW + 一个 65082 孤�
 5. **改了 `src/` 就要重启业务面**：standalone `api_server` 只在启动时导入代码。今天 8127 还是
    4 天前（09-24）的进程，导致 TB 按**新** `pos` 口径发请求、服务端按**旧** `x/y` 校验，报
    `command 0 invalid: 'x'` —— 看着像 TB 坏，其实是业务面过期。
+
+### 10.3 空响应窗口（P-086，2026-09-28 新增）
+
+症状：同 token 的 skill 请求突然返回 `Empty response from daemon`（或 raw socket 建连后不
+被 accept），`query` 仍正常；`~/.virtuoso-bridge/<user>/…` 下 daemon 进程还在监听。
+实测触发：① `twouser_same_view_probe` 的 hiSleep 持锁场景；② `maestro_e2e_tests.py --transport direct`
+跑到一半（无并发时也出现，CDS.log 伴随 `ASSEMBLER-8001 … argument "0"`）。
+**处置**：先等 **~90s** 自愈（轮询 `execute_skill('1+2')`，实测 15–90s 内恢复）；
+不恢复再 `hard_restart_user_instance.sh <user> <port>`。窗口期内**不要**把空响应当成新 bug 重复立案，
+先看 `test/reports/bugs/P-086-*.md`。
+
+### 10.4 硬重启后的僵尸 Xvfb 清理（2026-09-28 踩到）
+
+`hard_restart_user_instance.sh` 杀了 `xvfb-run` 包装与 virtuoso，但**Xvfb 进程可能留下**
+（旧 display 的窗口还挂着，例如上一次会话的 `Library Select`/`Library Manager`），排查 X 窗口时
+会误以为"当前会话弹了模态"。正确做法：`ps -u <user> | grep Xvfb` 找到旧 display →
+`kill -TERM <pid>` → 用**当前** virtuoso 的 `ps -o ppid`/日志确认 display 号再 `xwininfo`。
+
+### 10.5 vblog 上的并发纪律（2026-09-28 实测）
+
+`maestro_*` / `multiuser` / 长 skill 类用例**不要与另一个 vblog 使用者并发跑**：
+实测两路并发会让同 cell 的 ADE 会话交叉（`asiGet: no applicable method`、`Empty response`），
+表现为随机红但单跑即绿。跑覆盖率/整层前先 `pgrep -f maestro_e2e_tests` 确认没有别的长任务。

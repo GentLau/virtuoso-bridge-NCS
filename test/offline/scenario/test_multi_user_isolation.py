@@ -12,7 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src"))
 
 from transport.middle import BusinessServer
 from common.registry import UserEntry, load_registry
-from common.paths import registry_path, override_work_dir_for_tests
+from common.paths import init_work_dir, registry_path, work_root
 
 
 class FakeDaemon:
@@ -52,7 +52,7 @@ class FakeDaemon:
 
 class TestMultiUserIsolation(unittest.TestCase):
     def test_two_users_route_to_their_own_daemons(self):
-        wd = override_work_dir_for_tests(Path(tempfile.mkdtemp(prefix="vb-")))
+        wd = work_root()
         da = FakeDaemon("tok-a")
         db = FakeDaemon("tok-b")
         try:
@@ -66,7 +66,7 @@ class TestMultiUserIsolation(unittest.TestCase):
             reg.register("alice", a)
             reg.register("bob", b)
 
-            server = BusinessServer(wd)
+            server = BusinessServer()
             ra = server.execute_skill("hello", token="tok-a")
             rb = server.execute_skill("hello", token="tok-b")
             self.assertTrue(ra.ok)
@@ -81,12 +81,11 @@ class TestMultiUserIsolation(unittest.TestCase):
             db.close()
 
     def test_two_users_parallel_local_commands(self):
-        wd = override_work_dir_for_tests(Path(tempfile.mkdtemp(prefix="vb-")))
+        wd = work_root()
         reg = load_registry(registry_path())
         reg.register("alice", UserEntry(token="tok-a", mode="local"))
         reg.register("bob", UserEntry(token="tok-b", mode="local"))
-        server = BusinessServer(wd)
-
+        server = BusinessServer()
         results = {}
         def run(token, i):
             results[(token, i)] = server.run_command(

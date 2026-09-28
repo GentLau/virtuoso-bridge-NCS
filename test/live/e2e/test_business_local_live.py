@@ -1,3 +1,15 @@
+# === TB 注释头（规范见 test/docs/写TB规范.md §0）=====================
+# 作者: 设计/Codex
+# 最后改动: 2026-09-28 12:04
+# 依赖: 无
+# =====================================================================
+# 六步流程（按 test/docs/写TB规范.md §1–§6）：
+# §1 环境检查：VB_E2E_LOCAL 门禁 + 本机 root 检查；不满足则 skip。
+# §2 构建：注册本地账号、启动每账号真实 Virtuoso、绑定 work_root。
+# §3 最终检查：确认 daemon 端口/CIW 就绪、注册表条目完整。
+# §4 执行：skill/command/file 并发动作。
+# §5 比对：token 回显、命令输出、文件字节与期望一致。
+# §6 重复/收尾：并发轮次重复；保留进程/端口盘点，不清理真实对象。
 """Live business simulation in LOCAL mode on the Virtuoso host (wsl-gent).
 
 Run ON the Linux host after deploying ``src/`` there::
@@ -16,10 +28,10 @@ import os
 import socket
 import subprocess
 import sys
-import tempfile
 import threading
 import time
 import unittest
+import uuid
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -28,7 +40,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src"))
 from transport.middle import BusinessServer
 from register import RegistrationFlow, RegistrationRequest
 from common.registry import load_registry
-from common.paths import registry_path, override_work_dir_for_tests
+from common.paths import registry_path, work_root
 
 DISPLAY = os.environ.get("VB_LOCAL_DISPLAY", ":10")
 PROJECT_ROOT = Path(os.environ.get("VB_LOCAL_PROJECT_ROOT", "/home/Gent/project"))
@@ -52,7 +64,7 @@ class TestBusinessLocalLive(unittest.TestCase):
             raise unittest.SkipTest("local live tests must run on the Virtuoso host")
         cls.users_n = int(os.environ.get("VB_LOCAL_USERS", "4"))
         port_base = int(os.environ.get("VB_LOCAL_PORT_BASE", "65401"))
-        cls.wd = override_work_dir_for_tests(Path(tempfile.mkdtemp(prefix="vb-local-")))
+        cls.wd = work_root()
         registry = load_registry(registry_path())
 
         cls.users: list[tuple[str, str, int]] = []
@@ -97,7 +109,7 @@ class TestBusinessLocalLive(unittest.TestCase):
             if state.stage != "committed":
                 raise RuntimeError(f"{user} commit failed: {state.errors}")
 
-        cls.server = BusinessServer(cls.wd)
+        cls.server = BusinessServer()
 
     @staticmethod
     def _start_virtuoso(user: str) -> None:
@@ -120,8 +132,12 @@ class TestBusinessLocalLive(unittest.TestCase):
         for _user, _token, _port in cls.users:
             pass
         for project_dir in cls.project_dirs:
+            # 用**完整路径**做匹配：VB_LOCAL_PROJECT_ROOT 覆盖后目录深度会变，
+            # 原来写死的 "project/<name>/CDS.log" 匹配不到 → 实例残留、下次跑必撞端口
+            # （2026-09-28 实测：localtests/l00 的 virtuoso 没被杀掉，重跑报
+            #  "daemon port 65501 conflicts ... already in use locally"）。
             subprocess.run(
-                ["pkill", "-f", f"project/{project_dir.name}/CDS.log"],
+                ["pkill", "-f", f"{project_dir}/CDS.log"],
                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
             )
 
@@ -219,7 +235,7 @@ class TestBusinessLocalLive(unittest.TestCase):
             tok = tokens[i % len(tokens)]
             user = users[i % len(users)]
             try:
-                src = Path(tempfile.mkdtemp(prefix="vb-")) / "f.bin"
+                src = work_root() / f"e2e-upload-{uuid.uuid4().hex[:8]}.bin"
                 src.write_bytes(tok.encode())
                 remote = f"{self.wd}/{user}/files/conc-{i}.bin"
                 u = self.server.upload_file(src, remote, token=tok)
@@ -235,7 +251,7 @@ class TestBusinessLocalLive(unittest.TestCase):
             user = users[i % len(users)]
             try:
                 remote = f"{self.wd}/{user}/files/conc-{i}.bin"
-                dst = Path(tempfile.mkdtemp(prefix="vb-")) / "g.bin"
+                dst = work_root() / f"e2e-download-{uuid.uuid4().hex[:8]}.bin"
                 d = self.server.download_file(remote, dst, token=tok)
                 if d.returncode != 0 or dst.read_bytes() != tok.encode():
                     with lock:

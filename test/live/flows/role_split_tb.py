@@ -1,3 +1,15 @@
+# === TB 注释头（规范见 test/docs/写TB规范.md §0）=====================
+# 作者: 设计/Codex
+# 最后改动: 2026-09-28 12:04
+# 依赖: 无
+# =====================================================================
+# 六步流程（按 test/docs/写TB规范.md §1–§6）：
+# §1 环境检查：已调用 require_environment(work_dir, token)。
+# §2 构建：注册表/BusinessServer + lab 保活进程。
+# §3 最终检查：query 确认五 role 的 host/root 解析。
+# §4 执行：跨 role command、skill、上传/下载动作。
+# §5 比对：hostname、文件内容、角色落点与期望一致。
+# §6 重复/收尾：canary 重复；回收保活进程，保留 JSON 证据。
 """S2 多 role 分主机 TB：验证同一 token 下五 role 真的路由到不同主机。
 
 场景（见 ``test/docs/推荐测试环境.md`` S2）：
@@ -37,6 +49,10 @@ sys.path.insert(0, str(ROOT / "src"))
 _SUPPORT = Path(__file__).resolve().parents[2] / "shared" / "fixtures"
 if str(_SUPPORT) not in sys.path:
     sys.path.insert(0, str(_SUPPORT))
+_RUNNERS = ROOT / "test" / "shared" / "runners"
+if str(_RUNNERS) not in sys.path:
+    sys.path.insert(0, str(_RUNNERS))
+from env_check import require_environment  # noqa: E402
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
@@ -73,17 +89,34 @@ def ensure_lab_host(host: str, timeout: float = 120.0) -> tuple[bool, subprocess
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--work-dir", default=str(ROOT / "test" / "artifacts" / "scenario-role-split"))
-    ap.add_argument("--token", default="d6af595b342647b58ec63ca6")
+    ap.add_argument("--work-dir", default=str(ROOT / "test" / "artifacts" / "env" / "scenario-role-split"))
+    #: token 默认**从注册表里读**（`--user` 的条目）——2026-09-24 踩过：TB 写死一个 token，
+    #: 换环境（scenario-role-split 的 rolesplit 用 `vb-s11`）就全红成 `invalid token`，
+    #: 看着像产品故障。显式 `--token` 仍然优先。
+    ap.add_argument("--token", default="")
     ap.add_argument("--user", default="roleprobe")
     ap.add_argument("--skip-lab-start", action="store_true")
     ap.add_argument("--out", default="")
     args = ap.parse_args(argv)
 
     work_dir = Path(args.work_dir)
+    if not args.token:
+        try:
+            entry = json.loads((work_dir / "registry.json").read_text(encoding="utf-8")).get(args.user) or {}
+            token = str(entry.get("token") or "")
+        except (OSError, ValueError):
+            token = ""
+        if not token:
+            ap.error("--token 为空，且注册表里读不到该 user 的 token（用 --token 显式给）")
+        args.token = token
     from common.paths import init_work_dir  # noqa: E402
     from transport.middle import BusinessServer  # noqa: E402
 
+    # 六步 §1：确认 token 的 command / SKILL 通道可用，再做 role 落点验证。
+    environment = require_environment(
+        work_dir=str(work_dir.resolve()), token=args.token
+    )
+    # 六步 §2/§3：绑定 work root、构建 registry 客户端并核对各 role 初始落点。
     init_work_dir(str(work_dir))
     middle = BusinessServer()
 
@@ -192,6 +225,7 @@ def main(argv: list[str] | None = None) -> int:
         "ok": ok,
         "work_dir": str(work_dir),
         "token": args.token,
+        "environment": environment,
         "steps": steps,
         "value": value,
     }

@@ -1,3 +1,15 @@
+# === TB 注释头（规范见 test/docs/写TB规范.md §0）=====================
+# 作者: 设计/Codex
+# 最后改动: 2026-09-28 12:04
+# 依赖: 无
+# =====================================================================
+# 六步流程（按 test/docs/写TB规范.md §1–§6）：
+# §1 环境检查：加载 registry，确认每 token 的用户条目存在。
+# §2 构建：绑定 work root、BusinessServer、用户/token 列表。
+# §3 最终检查：先用 RBDToken 串行确认每用户路由基线。
+# §4 执行：多轮并发混合请求。
+# §5 比对：返回 token 必须等于请求 token，统计串号/失败。
+# §6 重复/收尾：多轮重复；保留 JSON 证据，不清理用户/daemon。
 """S3 多用户路由/隔离 TB（真机 + fake 混合注册表）。
 
 注册表由 ``--work-dir`` 提供（每个用户已配好 token / daemon 端口 / root），
@@ -27,7 +39,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "src"))
 
-from common.paths import override_work_dir_for_tests  # noqa: E402
+from common.paths import init_work_dir  # noqa: E402
 from common.registry import load_registry  # noqa: E402
 from common.paths import registry_path  # noqa: E402
 from transport.middle import BusinessServer  # noqa: E402
@@ -47,16 +59,18 @@ def main() -> int:
 
     work_dir = Path(args.work_dir).resolve()
     work_dir.mkdir(parents=True, exist_ok=True)
-    override_work_dir_for_tests(work_dir)
+    init_work_dir(work_dir)
     registry = load_registry(registry_path())
     users = sorted(registry.users())
     tokens = {name: registry.get(name).token for name in users}
-    server = BusinessServer(work_dir)
-
+    init_work_dir(work_dir)
+    server = BusinessServer()
     evidence: dict = {"work_dir": str(work_dir), "users": tokens, "serial": [], "concurrent": {}}
     failed = 0
     misrouted = 0
 
+    # 六步 §1/§3/§4/§5：先以 RBDToken 逐用户确认路由基线，再做并发；返回 token
+    # 必须与请求 token 完全相等。
     for name, token in tokens.items():
         result = server.execute_skill("RBDToken", timeout=args.timeout, token=token)
         got = _clean(result.output)

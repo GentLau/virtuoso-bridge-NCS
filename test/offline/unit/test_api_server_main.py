@@ -68,18 +68,6 @@ class TestPoolSizeHelpers(unittest.TestCase):
             api_server.pool_size_from_snapshot({}, default=8), 8
         )
 
-    def test_load_business_thread_pool_size_reads_config_file(self):
-        with mock.patch.object(
-            api_server.config_base,
-            "load_config_file",
-            return_value={"business_thread_pool_size": 12},
-        ):
-            self.assertEqual(
-                api_server.load_business_thread_pool_size(Path("config.json")),
-                12,
-            )
-
-
 class TestRegisterPackages(unittest.TestCase):
     def test_broken_package_is_isolated_and_good_one_registers(self):
         calls = []
@@ -108,22 +96,6 @@ class TestRegisterPackages(unittest.TestCase):
         )
         self.assertNotIn("pyapi.packages.basic", errors)
         self.assertTrue(calls, "the healthy package must still register")
-
-
-class TestBuildMiddle(unittest.TestCase):
-    def test_build_middle_initializes_paths_then_wires_business_server(self):
-        middle = object()
-        with mock.patch("transport.middle.BusinessServer",
-                        return_value=middle) as business, \
-                mock.patch.object(api_server, "init_work_dir") as init, \
-                mock.patch.object(api_server.config_base, "reload_config") as reload_cfg, \
-                mock.patch.object(api_server, "config_path",
-                                  return_value="cfg.json"):
-            got = api_server.build_middle("work")
-        self.assertIs(got, middle)
-        init.assert_called_once_with("work")
-        reload_cfg.assert_called_once_with("cfg.json")
-        business.assert_called_once()
 
 
 class TestEmitAndDrain(unittest.TestCase):

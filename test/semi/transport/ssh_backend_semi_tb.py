@@ -1,3 +1,15 @@
+# === TB 注释头（规范见 test/docs/写TB规范.md §0）=====================
+# 作者: 设计/Codex
+# 最后改动: 2026-09-28 12:04
+# 依赖: 无
+# =====================================================================
+# 六步流程（按 test/docs/写TB规范.md §1–§6）：
+# §1 环境检查：真实 SSH 可达性矩阵就是本 TB 的环境检查。
+# §2 构建：本地 staging 目录 + 远端 run-id scratch。
+# §3 最终检查：确认 backend/持久 shell 组合可连接。
+# §4 执行：命令、上传、下载、批量/并发动作。
+# §5 比对：rc、文件内容/sha、并发结果与期望一致。
+# §6 重复/收尾：paramiko/openssh × persistent 组合重复；清理本次 scratch。
 """SSH backend semi-real TB: OpenSSH *and* Paramiko over a real sshd.
 
 Every transport primitive the middle layer relies on is exercised against a
@@ -252,6 +264,8 @@ def main() -> int:
     }
     failed = False
     try:
+        # 六步 §1/§4/§5：逐 backend/持久化模式建立真实连接，矩阵内每个操作都
+        # 读回内容并比对；这里没有业务 token，因此环境检查就是 SSH 可达性矩阵本身。
         for backend in [b.strip() for b in args.backends.split(",") if b.strip()]:
             for persistent in (False, True):
                 key = f"{backend}{'+persistent' if persistent else ''}"

@@ -1,0 +1,884 @@
+[
+ {
+  "id": "路由#005",
+  "doc": "中层/3-路由设计.md",
+  "line": 7,
+  "section": "路由设计（5 role）",
+  "text": "> 关联：字段定义见[中层配置文档 §2](../中层/add-中层配置文档.md)；接口基线见[四层整体架构与接口 §4](../总览/1-四层整体架构与接口.md)；并发与预算见[并发设计](2-并发设计.md)",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "na",
+  "evidence": [],
+  "reason": "索引/关联声明，无独立可测行为",
+  "gap_test": ""
+ },
+ {
+  "id": "路由#008",
+  "doc": "中层/3-路由设计.md",
+  "line": 14,
+  "section": "0. 两步路由总览（路由是纯消费注册表的行为）",
+  "text": "2. **第二步（用户内检查与投递）**：在用户内按 role 解析目标后，执行并发 owner 的限流检查（线程预算、最大通道数、单目标点上限，见[并发设计 §2/§3](2-并发设计.md)），**容得下才继续投递**；需要排队的进对应队列，不需要排队的直接投递（形态见[并发设计 §1](2-并发设计.md)）。投递目标：串行命令 → command role 常驻 shell，Skill → daemon role 隧道/端口，并行类 → 对应 role 一次性通道。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/core/semantics_tb.py",
+   "test/offline/unit/test_endpoint_budgets.py"
+  ],
+  "reason": "第二步限流检查后‘排队或直接投递’有闸门/预算断言",
+  "gap_test": ""
+ },
+ {
+  "id": "路由#009",
+  "doc": "中层/3-路由设计.md",
+  "line": 15,
+  "section": "0. 两步路由总览（路由是纯消费注册表的行为）",
+  "text": "3. 任一限流参数容不下 → 返回容量拒绝并**指明是哪个参数**（结果字段见[四层整体架构与接口 §4.5](../总览/1-四层整体架构与接口.md)）；拒绝文本与记账见[并发设计 §2/§3](2-并发设计.md)。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/core/fault_injection_tb.py",
+   "test/offline/unit/test_endpoint_budgets.py"
+  ],
+  "reason": "容量拒绝时必须指明具体预算，有断言（三预算分别覆盖）",
+  "gap_test": ""
+ },
+ {
+  "id": "路由#013",
+  "doc": "中层/3-路由设计.md",
+  "line": 20,
+  "section": "0. 两步路由总览（路由是纯消费注册表的行为）",
+  "text": "B --> C[\"第二步：并发限流检查（见 2-并发设计 §2/§3）\"]",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "na",
+  "evidence": [],
+  "reason": "流程图节点（与 #008 同义），由 #008 承担",
+  "gap_test": ""
+ },
+ {
+  "id": "路由#014",
+  "doc": "中层/3-路由设计.md",
+  "line": 21,
+  "section": "0. 两步路由总览（路由是纯消费注册表的行为）",
+  "text": "C -- 容不下 --> R[\"容量拒绝，指明哪个参数\"]",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/core/fault_injection_tb.py"
+  ],
+  "reason": "‘容不下 → 容量拒绝并指明哪个参数’有断言（与 #009 同一用例族）",
+  "gap_test": ""
+ },
+ {
+  "id": "路由#015",
+  "doc": "中层/3-路由设计.md",
+  "line": 22,
+  "section": "0. 两步路由总览（路由是纯消费注册表的行为）",
+  "text": "C -- 容下 --> D[\"排队或直接投递（见 2-并发设计 §1）\"]",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/core/semantics_tb.py"
+  ],
+  "reason": "‘容下 → 排队或直接投递’由串行闸门用例覆盖",
+  "gap_test": ""
+ },
+ {
+  "id": "路由#018",
+  "doc": "中层/3-路由设计.md",
+  "line": 26,
+  "section": "0. 两步路由总览（路由是纯消费注册表的行为）",
+  "text": "- 排队/投递超时语义、预算与记账见[并发设计 §1–§3](2-并发设计.md)；注册表导入与 token 生命周期见[多用户与注册](../其他/1-多用户与注册.md)。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "na",
+  "evidence": [],
+  "reason": "索引/关联声明，无独立可测行为",
+  "gap_test": ""
+ },
+ {
+  "id": "路由#024",
+  "doc": "中层/3-路由设计.md",
+  "line": 38,
+  "section": "1. 定位与边界",
+  "text": "这条准则同时是评审 P0-01 的关闭口径：规范不再承诺\"gui 与 daemon 必须同机\"，也不再假设；bridge 按配置投送。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "indirect",
+  "evidence": [
+   "test/live/flows/role_split_tb.py"
+  ],
+  "reason": "role 跨主机不被拒绝已有真机证据（daemon/gui 在 wsl-gent、command/file 在 w1）；**gui 与 daemon 异机**无环境（第二台真 GUI 主机）——桥层按配置投送，不假设同机",
+  "gap_test": "环境限制项：如需闭合，需第二台带 X/Virtuoso 的主机；当前以‘跨主机投送不被拒绝’的同等证据承担"
+ },
+ {
+  "id": "路由#032",
+  "doc": "中层/3-路由设计.md",
+  "line": 52,
+  "section": "2.1 token 与主机边界（唯一口径）",
+  "text": "- 一个 token 拥有**五个 role**，这些 role **可以分布在多个主机**（含混合 local/remote）；bridge 不因为 role 跨主机而拒绝注册或拒绝投送；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/live/flows/role_split_tb.py",
+   "test/offline/unit/test_validation_roles.py"
+  ],
+  "reason": "五 role 可跨主机（含回退）注册与投送：真机 S2 5/5 + 离线解析用例",
+  "gap_test": ""
+ },
+ {
+  "id": "路由#033",
+  "doc": "中层/3-路由设计.md",
+  "line": 53,
+  "section": "2.1 token 与主机边界（唯一口径）",
+  "text": "- 一个 token **只允许一个 daemon role、一个活动 daemon、一个 CIW**：daemon 是本版唯一“单实例”资源，第二处 `load` 同一 token 属于配置错误；需要第二个 CIW 时注册第二个 user/token；",
+  "tokens": [
+   "load"
+  ],
+  "hits": {
+   "load": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "indirect",
+  "evidence": [
+   "test/offline/unit/test_middle_contracts.py",
+   "test/offline/scenario/test_multi_user_isolation.py",
+   "test/live/transport/cov_remote_real.py"
+  ],
+  "reason": "一 token→一 daemon 的映射与多 token 隔离有断言；‘第二 CIW=配置错误’属环境约定（无负向用例）",
+  "gap_test": ""
+ },
+ {
+  "id": "路由#036",
+  "doc": "中层/3-路由设计.md",
+  "line": 56,
+  "section": "2.1 token 与主机边界（唯一口径）",
+  "text": "- 该边界是本文的唯一口径；其它文档不得再出现“一个 token 多主机：不支持”这类无限定的表述。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "na",
+  "evidence": [],
+  "reason": "唯一口径/文档纪律声明，无可测行为",
+  "gap_test": ""
+ },
+ {
+  "id": "路由#037",
+  "doc": "中层/3-路由设计.md",
+  "line": 58,
+  "section": "2.1 token 与主机边界（唯一口径）",
+  "text": "`role.<name>.mode=local` 表示中层就在该 role 的目标主机上、直接本地执行、不经 SSH；`mode=remote` 表示经 SSH 投送到该 role 的 host/user；**不同 role 可以混合 mode**（例如客户端就在 daemon 主机上 → daemon=local、command/file=remote）；`mode=local` 是**单用户形态**（声明需管理权限），多用户身份隔离一律走 `mode=remote`（含指向 localhost 的 remote）。字段清单与默认值、逐字段回退规则见[中层配置文档 §2.3/§2.5](../中层/add-中层配置文档.md)，本文不重复。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_validation_roles.py",
+   "test/offline/unit/test_register_flow.py",
+   "test/offline/unit/test_norm_gap_round8.py::TestMixedModeSingleToken"
+  ],
+  "reason": "逐 role mode 解析有离线断言；同 token 混合模式（daemon=local + command=remote）原样保留由 test_norm_gap_round8 钉住（第八轮补）",
+  "gap_test": ""
+ },
+ {
+  "id": "路由#046",
+  "doc": "中层/3-路由设计.md",
+  "line": 72,
+  "section": "3. 五个业务接口与 role 的对应关系",
+  "text": "**GUI / Spectre 命令的本质**：它们是\"用并行模式执行命令\"——每次调用在对应 role 上执行一条一次性（one-shot）命令，不建立常驻会话、不保留 cwd/env，等价于 `parallel=True` 的命令语义。两者同样占用该 token 的 channel 预算（见[中层配置文档 §2.2](../中层/add-中层配置文档.md)与[并发设计](2-并发设计.md)）。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_tunnel_transfer.py",
+   "test/semi/transport/one_shot_burst_tb.py"
+  ],
+  "reason": "gui/spectre 一次性命令（不建常驻会话）+ 占 channel 预算，有离线与半真机断言",
+  "gap_test": ""
+ },
+ {
+  "id": "路由#052",
+  "doc": "中层/3-路由设计.md",
+  "line": 82,
+  "section": "4. endpoint 与连接复用",
+  "text": "- endpoint 身份只由 `(host, user, jump_host, jump_user, proxy)` 决定；**连接复用另要求解析后的 SSH 凭据（`key_dir`+`key`）一致**：同一 endpoint 但解析后凭据不同 → 不共用业务连接；经全局默认回退的 role 解析后天然一致；",
+  "tokens": [
+   "key_dir"
+  ],
+  "hits": {
+   "key_dir": [
+    "test/offline/unit/test_commit_shape.py",
+    "test/offline/unit/test_credential_routing.py",
+    "test/offline/unit/test_register_flow.py",
+    "test/offline/unit/test_registration_mock_server.py",
+    "test/offline/unit/test_registration_page.py",
+    "test/offline/unit/test_registration_server.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_credential_routing.py",
+   "test/offline/unit/test_spec_contracts.py"
+  ],
+  "reason": "endpoint 身份五元组 + 凭据一致性才复用，向量与隔离用例均有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "路由#053",
+  "doc": "中层/3-路由设计.md",
+  "line": 84,
+  "section": "4. endpoint 与连接复用",
+  "text": "**复用原则（唯一口径）**：",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "na",
+  "evidence": [],
+  "reason": "‘复用原则’小节标题，内容在 #052/#060 等条目",
+  "gap_test": ""
+ },
+ {
+  "id": "路由#059",
+  "doc": "中层/3-路由设计.md",
+  "line": 92,
+  "section": "4. endpoint 与连接复用",
+  "text": "- 连接生命周期（建连/重试/关闭）见[并发设计 §4](2-并发设计.md)；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "na",
+  "evidence": [],
+  "reason": "索引/关联声明，无独立可测行为",
+  "gap_test": ""
+ },
+ {
+  "id": "路由#060",
+  "doc": "中层/3-路由设计.md",
+  "line": 93,
+  "section": "4. endpoint 与连接复用",
+  "text": "- 预算：线程预算与最大通道数**每 token 一份**（token 内所有 endpoint 共享），单目标点上限按 endpoint（字段配置在 role、共享 endpoint 取最小值）；记账矩阵见[并发设计 §2/§3](2-并发设计.md)，预算不因 role 数量而增加。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_endpoint_budgets.py"
+  ],
+  "reason": "线程预算/最大通道数每 token 一份、单点上限取最小值，均有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "路由#067",
+  "doc": "中层/3-路由设计.md",
+  "line": 106,
+  "section": "6. 与其它文档的关系",
+  "text": "- 字段与默认值：[中层配置文档](../中层/add-中层配置文档.md)；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "na",
+  "evidence": [],
+  "reason": "索引/关联声明，无独立可测行为",
+  "gap_test": ""
+ },
+ {
+  "id": "路由#068",
+  "doc": "中层/3-路由设计.md",
+  "line": 107,
+  "section": "6. 与其它文档的关系",
+  "text": "- 接口签名与错误模型：[四层整体架构与接口](../总览/1-四层整体架构与接口.md) §4；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "na",
+  "evidence": [],
+  "reason": "索引/关联声明，无独立可测行为",
+  "gap_test": ""
+ },
+ {
+  "id": "路由#070",
+  "doc": "中层/3-路由设计.md",
+  "line": 109,
+  "section": "6. 与其它文档的关系",
+  "text": "- 并发、预算与连接复用：[并发设计](2-并发设计.md)；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "na",
+  "evidence": [],
+  "reason": "索引/关联声明，无独立可测行为",
+  "gap_test": ""
+ },
+ {
+  "id": "并发#005",
+  "doc": "中层/2-并发设计.md",
+  "line": 7,
+  "section": "并发设计",
+  "text": "> 关联：字段定义见[中层配置文档 §2.2/§2.3](../中层/add-中层配置文档.md)；接口语义见[四层整体架构与接口 §4](../总览/1-四层整体架构与接口.md)；错误分类见[四层整体架构与接口 §4.5](../总览/1-四层整体架构与接口.md)",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "na",
+  "evidence": [],
+  "reason": "索引/关联声明，无独立可测行为",
+  "gap_test": ""
+ },
+ {
+  "id": "并发#006",
+  "doc": "中层/2-并发设计.md",
+  "line": 11,
+  "section": "1. 三种执行形态",
+  "text": "五个业务接口按并发形态归为三类：",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/core/semantics_tb.py",
+   "test/semi/transport/one_shot_burst_tb.py"
+  ],
+  "reason": "串行 Skill/串行命令/并行三类形态有闸门与 one-shot 断言",
+  "gap_test": ""
+ },
+ {
+  "id": "并发#012",
+  "doc": "中层/2-并发设计.md",
+  "line": 19,
+  "section": "1. 三种执行形态",
+  "text": "- 串行两类的排队都在中层**投递前**发生，按 token 隔离（per-token 闸门）；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/core/semantics_tb.py"
+  ],
+  "reason": "投递前排队、per-token 闸门、队列不跨 token 有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "并发#013",
+  "doc": "中层/2-并发设计.md",
+  "line": 20,
+  "section": "1. 三种执行形态",
+  "text": "- 排队等待消耗同一条端到端 deadline：**排队中超时 = 未投递**（确定未执行，该“可安全重试”仅属中层内部策略）；**已投递后超时 = 结果未知**（中层不重发；是否重试由上层业务操作自行决断）；Skill 对外超时一律视为结果未知，语义见[四层整体架构与接口 §4.5/§5.8](../总览/1-四层整体架构与接口.md)。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/core/semantics_tb.py",
+   "test/offline/unit/test_persistent_shell_protocol.py"
+  ],
+  "reason": "排队超时=未投递（可安全重试）/已投递超时=结果未知，两条语义均有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "并发#020",
+  "doc": "中层/2-并发设计.md",
+  "line": 31,
+  "section": "2. 三个限流配置（每 token 一份）",
+  "text": "- 三个预算互相独立，任一超限 → 返回容量拒绝并指明具体预算（结果字段见[四层整体架构与接口 §4.5](../总览/1-四层整体架构与接口.md)），**不排队等待**；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_endpoint_budgets.py",
+   "test/offline/core/fault_injection_tb.py"
+  ],
+  "reason": "三预算独立、超限不排队、指明具体预算，均有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "并发#022",
+  "doc": "中层/2-并发设计.md",
+  "line": 33,
+  "section": "2. 三个限流配置（每 token 一份）",
+  "text": "- 多个 role 解析到同一 endpoint 时共享一个计数器，有效上限取这些 role 的 `max_sessions` 最小值；remote daemon 的专用 Skill tunnel 计入该 endpoint 的通道数；",
+  "tokens": [
+   "max_sessions"
+  ],
+  "hits": {
+   "max_sessions": [
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/integration/test_business_child_supervision.py",
+    "test/offline/integration/test_supervisor_process.py",
+    "test/offline/unit/test_connect_retry.py",
+    "test/offline/unit/test_endpoint_budgets.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_endpoint_budgets.py"
+  ],
+  "reason": "同 endpoint 多 role 共享计数、上限取最小值、daemon Skill 隧道计入，均有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "并发#034",
+  "doc": "中层/2-并发设计.md",
+  "line": 52,
+  "section": "4. 连接生命周期与建连（唯一口径）",
+  "text": "- 建连失败只在无副作用阶段重试，**最多 3 次总尝试（含初次）**；ControlMaster 故障自动降级直连；重试共享同一条剩余预算；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_connect_retry.py",
+   "test/offline/unit/test_ssh_tunnel_lifecycle.py"
+  ],
+  "reason": "≤3 次总尝试、ControlMaster 降级、共享剩余预算，均有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "并发#038",
+  "doc": "中层/2-并发设计.md",
+  "line": 59,
+  "section": "5. 与其它文档的索引",
+  "text": "- 字段与默认值：[中层配置文档 §2](../中层/add-中层配置文档.md)；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "na",
+  "evidence": [],
+  "reason": "索引/关联声明，无独立可测行为",
+  "gap_test": ""
+ },
+ {
+  "id": "并发#040",
+  "doc": "中层/2-并发设计.md",
+  "line": 61,
+  "section": "5. 与其它文档的索引",
+  "text": "- 错误 kind 与保留码：[四层整体架构与接口 §4.5](../总览/1-四层整体架构与接口.md)；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "na",
+  "evidence": [],
+  "reason": "索引/关联声明，无独立可测行为",
+  "gap_test": ""
+ },
+ {
+  "id": "并发#042",
+  "doc": "中层/2-并发设计.md",
+  "line": 63,
+  "section": "5. 与其它文档的索引",
+  "text": "- 本版不支持的并发能力：[本版范围与明确不支持](../总览/add-本版范围与明确不支持.md)。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "na",
+  "evidence": [],
+  "reason": "索引/关联声明，无独立可测行为",
+  "gap_test": ""
+ },
+ {
+  "id": "日志#009",
+  "doc": "底层/6-日志返回设计标准.md",
+  "line": 15,
+  "section": "1. 目标与硬性边界",
+  "text": "- **不向 CDS.log 注入任何输出**：不得因为“要返回日志”就往 CDS.log 写 BEGIN/END marker 或其他行——日志返回只读文件，不改文件；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_log_no_fetch.py",
+   "test/offline/unit/test_daemon_log_contract.py::test_daemon_never_writes_markers_into_cds_log"
+  ],
+  "reason": "IL/daemon 源码级断言不得出现 VB-BEGIN/END 等注入 marker（日志只读不改文件）",
+  "gap_test": ""
+ },
+ {
+  "id": "日志#035",
+  "doc": "底层/6-日志返回设计标准.md",
+  "line": 51,
+  "section": "3. 增量机制（offset 定界，无 marker、无 cursor）",
+  "text": "- `[start,end)` 之外的并发输出不属于本次增量；等待请求留在中层投递前队列，daemon 同一时刻只接收/执行一个由闸门放行的 Skill 请求。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_daemon_log_contract.py::test_reads_exact_interval",
+   "test/offline/unit/test_daemon_log_contract.py::test_rotated_file_reads_from_zero"
+  ],
+  "reason": "[start,end) 精确区间与轮转后从 0 读，均有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "日志#045",
+  "doc": "底层/6-日志返回设计标准.md",
+  "line": 69,
+  "section": "5. 限长与自动降级",
+  "text": "`log_max_bytes`（默认 64KB）：",
+  "tokens": [
+   "log_max_bytes"
+  ],
+  "hits": {
+   "log_max_bytes": [
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/integration/test_business_child_supervision.py",
+    "test/offline/integration/test_daemon_handler.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_common_config.py",
+   "test/offline/unit/test_daemon_log_utf8_budget.py"
+  ],
+  "reason": "默认 64KB 在配置默认值测试；字节预算是 diff/truncate 用例的边界",
+  "gap_test": ""
+ },
+ {
+  "id": "日志#055",
+  "doc": "底层/6-日志返回设计标准.md",
+  "line": 81,
+  "section": "5. 限长与自动降级",
+  "text": "- 最后一步按**字节截断、只取靠前部分**：例如上限 100 字节、本次增量起于 offset 10、error 增量到 200，则返回 10–110，之后内容本次不补发；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_daemon_log_utf8_budget.py"
+  ],
+  "reason": "‘只取靠前字节前缀、不补发、切到半个 UTF-8 字符要丢弃’，逐 max_bytes 扫描断言",
+  "gap_test": ""
+ },
+ {
+  "id": "日志#066",
+  "doc": "底层/6-日志返回设计标准.md",
+  "line": 103,
+  "section": "6.2 回包（daemon → 中层，唯一当前格式）",
+  "text": "{\"value\": \"3\", \"log\": \"\\\\e ...本次错误行...\\\\n\"}",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "na",
+  "evidence": [],
+  "reason": "示例 payload 形态，由 #070/#077/#082 的帧/日志断言覆盖",
+  "gap_test": ""
+ },
+ {
+  "id": "日志#070",
+  "doc": "底层/6-日志返回设计标准.md",
+  "line": 108,
+  "section": "6.2 回包（daemon → 中层，唯一当前格式）",
+  "text": "- **本版只解析 JSON payload**；旧 daemon（无 token）不在支持范围，收到非法帧按协议错误处理。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_daemon_runtime_contracts.py",
+   "test/offline/integration/test_daemon_handler.py"
+  ],
+  "reason": "只解析 JSON payload、非法帧/非法字段按协议错误处理，均有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "日志#077",
+  "doc": "底层/6-日志返回设计标准.md",
+  "line": 120,
+  "section": "6.3 内部 metadata frame（IL → daemon，冻结）",
+  "text": "- 帧顺序固定：第一帧 `value/error`，第二帧 `meta`；两帧必须由 IL 合并为**一次 `ipcWriteProcess`** 写入，避免重排；",
+  "tokens": [
+   "ipcWriteProcess",
+   "meta"
+  ],
+  "hits": {
+   "meta": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/unit/test_calibre_package.py",
+    "test/offline/unit/test_daemon27.py",
+    "test/offline/unit/test_daemon_parity.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/core/daemon_log_protocol_tb.py",
+   "test/offline/unit/test_norm_gap_round8.py::TestIlSingleIpcWrite"
+  ],
+  "reason": "帧顺序在 socket 协议层有断言；‘IL 合并为一次 ipcWriteProcess + meta 追加同一缓冲’由 test_norm_gap_round8 钉住（第八轮补）",
+  "gap_test": ""
+ },
+ {
+  "id": "日志#082",
+  "doc": "底层/6-日志返回设计标准.md",
+  "line": 128,
+  "section": "7. 边界与错误语义",
+  "text": "- `CDS.log` 不存在/不可读/路径变化且读取失败，或第二帧缺失/超时：**本次 log=\"\"，Skill 结果照常返回**，`VirtuosoResult.warnings` 追加固定文本 `CDS.log unavailable: <reason>`（`<reason>` 仅作诊断，不回退为请求失败）；`log_level=off` 刻意不产生第二帧，**不追加该 warning**。",
+  "tokens": [
+   "CDS.log",
+   "VirtuosoResult.warnings"
+  ],
+  "hits": {
+   "CDS.log": [
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/integration/test_daemon_handler.py",
+    "test/offline/unit/test_daemon27.py",
+    "test/offline/unit/test_daemon_log_contract.py",
+    "test/offline/unit/test_daemon_parity.py",
+    "test/offline/unit/test_daemon_runtime_contracts.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/integration/test_daemon_handler.py::test_unavailable_cds_log_uses_frozen_warning_text"
+  ],
+  "reason": "CDS.log 不可读 → log=\"\" + warnings 固定文案、结果照常返回，有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "日志#091",
+  "doc": "底层/6-日志返回设计标准.md",
+  "line": 140,
+  "section": "8. 验收标准",
+  "text": "7. 非法 `log_level`/`log_max_bytes` 直接拒绝报错；`CDS.log` 不可读时 `log=\"\"` 且 `warnings` 含固定文本 `CDS.log unavailable: <reason>`；截断后尾部不输出半个 UTF-8 字符。",
+  "tokens": [
+   "CDS.log",
+   "log_level",
+   "log_max_bytes",
+   "warnings"
+  ],
+  "hits": {
+   "CDS.log": [
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/integration/test_daemon_handler.py",
+    "test/offline/unit/test_daemon27.py",
+    "test/offline/unit/test_daemon_log_contract.py",
+    "test/offline/unit/test_daemon_parity.py",
+    "test/offline/unit/test_daemon_runtime_contracts.py"
+   ],
+   "log_level": [
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/integration/test_business_child_supervision.py",
+    "test/offline/integration/test_daemon_handler.py"
+   ],
+   "log_max_bytes": [
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/integration/test_business_child_supervision.py",
+    "test/offline/integration/test_daemon_handler.py"
+   ],
+   "warnings": [
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/integration/test_daemon_handler.py",
+    "test/offline/unit/test_calibre_package.py",
+    "test/offline/unit/test_daemon_runtime_contracts.py",
+    "test/offline/unit/test_layout_contracts.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/integration/test_daemon_handler.py",
+   "test/offline/unit/test_daemon_log_utf8_budget.py"
+  ],
+  "reason": "非法 log_level/log_max_bytes 直接 NAK（不夹紧）、不可读固定 warnings、截断不出半个 UTF-8 字符，均有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "顶层#005",
+  "doc": "顶层/1-顶层.md",
+  "line": 7,
+  "section": "顶层：HTTP 入口与业务调度",
+  "text": "> 定位：顶层只做入口与调度。业务包与业务操作契约见[上层 §2/§4](../上层/1-上层.md)；分层职责与依赖见[四层整体架构与接口 §3](../总览/1-四层整体架构与接口.md)；五业务接口与错误总则见[四层整体架构与接口 §4](../总览/1-四层整体架构与接口.md)。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "na",
+  "evidence": [],
+  "reason": "定位声明（顶层只做入口与调度），由 #009/#028 的可测条款承担",
+  "gap_test": ""
+ },
+ {
+  "id": "顶层#009",
+  "doc": "顶层/1-顶层.md",
+  "line": 14,
+  "section": "1. 总述",
+  "text": "- 限流不是顶层职责：中层 per-token 预算由中层计账（见[并发设计 §2/§3](../中层/2-并发设计.md)），顶层不解释该预算；顶层自身业务请求准入上限见[控制面与业务面 §5](add-控制面与业务面.md)。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_upper_layer_import_contract.py",
+   "test/offline/unit/test_endpoint_budgets.py"
+  ],
+  "reason": "顶层不引 transport（import 契约）+ 预算记账在中层（预算用例），两侧合起来钉死职责边界",
+  "gap_test": ""
+ },
+ {
+  "id": "顶层#018",
+  "doc": "顶层/1-顶层.md",
+  "line": 29,
+  "section": "2.1 显式注册表",
+  "text": "- 一个业务包可以出现在多行（每个业务操作一行）；**单操作业务包只登记一行，同样成立**；同一业务操作名重复登记是启动错误；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_top_layer_dispatch.py::test_duplicate_operation_is_startup_error",
+   "test/offline/core/api_server_tb.py"
+  ],
+  "reason": "同操作名重复登记=启动错误有断言；单操作包一行成立由 dispatch 用例覆盖",
+  "gap_test": ""
+ },
+ {
+  "id": "顶层#028",
+  "doc": "顶层/1-顶层.md",
+  "line": 48,
+  "section": "2.4 中层对象注入",
+  "text": "- 可测试约束：处理/调度模块只允许标准库、`common.paths`、`common.jsonutil`、`common.config`（纯工具基座）、`server.*`、`pyapi.*`；不得出现 `transport.*`、`socket`、`subprocess`、`paramiko`。",
+  "tokens": [
+   "common.config",
+   "common.jsonutil",
+   "common.paths",
+   "paramiko",
+   "socket",
+   "subprocess"
+  ],
+  "hits": {
+   "common.config": [
+    "test/offline/unit/test_config_snapshot_edges.py",
+    "test/offline/unit/test_skillref_package.py",
+    "test/offline/unit/test_upper_layer_import_contract.py",
+    "test/semi/probes/skillref_probe.py"
+   ],
+   "common.jsonutil": [
+    "test/offline/unit/test_jsonutil.py",
+    "test/offline/unit/test_output_json_safety.py",
+    "test/offline/unit/test_spectre_util_psf_contracts.py",
+    "test/offline/unit/test_upper_layer_import_contract.py"
+   ],
+   "common.paths": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/integration/test_integration.py",
+    "test/offline/scenario/test_business_local.py",
+    "test/offline/scenario/test_multi_user_isolation.py"
+   ],
+   "paramiko": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py",
+    "test/offline/unit/test_connect_retry.py",
+    "test/offline/unit/test_paramiko.py"
+   ],
+   "socket": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py",
+    "test/offline/integration/test_daemon_handler.py"
+   ],
+   "subprocess": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/integration/test_business_child_supervision.py",
+    "test/offline/integration/test_daemon_handler.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_upper_layer_import_contract.py"
+  ],
+  "reason": "处理/调度模块的允许/禁用 import 清单逐条断言（transport/socket/subprocess/paramiko 禁用）",
+  "gap_test": ""
+ },
+ {
+  "id": "顶层#042",
+  "doc": "顶层/1-顶层.md",
+  "line": 68,
+  "section": "3. 响应壳与错误分界",
+  "text": "- 未预期异常必须被顶层捕获：单请求失败不影响其它请求，不终止服务。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_api_server_main.py::test_unserializable_result_is_structured_500",
+   "test/offline/unit/test_top_layer_pool.py"
+  ],
+  "reason": "未预期异常结构化 500（不终止服务）+ 线程池/单请求失败隔离用例",
+  "gap_test": ""
+ },
+ {
+  "id": "顶层#050",
+  "doc": "顶层/1-顶层.md",
+  "line": 82,
+  "section": "5. 与其它文档的索引",
+  "text": "- 分层职责、依赖方向、五业务接口与错误总则：[四层整体架构与接口](../总览/1-四层整体架构与接口.md) §3/§4；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "na",
+  "evidence": [],
+  "reason": "索引/关联声明，无独立可测行为",
+  "gap_test": ""
+ },
+ {
+  "id": "顶层#051",
+  "doc": "顶层/1-顶层.md",
+  "line": 83,
+  "section": "5. 与其它文档的索引",
+  "text": "- 并发与限流：[并发设计](../中层/2-并发设计.md)；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "na",
+  "evidence": [],
+  "reason": "索引/关联声明，无独立可测行为",
+  "gap_test": ""
+ }
+]

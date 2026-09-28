@@ -32,6 +32,11 @@
 
 设计侧先定口径；定了之后测试侧补真机 MC 验证（或补不覆盖声明），并把「两项目全链」里的 MC/PVT 一栏按口径收口
 
+## 设计侧进展（2026-09-28，提交 `64c803c`）
+- 真机调查 v2：`set_run_mode('Monte Carlo Sampling')` + **裸** `maeRunSimulation` 可跑出真 history `MonteCarlo.0`（24.8s）；文档写的 `?runMode` 默认 Single Run 与实测不符。
+- 选项矩阵：`maeSetRunOption` 只认 `mcmethod`/`mcnumpoints`；其余 15 项走 `axlPutRunOption`+`axlSetRunOptionValue` 可写可回读（`dutsummary` 读回空串）。
+- 副作用提醒：MC 实验会把共享库 `maestro_tb/rc_probe` 的 run_mode 改成 Monte Carlo Sampling，**跑完务必还原**（本轮已由测试侧恢复过一次）。
+- 待办：产品拍板「支持驱动」后，在 maestro 包补正式入口 + spec；测试侧据此补真机 MC 验证与 yield/sigma 对数。
 
 ---
 

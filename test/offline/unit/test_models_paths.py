@@ -14,7 +14,7 @@ from pyapi.models import CommandResult, ExecutionStatus, SimulationResult, Virtu
 from common import paths as runtime_paths
 from common import remote_paths
 from common.registry import load_registry
-from common.paths import registry_path, override_work_dir_for_tests
+from common.paths import registry_path, init_work_dir
 from common.skill_client import STX, NAK, RS, SkillClient
 
 
@@ -43,7 +43,7 @@ class TestResultModels(unittest.TestCase):
 
 class TestRuntimePaths(unittest.TestCase):
     def test_explicit_working_dir(self):
-        wd = override_work_dir_for_tests(Path(tempfile.mkdtemp(prefix="vb-")))
+        wd = runtime_paths.work_root()
         self.assertEqual(runtime_paths.work_root(), wd)
         self.assertEqual(registry_path(), wd / "registry.json")
         self.assertTrue(runtime_paths.temp_dir().is_dir())
@@ -51,6 +51,11 @@ class TestRuntimePaths(unittest.TestCase):
         self.assertTrue(runtime_paths.artifact_dir().is_dir())
         self.assertEqual(runtime_paths.command_log_file(), wd / "log" / "commands.log")
 
+    @unittest.skipUnless(
+        sys.platform == "win32",
+        "Windows-only 分支：mock 全局 os.name='nt' 会让 pathlib 在非 Windows 上抛 "
+        "NotImplementedError（cannot instantiate 'WindowsPath'），属宿主平台限制",
+    )
     def test_windows_appdata_default(self):
         with mock.patch.object(runtime_paths.os, "name", "nt"), \
              mock.patch.object(runtime_paths.os, "environ", {"APPDATA": "C:/Users/u/AppData/Roaming"}):

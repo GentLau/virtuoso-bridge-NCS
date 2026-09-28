@@ -1,0 +1,1062 @@
+[
+ {
+  "id": "注册#005",
+  "doc": "其他/1-多用户与注册.md",
+  "line": 7,
+  "section": "多用户与注册",
+  "text": "> 定位：本文只讲**注册**（六步法、授权、要填参数）与**注册表生命周期**；运行期路由与限流见[路由设计](../中层/3-路由设计.md)、[并发设计](../中层/2-并发设计.md)；字段与默认值的详细清单见[中层配置文档](../中层/add-中层配置文档.md)。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "na",
+  "evidence": [],
+  "reason": "索引/定位/关联声明，无独立可测行为",
+  "gap_test": ""
+ },
+ {
+  "id": "注册#006",
+  "doc": "其他/1-多用户与注册.md",
+  "line": 11,
+  "section": "1. 总述与 token（授权）",
+  "text": "- **注册表是唯一持久化**：本地一份 `registry.json`，`user` 为键；启动时导入一次到内存快照，运行期**不自动读文件**，管理操作成功后由**业务进程管理端点**触发重新导入或重启（见[顶层补充 §1.1](../顶层/add-控制面与业务面.md)），不自动跨进程传播。",
+  "tokens": [
+   "registry.json",
+   "user"
+  ],
+  "hits": {
+   "registry.json": [
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/integration/test_business_child_supervision.py",
+    "test/offline/integration/test_supervisor_process.py",
+    "test/offline/unit/test_models_paths.py"
+   ],
+   "user": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/integration/test_business_child_supervision.py",
+    "test/offline/integration/test_supervisor_process.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_registry_decoupling.py",
+   "test/offline/integration/test_supervisor_process.py::test_status_reload_restart"
+  ],
+  "reason": "运行期不自动读文件 + 显式 reload/restart 后重新导入，均有端到端断言",
+  "gap_test": ""
+ },
+ {
+  "id": "注册#007",
+  "doc": "其他/1-多用户与注册.md",
+  "line": 12,
+  "section": "1. 总述与 token（授权）",
+  "text": "- **注册与使用解耦**：六步注册结束后，除文件系统变更（registry + 远端部署文件）外不得残留隧道、SSH 进程或控制 socket；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/live/registration/registration_http_six_step_tb.py",
+   "test/semi/registration/cov_registration_real.py"
+  ],
+  "reason": "六步结束后隧道/SSH/socket 残留盘点（真机六步 TB 末段 + 半真机 1-4 步）",
+  "gap_test": ""
+ },
+ {
+  "id": "注册#011",
+  "doc": "其他/1-多用户与注册.md",
+  "line": 16,
+  "section": "1. 总述与 token（授权）",
+  "text": "- **token 使用范围**：只用于路由与校验（注册表路由、daemon 比对、Skill 请求）；用户可读路径一律用唯一用户名，不用 token。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "indirect",
+  "evidence": [
+   "test/semi/registration/cov_registration_real.py",
+   "test/live/registration/registration_http_six_step_tb.py"
+  ],
+  "reason": "部署/根路径按 userid 组织（注册表实际条目可见）；‘token 不得出现在用户可读路径’无单独负向断言",
+  "gap_test": "可选：断言注册部署产物路径不含 token 值（六步 TB 内一行）"
+ },
+ {
+  "id": "注册#015",
+  "doc": "其他/1-多用户与注册.md",
+  "line": 24,
+  "section": "2. 要填参数（摘要）",
+  "text": "- **条件必填**：每个 remote role 必须可解析出目标与凭据——`role.<name>.host/user` 或 `ssh.default.host/user`，`role.<name>.key_dir/key` 或 `ssh.default.key_dir/key`；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_register_flow.py",
+   "test/offline/unit/test_registration_server_edges.py"
+  ],
+  "reason": "remote role 目标与凭据条件必填（含 ssh.default 回退）有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "注册#018",
+  "doc": "其他/1-多用户与注册.md",
+  "line": 27,
+  "section": "2. 要填参数（摘要）",
+  "text": "- 非法字段、local role 的 host/user、未知字段一律拒绝（规则见[中层配置文档 §5](../中层/add-中层配置文档.md)）。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_commit_shape.py::test_local_role_with_connection_field_is_model_error",
+   "test/offline/unit/test_validation_roles.py::test_role_user_groups_are_structural_only",
+   "test/offline/unit/test_norm_gap_round8.py::TestUnknownFieldRejected"
+  ],
+  "reason": "local role 的 host/user 拒绝有断言；未知 role 名拒绝 + 未知顶层字段拒绝由 test_norm_gap_round8 钉住（第八轮补）",
+  "gap_test": ""
+ },
+ {
+  "id": "注册#019",
+  "doc": "其他/1-多用户与注册.md",
+  "line": 33,
+  "section": "3.1 流程与预测目标",
+  "text": "**①申请 → ②本地校验 → ③探测 → ④部署 → ⑤连通性测试 → ⑥写注册表**；**前五步不写 registry**（`registry.json` 零写入，候选只存内存），第六步是唯一写盘点；未完成六步即放弃全部内存候选。",
+  "tokens": [
+   "registry.json"
+  ],
+  "hits": {
+   "registry.json": [
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/integration/test_business_child_supervision.py",
+    "test/offline/integration/test_supervisor_process.py",
+    "test/offline/unit/test_models_paths.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_registration_server.py",
+   "test/semi/registration/cov_registration_real.py",
+   "test/live/registration/registration_http_six_step_tb.py"
+  ],
+  "reason": "六步顺序、前五步 registry 零写入、第六步唯一写盘，均有断言（离线+半真机+真机）",
+  "gap_test": ""
+ },
+ {
+  "id": "注册#036",
+  "doc": "其他/1-多用户与注册.md",
+  "line": 57,
+  "section": "3.3 deadline 与失败清理",
+  "text": "- 各步**各有一条独立的步级 deadline**（默认 30s），步内相位共享、不重置；`runtime.connect_timeout` 是其中的子预算；探测逐项顺序执行；第四步之后用户 `load` 的等待**不计时**；",
+  "tokens": [
+   "load",
+   "runtime.connect_timeout"
+  ],
+  "hits": {
+   "load": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ],
+   "runtime.connect_timeout": [
+    "test/offline/unit/test_connect_retry.py",
+    "test/offline/unit/test_register_flow.py",
+    "test/offline/unit/test_tunnel_transfer.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_register_flow.py",
+   "test/offline/unit/test_norm_gap_round8.py::TestStepBudgetDoesNotReset"
+  ],
+  "reason": "步级 deadline/单窗口预算由 test_register_flow + TestStepBudgetDoesNotReset（remaining 不超步时长）钉住（第八轮补）",
+  "gap_test": ""
+ },
+ {
+  "id": "注册#038",
+  "doc": "其他/1-多用户与注册.md",
+  "line": 59,
+  "section": "3.3 deadline 与失败清理",
+  "text": "- **各步失败均不释放候选**：可**原样重试同一步**（不携带参数修正）；**修正参数必须 `cancel` 后重新 `apply`**，从第一步重走；`cancel` / 服务重启才释放候选（见[中层配置文档 §6.4](../中层/add-中层配置文档.md)）；任何失败不写 registry；第四步重试为**覆盖式**（`ramic/`、`setup/`、`status/` 重新投送）；",
+  "tokens": [
+   "apply",
+   "cancel"
+  ],
+  "hits": {
+   "apply": [
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/scenario/test_registration_local_full.py",
+    "test/offline/unit/test_calibre_package.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_register_flow.py",
+    "test/offline/unit/test_registration_mock_server.py"
+   ],
+   "cancel": [
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/unit/test_register_flow.py",
+    "test/offline/unit/test_registration_mock_server.py",
+    "test/offline/unit/test_registration_server.py",
+    "test/offline/unit/test_registration_server_edges.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_register_flow.py",
+   "test/offline/unit/test_reservation.py",
+   "test/live/registration/registration_http_six_step_tb.py"
+  ],
+  "reason": "失败不释放、原样重试、修正需 cancel、重试覆盖式，均有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "注册#039",
+  "doc": "其他/1-多用户与注册.md",
+  "line": 60,
+  "section": "3.3 deadline 与失败清理",
+  "text": "- `cancel` 合法于任意非 committed 进行中会话（含 failed），**幂等**；成功后丢弃候选、会话 token 立即失效，`GET /api/register/<user>` 返回无进行中会话；**apply 后必须手动 cancel 才释放**；cancel 或服务重启后同 user 才可重新 `apply`；服务重启清空全部内存候选；",
+  "tokens": [
+   "apply",
+   "cancel"
+  ],
+  "hits": {
+   "apply": [
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/scenario/test_registration_local_full.py",
+    "test/offline/unit/test_calibre_package.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_register_flow.py",
+    "test/offline/unit/test_registration_mock_server.py"
+   ],
+   "cancel": [
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/unit/test_register_flow.py",
+    "test/offline/unit/test_registration_mock_server.py",
+    "test/offline/unit/test_registration_server.py",
+    "test/offline/unit/test_registration_server_edges.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_reservation.py",
+   "test/offline/unit/test_registration_server.py",
+   "test/live/registration/registration_http_six_step_tb.py"
+  ],
+  "reason": "cancel 合法域/幂等/token 失效/GET 无会话，均有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "注册#040",
+  "doc": "其他/1-多用户与注册.md",
+  "line": 61,
+  "section": "3.3 deadline 与失败清理",
+  "text": "- 第五步通过只报告连通性 OK，**不自动写盘**；第六步由用户显式确认触发（唯一写盘点）；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/semi/registration/cov_registration_real.py",
+   "test/live/registration/registration_http_six_step_tb.py"
+  ],
+  "reason": "第五步通过不写盘、第六步显式触发才写 registry，半真机/真机均有零落盘断言",
+  "gap_test": ""
+ },
+ {
+  "id": "注册#051",
+  "doc": "其他/1-多用户与注册.md",
+  "line": 78,
+  "section": "4.1 第三步探测矩阵",
+  "text": "- `role.gui.display`：显式给出 → 在 gui role 上以该值运行 `xdpyinfo`/`xwininfo -root` 校验，不可达 → ERROR（报告参数问题，不静默改号）；未给出 → 仅在 gui 主机上能唯一确定 Virtuoso 进程时探测并写回，存在多个 Virtuoso 进程或探测不到 → 留 `null` 仅 WARNING；bridge 只使用/校验该值，不迁移、不改变 Virtuoso 实际 DISPLAY，CIW 必须以目标 DISPLAY 启动；",
+  "tokens": [
+   "null",
+   "role.gui.display",
+   "xdpyinfo"
+  ],
+  "hits": {
+   "null": [
+    "test/offline/unit/test_commit_shape.py",
+    "test/offline/unit/test_jsonutil.py",
+    "test/offline/unit/test_output_json_safety.py",
+    "test/offline/unit/test_register_flow.py",
+    "test/offline/unit/test_skillref_package.py",
+    "test/offline/unit/test_spectre_util_psf_contracts.py"
+   ],
+   "xdpyinfo": [
+    "test/live/registration/registration_real_ciw_tb.py",
+    "test/live/registration/registration_role_split_tb.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_register_flow.py::test_gui_display_probe_explicit_and_detected",
+   "test/semi/probes/gui_display_probe.py"
+  ],
+  "reason": "显式值校验失败=ERROR、缺省探测写回、探测不到/多进程（detect=None）留 null 仅 WARNING，均有离线断言 + 半真机 display 探针",
+  "gap_test": ""
+ },
+ {
+  "id": "控制面#007",
+  "doc": "顶层/add-控制面与业务面.md",
+  "line": 12,
+  "section": "1. 双面双端口",
+  "text": "- **控制端口**：注册、用户管理、全局配置与人类操作；低并发，面向人与运维；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_registration_server.py",
+   "test/offline/unit/test_api_server_main.py"
+  ],
+  "reason": "控制端口（注册/管理）与业务端口（调度）分进程分端点，各自有 HTTP 级用例",
+  "gap_test": ""
+ },
+ {
+  "id": "控制面#008",
+  "doc": "顶层/add-控制面与业务面.md",
+  "line": 13,
+  "section": "1. 双面双端口",
+  "text": "- **业务端口**：业务包调度；程序调用，高并发。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_api_server_main.py",
+   "test/offline/core/api_server_tb.py"
+  ],
+  "reason": "业务端口高并发调度（线程池/429 准入/operation 分发）有离线断言 + 真机常驻业务面",
+  "gap_test": ""
+ },
+ {
+  "id": "控制面#011",
+  "doc": "顶层/add-控制面与业务面.md",
+  "line": 16,
+  "section": "1. 双面双端口",
+  "text": "- 控制端口默认只绑定 `127.0.0.1`，管理操作经 SSH 隧道访问；业务端口绑定地址按部署配置。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "src/register/server.py:991",
+   "test/offline/unit/test_registration_server.py",
+   "test/offline/unit/test_norm_gap_round8.py::TestRegistrationBindsLoopback"
+  ],
+  "reason": "默认绑定 127.0.0.1 由 test_norm_gap_round8::TestRegistrationBindsLoopback 钉住（第八轮补）",
+  "gap_test": ""
+ },
+ {
+  "id": "控制面#028",
+  "doc": "顶层/add-控制面与业务面.md",
+  "line": 42,
+  "section": "3. 控制端口端点",
+  "text": "**六步注册**（语义唯一 owner 见[多用户与注册 §3](../其他/1-多用户与注册.md)）",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "na",
+  "evidence": [],
+  "reason": "小节标题（语义 owner 指向另一文档）",
+  "gap_test": ""
+ },
+ {
+  "id": "控制面#043",
+  "doc": "顶层/add-控制面与业务面.md",
+  "line": 61,
+  "section": "3. 控制端口端点",
+  "text": "- 非法 action/顺序 → 4xx `{\"error\": \"step order violation\", \"current_stage\": …, \"expected\": …}`，**不改变会话状态**；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_registration_server.py",
+   "test/live/registration/registration_http_six_step_tb.py"
+  ],
+  "reason": "乱序 action → 4xx step order violation 且会话状态不变，离线/真机均有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "控制面#044",
+  "doc": "顶层/add-控制面与业务面.md",
+  "line": 62,
+  "section": "3. 控制端口端点",
+  "text": "- 各步失败后候选保留，可**原样重试同一步**（不携带参数修正）；**修正参数必须 `cancel` 后重新 `apply`**；只有 `cancel`（或服务重启）才释放候选；",
+  "tokens": [
+   "apply",
+   "cancel"
+  ],
+  "hits": {
+   "apply": [
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/scenario/test_registration_local_full.py",
+    "test/offline/unit/test_calibre_package.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_register_flow.py",
+    "test/offline/unit/test_registration_mock_server.py"
+   ],
+   "cancel": [
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/unit/test_register_flow.py",
+    "test/offline/unit/test_registration_mock_server.py",
+    "test/offline/unit/test_registration_server.py",
+    "test/offline/unit/test_registration_server_edges.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_register_flow.py",
+   "test/live/registration/registration_http_six_step_tb.py"
+  ],
+  "reason": "同一步原样重试 vs 修正需 cancel 重 apply，均有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "控制面#045",
+  "doc": "顶层/add-控制面与业务面.md",
+  "line": 63,
+  "section": "3. 控制端口端点",
+  "text": "- `apply` 响应返回 `token`（用户显式提供则原样，缺省自动生成）；除 `apply` 外的 action 必须携带 `token`，服务端校验其与候选一致，缺失/不一致 → 4xx `invalid token`，**不改变会话状态**；",
+  "tokens": [
+   "apply",
+   "token"
+  ],
+  "hits": {
+   "apply": [
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/scenario/test_registration_local_full.py",
+    "test/offline/unit/test_calibre_package.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_register_flow.py",
+    "test/offline/unit/test_registration_mock_server.py"
+   ],
+   "token": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/integration/test_business_child_supervision.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_registration_server.py",
+   "test/offline/unit/test_registration_server_edges.py"
+  ],
+  "reason": "apply 返回 token、非 apply action 必须携带匹配 token、缺失/不一致 4xx invalid token，均有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "控制面#066",
+  "doc": "顶层/add-控制面与业务面.md",
+  "line": 91,
+  "section": "3. 控制端口端点",
+  "text": "- `status`：`starting/ready/crashed`（`starting` = 已拉起未 ready）；`restart` 期间监听保持，新请求 `503 + Retry-After`，在途排空 30s 后强杀并重拉；管理端同步等待、自身超时 > 30s；",
+  "tokens": [
+   "restart",
+   "starting",
+   "status"
+  ],
+  "hits": {
+   "restart": [
+    "test/offline/integration/test_supervisor_process.py",
+    "test/offline/unit/test_registration_mock_server.py",
+    "test/offline/unit/test_registration_server.py",
+    "test/offline/unit/test_registration_server_edges.py",
+    "test/offline/unit/test_supervisor_internals.py",
+    "test/offline/unit/test_top_layer_pool.py"
+   ],
+   "starting": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_top_layer_pool.py"
+   ],
+   "status": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/integration/test_supervisor_process.py::test_status_reload_restart",
+   "test/offline/unit/test_top_layer_pool.py"
+  ],
+  "reason": "status/restart 生命周期（重启替换子进程）+ 排空中 503 + 准入上限 429+Retry-After，均有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "控制面#069",
+  "doc": "顶层/add-控制面与业务面.md",
+  "line": 95,
+  "section": "3. 控制端口端点",
+  "text": "- 修改类（update/delete）路径以 `user` 定位，**收归管理员**：个人 token 不能自助修改；update 请求体含 `token` 字段 → 拒绝；",
+  "tokens": [
+   "token",
+   "user"
+  ],
+  "hits": {
+   "token": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/integration/test_business_child_supervision.py"
+   ],
+   "user": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/integration/test_business_child_supervision.py",
+    "test/offline/integration/test_supervisor_process.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_registration_server.py",
+   "test/offline/unit/test_registration_server_edges.py"
+  ],
+  "reason": "update/delete 收归管理员、个人 token 不能自助修改、update 体含 token → 拒绝，均有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "控制面#071",
+  "doc": "顶层/add-控制面与业务面.md",
+  "line": 97,
+  "section": "3. 控制端口端点",
+  "text": "- 请求体上限 **16 MiB**，超限 → `413`；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_registration_server_edges.py"
+  ],
+  "reason": "请求体超限 16MiB → 413（且不读体/不中断连接），有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "控制面#072",
+  "doc": "顶层/add-控制面与业务面.md",
+  "line": 98,
+  "section": "3. 控制端口端点",
+  "text": "- 控制端口不运行业务操作；`POST /api/bug` 携带个人 token，合法性由控制进程经注册与管理模块的 registry 内存快照校验（不经中层、不读注册表文件）；**无 token 或无效 → 4xx，不记录**；校验通过后，服务端**先剥离 token/Authorization 等凭据**再记录原始请求体，并附加提交 user、提交日期时间、当前状态摘要、备份的近期操作/错误日志，统一写入本地工作目录 `log/bug_reports/`（每份一个条目）；不解析内容、不触发业务，成功返回 2xx 收据。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_registration_server.py::test_bug_report_requires_valid_personal_token",
+   "test/offline/unit/test_registration_server.py::test_bug_report_records_entry_with_user_and_masked_token",
+   "test/offline/unit/test_registration_server_edges.py"
+  ],
+  "reason": "无效/缺失 token → 4xx 不记录；记录前剥离凭据（masked）；写失败 500 不留 tmp，均有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "控制面#079",
+  "doc": "顶层/add-控制面与业务面.md",
+  "line": 109,
+  "section": "4. 业务端口端点",
+  "text": "- 调度顺序与响应壳的唯一口径见[顶层 §2/§3](1-顶层.md)。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "na",
+  "evidence": [],
+  "reason": "索引/定位/关联声明，无独立可测行为",
+  "gap_test": ""
+ },
+ {
+  "id": "控制面#080",
+  "doc": "顶层/add-控制面与业务面.md",
+  "line": 113,
+  "section": "5. 全局配置与启动参数",
+  "text": "- 工作路径下除 `registry.json` 外，另存一份配置 JSON `config.json`；`GET/PUT /api/config` 操作该配置：GET 读内存快照，PUT 只覆盖请求里出现的顶层键、未出现的键原样保留，校验通过后更新快照并原子写回 `config.json`；",
+  "tokens": [
+   "config.json",
+   "registry.json"
+  ],
+  "hits": {
+   "config.json": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/integration/test_business_child_supervision.py",
+    "test/offline/unit/test_common_config.py",
+    "test/offline/unit/test_config_snapshot_edges.py",
+    "test/offline/unit/test_registration_server.py",
+    "test/offline/unit/test_skillref_package.py"
+   ],
+   "registry.json": [
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/integration/test_business_child_supervision.py",
+    "test/offline/integration/test_supervisor_process.py",
+    "test/offline/unit/test_models_paths.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_registration_server.py::test_config_unknown_top_level_key_passthrough",
+   "test/offline/unit/test_registration_server_edges.py",
+   "test/offline/unit/test_api_server_main.py"
+  ],
+  "reason": "GET/PUT config、PUT 只覆盖出现键（未知键透传）、原子写回与失败清理，均有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "控制面#081",
+  "doc": "顶层/add-控制面与业务面.md",
+  "line": 114,
+  "section": "5. 全局配置与启动参数",
+  "text": "- `config.json` 经 `common.config` 提供**进程级只读快照**（与 `common.paths` 同性质，四层可读）；控制面是唯一写者；业务进程启动与 `/api/process/reload` 或 `restart` 各导入一次，运行期不读文件、请求期零文件 IO；",
+  "tokens": [
+   "common.config",
+   "common.paths",
+   "config.json",
+   "restart"
+  ],
+  "hits": {
+   "common.config": [
+    "test/offline/unit/test_config_snapshot_edges.py",
+    "test/offline/unit/test_skillref_package.py",
+    "test/offline/unit/test_upper_layer_import_contract.py",
+    "test/semi/probes/skillref_probe.py"
+   ],
+   "common.paths": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/integration/test_integration.py",
+    "test/offline/scenario/test_business_local.py",
+    "test/offline/scenario/test_multi_user_isolation.py"
+   ],
+   "config.json": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/integration/test_business_child_supervision.py",
+    "test/offline/unit/test_common_config.py",
+    "test/offline/unit/test_config_snapshot_edges.py",
+    "test/offline/unit/test_registration_server.py",
+    "test/offline/unit/test_skillref_package.py"
+   ],
+   "restart": [
+    "test/offline/integration/test_supervisor_process.py",
+    "test/offline/unit/test_registration_mock_server.py",
+    "test/offline/unit/test_registration_server.py",
+    "test/offline/unit/test_registration_server_edges.py",
+    "test/offline/unit/test_supervisor_internals.py",
+    "test/offline/unit/test_top_layer_pool.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_common_config.py",
+   "test/offline/integration/test_supervisor_process.py::test_status_reload_restart"
+  ],
+  "reason": "进程级只读快照 + 启动/reload/restart 各导入一次，有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "控制面#083",
+  "doc": "顶层/add-控制面与业务面.md",
+  "line": 116,
+  "section": "5. 全局配置与启动参数",
+  "text": "- 控制面只理解并校验自己登记的键（本版 `business_thread_pool_size`），其余顶层键**原样透传、不解读**；`business_thread_pool_size` 是**可变准入上限**：reload 后新请求按新上限准入；在途数 ≥ 新上限时，新请求拒绝（`429 + Retry-After`）直至低于上限；",
+  "tokens": [
+   "business_thread_pool_size"
+  ],
+  "hits": {
+   "business_thread_pool_size": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/integration/test_business_child_supervision.py",
+    "test/offline/unit/test_api_server_main.py",
+    "test/offline/unit/test_common_config.py",
+    "test/offline/unit/test_registration_server.py",
+    "test/offline/unit/test_registration_server_edges.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_api_server_main.py",
+   "test/offline/unit/test_top_layer_pool.py",
+   "test/offline/core/api_server_tb.py"
+  ],
+  "reason": "business_thread_pool_size 为可变准入上限（reload 后生效 + 超限 429+Retry-After）；其余顶层键原样透传不解读，均有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "控制面#085",
+  "doc": "顶层/add-控制面与业务面.md",
+  "line": 118,
+  "section": "5. 全局配置与启动参数",
+  "text": "- `runtime.thread_pool_size` 是**每 token** 的注册表配置（唯一 owner 见[并发设计 §2](../中层/2-并发设计.md)），与本节的“全局线程池上限”不是一回事：前者是单用户预算，后者是顶层进程能力上限；两者独立，不互相替代。",
+  "tokens": [
+   "runtime.thread_pool_size"
+  ],
+  "hits": {
+   "runtime.thread_pool_size": [
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/integration/test_integration.py",
+    "test/offline/scenario/test_business_local.py",
+    "test/offline/unit/test_middle_routing.py",
+    "test/offline/unit/test_register_flow.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_endpoint_budgets.py",
+   "test/offline/unit/test_api_server_main.py"
+  ],
+  "reason": "runtime.thread_pool_size（每 token）与全局线程池上限各自用例，二者独立不互替",
+  "gap_test": ""
+ },
+ {
+  "id": "控制面#088",
+  "doc": "顶层/add-控制面与业务面.md",
+  "line": 124,
+  "section": "6. 索引",
+  "text": "- 调度顺序、响应壳与错误分界：[顶层 §2/§3](1-顶层.md)；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "na",
+  "evidence": [],
+  "reason": "索引/定位/关联声明，无独立可测行为",
+  "gap_test": ""
+ },
+ {
+  "id": "控制面#089",
+  "doc": "顶层/add-控制面与业务面.md",
+  "line": 125,
+  "section": "6. 索引",
+  "text": "- 并发与限流：[并发设计](../中层/2-并发设计.md)；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "na",
+  "evidence": [],
+  "reason": "索引/定位/关联声明，无独立可测行为",
+  "gap_test": ""
+ },
+ {
+  "id": "上层#005",
+  "doc": "上层/1-上层.md",
+  "line": 7,
+  "section": "上层：业务包与插件化",
+  "text": "> 定位：五业务接口签名与错误总则见[四层整体架构与接口 §4](../总览/1-四层整体架构与接口.md)；顶层调度见[顶层 §2](../顶层/1-顶层.md)；role 与并发见[路由设计](../中层/3-路由设计.md)、[并发设计](../中层/2-并发设计.md)。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "na",
+  "evidence": [],
+  "reason": "索引/定位/关联声明，无独立可测行为",
+  "gap_test": ""
+ },
+ {
+  "id": "上层#031",
+  "doc": "上层/1-上层.md",
+  "line": 52,
+  "section": "2.4 步骤痕迹",
+  "text": "- 每步记 `{\"step\": 名, \"ok\": 布尔, \"detail\": 中层结果}`；默认任一步失败即停止；业务操作可自行决定是否重试某步（条件与痕迹自行约定）；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_maestro_package_flow.py",
+   "test/offline/unit/test_veriloga_contracts.py"
+  ],
+  "reason": "每步 {step, ok, detail} 记录 + 任一步失败即停（后续不执行），包级用例有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "上层#032",
+  "doc": "上层/1-上层.md",
+  "line": 53,
+  "section": "2.4 步骤痕迹",
+  "text": "- 保留全部痕迹；失败不得伪装成成功，也不得只留一句 `error` 丢弃步骤。",
+  "tokens": [
+   "error"
+  ],
+  "hits": {
+   "error": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_veriloga_contracts.py",
+   "test/offline/unit/test_maestro_package_flow.py"
+  ],
+  "reason": "失败保留 steps 痕迹、不以成功形态返回（ok=false + error），有断言；P-027 类假成功已被禁止",
+  "gap_test": ""
+ },
+ {
+  "id": "上层#042",
+  "doc": "上层/1-上层.md",
+  "line": 74,
+  "section": "3.3 校验与错误",
+  "text": "- 领域校验失败是业务失败，写成 `Result(ok=false)`，**不得抛异常表达**；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_veriloga_contracts.py",
+   "test/offline/unit/test_maestro_package_flow.py"
+  ],
+  "reason": "领域校验/执行失败一律 Result(ok=false)（多条 assertFalse(result.ok)），不抛异常",
+  "gap_test": ""
+ },
+ {
+  "id": "上层#043",
+  "doc": "上层/1-上层.md",
+  "line": 75,
+  "section": "3.3 校验与错误",
+  "text": "- 下层结构化失败按错误总则处置：校验和不一致不忽略；重试策略由业务操作自行决断；中层只做传输层透明重试（见[并发设计 §4](../中层/2-并发设计.md)）；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_middle_contracts.py",
+   "test/offline/unit/test_pyapi_packages.py"
+  ],
+  "reason": "checksum 不一致不忽略（结构化失败）+ 传输层重试透明、业务重试由包决定，均有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "上层#045",
+  "doc": "上层/1-上层.md",
+  "line": 82,
+  "section": "4.1 显式注册",
+  "text": "- **插件的登记单元是业务包，条目落在业务操作级**：`{业务操作名: (业务包类, 方法名, Request 模型)}`；注册表结构与重复登记错误由[顶层 §2.1](../顶层/1-顶层.md)唯一 owner；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_top_layer_dispatch.py",
+   "test/offline/unit/test_pyapi_packages.py"
+  ],
+  "reason": "登记单元=业务操作级 tuple（含重复登记启动错误），有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "上层#063",
+  "doc": "上层/1-上层.md",
+  "line": 115,
+  "section": "7. 与其它文档的索引",
+  "text": "- 五业务接口签名与错误总则：[四层整体架构与接口 §4](../总览/1-四层整体架构与接口.md)；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "na",
+  "evidence": [],
+  "reason": "索引/定位/关联声明，无独立可测行为",
+  "gap_test": ""
+ },
+ {
+  "id": "上层#066",
+  "doc": "上层/1-上层.md",
+  "line": 118,
+  "section": "7. 与其它文档的索引",
+  "text": "- 排队、预算与 deadline：[并发设计](../中层/2-并发设计.md)；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "na",
+  "evidence": [],
+  "reason": "索引/定位/关联声明，无独立可测行为",
+  "gap_test": ""
+ },
+ {
+  "id": "cellview#006",
+  "doc": "上层/5-cellview.md",
+  "line": 11,
+  "section": "1. 业务操作",
+  "text": "重点在“文件”管理，对象体系分三层：**lib → cell → view**（categories 特殊，另行定义）。每层都有 list/create/copy/delete/rename；get/bind 只在 lib 层。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_cellview_contracts.py",
+   "test/live/packages/cellview_e2e_tests.py"
+  ],
+  "reason": "三层对象 list/create/copy/delete/rename + get/bind 仅 lib 层：离线契约 + 真机 E2E",
+  "gap_test": ""
+ },
+ {
+  "id": "cellview#038",
+  "doc": "上层/5-cellview.md",
+  "line": 57,
+  "section": "3. 预留（暂不实现）",
+  "text": "- **harvest**：输入一个 lib，一次性枚举 lib → cells → views 全貌，对 view 分类，并附带 Maestro setup/analysis 名与结果目录存在性，输出 JSON 报告。可由三层 `list` 拼出，先不实现。",
+  "tokens": [
+   "list"
+  ],
+  "hits": {
+   "list": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py",
+    "test/offline/frontend/registration_mock_server.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "na",
+  "evidence": [],
+  "reason": "spec 明示‘先不实现’的预留项（harvest）；按明确不做口径登记，不建 TB",
+  "gap_test": ""
+ },
+ {
+  "id": "gui#006",
+  "doc": "上层/10-gui.md",
+  "line": 11,
+  "section": "1. 业务操作",
+  "text": "窗口处理面向“卡住弹窗的恢复”：唯一清单入口是 X11 顶层窗口列表，动作只接受显式 `window_id`。",
+  "tokens": [
+   "window_id"
+  ],
+  "hits": {
+   "window_id": [
+    "test/offline/unit/test_gui_package.py",
+    "test/semi/probes/maestro_screenshot_probe.py",
+    "test/semi/probes/_maestro_tb.py",
+    "test/semi/transport/log_matrix_real_tb.py",
+    "test/live/packages/gui_e2e_tests.py",
+    "test/live/packages/infra_e2e_tests.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_gui_package.py",
+   "test/semi/probes/gui_display_probe.py"
+  ],
+  "reason": "窗口恢复面向 X11 顶层窗口 + 显式 window_id：离线解析/动作用例 + 真 display 探针",
+  "gap_test": ""
+ },
+ {
+  "id": "gui#016",
+  "doc": "上层/10-gui.md",
+  "line": 31,
+  "section": "2. 约定",
+  "text": "- 唯一清单入口：`list_windows` 只列 X11 顶层窗口，不再提供 SKILL 会话内清单；",
+  "tokens": [
+   "list_windows"
+  ],
+  "hits": {
+   "list_windows": [
+    "test/offline/unit/test_gui_package.py",
+    "test/semi/probes/gui_display_probe.py",
+    "test/live/packages/gui_e2e_tests.py",
+    "test/live/packages/infra_e2e_tests.py",
+    "test/live/packages/layout_e2e_tests.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_gui_package.py::test_list_windows_ok",
+   "test/offline/unit/test_gui_package.py::test_list_windows_ewmh_client_list"
+  ],
+  "reason": "list_windows 走 X11 顶层窗口清单（含 EWMH），无 SKILL 会话内清单，有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "gui#019",
+  "doc": "上层/10-gui.md",
+  "line": 34,
+  "section": "2. 约定",
+  "text": "- 动作必须带显式 `window_id`，不存在“当前/最近窗口”隐式目标；",
+  "tokens": [
+   "window_id"
+  ],
+  "hits": {
+   "window_id": [
+    "test/offline/unit/test_gui_package.py",
+    "test/semi/probes/maestro_screenshot_probe.py",
+    "test/semi/probes/_maestro_tb.py",
+    "test/semi/transport/log_matrix_real_tb.py",
+    "test/live/packages/gui_e2e_tests.py",
+    "test/live/packages/infra_e2e_tests.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_gui_package.py::test_target_validation",
+   "test/offline/unit/test_gui_package.py::test_whitelist"
+  ],
+  "reason": "动作必须显式 window_id（无隐式当前窗口）+ 动作白名单，有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "gui#022",
+  "doc": "上层/10-gui.md",
+  "line": 37,
+  "section": "2. 约定",
+  "text": "- `auto_dismiss` 只处理分类为 dialog 的窗口，设次数上限并保留逐窗口证据；",
+  "tokens": [
+   "auto_dismiss"
+  ],
+  "hits": {
+   "auto_dismiss": [
+    "test/offline/unit/test_gui_package.py",
+    "test/semi/probes/gds_then_skill_probe.py",
+    "test/live/packages/gui_e2e_tests.py",
+    "test/live/packages/infra_e2e_tests.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_gui_package.py::test_dialog_candidates_only_and_order",
+   "test/offline/unit/test_gui_package.py::test_send_and_verify",
+   "test/semi/probes/gds_then_skill_probe.py"
+  ],
+  "reason": "auto_dismiss 只收 dialog 候选 + 顺序 + 逐窗口验证（send_and_verify）；真机 P-075 回归探针覆盖",
+  "gap_test": ""
+ }
+]

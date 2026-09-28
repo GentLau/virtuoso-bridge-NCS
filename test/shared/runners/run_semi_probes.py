@@ -27,8 +27,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 PROBES_DIR = ROOT / "test" / "semi" / "probes"
-LOG_DIR = ROOT / "test" / "artifacts" / "evidence" / "round7" / "semi-logs"
-DEFAULT_OUT = ROOT / "test" / "artifacts" / "evidence" / "round7" / "semi-probes.json"
+# 探针日志与结果始终落在「本次 --out 的同一目录」下（run-id 由调用方决定），
+# 不写死某一轮——2026-09-28 修：原来写死 round7，第八轮的日志会混进第七轮目录。
+DEFAULT_OUT = ROOT / "test" / "artifacts" / "evidence" / "semi-probes.json"
 
 WORK_VBLOG = "test/artifacts/env/log-vblog"
 TOKEN_VBLOG = "vb-vblog"
@@ -70,6 +71,8 @@ def entry(group: str, argv: list[str] | None = None, needs: str = "",
 PROBES: dict[str, dict] = {
     "layout_lock_ownership_probe.py": entry(
         "layout", ["--work-dir", WORK_VBLOG, "--token", TOKEN_VBLOG], "业务面 8127 + 真 Virtuoso"),
+    "layout_depth_probe.py": entry(
+        "layout", [], "业务面 8127 + vb-vblog（P-082 depth>0 红灯钉）"),
     "layout_p044_second_write_probe.py": entry(
         "layout", ["--work-dir", WORK_VBLOG, "--token", TOKEN_VBLOG], "P-044 复验（真 Virtuoso）"),
     "twouser_same_view_probe.py": entry(
@@ -90,7 +93,12 @@ PROBES: dict[str, dict] = {
     "symbol_http_400_repro.py": entry("symbol", [], "业务面 8127"),
     "shared_cdf_pollution_probe.py": entry("schematic", [], "PDK 实例 + peer 用户"),
     "schematic_pin_ops_probe.py": entry("schematic", [], "PDK 实例"),
+    "schematic_wire_style_probe.py": entry("schematic", [], "PDK 实例"),
     "maestro_env_probe.py": entry("maestro", [], "真 Virtuoso + ADE 库"),
+    "maestro_export_include_results_probe.py": entry(
+        "maestro", [], "业务面 8127 + rc_probe history（P-084 红灯钉）"),
+    "maestro_save_false_disk_probe.py": entry(
+        "maestro", [], "业务面 8127 + maestro_tb/rc_probe 磁盘 sdb（P-087 红灯钉）"),
     "maestro_pkg_probe.py": entry("maestro", [], "真 Virtuoso"),
     "maestro_session_conflict_probe.py": entry("maestro", [], "只读诊断（真 Virtuoso）"),
     "maestro_leak_probe.py": entry("maestro", [], "被 import 的库（无 __main__，单跑会红）"),
@@ -99,7 +107,7 @@ PROBES: dict[str, dict] = {
     "calibre_env_probe.py": entry("calibre", ["--facts"], "calibre 环境（远程）"),
     "calibre_cdl_probe.py": entry("calibre", [], "PDK 实例 + auCdl"),
     "cdl_export_variants_probe.py": entry("calibre", [], "PDK 实例 + 多参数导出"),
-    "calibre_package_http_probe.py": entry("calibre", ["--kind", "env"], "业务面 8128"),
+    "calibre_package_http_probe.py": entry("calibre", ["--kind", "env"], "业务面 8127（默认 8127/vb-vblog）"),
     "spectre_ac_pipeline_probe.py": entry("spectre", [], "PDK 实例"),
     "skill_syntax_matrix_tb.py": entry("skill", [], "业务面 8127"),
     # `--tree` 需要具体目录；主用法是 `--check`（远端树 → 本地解析）
@@ -122,26 +130,32 @@ PROBES: dict[str, dict] = {
         "test/semi/transport"),
     "ssh_backend_semi_tb.py": entry("transport", [], "可达 SSH 主机", "test/semi/transport"),
     "role_credential_isolation_tb.py": entry(
-        "transport", ["--out", "test/artifacts/evidence/round7/role-credential-isolation.json"],
+        "transport", ["--out", "{evidence_dir}/role-credential-isolation.json"],
         "两把真钥（见 test/reports/internal/环境Runbook-内部.md §3.1）", "test/semi/transport"),
 }
 
 
-def _run_one(name: str, spec: dict, *, dry: bool) -> dict:
+def _run_one(name: str, spec: dict, *, dry: bool, log_dir: Path, evidence_dir: str) -> dict:
     base = PROBES_DIR if spec.get("path") is None else ROOT / str(spec["path"])
     script = base / name
     if not script.is_file():
         return {"probe": name, "status": "missing", "detail": str(script)}
-    argv = [sys.executable, str(script), *[str(x) for x in spec.get("argv", [])]]
+    argv = [sys.executable, str(script),
+            *[str(x).replace("{evidence_dir}", evidence_dir)
+              for x in spec.get("argv", [])]]
     if dry:
         return {"probe": name, "status": "dry", "argv": argv[2:], "needs": spec.get("needs")}
-    LOG_DIR.mkdir(parents=True, exist_ok=True)
-    log_path = LOG_DIR / f"{name}.log"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log_path = log_dir / f"{name}.log"
     started = time.monotonic()
     try:
+        # 探针输出是 UTF-8（含中文/符号）；Windows 默认 locale 是 GBK，必须显式指定，
+        # 否则读线程会抛 UnicodeDecodeError 把 runner 整个打断（2026-09-28 实测）。
         proc = subprocess.run(argv, cwd=str(ROOT), capture_output=True, text=True,
+                             encoding="utf-8", errors="replace",
                              timeout=spec.get("timeout", 900),
-                             env={**os.environ, "PYTHONPATH": "src"})
+                             env={**os.environ, "PYTHONPATH": "src",
+                                  "PYTHONIOENCODING": "utf-8"})
         rc, out, err = proc.returncode, proc.stdout or "", proc.stderr or ""
     except subprocess.TimeoutExpired as exc:
         rc = 124
@@ -171,11 +185,25 @@ def main(argv: list[str] | None = None) -> int:
     if not selected:
         parser.error(f"没有匹配的探针（--group {args.group}）")
 
-    results = [_run_one(name, spec, dry=args.dry) for name, spec in selected.items()]
+    out = Path(args.out)
+    if not out.is_absolute():
+        out = (ROOT / out).resolve()
+    log_dir = out.parent / "semi-logs"
+    evidence_dir = out.parent.as_posix()
+    results = []
+    for name, spec in selected.items():
+        if not args.dry:
+            print(f"[ .. ] {name}", flush=True)
+        row = _run_one(name, spec, dry=args.dry, log_dir=log_dir,
+                       evidence_dir=evidence_dir)
+        results.append(row)
+        if not args.dry:
+            extra = (f" rc={row.get('rc')} {row.get('seconds')}s"
+                     if row.get("rc") is not None else "")
+            print(f"[{row['status']:>4}] {name}{extra}", flush=True)
     failed = [r["probe"] for r in results if r["status"] == "fail"]
     payload = {"group": args.group, "count": len(results), "failed": failed,
                "ok": not failed, "results": results}
-    out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(payload, ensure_ascii=False, indent=1), encoding="utf-8")
     for row in results:

@@ -231,9 +231,8 @@ class _NeverReadyProc:
 class TestTunnelDeadlineAndHealth(unittest.TestCase):
     def setUp(self):
         self.wd = Path(tempfile.mkdtemp(prefix="vb-"))
-        from common.paths import override_work_dir_for_tests
+        from common.paths import init_work_dir
 
-        override_work_dir_for_tests(self.wd)
 
     def test_port_forward_retry_shares_the_call_deadline(self):
         """O2/§5.8: 隧道启动重试不得重置端到端 deadline。"""

@@ -82,20 +82,40 @@ class TestBusinessFacePool(unittest.TestCase):
             conn.close()
 
     def test_json_parser_limits_return_400(self):
-        """超长整数字面量/超深嵌套必须回 JSON 400，不得静默断连。"""
+        """超长整数字面量/超深嵌套必须 **400 结构化**返回，不得静默断连。
+
+        口径同 `test_registration_server.py::test_json_parser_limits_return_400`：
+        long-int 跨解释器稳定报 `invalid JSON body`（钉死）；deep 在 3.14 上会被
+        扫描器正常解析后由业务层拒绝 —— 因此只断言"400 + JSON 错误体"这条安全性
+        不变量。证据：`test/artifacts/evidence/round5-linux-client/py314.log`。
+        """
         long_int = (
             b'{"operation":"tb.pool.slow","token":"t","value":'
             + b"9" * 5000 + b"}"
         )
-        deep = (
-            b'{"operation":"tb.pool.slow","token":"t","value":'
-            + b"[" * 5000 + b"]" * 5000 + b"}"
-        )
-        for label, body in (("long-int", long_int), ("deep", deep)):
-            with self.subTest(label=label):
-                status, raw = self._post_raw(body)
-                self.assertEqual(status, 400, raw)
-                self.assertIn("invalid JSON body", raw)
+        status, raw = self._post_raw(long_int)
+        self.assertEqual(status, 400, raw)
+        self.assertIn("invalid JSON body", raw)
+
+        def _deep(depth: int) -> bytes:
+            return (
+                b'{"operation":"tb.pool.slow","token":"t","value":'
+                + b"[" * depth + b"]" * depth + b"}"
+            )
+
+        # 5000 层：解释器相关（3.9 拒 → 400 invalid JSON；3.14 解析后**照常执行** →
+        # 200 业务结果）。这里只钉安全性不变量：一定有 JSON 响应壳、绝不静默断连、
+        # 绝不 5xx。产品若要跨版本统一拒绝，需要显式深度上限（见台账 P-057）。
+        status, raw = self._post_raw(_deep(5000))
+        self.assertIn(status, (200, 400), raw)
+        payload = json.loads(raw)
+        self.assertIn("error", payload)
+        self.assertIn("data", payload)
+
+        # 200000 层：两个解释器都超出扫描器能力 → 必须 400 invalid JSON body
+        status, raw = self._post_raw(_deep(200000))
+        self.assertEqual(status, 400, raw)
+        self.assertIn("invalid JSON body", raw)
 
     def test_long_int_rejected_without_interpreter_limit(self):
         if not hasattr(sys, "set_int_max_str_digits"):

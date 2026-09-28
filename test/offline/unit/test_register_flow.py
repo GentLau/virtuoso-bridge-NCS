@@ -1,5 +1,6 @@
 """Six-step registration flow unit tests (probes/deploy/connectivity mocked)."""
 
+import itertools
 import sys
 import tempfile
 import time
@@ -22,7 +23,7 @@ from register import (
     validate_local,
 )
 from common.registry import UserEntry, SshDefaults, endpoint_key, load_registry
-from common.paths import registry_path, override_work_dir_for_tests
+from common.paths import init_work_dir, registry_path, work_root
 from _ssh_cred import make_credential
 
 
@@ -73,7 +74,7 @@ class TestCredentialValidation(unittest.TestCase):
     """spec r18+: 客户端凭据文件、公钥指纹与复用授权（第二步校验）。"""
 
     def setUp(self):
-        self.wd = override_work_dir_for_tests(Path(tempfile.mkdtemp(prefix="vb-")))
+        self.wd = work_root()
         self.reg = load_registry(registry_path())
 
     def _request(self, key_dir: str, key: str = "id_rsa"):
@@ -119,7 +120,7 @@ class TestCredentialValidation(unittest.TestCase):
 
 class TestValidateLocal(unittest.TestCase):
     def setUp(self):
-        self.wd = override_work_dir_for_tests(Path(tempfile.mkdtemp(prefix="vb-")))
+        self.wd = work_root()
         self.reg = load_registry(registry_path())
 
     def test_clean(self):
@@ -157,8 +158,23 @@ class TestValidateLocal(unittest.TestCase):
 
 class TestFlowApply(unittest.TestCase):
     def setUp(self):
-        self.wd = override_work_dir_for_tests(Path(tempfile.mkdtemp(prefix="vb-")))
+        self.wd = work_root()
         self.reg = load_registry(registry_path())
+        # P-063 / 独立复核 D4：`apply()` 的 validate 步骤会**真实分配本机 local tunnel 端口**
+        # （`register.probe.local_port_free` → `allocate_local_port(start=65081)`）。同机有别的
+        # 跑测/隧道占住那段区间时，本组会在 validate 就失败，掩盖"apply 各阶段失败即停"这个考点
+        # （实测：`test_deploy_failure_stops_flow` 报 `'deploy boom' not found in
+        # 'no free local tunnel port found'`）。这里把端口探测/分配换成确定性私有序列；
+        # 端口探测本身由 `test_probe.py` 与
+        # `TestValidateLocal::test_validate_rejects_busy_explicit_local_port` 覆盖。
+        counter = itertools.count(65100)
+        alloc = mock.patch("register.probe.allocate_local_port",
+                           side_effect=lambda *a, **kw: next(counter))
+        free = mock.patch("register.probe.local_port_free", return_value=True)
+        alloc.start()
+        free.start()
+        self.addCleanup(free.stop)
+        self.addCleanup(alloc.stop)
 
     def test_validation_failure_stops_flow(self):
         self.reg.register("alice", UserEntry(token="other", mode="remote"))
@@ -193,7 +209,7 @@ class TestFlowApply(unittest.TestCase):
 
 class TestStepRetryAfterFailure(unittest.TestCase):
     def setUp(self):
-        self.wd = override_work_dir_for_tests(Path(tempfile.mkdtemp(prefix="vb-")))
+        self.wd = work_root()
         self.reg = load_registry(registry_path())
 
     def test_validate_can_retry_same_step(self):
@@ -263,7 +279,7 @@ class TestStepRetryAfterFailure(unittest.TestCase):
 
 class TestFlowVerifyAndCommit(unittest.TestCase):
     def setUp(self):
-        self.wd = override_work_dir_for_tests(Path(tempfile.mkdtemp(prefix="vb-")))
+        self.wd = work_root()
         self.reg = load_registry(registry_path())
 
     def _deployed_flow(self):
@@ -392,7 +408,7 @@ class TestFlowVerifyAndCommit(unittest.TestCase):
 
 class TestRegisterUserOneShot(unittest.TestCase):
     def setUp(self):
-        self.wd = override_work_dir_for_tests(Path(tempfile.mkdtemp(prefix="vb-")))
+        self.wd = work_root()
         self.reg = load_registry(registry_path())
 
     def test_committed_roundtrip(self):
@@ -428,7 +444,7 @@ class TestRegisterUserOneShot(unittest.TestCase):
 
 class TestFlowCancelGuard(unittest.TestCase):
     def setUp(self):
-        self.wd = override_work_dir_for_tests(Path(tempfile.mkdtemp(prefix="vb-")))
+        self.wd = work_root()
         self.reg = load_registry(registry_path())
 
     def test_cancel_does_not_release_committed_session(self):
@@ -441,7 +457,7 @@ class TestFlowCancelGuard(unittest.TestCase):
 
 class TestProbeFailureBranches(unittest.TestCase):
     def setUp(self):
-        self.wd = override_work_dir_for_tests(Path(tempfile.mkdtemp(prefix="vb-")))
+        self.wd = work_root()
 
     def _remote(self, **patches):
         from register import probe_user
@@ -601,7 +617,7 @@ class TestProbeFailureBranches(unittest.TestCase):
 
 class TestVerifyExceptionBranches(unittest.TestCase):
     def setUp(self):
-        self.wd = override_work_dir_for_tests(Path(tempfile.mkdtemp(prefix="vb-")))
+        self.wd = work_root()
         self.reg = load_registry(registry_path())
 
     def test_verify_connectivity_exception(self):
@@ -661,7 +677,7 @@ class TestVerifyExceptionBranches(unittest.TestCase):
 
 class TestFlowMoreBranches(unittest.TestCase):
     def setUp(self):
-        self.wd = override_work_dir_for_tests(Path(tempfile.mkdtemp(prefix="vb-")))
+        self.wd = work_root()
 
     def test_resolve_scratch_absolute_passthrough_and_failure(self):
         from register.flow import _resolve_remote_scratch
@@ -900,7 +916,7 @@ class TestFlowMoreBranches(unittest.TestCase):
 
 class TestRequestAndIdempotence(unittest.TestCase):
     def setUp(self):
-        self.wd = override_work_dir_for_tests(Path(tempfile.mkdtemp(prefix="vb-")))
+        self.wd = work_root()
         self.reg = load_registry(registry_path())
 
     def test_remote_requires_host_and_ssh_user(self):
@@ -936,7 +952,7 @@ class TestLocalJointPort(unittest.TestCase):
     """§6.4: local 模式下 daemon_port 与 local_port 是同一个候选端口。"""
 
     def setUp(self):
-        self.wd = override_work_dir_for_tests(Path(tempfile.mkdtemp(prefix="vb-")))
+        self.wd = work_root()
         self.reg = load_registry(registry_path())
 
     def _probe_local(self, **daemon_fields):
@@ -1084,7 +1100,7 @@ class TestSpectreAutoProbe(unittest.TestCase):
             runner.return_value.run_command.side_effect = _probe_run
             result = probe_user(request, token="tok")
         self.assertEqual(result.entry.roles.spectre.bin, "/opt/cad/bin/spectre")
-        from transport.remote_roles import resolve
+        from transport.roles import resolve
         self.assertEqual(resolve(result.entry).spectre.host, "h")
 
     def test_explicit_bad_spectre_non_blocking(self):

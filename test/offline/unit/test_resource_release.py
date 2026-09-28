@@ -11,9 +11,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src"))
 
 from transport.middle import BusinessServer
 from common.registry import UserEntry, load_registry
-from common.paths import registry_path, override_work_dir_for_tests
+from common.paths import registry_path, init_work_dir
 from transport.tunnel import RemoteClient
-from transport.remote_roles import resolve
+from transport.roles import resolve
 
 
 class FakeRunner:
@@ -68,7 +68,6 @@ class TestRunnerCloseStopsTunnel(unittest.TestCase):
 class TestBusinessServerClose(unittest.TestCase):
     def _server_with_token(self, token: str = "tok-x") -> BusinessServer:
         wd = Path(tempfile.mkdtemp(prefix="vb-"))
-        override_work_dir_for_tests(wd)
         registry = load_registry(registry_path())
         entry = UserEntry(token=token, mode="remote")
         entry.ssh.default.host = "server-a"
@@ -78,7 +77,7 @@ class TestBusinessServerClose(unittest.TestCase):
         entry.roles.daemon.host = "server-a"
         entry.roles.daemon.user = "u"
         registry.register("alice", entry)
-        return BusinessServer(wd)
+        return BusinessServer()
 
     def test_invalidate_token_drops_token_scoped_locks(self):
         """C4: token 退役必须带走它的内存态（锁/门），不能只清 client 缓存。"""
@@ -104,7 +103,6 @@ class TestBusinessServerClose(unittest.TestCase):
 
     def test_close_releases_clients_once(self):
         wd = Path(tempfile.mkdtemp(prefix="vb-"))
-        override_work_dir_for_tests(wd)
         registry = load_registry(registry_path())
         entry = UserEntry(token="tok-c", mode="remote")
         entry.ssh.default.host = "server-a"
@@ -115,7 +113,7 @@ class TestBusinessServerClose(unittest.TestCase):
         entry.roles.daemon.user = "u"
         registry.register("alice", entry)
         with mock.patch("transport.tunnel.SSHRunner", FakeRunner):
-            server = BusinessServer(wd)          # loads the registry written above
+            server = BusinessServer()          # loads the registry written above
             client = server._remote("tok-c")
             runner = client.command_runner
             server.close()

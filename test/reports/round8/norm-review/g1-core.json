@@ -1,0 +1,1236 @@
+[
+ {
+  "id": "总览#010",
+  "doc": "总览/1-四层整体架构与接口.md",
+  "line": 18,
+  "section": "1.1 总述",
+  "text": "- **中层**：负责路由与并发限流，把指令或文件正确地投送到指定位置，并返回可验证结果；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_middle_routing.py",
+   "test/offline/unit/test_middle_contracts.py",
+   "test/offline/core/semantics_tb.py",
+   "test/live/transport/cov_remote_real.py"
+  ],
+  "reason": "路由投送、并发限流、结构化结果各有断言；真机四 token 五接口复跑通过",
+  "gap_test": ""
+ },
+ {
+  "id": "总览#021",
+  "doc": "总览/1-四层整体架构与接口.md",
+  "line": 33,
+  "section": "1.1 总述",
+  "text": "四层是职责边界，不要求每层都是独立进程。顶层、上层、中层可以位于同一进程；底层必须是 Virtuoso 可加载、可管理的常驻守护进程。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_daemon_runtime_contracts.py",
+   "test/live/transport/cov_remote_real.py"
+  ],
+  "reason": "常驻性由同一 daemon 多请求复用（真机）+ daemon 运行时契约钉住；‘可同进程’属实现自由度",
+  "gap_test": ""
+ },
+ {
+  "id": "总览#094",
+  "doc": "总览/1-四层整体架构与接口.md",
+  "line": 132,
+  "section": "3.2 上层：封装业务复杂度",
+  "text": "1. 业务参数校验、操作顺序和领域对象；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "indirect",
+  "evidence": [
+   "test/offline/unit/test_schematic_contracts.py",
+   "test/offline/unit/test_layout_contracts.py",
+   "test/live/packages/*_e2e_tests.py"
+  ],
+  "reason": "参数校验有包级离线契约、操作顺序由包 E2E 间接体现；无独立条款级用例（该行是职责列表片段）",
+  "gap_test": "—（由包契约+E2E 共同承担，不单独立项）"
+ },
+ {
+  "id": "总览#103",
+  "doc": "总览/1-四层整体架构与接口.md",
+  "line": 148,
+  "section": "3.3 中层：路由、投送和执行",
+  "text": "- 为每个 token 维护线程池：一次未完成的调用占用一个线程，结果返回后线程回池，超限返回错误（预算与记账唯一口径：[并发设计 §2/§3](../中层/2-并发设计.md)）；统一处理连接生命周期、超时、错误分类和诊断信息；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_endpoint_budgets.py",
+   "test/offline/core/fault_injection_tb.py",
+   "test/offline/core/semantics_tb.py"
+  ],
+  "reason": "per-token 线程池占用/回池/超限拒绝（含指明预算）有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "总览#110",
+  "doc": "总览/1-四层整体架构与接口.md",
+  "line": 160,
+  "section": "3.4 底层：连接端口与 Virtuoso",
+  "text": "4. 将 Skill 交给 Virtuoso 求值，并把结果或错误返回给中层。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/integration/test_daemon_handler.py",
+   "test/live/transport/cov_remote_real.py"
+  ],
+  "reason": "daemon 把 skill 交给求值并回 value/error 帧有真进程级断言 + 真机 skill 段",
+  "gap_test": ""
+ },
+ {
+  "id": "总览#115",
+  "doc": "总览/1-四层整体架构与接口.md",
+  "line": 170,
+  "section": "3.5 依赖方向",
+  "text": "顶层不直接访问中层/底层，经上层调用；顶层与上层之间领域方法不固定，调度机制固定（见[顶层 §2](../顶层/1-顶层.md)）。上层不能绕过中层直接连接底层或目标主机；中层不能把传输对象泄漏给上层；底层不能反向调用上层业务代码。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_upper_layer_import_contract.py",
+   "test/offline/unit/test_top_layer_dispatch.py"
+  ],
+  "reason": "依赖方向用 import 契约（上层不得 import transport/socket 等）+ 顶层 dispatch 测试钉住",
+  "gap_test": ""
+ },
+ {
+  "id": "总览#144",
+  "doc": "总览/1-四层整体架构与接口.md",
+  "line": 220,
+  "section": "4.2 上层 ↔ 中层：query 只读查询",
+  "text": "- `role` 给定 → 只返回该 role 的事实；`name` 必须与 `role` 同给 → 只返回该 role 的该键（`root` / `display` / `bin` / 用户组名），未配置的键省略；",
+  "tokens": [
+   "display",
+   "name",
+   "role",
+   "root"
+  ],
+  "hits": {
+   "display": [
+    "test/offline/core/semantics_tb.py",
+    "test/offline/unit/test_gui_package.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_middle_contracts.py",
+    "test/offline/unit/test_register_flow.py",
+    "test/offline/unit/test_registration_page.py"
+   ],
+   "name": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ],
+   "role": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/integration/test_business_child_supervision.py",
+    "test/offline/integration/test_integration.py"
+   ],
+   "root": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/integration/test_business_child_supervision.py",
+    "test/offline/integration/test_integration.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_middle_contracts.py::test_query_filters_role_and_name",
+   "test/offline/core/semantics_tb.py::case_query_shape"
+  ],
+  "reason": "role/name 过滤、未配置键省略、只返回事实字段均有断言（且断言不泄漏 host/port）",
+  "gap_test": ""
+ },
+ {
+  "id": "总览#148",
+  "doc": "总览/1-四层整体架构与接口.md",
+  "line": 224,
+  "section": "4.2 上层 ↔ 中层：query 只读查询",
+  "text": "- 非法 `role`/`name` 取值 → 参数错误（`TypeError`/`ValueError`）；",
+  "tokens": [
+   "TypeError",
+   "ValueError",
+   "name",
+   "role"
+  ],
+  "hits": {
+   "TypeError": [
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/unit/test_common_config.py",
+    "test/offline/unit/test_config_snapshot_edges.py",
+    "test/offline/unit/test_maestro_util_edges.py",
+    "test/offline/unit/test_pyapi_interface_contract.py",
+    "test/offline/unit/test_registration_server_edges.py"
+   ],
+   "ValueError": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/integration/test_business_child_supervision.py",
+    "test/offline/integration/test_supervisor_process.py",
+    "test/offline/unit/test_api_server_main.py",
+    "test/offline/unit/test_calibre_argv_contracts.py"
+   ],
+   "name": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ],
+   "role": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/integration/test_business_child_supervision.py",
+    "test/offline/integration/test_integration.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_middle_contracts.py::test_query_rejects_invalid_filters",
+   "test/offline/unit/test_middle_contracts.py::test_query_unknown_token_is_structured_error"
+  ],
+  "reason": "非法 role/name → TypeError/ValueError；未知 token → 结构化错误，均有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "总览#159",
+  "doc": "总览/1-四层整体架构与接口.md",
+  "line": 239,
+  "section": "4.3 中层 ↔ 底层：Skill 投送接口",
+  "text": "`skill`、`timeout` 是现代码字段；`token` 是唯一新增**必填**字段；`log_level`/`log_max_bytes` 属于[日志返回设计标准](../底层/6-日志返回设计标准.md)的可选扩展字段。响应保持 `STX/NAK/RS` 帧，**当前唯一 payload 格式为 JSON**（格式、log 字段与 `off` 语义见日志标准，本文件不复制）：",
+  "tokens": [
+   "log_level",
+   "log_max_bytes",
+   "skill",
+   "timeout",
+   "token"
+  ],
+  "hits": {
+   "log_level": [
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/integration/test_business_child_supervision.py",
+    "test/offline/integration/test_daemon_handler.py"
+   ],
+   "log_max_bytes": [
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/integration/test_business_child_supervision.py",
+    "test/offline/integration/test_daemon_handler.py"
+   ],
+   "skill": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/integration/test_daemon_handler.py"
+   ],
+   "timeout": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ],
+   "token": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/integration/test_business_child_supervision.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/integration/test_daemon_handler.py",
+   "test/offline/core/daemon_log_protocol_tb.py"
+  ],
+  "reason": "token 必填/错 token NAK、log_level/log_max_bytes 校验、STX/NAK/RS JSON 帧均有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "总览#164",
+  "doc": "总览/1-四层整体架构与接口.md",
+  "line": 246,
+  "section": "4.3 中层 ↔ 底层：Skill 投送接口",
+  "text": "命令执行与文件操作不经过此接口。上层传入 token，中层转发给底层，底层校验 token；校验失败时不得接触 Virtuoso。token 到达 daemon 供校验，但不得进入 Virtuoso/SKILL 求值文本，也不回显给上层。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/integration/test_daemon_handler.py::test_invalid_token_is_nak_without_touching_pipe",
+   "test/offline/integration/test_daemon_handler.py::test_token_is_not_written_into_skill_text"
+  ],
+  "reason": "校验失败不接触求值通道（sent==b\"\"）+ token 不出现在求值字节流，两条断言均已落地（后者第八轮补）",
+  "gap_test": ""
+ },
+ {
+  "id": "总览#175",
+  "doc": "总览/1-四层整体架构与接口.md",
+  "line": 265,
+  "section": "4.4 底层内部实现：连接 Virtuoso（非跨层接口）",
+  "text": "字节示例：成功 `02 33 1e`（`02`=STX，`33`=字符 `3`，`1e`=RS）；失败 `15 <错误文本> 1e`。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/core/daemon_log_protocol_tb.py",
+   "test/offline/integration/test_daemon_handler.py"
+  ],
+  "reason": "成功帧 02…1e / 失败帧 15…1e 由帧常量构造与 roundtrip 断言覆盖",
+  "gap_test": ""
+ },
+ {
+  "id": "总览#178",
+  "doc": "总览/1-四层整体架构与接口.md",
+  "line": 274,
+  "section": "4.5 结果与错误合同（本版冻结）",
+  "text": "五个业务接口**对外一律返回结构化结果，不向上抛传输异常**。参数编程错误（token 缺失、类型错误）是调用方错误，允许直接抛出 `TypeError/ValueError`；运行期错误（unknown token、daemon NAK、文件失败、传输失败）必须封装为结果。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_middle_contracts.py",
+   "test/offline/core/fault_injection_tb.py",
+   "test/offline/unit/test_transport_error_paths.py"
+  ],
+  "reason": "运行期错误一律结构化（kind/errors），参数编程错误直抛，均有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "总览#179",
+  "doc": "总览/1-四层整体架构与接口.md",
+  "line": 276,
+  "section": "4.5 结果与错误合同（本版冻结）",
+  "text": "`CommandResult` 增加稳定 `kind` 字段：`command`（真实命令）/ `timeout` / `transport` / `path` / `unknown-effect` / `rejected`（容量拒绝）/ `checksum`（文件摘要不一致）/ `invalid-token`（未知 token）；真实命令返回码即使等于 124/255 也保持 `kind=command`，桥保留码只在 `kind != command` 时解释。",
+  "tokens": [
+   "CommandResult",
+   "checksum",
+   "command",
+   "invalid-token",
+   "kind",
+   "path",
+   "rejected",
+   "timeout",
+   "transport",
+   "unknown-effect"
+  ],
+  "hits": {
+   "CommandResult": [
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/unit/test_calibre_package.py",
+    "test/offline/unit/test_gui_package.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_layout_publish_contracts.py",
+    "test/offline/unit/test_maestro_command_exprs.py"
+   ],
+   "checksum": [
+    "test/offline/unit/test_ssh_edges.py",
+    "test/offline/unit/test_tunnel_transfer.py"
+   ],
+   "command": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py",
+    "test/offline/frontend/registration_mock_server.py"
+   ],
+   "invalid-token": [
+    "test/offline/integration/test_daemon_handler.py",
+    "test/offline/unit/test_middle_contracts.py",
+    "test/offline/unit/test_skillref_package.py",
+    "test/live/stress/production_face_stress_tb.py"
+   ],
+   "kind": [
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/unit/test_calibre_argv_contracts.py",
+    "test/offline/unit/test_calibre_job_state.py",
+    "test/offline/unit/test_calibre_package.py",
+    "test/offline/unit/test_daemon_runtime_contracts.py"
+   ],
+   "path": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ],
+   "rejected": [
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/scenario/test_business_local.py",
+    "test/offline/unit/test_calibre_argv_contracts.py",
+    "test/offline/unit/test_calibre_package.py",
+    "test/offline/unit/test_commit_shape.py",
+    "test/offline/unit/test_daemon_runtime_contracts.py"
+   ],
+   "timeout": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ],
+   "transport": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py",
+    "test/offline/integration/test_integration.py",
+    "test/offline/scenario/test_business_local.py"
+   ],
+   "unknown-effect": [
+    "test/offline/unit/test_middle_contracts.py",
+    "test/offline/unit/test_persistent_shell_protocol.py",
+    "test/offline/unit/test_ssh_edges.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_middle_contracts.py",
+   "test/offline/core/fault_injection_tb.py",
+   "test/offline/unit/test_middle_reserved_codes.py"
+  ],
+  "reason": "kind 枚举完整 + 真实 rc=124/255 仍 kind=command 有专项用例（含负控制）",
+  "gap_test": ""
+ },
+ {
+  "id": "总览#192",
+  "doc": "总览/1-四层整体架构与接口.md",
+  "line": 291,
+  "section": "4.5 结果与错误合同（本版冻结）",
+  "text": "- Skill 超时与“结果未知”对外不可区分：一律视为结果未知；是否重试由上层业务操作自行决断；“投递前未投递可安全重试”仅为中层内部策略，不提供可观察的投递状态；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/core/semantics_tb.py",
+   "test/offline/unit/test_persistent_shell_protocol.py"
+  ],
+  "reason": "skill 投递后不重发（单次投递断言）、超时视为结果未知，均有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "总览#196",
+  "doc": "总览/1-四层整体架构与接口.md",
+  "line": 300,
+  "section": "4.6 文件执行合同（上传/下载，唯一 owner）",
+  "text": "- **落盘**：先写入临时位置，**对临时文件做 SHA-256 校验通过后**才原子替换到目标；校验失败删除临时文件、目标不变；传输中途失败同样清理临时内容、不改动已有目标；目标已存在则**覆盖**；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_transfer.py",
+   "test/offline/unit/test_tunnel_transfer.py"
+  ],
+  "reason": "临时落盘→SHA 校验→原子替换、失败回滚（目标不变）、覆盖语义均有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "总览#204",
+  "doc": "总览/1-四层整体架构与接口.md",
+  "line": 318,
+  "section": "5.2 上层只面向逻辑业务服务器",
+  "text": "- 五个 role（gui/daemon/command/file/spectre）各自独立配置；能力与职责、接口映射与 endpoint 复用规则由[路由设计 §2–§4](../中层/3-路由设计.md)唯一 owner 定义，探测矩阵、部署与文件根见[多用户与注册 §4](../其他/1-多用户与注册.md)，本文不重复；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_register_flow.py",
+   "test/offline/unit/test_validation_roles.py",
+   "test/live/flows/role_split_tb.py"
+  ],
+  "reason": "五 role 独立配置（字段级）+ 真机跨主机 S2 五 role 投送 5/5",
+  "gap_test": ""
+ },
+ {
+  "id": "总览#206",
+  "doc": "总览/1-四层整体架构与接口.md",
+  "line": 320,
+  "section": "5.2 上层只面向逻辑业务服务器",
+  "text": "- 同一 token 内按解析后的 endpoint 去重（唯一口径：[路由设计 §4](../中层/3-路由设计.md)）：每个 endpoint 一条业务连接 + remote daemon 的专用 Skill 隧道；跨 token 不共用；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_credential_routing.py",
+   "test/offline/unit/test_ssh_tunnel_lifecycle.py",
+   "test/semi/transport/role_credential_isolation_tb.py"
+  ],
+  "reason": "endpoint 去重复用、凭据不同不复用、跨 token 不共享，均有断言 + 半真机验证",
+  "gap_test": ""
+ },
+ {
+  "id": "总览#210",
+  "doc": "总览/1-四层整体架构与接口.md",
+  "line": 327,
+  "section": "5.3 中层保证“正确位置”和“可验证结果”",
+  "text": "中层不仅负责发送请求，还要确认请求对应的目标、执行阶段和结果。路径不可见、连接失败、命令非零退出、Skill 错误和文件校验失败必须能够区分。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/core/fault_injection_tb.py",
+   "test/offline/unit/test_transport_error_paths.py",
+   "test/offline/unit/test_middle_contracts.py"
+  ],
+  "reason": "path/transport/command/skill/checksum 五类错误可区分，均有结构化断言",
+  "gap_test": ""
+ },
+ {
+  "id": "总览#211",
+  "doc": "总览/1-四层整体架构与接口.md",
+  "line": 331,
+  "section": "5.4 底层最小化且一对一",
+  "text": "底层只连接一个 Virtuoso 会话并执行 Skill，不扩展成通用远程命令代理。**一个 token = 一个活动 daemon = 一个 CIW**；不同 token 不得共享同一个底层 Skill 通道；需要第二个 CIW 必须注册第二个 user/token。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "indirect",
+  "evidence": [
+   "test/offline/unit/test_middle_contracts.py",
+   "test/offline/scenario/test_multi_user_isolation.py",
+   "test/live/transport/cov_remote_real.py"
+  ],
+  "reason": "一 token→一 daemon 的映射与多 token 隔离有断言（离线多用户 + 真机四 token）；‘第二 CIW=配置错误’属环境约定，无负向用例",
+  "gap_test": "—（环境约定项，不做负向）"
+ },
+ {
+  "id": "总览#215",
+  "doc": "总览/1-四层整体架构与接口.md",
+  "line": 342,
+  "section": "5.6 路径和位置语义明确",
+  "text": "- 各 role 的 `root` 只是该 role 的**默认工作目录约定**（部署文件、截图、日志、导入网表等），**不是沙箱**：文件操作允许访问业务服务器上任意可达路径；同 SSH 账号下不同 user 之间不承诺跨目录隔离，安全边界由 OS 账号权限提供；",
+  "tokens": [
+   "root"
+  ],
+  "hits": {
+   "root": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/integration/test_business_child_supervision.py",
+    "test/offline/integration/test_integration.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_local_path_expansion.py",
+   "test/offline/unit/test_transfer.py"
+  ],
+  "reason": "绝对路径/`..` 不被拦截、root 仅作默认目录，均有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "总览#216",
+  "doc": "总览/1-四层整体架构与接口.md",
+  "line": 343,
+  "section": "5.6 路径和位置语义明确",
+  "text": "- symlink、不存在的目标、覆盖目录按 OS 语义；目标不可见 → 结构化错误 `VB-PATH-NOT-VISIBLE`，不悄悄改写路径或隐式复制；",
+  "tokens": [
+   "VB-PATH-NOT-VISIBLE"
+  ],
+  "hits": {
+   "VB-PATH-NOT-VISIBLE": [
+    "test/offline/unit/test_middle_contracts.py",
+    "test/offline/unit/test_ssh_edges.py",
+    "test/offline/unit/test_tunnel_transfer.py",
+    "test/semi/probes/calibre_cdl_probe.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_tunnel_transfer.py",
+   "test/offline/unit/test_transport_error_paths.py",
+   "test/offline/unit/test_middle_contracts.py"
+  ],
+  "reason": "VB-PATH-NOT-VISIBLE 结构化错误、不改写路径，均有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "总览#218",
+  "doc": "总览/1-四层整体架构与接口.md",
+  "line": 348,
+  "section": "5.7 单 CIW 串行，跨 CIW 并行",
+  "text": "同一个 Virtuoso CIW 的 Skill 请求必须串行，不同底层会话可以并行；命令默认串行、`parallel=True` 显式并行，文件传输天然并行。排队闸门与超时语义见[并发设计 §1](../中层/2-并发设计.md)。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/core/semantics_tb.py",
+   "test/semi/transport/one_shot_burst_tb.py",
+   "test/live/stress/production_face_stress_tb.py"
+  ],
+  "reason": "单 CIW 串行闸门（离线）+ parallel 一次性命令（半真机）+ 生产面混合并发（真机）",
+  "gap_test": ""
+ },
+ {
+  "id": "总览#220",
+  "doc": "总览/1-四层整体架构与接口.md",
+  "line": 354,
+  "section": "5.8 可靠性和可扩展性",
+  "text": "**五业务接口 deadline 唯一表**（`timeout=None` 时；每个接口一次调用只有一条 deadline，下表各相位共享它）：",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_connect_retry.py",
+   "test/offline/unit/test_tunnel_transfer.py",
+   "test/offline/unit/test_endpoint_budgets.py"
+  ],
+  "reason": "各接口 timeout 路径 + connect_timeout 作为子预算有断言（第七轮矩阵 A18 点位，离线全绿）",
+  "gap_test": ""
+ },
+ {
+  "id": "总览#229",
+  "doc": "总览/1-四层整体架构与接口.md",
+  "line": 365,
+  "section": "5.8 可靠性和可扩展性",
+  "text": "- `runtime.connect_timeout`（默认 15s）是**该预算内的子预算**，不额外增加总预算；建连阶段耗到该子预算 → `kind=timeout` / `returncode=124`；非超时的拒绝/断连 → `kind=transport` / `returncode=255`（Skill 侧对应 `Daemon connection failed`）；",
+  "tokens": [
+   "runtime.connect_timeout"
+  ],
+  "hits": {
+   "runtime.connect_timeout": [
+    "test/offline/unit/test_connect_retry.py",
+    "test/offline/unit/test_register_flow.py",
+    "test/offline/unit/test_tunnel_transfer.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_connect_retry.py",
+   "test/offline/unit/test_middle_reserved_codes.py"
+  ],
+  "reason": "建连子预算耗尽→timeout/124 与断连→transport/255 均有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "总览#230",
+  "doc": "总览/1-四层整体架构与接口.md",
+  "line": 366,
+  "section": "5.8 可靠性和可扩展性",
+  "text": "- 建连重试与失效恢复（≤3 次总尝试、降级直连、常驻 shell 重建）的唯一口径见[并发设计 §4](../中层/2-并发设计.md)，与初次尝试共享同一条 deadline；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_connect_retry.py::test_banner_drop_retries_exactly_three_attempts_then_raises",
+   "test/offline/unit/test_ssh_tunnel_lifecycle.py",
+   "test/offline/unit/test_persistent_shell_protocol.py"
+  ],
+  "reason": "≤3 次总尝试（恰好三次）、ControlMaster 降级、常驻 shell 重建均有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "总览#238",
+  "doc": "总览/1-四层整体架构与接口.md",
+  "line": 377,
+  "section": "5.8 可靠性和可扩展性",
+  "text": "本版不引入 `request_id` 参数/字段（等待请求留在**中层投递前队列**；daemon 同一时刻只接收/执行一个由闸门放行的 Skill 请求。日志增量由每请求的 `[start,end)` offset 定界）。无法判断请求是否已经产生副作用时返回“结果未知”，中层不盲目重发非幂等操作；是否重试由上层业务操作自行决断；该纪律同样适用于 Skill：**投递前**排队超时=确定未执行（仅中层内部可据此处置）；**投递后**超时=结果未知；对外 Skill 超时一律视为结果未知；是否重试由上层业务操作自行决断。增加新的业务能力时扩展上层，增加新的本地/远程传输方式时扩展中层，四层边界不改变。安全模型预留演进：当前 token 是对称共享授权票，未来可升级为双方各自持有公私钥的非对称认证，四层边界不变。",
+  "tokens": [
+   "request_id"
+  ],
+  "hits": {},
+  "premap_status": "NONE",
+  "verdict": "direct",
+  "evidence": "test/offline/unit/test_norm_gap_batch2.py::TestRequestIdNotIntroduced",
+  "reason": "本版不引入 request_id：带 request_id 的 operation 在 dataclass 请求模型路径上返回 400 unexpected keyword argument（真机 8127 实测同口径）；离线用例钉住。观察项：pydantic 请求模型未统一 extra=forbid，那条路径会静默忽略未知字段。",
+  "gap_test": ""
+ },
+ {
+  "id": "范围#006",
+  "doc": "总览/add-本版范围与明确不支持.md",
+  "line": 11,
+  "section": "1. 本版支持的范围（一句话）",
+  "text": "四层架构：上层通过中层**五个业务接口**（Skill 执行 / 命令执行 / 文件执行 / GUI 命令执行 / Spectre 命令执行）完成业务，另有一个只读查询 `query`（见[四层整体架构与接口 §4.2](1-四层整体架构与接口.md)）供参数准备；中层负责 local/SSH/多用户路由与投送；底层 daemon 只执行 Skill。多用户、并发、CDS.log 增量返回在本版范围内。以下明确不做。",
+  "tokens": [
+   "query"
+  ],
+  "hits": {
+   "query": [
+    "test/offline/core/semantics_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/unit/test_calibre_argv_contracts.py",
+    "test/offline/unit/test_calibre_package.py",
+    "test/offline/unit/test_gui_package.py",
+    "test/offline/unit/test_layout_contracts.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_middle_contracts.py",
+   "test/offline/unit/test_pyapi_interface_contract.py",
+   "test/live/transport/cov_remote_real.py"
+  ],
+  "reason": "五接口+query 集合固定有接口面断言；真机四 token 五接口 5/5",
+  "gap_test": ""
+ },
+ {
+  "id": "范围#032",
+  "doc": "总览/add-本版范围与明确不支持.md",
+  "line": 60,
+  "section": "3. 与相关文档的关系",
+  "text": "- 每项对应的“该怎么做”由各自 Normative 文档定义：接口见[四层整体架构与接口](1-四层整体架构与接口.md)，路由见[路由设计](../中层/3-路由设计.md)，注册见[多用户与注册](../其他/1-多用户与注册.md)，并发见[并发设计](../中层/2-并发设计.md)，日志见[日志返回设计标准](../底层/6-日志返回设计标准.md)，字段见[中层配置文档](../中层/add-中层配置文档.md)。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "na",
+  "evidence": [],
+  "reason": "文档关系/索引声明（哪份文档管什么），无独立可测行为",
+  "gap_test": ""
+ },
+ {
+  "id": "配置#005",
+  "doc": "中层/add-中层配置文档.md",
+  "line": 7,
+  "section": "中层配置文档",
+  "text": "> 定位：本文是[多用户与注册](../其他/1-多用户与注册.md)的**字段与 schema 详细补充**——六步状态机与授权归[多用户与注册](../其他/1-多用户与注册.md)；本文是字段与必填清单 owner（§4），并提供默认值、探测写回、注册表 schema、reservation 与 endpoint key。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "na",
+  "evidence": [],
+  "reason": "文档定位声明（本文是多用户与注册的字段补充），无可测行为",
+  "gap_test": ""
+ },
+ {
+  "id": "配置#006",
+  "doc": "中层/add-中层配置文档.md",
+  "line": 11,
+  "section": "1. 总述",
+  "text": "- **唯一 owner**：字段名/类型/默认值、注册表 schema（§6.1）、reservation（§6.4）、endpoint canonical key（§6.5）只在本文定义；其它文档只索引，不复制。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "na",
+  "evidence": [],
+  "reason": "owner 归属声明（哪些内容只在本文定义），无可测行为",
+  "gap_test": ""
+ },
+ {
+  "id": "配置#012",
+  "doc": "中层/add-中层配置文档.md",
+  "line": 17,
+  "section": "1. 总述",
+  "text": "- **默认值约定**：标“默认 X”可省略；标“必填”必须写入。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "na",
+  "evidence": [],
+  "reason": "文档写法约定（‘默认 X 可省略’），落实到具体字段行（OPS）去测",
+  "gap_test": ""
+ },
+ {
+  "id": "配置#027",
+  "doc": "中层/add-中层配置文档.md",
+  "line": 43,
+  "section": "2.3 各 role 公共字段",
+  "text": "五个 role（`gui / daemon / command / file / spectre`）各有下列公共字段。role 的职责、接口对应与连接复用见[路由设计 §2–§4](3-路由设计.md)，本文只定义字段与默认值。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_validation_roles.py",
+   "test/offline/unit/test_register_flow.py"
+  ],
+  "reason": "五 role 公共字段/默认值/逐字段回退有 schema 与回退用例",
+  "gap_test": ""
+ },
+ {
+  "id": "配置#053",
+  "doc": "中层/add-中层配置文档.md",
+  "line": 78,
+  "section": "2.5 全局默认与字段回退",
+  "text": "- 回退是**逐字段**的：role 有值用自己的，否则回退对应全局默认；`null`/空串 = 未提供；",
+  "tokens": [
+   "null"
+  ],
+  "hits": {
+   "null": [
+    "test/offline/unit/test_commit_shape.py",
+    "test/offline/unit/test_jsonutil.py",
+    "test/offline/unit/test_output_json_safety.py",
+    "test/offline/unit/test_register_flow.py",
+    "test/offline/unit/test_skillref_package.py",
+    "test/offline/unit/test_spectre_util_psf_contracts.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_register_flow.py",
+   "test/offline/unit/test_validation_roles.py"
+  ],
+  "reason": "逐字段回退（role→全局默认；null/空串=未提供）有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "配置#056",
+  "doc": "中层/add-中层配置文档.md",
+  "line": 84,
+  "section": "2.6 固定目录结构（非配置项）",
+  "text": "- 本地工作目录不是注册字段（启动时传入，不传用实现默认）；子结构固定 `registry.json / config.json / temp/ / log/ / artifact/`，启动时自动创建（`config.json` 见[顶层补充 §5](../顶层/add-控制面与业务面.md)）；",
+  "tokens": [
+   "config.json"
+  ],
+  "hits": {
+   "config.json": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/integration/test_business_child_supervision.py",
+    "test/offline/unit/test_common_config.py",
+    "test/offline/unit/test_config_snapshot_edges.py",
+    "test/offline/unit/test_registration_server.py",
+    "test/offline/unit/test_skillref_package.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_workdir_contract.py",
+   "test/offline/unit/test_common_config.py"
+  ],
+  "reason": "固定子结构 registry/config/temp/log/artifact 与实际路径函数均有断言（子进程级）",
+  "gap_test": ""
+ },
+ {
+  "id": "配置#063",
+  "doc": "中层/add-中层配置文档.md",
+  "line": 95,
+  "section": "3. 三类处理规则",
+  "text": "探测动作本身（何时探测、逐 role 探测矩阵、失败级别）见[多用户与注册 §4](../其他/1-多用户与注册.md)，本文只定义字段类型规则。`root` 不是探测发现的环境值，而是按 §2.5 与[多用户与注册 §4.2](../其他/1-多用户与注册.md)的默认算法推导、探测期写回绝对路径，其类型为**配置**。",
+  "tokens": [
+   "root"
+  ],
+  "hits": {
+   "root": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/integration/test_business_child_supervision.py",
+    "test/offline/integration/test_integration.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_spec_contracts.py",
+   "test/offline/unit/test_register_flow.py",
+   "test/artifacts/env/log-vblog/registry.json"
+  ],
+  "reason": "root 属配置、探测期写回绝对路径：契约用例 + 真机注册表实测（提交态 root.default=null）",
+  "gap_test": ""
+ },
+ {
+  "id": "配置#065",
+  "doc": "中层/add-中层配置文档.md",
+  "line": 100,
+  "section": "4. 必填小结",
+  "text": "- 条件必填：每个 remote role 必须可解析出目标（role 级 `host/user` 或 `ssh.default.*`）与凭据（role 级 `key_dir/key` 或 `ssh.default.key_dir/key`）；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_register_flow.py",
+   "test/offline/unit/test_registration_server_edges.py"
+  ],
+  "reason": "remote role 目标与凭据条件必填（含 ssh.default 回退、key 仅文件名）有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "配置#068",
+  "doc": "中层/add-中层配置文档.md",
+  "line": 106,
+  "section": "5. 输入校验与首信任",
+  "text": "- `user` 格式 `^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$`；禁止 `/`、`\\`、`..`、绝对路径；Windows 大小写不敏感查重；拒绝保留设备名（CON/PRN/AUX/NUL/COM1–9/LPT1–9 及带扩展名）与结尾 `.`/空格；",
+  "tokens": [
+   "user"
+  ],
+  "hits": {
+   "user": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/integration/test_business_child_supervision.py",
+    "test/offline/integration/test_supervisor_process.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_validation_roles.py::test_user_names",
+   "test/offline/unit/test_registration_server_edges.py"
+  ],
+  "reason": "格式/../斜杠/保留设备名（CON、con.txt、NUL）/结尾点均有断言；Windows 大小写查重在注册服务用例",
+  "gap_test": ""
+ },
+ {
+  "id": "配置#070",
+  "doc": "中层/add-中层配置文档.md",
+  "line": 108,
+  "section": "5. 输入校验与首信任",
+  "text": "- `local` role 显式提交 `host/user/jump_host/jump_user/proxy` 或 `key_dir/key` → 参数错误；",
+  "tokens": [
+   "local"
+  ],
+  "hits": {
+   "local": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py",
+    "test/offline/frontend/registration_mock_server.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_commit_shape.py::test_local_role_with_connection_field_is_model_error",
+   "test/offline/unit/test_registration_server_edges.py"
+  ],
+  "reason": "local role 带连接字段（model 级）与 key_dir/key（HTTP 级 400）均拒绝",
+  "gap_test": ""
+ },
+ {
+  "id": "配置#071",
+  "doc": "中层/add-中层配置文档.md",
+  "line": 109,
+  "section": "5. 输入校验与首信任",
+  "text": "- remote role 必须解析出凭据（`key_dir`+`key`），否则拒绝；`key` 只允许文件名、不含目录成分；凭据按**公钥指纹**查重，已被其他条目登记 → 需**任一**已登记持有者的 token 或管理员凭据，否则拒绝（复用规则见[多用户与注册 §3](../其他/1-多用户与注册.md)）；",
+  "tokens": [
+   "key_dir"
+  ],
+  "hits": {
+   "key_dir": [
+    "test/offline/unit/test_commit_shape.py",
+    "test/offline/unit/test_credential_routing.py",
+    "test/offline/unit/test_register_flow.py",
+    "test/offline/unit/test_registration_mock_server.py",
+    "test/offline/unit/test_registration_page.py",
+    "test/offline/unit/test_registration_server.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_registration_server_edges.py::test_credential_reuse_requires_enhanced_token",
+   "test/offline/unit/test_registration_server_edges.py::test_apply_rejects_unknown_enhanced_token",
+   "test/offline/unit/test_credential_routing.py"
+  ],
+  "reason": "指纹查重→enhanced_token（holder/admin 两者）、key 含目录成分 400、凭据不同不复用，均有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "配置#072",
+  "doc": "中层/add-中层配置文档.md",
+  "line": 110,
+  "section": "5. 输入校验与首信任",
+  "text": "- `role.gui.display` 只接受 X display 形式（如 `:11`、`localhost:10.0`、`unix/:0`），禁止空白、引号、`$`、反引号、`;` 等 shell 元字符（防注入）；",
+  "tokens": [
+   "localhost:10.0",
+   "role.gui.display"
+  ],
+  "hits": {
+   "localhost:10.0": [
+    "test/offline/unit/test_validation_roles.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_validation_roles.py::test_gui_displays"
+  ],
+  "reason": "良好形态（:11、localhost:10.0、unix/:0）与注入形态（空白/引号/;/$( ) 等）逐条断言",
+  "gap_test": ""
+ },
+ {
+  "id": "配置#073",
+  "doc": "中层/add-中层配置文档.md",
+  "line": 111,
+  "section": "5. 输入校验与首信任",
+  "text": "- 未知字段拒绝（`extra=forbid`）；各 role 的用户组例外：组名 `^[a-z][a-z0-9_-]{0,63}$`、不与固定字段重名，值为对象、字段值仅 JSON 标量且不含 NUL，每 role 用户组总大小 ≤ 16 KiB；语义由上层业务包约定；空串视为未提供；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_validation_roles.py::test_role_user_groups_are_structural_only",
+   "test/offline/unit/test_validation_roles.py::test_role_user_groups_reject_bad_shapes",
+   "test/offline/unit/test_validation_roles.py::test_empty_role_user_group_is_omitted",
+   "test/offline/unit/test_validation_roles.py::test_role_user_group_size_limit_boundary",
+   "test/offline/unit/test_norm_gap_round8.py::TestUnknownFieldRejected"
+  ],
+  "reason": "组名/形状/标量/NUL/固定字段重名 + 16 KiB 边界（第八轮补）均有断言；未知字段/未知 role 名拒绝由 test_norm_gap_round8 钉住（未知 role 拒绝 + role 级未知名=用户组语义）",
+  "gap_test": ""
+ },
+ {
+  "id": "配置#075",
+  "doc": "中层/add-中层配置文档.md",
+  "line": 113,
+  "section": "5. 输入校验与首信任",
+  "text": "- registry 持久化 UTF-8、权限 `0600`、tmp + 原子替换。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/core/semantics_tb.py",
+   "test/offline/unit/test_registry_more.py",
+   "test/offline/unit/test_registry_more.py::test_registry_file_mode_is_0600"
+  ],
+  "reason": "UTF-8/跨进程读改写不丢更新/tmp+原子替换有断言；0600 权限断言第八轮补（POSIX 用例，Windows skip；Linux 客户端矩阵执行）",
+  "gap_test": ""
+ },
+ {
+  "id": "配置#103",
+  "doc": "中层/add-中层配置文档.md",
+  "line": 150,
+  "section": "6.2 提交 schema 与写回口径",
+  "text": "- 何时探测、何时写回、唯一写盘点见[多用户与注册 §3/§4](../其他/1-多用户与注册.md)；本节只约定提交后的字段形态；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "na",
+  "evidence": [],
+  "reason": "指向另一文档（探测/写回时机）的索引声明，无可测行为",
+  "gap_test": ""
+ },
+ {
+  "id": "配置#107",
+  "doc": "中层/add-中层配置文档.md",
+  "line": 160,
+  "section": "6.4 端口 reservation（内存候选，唯一口径）",
+  "text": "**唯一性作用域**：`token`/`user` 全局；`daemon_port` 同一 daemon 目标主机（`mode=local` 时即本机）；`local_port` 本机。",
+  "tokens": [
+   "daemon_port",
+   "local_port",
+   "token",
+   "user"
+  ],
+  "hits": {
+   "daemon_port": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/integration/test_integration.py",
+    "test/offline/scenario/test_business_local.py",
+    "test/offline/scenario/test_multi_user_isolation.py"
+   ],
+   "local_port": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/integration/test_integration.py",
+    "test/offline/scenario/test_business_local.py",
+    "test/offline/scenario/test_multi_user_isolation.py"
+   ],
+   "token": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/integration/test_business_child_supervision.py"
+   ],
+   "user": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/integration/test_business_child_supervision.py",
+    "test/offline/integration/test_supervisor_process.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_reservation.py"
+  ],
+  "reason": "daemon_port 按 daemon 主机作用域、local_port 本机级、user/token 全局，均有冲突用例",
+  "gap_test": ""
+ },
+ {
+  "id": "配置#108",
+  "doc": "中层/add-中层配置文档.md",
+  "line": 162,
+  "section": "6.4 端口 reservation（内存候选，唯一口径）",
+  "text": "**联合端口**：`mode=local` 时 `daemon_port` 与 `local_port` 是同一个候选端口——任一缺省由同一值生成并同步写入，显式双值必须相等。",
+  "tokens": [
+   "daemon_port",
+   "local_port"
+  ],
+  "hits": {
+   "daemon_port": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/integration/test_integration.py",
+    "test/offline/scenario/test_business_local.py",
+    "test/offline/scenario/test_multi_user_isolation.py"
+   ],
+   "local_port": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/integration/test_integration.py",
+    "test/offline/scenario/test_business_local.py",
+    "test/offline/scenario/test_multi_user_isolation.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "partial",
+  "evidence": [
+   "test/offline/unit/test_register_flow.py::test_validate_preallocates_joint_port_for_local_mode",
+   "test/offline/unit/test_norm_gap_round8.py::TestLocalJointPortNotCoerced"
+  ],
+  "reason": "缺省→同值生成并同步写入有断言；**显式双值不等**时实测被静默归一化（local_port 胜出、daemon_port 请求被丢弃，见 P-079），flow.py:705-715 的拒绝守卫在正常流程不可达",
+  "gap_test": "P-079 定口径后补测：钉住用例 TestLocalJointPortNotCoerced 修复前红；若选‘local_port 优先’需把用例改成断言归一化行为"
+ },
+ {
+  "id": "配置#111",
+  "doc": "中层/add-中层配置文档.md",
+  "line": 168,
+  "section": "6.4 端口 reservation（内存候选，唯一口径）",
+  "text": "**并发**：注册为低并发流程，由注册服务进程内协调；不设跨进程租约与宽限回收。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "na",
+  "evidence": [],
+  "reason": "实现自由度声明（进程内协调、不设跨进程租约），无独立可测行为",
+  "gap_test": ""
+ },
+ {
+  "id": "配置#112",
+  "doc": "中层/add-中层配置文档.md",
+  "line": 170,
+  "section": "6.4 端口 reservation（内存候选，唯一口径）",
+  "text": "**分配算法**：具体算法与端口范围为实现自由度，合同只要求候选唯一且空闲。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_probe.py",
+   "test/offline/unit/test_reservation.py"
+  ],
+  "reason": "分配算法自由度但‘候选唯一且空闲’合同有断言（含保留集/本机占用）",
+  "gap_test": ""
+ },
+ {
+  "id": "配置#118",
+  "doc": "中层/add-中层配置文档.md",
+  "line": 180,
+  "section": "6.5 endpoint canonical key",
+  "text": "- 两条独立规则：① 字符串规范化决定“是否同一 endpoint”（`Server-A`、`server-a.` 同 endpoint，指纹必须一致）；② 不做名称解析（不查 DNS、不把 alias 与真实 hostname 合并）；`~/.ssh/config` 只用于 transport 解析与 22 端口校验，canonical key 只按规范化输入字符串计算；",
+  "tokens": [
+   "Server-A",
+   "server-a."
+  ],
+  "hits": {
+   "Server-A": [
+    "test/offline/unit/test_reservation.py",
+    "test/offline/unit/test_spec_contracts.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_spec_contracts.py::test_vectors_from_spec",
+   "test/offline/unit/test_spec_contracts.py::test_canonical_host_rules"
+  ],
+  "reason": "Server-A/server-a. 同 endpoint、大小写/结尾点规范化、不做 DNS，逐条向量断言",
+  "gap_test": ""
+ },
+ {
+  "id": "配置#120",
+  "doc": "中层/add-中层配置文档.md",
+  "line": 182,
+  "section": "6.5 endpoint canonical key",
+  "text": "- 测试向量（必须逐条可测）：",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_spec_contracts.py"
+  ],
+  "reason": "‘向量必须逐条可测’由 test_spec_contracts 的向量表逐条 assertEquals 落实",
+  "gap_test": ""
+ },
+ {
+  "id": "配置#130",
+  "doc": "中层/add-中层配置文档.md",
+  "line": 194,
+  "section": "6.5 endpoint canonical key",
+  "text": "- 约束：SSH 端口固定 22（注册期校验目标/jump 解析端口，非 22 拒绝）；proxy 固定 `socks5://host:port`；jump 的 known_hosts 由系统 SSH 配置提供；不接受自定义 known_hosts 路径。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_probe.py::test_ssh_port_rule_enforces_22",
+   "test/offline/unit/test_register_flow.py",
+   "test/offline/unit/test_paramiko.py"
+  ],
+  "reason": "SSH 22 端口校验（目标/jump）/非 22 拒绝、proxy 仅 socks5://host:port 且有非法拒绝，均有断言",
+  "gap_test": ""
+ }
+]

@@ -16,4 +16,4 @@ $env:VB_E2E='1'; python -m unittest discover -s test/live/e2e -p "test_*.py"
 | `test_business_local_live.py` | 本机/WSL local 模式 + `VB_E2E_LOCAL=1` |
 | `test_business_remote_live.py` | `VB_E2E=1` + `wsl-gent` 上的多实例 daemon |
 
-路径与产物规则见 [`../../docs/文件使用规范.md`](../../docs/文件使用规范.md)；真机准入见 [`../transport/README.md`](../transport/README.md)。
+路径与产物规则见 [`../../docs/写TB规范.md`](../../docs/写TB规范.md) §6；真机准入见 [`../transport/README.md`](../transport/README.md)。

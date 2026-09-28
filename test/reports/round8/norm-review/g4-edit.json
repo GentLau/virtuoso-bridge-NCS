@@ -1,0 +1,1488 @@
+[
+ {
+  "id": "schematic#006",
+  "doc": "上层/2-schematic.md",
+  "line": 11,
+  "section": "1. 业务操作",
+  "text": "核心只有读和写。写是按对象对称的原子操作：instance / wire / label / pin 各有 place、delete、rename、set。net 是 label/pin 的派生对象，不做操作。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_schematic_contracts.py",
+   "test/live/packages/schematic_e2e_tests.py"
+  ],
+  "reason": "instance/wire/label/pin 的 place/delete/rename/set 写原子 + net 派生：离线契约 + 真机读回用例",
+  "gap_test": ""
+ },
+ {
+  "id": "schematic#014",
+  "doc": "上层/2-schematic.md",
+  "line": 23,
+  "section": "1.1 读操作（不改变业务服务器状态）",
+  "text": "- 可选 `object_filter`：每个对象一个条目，**不写默认 `all`**；条目可以是 `none`（该类一个都不读）。重点是\"只看某实例的端子/位置\"，不把整图读一遍：",
+  "tokens": [
+   "none",
+   "object_filter"
+  ],
+  "hits": {
+   "none": [
+    "test/offline/integration/test_daemon_handler.py",
+    "test/offline/unit/test_calibre_argv_contracts.py",
+    "test/offline/unit/test_gui_package.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_paramiko.py",
+    "test/offline/unit/test_paramiko_helpers.py"
+   ],
+   "object_filter": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/live/flows/layout_suite_p044_workaround_tb.py",
+    "test/live/packages/layout_e2e_tests.py",
+    "test/live/packages/schematic_e2e_tests.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_schematic_contracts.py::test_instance_filter_all_none_names_region",
+   "test/offline/unit/test_schematic_contracts.py::test_shape_filter_none_dict_and_invalid"
+  ],
+  "reason": "object_filter 逐条目 all/none/names/region 与不写默认 all，有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "schematic#015",
+  "doc": "上层/2-schematic.md",
+  "line": 24,
+  "section": "1.1 读操作（不改变业务服务器状态）",
+  "text": "- `instance`：`all`（默认）/ `none` / `{\"names\":[...]}` / `{\"region\":[pos0, pos1]}`；",
+  "tokens": [
+   "instance",
+   "none"
+  ],
+  "hits": {
+   "instance": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/unit/test_daemon_runtime_contracts.py",
+    "test/offline/unit/test_endpoint_budgets.py",
+    "test/offline/unit/test_layout_contracts.py"
+   ],
+   "none": [
+    "test/offline/integration/test_daemon_handler.py",
+    "test/offline/unit/test_calibre_argv_contracts.py",
+    "test/offline/unit/test_gui_package.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_paramiko.py",
+    "test/offline/unit/test_paramiko_helpers.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_schematic_contracts.py::test_instance_filter_all_none_names_region",
+   "test/live/packages/schematic_e2e_tests.py"
+  ],
+  "reason": "instance 过滤四形态有离线断言 + 真机 read 过滤用例",
+  "gap_test": ""
+ },
+ {
+  "id": "schematic#016",
+  "doc": "上层/2-schematic.md",
+  "line": 25,
+  "section": "1.1 读操作（不改变业务服务器状态）",
+  "text": "- `wire` / `label` / `pin` / `note`：`all`（默认）/ `none` / `{\"region\":[pos0, pos1]}`。",
+  "tokens": [
+   "label",
+   "none",
+   "note",
+   "wire"
+  ],
+  "hits": {
+   "label": [
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/unit/test_api_server_main.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_registration_server_edges.py",
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_spectre_util_psf_contracts.py"
+   ],
+   "none": [
+    "test/offline/integration/test_daemon_handler.py",
+    "test/offline/unit/test_calibre_argv_contracts.py",
+    "test/offline/unit/test_gui_package.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_paramiko.py",
+    "test/offline/unit/test_paramiko_helpers.py"
+   ],
+   "note": [
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_registration_server_edges.py",
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_skillref_package.py",
+    "test/offline/unit/test_spectre_util_contracts.py"
+   ],
+   "wire": [
+    "test/offline/integration/test_daemon_handler.py",
+    "test/offline/integration/test_integration.py",
+    "test/offline/unit/test_models_paths.py",
+    "test/offline/unit/test_paramiko_transport_fakes.py",
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_supervisor_internals.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_schematic_contracts.py::test_shape_filter_none_dict_and_invalid"
+  ],
+  "reason": "wire/label/pin/note 共用的 shape 过滤 none/region 有断言（names 非法有负控制）",
+  "gap_test": ""
+ },
+ {
+  "id": "schematic#017",
+  "doc": "上层/2-schematic.md",
+  "line": 26,
+  "section": "1.1 读操作（不改变业务服务器状态）",
+  "text": "- object_filter 只对 `positions`、`params`、不填=全部生效；`focus` 含 `connectivity` 时忽略（连接关系必须全量）。",
+  "tokens": [
+   "connectivity",
+   "focus",
+   "params",
+   "positions"
+  ],
+  "hits": {
+   "connectivity": [
+    "test/offline/unit/test_register_flow.py",
+    "test/live/e2e/test_business_local_live.py",
+    "test/live/e2e/test_e2e_live.py",
+    "test/live/flows/design_iterate_tb.py",
+    "test/live/flows/serdes_rx_flow_tb.py",
+    "test/live/packages/schematic_e2e_tests.py"
+   ],
+   "focus": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/offline/unit/test_verilog_contracts.py",
+    "test/semi/probes/shared_cdf_pollution_probe.py",
+    "test/semi/probes/symbol_generate_hierarchy_handle_probe.py"
+   ],
+   "params": [
+    "test/offline/unit/test_calibre_package.py",
+    "test/offline/unit/test_maestro_command_exprs.py",
+    "test/offline/unit/test_maestro_util_edges.py",
+    "test/offline/unit/test_middle_contracts.py",
+    "test/offline/unit/test_middle_routing.py",
+    "test/offline/unit/test_paramiko_run_command.py"
+   ],
+   "positions": [
+    "test/semi/probes/symbol_generate_hierarchy_handle_probe.py",
+    "test/semi/probes/symbol_regen_handle_probe.py",
+    "test/semi/probes/twouser_same_view_probe.py",
+    "test/live/packages/schematic_e2e_tests.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": "test/offline/unit/test_norm_gap_batch2.py::TestSchematicConnectivityIgnoresFilter",
+  "reason": "focus=connectivity 时 object_filter 必须被忽略，已由第八轮补测直接断言（connectivity 场景下 SKILL 文本不含 sentinel 过滤名；positions 场景下必须含）。",
+  "gap_test": ""
+ },
+ {
+  "id": "schematic#018",
+  "doc": "上层/2-schematic.md",
+  "line": 27,
+  "section": "1.1 读操作（不改变业务服务器状态）",
+  "text": "- `screenshot`：目标默认 `lib/cell/view`，可选 `window_id`；可选 `region=[pos0, pos1]`（user units，截前 `hiZoomIn(window, bBox)` 把区域填满窗口）；`toplevel` / `centralWidget` 暴露；`leave_open` 默认关窗；格式固定 PNG；远端存 daemon role root 的 screenshots/；本地存客户端工作目录 artifact/screenshots/。",
+  "tokens": [
+   "centralWidget",
+   "leave_open",
+   "screenshot",
+   "toplevel",
+   "window_id"
+  ],
+  "hits": {
+   "centralWidget": [
+    "test/semi/probes/symbol_screenshot_probe.py"
+   ],
+   "leave_open": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/live/packages/layout_e2e_tests.py",
+    "test/live/packages/schematic_e2e_tests.py",
+    "test/live/packages/symbol_e2e_tests.py"
+   ],
+   "screenshot": [
+    "test/offline/unit/test_gui_package.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_maestro_package_flow.py",
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/semi/probes/gui_display_probe.py"
+   ],
+   "toplevel": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/semi/probes/maestro_screenshot_probe.py",
+    "test/semi/probes/symbol_screenshot_probe.py",
+    "test/live/packages/maestro_e2e_tests.py"
+   ],
+   "window_id": [
+    "test/offline/unit/test_gui_package.py",
+    "test/semi/probes/maestro_screenshot_probe.py",
+    "test/semi/probes/_maestro_tb.py",
+    "test/semi/transport/log_matrix_real_tb.py",
+    "test/live/packages/gui_e2e_tests.py",
+    "test/live/packages/infra_e2e_tests.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "partial",
+  "evidence": [
+   "test/live/packages/schematic_e2e_tests.py::_case_screenshot"
+  ],
+  "reason": "screenshot 基本路径（lib/cell/view + PNG）有真机用例；`window_id/region/toplevel/central_widget` 参数属第八轮 op×param GAP（shot_family 子代理补测中）；region 形状同时受 P-082（两点 vs 四元组）影响",
+  "gap_test": "shot_family 交付后回填；P-082 修复后 region 用例需改两点"
+ },
+ {
+  "id": "schematic#019",
+  "doc": "上层/2-schematic.md",
+  "line": 31,
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "text": "对外只有一个**通用写操作** `write`：调用方一次给一组原子命令，业务包内部组织 SKILL 逐个改写，最后统一 check/save。调用方不会按单个原子调用多次。",
+  "tokens": [
+   "write"
+  ],
+  "hits": {
+   "write": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_schematic_contracts.py",
+   "test/live/packages/schematic_e2e_tests.py"
+  ],
+  "reason": "对外只有通用 write（一次一组原子、统一 check/save）由契约与真机套件钉住",
+  "gap_test": ""
+ },
+ {
+  "id": "schematic#024",
+  "doc": "上层/2-schematic.md",
+  "line": 38,
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "text": "`write.commands` 每项 = `{\"op\": 原子名, ...该原子参数}`；业务包按顺序执行并保留每步痕迹。",
+  "tokens": [
+   "write.commands"
+  ],
+  "hits": {},
+  "premap_status": "NONE",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_schematic_contracts.py"
+  ],
+  "reason": "commands 每项 {op,...}、按序执行并保留每步痕迹，有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "schematic#025",
+  "doc": "上层/2-schematic.md",
+  "line": 40,
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "text": "**write 支持的原子命令**：每个原子 = `op` + **索引**（要动哪个对象）+ 附加参数。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/artifacts/evidence/atom-coverage-2026-09-28.json"
+  ],
+  "reason": "20 个写原子全部有真机读回用例；原子覆盖核账 GAP=0",
+  "gap_test": ""
+ },
+ {
+  "id": "schematic#048",
+  "doc": "上层/2-schematic.md",
+  "line": 67,
+  "section": "1.3 坐标口径（P-074 定版）",
+  "text": "- **单点坐标一律一个字段 `pos`**，值是两元素数组 `[x, y]`（user units）：索引（delete/rename/set_*）、新建（place_*）、读回（read 的实例/端子/label/pin/note）**同一口径**；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/live/packages/schematic_e2e_tests.py::_case_pos_negative",
+   "test/offline/unit/test_schematic_contracts.py"
+  ],
+  "reason": "单点一律 pos（索引/新建/读回同形）由 P-074 实现 + 真机负控制 + 契约钉住",
+  "gap_test": ""
+ },
+ {
+  "id": "schematic#049",
+  "doc": "上层/2-schematic.md",
+  "line": 68,
+  "section": "1.3 坐标口径（P-074 定版）",
+  "text": "- **不再出现 `xy` 字段**；**不把坐标拆成两个字段**（`{\"x\":…,\"y\":…}` 一律非法）；`pos` 缺字段/形状不对时校验必须报明缺哪个字段（不得裸 `KeyError`）；",
+  "tokens": [
+   "KeyError"
+  ],
+  "hits": {
+   "KeyError": [
+    "test/offline/unit/test_daemon_runtime_contracts.py",
+    "test/offline/unit/test_registration_server_edges.py",
+    "test/offline/unit/test_registry_more.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/live/packages/schematic_e2e_tests.py (负控制 349-352)",
+   "test/offline/unit/test_schematic_contracts.py"
+  ],
+  "reason": "xy/拆字段必须被拒且点名 pos：真机负控制逐形态断言（非裸异常）",
+  "gap_test": ""
+ },
+ {
+  "id": "schematic#050",
+  "doc": "上层/2-schematic.md",
+  "line": 69,
+  "section": "1.3 坐标口径（P-074 定版）",
+  "text": "- 多点：`points: [pos, …]`；区域/矩形：`region` / `bbox` 一律**对角两点** `[pos0, pos1]`（read 与 write 同形，**不再用四元组**）；",
+  "tokens": [
+   "bbox",
+   "region"
+  ],
+  "hits": {
+   "bbox": [
+    "test/offline/unit/test_calibre_parsers.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/semi/probes/gds_then_skill_probe.py",
+    "test/semi/probes/layout_lock_ownership_probe.py",
+    "test/semi/probes/layout_p044_second_write_probe.py"
+   ],
+   "region": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/semi/probes/maestro_screenshot_probe.py",
+    "test/live/packages/layout_e2e_tests.py",
+    "test/live/packages/maestro_e2e_tests.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "partial",
+  "evidence": [
+   "test/offline/unit/test_schematic_contracts.py"
+  ],
+  "reason": "points=[pos,…] 两点/多点有断言；**region 的对角两点在 read 过滤与 screenshot 仍失败（P-082）**，实现只收四元组，与该条‘不再用四元组’冲突",
+  "gap_test": "P-082 修复后补两点正例（read 过滤 + screenshot）并复跑"
+ },
+ {
+  "id": "schematic#058",
+  "doc": "上层/2-schematic.md",
+  "line": 85,
+  "section": "3. 待修订",
+  "text": "跟进时**不做兼容层**（`xy`/拆字段直接判非法），校验错误必须点名缺哪个字段；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/live/packages/schematic_e2e_tests.py (负控制)",
+   "test/offline/unit/test_schematic_contracts.py"
+  ],
+  "reason": "不做兼容层：xy/拆字段直接非法且点名 pos，有真机与离线负控制",
+  "gap_test": ""
+ },
+ {
+  "id": "schematic#059",
+  "doc": "上层/2-schematic.md",
+  "line": 86,
+  "section": "3. 待修订",
+  "text": "- 唯一 name 索引只有 instance；wire=line segment 列表（无 name），label/note/pin 均按 `pos` 索引（可加 text/name 消歧义）；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_schematic_contracts.py",
+   "test/live/packages/schematic_e2e_tests.py"
+  ],
+  "reason": "instance 唯一 name 索引、wire 按 points、label/note/pin 按 pos（含消歧义）由契约与真机用例覆盖",
+  "gap_test": ""
+ },
+ {
+  "id": "schematic#066",
+  "doc": "上层/2-schematic.md",
+  "line": 93,
+  "section": "3. 待修订",
+  "text": "- `check_and_save` 供显式补一次校验保存；读写目标都必须带 `view`，默认 `\"schematic\"`，不假设只有这个视图名。",
+  "tokens": [
+   "check_and_save",
+   "view"
+  ],
+  "hits": {
+   "check_and_save": [
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/semi/probes/schematic_pin_ops_probe.py",
+    "test/semi/probes/symbol_pkg_probe.py",
+    "test/live/flows/adc_sar_flow_tb.py"
+   ],
+   "view": [
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/unit/test_cellview_contracts.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_layout_publish_contracts.py",
+    "test/offline/unit/test_maestro_command_exprs.py",
+    "test/offline/unit/test_maestro_package_flow.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_schematic_contracts.py",
+   "test/live/packages/schematic_e2e_tests.py"
+  ],
+  "reason": "check_and_save 显式补校验保存 + view 必须显式默认 schematic，有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "symbol#004",
+  "doc": "上层/3-symbol.md",
+  "line": 6,
+  "section": "上层业务包：symbol",
+  "text": "> Supersedes：Draft v2（坐标口径对齐 [2-schematic.md §1.3](2-schematic.md)：单点一律 `pos`，弃用 `xy`、不拆字段）",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "na",
+  "evidence": [],
+  "reason": "Supersedes 注记（文档版本说明）",
+  "gap_test": ""
+ },
+ {
+  "id": "symbol#010",
+  "doc": "上层/3-symbol.md",
+  "line": 17,
+  "section": "1. 总述",
+  "text": "- `generate` 可以从 schematic 生成或覆盖 symbol，内部自带临时 view、校验、备份、回滚。",
+  "tokens": [
+   "generate"
+  ],
+  "hits": {
+   "generate": [
+    "test/offline/unit/test_new_middle.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/offline/unit/test_symbol_generate.py",
+    "test/semi/probes/schematic_pin_ops_probe.py",
+    "test/semi/probes/symbol_generate_hierarchy_handle_probe.py",
+    "test/semi/probes/symbol_http_400_repro.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_symbol_generate.py",
+   "test/semi/probes/symbol_regen_handle_probe.py"
+  ],
+  "reason": "generate 的临时 view/校验/备份/回滚全链：离线生成式 + 真机句柄探针",
+  "gap_test": ""
+ },
+ {
+  "id": "symbol#023",
+  "doc": "上层/3-symbol.md",
+  "line": 38,
+  "section": "2.1 读操作",
+  "text": "`read` 默认 `view=\"symbol\"`、`view_type=\"schematicSymbol\"`；必须返回通用 shapes，",
+  "tokens": [
+   "read"
+  ],
+  "hits": {
+   "read": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_symbol_contracts.py"
+  ],
+  "reason": "read 默认 view=symbol/view_type=schematicSymbol 且返回通用 shapes，有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "symbol#026",
+  "doc": "上层/3-symbol.md",
+  "line": 43,
+  "section": "2.1 读操作",
+  "text": "- `view_type` 默认 `schematicSymbol`；格式固定 PNG；",
+  "tokens": [
+   "schematicSymbol",
+   "view_type"
+  ],
+  "hits": {
+   "schematicSymbol": [
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/semi/probes/maestro_e2e_probe.py",
+    "test/semi/probes/symbol_screenshot_probe.py",
+    "test/live/flows/design_iterate_tb.py",
+    "test/live/flows/serdes_rx_flow_tb.py",
+    "test/live/packages/layout_e2e_tests.py"
+   ],
+   "view_type": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/offline/unit/test_verilog_contracts.py",
+    "test/semi/probes/gds_then_skill_probe.py",
+    "test/semi/probes/schematic_pin_ops_probe.py",
+    "test/semi/probes/shared_cdf_pollution_probe.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/live/packages/symbol_e2e_tests.py::_case_screenshot",
+   "test/semi/probes/symbol_screenshot_probe.py"
+  ],
+  "reason": "view_type 默认 + PNG 落盘，有真机用例与探针",
+  "gap_test": ""
+ },
+ {
+  "id": "symbol#038",
+  "doc": "上层/3-symbol.md",
+  "line": 60,
+  "section": "2.2 写操作",
+  "text": "所以 write 必须先显式探测 view 是否存在，再进入 append 编辑。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_symbol_contracts.py"
+  ],
+  "reason": "write 先显式探测 view 存在再 append 编辑，有生成式断言",
+  "gap_test": ""
+ },
+ {
+  "id": "symbol#041",
+  "doc": "上层/3-symbol.md",
+  "line": 64,
+  "section": "2.2 写操作",
+  "text": "`write.commands` 每项 = `{\"op\": 原子名, ...该原子参数}`；按顺序执行并保留每步痕迹。",
+  "tokens": [
+   "write.commands"
+  ],
+  "hits": {},
+  "premap_status": "NONE",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_symbol_contracts.py"
+  ],
+  "reason": "commands 每项 {op,...} 按序执行并保留每步痕迹，有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "symbol#053",
+  "doc": "上层/3-symbol.md",
+  "line": 81,
+  "section": "2.2.1 几何原子",
+  "text": "- 新建原子的 `layer/purpose` 必填；不设默认层，避免猜 PDK。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_symbol_contracts.py"
+  ],
+  "reason": "新建几何原子 layer/purpose 必填、不设默认层：生成式断言（缺 layer 即 ValueError）",
+  "gap_test": ""
+ },
+ {
+  "id": "symbol#067",
+  "doc": "上层/3-symbol.md",
+  "line": 103,
+  "section": "2.2.3 引脚原子",
+  "text": "pin 以 **terminal name** 为唯一索引；旧代码 `symbol_create_pin` 本身就以",
+  "tokens": [
+   "symbol_create_pin"
+  ],
+  "hits": {},
+  "premap_status": "NONE",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_symbol_contracts.py",
+   "test/semi/probes/schematic_pin_ops_probe.py"
+  ],
+  "reason": "pin 以 terminal name 为唯一索引（P-073 修复后真机 pin 探针 clean）",
+  "gap_test": ""
+ },
+ {
+  "id": "symbol#075",
+  "doc": "上层/3-symbol.md",
+  "line": 113,
+  "section": "2.2.3 引脚原子",
+  "text": "`place_pin` 内部顺序：检查 terminal 不存在 → net → term → pin 矩形",
+  "tokens": [
+   "place_pin"
+  ],
+  "hits": {
+   "place_pin": [
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/semi/probes/schematic_pin_ops_probe.py",
+    "test/semi/probes/symbol_generate_hierarchy_handle_probe.py",
+    "test/semi/probes/symbol_regen_handle_probe.py",
+    "test/live/flows/adc_sar_flow_tb.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_symbol_contracts.py"
+  ],
+  "reason": "place_pin 内部顺序（terminal→net→term→矩形）由生成式用例钉住",
+  "gap_test": ""
+ },
+ {
+  "id": "symbol#082",
+  "doc": "上层/3-symbol.md",
+  "line": 122,
+  "section": "2.2.3 引脚原子",
+  "text": "真机语义（必须遵守）：",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "indirect",
+  "evidence": [
+   "test/semi/probes/schematic_pin_ops_probe.py",
+   "test/live/packages/symbol_e2e_tests.py"
+  ],
+  "reason": "小节标题（真机语义必须遵守）；其语义由 pin 探针 + symbol E2E 的引脚用例承担",
+  "gap_test": ""
+ },
+ {
+  "id": "symbol#107",
+  "doc": "上层/3-symbol.md",
+  "line": 160,
+  "section": "2.3 generate",
+  "text": "1. source/target view 必须不同；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_symbol_generate.py",
+   "test/semi/probes/symbol_http_400_repro.py"
+  ],
+  "reason": "source/target view 必须不同：离线生成式 + 真机 400 负控制",
+  "gap_test": ""
+ },
+ {
+  "id": "symbol#113",
+  "doc": "上层/3-symbol.md",
+  "line": 166,
+  "section": "2.3 generate",
+  "text": "7. 任一步失败尝试回滚；回滚失败保留 backup view 并返回失败；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_symbol_generate.py::test_rollback_path_keeps_backup_and_reports_failure"
+  ],
+  "reason": "任一步失败尝试回滚；回滚失败保留 backup view 并返回失败，有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "symbol#117",
+  "doc": "上层/3-symbol.md",
+  "line": 172,
+  "section": "2.3 generate",
+  "text": "`schPinListToSymbolGen` 对显式 pin list 也按传入顺序生成，**`sort_pins` 参数保留但不承诺排序效果**。",
+  "tokens": [
+   "schPinListToSymbolGen",
+   "sort_pins"
+  ],
+  "hits": {
+   "sort_pins": [
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/offline/unit/test_symbol_generate.py",
+    "test/live/packages/symbol_e2e_tests.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_symbol_generate.py"
+  ],
+  "reason": "sort_pins 保留但只接受枚举、不承诺排序效果：参数矩阵用例（含 bogus 拒绝）",
+  "gap_test": ""
+ },
+ {
+  "id": "symbol#118",
+  "doc": "上层/3-symbol.md",
+  "line": 173,
+  "section": "2.3 generate",
+  "text": "`schPinListToSymbolGen` 会自行 `dbSave`，因此只能用于临时 view（当前实现即如此）。",
+  "tokens": [
+   "dbSave",
+   "schPinListToSymbolGen"
+  ],
+  "hits": {
+   "dbSave": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/semi/probes/layout_p044_second_write_probe.py",
+    "test/semi/probes/maestro_e2e_probe.py",
+    "test/semi/probes/twouser_same_view_probe.py",
+    "test/live/flows/adc_sar_flow_tb.py",
+    "test/live/flows/multiuser_layout_handoff_tb.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_symbol_generate.py",
+   "test/semi/probes/symbol_generate_hierarchy_handle_probe.py"
+  ],
+  "reason": "schPinListToSymbolGen 自带 dbSave → 仅用于临时 view：生成式 + 层次句柄探针",
+  "gap_test": ""
+ },
+ {
+  "id": "symbol#121",
+  "doc": "上层/3-symbol.md",
+  "line": 180,
+  "section": "3. 不在本版",
+  "text": "- `port_order` / `term_order` 的独立写入原子；",
+  "tokens": [
+   "port_order",
+   "term_order"
+  ],
+  "hits": {
+   "port_order": [
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/live/flows/lvs_from_schematic_tb.py"
+   ],
+   "term_order": [
+    "test/offline/unit/test_symbol_contracts.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "na",
+  "evidence": [],
+  "reason": "「不在本版」：port_order/term_order 独立原子，明确不做",
+  "gap_test": ""
+ },
+ {
+  "id": "symbol#124",
+  "doc": "上层/3-symbol.md",
+  "line": 183,
+  "section": "3. 不在本版",
+  "text": "- 移动类原子（`move_shape / move_label / move_pin`）：底层已确认 `dbMoveFig/dbMoveShape` 可用，",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "na",
+  "evidence": [],
+  "reason": "「不在本版」：move_* 系列，明确不做",
+  "gap_test": ""
+ },
+ {
+  "id": "symbol#130",
+  "doc": "上层/3-symbol.md",
+  "line": 189,
+  "section": "3. 不在本版",
+  "text": "- circle / arc / donut / path 原子；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "na",
+  "evidence": [],
+  "reason": "「不在本版」：circle/arc/donut/path 原子，明确不做",
+  "gap_test": ""
+ },
+ {
+  "id": "layout#004",
+  "doc": "上层/4-layout.md",
+  "line": 6,
+  "section": "上层业务包：layout",
+  "text": "> Supersedes：Draft v4（坐标口径对齐 [2-schematic.md §1.3](2-schematic.md)：单点一律 `pos`，弃用 `xy`、不拆字段）",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "na",
+  "evidence": [],
+  "reason": "Supersedes 注记（文档版本说明）",
+  "gap_test": ""
+ },
+ {
+  "id": "layout#006",
+  "doc": "上层/4-layout.md",
+  "line": 11,
+  "section": "1. 业务操作",
+  "text": "核心是读和写。写是**按对象对称**的原子操作：shape（rect/polygon/path/line）、label、instance、mosaic、via",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_layout_contracts.py",
+   "test/live/packages/layout_e2e_tests.py",
+   "test/artifacts/evidence/atom-coverage-2026-09-28.json"
+  ],
+  "reason": "shape/label/instance/mosaic/via 对称原子：离线契约 + 真机读回；原子核账 GAP=0",
+  "gap_test": ""
+ },
+ {
+  "id": "layout#011",
+  "doc": "上层/4-layout.md",
+  "line": 18,
+  "section": "1. 业务操作",
+  "text": "- viewType 固定 `maskLayout`，view 默认 `\"layout\"`；",
+  "tokens": [
+   "maskLayout"
+  ],
+  "hits": {
+   "maskLayout": [
+    "test/offline/unit/test_cellview_contracts.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/semi/probes/gds_then_skill_probe.py",
+    "test/semi/probes/layout_lock_ownership_probe.py",
+    "test/semi/probes/layout_p044_second_write_probe.py",
+    "test/live/flows/adc_sar_flow_tb.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_layout_contracts.py",
+   "test/live/packages/layout_e2e_tests.py"
+  ],
+  "reason": "viewType 固定 maskLayout、view 默认 layout，由契约与真机用例钉住",
+  "gap_test": ""
+ },
+ {
+  "id": "layout#015",
+  "doc": "上层/4-layout.md",
+  "line": 22,
+  "section": "1. 业务操作",
+  "text": "- 不提供\"按当前选择集\"的写操作（selection 是全局 GUI 状态，不能作业务索引）。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "indirect",
+  "evidence": [
+   "test/offline/unit/test_pyapi_interface_contract.py",
+   "test/live/packages/layout_e2e_tests.py"
+  ],
+  "reason": "运营面原子集合固定、不存在按 selection 的写操作（接口面断言）；无专门负向用例",
+  "gap_test": ""
+ },
+ {
+  "id": "layout#023",
+  "doc": "上层/4-layout.md",
+  "line": 34,
+  "section": "1.1 读操作（不改变业务服务器状态）",
+  "text": "- 可选 `detail`：`geometry`（默认，含坐标与属性）/ `index`（只回 type + LPP，供大版图廉价索引）；",
+  "tokens": [
+   "detail",
+   "geometry",
+   "index"
+  ],
+  "hits": {
+   "detail": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ],
+   "geometry": [
+    "test/offline/unit/test_calibre_parsers.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/semi/probes/gds_then_skill_probe.py",
+    "test/live/flows/design_iterate_tb.py",
+    "test/live/flows/layout_suite_p044_workaround_tb.py"
+   ],
+   "index": [
+    "test/offline/core/semantics_tb.py",
+    "test/offline/unit/test_maestro_command_exprs.py",
+    "test/offline/unit/test_maestro_package_flow.py",
+    "test/offline/unit/test_registration_mock_server.py",
+    "test/offline/unit/test_registry_more.py",
+    "test/offline/unit/test_spectre_util_contracts.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/live/packages/layout_e2e_tests.py::_case_read_filters",
+   "test/offline/unit/test_layout_contracts.py"
+  ],
+  "reason": "detail=geometry/index：真机 index 只回 type+LPP；非法值拒绝有离线断言",
+  "gap_test": ""
+ },
+ {
+  "id": "layout#024",
+  "doc": "上层/4-layout.md",
+  "line": 35,
+  "section": "1.1 读操作（不改变业务服务器状态）",
+  "text": "- 可选 `object_filter`：每个对象一个条目，**不写默认 `all`**；条目可以是 `none`（该类一个都不读）；",
+  "tokens": [
+   "none",
+   "object_filter"
+  ],
+  "hits": {
+   "none": [
+    "test/offline/integration/test_daemon_handler.py",
+    "test/offline/unit/test_calibre_argv_contracts.py",
+    "test/offline/unit/test_gui_package.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_paramiko.py",
+    "test/offline/unit/test_paramiko_helpers.py"
+   ],
+   "object_filter": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/live/flows/layout_suite_p044_workaround_tb.py",
+    "test/live/packages/layout_e2e_tests.py",
+    "test/live/packages/schematic_e2e_tests.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/live/packages/layout_e2e_tests.py::_case_read_filters",
+   "test/offline/unit/test_layout_contracts.py"
+  ],
+  "reason": "object_filter 逐条目 none/region 等有离线断言 + 真机 region 过滤用例",
+  "gap_test": ""
+ },
+ {
+  "id": "layout#028",
+  "doc": "上层/4-layout.md",
+  "line": 39,
+  "section": "1.1 读操作（不改变业务服务器状态）",
+  "text": "- 可选 `region_mode`：`intersect`（默认）/ `contain`，作用于 object_filter 里的 region；",
+  "tokens": [
+   "contain",
+   "intersect",
+   "region_mode"
+  ],
+  "hits": {
+   "contain": [
+    "test/offline/unit/test_calibre_package.py",
+    "test/offline/unit/test_config_snapshot_edges.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_spectre_contracts.py",
+    "test/offline/unit/test_ssh_dispatch.py",
+    "test/offline/unit/test_ssh_edges.py"
+   ],
+   "intersect": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/live/packages/layout_e2e_tests.py"
+   ],
+   "region_mode": [
+    "test/offline/unit/test_layout_contracts.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/live/packages/layout_e2e_tests.py::_case_read_params (READ-02)",
+   "test/offline/unit/test_layout_contracts.py"
+  ],
+  "reason": "region_mode intersect/contain 语义差异有真机断言；非法值拒绝有离线断言（region 形状受 P-082 影响）",
+  "gap_test": ""
+ },
+ {
+  "id": "layout#029",
+  "doc": "上层/4-layout.md",
+  "line": 40,
+  "section": "1.1 读操作（不改变业务服务器状态）",
+  "text": "- 可选 `depth`：`0`（默认，只读本层）/ `>0`（跨层，需同时给 `region` 或 `layers`）；",
+  "tokens": [
+   "depth",
+   "layers",
+   "region"
+  ],
+  "hits": {
+   "depth": [
+    "test/offline/unit/test_cellview_contracts.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_maestro_command_exprs.py",
+    "test/offline/unit/test_registration_server.py",
+    "test/offline/unit/test_skillref_docs_contracts.py",
+    "test/offline/unit/test_spectre_util_psf_contracts.py"
+   ],
+   "layers": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_skillref_package.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/semi/probes/skillref_probe.py",
+    "test/live/flows/layout_suite_p044_workaround_tb.py"
+   ],
+   "region": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/semi/probes/maestro_screenshot_probe.py",
+    "test/live/packages/layout_e2e_tests.py",
+    "test/live/packages/maestro_e2e_tests.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/live/packages/layout_e2e_tests.py::_case_read_params (READ-02)",
+   "test/offline/unit/test_layout_contracts.py"
+  ],
+  "reason": "depth=0/>0 真机用例（跨层需 region/layers 的校验有离线断言）",
+  "gap_test": ""
+ },
+ {
+  "id": "layout#039",
+  "doc": "上层/4-layout.md",
+  "line": 55,
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "text": "对外只有一个**通用写操作** `write`：调用方一次给一组原子命令，业务包内部组织 SKILL 逐个改写，最后统一 `dbSave`。",
+  "tokens": [
+   "dbSave",
+   "write"
+  ],
+  "hits": {
+   "dbSave": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/semi/probes/layout_p044_second_write_probe.py",
+    "test/semi/probes/maestro_e2e_probe.py",
+    "test/semi/probes/twouser_same_view_probe.py",
+    "test/live/flows/adc_sar_flow_tb.py",
+    "test/live/flows/multiuser_layout_handoff_tb.py"
+   ],
+   "write": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_layout_contracts.py",
+   "test/live/packages/layout_e2e_tests.py"
+  ],
+  "reason": "对外单一通用 write（一组原子 + 统一 dbSave）由契约与真机套件钉住",
+  "gap_test": ""
+ },
+ {
+  "id": "layout#040",
+  "doc": "上层/4-layout.md",
+  "line": 56,
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "text": "调用方不会按单个原子调用多次。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_pyapi_interface_contract.py",
+   "test/live/packages/layout_e2e_tests.py"
+  ],
+  "reason": "不按单原子多次调用（接口面固定 + 批量 write 用法）有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "layout#045",
+  "doc": "上层/4-layout.md",
+  "line": 63,
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "text": "`write.commands` 每项 = `{\"op\": 原子名, ...该原子参数}`；按顺序执行并保留每步痕迹。",
+  "tokens": [
+   "write.commands"
+  ],
+  "hits": {},
+  "premap_status": "NONE",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_layout_contracts.py"
+  ],
+  "reason": "commands 每项 {op,...} 按序执行并保留每步痕迹，有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "layout#047",
+  "doc": "上层/4-layout.md",
+  "line": 65,
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "text": "**不得靠 `a` 模式凭空创建**；非事务——中途失败时前面的命令已生效，失败响应带 `commands applied: k/n`。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_layout_contracts.py::test_command_failure_reports_applied_prefix",
+   "test/offline/unit/test_layout_contracts.py::test_happy_path_reports_applied_count"
+  ],
+  "reason": "不得 append 凭空创建 + 非事务（失败带 applied k/n）均有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "layout#048",
+  "doc": "上层/4-layout.md",
+  "line": 67,
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "text": "**write 支持的原子命令**：每个原子 = `op` + **索引**（要动哪个对象）+ 附加参数。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/live/packages/layout_e2e_tests.py",
+   "test/artifacts/evidence/atom-coverage-2026-09-28.json"
+  ],
+  "reason": "原子清单全覆盖（含 delete_instance/delete_mosaic/fit_view/zoom 补测）；核账 GAP=0",
+  "gap_test": ""
+ },
+ {
+  "id": "layout#075",
+  "doc": "上层/4-layout.md",
+  "line": 99,
+  "section": "1.2.1 LPP 与失败语义",
+  "text": "- 底层 `dbCreateXxx` 失败**返回 nil 而不抛错** → 每个原子必须判返回值，失败即业务失败；",
+  "tokens": [
+   "dbCreateXxx"
+  ],
+  "hits": {},
+  "premap_status": "NONE",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_layout_contracts.py",
+   "test/semi/probes/layout_p044_second_write_probe.py"
+  ],
+  "reason": "dbCreateXxx 返回 nil 即业务失败（含真机探针）有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "layout#076",
+  "doc": "上层/4-layout.md",
+  "line": 100,
+  "section": "1.2.1 LPP 与失败语义",
+  "text": "- 默认**不做** techfile 预检；`write` 可选 `strict_lpp=true` 时校验：`techGetLayerNum(tf, layer)` 非 nil +",
+  "tokens": [
+   "write"
+  ],
+  "hits": {
+   "write": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/live/packages/layout_e2e_tests.py (strict_lpp 331-337)",
+   "test/offline/unit/test_layout_contracts.py"
+  ],
+  "reason": "默认不做 techfile 预检；strict_lpp=true 拒绝未知 layer，有真机断言 + 类型校验",
+  "gap_test": ""
+ },
+ {
+  "id": "layout#079",
+  "doc": "上层/4-layout.md",
+  "line": 103,
+  "section": "1.2.1 LPP 与失败语义",
+  "text": "批量删层用 `dbShapeQuery(cv lpp bbox 0 <stopLevel>)`，**stopLevel 必须覆盖层次**；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "indirect",
+  "evidence": [
+   "test/live/packages/layout_e2e_tests.py",
+   "test/semi/probes/layout_p044_second_write_probe.py"
+  ],
+  "reason": "批量删层 stopLevel 覆盖层次为生成式事实；由 delete 系列真机用例间接承担，无专门跨层负向",
+  "gap_test": ""
+ },
+ {
+  "id": "layout#120",
+  "doc": "上层/4-layout.md",
+  "line": 155,
+  "section": "1.3 gds（导入 / 导出收拢为一个操作）",
+  "text": "`XSTRM-234` + `Translation completed` 才算完成；**完成前不得读目标 cellview**（会读到旧版 stale bbox）；",
+  "tokens": [
+   "XSTRM-234"
+  ],
+  "hits": {
+   "XSTRM-234": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/live/packages/layout_e2e_tests.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_layout_publish_contracts.py",
+   "test/semi/probes/gds_publish_path_edges_probe.py",
+   "test/semi/probes/gds_then_skill_probe.py"
+  ],
+  "reason": "XSTRM-234 + Translation completed 完成判定、完成前不读目标 view：契约 + 两条真机探针（P-051/P-075 已闭环）",
+  "gap_test": ""
+ },
+ {
+  "id": "layout#139",
+  "doc": "上层/4-layout.md",
+  "line": 182,
+  "section": "1.4 screenshot",
+  "text": "- **禁止不带 bbox 的 `hiZoomIn`/`hiZoomOut`**（会进交互橡皮筋并卡死 SKILL 通道）；",
+  "tokens": [
+   "hiZoomIn",
+   "hiZoomOut"
+  ],
+  "hits": {},
+  "premap_status": "NONE",
+  "verdict": "direct",
+  "evidence": "test/offline/unit/test_norm_gap_batch2.py::TestLayoutZoomNeverBboxless",
+  "reason": "禁止无 bbox 的 hiZoomIn/hiZoomOut：fit_view 走 hiZoomIn(win bBox)、zoom 走 hiZoomAbsoluteScale，且不出现裸 hiZoomIn/hiZoomOut，已断言。",
+  "gap_test": ""
+ },
+ {
+  "id": "layout#158",
+  "doc": "上层/4-layout.md",
+  "line": 213,
+  "section": "3. 不在本版",
+  "text": "- 路由抽象（多层/总线）与 `clear_routing`：调用方用几何原子组合；",
+  "tokens": [
+   "clear_routing"
+  ],
+  "hits": {},
+  "premap_status": "NONE",
+  "verdict": "na",
+  "evidence": [],
+  "reason": "「不在本版」：路由抽象/clear_routing，明确不做",
+  "gap_test": ""
+ },
+ {
+  "id": "layout#179",
+  "doc": "上层/4-layout.md",
+  "line": 240,
+  "section": "5. 真机事实（IC6.1.8，2026-09-21 实测）",
+  "text": "3. `dbCreateXxx` 失败分两类：**非法 LPP → 抛 SKILL 硬错误**；**几何非法 → nil + WARNING** →",
+  "tokens": [
+   "dbCreateXxx"
+  ],
+  "hits": {},
+  "premap_status": "NONE",
+  "verdict": "partial",
+  "evidence": [
+   "test/live/packages/layout_e2e_tests.py (strict_lpp)",
+   "test/semi/probes/layout_p044_second_write_probe.py"
+  ],
+  "reason": "非法 LPP 硬错误有真机用例；**几何非法 → nil+WARNING 的分支**靠探针间接覆盖，无分类断言",
+  "gap_test": "补：几何非法（如零面积 rect）→ 业务失败且错误文本含 WARNING 语义"
+ },
+ {
+  "id": "layout#180",
+  "doc": "上层/4-layout.md",
+  "line": 241,
+  "section": "5. 真机事实（IC6.1.8，2026-09-21 实测）",
+  "text": "上层既要判返回值也要能收错误；`pos` 写 **point**（`7:8`），`bBox`/`points` 写 list；",
+  "tokens": [
+   "bBox",
+   "points"
+  ],
+  "hits": {
+   "bBox": [
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/live/flows/project_flow_tb.py"
+   ],
+   "points": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/integration/test_supervisor_process.py",
+    "test/offline/unit/test_endpoint_budgets.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_maestro_util.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_layout_contracts.py"
+  ],
+  "reason": "pos 写 point（7:8）、bBox/points 写 list —— 生成式文本断言",
+  "gap_test": ""
+ },
+ {
+  "id": "layout#181",
+  "doc": "上层/4-layout.md",
+  "line": 242,
+  "section": "5. 真机事实（IC6.1.8，2026-09-21 实测）",
+  "text": "4. **`dbClose` 不落盘**：必须显式 `dbSave` 后再 `dbClose`；未保存的 cellview 留在会话里会污染导出",
+  "tokens": [
+   "dbClose",
+   "dbSave"
+  ],
+  "hits": {
+   "dbClose": [
+    "test/offline/unit/test_cellview_contracts.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/offline/unit/test_symbol_generate.py",
+    "test/semi/probes/layout_lock_ownership_probe.py"
+   ],
+   "dbSave": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/semi/probes/layout_p044_second_write_probe.py",
+    "test/semi/probes/maestro_e2e_probe.py",
+    "test/semi/probes/twouser_same_view_probe.py",
+    "test/live/flows/adc_sar_flow_tb.py",
+    "test/live/flows/multiuser_layout_handoff_tb.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_layout_contracts.py",
+   "test/semi/probes/layout_p044_second_write_probe.py"
+  ],
+  "reason": "dbSave 后才 dbClose（未保存不落盘）由契约 + P-044 探针覆盖",
+  "gap_test": ""
+ },
+ {
+  "id": "layout#184",
+  "doc": "上层/4-layout.md",
+  "line": 245,
+  "section": "5. 真机事实（IC6.1.8，2026-09-21 实测）",
+  "text": "6. 区域/层级查询显式给 level（`dbShapeQuery(cv lpp bbox 0 32)`）；3 参数默认形式会下探一层 instance",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_layout_contracts.py",
+   "test/live/packages/layout_e2e_tests.py"
+  ],
+  "reason": "区域/层级查询显式给 level（dbShapeQuery … 0 <level>）由生成式与真机用例钉住",
+  "gap_test": ""
+ },
+ {
+  "id": "layout#185",
+  "doc": "上层/4-layout.md",
+  "line": 246,
+  "section": "5. 真机事实（IC6.1.8，2026-09-21 实测）",
+  "text": "但**不含 via 生成图形**，不要依赖默认；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "indirect",
+  "evidence": [
+   "test/offline/unit/test_layout_contracts.py"
+  ],
+  "reason": "via 生成图形默认不含在查询结果为真机事实；由 via 原子用例间接体现，无专门断言",
+  "gap_test": ""
+ },
+ {
+  "id": "layout#189",
+  "doc": "上层/4-layout.md",
+  "line": 250,
+  "section": "5. 真机事实（IC6.1.8，2026-09-21 实测）",
+  "text": "9. via 的 `~>viaDef` / `~>name` **不可读**（都是 nil）⇒ 只能按 `pos + orient` 索引；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_layout_contracts.py"
+  ],
+  "reason": "via 按 pos+orient 索引（viaDef/name 不可读）由 via 原子生成式断言钉住",
+  "gap_test": ""
+ },
+ {
+  "id": "layout#196",
+  "doc": "上层/4-layout.md",
+  "line": 257,
+  "section": "5. 真机事实（IC6.1.8，2026-09-21 实测）",
+  "text": "**不能**用来判断 `dbCreate*` 是否接受某 LPP（真机已验证 `(\"y0\" \"pin\")` 不在列表里但可建）；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "indirect",
+  "evidence": [
+   "test/live/packages/layout_e2e_tests.py (strict_lpp)",
+   "test/offline/unit/test_layout_contracts.py"
+  ],
+  "reason": "‘不能拿 lpp 列表判断接受性’是经验注记；可测含义（strict_lpp 用 techGetLayerNum 而非列表）由 strict_lpp 用例承担",
+  "gap_test": ""
+ },
+ {
+  "id": "layout#199",
+  "doc": "上层/4-layout.md",
+  "line": 260,
+  "section": "5. 真机事实（IC6.1.8，2026-09-21 实测）",
+  "text": "与 SKILL 侧会话的在内存库表**不是**同一份 ⇒ 会话 run 目录的 `cds.lib` 是唯一权威解析入口；",
+  "tokens": [
+   "cds.lib"
+  ],
+  "hits": {
+   "cds.lib": [
+    "test/offline/unit/test_calibre_package.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/semi/probes/calibre_cdl_probe.py",
+    "test/semi/probes/cdl_export_variants_probe.py",
+    "test/semi/probes/layout_p044_second_write_probe.py",
+    "test/semi/probes/symbol_pkg_probe.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "na",
+  "evidence": [],
+  "reason": "环境事实（会话 run 目录 cds.lib 是权威解析入口），由环境 Runbook 承担",
+  "gap_test": ""
+ },
+ {
+  "id": "layout#202",
+  "doc": "上层/4-layout.md",
+  "line": 263,
+  "section": "5. 真机事实（IC6.1.8，2026-09-21 实测）",
+  "text": "同会话后续 SKILL 调用全部超时（P-075）。批处理路径从根上避开，别再走窗体。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/semi/probes/gds_then_skill_probe.py",
+   "test/offline/unit/test_layout_publish_contracts.py"
+  ],
+  "reason": "GDS 导出走批处理路径、不再触发窗体模态框：P-075 修复后探针 green（0.3s 返回）",
+  "gap_test": ""
+ }
+]

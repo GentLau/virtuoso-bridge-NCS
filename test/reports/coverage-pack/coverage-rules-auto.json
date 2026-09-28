@@ -15,27 +15,27 @@
   ],
   "src/common/paramiko_backend.py": [
     {
-      "lines": "405",
+      "lines": "447",
       "category": "env-blocked",
       "why": "platform-guarded: guarded by `os.name != 'nt'` (this run: platform=win32, os=nt)"
     },
     {
-      "lines": "508-509",
+      "lines": "578-579",
       "category": "env-blocked",
       "why": "optional-dependency: inside `except ImportError` handler"
     },
     {
-      "lines": "529-530",
+      "lines": "599-600",
       "category": "env-blocked",
       "why": "optional-dependency: inside `except ImportError` handler"
     },
     {
-      "lines": "667",
+      "lines": "737",
       "category": "env-blocked",
       "why": "platform-guarded: guarded by `os.name == 'nt'` (this run: platform=win32, os=nt)"
     },
     {
-      "lines": "1287",
+      "lines": "1357",
       "category": "defensive",
       "why": "pragma-no-cover: explicit pragma in source"
     }
@@ -61,17 +61,17 @@
   ],
   "src/common/ssh.py": [
     {
-      "lines": "112",
+      "lines": "113",
       "category": "env-blocked",
       "why": "platform-guarded: guarded by `os.name != 'nt'` (this run: platform=win32, os=nt)"
     },
     {
-      "lines": "352-353",
+      "lines": "353-354",
       "category": "env-blocked",
       "why": "platform-guarded: guarded by `os.name == 'nt'` (this run: platform=win32, os=nt)"
     },
     {
-      "lines": "359",
+      "lines": "360",
       "category": "env-blocked",
       "why": "platform-guarded: guarded by `os.name == 'nt'` (this run: platform=win32, os=nt)"
     }
@@ -181,7 +181,7 @@
   ],
   "src/transport/middle.py": [
     {
-      "lines": "409",
+      "lines": "423",
       "category": "env-blocked",
       "why": "platform-guarded: guarded by `os.name == 'nt'` (this run: platform=win32, os=nt)"
     }

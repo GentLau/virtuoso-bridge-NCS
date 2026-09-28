@@ -15,8 +15,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src"))
 
 from pyapi.models import CommandResult
 from common.registry import UserEntry
-from transport.remote_roles import resolve
-from common.paths import override_work_dir_for_tests
+from transport.roles import resolve
+from common.paths import init_work_dir
 from transport.tunnel import RemoteClient
 
 
@@ -77,7 +77,6 @@ def make_entry(*, skill_host="daemon-a", command_host="daemon-a", file_host="dae
 
 class TestRemoteClientTunnel(unittest.TestCase):
     def setUp(self) -> None:
-        override_work_dir_for_tests(Path(tempfile.mkdtemp(prefix="vb-")))
         FakeRunner.instances.clear()
 
     def test_ensure_tunnel_passes_remote_port_kwarg(self) -> None:
@@ -152,7 +151,7 @@ class TestRemoteClientTunnel(unittest.TestCase):
 
 class TestSSHRunnerParamikoBackend(unittest.TestCase):
     def setUp(self) -> None:
-        override_work_dir_for_tests(Path(tempfile.mkdtemp(prefix="vb-")))
+        pass  # work root: session-bound（test/conftest.py）
 
     def test_paramiko_backend_constructs(self) -> None:
         try:

@@ -8,14 +8,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src"))
 from transport.middle import BusinessServer
 from common.registry import UserEntry, load_registry
 from common.remote_paths import daemon_path, identity_path, il_path, setup_il_path, user_dir
-from transport.remote_roles import resolve
-from common.paths import registry_path, override_work_dir_for_tests
+from transport.roles import resolve
+from common.paths import init_work_dir, registry_path, work_root
 from common.setup import generate_setup_il
 
 
 class TestNewMiddle(unittest.TestCase):
     def setUp(self):
-        self.wd = override_work_dir_for_tests(Path(tempfile.mkdtemp(prefix="vb-")))
+        self.wd = work_root()
 
     def test_remote_paths_structure(self):
         root = "/tmp/root/alice"
@@ -76,7 +76,7 @@ class TestNewMiddle(unittest.TestCase):
         entry.roles.daemon.local_port = 65432
         reg.register("alice", entry)
 
-        server = BusinessServer(self.wd)
+        server = BusinessServer()
         r = server.run_command("echo vb-ok", token="tok-1")
         self.assertEqual(r.returncode, 0, r.stderr)
         self.assertIn("vb-ok", r.stdout)

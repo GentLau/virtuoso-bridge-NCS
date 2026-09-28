@@ -1,3 +1,15 @@
+# === TB 注释头（规范见 test/docs/写TB规范.md §0）=====================
+# 作者: 设计/Codex
+# 最后改动: 2026-09-28 12:04
+# 依赖: 无
+# =====================================================================
+# 六步流程（按 test/docs/写TB规范.md §1–§6）：
+# §1 环境检查：本地文件系统/子进程，无需远端环境 → 跳过。
+# §2 构建：临时 work root、legacy commands.log、持有者子进程。
+# §3 最终检查：确认 legacy holder 已持有文件且本进程日志路径正确。
+# §4 执行：本进程写满日志触发轮转。
+# §5 比对：commands.<pid>.log.1 是否生成及其内容，与期望一致。
+# §6 重复/收尾：释放 holder、回收临时目录，结果留证据。
 """Probe: per-process command logs rotate even if another process holds the old file.
 
 The control face and business face share one work directory.  Logging now

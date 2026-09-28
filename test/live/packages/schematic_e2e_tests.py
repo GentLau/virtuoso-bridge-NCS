@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
-# 作者: 设计/上层开发
-# 最后改动: 2026-09-28 19:45
+# 作者: 测试/root
+# 最后改动: 2026-09-28 20:23
 # 依赖: 无
 # =======================================================================
 """``virtuoso.schematic.*`` 真机原子级验收 TB（含 P-074 `pos` 口径）。
@@ -326,7 +326,9 @@ def _case_note_atoms(transport, ev: Evidence) -> None:
     case = "ATOM-note"
     _baseline(transport, "ATOM-note", ev)
     pos = [3.0, 3.0]
-    _write(transport, [{"op": "place_note", "text": "note1", "pos": pos}])
+    # type 显式给默认值 normalLabel（参数矩阵缺口；错值由离线契约覆盖）
+    _write(transport, [{"op": "place_note", "text": "note1", "pos": pos,
+                        "type": "normalLabel"}])
     notes = _read(transport).get("notes", [])
     ev.check_true(case, "place_note visible",
                   any(item.get("text") == "note1" and _near(item.get("pos"), pos)

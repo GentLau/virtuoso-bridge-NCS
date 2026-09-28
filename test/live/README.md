@@ -1,7 +1,7 @@
 # `test/live/` —— 真机级
 
 > **级别：真机测试**（全真环境；所有操作严格按用户实际能产生的操作执行）。
-> 判定与目录映射见 [`../docs/测试架构.md`](../docs/测试架构.md) §2。
+> 判定与目录映射见 [`../docs/README.md`](../docs/README.md) §1 / §3。
 
 ## 内容
 
@@ -20,11 +20,10 @@
 python test/live/registration/registration_http_six_step_tb.py --work-dir test/artifacts/env/reg-six-local `
     --user vbsixlocal --local-mode --token vb-six-local --out test/artifacts/env/reg-six-local/evidence.json
 python test/live/transport/cov_remote_real.py --work-dir test/artifacts/env/log-vblog --token vb-vblog
-python test/shared/runners/run_all_http.py                                   # 10 套包 E2E
+python test/shared/runners/run_all_http.py                                   # 11 套包 E2E（含 calibre）
 $env:VB_E2E='1'; python -m pytest test/live/e2e -q
-python test/live/stress/http_mixed_stress_tb.py --work-dir test/artifacts/env/http-stress2 `
-    --remote-token vb-vblog --remote-daemon-port 65121 `
-    --remote-root /home/Gent/.virtuoso-bridge/vblog --workers 6 --rounds 6
+python test/live/stress/production_face_stress_tb.py --workers 6 --rounds 6   # 自起生产面压测
+# 对接既有真机面：  --base http://127.0.0.1:8127/api/operation --token vb-vblog
 python test/live/flows/role_split_tb.py                               # S2
 python test/live/flows/scale_100_tb.py --count 100 --rounds 2         # S4
 python test/live/flows/s11_full_flow.py                               # S11（需已加载 PDK 的 CIW）

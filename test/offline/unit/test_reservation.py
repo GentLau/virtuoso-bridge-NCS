@@ -21,7 +21,7 @@ from register.flow import (
 from register.models import RegistrationRequest
 from register.reservation import Reservation, ReservationTable
 from common.registry import UserEntry, load_registry
-from common.paths import registry_path, override_work_dir_for_tests
+from common.paths import init_work_dir, registry_path, work_root
 from _ssh_cred import make_credential
 
 
@@ -29,7 +29,7 @@ _KEY_DIR, _KEY = make_credential()
 
 
 def _table():
-    return ReservationTable(Path(tempfile.mkdtemp(prefix="vb-")) / "registry.reservation")
+    return ReservationTable()
 
 
 def _record(user="alice", token="tok-a", scope="server-a", daemon_port=65081, local_port=65082):
@@ -79,7 +79,6 @@ class TestReservationTable(unittest.TestCase):
     def test_reservation_is_memory_only(self):
         table = _table()
         self.assertEqual(table.reserve(_record()), [])
-        self.assertFalse(table.path.exists())
         self.assertEqual([r.user for r in table.records()], ["alice"])
 
 
@@ -107,9 +106,20 @@ class TestDaemonScope(unittest.TestCase):
 
 class TestFlowReservationLifecycle(unittest.TestCase):
     def setUp(self):
-        self.wd = override_work_dir_for_tests(Path(tempfile.mkdtemp(prefix="vb-")))
+        # P-063：本组用例考的是 reservation 生命周期（spec 配置一览 §6.4），
+        # 但 `validate()` 第二步会**真实探测本机端口可用性**（`register.probe
+        # .local_port_free`，扫描 65081–65130）——并发跑测/隧道占住该区间时，
+        # 分配失败会让 validate 直接 failed、reservation 根本没写，用例出现
+        # 与环境无关的假红（实测：占满 65081–65130 时本类 1–3 条红）。
+        # 这里把"端口是否空闲"固定为 True，让本组只考 reservation；
+        # 端口探测/分配本身由 test_probe.py 与 test_register_flow.py
+        # ::test_validate_rejects_busy_explicit_local_port 覆盖。
+        free = mock.patch("register.probe.local_port_free", return_value=True)
+        free.start()
+        self.addCleanup(free.stop)
+        self.wd = work_root()
         self.registry = load_registry(registry_path())
-        self.table = ReservationTable(self.wd / "registry.reservation")
+        self.table = ReservationTable()
         self.flow = RegistrationFlow(self.registry, self.table)
 
     def _request(self, user="alice", token="t1", port=65081):

@@ -1,3 +1,15 @@
+# === TB 注释头（规范见 test/docs/写TB规范.md §0）=====================
+# 作者: 设计/Codex
+# 最后改动: 2026-09-28 12:04
+# 依赖: 无
+# =====================================================================
+# 六步流程（按 test/docs/写TB规范.md §1–§6）：
+# §1 环境检查：真实 ssh_config/SSH 主机；--connection 时先验证连接前提。
+# §2 构建：读取真实 ssh -G，构造含 true/false 的临时 ssh_config。
+# §3 最终检查：确认临时配置字段、主机名/用户/端口解析正确。
+# §4 执行：解析 endpoint；可选执行 connection。
+# §5 比对：解析不抛错、连接结果与 OpenSSH 语义一致。
+# §6 重复/收尾：synthetic/connection 两种模式按需重复；临时文件回收，JSON 留证。
 """P-037 复验：真实 ``ssh -G`` 的 ``true``/``false`` 必须被 paramiko 后端接受。
 
 缺陷背景：部分用户 ``~/.ssh/config`` 写 ``StrictHostKeyChecking true``（OpenSSH

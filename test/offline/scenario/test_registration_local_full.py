@@ -13,7 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src"))
 from transport.middle import BusinessServer
 from register import RegistrationFlow, RegistrationRequest
 from common.registry import load_registry
-from common.paths import registry_path, override_work_dir_for_tests
+from common.paths import init_work_dir, registry_path, work_root
 
 
 class FakeDaemon:
@@ -65,7 +65,7 @@ class FakeDaemon:
 
 class TestLocalRegistrationScenario(unittest.TestCase):
     def test_six_step_registration_then_business_use(self):
-        wd = override_work_dir_for_tests(Path(tempfile.mkdtemp(prefix="vb-")))
+        wd = work_root()
         root = Path(tempfile.mkdtemp(prefix="vb-"))
         # Registration probes the port BEFORE the daemon exists: the daemon
         # binds it later, between deploy (step 4) and verify (step 5).
@@ -97,7 +97,7 @@ class TestLocalRegistrationScenario(unittest.TestCase):
             state = flow.commit()
             self.assertEqual(state.stage, "committed", str(state.errors))
 
-            server = BusinessServer(wd)
+            server = BusinessServer()
             r = server.execute_skill("1+1", token="tok-local")
             self.assertTrue(r.ok)
             self.assertEqual(r.output, "2")

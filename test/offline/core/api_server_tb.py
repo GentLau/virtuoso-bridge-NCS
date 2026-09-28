@@ -1,3 +1,15 @@
+# === TB 注释头（规范见 test/docs/写TB规范.md §0）=====================
+# 作者: 设计/Codex
+# 最后改动: 2026-09-28 12:04
+# 依赖: 无
+# =====================================================================
+# 六步流程（按 test/docs/写TB规范.md §1–§6）：
+# §1 环境检查：离线本地，无需远端环境 → 跳过；本机前置见临时 server/stub 启动。
+# §2 构建：临时 work root + local registry + daemon stub + 生产 HTTP face。
+# §3 最终检查：先验 /health、/help、注册操作表，再执行请求。
+# §4 执行：结构错误、basic 六接口、5xx、并发/准入请求。
+# §5 比对：状态码、响应壳、marker、文件内容、计数逐项比对。
+# §6 重复/收尾：多请求/并发重复；临时目录 finally 回收，--out 留证据。
 """Top-layer HTTP TB (spec 顶层): dispatch shell, status codes, isolation.
 
 Starts the real ``server.api_server`` against a local-mode token with an
@@ -7,8 +19,8 @@ in-process daemon stub, then drives it over HTTP:
 * structural failures are 4xx and business failures are 2xx ``ok=false``;
 * an unexpected exception is 5xx, is not leaked as a stack trace, and does not
   stop the server (next request still works);
-* a full ``demo.pipeline.run`` (upload -> skill -> command -> download) succeeds
-  and the token travels unchanged to the middle (never echoed back);
+* the production ``basic`` operations travel through the HTTP face and the
+  token reaches the middle unchanged (never echoed back);
 * the dispatch module imports no transport/socket/subprocess code (顶层 §2.4).
 
 Run with::
@@ -41,12 +53,13 @@ from server.api_server import (  # noqa: E402
     CONFIG_FILENAME,
     DEFAULT_MAX_INFLIGHT,
     build_server,
-    load_business_thread_pool_size,
+    pool_size_from_snapshot,
     register_packages,
 )
 from transport.middle import BusinessServer  # noqa: E402
 from common.registry import UserEntry, load_registry  # noqa: E402
-from common.paths import registry_path, override_work_dir_for_tests  # noqa: E402
+from common import config as config_base  # noqa: E402
+from common.paths import init_work_dir, registry_path  # noqa: E402
 
 
 class ProbeFailure(AssertionError):
@@ -136,8 +149,10 @@ def main() -> int:
     parser.add_argument("--out", default="")
     args = parser.parse_args()
 
+    # 六步 §1–§3：本 TB 不需要远端环境；先在临时 work root 内组装
+    # 生产 HTTP face、daemon stub 和空注册表，再做前置 health/help 检查。
     work_dir = Path(tempfile.mkdtemp(prefix="vb-api-tb-"))
-    override_work_dir_for_tests(work_dir)
+    init_work_dir(work_dir)
     registry = load_registry(registry_path())
     token = f"tok-api-{uuid.uuid4().hex[:8]}"
     daemon_port = _free_port()
@@ -151,7 +166,7 @@ def main() -> int:
 
     stub = _DaemonStub(daemon_port, token)
     stub.start()
-    middle = BusinessServer(work_dir)
+    middle = BusinessServer()
 
     errors = register_packages()
     if errors:
@@ -202,7 +217,6 @@ def main() -> int:
         required = {
             "basic.skill.execute", "basic.command.run", "basic.file.upload",
             "basic.file.download", "basic.gui.run", "basic.spectre.run",
-            "demo.pipeline.run", "demo.parallel.probe", "virtuoso.netlist.import",
         }
         if not required <= ops:
             raise ProbeFailure(f"operations listing incomplete: {sorted(required - ops)}")
@@ -215,14 +229,14 @@ def main() -> int:
         status, body = _post(base, {"token": token})
         if status != 400 or "operation" not in str(body.get("error")):
             raise ProbeFailure(f"missing operation must be 400: {status} {body}")
-        status, body = _post(base, {"operation": "demo.parallel.probe"})
+        status, body = _post(base, {"operation": "basic.command.run"})
         if status != 400 or "token" not in str(body.get("error")):
             raise ProbeFailure(f"missing token must be 400: {status} {body}")
         status, body = _post(base, {"operation": "nope.nope.nope", "token": token})
         if status != 404:
             raise ProbeFailure(f"unknown operation must be 404: {status} {body}")
-        status, body = _post(base, {"operation": "demo.parallel.probe", "token": token,
-                                    "commands": "not-a-list"})
+        status, body = _post(base, {"operation": "basic.command.run", "token": token,
+                                    "cmd": ["not-a-string"]})
         if status != 400:
             raise ProbeFailure(f"bad field type must be 400: {status} {body}")
         status, body = _post(base, {"operation": "basic.command.run", "token": token})
@@ -270,40 +284,12 @@ def main() -> int:
                 raise ProbeFailure(f"{operation} failed: {status} {json.dumps(body)[:200]}")
         results["basic_package"] = "skill/command/upload/download/gui/spectre ok"
 
-        # -- business success over HTTP (upload -> skill -> command -> download)
-        local_in = work_dir / "in.txt"
-        local_in.write_text("payload", encoding="utf-8")
-        local_out = work_dir / "out.txt"
-        marker = f"API-{uuid.uuid4().hex[:8]}"
-        payload = {
-            "operation": "demo.pipeline.run",
-            "token": token,
-            "local_input": str(local_in),
-            "remote_input": str(work_dir / "root" / "file" / "in.txt"),
-            "skill_code": f'strcat("{marker}")',
-            "command": f"echo {marker}",
-            "remote_output": str(work_dir / "root" / "file" / "in.txt"),
-            "local_output": str(local_out),
-        }
-        status, body = _post(base, payload)
-        if status != 200 or body.get("ok") is not True:
-            raise ProbeFailure(f"pipeline operation failed: {status} {json.dumps(body)[:300]}")
-        steps = body["data"]["steps"]
-        if [step["name"] for step in steps] != ["upload", "skill", "command", "download"]:
-            raise ProbeFailure(f"unexpected step trace: {steps}")
-        if local_out.read_text(encoding="utf-8") != "payload":
-            raise ProbeFailure("downloaded payload differs")
-        if marker not in json.dumps(steps):
-            raise ProbeFailure("skill/command markers missing from the step trace")
-        if token in json.dumps(body):
-            raise ProbeFailure("the top layer echoed the token back")
-        if token not in stub.seen_tokens:
-            raise ProbeFailure("token did not reach the middle layer unchanged")
-        results["pipeline"] = {"steps": len(steps), "echoed_token": False}
-
         # -- business failure is 2xx ok=false with step trace ------------------
-        failing = dict(payload, local_input=str(work_dir / "missing.txt"))
-        status, body = _post(base, failing)
+        status, body = _post(base, {
+            "operation": "basic.file.upload", "token": token,
+            "local_path": str(work_dir / "missing.txt"),
+            "remote_path": str(work_dir / "root" / "file" / "missing.txt"),
+        })
         if status != 200 or body.get("ok") is not False or not body.get("error"):
             raise ProbeFailure(f"business failure must be 2xx ok=false: {status} {body}")
         if body["data"] is None or not body["data"].get("steps"):
@@ -316,8 +302,8 @@ def main() -> int:
             raise ProbeFailure(f"unexpected exception must be 500: {status} {body}")
         if "Traceback" in json.dumps(body):
             raise ProbeFailure("stack trace leaked to the client")
-        status, body = _post(base, {"operation": "demo.parallel.probe", "token": token,
-                                    "commands": [f"echo {marker}"]})
+        status, body = _post(base, {"operation": "basic.command.run", "token": token,
+                                    "cmd": f"echo {marker}"})
         if status != 200 or body.get("ok") is not True:
             raise ProbeFailure(f"server did not survive the 5xx path: {status} {body}")
         results["error_isolation"] = "500 then next request ok"
@@ -327,8 +313,8 @@ def main() -> int:
         lock = threading.Lock()
 
         def one() -> None:
-            status, body = _post(base, {"operation": "demo.parallel.probe", "token": token,
-                                        "commands": [f"echo {marker}"]})
+            status, body = _post(base, {"operation": "basic.command.run", "token": token,
+                                        "cmd": f"echo {marker}"})
             with lock:
                 outcomes.append(status == 200 and body.get("ok") is True)
 
@@ -360,9 +346,6 @@ def main() -> int:
             ("pyapi.packages.basic", {
                 "basic.skill.execute", "basic.command.run", "basic.file.upload",
                 "basic.file.download", "basic.gui.run", "basic.spectre.run"}),
-            ("pyapi.packages.demo", {
-                "demo.pipeline.run", "demo.parallel.probe", "virtuoso.netlist.import",
-                "demo.paths.facts"}),
         ):
             module = __import__(module_name, fromlist=["*"])
             if not hasattr(module, "Package") or not hasattr(module, "OPERATIONS"):
@@ -370,12 +353,12 @@ def main() -> int:
             declared = {entry[0] for entry in module.OPERATIONS}
             if declared != expected:
                 raise ProbeFailure(f"{module_name} metadata mismatch: {sorted(declared)}")
-        results["package_metadata"] = "basic(6) + demo(3) operations declared"
+        results["package_metadata"] = "basic(6) operations declared"
 
         # duplicate operation registration must be a startup error (顶层 §2.1)
         try:
             dispatch_module.register_operation(
-                "demo.pipeline.run", object, "run", dict
+                "basic.command.run", object, "run", dict
             )
         except ValueError as exc:
             results["duplicate_registration"] = f"startup error: {exc}"
@@ -388,14 +371,20 @@ def main() -> int:
         config_path = work_dir / CONFIG_FILENAME
         config_path.write_text(json.dumps({"business_thread_pool_size": 7}),
                                encoding="utf-8")
-        if load_business_thread_pool_size(config_path) != 7:
+        if pool_size_from_snapshot(
+            config_base.load_config_file(config_path)
+        ) != 7:
             raise ProbeFailure("config.json business_thread_pool_size was not honoured")
         config_path.write_text(json.dumps({"business_thread_pool_size": 0}),
                                encoding="utf-8")
-        if load_business_thread_pool_size(config_path) != DEFAULT_MAX_INFLIGHT:
+        if pool_size_from_snapshot(
+            config_base.load_config_file(config_path)
+        ) != DEFAULT_MAX_INFLIGHT:
             raise ProbeFailure("invalid pool size must fall back to the default")
         config_path.write_text("{not json", encoding="utf-8")
-        if load_business_thread_pool_size(config_path) != DEFAULT_MAX_INFLIGHT:
+        if pool_size_from_snapshot(
+            config_base.load_config_file(config_path)
+        ) != DEFAULT_MAX_INFLIGHT:
             raise ProbeFailure("broken config.json must fall back to the default")
         results["config_snapshot"] = {
             "file": CONFIG_FILENAME,
@@ -416,21 +405,6 @@ def main() -> int:
         if not hasattr(first_arg, "execute_skill"):
             raise ProbeFailure("the single constructor argument is not the Middle")
         results["ctor_contract"] = {"arguments": 1, "argument": type(first_arg).__name__}
-
-        # -- 上层业务包直接读 common 基座拿本机目录（经顶层 HTTP 返回）------------
-        status, body = _post(base, {"operation": "demo.paths.facts", "token": token})
-        if status != 200 or body.get("ok") is not True:
-            raise ProbeFailure(f"demo.paths.facts failed: {status} {body}")
-        facts = body["data"]
-        if facts.get("work_root") != str(work_dir):
-            raise ProbeFailure(f"business package did not read the common base: {facts}")
-        for key in ("temp_dir", "log_dir", "artifact_dir"):
-            if not Path(facts.get(key) or "").is_dir():
-                raise ProbeFailure(f"{key} not a directory: {facts}")
-        results["upper_layer_paths"] = {
-            "work_root_matches": True,
-            "temp_dir": facts["temp_dir"],
-        }
 
         class _SlowPackage:
             def __init__(self, _middle) -> None:

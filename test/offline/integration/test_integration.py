@@ -20,7 +20,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src"))
 from pyapi.models import ExecutionStatus
 from transport.middle import BusinessServer
 from common.registry import UserEntry, load_registry
-from common.paths import registry_path, override_work_dir_for_tests
+from common.paths import init_work_dir, registry_path, work_root
 
 STX = "\x02"
 NAK = "\x15"
@@ -70,7 +70,7 @@ class FakeDaemon:
 
 class TestIntegration(unittest.TestCase):
     def test_skill_end_to_end_fake_daemon(self):
-        wd = override_work_dir_for_tests(Path(tempfile.mkdtemp(prefix="vb-")))
+        wd = work_root()
         fake = FakeDaemon(token="tok-1")
         try:
             reg = load_registry(registry_path())
@@ -79,7 +79,7 @@ class TestIntegration(unittest.TestCase):
             entry.roles.daemon.daemon_port = fake.port
             reg.register("alice", entry)
 
-            server = BusinessServer(wd)
+            server = BusinessServer()
             r = server.execute_skill("1+1", token="tok-1")
             self.assertTrue(r.ok)
             self.assertEqual(r.output, "2")
@@ -93,13 +93,13 @@ class TestIntegration(unittest.TestCase):
 
     def test_thread_capacity(self):
         import os
-        wd = override_work_dir_for_tests(Path(tempfile.mkdtemp(prefix="vb-")))
+        wd = work_root()
         reg = load_registry(registry_path())
         entry = UserEntry(token="tok-1", mode="local")
         entry.runtime.thread_pool_size = 1
         reg.register("alice", entry)
 
-        server = BusinessServer(wd)
+        server = BusinessServer()
         slow = f'"{sys.executable}" -c "import time; time.sleep(0.5)"'
         holder = threading.Thread(target=lambda: server.run_command(slow, token="tok-1"))
         holder.start()
@@ -109,13 +109,13 @@ class TestIntegration(unittest.TestCase):
         holder.join()
 
     def test_parallel_local(self):
-        wd = override_work_dir_for_tests(Path(tempfile.mkdtemp(prefix="vb-")))
+        wd = work_root()
         reg = load_registry(registry_path())
         entry = UserEntry(token="tok-1", mode="local")
         entry.runtime.thread_pool_size = 4
         reg.register("alice", entry)
 
-        server = BusinessServer(wd)
+        server = BusinessServer()
         results = {}
         cmd = f'"{sys.executable}" -c "import time; time.sleep(0.5)"'
 

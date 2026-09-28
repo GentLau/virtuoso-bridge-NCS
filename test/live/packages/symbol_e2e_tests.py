@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
-# 作者: 设计/上层开发
-# 最后改动: 2026-09-28 20:25
+# 作者: 测试/root
+# 最后改动: 2026-09-28 20:23
 # 依赖: 无
 # =======================================================================
 
@@ -182,12 +182,14 @@ def _case_write_create(transport) -> str:
     ]
     written = _value(
         transport, "virtuoso.symbol.write",
-        library=lib, cell=cell, view=view, commands=commands,
+        library=lib, cell=cell, view=view, view_type="schematicSymbol",
+        commands=commands, timeout=120,
     )
     _check(written["applied"] == len(commands), "not all write commands applied")
     value = _value(
         transport, "virtuoso.symbol.read",
-        library=lib, cell=cell, view=view,
+        library=lib, cell=cell, view=view, view_type="schematicSymbol",
+        timeout=120,
     )
     names = {item["name"] for item in value["terms"]}
     _check(names == {"IN", "OUT"}, f"terms after write: {names}")
@@ -294,6 +296,7 @@ def _case_check_and_save(transport, view: str) -> None:
     value = _value(
         transport, "virtuoso.symbol.check_and_save",
         library="schemtest", cell="sym_e2e", view=view,
+        view_type="schematicSymbol", timeout=120,
     )
     _check(value["saved"] is True, "check_and_save did not report saved")
 

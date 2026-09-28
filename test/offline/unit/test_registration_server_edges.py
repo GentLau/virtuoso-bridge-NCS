@@ -15,6 +15,7 @@ import json
 import socket
 import sys
 import tempfile
+import time
 import threading
 import types
 import unittest
@@ -26,7 +27,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src"))
 import register.server as register_server
 from register.server import RegistrationHandler, RegistrationServer
 from common.registry import UserEntry, load_registry
-from common.paths import registry_path, override_work_dir_for_tests
+from common.paths import registry_path, work_root
 from _ssh_cred import make_credential as _make_credential
 
 #: Same throwaway credential as ``test_registration_server.py``; the module
@@ -145,9 +146,7 @@ class _EdgeBase(unittest.TestCase):
         register_server._ADMIN_TOKEN_HASH = hashlib.sha256(
             _ADMIN_TOKEN.encode("utf-8")
         ).hexdigest()
-        self.wd = override_work_dir_for_tests(
-            Path(tempfile.mkdtemp(prefix="vb-"))
-        )
+        self.wd = work_root()
         self.registry = load_registry(registry_path())
         self._servers: list[_ServerThread] = []
 
@@ -678,6 +677,7 @@ class TestBugReportEdges(_EdgeBase):
 
     def test_bug_report_write_failure_is_500_and_leaves_no_temp(self):
         srv = self.start()
+        started_at = time.time() - 1.0
         body = json.dumps({"token": "tok-bug-edge", "error": "x"}).encode()
         with mock.patch.object(
             register_server.os, "replace", side_effect=OSError("disk full")
@@ -685,8 +685,9 @@ class TestBugReportEdges(_EdgeBase):
             status, raw = srv.request_raw("POST", "/api/bug", body)
         self.assertEqual(status, 500, raw)
         self.assertIn("failed to record bug report", raw)
-        leftovers = list((Path(self.wd) / "log" / "bug_reports").glob("*.tmp"))
-        self.assertEqual(leftovers, [])
+        # 共享 work root：只断言"本次调用没有留下新的 .tmp"（别的用例的残留不算）
+        leftovers = sorted((Path(self.wd) / "log" / "bug_reports").glob("*.tmp"))
+        self.assertEqual([p for p in leftovers if p.stat().st_mtime >= started_at], [])
 
     def test_bug_report_cleanup_failure_still_returns_500(self):
         srv = self.start()

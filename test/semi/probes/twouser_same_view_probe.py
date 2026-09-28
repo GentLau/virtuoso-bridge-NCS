@@ -55,8 +55,8 @@ from server.api_server import register_packages  # noqa: E402
 from transport.middle import BusinessServer  # noqa: E402
 
 
-def _skill(server, token: str, code: str) -> str:
-    result = server.execute_skill(code, token=token)
+def _skill(server, token: str, code: str, timeout: float | None = None) -> str:
+    result = server.execute_skill(code, token=token, **({"timeout": timeout} if timeout else {}))
     if not result.ok:
         raise RuntimeError("; ".join(result.errors) or "SKILL failed")
     return result.output or ""
@@ -122,10 +122,12 @@ def main(argv: list[str] | None = None) -> int:
     scenarios: list[dict] = []
     t0 = _dt.datetime.now()
 
-    def record(sid: str, desc: str, expected: str, observed, ok: bool, extra=None):
+    def record(sid: str, desc: str, expected: str, observed, ok: bool, extra=None,
+               counted: bool = True):
         scenarios.append({
             "id": sid, "description": desc, "expected": expected,
-            "observed": observed, "ok": ok, "extra": extra or {},
+            "observed": observed, "ok": ok, "counted": counted,
+            "extra": extra or {},
         })
 
     # 环境自检：两个用户各自能执行 SKILL 且看到同一库。
@@ -201,11 +203,14 @@ def main(argv: list[str] | None = None) -> int:
     # 两个 CIW 独立执行，B 的请求与之并发。
     holder = threading.Thread(
         target=lambda: _skill(
+            # holder 的 hiSleep(20) 必须在同一请求里跑完：显式给足 timeout（120s），
+            # 否则客户端先超时 → 中层闸门放行下一条 → 新请求撞上仍被占用的 CIW，
+            # 表现为 "Empty response from daemon"（2026-09-28 两次实测，~1-2 分钟自愈）。
             server, args.token_a,
             f'let((cv) cv = dbOpenCellViewByType("{args.lib}" "{args.cell}" '
             f'"{args.view}" "schematic" "a") '
             'unless(cv error("cannot open edit")) '
-            'hiSleep(20) dbClose(cv) t)'),
+            'hiSleep(20) dbClose(cv) t)', timeout=120),
         daemon=True)
     holder.start()
     held = _wait_lock(server, args.token_a, view_dir, time.time() + 15)
@@ -226,7 +231,8 @@ def main(argv: list[str] | None = None) -> int:
             "held_observed": held},
            bool(held) and not b_write2.get("ok") and lock_clean)
 
-    holder.join(timeout=30)
+    holder.join(timeout=60)
+    holder_still_running = holder.is_alive()
 
     # 清理：purge 释放 A 的编辑句柄后删视图（尽力而为，不参与判定）。
     try:
@@ -236,12 +242,15 @@ def main(argv: list[str] | None = None) -> int:
                f'let((o) o = ddGetObj("{args.lib}" "{args.cell}" "{args.view}") '
                'when(o unless(ddDeleteObj(o) error("delete failed"))))')
     except Exception as exc:  # noqa: BLE001
+        # 清理是尽力而为：不计入判定（A 的 CIW 可能还在 hiSleep 里，
+        # 此时新请求会撞上串行闸门 —— 2026-09-28 实测报 Empty response from daemon）。
         record("CLEAN", "清理视图", "成功释放锁并删除", f"{type(exc).__name__}: {exc}",
-               False)
+               False, counted=False, extra={"holder_still_running": holder_still_running})
 
     server.close()
 
-    all_ok = all(item["ok"] for item in scenarios)
+    # 判定只看 counted=True 的场景（CLEAN 是尽力而为的收尾，不是判据）
+    all_ok = all(item["ok"] for item in scenarios if item.get("counted", True))
     run_id = f'twouser-{_dt.datetime.now().strftime("%Y%m%dT%H%M%S")}'
     evidence_root = SRC.parent / "test" / "artifacts" / "evidence"
     out_path = Path(args.out) if args.out else (

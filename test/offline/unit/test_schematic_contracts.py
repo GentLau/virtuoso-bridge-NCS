@@ -14,6 +14,8 @@ from __future__ import annotations
 
 import unittest
 
+import pytest
+
 from pyapi.models import ExecutionStatus, VirtuosoResult
 from pyapi.packages import schematic as S
 
@@ -104,6 +106,26 @@ class TestValidators(unittest.TestCase):
         self.assertIn("x~>bBox", S._shape_filter_expr({"region": [0, 0, 1, 1]}))
         with self.assertRaises(ValueError):
             S._shape_filter_expr({"names": ["A"]})
+
+    @pytest.mark.xfail(strict=True,
+                       reason="P-082: region 两点口径未落地（实现只收四元组）")
+    def test_region_filter_uses_two_points_per_p074_spec(self):
+        """P-082（钉住，修复前 xfail）：region 必须是对角两点 [[x,y],[x,y]]。
+
+        spec 2-schematic §1.3（P-074 定版）：「区域/矩形：region/bbox 一律对角两点
+        [pos0, pos1]（read 与 write 同形，**不再用四元组**）」。
+        实测（2026-09-28）：两点形式抛裸 TypeError（float(list)），四元组反而被接受 ——
+        与 layout `_bbox`（已按两点实现）不一致。修复后本用例转绿：
+        两点可用、四元组被显式拒绝（ValueError）。
+        """
+        expr = S._instance_filter_expr({"region": [[0, 0], [1, 1]]})
+        self.assertIn("xCoord", expr)
+        with self.assertRaises(ValueError):
+            S._instance_filter_expr({"region": [0, 0, 1, 1]})
+        shape = S._shape_filter_expr({"region": [[0, 0], [1, 1]]})
+        self.assertIn("bBox", shape)
+        with self.assertRaises(ValueError):
+            S._shape_filter_expr({"region": [0, 0, 1, 1]})
 
     def test_point_str_formats_pairs(self):
         self.assertEqual(S._point_str([[0, 1], [2, 3]]), "list(0:1 2:3)")
@@ -219,6 +241,34 @@ class TestAtomicSkill(unittest.TestCase):
         props = S._atomic_skill("set_wire_properties", {
             "points": [[0, 0], [1, 0]], "width": 0.2})
         self.assertIn("__obj~>width", props)
+
+    @pytest.mark.xfail(strict=True,
+                       reason="P-078: place_wire 样式参数拼接重复，未修复")
+    def test_wire_style_arguments_exact(self):
+        """P-078（钉住，修复前 xfail）：place_wire 的样式参数只能拼一次。
+
+        真机实测（2026-09-28，`test/semi/probes/schematic_wire_style_probe.py`）：
+        旧拼接把 width/color/line_style 追加了两遍 ——
+        width 单参数时 `schCreateWire(... 0.1 0.1 nil)` 会**静默建出 path 而非 wire**
+        （`schematic.read` 完全看不到）；带 color 时直接
+        `too many arguments (at most 9 expected, 10 given)`。
+
+        期望形状（官方签名 cv entry route points xSp ySp width [color] [lineStyle]）：
+        每个实参恰好出现一次。修复 P-078 后本用例必须转绿，且不得改判据。
+        """
+        pts = [[0, 0], [1, 0]]
+        width_only = S._atomic_skill("place_wire", {"points": pts, "width": 0.1})
+        self.assertEqual(1, width_only.count("0.1"), width_only)
+        self.assertEqual(
+            'schCreateWire(vbSchemCv "route" "full" list(0:0 1:0) 0 0 0.1)',
+            width_only)
+        styled = S._atomic_skill("place_wire", {
+            "points": pts, "width": 0.1, "color": "red", "line_style": "dashed"})
+        self.assertEqual(1, styled.count('"red"'), styled)
+        self.assertEqual(1, styled.count('"dashed"'), styled)
+        self.assertEqual(
+            'schCreateWire(vbSchemCv "route" "full" list(0:0 1:0) 0 0 0.1 "red" "dashed")',
+            styled)
 
     def test_label_ops(self):
         placed = S._atomic_skill("place_label", {"text": "VIN", "pos": [0, 0]})

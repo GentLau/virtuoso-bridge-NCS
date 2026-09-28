@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
-# 作者: 设计/上层开发
-# 最后改动: 2026-09-28 22:40
+# 作者: 测试/root
+# 最后改动: 2026-09-28 20:23
 # 依赖: 无
 # =======================================================================
 # 六步流程（test/docs/写TB规范.md §1）：
@@ -95,6 +95,15 @@ def _case_license(transport) -> None:
     value = _value(transport, "spectre.check_license")
     _check(value.get("version"), f"version missing: {value}")
     _check(value.get("bin"), f"bin missing: {value}")
+    # 显式 spectre_bin：与自动探测同源；错路径必须结构化失败
+    explicit = _value(transport, "spectre.check_license",
+                      spectre_bin=value["bin"], timeout=60)
+    _check(explicit.get("bin") == value["bin"],
+           f"explicit spectre_bin mismatch: {explicit}")
+    bad = transport.call({
+        "operation": "spectre.check_license", "token": TOKEN,
+        "spectre_bin": "/no/such/spectre-binary", "timeout": 60})
+    _check(not bad.get("ok"), f"bad spectre_bin must fail: {bad}")
 
 
 def _case_run_auto(transport) -> None:
@@ -122,13 +131,17 @@ def _case_run_raw_and_read(transport) -> None:
     run_dir = (run.get("value") or {}).get("run_dir")
     _check(run_dir, f"run_dir missing: {run}")
     try:
+        out_dir = Path(WORK_DIR) / "spectre_e2e" / "read_out"
+        out_dir.mkdir(parents=True, exist_ok=True)
         read = _value(
             transport, "spectre.read_results",
             source=f"{run_dir}/tb.raw", analysis="all",
+            output_dir=str(out_dir), timeout=120,
         )
         _check(read.get("kind") == "raw", f"kind: {read}")
         signals = set(read.get("signals", []))
         _check({"time", "OUT"} <= signals, f"signals: {signals}")
+        _check(any(out_dir.iterdir()), f"output_dir must receive files: {out_dir}")
     finally:
         _op(
             transport, "basic.spectre.run",

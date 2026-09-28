@@ -1,0 +1,5430 @@
+[
+ {
+  "id": "schematic#004",
+  "kind": "clause",
+  "section": "上层业务包：schematic",
+  "line": 6,
+  "text": "> Supersedes：Draft v3（坐标口径再收口：**单点一律 `pos`**，弃用 `xy`，**不拆成两个字段**；见 §1.3）",
+  "doc": "上层/2-schematic.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "schematic#006",
+  "kind": "clause",
+  "section": "1. 业务操作",
+  "line": 11,
+  "text": "核心只有读和写。写是按对象对称的原子操作：instance / wire / label / pin 各有 place、delete、rename、set。net 是 label/pin 的派生对象，不做操作。",
+  "doc": "上层/2-schematic.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "schematic#007",
+  "kind": "table-row",
+  "section": "1.1 读操作（不改变业务服务器状态）",
+  "line": 15,
+  "text": "| 操作名 | 说明 | 步骤摘要 | 接口 |",
+  "doc": "上层/2-schematic.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "schematic#009",
+  "kind": "table-row",
+  "section": "1.1 读操作（不改变业务服务器状态）",
+  "line": 17,
+  "text": "| read | `focus` 可选，可组合；不填=全部；可带实例过滤与参数白名单 | 开只读 → 按 focus 执行对应 SKILL 段 → 解析 | S |",
+  "doc": "上层/2-schematic.md",
+  "tokens": [
+   "focus"
+  ],
+  "hits": {
+   "focus": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/offline/unit/test_verilog_contracts.py",
+    "test/semi/probes/shared_cdf_pollution_probe.py",
+    "test/semi/probes/symbol_generate_hierarchy_handle_probe.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/layout_suite_p044_workaround_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/live/packages/verilog_e2e_tests.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "schematic#010",
+  "kind": "table-row",
+  "section": "1.1 读操作（不改变业务服务器状态）",
+  "line": 18,
+  "text": "| screenshot | 原理图截图：默认 `lib/cell/view`，可选 `window_id`；格式 PNG | 找/开窗口 → hiWindowSaveImage → 下载 | S+D |",
+  "doc": "上层/2-schematic.md",
+  "tokens": [
+   "window_id"
+  ],
+  "hits": {
+   "window_id": [
+    "test/offline/unit/test_gui_package.py",
+    "test/semi/probes/maestro_screenshot_probe.py",
+    "test/semi/probes/_maestro_tb.py",
+    "test/semi/transport/log_matrix_real_tb.py",
+    "test/live/packages/gui_e2e_tests.py",
+    "test/live/packages/infra_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/gui_e2e_tests.py",
+   "test/live/packages/infra_e2e_tests.py",
+   "test/live/packages/maestro_e2e_tests.py",
+   "test/offline/unit/test_gui_package.py",
+   "test/semi/probes/_maestro_tb.py",
+   "test/semi/probes/maestro_screenshot_probe.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "schematic#014",
+  "kind": "clause",
+  "section": "1.1 读操作（不改变业务服务器状态）",
+  "line": 23,
+  "text": "- 可选 `object_filter`：每个对象一个条目，**不写默认 `all`**；条目可以是 `none`（该类一个都不读）。重点是\"只看某实例的端子/位置\"，不把整图读一遍：",
+  "doc": "上层/2-schematic.md",
+  "tokens": [
+   "none",
+   "object_filter"
+  ],
+  "hits": {
+   "none": [
+    "test/offline/integration/test_daemon_handler.py",
+    "test/offline/unit/test_calibre_argv_contracts.py",
+    "test/offline/unit/test_gui_package.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_paramiko.py",
+    "test/offline/unit/test_paramiko_helpers.py"
+   ],
+   "object_filter": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/live/flows/layout_suite_p044_workaround_tb.py",
+    "test/live/packages/layout_e2e_tests.py",
+    "test/live/packages/schematic_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/layout_suite_p044_workaround_tb.py",
+   "test/live/packages/infra_e2e_tests.py",
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/live/packages/spectre_e2e_tests.py",
+   "test/live/packages/spectre_params_e2e_tests.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "schematic#015",
+  "kind": "clause",
+  "section": "1.1 读操作（不改变业务服务器状态）",
+  "line": 24,
+  "text": "- `instance`：`all`（默认）/ `none` / `{\"names\":[...]}` / `{\"region\":[pos0, pos1]}`；",
+  "doc": "上层/2-schematic.md",
+  "tokens": [
+   "instance",
+   "none"
+  ],
+  "hits": {
+   "instance": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/unit/test_daemon_runtime_contracts.py",
+    "test/offline/unit/test_endpoint_budgets.py",
+    "test/offline/unit/test_layout_contracts.py"
+   ],
+   "none": [
+    "test/offline/integration/test_daemon_handler.py",
+    "test/offline/unit/test_calibre_argv_contracts.py",
+    "test/offline/unit/test_gui_package.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_paramiko.py",
+    "test/offline/unit/test_paramiko_helpers.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py",
+   "test/live/flows/multihop_jump_tb.py",
+   "test/live/flows/multiuser_layout_handoff_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "schematic#016",
+  "kind": "clause",
+  "section": "1.1 读操作（不改变业务服务器状态）",
+  "line": 25,
+  "text": "- `wire` / `label` / `pin` / `note`：`all`（默认）/ `none` / `{\"region\":[pos0, pos1]}`。",
+  "doc": "上层/2-schematic.md",
+  "tokens": [
+   "label",
+   "none",
+   "note",
+   "wire"
+  ],
+  "hits": {
+   "label": [
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/unit/test_api_server_main.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_registration_server_edges.py",
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_spectre_util_psf_contracts.py"
+   ],
+   "none": [
+    "test/offline/integration/test_daemon_handler.py",
+    "test/offline/unit/test_calibre_argv_contracts.py",
+    "test/offline/unit/test_gui_package.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_paramiko.py",
+    "test/offline/unit/test_paramiko_helpers.py"
+   ],
+   "note": [
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_registration_server_edges.py",
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_skillref_package.py",
+    "test/offline/unit/test_spectre_util_contracts.py"
+   ],
+   "wire": [
+    "test/offline/integration/test_daemon_handler.py",
+    "test/offline/integration/test_integration.py",
+    "test/offline/unit/test_models_paths.py",
+    "test/offline/unit/test_paramiko_transport_fakes.py",
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_supervisor_internals.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py",
+   "test/live/flows/multihop_jump_tb.py",
+   "test/live/flows/multiuser_layout_handoff_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "schematic#017",
+  "kind": "clause",
+  "section": "1.1 读操作（不改变业务服务器状态）",
+  "line": 26,
+  "text": "- object_filter 只对 `positions`、`params`、不填=全部生效；`focus` 含 `connectivity` 时忽略（连接关系必须全量）。",
+  "doc": "上层/2-schematic.md",
+  "tokens": [
+   "connectivity",
+   "focus",
+   "params",
+   "positions"
+  ],
+  "hits": {
+   "connectivity": [
+    "test/offline/unit/test_register_flow.py",
+    "test/live/e2e/test_business_local_live.py",
+    "test/live/e2e/test_e2e_live.py",
+    "test/live/flows/design_iterate_tb.py",
+    "test/live/flows/serdes_rx_flow_tb.py",
+    "test/live/packages/schematic_e2e_tests.py"
+   ],
+   "focus": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/offline/unit/test_verilog_contracts.py",
+    "test/semi/probes/shared_cdf_pollution_probe.py",
+    "test/semi/probes/symbol_generate_hierarchy_handle_probe.py"
+   ],
+   "params": [
+    "test/offline/unit/test_calibre_package.py",
+    "test/offline/unit/test_maestro_command_exprs.py",
+    "test/offline/unit/test_maestro_util_edges.py",
+    "test/offline/unit/test_middle_contracts.py",
+    "test/offline/unit/test_middle_routing.py",
+    "test/offline/unit/test_paramiko_run_command.py"
+   ],
+   "positions": [
+    "test/semi/probes/symbol_generate_hierarchy_handle_probe.py",
+    "test/semi/probes/symbol_regen_handle_probe.py",
+    "test/semi/probes/twouser_same_view_probe.py",
+    "test/live/packages/schematic_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py",
+   "test/live/flows/s11_full_flow.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "schematic#018",
+  "kind": "clause",
+  "section": "1.1 读操作（不改变业务服务器状态）",
+  "line": 27,
+  "text": "- `screenshot`：目标默认 `lib/cell/view`，可选 `window_id`；可选 `region=[pos0, pos1]`（user units，截前 `hiZoomIn(window, bBox)` 把区域填满窗口）；`toplevel` / `centralWidget` 暴露；`leave_open` 默认关窗；格式固定 PNG；远端存 daemon role root 的 screenshots/；本地存客户端工作目录 artifact/screenshots/。",
+  "doc": "上层/2-schematic.md",
+  "tokens": [
+   "centralWidget",
+   "leave_open",
+   "screenshot",
+   "toplevel",
+   "window_id"
+  ],
+  "hits": {
+   "centralWidget": [
+    "test/semi/probes/symbol_screenshot_probe.py"
+   ],
+   "leave_open": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/live/packages/layout_e2e_tests.py",
+    "test/live/packages/schematic_e2e_tests.py",
+    "test/live/packages/symbol_e2e_tests.py"
+   ],
+   "screenshot": [
+    "test/offline/unit/test_gui_package.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_maestro_package_flow.py",
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/semi/probes/gui_display_probe.py"
+   ],
+   "toplevel": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/semi/probes/maestro_screenshot_probe.py",
+    "test/semi/probes/symbol_screenshot_probe.py",
+    "test/live/packages/maestro_e2e_tests.py"
+   ],
+   "window_id": [
+    "test/offline/unit/test_gui_package.py",
+    "test/semi/probes/maestro_screenshot_probe.py",
+    "test/semi/probes/_maestro_tb.py",
+    "test/semi/transport/log_matrix_real_tb.py",
+    "test/live/packages/gui_e2e_tests.py",
+    "test/live/packages/infra_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/layout_suite_p044_workaround_tb.py",
+   "test/live/packages/gui_e2e_tests.py",
+   "test/live/packages/infra_e2e_tests.py",
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/maestro_e2e_tests.py",
+   "test/live/packages/schematic_e2e_tests.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "schematic#019",
+  "kind": "clause",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 31,
+  "text": "对外只有一个**通用写操作** `write`：调用方一次给一组原子命令，业务包内部组织 SKILL 逐个改写，最后统一 check/save。调用方不会按单个原子调用多次。",
+  "doc": "上层/2-schematic.md",
+  "tokens": [
+   "write"
+  ],
+  "hits": {
+   "write": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "schematic#020",
+  "kind": "table-row",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 33,
+  "text": "| 操作名 | 说明 | 步骤摘要 | 接口 |",
+  "doc": "上层/2-schematic.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "schematic#022",
+  "kind": "table-row",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 35,
+  "text": "| write | 通用写：`lib/cell/view + commands[]` | 开 cellview(a) → 逐命令执行 → schCheck → dbSave | S |",
+  "doc": "上层/2-schematic.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "schematic#023",
+  "kind": "table-row",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 36,
+  "text": "| check_and_save | 对目标显式执行 `schCheck` + `dbSave` | 开 cellview(a) → check → save | S |",
+  "doc": "上层/2-schematic.md",
+  "tokens": [
+   "dbSave",
+   "schCheck"
+  ],
+  "hits": {
+   "dbSave": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/semi/probes/layout_p044_second_write_probe.py",
+    "test/semi/probes/maestro_e2e_probe.py",
+    "test/semi/probes/twouser_same_view_probe.py",
+    "test/live/flows/adc_sar_flow_tb.py",
+    "test/live/flows/multiuser_layout_handoff_tb.py"
+   ],
+   "schCheck": [
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/semi/probes/maestro_e2e_probe.py",
+    "test/shared/runners/audit_atom_coverage.py",
+    "test/shared/runners/make_bug_cards.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/multiuser_layout_handoff_tb.py",
+   "test/live/flows/multiuser_serdes_rx_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/schematic_e2e_tests.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "schematic#024",
+  "kind": "clause",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 38,
+  "text": "`write.commands` 每项 = `{\"op\": 原子名, ...该原子参数}`；业务包按顺序执行并保留每步痕迹。",
+  "doc": "上层/2-schematic.md",
+  "tokens": [
+   "write.commands"
+  ],
+  "hits": {},
+  "files": [],
+  "status": "NONE"
+ },
+ {
+  "id": "schematic#025",
+  "kind": "clause",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 40,
+  "text": "**write 支持的原子命令**：每个原子 = `op` + **索引**（要动哪个对象）+ 附加参数。",
+  "doc": "上层/2-schematic.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "schematic#026",
+  "kind": "table-row",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 42,
+  "text": "| 原子名 | 索引（动哪个） | 附加参数 |",
+  "doc": "上层/2-schematic.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "schematic#028",
+  "kind": "table-row",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 44,
+  "text": "| place_instance | —（新建） | `master_lib, master_cell, master_view=\"symbol\", name, pos, orient=\"R0\"` |",
+  "doc": "上层/2-schematic.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "schematic#029",
+  "kind": "table-row",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 45,
+  "text": "| delete_instance | `name` | — |",
+  "doc": "上层/2-schematic.md",
+  "tokens": [
+   "name"
+  ],
+  "hits": {
+   "name": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "schematic#030",
+  "kind": "table-row",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 46,
+  "text": "| rename_instance | `name` | `new_name` |",
+  "doc": "上层/2-schematic.md",
+  "tokens": [
+   "name",
+   "new_name"
+  ],
+  "hits": {
+   "name": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ],
+   "new_name": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_maestro_command_exprs.py",
+    "test/offline/unit/test_maestro_package_flow.py",
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/semi/probes/maestro_pkg_probe.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "schematic#031",
+  "kind": "table-row",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 47,
+  "text": "| set_instance_params | `name` | `params: dict` |",
+  "doc": "上层/2-schematic.md",
+  "tokens": [
+   "name"
+  ],
+  "hits": {
+   "name": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "schematic#032",
+  "kind": "table-row",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 48,
+  "text": "| set_term_nets | `name` | `term_nets: {term: net}`；内部超短 stub + label；可选样式 `justify/orient/font/height/stub_length`（不传用默认） |",
+  "doc": "上层/2-schematic.md",
+  "tokens": [
+   "name"
+  ],
+  "hits": {
+   "name": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "schematic#033",
+  "kind": "table-row",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 49,
+  "text": "| place_wire | —（新建） | `points: [pos, …]`（≥2 点）；可选 `entry/route/width/color/line_style`（传了才拼，不传用底层默认） |",
+  "doc": "上层/2-schematic.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "schematic#034",
+  "kind": "table-row",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 50,
+  "text": "| delete_wire | `points`（wire 是多个 2 点 line segment，按 `pos` 端点匹配） | — |",
+  "doc": "上层/2-schematic.md",
+  "tokens": [
+   "points"
+  ],
+  "hits": {
+   "points": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/integration/test_supervisor_process.py",
+    "test/offline/unit/test_endpoint_budgets.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_maestro_util.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/maestro_e2e_tests.py",
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/live/packages/symbol_e2e_tests.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "schematic#035",
+  "kind": "table-row",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 51,
+  "text": "| set_wire_properties | `points` | `width?, color?, line_style?` |",
+  "doc": "上层/2-schematic.md",
+  "tokens": [
+   "points"
+  ],
+  "hits": {
+   "points": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/integration/test_supervisor_process.py",
+    "test/offline/unit/test_endpoint_budgets.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_maestro_util.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/maestro_e2e_tests.py",
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/live/packages/symbol_e2e_tests.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "schematic#036",
+  "kind": "table-row",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 52,
+  "text": "| place_label | —（新建） | `text, pos`；可选样式 `justify/orient/font/height/alias`（不传用默认） |",
+  "doc": "上层/2-schematic.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "schematic#037",
+  "kind": "table-row",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 53,
+  "text": "| delete_label | `pos`（可选加 `text` 消歧义） | — |",
+  "doc": "上层/2-schematic.md",
+  "tokens": [
+   "text"
+  ],
+  "hits": {
+   "text": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "schematic#038",
+  "kind": "table-row",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 54,
+  "text": "| rename_label | `pos`（可选加 `old_text` 消歧义） | `new_text` |",
+  "doc": "上层/2-schematic.md",
+  "tokens": [
+   "new_text",
+   "old_text"
+  ],
+  "hits": {
+   "new_text": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/offline/unit/test_verilog_contracts.py",
+    "test/live/packages/layout_e2e_tests.py"
+   ],
+   "old_text": [
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/offline/unit/test_verilog_contracts.py",
+    "test/live/packages/veriloga_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/live/packages/veriloga_e2e_tests.py",
+   "test/offline/unit/test_layout_contracts.py",
+   "test/offline/unit/test_schematic_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "schematic#039",
+  "kind": "table-row",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 55,
+  "text": "| set_label_properties | `pos`（可选加 `text`） | `justify?, orient?, font?, height?` |",
+  "doc": "上层/2-schematic.md",
+  "tokens": [
+   "text"
+  ],
+  "hits": {
+   "text": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "schematic#040",
+  "kind": "table-row",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 56,
+  "text": "| place_pin | —（新建） | `name, pos`；可选 `direction/orient/off_sheet/power_sens/ground_sens/sig_type`（不传用默认/不拼） |",
+  "doc": "上层/2-schematic.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "schematic#041",
+  "kind": "table-row",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 57,
+  "text": "| delete_pin | `pos` | — |",
+  "doc": "上层/2-schematic.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "schematic#042",
+  "kind": "table-row",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 58,
+  "text": "| rename_pin | `pos` | `new_name` |",
+  "doc": "上层/2-schematic.md",
+  "tokens": [
+   "new_name"
+  ],
+  "hits": {
+   "new_name": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_maestro_command_exprs.py",
+    "test/offline/unit/test_maestro_package_flow.py",
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/semi/probes/maestro_pkg_probe.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/packages/cellview_e2e_tests.py",
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/maestro_e2e_tests.py",
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/live/packages/symbol_e2e_tests.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "schematic#043",
+  "kind": "table-row",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 59,
+  "text": "| set_pin_properties | `pos` | `direction?` |",
+  "doc": "上层/2-schematic.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "schematic#044",
+  "kind": "table-row",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 60,
+  "text": "| place_note | —（新建） | `text, pos, justify=\"lowerLeft\", orient=\"R0\", font=\"stick\", height=0.0625, type=\"normalLabel\"` |",
+  "doc": "上层/2-schematic.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "schematic#045",
+  "kind": "table-row",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 61,
+  "text": "| delete_note | `pos`（可选加 `text`） | — |",
+  "doc": "上层/2-schematic.md",
+  "tokens": [
+   "text"
+  ],
+  "hits": {
+   "text": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "schematic#046",
+  "kind": "table-row",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 62,
+  "text": "| rename_note | `pos`（可选加 `old_text`） | `new_text` |",
+  "doc": "上层/2-schematic.md",
+  "tokens": [
+   "new_text",
+   "old_text"
+  ],
+  "hits": {
+   "new_text": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/offline/unit/test_verilog_contracts.py",
+    "test/live/packages/layout_e2e_tests.py"
+   ],
+   "old_text": [
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/offline/unit/test_verilog_contracts.py",
+    "test/live/packages/veriloga_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/live/packages/veriloga_e2e_tests.py",
+   "test/offline/unit/test_layout_contracts.py",
+   "test/offline/unit/test_schematic_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "schematic#047",
+  "kind": "table-row",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 63,
+  "text": "| set_note_properties | `pos`（可选加 `text`） | `justify?, orient?, font?, height?` |",
+  "doc": "上层/2-schematic.md",
+  "tokens": [
+   "text"
+  ],
+  "hits": {
+   "text": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "schematic#048",
+  "kind": "clause",
+  "section": "1.3 坐标口径（P-074 定版）",
+  "line": 67,
+  "text": "- **单点坐标一律一个字段 `pos`**，值是两元素数组 `[x, y]`（user units）：索引（delete/rename/set_*）、新建（place_*）、读回（read 的实例/端子/label/pin/note）**同一口径**；",
+  "doc": "上层/2-schematic.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "schematic#049",
+  "kind": "clause",
+  "section": "1.3 坐标口径（P-074 定版）",
+  "line": 68,
+  "text": "- **不再出现 `xy` 字段**；**不把坐标拆成两个字段**（`{\"x\":…,\"y\":…}` 一律非法）；`pos` 缺字段/形状不对时校验必须报明缺哪个字段（不得裸 `KeyError`）；",
+  "doc": "上层/2-schematic.md",
+  "tokens": [
+   "KeyError"
+  ],
+  "hits": {
+   "KeyError": [
+    "test/offline/unit/test_daemon_runtime_contracts.py",
+    "test/offline/unit/test_registration_server_edges.py",
+    "test/offline/unit/test_registry_more.py"
+   ]
+  },
+  "files": [
+   "test/offline/unit/test_daemon_runtime_contracts.py",
+   "test/offline/unit/test_registration_server_edges.py",
+   "test/offline/unit/test_registry_more.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "schematic#050",
+  "kind": "clause",
+  "section": "1.3 坐标口径（P-074 定版）",
+  "line": 69,
+  "text": "- 多点：`points: [pos, …]`；区域/矩形：`region` / `bbox` 一律**对角两点** `[pos0, pos1]`（read 与 write 同形，**不再用四元组**）；",
+  "doc": "上层/2-schematic.md",
+  "tokens": [
+   "bbox",
+   "region"
+  ],
+  "hits": {
+   "bbox": [
+    "test/offline/unit/test_calibre_parsers.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/semi/probes/gds_then_skill_probe.py",
+    "test/semi/probes/layout_lock_ownership_probe.py",
+    "test/semi/probes/layout_p044_second_write_probe.py"
+   ],
+   "region": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/semi/probes/maestro_screenshot_probe.py",
+    "test/live/packages/layout_e2e_tests.py",
+    "test/live/packages/maestro_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/multiuser_layout_handoff_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/packages/layout_e2e_tests.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "schematic#058",
+  "kind": "clause",
+  "section": "3. 待修订",
+  "line": 85,
+  "text": "跟进时**不做兼容层**（`xy`/拆字段直接判非法），校验错误必须点名缺哪个字段；",
+  "doc": "上层/2-schematic.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "schematic#059",
+  "kind": "clause",
+  "section": "3. 待修订",
+  "line": 86,
+  "text": "- 唯一 name 索引只有 instance；wire=line segment 列表（无 name），label/note/pin 均按 `pos` 索引（可加 text/name 消歧义）；",
+  "doc": "上层/2-schematic.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "schematic#066",
+  "kind": "clause",
+  "section": "3. 待修订",
+  "line": 93,
+  "text": "- `check_and_save` 供显式补一次校验保存；读写目标都必须带 `view`，默认 `\"schematic\"`，不假设只有这个视图名。",
+  "doc": "上层/2-schematic.md",
+  "tokens": [
+   "check_and_save",
+   "view"
+  ],
+  "hits": {
+   "check_and_save": [
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/semi/probes/schematic_pin_ops_probe.py",
+    "test/semi/probes/symbol_pkg_probe.py",
+    "test/live/flows/adc_sar_flow_tb.py"
+   ],
+   "view": [
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/unit/test_cellview_contracts.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_layout_publish_contracts.py",
+    "test/offline/unit/test_maestro_command_exprs.py",
+    "test/offline/unit/test_maestro_package_flow.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py",
+   "test/live/flows/multiuser_layout_handoff_tb.py",
+   "test/live/flows/multiuser_serdes_rx_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "symbol#004",
+  "kind": "clause",
+  "section": "上层业务包：symbol",
+  "line": 6,
+  "text": "> Supersedes：Draft v2（坐标口径对齐 [2-schematic.md §1.3](2-schematic.md)：单点一律 `pos`，弃用 `xy`、不拆字段）",
+  "doc": "上层/3-symbol.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "symbol#010",
+  "kind": "clause",
+  "section": "1. 总述",
+  "line": 17,
+  "text": "- `generate` 可以从 schematic 生成或覆盖 symbol，内部自带临时 view、校验、备份、回滚。",
+  "doc": "上层/3-symbol.md",
+  "tokens": [
+   "generate"
+  ],
+  "hits": {
+   "generate": [
+    "test/offline/unit/test_new_middle.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/offline/unit/test_symbol_generate.py",
+    "test/semi/probes/schematic_pin_ops_probe.py",
+    "test/semi/probes/symbol_generate_hierarchy_handle_probe.py",
+    "test/semi/probes/symbol_http_400_repro.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py",
+   "test/live/flows/multiuser_serdes_rx_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "symbol#011",
+  "kind": "table-row",
+  "section": "2.1 读操作",
+  "line": 23,
+  "text": "| 操作名 | 说明 | 步骤摘要 | 接口 |",
+  "doc": "上层/3-symbol.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "symbol#013",
+  "kind": "table-row",
+  "section": "2.1 读操作",
+  "line": 25,
+  "text": "| `read` | 读 terms/labels/shapes/orders/selection boxes；`focus` 可选 | 只读打开 → 收集 → 解析 | S |",
+  "doc": "上层/3-symbol.md",
+  "tokens": [
+   "focus",
+   "read"
+  ],
+  "hits": {
+   "focus": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/offline/unit/test_verilog_contracts.py",
+    "test/semi/probes/shared_cdf_pollution_probe.py",
+    "test/semi/probes/symbol_generate_hierarchy_handle_probe.py"
+   ],
+   "read": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "symbol#014",
+  "kind": "table-row",
+  "section": "2.1 读操作",
+  "line": 26,
+  "text": "| `screenshot` | symbol 截图；默认 `lib/cell/view`，可选 `window_id` | 找/开窗口 → `hiWindowSaveImage` → 下载 | S+D |",
+  "doc": "上层/3-symbol.md",
+  "tokens": [
+   "hiWindowSaveImage",
+   "screenshot",
+   "window_id"
+  ],
+  "hits": {
+   "hiWindowSaveImage": [
+    "test/offline/unit/test_maestro_package_flow.py",
+    "test/semi/probes/symbol_screenshot_probe.py",
+    "test/live/packages/maestro_e2e_tests.py"
+   ],
+   "screenshot": [
+    "test/offline/unit/test_gui_package.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_maestro_package_flow.py",
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/semi/probes/gui_display_probe.py"
+   ],
+   "window_id": [
+    "test/offline/unit/test_gui_package.py",
+    "test/semi/probes/maestro_screenshot_probe.py",
+    "test/semi/probes/_maestro_tb.py",
+    "test/semi/transport/log_matrix_real_tb.py",
+    "test/live/packages/gui_e2e_tests.py",
+    "test/live/packages/infra_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/layout_suite_p044_workaround_tb.py",
+   "test/live/packages/gui_e2e_tests.py",
+   "test/live/packages/infra_e2e_tests.py",
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/maestro_e2e_tests.py",
+   "test/live/packages/schematic_e2e_tests.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "symbol#016",
+  "kind": "table-row",
+  "section": "2.1 读操作",
+  "line": 30,
+  "text": "| focus | 返回 |",
+  "doc": "上层/3-symbol.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "symbol#018",
+  "kind": "table-row",
+  "section": "2.1 读操作",
+  "line": 32,
+  "text": "| `terms` | 每个 terminal：`name / direction / num_bits / bbox / access_dir` |",
+  "doc": "上层/3-symbol.md",
+  "tokens": [
+   "terms"
+  ],
+  "hits": {
+   "terms": [
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/offline/unit/test_symbol_generate.py",
+    "test/semi/probes/schematic_pin_ops_probe.py",
+    "test/semi/probes/symbol_generate_hierarchy_handle_probe.py",
+    "test/live/flows/adc_sar_flow_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py",
+   "test/live/flows/multiuser_serdes_rx_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/serdes_rx_flow_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "symbol#019",
+  "kind": "table-row",
+  "section": "2.1 读操作",
+  "line": 33,
+  "text": "| `labels` | 每个 label：`text / label_type / pos / layer / purpose / justify / orient / font / height / bbox` |",
+  "doc": "上层/3-symbol.md",
+  "tokens": [
+   "labels"
+  ],
+  "hits": {
+   "labels": [
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/semi/probes/maestro_e2e_probe.py",
+    "test/semi/probes/twouser_same_view_probe.py",
+    "test/live/packages/layout_e2e_tests.py",
+    "test/live/packages/schematic_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/offline/unit/test_schematic_contracts.py",
+   "test/offline/unit/test_symbol_contracts.py",
+   "test/semi/probes/maestro_e2e_probe.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "symbol#020",
+  "kind": "table-row",
+  "section": "2.1 读操作",
+  "line": 34,
+  "text": "| `shapes` | 已知类型 line / rect / polygon / ellipse 及兜底类型（path / arc / inst / textDisplay 等）：`kind / layer / purpose / bbox / points` |",
+  "doc": "上层/3-symbol.md",
+  "tokens": [
+   "shapes"
+  ],
+  "hits": {
+   "shapes": [
+    "test/offline/unit/test_cellview_contracts.py",
+    "test/offline/unit/test_daemon_runtime_contracts.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/offline/unit/test_validation_roles.py",
+    "test/offline/unit/_daemon_harness.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/multiuser_layout_handoff_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/packages/layout_e2e_tests.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "symbol#021",
+  "kind": "table-row",
+  "section": "2.1 读操作",
+  "line": 35,
+  "text": "| `orders` | `pin_order`（权威，`schGetPinOrder`）；`port_order` / `term_order` raw（兼容旧 reader） |",
+  "doc": "上层/3-symbol.md",
+  "tokens": [
+   "orders",
+   "pin_order",
+   "port_order",
+   "schGetPinOrder",
+   "term_order"
+  ],
+  "hits": {
+   "orders": [
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/live/packages/symbol_e2e_tests.py"
+   ],
+   "pin_order": [
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/offline/unit/test_symbol_generate.py",
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/live/packages/symbol_e2e_tests.py",
+    "test/live/packages/veriloga_e2e_tests.py"
+   ],
+   "port_order": [
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/live/flows/lvs_from_schematic_tb.py"
+   ],
+   "term_order": [
+    "test/offline/unit/test_symbol_contracts.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/lvs_from_schematic_tb.py",
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/live/packages/veriloga_e2e_tests.py",
+   "test/offline/unit/test_symbol_contracts.py",
+   "test/offline/unit/test_symbol_generate.py",
+   "test/offline/unit/test_veriloga_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "symbol#022",
+  "kind": "table-row",
+  "section": "2.1 读操作",
+  "line": 36,
+  "text": "| `selection_boxes` | `instance/drawing` 矩形列表 |",
+  "doc": "上层/3-symbol.md",
+  "tokens": [
+   "selection_boxes"
+  ],
+  "hits": {
+   "selection_boxes": [
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/live/packages/symbol_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/offline/unit/test_symbol_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "symbol#023",
+  "kind": "clause",
+  "section": "2.1 读操作",
+  "line": 38,
+  "text": "`read` 默认 `view=\"symbol\"`、`view_type=\"schematicSymbol\"`；必须返回通用 shapes，",
+  "doc": "上层/3-symbol.md",
+  "tokens": [
+   "read"
+  ],
+  "hits": {
+   "read": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "symbol#026",
+  "kind": "clause",
+  "section": "2.1 读操作",
+  "line": 43,
+  "text": "- `view_type` 默认 `schematicSymbol`；格式固定 PNG；",
+  "doc": "上层/3-symbol.md",
+  "tokens": [
+   "schematicSymbol",
+   "view_type"
+  ],
+  "hits": {
+   "schematicSymbol": [
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/semi/probes/maestro_e2e_probe.py",
+    "test/semi/probes/symbol_screenshot_probe.py",
+    "test/live/flows/design_iterate_tb.py",
+    "test/live/flows/serdes_rx_flow_tb.py",
+    "test/live/packages/layout_e2e_tests.py"
+   ],
+   "view_type": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/offline/unit/test_verilog_contracts.py",
+    "test/semi/probes/gds_then_skill_probe.py",
+    "test/semi/probes/schematic_pin_ops_probe.py",
+    "test/semi/probes/shared_cdf_pollution_probe.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/packages/cellview_e2e_tests.py",
+   "test/live/packages/layout_e2e_tests.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "symbol#030",
+  "kind": "table-row",
+  "section": "2.2 写操作",
+  "line": 50,
+  "text": "| 操作名 | 说明 | 步骤摘要 | 接口 |",
+  "doc": "上层/3-symbol.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "symbol#032",
+  "kind": "table-row",
+  "section": "2.2 写操作",
+  "line": 52,
+  "text": "| `write` | 通用写：`lib/cell/view + commands[]` | 开 cellview(a) → 逐命令执行 → `schSymbolToPinList` → `dbSave` | S |",
+  "doc": "上层/3-symbol.md",
+  "tokens": [
+   "dbSave",
+   "schSymbolToPinList",
+   "write"
+  ],
+  "hits": {
+   "dbSave": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/semi/probes/layout_p044_second_write_probe.py",
+    "test/semi/probes/maestro_e2e_probe.py",
+    "test/semi/probes/twouser_same_view_probe.py",
+    "test/live/flows/adc_sar_flow_tb.py",
+    "test/live/flows/multiuser_layout_handoff_tb.py"
+   ],
+   "write": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "symbol#033",
+  "kind": "table-row",
+  "section": "2.2 写操作",
+  "line": 53,
+  "text": "| `check_and_save` | 对目标显式执行 symbol check + `dbSave` | 开 cellview(a) → check → save | S |",
+  "doc": "上层/3-symbol.md",
+  "tokens": [
+   "check_and_save",
+   "dbSave"
+  ],
+  "hits": {
+   "check_and_save": [
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/semi/probes/schematic_pin_ops_probe.py",
+    "test/semi/probes/symbol_pkg_probe.py",
+    "test/live/flows/adc_sar_flow_tb.py"
+   ],
+   "dbSave": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/semi/probes/layout_p044_second_write_probe.py",
+    "test/semi/probes/maestro_e2e_probe.py",
+    "test/semi/probes/twouser_same_view_probe.py",
+    "test/live/flows/adc_sar_flow_tb.py",
+    "test/live/flows/multiuser_layout_handoff_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/multiuser_layout_handoff_tb.py",
+   "test/live/flows/multiuser_serdes_rx_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "symbol#034",
+  "kind": "table-row",
+  "section": "2.2 写操作",
+  "line": 54,
+  "text": "| `generate` | 从 schematic 自动生成 symbol | 取 pin 序 → 临时 view → 校验 → 安装/回滚 | S |",
+  "doc": "上层/3-symbol.md",
+  "tokens": [
+   "generate"
+  ],
+  "hits": {
+   "generate": [
+    "test/offline/unit/test_new_middle.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/offline/unit/test_symbol_generate.py",
+    "test/semi/probes/schematic_pin_ops_probe.py",
+    "test/semi/probes/symbol_generate_hierarchy_handle_probe.py",
+    "test/semi/probes/symbol_http_400_repro.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py",
+   "test/live/flows/multiuser_serdes_rx_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "symbol#038",
+  "kind": "clause",
+  "section": "2.2 写操作",
+  "line": 60,
+  "text": "所以 write 必须先显式探测 view 是否存在，再进入 append 编辑。",
+  "doc": "上层/3-symbol.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "symbol#041",
+  "kind": "clause",
+  "section": "2.2 写操作",
+  "line": 64,
+  "text": "`write.commands` 每项 = `{\"op\": 原子名, ...该原子参数}`；按顺序执行并保留每步痕迹。",
+  "doc": "上层/3-symbol.md",
+  "tokens": [
+   "write.commands"
+  ],
+  "hits": {},
+  "files": [],
+  "status": "NONE"
+ },
+ {
+  "id": "symbol#042",
+  "kind": "table-row",
+  "section": "2.2.1 几何原子",
+  "line": 68,
+  "text": "| 原子名 | 索引 | 附加参数 |",
+  "doc": "上层/3-symbol.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "symbol#044",
+  "kind": "table-row",
+  "section": "2.2.1 几何原子",
+  "line": 70,
+  "text": "| `place_line` | —（新建） | `layer, purpose, points=[pos, …]`（=2 点） |",
+  "doc": "上层/3-symbol.md",
+  "tokens": [
+   "place_line"
+  ],
+  "hits": {
+   "place_line": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/live/packages/layout_e2e_tests.py",
+    "test/live/packages/symbol_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/offline/unit/test_layout_contracts.py",
+   "test/offline/unit/test_schematic_contracts.py",
+   "test/offline/unit/test_symbol_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "symbol#045",
+  "kind": "table-row",
+  "section": "2.2.1 几何原子",
+  "line": 71,
+  "text": "| `place_rect` | —（新建） | `layer, purpose, bbox=[pos0, pos1]`（对角两点，与 read 同形） |",
+  "doc": "上层/3-symbol.md",
+  "tokens": [
+   "place_rect"
+  ],
+  "hits": {
+   "place_rect": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/semi/probes/gds_then_skill_probe.py",
+    "test/semi/probes/layout_lock_ownership_probe.py",
+    "test/semi/probes/layout_p044_second_write_probe.py",
+    "test/live/flows/adc_sar_flow_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/multiuser_layout_handoff_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/packages/layout_e2e_tests.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "symbol#046",
+  "kind": "table-row",
+  "section": "2.2.1 几何原子",
+  "line": 72,
+  "text": "| `place_polygon` | —（新建） | `layer, purpose, points=[pos, …]`（≥3 点） |",
+  "doc": "上层/3-symbol.md",
+  "tokens": [
+   "place_polygon"
+  ],
+  "hits": {
+   "place_polygon": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/live/packages/layout_e2e_tests.py",
+    "test/live/packages/symbol_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/offline/unit/test_layout_contracts.py",
+   "test/offline/unit/test_symbol_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "symbol#047",
+  "kind": "table-row",
+  "section": "2.2.1 几何原子",
+  "line": 73,
+  "text": "| `place_ellipse` | —（新建） | `layer, purpose, bbox=[pos0, pos1]` |",
+  "doc": "上层/3-symbol.md",
+  "tokens": [
+   "place_ellipse"
+  ],
+  "hits": {
+   "place_ellipse": [
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/live/packages/symbol_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/offline/unit/test_symbol_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "symbol#048",
+  "kind": "table-row",
+  "section": "2.2.1 几何原子",
+  "line": 74,
+  "text": "| `delete_shape` | `kind + bbox/points` | — |",
+  "doc": "上层/3-symbol.md",
+  "tokens": [
+   "delete_shape"
+  ],
+  "hits": {
+   "delete_shape": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/live/packages/layout_e2e_tests.py",
+    "test/live/packages/symbol_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/offline/unit/test_layout_contracts.py",
+   "test/offline/unit/test_symbol_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "symbol#049",
+  "kind": "table-row",
+  "section": "2.2.1 几何原子",
+  "line": 75,
+  "text": "| `set_shape_properties` | `kind + bbox/points`（旧值定位） | `layer?, purpose?, new_bbox?, new_points?`（按 kind 取合法项） |",
+  "doc": "上层/3-symbol.md",
+  "tokens": [
+   "set_shape_properties"
+  ],
+  "hits": {
+   "set_shape_properties": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/live/packages/layout_e2e_tests.py",
+    "test/live/packages/symbol_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/offline/unit/test_layout_contracts.py",
+   "test/offline/unit/test_symbol_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "symbol#053",
+  "kind": "clause",
+  "section": "2.2.1 几何原子",
+  "line": 81,
+  "text": "- 新建原子的 `layer/purpose` 必填；不设默认层，避免猜 PDK。",
+  "doc": "上层/3-symbol.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "symbol#055",
+  "kind": "table-row",
+  "section": "2.2.2 标签原子",
+  "line": 87,
+  "text": "| label_kind | 底层 |",
+  "doc": "上层/3-symbol.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "symbol#057",
+  "kind": "table-row",
+  "section": "2.2.2 标签原子",
+  "line": 89,
+  "text": "| `drawing` | `dbCreateLabel` / `dbCreateLabel` + labelType |",
+  "doc": "上层/3-symbol.md",
+  "tokens": [
+   "dbCreateLabel",
+   "drawing"
+  ],
+  "hits": {
+   "dbCreateLabel": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py"
+   ],
+   "drawing": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/semi/probes/gds_then_skill_probe.py",
+    "test/semi/probes/layout_lock_ownership_probe.py",
+    "test/semi/probes/layout_p044_second_write_probe.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/multiuser_layout_handoff_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/packages/layout_e2e_tests.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "symbol#058",
+  "kind": "table-row",
+  "section": "2.2.2 标签原子",
+  "line": 90,
+  "text": "| `pin_name` | `schCreateSymbolLabel` `\"pin name\"` |",
+  "doc": "上层/3-symbol.md",
+  "tokens": [
+   "pin_name",
+   "schCreateSymbolLabel"
+  ],
+  "hits": {
+   "pin_name": [
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/offline/unit/test_symbol_generate.py",
+    "test/live/flows/lvs_from_schematic_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/lvs_from_schematic_tb.py",
+   "test/offline/unit/test_symbol_contracts.py",
+   "test/offline/unit/test_symbol_generate.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "symbol#059",
+  "kind": "table-row",
+  "section": "2.2.2 标签原子",
+  "line": 91,
+  "text": "| `instance` | `schCreateSymbolLabel` `\"instance label\"` |",
+  "doc": "上层/3-symbol.md",
+  "tokens": [
+   "instance",
+   "schCreateSymbolLabel"
+  ],
+  "hits": {
+   "instance": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/unit/test_daemon_runtime_contracts.py",
+    "test/offline/unit/test_endpoint_budgets.py",
+    "test/offline/unit/test_layout_contracts.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py",
+   "test/live/flows/multihop_jump_tb.py",
+   "test/live/flows/multiuser_layout_handoff_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "symbol#060",
+  "kind": "table-row",
+  "section": "2.2.2 标签原子",
+  "line": 92,
+  "text": "| `logical` | `schCreateSymbolLabel` `\"logical label\"` |",
+  "doc": "上层/3-symbol.md",
+  "tokens": [
+   "logical",
+   "schCreateSymbolLabel"
+  ],
+  "hits": {
+   "logical": [
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/live/packages/symbol_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/offline/unit/test_symbol_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "symbol#061",
+  "kind": "table-row",
+  "section": "2.2.2 标签原子",
+  "line": 94,
+  "text": "| 原子名 | 索引 | 附加参数 |",
+  "doc": "上层/3-symbol.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "symbol#063",
+  "kind": "table-row",
+  "section": "2.2.2 标签原子",
+  "line": 96,
+  "text": "| `place_label` | —（新建） | `label_kind, text, pos, layer?, purpose?, justify?, orient?, font?, height?` |",
+  "doc": "上层/3-symbol.md",
+  "tokens": [
+   "place_label"
+  ],
+  "hits": {
+   "place_label": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/semi/probes/twouser_same_view_probe.py",
+    "test/live/flows/adc_sar_flow_tb.py",
+    "test/live/flows/design_iterate_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/schematic_e2e_tests.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "symbol#064",
+  "kind": "table-row",
+  "section": "2.2.2 标签原子",
+  "line": 97,
+  "text": "| `delete_label` | `label_kind + pos`（可加 `text` 消歧） | — |",
+  "doc": "上层/3-symbol.md",
+  "tokens": [
+   "delete_label",
+   "text"
+  ],
+  "hits": {
+   "delete_label": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/live/packages/schematic_e2e_tests.py",
+    "test/live/packages/symbol_e2e_tests.py"
+   ],
+   "text": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "symbol#065",
+  "kind": "table-row",
+  "section": "2.2.2 标签原子",
+  "line": 98,
+  "text": "| `rename_label` | `label_kind + pos`（可加 `old_text`） | `new_text` |",
+  "doc": "上层/3-symbol.md",
+  "tokens": [
+   "new_text",
+   "old_text",
+   "rename_label"
+  ],
+  "hits": {
+   "new_text": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/offline/unit/test_verilog_contracts.py",
+    "test/live/packages/layout_e2e_tests.py"
+   ],
+   "old_text": [
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/offline/unit/test_verilog_contracts.py",
+    "test/live/packages/veriloga_e2e_tests.py"
+   ],
+   "rename_label": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/live/packages/layout_e2e_tests.py",
+    "test/live/packages/schematic_e2e_tests.py",
+    "test/live/packages/symbol_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/live/packages/veriloga_e2e_tests.py",
+   "test/offline/unit/test_layout_contracts.py",
+   "test/offline/unit/test_schematic_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "symbol#066",
+  "kind": "table-row",
+  "section": "2.2.2 标签原子",
+  "line": 99,
+  "text": "| `set_label_properties` | `label_kind + pos`（可加 `text`） | `justify?, orient?, font?, height?`；`drawing` 可额外 `layer?, purpose?` |",
+  "doc": "上层/3-symbol.md",
+  "tokens": [
+   "drawing",
+   "set_label_properties",
+   "text"
+  ],
+  "hits": {
+   "drawing": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/semi/probes/gds_then_skill_probe.py",
+    "test/semi/probes/layout_lock_ownership_probe.py",
+    "test/semi/probes/layout_p044_second_write_probe.py"
+   ],
+   "set_label_properties": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/live/packages/schematic_e2e_tests.py",
+    "test/live/packages/symbol_e2e_tests.py"
+   ],
+   "text": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "symbol#067",
+  "kind": "clause",
+  "section": "2.2.3 引脚原子",
+  "line": 103,
+  "text": "pin 以 **terminal name** 为唯一索引；旧代码 `symbol_create_pin` 本身就以",
+  "doc": "上层/3-symbol.md",
+  "tokens": [
+   "symbol_create_pin"
+  ],
+  "hits": {},
+  "files": [],
+  "status": "NONE"
+ },
+ {
+  "id": "symbol#069",
+  "kind": "table-row",
+  "section": "2.2.3 引脚原子",
+  "line": 106,
+  "text": "| 原子名 | 索引 | 附加参数 |",
+  "doc": "上层/3-symbol.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "symbol#071",
+  "kind": "table-row",
+  "section": "2.2.3 引脚原子",
+  "line": 108,
+  "text": "| `place_pin` | —（新建） | `name, pos, direction=\"inputOutput\", half_size=0.0625, label=True, label_pos?, label_justify?, label_orient?, label_font?, label_height?` |",
+  "doc": "上层/3-symbol.md",
+  "tokens": [
+   "place_pin"
+  ],
+  "hits": {
+   "place_pin": [
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/semi/probes/schematic_pin_ops_probe.py",
+    "test/semi/probes/symbol_generate_hierarchy_handle_probe.py",
+    "test/semi/probes/symbol_regen_handle_probe.py",
+    "test/live/flows/adc_sar_flow_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/multiuser_serdes_rx_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/packages/schematic_e2e_tests.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "symbol#072",
+  "kind": "table-row",
+  "section": "2.2.3 引脚原子",
+  "line": 109,
+  "text": "| `delete_pin` | `name` | — |",
+  "doc": "上层/3-symbol.md",
+  "tokens": [
+   "delete_pin",
+   "name"
+  ],
+  "hits": {
+   "delete_pin": [
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/semi/probes/schematic_pin_ops_probe.py",
+    "test/live/flows/design_iterate_tb.py",
+    "test/live/packages/schematic_e2e_tests.py",
+    "test/live/packages/symbol_e2e_tests.py"
+   ],
+   "name": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "symbol#073",
+  "kind": "table-row",
+  "section": "2.2.3 引脚原子",
+  "line": 110,
+  "text": "| `rename_pin` | `name` | `new_name`（同步 terminal/net/pin 与 pin-name label） |",
+  "doc": "上层/3-symbol.md",
+  "tokens": [
+   "name",
+   "new_name",
+   "rename_pin"
+  ],
+  "hits": {
+   "name": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ],
+   "new_name": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_maestro_command_exprs.py",
+    "test/offline/unit/test_maestro_package_flow.py",
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/semi/probes/maestro_pkg_probe.py"
+   ],
+   "rename_pin": [
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/semi/probes/schematic_pin_ops_probe.py",
+    "test/live/flows/design_iterate_tb.py",
+    "test/live/packages/schematic_e2e_tests.py",
+    "test/live/packages/symbol_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "symbol#074",
+  "kind": "table-row",
+  "section": "2.2.3 引脚原子",
+  "line": 111,
+  "text": "| `set_pin_properties` | `name` | `direction?, access_dir?, label?, label_justify?, label_orient?, label_font?, label_height?` |",
+  "doc": "上层/3-symbol.md",
+  "tokens": [
+   "name",
+   "set_pin_properties"
+  ],
+  "hits": {
+   "name": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ],
+   "set_pin_properties": [
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/semi/probes/schematic_pin_ops_probe.py",
+    "test/live/packages/schematic_e2e_tests.py",
+    "test/live/packages/symbol_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "symbol#075",
+  "kind": "clause",
+  "section": "2.2.3 引脚原子",
+  "line": 113,
+  "text": "`place_pin` 内部顺序：检查 terminal 不存在 → net → term → pin 矩形",
+  "doc": "上层/3-symbol.md",
+  "tokens": [
+   "place_pin"
+  ],
+  "hits": {
+   "place_pin": [
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/semi/probes/schematic_pin_ops_probe.py",
+    "test/semi/probes/symbol_generate_hierarchy_handle_probe.py",
+    "test/semi/probes/symbol_regen_handle_probe.py",
+    "test/live/flows/adc_sar_flow_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/multiuser_serdes_rx_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/packages/schematic_e2e_tests.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "symbol#082",
+  "kind": "clause",
+  "section": "2.2.3 引脚原子",
+  "line": 122,
+  "text": "真机语义（必须遵守）：",
+  "doc": "上层/3-symbol.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "symbol#089",
+  "kind": "table-row",
+  "section": "2.2.4 结构原子",
+  "line": 133,
+  "text": "| 原子名 | 索引 | 附加参数 |",
+  "doc": "上层/3-symbol.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "symbol#091",
+  "kind": "table-row",
+  "section": "2.2.4 结构原子",
+  "line": 135,
+  "text": "| `set_selection_box` | 单例 | `bbox=[pos0, pos1]`（`instance/drawing` 矩形，替换旧框） |",
+  "doc": "上层/3-symbol.md",
+  "tokens": [
+   "set_selection_box"
+  ],
+  "hits": {
+   "set_selection_box": [
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/live/packages/symbol_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/offline/unit/test_symbol_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "symbol#092",
+  "kind": "table-row",
+  "section": "2.2.4 结构原子",
+  "line": 136,
+  "text": "| `set_pin_order` | —（整体） | `term_names=[...]`；底层 `schEditPinOrder`，不是写 `cv~>termOrder` |",
+  "doc": "上层/3-symbol.md",
+  "tokens": [
+   "schEditPinOrder",
+   "set_pin_order"
+  ],
+  "hits": {
+   "set_pin_order": [
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/live/packages/symbol_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/offline/unit/test_symbol_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "symbol#098",
+  "kind": "table-row",
+  "section": "2.3 generate",
+  "line": 149,
+  "text": "| 参数 | 说明 |",
+  "doc": "上层/3-symbol.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "symbol#100",
+  "kind": "table-row",
+  "section": "2.3 generate",
+  "line": 151,
+  "text": "| `lib / cell` | 必填 |",
+  "doc": "上层/3-symbol.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "symbol#101",
+  "kind": "table-row",
+  "section": "2.3 generate",
+  "line": 152,
+  "text": "| `schematic_view` | 默认 `\"schematic\"` |",
+  "doc": "上层/3-symbol.md",
+  "tokens": [
+   "schematic_view"
+  ],
+  "hits": {
+   "schematic_view": [
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/offline/unit/test_symbol_generate.py",
+    "test/semi/probes/schematic_pin_ops_probe.py",
+    "test/semi/probes/symbol_generate_hierarchy_handle_probe.py",
+    "test/semi/probes/symbol_http_400_repro.py",
+    "test/semi/probes/symbol_pkg_probe.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/live/packages/symbol_e2e_tests.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "symbol#102",
+  "kind": "table-row",
+  "section": "2.3 generate",
+  "line": 153,
+  "text": "| `symbol_view` | 默认 `\"symbol\"` |",
+  "doc": "上层/3-symbol.md",
+  "tokens": [
+   "symbol_view"
+  ],
+  "hits": {
+   "symbol_view": [
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/offline/unit/test_symbol_generate.py",
+    "test/semi/probes/schematic_pin_ops_probe.py",
+    "test/semi/probes/symbol_generate_hierarchy_handle_probe.py",
+    "test/semi/probes/symbol_http_400_repro.py",
+    "test/semi/probes/symbol_pkg_probe.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/live/packages/symbol_e2e_tests.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "symbol#103",
+  "kind": "table-row",
+  "section": "2.3 generate",
+  "line": 154,
+  "text": "| `sort_pins` | `None / \"alphanumeric\" / \"geometric\"` |",
+  "doc": "上层/3-symbol.md",
+  "tokens": [
+   "sort_pins"
+  ],
+  "hits": {
+   "sort_pins": [
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/offline/unit/test_symbol_generate.py",
+    "test/live/packages/symbol_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/offline/unit/test_symbol_contracts.py",
+   "test/offline/unit/test_symbol_generate.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "symbol#104",
+  "kind": "table-row",
+  "section": "2.3 generate",
+  "line": 155,
+  "text": "| `overwrite` | 默认 `false` |",
+  "doc": "上层/3-symbol.md",
+  "tokens": [
+   "false",
+   "overwrite"
+  ],
+  "hits": {
+   "false": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/unit/test_daemon_runtime_contracts.py",
+    "test/offline/unit/test_gui_package.py",
+    "test/offline/unit/test_jsonutil.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_layout_publish_contracts.py"
+   ],
+   "overwrite": [
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/unit/test_registry_decoupling.py",
+    "test/offline/unit/test_registry_more.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/offline/unit/test_symbol_generate.py",
+    "test/semi/probes/schematic_pin_ops_probe.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py",
+   "test/live/flows/multiuser_serdes_rx_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "symbol#105",
+  "kind": "table-row",
+  "section": "2.3 generate",
+  "line": 156,
+  "text": "| `timeout` | 可选 |",
+  "doc": "上层/3-symbol.md",
+  "tokens": [
+   "timeout"
+  ],
+  "hits": {
+   "timeout": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "symbol#107",
+  "kind": "clause",
+  "section": "2.3 generate",
+  "line": 160,
+  "text": "1. source/target view 必须不同；",
+  "doc": "上层/3-symbol.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "symbol#113",
+  "kind": "clause",
+  "section": "2.3 generate",
+  "line": 166,
+  "text": "7. 任一步失败尝试回滚；回滚失败保留 backup view 并返回失败；",
+  "doc": "上层/3-symbol.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "symbol#117",
+  "kind": "clause",
+  "section": "2.3 generate",
+  "line": 172,
+  "text": "`schPinListToSymbolGen` 对显式 pin list 也按传入顺序生成，**`sort_pins` 参数保留但不承诺排序效果**。",
+  "doc": "上层/3-symbol.md",
+  "tokens": [
+   "schPinListToSymbolGen",
+   "sort_pins"
+  ],
+  "hits": {
+   "sort_pins": [
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/offline/unit/test_symbol_generate.py",
+    "test/live/packages/symbol_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/offline/unit/test_symbol_contracts.py",
+   "test/offline/unit/test_symbol_generate.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "symbol#118",
+  "kind": "clause",
+  "section": "2.3 generate",
+  "line": 173,
+  "text": "`schPinListToSymbolGen` 会自行 `dbSave`，因此只能用于临时 view（当前实现即如此）。",
+  "doc": "上层/3-symbol.md",
+  "tokens": [
+   "dbSave",
+   "schPinListToSymbolGen"
+  ],
+  "hits": {
+   "dbSave": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/semi/probes/layout_p044_second_write_probe.py",
+    "test/semi/probes/maestro_e2e_probe.py",
+    "test/semi/probes/twouser_same_view_probe.py",
+    "test/live/flows/adc_sar_flow_tb.py",
+    "test/live/flows/multiuser_layout_handoff_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/multiuser_layout_handoff_tb.py",
+   "test/live/flows/multiuser_serdes_rx_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/schematic_e2e_tests.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "symbol#121",
+  "kind": "clause",
+  "section": "3. 不在本版",
+  "line": 180,
+  "text": "- `port_order` / `term_order` 的独立写入原子；",
+  "doc": "上层/3-symbol.md",
+  "tokens": [
+   "port_order",
+   "term_order"
+  ],
+  "hits": {
+   "port_order": [
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/live/flows/lvs_from_schematic_tb.py"
+   ],
+   "term_order": [
+    "test/offline/unit/test_symbol_contracts.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/lvs_from_schematic_tb.py",
+   "test/offline/unit/test_symbol_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "symbol#124",
+  "kind": "clause",
+  "section": "3. 不在本版",
+  "line": 183,
+  "text": "- 移动类原子（`move_shape / move_label / move_pin`）：底层已确认 `dbMoveFig/dbMoveShape` 可用，",
+  "doc": "上层/3-symbol.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "symbol#130",
+  "kind": "clause",
+  "section": "3. 不在本版",
+  "line": 189,
+  "text": "- circle / arc / donut / path 原子；",
+  "doc": "上层/3-symbol.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "symbol#131",
+  "kind": "clause",
+  "section": "3. 不在本版",
+  "line": 190,
+  "text": "- 并发写。",
+  "doc": "上层/3-symbol.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "symbol#132",
+  "kind": "table-row",
+  "section": "4. 真机结论（已闭环）",
+  "line": 194,
+  "text": "| 项 | 结论 |",
+  "doc": "上层/3-symbol.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "symbol#134",
+  "kind": "table-row",
+  "section": "4. 真机结论（已闭环）",
+  "line": 196,
+  "text": "| `set_shape_properties` 可写字段 | line/polygon 的 `points`、rect/ellipse 的 `bBox`、`layerName`/`purpose` 均已真机验证生效 |",
+  "doc": "上层/3-symbol.md",
+  "tokens": [
+   "bBox",
+   "layerName",
+   "points",
+   "purpose",
+   "set_shape_properties"
+  ],
+  "hits": {
+   "bBox": [
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/live/flows/project_flow_tb.py"
+   ],
+   "layerName": [
+    "test/offline/unit/test_symbol_contracts.py"
+   ],
+   "points": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/integration/test_supervisor_process.py",
+    "test/offline/unit/test_endpoint_budgets.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_maestro_util.py"
+   ],
+   "purpose": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/semi/probes/gds_then_skill_probe.py",
+    "test/semi/probes/layout_lock_ownership_probe.py",
+    "test/semi/probes/layout_p044_second_write_probe.py"
+   ],
+   "set_shape_properties": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/live/packages/layout_e2e_tests.py",
+    "test/live/packages/symbol_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/multiuser_layout_handoff_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/s11_inprocess_lvs_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "symbol#135",
+  "kind": "table-row",
+  "section": "4. 真机结论（已闭环）",
+  "line": 197,
+  "text": "| `set_pin_properties` 移动 pin | 本版不支持；`dbMoveFig` 可用，留作扩展 |",
+  "doc": "上层/3-symbol.md",
+  "tokens": [
+   "dbMoveFig",
+   "set_pin_properties"
+  ],
+  "hits": {
+   "set_pin_properties": [
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/semi/probes/schematic_pin_ops_probe.py",
+    "test/live/packages/schematic_e2e_tests.py",
+    "test/live/packages/symbol_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/offline/unit/test_schematic_contracts.py",
+   "test/offline/unit/test_symbol_contracts.py",
+   "test/semi/probes/schematic_pin_ops_probe.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "symbol#136",
+  "kind": "table-row",
+  "section": "4. 真机结论（已闭环）",
+  "line": 198,
+  "text": "| label 索引 | 坐标容差 0.001；`label_kind` 参与消歧，`pin_name` 另外要求 `pin/label` |",
+  "doc": "上层/3-symbol.md",
+  "tokens": [
+   "label_kind",
+   "pin_name"
+  ],
+  "hits": {
+   "label_kind": [
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/live/packages/symbol_e2e_tests.py"
+   ],
+   "pin_name": [
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/offline/unit/test_symbol_generate.py",
+    "test/live/flows/lvs_from_schematic_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/lvs_from_schematic_tb.py",
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/offline/unit/test_symbol_contracts.py",
+   "test/offline/unit/test_symbol_generate.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "symbol#137",
+  "kind": "table-row",
+  "section": "4. 真机结论（已闭环）",
+  "line": 199,
+  "text": "| `rename_pin` 同步 | 不联动：必须显式 `dbRenameNet` + 手工改 pin-name label（已测） |",
+  "doc": "上层/3-symbol.md",
+  "tokens": [
+   "dbRenameNet",
+   "rename_pin"
+  ],
+  "hits": {
+   "dbRenameNet": [
+    "test/offline/unit/test_symbol_contracts.py"
+   ],
+   "rename_pin": [
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/semi/probes/schematic_pin_ops_probe.py",
+    "test/live/flows/design_iterate_tb.py",
+    "test/live/packages/schematic_e2e_tests.py",
+    "test/live/packages/symbol_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/offline/unit/test_schematic_contracts.py",
+   "test/offline/unit/test_symbol_contracts.py",
+   "test/semi/probes/schematic_pin_ops_probe.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "symbol#138",
+  "kind": "table-row",
+  "section": "4. 真机结论（已闭环）",
+  "line": 200,
+  "text": "| `schEditPinOrder` | 真机生效，`pin_order` 与 `port_order`/`term_order` 一致 |",
+  "doc": "上层/3-symbol.md",
+  "tokens": [
+   "pin_order",
+   "port_order",
+   "schEditPinOrder",
+   "term_order"
+  ],
+  "hits": {
+   "pin_order": [
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/offline/unit/test_symbol_generate.py",
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/live/packages/symbol_e2e_tests.py",
+    "test/live/packages/veriloga_e2e_tests.py"
+   ],
+   "port_order": [
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/live/flows/lvs_from_schematic_tb.py"
+   ],
+   "term_order": [
+    "test/offline/unit/test_symbol_contracts.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/lvs_from_schematic_tb.py",
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/live/packages/veriloga_e2e_tests.py",
+   "test/offline/unit/test_symbol_contracts.py",
+   "test/offline/unit/test_symbol_generate.py",
+   "test/offline/unit/test_veriloga_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "symbol#139",
+  "kind": "table-row",
+  "section": "4. 真机结论（已闭环）",
+  "line": 201,
+  "text": "| `schCreateSymbolLabel` | `\"pin name\"`/`\"instance label\"`/`\"logical label\"` 可用；`\"device label\"` 在 symbol 里返回 nil（文档与实测不符） |",
+  "doc": "上层/3-symbol.md",
+  "tokens": [
+   "schCreateSymbolLabel"
+  ],
+  "hits": {},
+  "files": [],
+  "status": "NONE"
+ },
+ {
+  "id": "symbol#140",
+  "kind": "table-row",
+  "section": "4. 真机结论（已闭环）",
+  "line": 202,
+  "text": "| `read.shapes` 覆盖 | 已覆盖 line/rect/polygon/ellipse + 兜底 objType（path/arc/inst/textDisplay 等） |",
+  "doc": "上层/3-symbol.md",
+  "tokens": [
+   "read.shapes"
+  ],
+  "hits": {},
+  "files": [],
+  "status": "NONE"
+ },
+ {
+  "id": "symbol#141",
+  "kind": "table-row",
+  "section": "4. 真机结论（已闭环）",
+  "line": 203,
+  "text": "| 截图 | symbol 窗口真机出图；空 symbol 窗口出 1 色黑图（无内容时的正常表现），有内容窗口出 7 色真实图 |",
+  "doc": "上层/3-symbol.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "symbol#142",
+  "kind": "table-row",
+  "section": "4. 真机结论（已闭环）",
+  "line": 204,
+  "text": "| `write` 执行方式 | 逐命令 `execute_skill` + 末尾统一 check/save，保留每步痕迹；**非事务**，失败响应带 `commands applied: k/n` |",
+  "doc": "上层/3-symbol.md",
+  "tokens": [
+   "execute_skill",
+   "write"
+  ],
+  "hits": {
+   "execute_skill": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/integration/test_integration.py",
+    "test/offline/scenario/test_business_local.py",
+    "test/offline/scenario/test_multi_user_isolation.py"
+   ],
+   "write": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#004",
+  "kind": "clause",
+  "section": "上层业务包：layout",
+  "line": 6,
+  "text": "> Supersedes：Draft v4（坐标口径对齐 [2-schematic.md §1.3](2-schematic.md)：单点一律 `pos`，弃用 `xy`、不拆字段）",
+  "doc": "上层/4-layout.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "layout#006",
+  "kind": "clause",
+  "section": "1. 业务操作",
+  "line": 11,
+  "text": "核心是读和写。写是**按对象对称**的原子操作：shape（rect/polygon/path/line）、label、instance、mosaic、via",
+  "doc": "上层/4-layout.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "layout#011",
+  "kind": "clause",
+  "section": "1. 业务操作",
+  "line": 18,
+  "text": "- viewType 固定 `maskLayout`，view 默认 `\"layout\"`；",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "maskLayout"
+  ],
+  "hits": {
+   "maskLayout": [
+    "test/offline/unit/test_cellview_contracts.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/semi/probes/gds_then_skill_probe.py",
+    "test/semi/probes/layout_lock_ownership_probe.py",
+    "test/semi/probes/layout_p044_second_write_probe.py",
+    "test/live/flows/adc_sar_flow_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/multiuser_layout_handoff_tb.py",
+   "test/live/flows/multiuser_serdes_rx_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#015",
+  "kind": "clause",
+  "section": "1. 业务操作",
+  "line": 22,
+  "text": "- 不提供\"按当前选择集\"的写操作（selection 是全局 GUI 状态，不能作业务索引）。",
+  "doc": "上层/4-layout.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "layout#016",
+  "kind": "table-row",
+  "section": "1.1 读操作（不改变业务服务器状态）",
+  "line": 26,
+  "text": "| 操作名 | 说明 | 步骤摘要 | 接口 |",
+  "doc": "上层/4-layout.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "layout#018",
+  "kind": "table-row",
+  "section": "1.1 读操作（不改变业务服务器状态）",
+  "line": 28,
+  "text": "| read | `focus` 可选、可组合；不填=全部；可带区域/对象过滤 | 开只读 → 按 focus 执行对应 SKILL 段 → 解析 | S |",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "focus"
+  ],
+  "hits": {
+   "focus": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/offline/unit/test_verilog_contracts.py",
+    "test/semi/probes/shared_cdf_pollution_probe.py",
+    "test/semi/probes/symbol_generate_hierarchy_handle_probe.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/layout_suite_p044_workaround_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/live/packages/verilog_e2e_tests.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#019",
+  "kind": "table-row",
+  "section": "1.1 读操作（不改变业务服务器状态）",
+  "line": 29,
+  "text": "| screenshot | 版图截图：默认 `lib/cell/view`，可选 `window_id`；格式 PNG | 找/开窗口 → hiWindowSaveImage → 下载 | S+D |",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "window_id"
+  ],
+  "hits": {
+   "window_id": [
+    "test/offline/unit/test_gui_package.py",
+    "test/semi/probes/maestro_screenshot_probe.py",
+    "test/semi/probes/_maestro_tb.py",
+    "test/semi/transport/log_matrix_real_tb.py",
+    "test/live/packages/gui_e2e_tests.py",
+    "test/live/packages/infra_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/gui_e2e_tests.py",
+   "test/live/packages/infra_e2e_tests.py",
+   "test/live/packages/maestro_e2e_tests.py",
+   "test/offline/unit/test_gui_package.py",
+   "test/semi/probes/_maestro_tb.py",
+   "test/semi/probes/maestro_screenshot_probe.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#023",
+  "kind": "clause",
+  "section": "1.1 读操作（不改变业务服务器状态）",
+  "line": 34,
+  "text": "- 可选 `detail`：`geometry`（默认，含坐标与属性）/ `index`（只回 type + LPP，供大版图廉价索引）；",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "detail",
+   "geometry",
+   "index"
+  ],
+  "hits": {
+   "detail": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ],
+   "geometry": [
+    "test/offline/unit/test_calibre_parsers.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/semi/probes/gds_then_skill_probe.py",
+    "test/live/flows/design_iterate_tb.py",
+    "test/live/flows/layout_suite_p044_workaround_tb.py"
+   ],
+   "index": [
+    "test/offline/core/semantics_tb.py",
+    "test/offline/unit/test_maestro_command_exprs.py",
+    "test/offline/unit/test_maestro_package_flow.py",
+    "test/offline/unit/test_registration_mock_server.py",
+    "test/offline/unit/test_registry_more.py",
+    "test/offline/unit/test_spectre_util_contracts.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py",
+   "test/live/flows/multihop_jump_tb.py",
+   "test/live/flows/multiuser_layout_handoff_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#024",
+  "kind": "clause",
+  "section": "1.1 读操作（不改变业务服务器状态）",
+  "line": 35,
+  "text": "- 可选 `object_filter`：每个对象一个条目，**不写默认 `all`**；条目可以是 `none`（该类一个都不读）；",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "none",
+   "object_filter"
+  ],
+  "hits": {
+   "none": [
+    "test/offline/integration/test_daemon_handler.py",
+    "test/offline/unit/test_calibre_argv_contracts.py",
+    "test/offline/unit/test_gui_package.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_paramiko.py",
+    "test/offline/unit/test_paramiko_helpers.py"
+   ],
+   "object_filter": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/live/flows/layout_suite_p044_workaround_tb.py",
+    "test/live/packages/layout_e2e_tests.py",
+    "test/live/packages/schematic_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/layout_suite_p044_workaround_tb.py",
+   "test/live/packages/infra_e2e_tests.py",
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/live/packages/spectre_e2e_tests.py",
+   "test/live/packages/spectre_params_e2e_tests.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#028",
+  "kind": "clause",
+  "section": "1.1 读操作（不改变业务服务器状态）",
+  "line": 39,
+  "text": "- 可选 `region_mode`：`intersect`（默认）/ `contain`，作用于 object_filter 里的 region；",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "contain",
+   "intersect",
+   "region_mode"
+  ],
+  "hits": {
+   "contain": [
+    "test/offline/unit/test_calibre_package.py",
+    "test/offline/unit/test_config_snapshot_edges.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_spectre_contracts.py",
+    "test/offline/unit/test_ssh_dispatch.py",
+    "test/offline/unit/test_ssh_edges.py"
+   ],
+   "intersect": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/live/packages/layout_e2e_tests.py"
+   ],
+   "region_mode": [
+    "test/offline/unit/test_layout_contracts.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/cellview_e2e_tests.py",
+   "test/live/packages/layout_e2e_tests.py",
+   "test/offline/unit/test_calibre_package.py",
+   "test/offline/unit/test_config_snapshot_edges.py",
+   "test/offline/unit/test_layout_contracts.py",
+   "test/offline/unit/test_spectre_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#029",
+  "kind": "clause",
+  "section": "1.1 读操作（不改变业务服务器状态）",
+  "line": 40,
+  "text": "- 可选 `depth`：`0`（默认，只读本层）/ `>0`（跨层，需同时给 `region` 或 `layers`）；",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "depth",
+   "layers",
+   "region"
+  ],
+  "hits": {
+   "depth": [
+    "test/offline/unit/test_cellview_contracts.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_maestro_command_exprs.py",
+    "test/offline/unit/test_registration_server.py",
+    "test/offline/unit/test_skillref_docs_contracts.py",
+    "test/offline/unit/test_spectre_util_psf_contracts.py"
+   ],
+   "layers": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_skillref_package.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/semi/probes/skillref_probe.py",
+    "test/live/flows/layout_suite_p044_workaround_tb.py"
+   ],
+   "region": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/semi/probes/maestro_screenshot_probe.py",
+    "test/live/packages/layout_e2e_tests.py",
+    "test/live/packages/maestro_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/layout_suite_p044_workaround_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py",
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/maestro_e2e_tests.py",
+   "test/offline/unit/test_cellview_contracts.py",
+   "test/offline/unit/test_layout_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#033",
+  "kind": "table-row",
+  "section": "1.1 读操作（不改变业务服务器状态）",
+  "line": 46,
+  "text": "| focus | 字段 |",
+  "doc": "上层/4-layout.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "layout#035",
+  "kind": "table-row",
+  "section": "1.1 读操作（不改变业务服务器状态）",
+  "line": 48,
+  "text": "| `summary` | `bbox`、`shape_count`、`instance_count`、`via_count`、按 LPP 的 shape 计数 |",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "bbox",
+   "instance_count",
+   "shape_count",
+   "summary",
+   "via_count"
+  ],
+  "hits": {
+   "bbox": [
+    "test/offline/unit/test_calibre_parsers.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/semi/probes/gds_then_skill_probe.py",
+    "test/semi/probes/layout_lock_ownership_probe.py",
+    "test/semi/probes/layout_p044_second_write_probe.py"
+   ],
+   "instance_count": [
+    "test/offline/unit/test_layout_contracts.py"
+   ],
+   "shape_count": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/semi/probes/gds_then_skill_probe.py",
+    "test/live/flows/adc_sar_flow_tb.py",
+    "test/live/flows/design_iterate_tb.py",
+    "test/live/flows/multiuser_layout_handoff_tb.py",
+    "test/live/flows/project_flow_tb.py"
+   ],
+   "summary": [
+    "test/offline/unit/test_calibre_package.py",
+    "test/offline/unit/test_calibre_parsers.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_registration_server_edges.py",
+    "test/offline/unit/test_spectre_contracts.py",
+    "test/offline/unit/test_ssh_edges.py"
+   ],
+   "via_count": [
+    "test/offline/unit/test_layout_contracts.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py",
+   "test/live/flows/multiuser_layout_handoff_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#036",
+  "kind": "table-row",
+  "section": "1.1 读操作（不改变业务服务器状态）",
+  "line": 49,
+  "text": "| `shapes` | `obj_type / layer / purpose / lpp / bbox / points / width / path_style`；label 额外 `text / pos / height / justify / orient / font` |",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "shapes"
+  ],
+  "hits": {
+   "shapes": [
+    "test/offline/unit/test_cellview_contracts.py",
+    "test/offline/unit/test_daemon_runtime_contracts.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/offline/unit/test_validation_roles.py",
+    "test/offline/unit/_daemon_harness.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/multiuser_layout_handoff_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/packages/layout_e2e_tests.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#037",
+  "kind": "table-row",
+  "section": "1.1 读操作（不改变业务服务器状态）",
+  "line": 50,
+  "text": "| `instances` | `name / master(lib,cell,view) / pos / orient / num_inst / bbox` |",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "instances"
+  ],
+  "hits": {
+   "instances": [
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/unit/test_endpoint_budgets.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_middle_routing.py",
+    "test/offline/unit/test_resource_release.py",
+    "test/offline/unit/test_runner_single_flight.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py",
+   "test/live/flows/multiuser_serdes_rx_tb.py",
+   "test/live/flows/project_flow_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#038",
+  "kind": "table-row",
+  "section": "1.1 读操作（不改变业务服务器状态）",
+  "line": 51,
+  "text": "| `vias` | `via_name / pos / orient / bbox` |",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "vias"
+  ],
+  "hits": {
+   "vias": [
+    "test/live/packages/layout_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/layout_e2e_tests.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#039",
+  "kind": "clause",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 55,
+  "text": "对外只有一个**通用写操作** `write`：调用方一次给一组原子命令，业务包内部组织 SKILL 逐个改写，最后统一 `dbSave`。",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "dbSave",
+   "write"
+  ],
+  "hits": {
+   "dbSave": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/semi/probes/layout_p044_second_write_probe.py",
+    "test/semi/probes/maestro_e2e_probe.py",
+    "test/semi/probes/twouser_same_view_probe.py",
+    "test/live/flows/adc_sar_flow_tb.py",
+    "test/live/flows/multiuser_layout_handoff_tb.py"
+   ],
+   "write": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#040",
+  "kind": "clause",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 56,
+  "text": "调用方不会按单个原子调用多次。",
+  "doc": "上层/4-layout.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "layout#041",
+  "kind": "table-row",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 58,
+  "text": "| 操作名 | 说明 | 步骤摘要 | 接口 |",
+  "doc": "上层/4-layout.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "layout#043",
+  "kind": "table-row",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 60,
+  "text": "| write | 通用写：`lib/cell/view + commands[]` | 探测 view 存在 → 开 cellview(a) → 逐命令 → dbSave | S |",
+  "doc": "上层/4-layout.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "layout#044",
+  "kind": "table-row",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 61,
+  "text": "| gds | GDS 导入/导出，`action=export\\|import` | 见 §1.3 | S+C+U+D |",
+  "doc": "上层/4-layout.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "layout#045",
+  "kind": "clause",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 63,
+  "text": "`write.commands` 每项 = `{\"op\": 原子名, ...该原子参数}`；按顺序执行并保留每步痕迹。",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "write.commands"
+  ],
+  "hits": {},
+  "files": [],
+  "status": "NONE"
+ },
+ {
+  "id": "layout#047",
+  "kind": "clause",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 65,
+  "text": "**不得靠 `a` 模式凭空创建**；非事务——中途失败时前面的命令已生效，失败响应带 `commands applied: k/n`。",
+  "doc": "上层/4-layout.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "layout#048",
+  "kind": "clause",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 67,
+  "text": "**write 支持的原子命令**：每个原子 = `op` + **索引**（要动哪个对象）+ 附加参数。",
+  "doc": "上层/4-layout.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "layout#049",
+  "kind": "table-row",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 69,
+  "text": "| 对象 | 原子名 | 索引（动哪个） | 附加参数 |",
+  "doc": "上层/4-layout.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "layout#051",
+  "kind": "table-row",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 71,
+  "text": "| rect | `place_rect` | —（新建） | `layer, purpose, bbox=[pos0, pos1]`（对角两点，**与 read 同形**） |",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "place_rect"
+  ],
+  "hits": {
+   "place_rect": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/semi/probes/gds_then_skill_probe.py",
+    "test/semi/probes/layout_lock_ownership_probe.py",
+    "test/semi/probes/layout_p044_second_write_probe.py",
+    "test/live/flows/adc_sar_flow_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/multiuser_layout_handoff_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/packages/layout_e2e_tests.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#052",
+  "kind": "table-row",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 72,
+  "text": "| ellipse | `place_ellipse` | —（新建） | `layer, purpose, bbox=[pos0, pos1]`（同上） |",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "place_ellipse"
+  ],
+  "hits": {
+   "place_ellipse": [
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/live/packages/symbol_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/offline/unit/test_symbol_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#053",
+  "kind": "table-row",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 73,
+  "text": "| polygon | `place_polygon` | —（新建） | `layer, purpose, points=[pos, …]`（≥3 点，去重后非退化） |",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "place_polygon"
+  ],
+  "hits": {
+   "place_polygon": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/live/packages/layout_e2e_tests.py",
+    "test/live/packages/symbol_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/offline/unit/test_layout_contracts.py",
+   "test/offline/unit/test_symbol_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#054",
+  "kind": "table-row",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 74,
+  "text": "| path | `place_path` | —（新建） | `layer, purpose, points=[pos, …]`（≥2 点）, `width>0`；可选 `style`（7 个合法值，不传用 `truncateExtend`） |",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "place_path",
+   "style",
+   "truncateExtend"
+  ],
+  "hits": {
+   "place_path": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/live/flows/adc_sar_flow_tb.py",
+    "test/live/packages/layout_e2e_tests.py"
+   ],
+   "style": [
+    "test/offline/unit/test_calibre_package.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_skillref_docs_contracts.py",
+    "test/live/flows/layout_suite_p044_workaround_tb.py",
+    "test/live/packages/layout_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py",
+   "test/live/packages/layout_e2e_tests.py",
+   "test/offline/unit/test_calibre_package.py",
+   "test/offline/unit/test_layout_contracts.py",
+   "test/offline/unit/test_schematic_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#055",
+  "kind": "table-row",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 75,
+  "text": "| line | `place_line` | —（新建） | `layer, purpose, points=[pos, …]`（=2 点） |",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "place_line"
+  ],
+  "hits": {
+   "place_line": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/live/packages/layout_e2e_tests.py",
+    "test/live/packages/symbol_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/offline/unit/test_layout_contracts.py",
+   "test/offline/unit/test_schematic_contracts.py",
+   "test/offline/unit/test_symbol_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#056",
+  "kind": "table-row",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 76,
+  "text": "| shape（通用） | `delete_shape` | `kind + layer/purpose + (bbox\\|points)`；`all=false` 默认唯一命中 | — |",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "delete_shape"
+  ],
+  "hits": {
+   "delete_shape": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/live/packages/layout_e2e_tests.py",
+    "test/live/packages/symbol_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/offline/unit/test_layout_contracts.py",
+   "test/offline/unit/test_symbol_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#057",
+  "kind": "table-row",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 77,
+  "text": "| shape（通用） | `set_shape_properties` | 同 `delete_shape` | `new_bbox?（=[pos0, pos1]）, new_points?, new_width?` |",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "delete_shape",
+   "set_shape_properties"
+  ],
+  "hits": {
+   "delete_shape": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/live/packages/layout_e2e_tests.py",
+    "test/live/packages/symbol_e2e_tests.py"
+   ],
+   "set_shape_properties": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/live/packages/layout_e2e_tests.py",
+    "test/live/packages/symbol_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/offline/unit/test_layout_contracts.py",
+   "test/offline/unit/test_symbol_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#058",
+  "kind": "table-row",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 78,
+  "text": "| shape（按层批量） | `delete_shapes_on_layer` | `layer, purpose` | `types?`（缺省=该 LPP 全部类型） |",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "delete_shapes_on_layer"
+  ],
+  "hits": {
+   "delete_shapes_on_layer": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/live/packages/layout_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/layout_e2e_tests.py",
+   "test/offline/unit/test_layout_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#059",
+  "kind": "table-row",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 79,
+  "text": "| label | `place_label` | —（新建） | `layer, purpose, pos, text`；可选 `justify/orient/font/height`（不传用底层默认） |",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "place_label"
+  ],
+  "hits": {
+   "place_label": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/semi/probes/twouser_same_view_probe.py",
+    "test/live/flows/adc_sar_flow_tb.py",
+    "test/live/flows/design_iterate_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/schematic_e2e_tests.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#060",
+  "kind": "table-row",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 80,
+  "text": "| label | `delete_label` | `pos`（可选加 `text`/`layer` 消歧义） | — |",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "delete_label",
+   "layer",
+   "text"
+  ],
+  "hits": {
+   "delete_label": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/live/packages/schematic_e2e_tests.py",
+    "test/live/packages/symbol_e2e_tests.py"
+   ],
+   "layer": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/scenario/test_multi_user_isolation.py",
+    "test/offline/unit/test_api_server_main.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_log_no_fetch.py"
+   ],
+   "text": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#061",
+  "kind": "table-row",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 81,
+  "text": "| label | `rename_label` | `pos`（可选加 `old_text`） | `new_text` |",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "new_text",
+   "old_text",
+   "rename_label"
+  ],
+  "hits": {
+   "new_text": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/offline/unit/test_verilog_contracts.py",
+    "test/live/packages/layout_e2e_tests.py"
+   ],
+   "old_text": [
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/offline/unit/test_verilog_contracts.py",
+    "test/live/packages/veriloga_e2e_tests.py"
+   ],
+   "rename_label": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/live/packages/layout_e2e_tests.py",
+    "test/live/packages/schematic_e2e_tests.py",
+    "test/live/packages/symbol_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/live/packages/veriloga_e2e_tests.py",
+   "test/offline/unit/test_layout_contracts.py",
+   "test/offline/unit/test_schematic_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#062",
+  "kind": "table-row",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 82,
+  "text": "| label | `set_label_properties` | `pos`（可选加 `text`） | `new_pos?, new_height?, new_justify?, new_orient?, new_font?`（至少给一个） |",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "set_label_properties",
+   "text"
+  ],
+  "hits": {
+   "set_label_properties": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/live/packages/schematic_e2e_tests.py",
+    "test/live/packages/symbol_e2e_tests.py"
+   ],
+   "text": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#063",
+  "kind": "table-row",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 83,
+  "text": "| instance | `place_instance` | —（新建） | `master_lib, master_cell, master_view=\"layout\", name, pos, orient=\"R0\"`；可选 `num_inst`（数组实例，name 变 `A<0:n>`） |",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "num_inst",
+   "place_instance"
+  ],
+  "hits": {
+   "num_inst": [
+    "test/offline/unit/test_layout_contracts.py"
+   ],
+   "place_instance": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/semi/probes/schematic_pin_ops_probe.py",
+    "test/semi/probes/shared_cdf_pollution_probe.py",
+    "test/semi/probes/symbol_generate_hierarchy_handle_probe.py",
+    "test/live/flows/adc_sar_flow_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/multiuser_serdes_rx_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/serdes_rx_flow_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#064",
+  "kind": "table-row",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 84,
+  "text": "| instance | `delete_instance` | `name` | — |",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "delete_instance",
+   "name"
+  ],
+  "hits": {
+   "delete_instance": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/live/packages/layout_e2e_tests.py",
+    "test/live/packages/schematic_e2e_tests.py"
+   ],
+   "name": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#065",
+  "kind": "table-row",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 85,
+  "text": "| instance | `rename_instance` | `name` | `new_name` |",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "name",
+   "new_name",
+   "rename_instance"
+  ],
+  "hits": {
+   "name": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ],
+   "new_name": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_maestro_command_exprs.py",
+    "test/offline/unit/test_maestro_package_flow.py",
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/semi/probes/maestro_pkg_probe.py"
+   ],
+   "rename_instance": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/live/packages/layout_e2e_tests.py",
+    "test/live/packages/schematic_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#066",
+  "kind": "table-row",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 86,
+  "text": "| instance | `set_instance_properties` | `name` | `new_pos?, new_orient?`（`new_pos` 必须写 point；`mag`/`master` 只读，不在本版） |",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "master",
+   "name",
+   "new_pos",
+   "set_instance_properties"
+  ],
+  "hits": {
+   "master": [
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_register_flow.py",
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_ssh.py",
+    "test/offline/unit/test_ssh_dispatch.py"
+   ],
+   "name": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ],
+   "new_pos": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/live/packages/layout_e2e_tests.py"
+   ],
+   "set_instance_properties": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/live/packages/layout_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#067",
+  "kind": "table-row",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 87,
+  "text": "| mosaic | `place_mosaic` | —（新建） | `master_lib, master_cell, master_view=\"layout\", name, pos, orient` , `rows, cols, row_pitch, col_pitch` |",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "place_mosaic"
+  ],
+  "hits": {
+   "place_mosaic": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/live/packages/layout_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/layout_e2e_tests.py",
+   "test/offline/unit/test_layout_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#068",
+  "kind": "table-row",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 88,
+  "text": "| mosaic | `delete_mosaic` | `name` | — |",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "delete_mosaic",
+   "name"
+  ],
+  "hits": {
+   "delete_mosaic": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/live/packages/layout_e2e_tests.py"
+   ],
+   "name": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#069",
+  "kind": "table-row",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 89,
+  "text": "| via | `place_via` | —（新建） | `via_name, pos, orient=\"R0\"`；techfile-gated（§1.2.2） |",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "place_via"
+  ],
+  "hits": {
+   "place_via": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/live/packages/layout_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/layout_e2e_tests.py",
+   "test/offline/unit/test_layout_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#070",
+  "kind": "table-row",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 90,
+  "text": "| via | `delete_via` | `via_name + pos + orient` | — |",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "delete_via"
+  ],
+  "hits": {
+   "delete_via": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/live/packages/layout_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/layout_e2e_tests.py",
+   "test/offline/unit/test_layout_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#075",
+  "kind": "clause",
+  "section": "1.2.1 LPP 与失败语义",
+  "line": 99,
+  "text": "- 底层 `dbCreateXxx` 失败**返回 nil 而不抛错** → 每个原子必须判返回值，失败即业务失败；",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "dbCreateXxx"
+  ],
+  "hits": {},
+  "files": [],
+  "status": "NONE"
+ },
+ {
+  "id": "layout#076",
+  "kind": "clause",
+  "section": "1.2.1 LPP 与失败语义",
+  "line": 100,
+  "text": "- 默认**不做** techfile 预检；`write` 可选 `strict_lpp=true` 时校验：`techGetLayerNum(tf, layer)` 非 nil +",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "write"
+  ],
+  "hits": {
+   "write": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#079",
+  "kind": "clause",
+  "section": "1.2.1 LPP 与失败语义",
+  "line": 103,
+  "text": "批量删层用 `dbShapeQuery(cv lpp bbox 0 <stopLevel>)`，**stopLevel 必须覆盖层次**；",
+  "doc": "上层/4-layout.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "layout#086",
+  "kind": "table-row",
+  "section": "1.3 gds（导入 / 导出收拢为一个操作）",
+  "line": 117,
+  "text": "| 参数 | 说明 |",
+  "doc": "上层/4-layout.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "layout#088",
+  "kind": "table-row",
+  "section": "1.3 gds（导入 / 导出收拢为一个操作）",
+  "line": 119,
+  "text": "| `action` | `export` / `import`，必填 |",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "action",
+   "export",
+   "import"
+  ],
+  "hits": {
+   "action": [
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/unit/test_daemon_runtime_contracts.py",
+    "test/offline/unit/test_gui_package.py"
+   ],
+   "export": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/integration/test_supervisor_process.py",
+    "test/offline/unit/test_calibre_package.py",
+    "test/offline/unit/test_gui_package.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_layout_publish_contracts.py"
+   ],
+   "import": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#089",
+  "kind": "table-row",
+  "section": "1.3 gds（导入 / 导出收拢为一个操作）",
+  "line": 120,
+  "text": "| `lib / cell` | 必填；`view` 默认 `\"layout\"` |",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "view"
+  ],
+  "hits": {
+   "view": [
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/unit/test_cellview_contracts.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_layout_publish_contracts.py",
+    "test/offline/unit/test_maestro_command_exprs.py",
+    "test/offline/unit/test_maestro_package_flow.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py",
+   "test/live/flows/multiuser_layout_handoff_tb.py",
+   "test/live/flows/multiuser_serdes_rx_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#090",
+  "kind": "table-row",
+  "section": "1.3 gds（导入 / 导出收拢为一个操作）",
+  "line": 121,
+  "text": "| `file_path` | export：本机 GDS 目标路径；import：GDS 源文件（本机→上传，远端→直接用） |",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "file_path"
+  ],
+  "hits": {
+   "file_path": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_probe.py",
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/offline/unit/test_verilog_contracts.py",
+    "test/semi/probes/gds_publish_path_edges_probe.py",
+    "test/semi/probes/gds_then_skill_probe.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/s11_inprocess_lvs_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#091",
+  "kind": "table-row",
+  "section": "1.3 gds（导入 / 导出收拢为一个操作）",
+  "line": 122,
+  "text": "| `layer_map` | layer map 文件（export 映射 OA LPP→stream 层号；import 用 `-layerMap` 把 stream 层号映射回 OA）。缺省时导出会走自动 mapping（层号不确定），导入在本环境会直接失败（`XSTRM-74`） |",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "XSTRM-74",
+   "layer_map"
+  ],
+  "hits": {
+   "layer_map": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/semi/probes/gds_publish_path_edges_probe.py",
+    "test/semi/probes/gds_then_skill_probe.py",
+    "test/live/flows/adc_sar_flow_tb.py",
+    "test/live/flows/design_iterate_tb.py",
+    "test/live/flows/lvs_from_schematic_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/s11_inprocess_lvs_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#092",
+  "kind": "table-row",
+  "section": "1.3 gds（导入 / 导出收拢为一个操作）",
+  "line": 123,
+  "text": "| `ref_lib_file` | 仅 import：参考库清单（`-refLibList`），可选 |",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "ref_lib_file"
+  ],
+  "hits": {
+   "ref_lib_file": [
+    "test/offline/unit/test_layout_contracts.py"
+   ]
+  },
+  "files": [
+   "test/offline/unit/test_layout_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#093",
+  "kind": "table-row",
+  "section": "1.3 gds（导入 / 导出收拢为一个操作）",
+  "line": 124,
+  "text": "| `tech_lib` | import 必填：目标库绑定/对齐的技术库（`-attachTechFileOfLib`） |",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "tech_lib"
+  ],
+  "hits": {
+   "tech_lib": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/semi/probes/gds_publish_path_edges_probe.py",
+    "test/semi/probes/gds_then_skill_probe.py",
+    "test/live/flows/adc_sar_flow_tb.py",
+    "test/live/flows/design_iterate_tb.py",
+    "test/live/flows/s11_full_flow.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/packages/layout_e2e_tests.py",
+   "test/offline/unit/test_layout_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#094",
+  "kind": "table-row",
+  "section": "1.3 gds（导入 / 导出收拢为一个操作）",
+  "line": 125,
+  "text": "| `log_path` | export 默认 `<output stem>.xstream.log`；import 默认远端工作目录 `strmIn.log` |",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "log_path",
+   "strmIn.log"
+  ],
+  "hits": {
+   "log_path": [
+    "test/offline/unit/test_calibre_verdict_consistency.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_new_middle.py",
+    "test/offline/unit/test_verilog_contracts.py",
+    "test/semi/fakevirt/fake_virtuoso.py",
+    "test/semi/fakevirt/skill_ops.py"
+   ],
+   "strmIn.log": [
+    "test/offline/unit/test_layout_contracts.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/verilog_e2e_tests.py",
+   "test/offline/unit/test_calibre_verdict_consistency.py",
+   "test/offline/unit/test_layout_contracts.py",
+   "test/offline/unit/test_new_middle.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#095",
+  "kind": "table-row",
+  "section": "1.3 gds（导入 / 导出收拢为一个操作）",
+  "line": 126,
+  "text": "| `timeout` / `poll_interval` | export 默认 300s / 0.5s；import 默认 600s / 3s |",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "poll_interval",
+   "timeout"
+  ],
+  "hits": {
+   "poll_interval": [
+    "test/offline/unit/test_calibre_package.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_maestro_package_flow.py",
+    "test/semi/probes/maestro_pkg_probe.py",
+    "test/live/packages/layout_e2e_tests.py",
+    "test/live/packages/maestro_e2e_tests.py"
+   ],
+   "timeout": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#096",
+  "kind": "table-row",
+  "section": "1.3 gds（导入 / 导出收拢为一个操作）",
+  "line": 127,
+  "text": "| `cleanup_policy` | 仅 export：`success`（默认）/ `always` / `never` |",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "always",
+   "cleanup_policy",
+   "never",
+   "success"
+  ],
+  "hits": {
+   "always": [
+    "test/offline/unit/test_daemon_runtime_contracts.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/_daemon_harness.py",
+    "test/live/flows/s11_full_flow.py",
+    "test/shared/runners/run_offline_multi.py"
+   ],
+   "cleanup_policy": [
+    "test/offline/unit/test_layout_contracts.py"
+   ],
+   "never": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/unit/test_connect_retry.py",
+    "test/offline/unit/test_daemon_log_contract.py"
+   ],
+   "success": [
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_maestro_command_exprs.py",
+    "test/offline/unit/test_maestro_package_flow.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#120",
+  "kind": "clause",
+  "section": "1.3 gds（导入 / 导出收拢为一个操作）",
+  "line": 155,
+  "text": "`XSTRM-234` + `Translation completed` 才算完成；**完成前不得读目标 cellview**（会读到旧版 stale bbox）；",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "XSTRM-234"
+  ],
+  "hits": {
+   "XSTRM-234": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/live/packages/layout_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/layout_e2e_tests.py",
+   "test/offline/unit/test_layout_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#130",
+  "kind": "table-row",
+  "section": "1.4 screenshot",
+  "line": 171,
+  "text": "| 参数 | 说明 |",
+  "doc": "上层/4-layout.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "layout#132",
+  "kind": "table-row",
+  "section": "1.4 screenshot",
+  "line": 173,
+  "text": "| `lib / cell / view` | 默认目标；用于在窗口列表里按 `w~>cellView` 的 lib/cell/view 匹配已开窗口 |",
+  "doc": "上层/4-layout.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "layout#133",
+  "kind": "table-row",
+  "section": "1.4 screenshot",
+  "line": 174,
+  "text": "| `window_id` | 可选显式目标；**显式给了坏 id 直接业务失败，不做 X11/display 回退** |",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "window_id"
+  ],
+  "hits": {
+   "window_id": [
+    "test/offline/unit/test_gui_package.py",
+    "test/semi/probes/maestro_screenshot_probe.py",
+    "test/semi/probes/_maestro_tb.py",
+    "test/semi/transport/log_matrix_real_tb.py",
+    "test/live/packages/gui_e2e_tests.py",
+    "test/live/packages/infra_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/gui_e2e_tests.py",
+   "test/live/packages/infra_e2e_tests.py",
+   "test/live/packages/maestro_e2e_tests.py",
+   "test/offline/unit/test_gui_package.py",
+   "test/semi/probes/_maestro_tb.py",
+   "test/semi/probes/maestro_screenshot_probe.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#134",
+  "kind": "table-row",
+  "section": "1.4 screenshot",
+  "line": 175,
+  "text": "| `region` | `[pos0, pos1]`（user units）；截前 `hiZoomIn(window bbox)` 把区域填满窗口 |",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "region"
+  ],
+  "hits": {
+   "region": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/semi/probes/maestro_screenshot_probe.py",
+    "test/live/packages/layout_e2e_tests.py",
+    "test/live/packages/maestro_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/maestro_e2e_tests.py",
+   "test/offline/unit/test_layout_contracts.py",
+   "test/offline/unit/test_schematic_contracts.py",
+   "test/offline/unit/test_symbol_contracts.py",
+   "test/semi/probes/maestro_screenshot_probe.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#135",
+  "kind": "table-row",
+  "section": "1.4 screenshot",
+  "line": 176,
+  "text": "| `toplevel` / `central_widget` | 透传给 `hiWindowSaveImage` |",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "central_widget",
+   "hiWindowSaveImage",
+   "toplevel"
+  ],
+  "hits": {
+   "central_widget": [
+    "test/offline/unit/test_layout_contracts.py"
+   ],
+   "hiWindowSaveImage": [
+    "test/offline/unit/test_maestro_package_flow.py",
+    "test/semi/probes/symbol_screenshot_probe.py",
+    "test/live/packages/maestro_e2e_tests.py"
+   ],
+   "toplevel": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/semi/probes/maestro_screenshot_probe.py",
+    "test/semi/probes/symbol_screenshot_probe.py",
+    "test/live/packages/maestro_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/maestro_e2e_tests.py",
+   "test/offline/unit/test_layout_contracts.py",
+   "test/offline/unit/test_maestro_package_flow.py",
+   "test/offline/unit/test_symbol_contracts.py",
+   "test/semi/probes/maestro_screenshot_probe.py",
+   "test/semi/probes/symbol_screenshot_probe.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#136",
+  "kind": "table-row",
+  "section": "1.4 screenshot",
+  "line": 177,
+  "text": "| `leave_open` | 默认 `false`；只关闭本操作自己打开的窗口，不动别人已开的窗口 |",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "false",
+   "leave_open"
+  ],
+  "hits": {
+   "false": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/unit/test_daemon_runtime_contracts.py",
+    "test/offline/unit/test_gui_package.py",
+    "test/offline/unit/test_jsonutil.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_layout_publish_contracts.py"
+   ],
+   "leave_open": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/live/packages/layout_e2e_tests.py",
+    "test/live/packages/schematic_e2e_tests.py",
+    "test/live/packages/symbol_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/layout_suite_p044_workaround_tb.py",
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/maestro_e2e_tests.py",
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/offline/core/api_server_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#139",
+  "kind": "clause",
+  "section": "1.4 screenshot",
+  "line": 182,
+  "text": "- **禁止不带 bbox 的 `hiZoomIn`/`hiZoomOut`**（会进交互橡皮筋并卡死 SKILL 通道）；",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "hiZoomIn",
+   "hiZoomOut"
+  ],
+  "hits": {},
+  "files": [],
+  "status": "NONE"
+ },
+ {
+  "id": "layout#143",
+  "kind": "table-row",
+  "section": "1.5 display（展示，不落数据）",
+  "line": 190,
+  "text": "| 原子 | 底层 | 说明 |",
+  "doc": "上层/4-layout.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "layout#145",
+  "kind": "table-row",
+  "section": "1.5 display（展示，不落数据）",
+  "line": 192,
+  "text": "| `set_layers_visible` | `leSetLayerVisible(lpp t/nil tf)` | 指定 LPP 显示/隐藏 |",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "set_layers_visible"
+  ],
+  "hits": {
+   "set_layers_visible": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/live/packages/layout_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/layout_e2e_tests.py",
+   "test/offline/unit/test_layout_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#146",
+  "kind": "table-row",
+  "section": "1.5 display（展示，不落数据）",
+  "line": 193,
+  "text": "| `show_only_layers` | `leSetAllLayerVisible(nil tf)` + 逐个显示 | 只显示指定 LPP |",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "show_only_layers"
+  ],
+  "hits": {
+   "show_only_layers": [
+    "test/live/packages/layout_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/layout_e2e_tests.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#147",
+  "kind": "table-row",
+  "section": "1.5 display（展示，不落数据）",
+  "line": 194,
+  "text": "| `set_entry_layer` | `leSetEntryLayer(lpp tf)` | 录入层（LSW 当前层） |",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "set_entry_layer"
+  ],
+  "hits": {
+   "set_entry_layer": [
+    "test/live/packages/layout_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/layout_e2e_tests.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#148",
+  "kind": "table-row",
+  "section": "1.5 display（展示，不落数据）",
+  "line": 195,
+  "text": "| `fit_view` / `zoom` | `hiZoomAbsoluteScale(w n)` / `hiZoomIn(w bbox)` | 需窗口；显式 `window_id` |",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "fit_view",
+   "window_id",
+   "zoom"
+  ],
+  "hits": {
+   "fit_view": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/live/packages/layout_e2e_tests.py"
+   ],
+   "window_id": [
+    "test/offline/unit/test_gui_package.py",
+    "test/semi/probes/maestro_screenshot_probe.py",
+    "test/semi/probes/_maestro_tb.py",
+    "test/semi/transport/log_matrix_real_tb.py",
+    "test/live/packages/gui_e2e_tests.py",
+    "test/live/packages/infra_e2e_tests.py"
+   ],
+   "zoom": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/live/packages/layout_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/gui_e2e_tests.py",
+   "test/live/packages/infra_e2e_tests.py",
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/maestro_e2e_tests.py",
+   "test/offline/unit/test_gui_package.py",
+   "test/offline/unit/test_layout_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#152",
+  "kind": "table-row",
+  "section": "2. 归属（不在本包）",
+  "line": 204,
+  "text": "| 能力 | 归属 |",
+  "doc": "上层/4-layout.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "layout#154",
+  "kind": "table-row",
+  "section": "2. 归属（不在本包）",
+  "line": 206,
+  "text": "| view create/replace/delete/rename、cell delete | cellview |",
+  "doc": "上层/4-layout.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "layout#155",
+  "kind": "table-row",
+  "section": "2. 归属（不在本包）",
+  "line": 207,
+  "text": "| 结构 Verilog 导入 `ihdl`、PG label、标签后处理流水线 | digital-import |",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "ihdl"
+  ],
+  "hits": {
+   "ihdl": [
+    "test/offline/unit/test_verilog_contracts.py"
+   ]
+  },
+  "files": [
+   "test/offline/unit/test_verilog_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#156",
+  "kind": "table-row",
+  "section": "2. 归属（不在本包）",
+  "line": 208,
+  "text": "| 截图机制（窗口解析、抓屏、下载） | gui 机制 + layout 领域封装 |",
+  "doc": "上层/4-layout.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "layout#157",
+  "kind": "table-row",
+  "section": "2. 归属（不在本包）",
+  "line": 209,
+  "text": "| selection / highlight / LSW 交互 | 不进业务 API |",
+  "doc": "上层/4-layout.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "layout#158",
+  "kind": "clause",
+  "section": "3. 不在本版",
+  "line": 213,
+  "text": "- 路由抽象（多层/总线）与 `clear_routing`：调用方用几何原子组合；",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "clear_routing"
+  ],
+  "hits": {},
+  "files": [],
+  "status": "NONE"
+ },
+ {
+  "id": "layout#163",
+  "kind": "clause",
+  "section": "3. 不在本版",
+  "line": 218,
+  "text": "- 并发写。",
+  "doc": "上层/4-layout.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "layout#164",
+  "kind": "table-row",
+  "section": "4. 决策记录（2026-09-21）",
+  "line": 222,
+  "text": "| # | 决策 |",
+  "doc": "上层/4-layout.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "layout#166",
+  "kind": "table-row",
+  "section": "4. 决策记录（2026-09-21）",
+  "line": 224,
+  "text": "| 1 | `display` 作为 layout 的展示子操作（底层 `le*` SKILL，不需要 GUI 也能改可见性） |",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "display"
+  ],
+  "hits": {
+   "display": [
+    "test/offline/core/semantics_tb.py",
+    "test/offline/unit/test_gui_package.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_middle_contracts.py",
+    "test/offline/unit/test_register_flow.py",
+    "test/offline/unit/test_registration_page.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/layout_suite_p044_workaround_tb.py",
+   "test/live/flows/scale_100_tb.py",
+   "test/live/packages/gui_e2e_tests.py",
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/registration/registration_real_ciw_tb.py",
+   "test/live/registration/registration_role_split_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#167",
+  "kind": "table-row",
+  "section": "4. 决策记录（2026-09-21）",
+  "line": 225,
+  "text": "| 2 | `export_gds` 放 layout 包（旧公开面即 `client.layout.export_gds`） |",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "client.layout.export_gds",
+   "export_gds"
+  ],
+  "hits": {},
+  "files": [],
+  "status": "NONE"
+ },
+ {
+  "id": "layout#168",
+  "kind": "table-row",
+  "section": "4. 决策记录（2026-09-21）",
+  "line": 226,
+  "text": "| 3 | GDS 导出的 `reason` 收敛为 §1.3 的 9 个值，不沿用旧 13 值枚举 |",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "reason"
+  ],
+  "hits": {
+   "reason": [
+    "test/offline/unit/test_endpoint_budgets.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_verilog_contracts.py",
+    "test/semi/probes/daemon_internal_error_path_probe.py",
+    "test/semi/probes/layout_p044_second_write_probe.py",
+    "test/live/packages/layout_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/verilog_e2e_tests.py",
+   "test/offline/unit/test_endpoint_budgets.py",
+   "test/offline/unit/test_layout_contracts.py",
+   "test/offline/unit/test_verilog_contracts.py",
+   "test/semi/probes/daemon_internal_error_path_probe.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#169",
+  "kind": "table-row",
+  "section": "4. 决策记录（2026-09-21）",
+  "line": 227,
+  "text": "| 4 | via 本版实现，但标注 techfile-gated；真机验收需带 PDK 的环境 |",
+  "doc": "上层/4-layout.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "layout#170",
+  "kind": "table-row",
+  "section": "4. 决策记录（2026-09-21）",
+  "line": 228,
+  "text": "| 5 | region 查询本版做；`depth>0` 只走 `dbShapeQuery` 路径，不展开完整层级树 |",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "dbShapeQuery"
+  ],
+  "hits": {},
+  "files": [],
+  "status": "NONE"
+ },
+ {
+  "id": "layout#171",
+  "kind": "table-row",
+  "section": "4. 决策记录（2026-09-21）",
+  "line": 229,
+  "text": "| 6 | `strict_lpp` 默认 `false`（轻校验），严格模式可选 |",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "false",
+   "strict_lpp"
+  ],
+  "hits": {
+   "false": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/unit/test_daemon_runtime_contracts.py",
+    "test/offline/unit/test_gui_package.py",
+    "test/offline/unit/test_jsonutil.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_layout_publish_contracts.py"
+   ],
+   "strict_lpp": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/live/packages/layout_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/layout_suite_p044_workaround_tb.py",
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/maestro_e2e_tests.py",
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/offline/core/api_server_tb.py",
+   "test/offline/unit/test_daemon_runtime_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#172",
+  "kind": "table-row",
+  "section": "4. 决策记录（2026-09-21）",
+  "line": 230,
+  "text": "| 7 | 旧 `route_multilayer`/`route_bus`/`clear_routing` 降级为调用方组合；`set_visibility` 进 `display`；`select_delete`/`delete_cell` 不进 API（cell 删除归 cellview） |",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "clear_routing",
+   "delete_cell",
+   "display",
+   "route_bus",
+   "route_multilayer",
+   "select_delete",
+   "set_visibility"
+  ],
+  "hits": {
+   "delete_cell": [
+    "test/live/packages/verilog_e2e_tests.py"
+   ],
+   "display": [
+    "test/offline/core/semantics_tb.py",
+    "test/offline/unit/test_gui_package.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_middle_contracts.py",
+    "test/offline/unit/test_register_flow.py",
+    "test/offline/unit/test_registration_page.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/layout_suite_p044_workaround_tb.py",
+   "test/live/flows/scale_100_tb.py",
+   "test/live/packages/gui_e2e_tests.py",
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/verilog_e2e_tests.py",
+   "test/live/registration/registration_real_ciw_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#173",
+  "kind": "table-row",
+  "section": "4. 决策记录（2026-09-21）",
+  "line": 231,
+  "text": "| 8 | **GDS 导入与导出都归本包**，收拢为一个 `gds` 操作（`action=export\\|import`）；digital-import 只保留 `ihdl` / PG label / 标签后处理 |",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "ihdl"
+  ],
+  "hits": {
+   "ihdl": [
+    "test/offline/unit/test_verilog_contracts.py"
+   ]
+  },
+  "files": [
+   "test/offline/unit/test_verilog_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#174",
+  "kind": "table-row",
+  "section": "4. 决策记录（2026-09-21）",
+  "line": 232,
+  "text": "| 9 | 截图口径**参考 schematic + maestro**：cellView 匹配窗口 → `geOpen` 兜底、`window_id` 显式则坏 id 直接失败、`region` 用 `hiZoomIn(bbox)`、`toplevel/central_widget` 透传、PNG 落 role root `screenshots/` 与本地 `artifact/screenshots/`、无 X11 回退 |",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "geOpen",
+   "region",
+   "window_id"
+  ],
+  "hits": {
+   "geOpen": [
+    "test/semi/probes/symbol_screenshot_probe.py",
+    "test/live/packages/gui_e2e_tests.py",
+    "test/live/packages/layout_e2e_tests.py"
+   ],
+   "region": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/semi/probes/maestro_screenshot_probe.py",
+    "test/live/packages/layout_e2e_tests.py",
+    "test/live/packages/maestro_e2e_tests.py"
+   ],
+   "window_id": [
+    "test/offline/unit/test_gui_package.py",
+    "test/semi/probes/maestro_screenshot_probe.py",
+    "test/semi/probes/_maestro_tb.py",
+    "test/semi/transport/log_matrix_real_tb.py",
+    "test/live/packages/gui_e2e_tests.py",
+    "test/live/packages/infra_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/gui_e2e_tests.py",
+   "test/live/packages/infra_e2e_tests.py",
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/maestro_e2e_tests.py",
+   "test/offline/unit/test_gui_package.py",
+   "test/offline/unit/test_layout_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#175",
+  "kind": "table-row",
+  "section": "4. 决策记录（2026-09-21）",
+  "line": 233,
+  "text": "| 10 | `gds` 的参数按 vendor 选项拆开：`layer_map`（导出/导入的层映射）与 `ref_lib_file`（仅导入 `-refLibList`）；导入选 cell 用 `-topCell` |",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "layer_map",
+   "ref_lib_file"
+  ],
+  "hits": {
+   "layer_map": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/semi/probes/gds_publish_path_edges_probe.py",
+    "test/semi/probes/gds_then_skill_probe.py",
+    "test/live/flows/adc_sar_flow_tb.py",
+    "test/live/flows/design_iterate_tb.py",
+    "test/live/flows/lvs_from_schematic_tb.py"
+   ],
+   "ref_lib_file": [
+    "test/offline/unit/test_layout_contracts.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/s11_inprocess_lvs_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#176",
+  "kind": "table-row",
+  "section": "4. 决策记录（2026-09-21）",
+  "line": 234,
+  "text": "| 11 | 索引容差由 0.001 收敛为 **0.0005**（半个 dbu）；via 索引改为 `pos + orient`（viaDef/name 不可回读） |",
+  "doc": "上层/4-layout.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "layout#179",
+  "kind": "clause",
+  "section": "5. 真机事实（IC6.1.8，2026-09-21 实测）",
+  "line": 240,
+  "text": "3. `dbCreateXxx` 失败分两类：**非法 LPP → 抛 SKILL 硬错误**；**几何非法 → nil + WARNING** →",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "dbCreateXxx"
+  ],
+  "hits": {},
+  "files": [],
+  "status": "NONE"
+ },
+ {
+  "id": "layout#180",
+  "kind": "clause",
+  "section": "5. 真机事实（IC6.1.8，2026-09-21 实测）",
+  "line": 241,
+  "text": "上层既要判返回值也要能收错误；`pos` 写 **point**（`7:8`），`bBox`/`points` 写 list；",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "bBox",
+   "points"
+  ],
+  "hits": {
+   "bBox": [
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/live/flows/project_flow_tb.py"
+   ],
+   "points": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/integration/test_supervisor_process.py",
+    "test/offline/unit/test_endpoint_budgets.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_maestro_util.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/maestro_e2e_tests.py",
+   "test/live/packages/schematic_e2e_tests.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#181",
+  "kind": "clause",
+  "section": "5. 真机事实（IC6.1.8，2026-09-21 实测）",
+  "line": 242,
+  "text": "4. **`dbClose` 不落盘**：必须显式 `dbSave` 后再 `dbClose`；未保存的 cellview 留在会话里会污染导出",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "dbClose",
+   "dbSave"
+  ],
+  "hits": {
+   "dbClose": [
+    "test/offline/unit/test_cellview_contracts.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/offline/unit/test_symbol_generate.py",
+    "test/semi/probes/layout_lock_ownership_probe.py"
+   ],
+   "dbSave": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/semi/probes/layout_p044_second_write_probe.py",
+    "test/semi/probes/maestro_e2e_probe.py",
+    "test/semi/probes/twouser_same_view_probe.py",
+    "test/live/flows/adc_sar_flow_tb.py",
+    "test/live/flows/multiuser_layout_handoff_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/multiuser_layout_handoff_tb.py",
+   "test/live/flows/multiuser_serdes_rx_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/schematic_e2e_tests.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#184",
+  "kind": "clause",
+  "section": "5. 真机事实（IC6.1.8，2026-09-21 实测）",
+  "line": 245,
+  "text": "6. 区域/层级查询显式给 level（`dbShapeQuery(cv lpp bbox 0 32)`）；3 参数默认形式会下探一层 instance",
+  "doc": "上层/4-layout.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "layout#185",
+  "kind": "clause",
+  "section": "5. 真机事实（IC6.1.8，2026-09-21 实测）",
+  "line": 246,
+  "text": "但**不含 via 生成图形**，不要依赖默认；",
+  "doc": "上层/4-layout.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "layout#189",
+  "kind": "clause",
+  "section": "5. 真机事实（IC6.1.8，2026-09-21 实测）",
+  "line": 250,
+  "text": "9. via 的 `~>viaDef` / `~>name` **不可读**（都是 nil）⇒ 只能按 `pos + orient` 索引；",
+  "doc": "上层/4-layout.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "layout#196",
+  "kind": "clause",
+  "section": "5. 真机事实（IC6.1.8，2026-09-21 实测）",
+  "line": 257,
+  "text": "**不能**用来判断 `dbCreate*` 是否接受某 LPP（真机已验证 `(\"y0\" \"pin\")` 不在列表里但可建）；",
+  "doc": "上层/4-layout.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "layout#199",
+  "kind": "clause",
+  "section": "5. 真机事实（IC6.1.8，2026-09-21 实测）",
+  "line": 260,
+  "text": "与 SKILL 侧会话的在内存库表**不是**同一份 ⇒ 会话 run 目录的 `cds.lib` 是唯一权威解析入口；",
+  "doc": "上层/4-layout.md",
+  "tokens": [
+   "cds.lib"
+  ],
+  "hits": {
+   "cds.lib": [
+    "test/offline/unit/test_calibre_package.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/semi/probes/calibre_cdl_probe.py",
+    "test/semi/probes/cdl_export_variants_probe.py",
+    "test/semi/probes/layout_p044_second_write_probe.py",
+    "test/semi/probes/symbol_pkg_probe.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/multiuser_serdes_rx_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/serdes_rx_flow_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "layout#202",
+  "kind": "clause",
+  "section": "5. 真机事实（IC6.1.8，2026-09-21 实测）",
+  "line": 263,
+  "text": "同会话后续 SKILL 调用全部超时（P-075）。批处理路径从根上避开，别再走窗体。",
+  "doc": "上层/4-layout.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ }
+]

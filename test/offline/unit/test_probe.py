@@ -11,7 +11,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src"))
 
 from pyapi.models import CommandResult
 from register.probe import allocate_local_port, allocate_remote_port, detect_remote_python, port_free_on_remote
-from common.paths import override_work_dir_for_tests
+from common.paths import init_work_dir
 
 
 class FakeRunner:
@@ -28,7 +28,7 @@ class FakeRunner:
 
 class TestProbeHelpers(unittest.TestCase):
     def setUp(self) -> None:
-        override_work_dir_for_tests(Path(tempfile.mkdtemp(prefix="vb-")))
+        pass  # work root: session-bound（test/conftest.py）
 
     def test_python_version_window_r17(self) -> None:
         """r17: role 机器 2.7+ 或 3.6.8+；边界值必须精确。"""

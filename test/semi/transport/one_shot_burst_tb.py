@@ -1,3 +1,15 @@
+# === TB 注释头（规范见 test/docs/写TB规范.md §0）=====================
+# 作者: 设计/Codex
+# 最后改动: 2026-09-28 12:04
+# 依赖: 无
+# =====================================================================
+# 六步流程（按 test/docs/写TB规范.md §1–§6）：
+# §1 环境检查：已调用 require_environment(work_dir, token)。
+# §2 构建：绑定 work root、补齐注册表、设置会话上限并发量。
+# §3 最终检查：确认 server/注册表可用、无旧 worker 遗留。
+# §4 执行：并发 gui/spectre 一次性命令。
+# §5 比对：每个 marker 回显、planned/answered、transport 失败数。
+# §6 重复/收尾：多轮重复；关闭 server、保留 JSON 证据。
 """One-shot channel burst TB (real host): session-channel opens must retry.
 
 ``run_gui_command`` / ``run_spectre_command`` open a fresh SSH session channel
@@ -26,10 +38,14 @@ ROOT = Path(__file__).resolve().parents[3]
 SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
+_RUNNERS = ROOT / "test" / "shared" / "runners"
+if str(_RUNNERS) not in sys.path:
+    sys.path.insert(0, str(_RUNNERS))
 
 from transport.middle import BusinessServer  # noqa: E402
 from common.registry import UserEntry, load_registry  # noqa: E402
-from common.paths import registry_path, override_work_dir_for_tests  # noqa: E402
+from common.paths import registry_path, init_work_dir  # noqa: E402
+from env_check import require_environment  # noqa: E402
 
 
 class ProbeFailure(AssertionError):
@@ -52,9 +68,14 @@ def main() -> int:
     parser.add_argument("--out", default="")
     args = parser.parse_args()
 
+    # 六步 §1：先确认 token / command role / SKILL 通道可用。
+    environment = require_environment(
+        work_dir=str(Path(args.work_dir).resolve()), token=args.token
+    )
+    # 六步 §2/§3：绑定 work root、补齐注册表基线，并确认服务端会话上限。
     work_dir = Path(args.work_dir).resolve()
     work_dir.mkdir(parents=True, exist_ok=True)
-    override_work_dir_for_tests(work_dir)
+    init_work_dir(work_dir)
     registry = load_registry(registry_path())
     if registry.get(args.user) is None:
         entry = UserEntry(token=args.token, mode="remote")
@@ -82,7 +103,8 @@ def main() -> int:
         # budget bump would be lost
         registry.register(args.user, entry, overwrite=True)
 
-    server = BusinessServer(work_dir)
+    init_work_dir(work_dir)
+    server = BusinessServer()
     results: list[dict] = []
     lock = threading.Lock()
     started_workers = 0
@@ -109,6 +131,7 @@ def main() -> int:
 
     alive: list[threading.Thread] = []
     try:
+        # 六步 §4/§5：并发执行同一动作；每个结果携带自己的 marker 供比对。
         for _round in range(args.rounds):
             threads = []
             for index in range(args.workers):
@@ -139,6 +162,7 @@ def main() -> int:
         "planned_requests": planned_calls,
         "failed": len(failed),
         "transport_failures": len(transport_failures),
+        "environment": environment,
         "by_kind": {
             kind: {
                 "total": sum(1 for r in results if r["kind"] == kind),

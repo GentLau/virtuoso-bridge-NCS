@@ -26,6 +26,94 @@ BUGS_DIR = ROOT / "test" / "reports" / "bugs"
 
 #: 未关闭条目。状态只允许：待设计修 / 待测试侧 / 待归属 / 待决策 / 观察
 OPEN = [
+
+    {
+        "id": "P-089",
+        "layer": "上层（maestro 包）",
+        "slug": "maestro-open-waveform-result-ignored",
+        "reported": "2026-09-28（第八轮 op×param 补测；红灯探针已留证）",
+        "updated": "2026-09-28（新立）",
+        "title": "`maestro.open_waveform_gui.result` 声明但**从不被实现读取**（静默无效）",
+        "level": "P3（静默无效参数，与 P-084 同类）",
+        "owner": "设计侧（实现语义或从模型/spec 删除）",
+        "status": "待设计修",
+        "where": "`src/pyapi/packages/maestro.py:187`（`OpenWaveformRequest.result`）；全文件 `request.result` "
+                 "只出现在 read_results 的波形表达式（`:1909/:1912`），open_waveform_gui 的 SKILL"
+                 "（`:3139-3158`）只做 `v(signal)`，无 `?result` 分支",
+        "symptom": "`open_waveform_gui(result=\"ac\")` 与 `result=\"no_such_result_name\"` **都成功**、"
+                   "都返回正常窗口（window:243 / window:245）⇒ 参数对行为零影响。",
+        "repro": "`PYTHONPATH=src python test/semi/probes/maestro_open_waveform_result_probe.py`（预期红）",
+        "evidence": "`test/artifacts/evidence/round8/p089-open-waveform-result.json`",
+        "accept": "二选一：① 让 result 参与波形表达式（`?result`）并给出错误名失败语义；"
+                  "② 从模型/spec 删除该字段；探针转绿或删除",
+        "next": "设计侧定口径；测试侧复跑探针确认",
+    },
+
+    {
+        "id": "P-088",
+        "layer": "上层（maestro 包）",
+        "slug": "maestro-delete-var-all-scope-broken",
+        "reported": "2026-09-28（第八轮 op×param 补测；红灯探针已留证）",
+        "updated": "2026-09-28（新立）",
+        "title": "`maestro.write(delete_var, scope=..all..)` 确定性失败：Cannot find a setup database entry for handle 0",
+        "level": "P2（用户清理/teardown 常用路径不可用；现有套件用 try/except 掩盖）",
+        "owner": "设计侧（maestro 包 delete_var 的 all 分支 SKILL）",
+        "status": "待设计修",
+        "where": "`src/pyapi/packages/maestro.py:930-941`（all 分支 `foreach(tn cadr(axlGetTests(sdb)) … axlGetTest(sdb tn) …)` / "
+                 "`foreach(cn cadr(axlGetCorners(sdb)) … axlGetCorner(sdb cn) …)` → `axlGetVar(0 …)` 报 handle 0）",
+        "symptom": "scope 矩阵实测：`global` set/delete 均 ✓；`test`（test=ac）✓；**`all` set ✓ / delete ✗** "
+                   "`*Error* error: Cannot find a setup database entry for handle 0`。副产物："
+                   "`maestro_e2e_tests.py` 的 scope=all 清理在 try/except 里，失败被吞 → rc_probe 的 sdb 里"
+                   "残留 `e2e_save_*` 变量（本轮实测 3 个）。",
+        "repro": "`PYTHONPATH=src python test/semi/probes/maestro_delete_var_all_probe.py`（预期红）",
+        "evidence": "`test/artifacts/evidence/round8/p086-delete-var-all.json`；`test/artifacts/tmp/probe_delete_var_scopes.py`",
+        "accept": "delete_var scope=all 成功删除 global/test/corner 三处同名变量（探针转绿）；"
+                  "现有套件的 try/except 清理改为显式断言",
+        "next": "设计侧修 all 分支的迭代写法；测试侧复跑探针 + 清理 rc_probe 残留变量",
+    },
+
+    {
+        "id": "P-083",
+        "layer": "上层（spectre 包）",
+        "slug": "spectre-export-precision-semantics-undefined",
+        "reported": "2026-09-28（第八轮 op×param 补测；未走外部 bug 系统）",
+        "updated": "2026-09-28（新立）",
+        "title": "`spectre.export.precision` 语义未定义：实现按**有效数字**（`%.Ng`），用户直觉是小数位",
+        "level": "P3（口径/文档；会造成「导入的 CSV 精度与预期不符」）",
+        "owner": "设计侧（spec 写明语义，或实现改小数位）",
+        "status": "待归属",
+        "where": "`src/pyapi/packages/spectre.py:1050`（`formatter = f\"{value:.{precision}g}\"`）"
+                 "vs `spec/design-concepts/上层/7-spectre.md:287`（只列字段，未定义语义）",
+        "symptom": "`export(format=csv, precision=3)` 对 1.23456 输出 `1.23`（3 位有效数字），"
+                   "而按「小数位」直觉应为 `1.235`。",
+        "repro": "`PYTHONPATH=src python test/live/packages/spectre_params_e2e_tests.py "
+                 "--transport http --token vb-vblog`（EXPORT-P1 按实效口径钉住）",
+        "evidence": "`test/artifacts/evidence/round8/spectre-params/spectre-params.json`、"
+                    "`.../spectre_params_export.csv`（1.23/2.35/3.46）",
+        "accept": "spec 明确写「有效数字」，或实现改为小数位；两者取其一并同步 TB 断言",
+        "next": "设计侧定口径；测试侧按拍板结果更新 EXPORT-P1 断言",
+    },
+    {
+        "id": "P-084",
+        "layer": "上层（maestro 包）",
+        "slug": "maestro-export-include-results-ignored",
+        "reported": "2026-09-28（第八轮 op×param 补测；红灯探针已留证）",
+        "updated": "2026-09-28（新立）",
+        "title": "`maestro.export.include_results` 是声明参数但实现**从不读取**（静默无效）",
+        "level": "P2（静默无效参数：调用方以为能控制是否携带结果文件）",
+        "owner": "设计侧（实现语义或从模型/spec 删除）",
+        "status": "待设计修",
+        "where": "`src/pyapi/packages/maestro.py:123`（`include_results: bool = True`，全文件仅此一处；"
+                 "`rg -n \"include_results\" src/pyapi/packages/maestro.py` 只命中声明行）；spec 未定义该字段",
+        "symptom": "同一 `kind=outputs_csv` 下 `include_results=True/False` 导出的文件内容 "
+                   "**sha256 完全相同**（本轮实测 3c7e476b…），参数对产物零影响。",
+        "repro": "`PYTHONPATH=src python test/semi/probes/maestro_export_include_results_probe.py`"
+                 "（预期红；verdict=RED(参数被忽略)）",
+        "evidence": "`test/artifacts/evidence/round8/maestro-include-results/include-results.json`",
+        "accept": "二选一：① 实现 `include_results` 的真实语义（并在 spec 定义）；"
+                  "② 从 `ExportRequest`/spec 删除该字段；探针转绿或删除",
+        "next": "设计侧定口径；测试侧复跑探针确认",
+    },
     {
         "id": "P-070",
         "layer": "上层（maestro/spectre 包）",
@@ -47,6 +135,243 @@ OPEN = [
         "accept": "二选一：① 支持驱动 —— 能配置 montecarlo 分析并启动，跑完读回 yield/mean/sigma 且与 ADE GUI 对数一致"
                   "（真机一次）；② 不支持 —— spec 明确写「只读 MC 结果、不驱动」并标为明确不做",
         "next": "设计侧先定口径；定了之后测试侧补真机 MC 验证（或补不覆盖声明），并把「两项目全链」里的 MC/PVT 一栏按口径收口",
+        "extra": "## 设计侧进展（2026-09-28，提交 `64c803c`）\n"
+                 "- 真机调查 v2：`set_run_mode('Monte Carlo Sampling')` + **裸** `maeRunSimulation` 可跑出真 history "
+                 "`MonteCarlo.0`（24.8s）；文档写的 `?runMode` 默认 Single Run 与实测不符。\n"
+                 "- 选项矩阵：`maeSetRunOption` 只认 `mcmethod`/`mcnumpoints`；其余 15 项走 `axlPutRunOption`+"
+                 "`axlSetRunOptionValue` 可写可回读（`dutsummary` 读回空串）。\n"
+                 "- 副作用提醒：MC 实验会把共享库 `maestro_tb/rc_probe` 的 run_mode 改成 Monte Carlo Sampling，"
+                 "**跑完务必还原**（本轮已由测试侧恢复过一次）。\n"
+                 "- 待办：产品拍板「支持驱动」后，在 maestro 包补正式入口 + spec；测试侧据此补真机 MC 验证与 yield/sigma 对数。\n",
+    },
+    {
+        "id": "P-078",
+        "layer": "上层（schematic 包）",
+        "slug": "place-wire-style-args",
+        "title": "`place_wire` 样式参数拼接重复：width 静默建出 path、color/line_style 直接报错",
+        "level": "P2（静默错误结果 + 硬报错）",
+        "owner": "设计侧（schematic 包）",
+        "status": "待设计修",
+        "where": "`src/pyapi/packages/schematic.py:575-583`（两段追加逻辑都保留：575-578 与 579-583 重复拼 width/color/line_style；"
+                 "按官方签名应只保留 `width [color [lineStyle]]` 一次 → 删除第二段）",
+        "symptom": "`place_wire` 只传 `points` 正常；**一旦传样式参数**：\n"
+                   "1. `width=0.1` → 生成 `schCreateWire(... 0 0 0.1 0.1 nil)`，**静默建出 `path` 而不是 `line`(wire)**，"
+                   "`schematic.read` 看不到该线（wire_count=0），下游连通性/网表会当它不存在；write 仍报 ok。\n"
+                   "2. `width+color` → `too many arguments (at most 9 expected, 10 given)` 硬报错。\n"
+                   "3. `width+color+line_style` → `12 given` 硬报错。\n"
+                   "真机 DB 复核：ctrl 用例 shape=`((\"line\" nil nil nil))`，width 用例 shape=`((\"path\" 0.1 nil nil))`。",
+        "repro": "python test/semi/probes/schematic_wire_style_probe.py            # 真机，5 例：ctrl/route OK，width/color/style BUG\n"
+                 "python -m pytest test/offline/unit/test_schematic_contracts.py -q  # 离线钉住用例 test_wire_style_arguments_exact 必红",
+        "evidence": "`test/artifacts/evidence/round8/schematic-wire-style.json`（逐例 write/read/DB 三层 + 离线 SKILL 文本）；"
+                    "离线失败输出见 round8/offline-win-1.log（本条为**有意红钉住**）",
+        "accept": "① 半真机探针 `schematic_wire_style_probe.py` **5/5 OK**（width 读回 width≈0.1 且 read 可见；"
+                  "color/line_style 不再报 too-many-arguments 且读回正确）；"
+                  "② 离线 `test_wire_style_arguments_exact` 转绿；③ 复跑 `schematic_e2e_tests.py`（含 ATOM-wire）不回归。",
+        "next": "设计侧按官方签名收敛为单次拼接（删 579-583 段或 575-578 段，二者只留一）→ 通知测试侧；"
+                "测试侧复跑上述三件套后销案。",
+        "reported": "2026-09-28（测试侧第八轮参数矩阵发现，卡片直报）",
+        "updated": "2026-09-28",
+    },
+    {
+        "id": "P-079",
+        "layer": "其他（注册流程）",
+        "slug": "local-joint-port-silent-coercion",
+        "title": "local 模式显式 `daemon_port`≠`local_port` 被静默归一化（spec 要求双值相等；`_probe` 守卫不可达）",
+        "level": "P3（参数被静默丢弃）",
+        "owner": "设计侧（注册口径二选一，建议显式拒绝）",
+        "status": "待设计修",
+        "where": "`src/register/flow.py:1180-1185`（`_prepare_local_port`：`joint = role.local_port or role.daemon_port` 后**同步覆写两值**）"
+                 "与 `:705-715`（`_probe` 的‘双值必须相等’守卫——正常流程经第 2 步后二者已相等，**不可达**）；spec：`中层/add-中层配置文档.md` §6.4",
+        "symptom": "local 模式显式提交 `daemon_port=65091, local_port=65092`：第 2 步静默把两者都改成 **65092**（local_port 胜出），"
+                   "第 3 步照常 `probed`，无错误无告警 —— 调用方指定的 daemon 端口被丢弃。"
+                   "spec 措辞是「显式双值必须相等」，既未拒绝、也无文档写明优先级。",
+        "repro": "离线最小复现（测试侧实测，2026-09-28）：\n"
+                 "  RegistrationRequest(mode=\"local\", user=\"u\", token=\"tok-local\",\n"
+                 "      roles={\"daemon\": {\"daemon_port\": 65091, \"local_port\": 65092}})\n"
+                 "  → flow.validate() stage=validated、ports=(65092,65092)；flow.probe() stage=probed、errors=[]\n"
+                 "脚本：`test/artifacts/tmp/_r8_joint_port.py`",
+        "evidence": "同上脚本输出；`test/offline/unit/test_register_flow.py::test_validate_preallocates_joint_port_for_local_mode`（只覆盖缺省同步，不含冲突双值）",
+        "accept": "二选一：① **拒绝**（建议）：第 2 步发现显式双值不等 → failed，错误指向两个端口值（并补离线断言）；"
+                  "② **文档化优先级**：spec 写明 local_port 优先/或 daemon_port 优先，行为按文档固定并补断言。",
+        "next": "设计侧定口径 → 测试侧补离线用例（`test_register_flow.py`）并复跑全套。",
+        "reported": "2026-09-28（第八轮条款逐条核账 · g1-core 配置#108 发现）",
+        "updated": "2026-09-28",
+    },
+    {
+        "id": "P-080",
+        "layer": "上层（verilog / veriloga 包）",
+        "slug": "view-type-read-unvalidated",
+        "title": "`view_type` 在 read 路径不校验（空串/整数/bogus 静默接受）；write 校验后取值又被忽略",
+        "level": "P2（参数合同不一致 + 死参数）",
+        "owner": "设计侧（verilog / veriloga 包）；\"view_type 是否参与寻址\"需 spec owner 定口径",
+        "status": "待设计修",
+        "where": "`src/pyapi/packages/verilog.py:201-230`（read 不碰 view_type）、`:307`（只有 write 校验）、`_view_dir:161`（不使用 view_type）；"
+                 "`src/pyapi/packages/veriloga.py:205-235`、`:476`、`_view_dir:145`。主文件名 `MAIN_FILE` 硬编码，"
+                 "与 spec `8-verilog.md:45`『主文件名由 viewType 决定（`ddMapGetDataTypeFileName` 查）』不一致。",
+        "symptom": "真机（vblog）实测：`read(view_type=\"\")`、`read(view_type=123)`、`read(view_type=\"bogus_type_xyz\")` 全部 `ok=true` 且返回默认视图内容（静默忽略取参）；"
+                   "同一字段 `write(view_type=\"\")` 返回 400 `invalid request: view_type must be a non-empty string`，而 `write(view_type=\"bogus_type_xyz\")` 返回 ok。"
+                   "read/write 校验口径不一致；非默认取值对寻址/主文件名没有任何可观察影响。",
+        "repro": "python test/artifacts/tmp/r8_p080_p081_evidence.py（真机；含 read 五态 + write 两态）\n"
+                 "python -m pytest test/offline/unit/test_view_type_param_contract.py -q  # 4 条 strict xfail：read 的空串/整数必须 ValueError",
+        "evidence": "`test/artifacts/evidence/round8/p080-viewtype-p081-remote-path-2026-09-28.json`（live 五态 + write 两态）；"
+                    "`test/offline/unit/test_view_type_param_contract.py`（修复后 xfail→XPASS 转红，强制删标记）",
+        "accept": "① read 对 view_type 与 write 同口径校验（空/非字符串 → ValueError；4 条 xfail 转绿）；"
+                  "② 产品定口径：若 view_type 按 spec 参与主文件名/视图类型决策 → 实现并对非默认值给可观察差异；"
+                  "若仅为兼容字段 → spec 写明『不参与寻址』并统一 read/write 校验。",
+        "next": "设计侧先定 ② 口径、修 read 校验与/或主文件名映射；测试侧按结论删 xfail，复跑 verilog/veriloga 两套 E2E 与离线合同。",
+        "reported": "2026-09-28（第八轮 op×param 参数矩阵攻击发现，卡片直报）",
+        "updated": "2026-09-28",
+    },
+    {
+        "id": "P-081",
+        "layer": "上层（verilog / veriloga 包）· Windows/Linux 一致性",
+        "slug": "remote-posix-path-mangling",
+        "title": "`file_is_local=False` 时 Windows 客户端把 POSIX 远端路径转成反斜杠 → 远端找不到文件",
+        "level": "P2（该模式在 Windows 客户端完全不可用）",
+        "owner": "设计侧（verilog / veriloga 包）",
+        "status": "待设计修",
+        "where": "`src/pyapi/packages/verilog.py:218-225`（`path = Path(request.file_path)` → `str(path)` 交给 download）、"
+                 "`src/pyapi/packages/veriloga.py:218-225`；Linux 客户端为 `PosixPath` 不受影响 → **同一请求两端行为不同**。",
+        "symptom": "Windows 客户端真机实测：`read(file_path=\"/home/Gent/project/vblog/.../veriloga.va\", file_is_local=False)` → "
+                   "`RuntimeError: download requires a regular file: /home/Gent/.virtuoso-bridge/vblog/\\home\\Gent\\... (missing)`；"
+                   "路径被改写成 `\\home\\Gent\\...`（WindowsPath 形态）并按相对路径拼到 role root 下。`source.path` 回显同样是反斜杠形态。",
+        "repro": "python test/artifacts/tmp/r8_p080_p081_evidence.py（真机；看 read_remote_file_is_local_false）\n"
+                 "python -m pytest test/offline/unit/test_remote_posix_path_contract.py -q  # 2 条 strict xfail：传给 download 的路径必须逐字节不变",
+        "evidence": "`test/artifacts/evidence/round8/p080-viewtype-p081-remote-path-2026-09-28.json`；"
+                    "`test/offline/unit/test_remote_posix_path_contract.py`；live 侧已在 `test/live/packages/veriloga_e2e_tests.py` READ-02 留『修复后恢复远端读断言』的注释。",
+        "accept": "① Windows 客户端 read(file_is_local=False, file_path=<POSIX>) 成功且 sha256 与库路径读取一致；"
+                  "② source.path 原样回显；③ 2 条 xfail 转绿；④ 恢复 live READ-02 的远端读断言。",
+        "next": "设计侧不要把远端路径过 `pathlib.Path`（或只在 file_is_local=True 分支使用）；测试侧复跑离线 xfail + veriloga live + 跨平台客户端矩阵。",
+        "reported": "2026-09-28（第八轮 op×param 参数矩阵攻击 file_is_local 分支发现，卡片直报）",
+        "updated": "2026-09-28",
+    },
+    {
+        "id": "P-082",
+        "layer": "上层（schematic + layout 包）",
+        "slug": "region-quad-vs-two-points",
+        "title": "region 口径漂移（P-074 同类）：spec 定版‘对角两点、禁四元组’，实现（读过滤/截图）仍只收四元组",
+        "level": "P2（spec 合规请求直接失败）",
+        "owner": "设计侧（schematic / layout 包对齐 P-074 定版）",
+        "status": "待设计修",
+        "where": "schematic：`src/pyapi/packages/schematic.py:79-126`（region 过滤按 4 个 float 解包）、`:932-935`（screenshot region 强制 len==4）；"
+                 "layout：`src/pyapi/packages/layout.py:1707-1714`（`_filter_region` 强制 len==4）。"
+                 "spec：`上层/2-schematic.md` §1.3「region/bbox 一律对角两点 [pos0,pos1]（read 与 write 同形，**不再用四元组**）」；"
+                 "`上层/4-layout.md:36/71/175`（`{\"region\":[pos0,pos1]}`）。",
+        "symptom": "按 spec 传对角两点 `[[x0,y0],[x1,y1]]`：schematic `object_filter.region` → **裸 TypeError**（float(list)）；"
+                   "schematic `screenshot.region` → `ValueError: region must be [x1, y1, x2, y2]`；layout `object_filter.region` → "
+                   "`ValueError: shape.region must be [x0, y0, x1, y1]`。反之 spec 明令弃用的四元组在三个面全被接受 —— "
+                   "同文件 layout `_bbox`（write 侧）已是两点口径，read 过滤与 schematic 截图没跟上 P-074 定版。\n"
+                   "**加强证据（真机探针，2026-09-28）**：layout `read(depth>0)` **在两种形态下都必然失败** —— "
+                   "扁平四元组过了 `_filter_region` 后被 `_bbox` 拒（`ValueError: bbox must be [ [x, y], [x, y] ]`），"
+                   "嵌套两点又被 `_filter_region` 拒 → **depth 特性 100% 不可用**（`layout-depth.json`：depth0 shapes=3 OK，depth1 直接 BUG）。",
+        "repro": "python test/artifacts/tmp/_r8_region_shapes.py   # 两点/四元组 ×（schematic instance/shape、layout filter）对照\n"
+                 "python test/artifacts/tmp/_r8_public_region.py  # 公共 API：read(object_filter=两点 region) → 裸 TypeError；四元组放行到 middle\n"
+                 "离线钉住（修复前必红）：test/offline/unit/test_schematic_contracts.py::test_region_filter_uses_two_points_per_p074_spec；"
+                 "test/offline/unit/test_layout_contracts.py::test_object_filter_region_uses_two_points_per_p074_spec",
+        "evidence": "`test/artifacts/tmp/_r8_region_shapes.py` 六行输出；现有 TB 用四元组的点位："
+                    "`test_layout_contracts.py:382`、`test_schematic_contracts.py:92/104`（修复后需同步改两点）；"
+                    "真机探针 `test/semi/probes/layout_depth_probe.py` → `test/artifacts/evidence/round8/layout-depth.json`",
+        "accept": "① 三个请求面只接受对角两点、四元组报显式 ValueError（点明 pos0/pos1）；② 两条钉住用例转绿；"
+                  "③ 旧四元组点位 TB 同步改两点并全绿（layout/schematic 包 E2E 无回归）；"
+                  "④ `layout_depth_probe` 转绿：depth=1 读回 shapes 严格大于 depth=0（层级下钻语义成立）。",
+        "next": "设计侧按 P-074 口径统一实现 → 通知测试侧；测试侧改旧点位、复跑离线 + layout/schematic 包 E2E 后销案。",
+        "extra": "## 关联\n\n"
+                 "- **P-085**：`layout.read(depth>0)` 与 region 的组合任何写法都失败（与本条同源但独立，见该卡片）；"
+                 "修本条时两处（`_filter_region` 与 `_bbox`）必须一起对齐。\n",
+        "reported": "2026-09-28（第八轮条款逐条核账 · g4-edit schematic#014-018/049-050、layout#023-024/028 发现）",
+        "updated": "2026-09-28",
+    },
+    {
+        "id": "P-085",
+        "layer": "上层（layout 包）",
+        "slug": "layout-depth-region-unusable",
+        "title": "`layout.read(depth>0)` 与 `region` 组合**任何写法都失败**（扁平→`_bbox` 拒；两点→`_filter_region` 拒）",
+        "level": "P2（spec 声明的参数组合确定性不可用）",
+        "owner": "设计侧（layout 包）；与 P-082 同源但独立",
+        "status": "待设计修",
+        "where": "`src/pyapi/packages/layout.py:1522-1525`（deep 路径 `_bbox(region)` 要求嵌套两点）"
+                 "与 `:1707-1714`（`_filter_region` 要求扁平四元组）；spec `上层/4-layout.md:36,40`（region 定版 `[pos0, pos1]`，depth>0 需 region 或 layers）",
+        "symptom": "`depth>0` 时两条校验互斥，**没有任何一种 region 写法能通过**：\n"
+                   "| 输入 | 结果 |\n"
+                   "|---|---|\n"
+                   "| `depth=0` + `region=[0,0,60,60]` | ✅ 正常（shapes=3） |\n"
+                   "| `depth=1` + `region=[0,0,60,60]`（实现自定的扁平格式） | ❌ `ValueError: bbox must be [ [x, y], [x, y] ]` |\n"
+                   "| `depth=1` + `region=[[0,0],[60,60]]`（spec 定版两点） | ❌ `ValueError: shape.region must be [x0, y0, x1, y1]` |\n"
+                   "depth>0 因此是**确定性不可用**的参数组合（不是偶发）。",
+        "repro": "python test/semi/probes/layout_depth_probe.py            # 期望 RED（现为确定性失败）\n"
+                 "python -m pytest test/offline/unit/test_layout_depth_contract.py -q  # 1 条 strict xfail",
+        "evidence": "`test/artifacts/evidence/round8/layout-depth.json`（depth0=3 shapes OK / depth1=ValueError）；"
+                    "`test/offline/unit/test_layout_depth_contract.py`（stub middle 证明死在参数形态、未触达传输层）",
+        "accept": "二选一定口径后实现：① 按 P-074 定版统一 `region` 为对角两点（改 `_filter_region`，deep 分支不动）；"
+                  "② 或 deep 分支把扁平四元组转成两点后再交给 `_bbox()` 并同步 spec。"
+                  "任一方案都要补回归：`depth=1 + region` 返回跨层结果（shapes>0）且 `layout_depth_probe.py` 转 GREEN。",
+        "next": "设计侧与 P-082 一起定 region 形态（两处必须同时对齐）→ 测试侧复跑探针 + 离线 xfail + layout live。",
+        "reported": "2026-09-28（第八轮半真机探针 layout_depth_probe.py 发现）",
+        "updated": "2026-09-28",
+    },
+    {
+        "id": "P-086",
+        "layer": "底层 daemon / 中层连接（多用户场景）",
+        "slug": "empty-response-window-after-long-skill",
+        "title": "多用户同视图场景后 ~30–90s 窗口内同 token 请求得到 `Empty response from daemon`（随后自愈）",
+        "level": "P3（观察：可恢复，但窗口期错误不可读、无结构化语义）",
+        "owner": "待归属（底层 daemon 请求生命周期 / 中层连接复用，二选一或联合）",
+        "status": "观察",
+        "where": "底层：`src/bridge/resources/ramic_bridge_daemon_3.py:187`（`_read_frame` 对空 stdin 只 1ms 轮询、无 EOF/停滞判定）；"
+                 "中层：`src/common/skill_client.py:185`（读空 → `errors=[\"Empty response from daemon\"]`，非 spec 枚举文案）；"
+                 "触发 TB：`test/semi/probes/twouser_same_view_probe.py`（holder 单请求内 `dbOpenCellViewByType a` + `hiSleep(20)` 持锁）",
+        "symptom": "复现 4/4（2026-09-28）：跑完 twouser 多用户同视图场景后，**同 token 新请求立即得到 "
+                   "`Empty response from daemon`**；raw socket 新建连接 6s 内未被 accept（daemon 忙，wchan=hrtimer_nanosleep）。"
+                   "CLEAN 步记录 `holder_still_running=false`（holder 已结束）。**约 30–90s 后自愈**"
+                   "（python daemon 回到 `inet_csk_accept`，`1+2` 恢复 SUCCESS='3'），无需重启实例。\n"
+                   "**加强证据（21:30–21:38，无并发）**：`maestro_e2e_tests.py --transport direct` 单独跑两次，"
+                   "均在套件中途 `virtuoso.maestro.read_config/write` 报 `RuntimeError: Empty response from daemon`；"
+                   "同窗口 CDS.log 出现 `ERROR (ASSEMBLER-8001): Cannot determine a valid ADE Assembler session from "
+                   "the supplied argument \"0\"` —— 有调用把**会话句柄 0** 传给了 ADE API（与 `delete_var` 报的 "
+                   "`Cannot find a setup database entry for handle 0` 同源嫌疑）。",
+        "repro": "python test/semi/probes/twouser_same_view_probe.py --work-dir test/artifacts/env/log-vblog \\\n"
+                 "  --token-a vb-vbuser1 --token-b vb-vbuser2 --lib serdes_rx --cell twouser_probe_r8 \\\n"
+                 "  --out test/artifacts/evidence/round8/twouser-same-view-r8d.json\n"
+                 "# 随后立即 python test/artifacts/tmp/_r8_user1_recover.py → Empty response；隔 ~60s 再跑 → SUCCESS",
+        "evidence": "`test/artifacts/evidence/round8/twouser-same-view-r8d.json`（CLEAN counted=false + holder_still_running=false）；"
+                    "`p085-vbuser1-daemon-hang-2026-09-28.json`、`p085-dd-modal-wedge-2026-09-28.json`（现场快照，文件名沿用当天流水号）；"
+                    "CDS.log 出现过 `a '(' at line 1 was still unclosed on EOF` 读入警告；"
+                    "maestro 侧：`evidence/round8/coverage-main-r8.log`（两次 Empty response + 失败步骤）、"
+                    "`~/.virtuoso-bridge/vblog/run/CDS.log` 21:36:04 的 ASSEMBLER-8001(argument \"0\") 行",
+        "accept": "① 触发场景结束后 0 窗口期：同 token 下一条请求直接成功；② 若窗口不可避免，错误必须是 spec 枚举语义"
+                  "（`unknown-effect`/`timeout`/具名 busy）且文案可读；③ daemon 对 stdin EOF/请求停滞有可观测处置（日志 + 退出/复位），不再静默轮询。",
+        "next": "设计侧定位窗口期 daemon 在等什么（建议给请求生命周期加日志：recv→ipc 写→ipc 读→回包，各步带耗时）；"
+                "中层评估 stale 连接自动重连与空响应结构化。测试侧：探针 CLEAN 已改 best-effort（不计判定），Runbook 记『跑完 twouser 等 90s 再跑同实例用例』。",
+        "reported": "2026-09-28（第八轮半真机整层，twouser_same_view_probe 复跑 4 次稳定复现）",
+        "updated": "2026-09-28",
+    },
+    {
+        "id": "P-087",
+        "layer": "上层（maestro 包）· 会话复用",
+        "slug": "maestro-write-save-false-still-persists",
+        "title": "`save=False` 的改动不被隔离：后续任意一次 save 会把它静默带走（跨请求污染）；同场景 `delete_var` 清理报 handle 错误",
+        "level": "P2（静默跨请求污染用户 setup + 清理失败）",
+        "owner": "设计侧（maestro 包）；`save` 的对外语义需 spec owner 定稿",
+        "status": "待设计修",
+        "where": "`src/pyapi/packages/maestro.py:1760-1765`（save=False 只跳过显式 `maeSaveSetup`，不丢弃/隔离会话内改动）；"
+                 "`:1303-1317` `_close_if_created`/`_close_session`；`delete_var` 清理路径（本场景报 handle 错误）。"
+                 "spec `6-maestro.md` 未定义 `save` 语义（仅 :173 提到 open/save/close）",
+        "symptom": "磁盘级因果链（真机 maestro_tb/rc_probe，2026-09-28 实测）：\n"
+                   "1. `write(set_var v=1.0)`（save=True）→ 步骤含 save_setup，sdb 中 v=1.0 ✓\n"
+                   "2. `write(save=False, set_var v=2.0)` → 步骤**不含** save_setup，**立即**查 sdb 仍 v=1.0 ✓（未立即落盘）\n"
+                   "3. 随后一次**无关**的 `write(set_var other=ok)`（save=True）→ sdb 中 v 被写成 **2.0** ✗ —— "
+                   "未保存改动留在复用会话里，被下一次保存静默带走（跨请求污染）。\n"
+                   "4. 同场景 `delete_var` 清理两个变量均失败：`*Error* error: Cannot find a setup database entry for handle 0`。",
+        "repro": "PYTHONPATH=src python test/semi/probes/maestro_save_false_disk_probe.py   # 期望 RED（第 5 项 FAIL=2.0）\n"
+                 "# 证据：test/artifacts/evidence/round8/maestro-save-false-disk.json",
+        "evidence": "`test/artifacts/evidence/round8/maestro-save-false-disk.json`（5 项 checks：步骤表/立即磁盘/泄漏判据/清理）；"
+                    "live 侧 `maestro_e2e_tests.py` WRITE-06 现按步骤表判定（可过），**不足以防住本条泄漏**，以磁盘探针为准",
+        "accept": "① spec 明确 `save` 语义（推荐：save=False 的改动必须被隔离 —— 关闭/丢弃或快照-回滚，后续 save 不得带走）；"
+                  "② 实测第 3 步泄漏消失（旧变量仍 1.0），删参数则改为负向「传 save 被拒」；"
+                  "③ `delete_var` 在复用会话/失败恢复路径可正常清理（或明确报可读错误）；④ 探针转 GREEN。",
+        "next": "设计侧定 `save` 隔离口径 + 修 delete_var handle 路径；测试侧把磁堢探针纳入半真机层并复跑 live WRITE-06。",
+        "reported": "2026-09-28（第八轮：live WRITE-06 首红 → 磁盘级探针确认隔离缺失）",
+        "updated": "2026-09-28",
     },
 ]
 

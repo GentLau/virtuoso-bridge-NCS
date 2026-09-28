@@ -1,0 +1,1663 @@
+# Spec 条款预映射（机器，**不是覆盖结论**）
+
+> 由 `test/shared/runners/premap_spec_clauses.py` 生成。`NONE/WEAK` 必须逐条人工/子代理复核；
+> `CANDIDATE` 只是找到候选证据文件，是否真覆盖要看该 TB 的判据。
+
+- 条款总数 **1131**：CANDIDATE 16 / WEAK 541 / NONE 70 / NO-TOKEN 504
+
+- **总览#004** [NO-TOKEN] 总览/1-四层整体架构与接口.md:6 — > 状态：已冻结（接口唯一基线）
+- **总览#010** [NO-TOKEN] 总览/1-四层整体架构与接口.md:18 — - **中层**：负责路由与并发限流，把指令或文件正确地投送到指定位置，并返回可验证结果；
+- **总览#020** [NO-TOKEN] 总览/1-四层整体架构与接口.md:31 — 接口签名与返回、错误总则的唯一 owner 是本文 §4.1 / §4.5；其它文档只引用，不再复制清单。
+- **总览#021** [NO-TOKEN] 总览/1-四层整体架构与接口.md:33 — 四层是职责边界，不要求每层都是独立进程。顶层、上层、中层可以位于同一进程；底层必须是 Virtuoso 可加载、可管理的常驻守护进程。
+- **总览#022** [NO-TOKEN] 总览/1-四层整体架构与接口.md:37 — | 术语 | 定义 |
+- **总览#024** [NO-TOKEN] 总览/1-四层整体架构与接口.md:39 — | **顶层** | HTTPServer：对外提供 API、接收请求并开线程池（每任务一个线程；池大小见[顶层补充 §5](../顶层/add-控制面与业务面.md)），不实现业务。 |
+- **总览#025** [NO-TOKEN] 总览/1-四层整体架构与接口.md:40 — | **上层** | 纯粹的封装层：把业务操作封装为调用中层五个业务接口的业务包；包含原理图、版图、TB、Maestro、库/符号、仿真（一次性 Spectre 命令封装）等模块。 |
+- **总览#026** [WEAK] 总览/1-四层整体架构与接口.md:41 — | **中层** | 路由与并发限流：向上层提供五个业务接口（见 §4.1）与只读查询 `query`（见 §4.2），隐藏本地/SSH、隧道、端口和主机拓扑。 |
+  - 命中：`query`→6
+- **总览#027** [WEAK] 总览/1-四层整体架构与接口.md:42 — | **底层** | Virtuoso 常驻守护进程，由 Virtuoso 中加载的 SKILL bridge 和其启动的 `daemon.py` 组成，只处理 Skill。 |
+  - 命中：`daemon.py`→6
+- **总览#028** [NO-TOKEN] 总览/1-四层整体架构与接口.md:43 — | **Skill** | 在 Virtuoso CIW 及其数据库上下文中求值的 SKILL 文本。 |
+- **总览#029** [NO-TOKEN] 总览/1-四层整体架构与接口.md:44 — | **RunCommand** | 在指定命令环境中运行的命令行指令，不通过 Virtuoso。 |
+- **总览#030** [NO-TOKEN] 总览/1-四层整体架构与接口.md:45 — | **File** | 调用方本地路径与业务服务器路径之间的上传、下载及必要校验。 |
+- **总览#031** [NO-TOKEN] 总览/1-四层整体架构与接口.md:46 — | **业务服务器** | 上层看到的逻辑执行环境，不一定对应一台物理主机。 |
+- **总览#032** [NO-TOKEN] 总览/1-四层整体架构与接口.md:47 — | **指定位置** | 中层根据 token 参数和路由选择的底层 Skill 端点、命令主机或文件系统。 |
+- **总览#033** [NO-TOKEN] 总览/1-四层整体架构与接口.md:48 — | **token** | 上层每次调用携带的寻址与授权参数；中层据此路由，不绑定会话对象。 |
+- **总览#034** [NO-TOKEN] 总览/1-四层整体架构与接口.md:49 — | **endpoint** | 一次 SSH 连接的目的地身份，由 `(host, user)` 加可达路径 `(jump, proxy)` 唯一确定；只表达“连到哪”，不携带 token，不携带预算。同一 token 内按 endpoint 去重复用连接，不同 token 即使 endpoint
+- **总览#035** [NO-TOKEN] 总览/1-四层整体架构与接口.md:50 — | **CIW** | Virtuoso 命令窗口，底层 Skill 的实际求值环境。 |
+- **总览#056** [NO-TOKEN] 总览/1-四层整体架构与接口.md:77 — │  token 路由 · 并发限流 · 指令投送 · 文件传输 · 结果诊断           │
+- **总览#094** [NO-TOKEN] 总览/1-四层整体架构与接口.md:132 — 1. 业务参数校验、操作顺序和领域对象；
+- **总览#099** [NO-TOKEN] 总览/1-四层整体架构与接口.md:142 — 五个请求类型分别投送到各自的 role（Skill→daemon、命令→command、文件→file、GUI→gui、Spectre→spectre）；**唯一映射与职责见[路由设计 §3](../中层/3-路由设计.md)**，本文不复制表格。
+- **总览#103** [NO-TOKEN] 总览/1-四层整体架构与接口.md:148 — - 为每个 token 维护线程池：一次未完成的调用占用一个线程，结果返回后线程回池，超限返回错误（预算与记账唯一口径：[并发设计 §2/§3](../中层/2-并发设计.md)）；统一处理连接生命周期、超时、错误分类和诊断信息；
+- **总览#110** [NO-TOKEN] 总览/1-四层整体架构与接口.md:160 — 4. 将 Skill 交给 Virtuoso 求值，并把结果或错误返回给中层。
+- **总览#115** [NO-TOKEN] 总览/1-四层整体架构与接口.md:170 — 顶层不直接访问中层/底层，经上层调用；顶层与上层之间领域方法不固定，调度机制固定（见[顶层 §2](../顶层/1-顶层.md)）。上层不能绕过中层直接连接底层或目标主机；中层不能把传输对象泄漏给上层；底层不能反向调用上层业务代码。
+- **总览#144** [WEAK] 总览/1-四层整体架构与接口.md:220 — - `role` 给定 → 只返回该 role 的事实；`name` 必须与 `role` 同给 → 只返回该 role 的该键（`root` / `display` / `bin` / 用户组名），未配置的键省略；
+  - 命中：`display`→6；`name`→6；`role`→6；`root`→6
+- **总览#148** [WEAK] 总览/1-四层整体架构与接口.md:224 — - 非法 `role`/`name` 取值 → 参数错误（`TypeError`/`ValueError`）；
+  - 命中：`TypeError`→6；`ValueError`→6；`name`→6；`role`→6
+- **总览#159** [WEAK] 总览/1-四层整体架构与接口.md:239 — `skill`、`timeout` 是现代码字段；`token` 是唯一新增**必填**字段；`log_level`/`log_max_bytes` 属于[日志返回设计标准](../底层/6-日志返回设计标准.md)的可选扩展字段。响应保持 `STX/NAK/RS` 帧，**当前唯一 payload
+  - 命中：`log_level`→6；`log_max_bytes`→6；`skill`→6；`timeout`→6；`token`→6
+- **总览#164** [NO-TOKEN] 总览/1-四层整体架构与接口.md:246 — 命令执行与文件操作不经过此接口。上层传入 token，中层转发给底层，底层校验 token；校验失败时不得接触 Virtuoso。token 到达 daemon 供校验，但不得进入 Virtuoso/SKILL 求值文本，也不回显给上层。
+- **总览#175** [NO-TOKEN] 总览/1-四层整体架构与接口.md:265 — 字节示例：成功 `02 33 1e`（`02`=STX，`33`=字符 `3`，`1e`=RS）；失败 `15 <错误文本> 1e`。
+- **总览#178** [NO-TOKEN] 总览/1-四层整体架构与接口.md:274 — 五个业务接口**对外一律返回结构化结果，不向上抛传输异常**。参数编程错误（token 缺失、类型错误）是调用方错误，允许直接抛出 `TypeError/ValueError`；运行期错误（unknown token、daemon NAK、文件失败、传输失败）必须封装为结果。
+- **总览#179** [WEAK] 总览/1-四层整体架构与接口.md:276 — `CommandResult` 增加稳定 `kind` 字段：`command`（真实命令）/ `timeout` / `transport` / `path` / `unknown-effect` / `rejected`（容量拒绝）/ `checksum`（文件摘要不一致）/ `invalid-
+  - 命中：`CommandResult`→6；`checksum`→2；`command`→6；`invalid-token`→4；`kind`→6
+- **总览#180** [WEAK] 总览/1-四层整体架构与接口.md:278 — | 情形 | Skill (`VirtuosoResult`) | 命令/文件/GUI/Spectre (`CommandResult`) |
+  - 命中：`CommandResult`→6；`VirtuosoResult`→6
+- **总览#182** [WEAK] 总览/1-四层整体架构与接口.md:280 — | 正常 | `status=success`、`output`、`log` | `kind=command`、`returncode=命令自身退出码`、`stdout/stderr` |
+  - 命中：`output`→6
+- **总览#183** [WEAK] 总览/1-四层整体架构与接口.md:281 — | 超时 | `status=error`、`errors=["SKILL execution timed out"]` | `kind=timeout`、`returncode=124`、`stderr` 含超时说明 |
+  - 命中：`stderr`→6
+- **总览#187** [WEAK] 总览/1-四层整体架构与接口.md:285 — | 容量拒绝（线程/通道超限） | `errors` 含 `thread pool exceeded` / `channel budget exceeded` / `role max_sessions exceeded` 之一（指明哪一个） | `kind=rejected`、`returncode
+  - 命中：`errors`→6；`stderr`→6
+- **总览#188** [WEAK] 总览/1-四层整体架构与接口.md:286 — | 文件校验失败 | 不适用 | `kind=checksum`、`returncode=1`、`stderr` 含 `sha256 mismatch` |
+  - 命中：`stderr`→6
+- **总览#189** [NO-TOKEN] 总览/1-四层整体架构与接口.md:287 — | unknown token | `status=error`、`errors=["invalid token"]` | `kind=invalid-token`、`returncode=1`、`stderr="invalid token"`（token 不发送给命令本体，但参与中层路由） |
+- **总览#190** [NO-TOKEN] 总览/1-四层整体架构与接口.md:288 — | Skill 求值错误 | `status=error`、`errors=[...]` | 不适用 |
+- **总览#192** [NO-TOKEN] 总览/1-四层整体架构与接口.md:291 — - Skill 超时与“结果未知”对外不可区分：一律视为结果未知；是否重试由上层业务操作自行决断；“投递前未投递可安全重试”仅为中层内部策略，不提供可观察的投递状态；
+- **总览#196** [NO-TOKEN] 总览/1-四层整体架构与接口.md:300 — - **落盘**：先写入临时位置，**对临时文件做 SHA-256 校验通过后**才原子替换到目标；校验失败删除临时文件、目标不变；传输中途失败同样清理临时内容、不改动已有目标；目标已存在则**覆盖**；
+- **总览#204** [NO-TOKEN] 总览/1-四层整体架构与接口.md:318 — - 五个 role（gui/daemon/command/file/spectre）各自独立配置；能力与职责、接口映射与 endpoint 复用规则由[路由设计 §2–§4](../中层/3-路由设计.md)唯一 owner 定义，探测矩阵、部署与文件根见[多用户与注册 §4](../其他/1-多用
+- **总览#206** [NO-TOKEN] 总览/1-四层整体架构与接口.md:320 — - 同一 token 内按解析后的 endpoint 去重（唯一口径：[路由设计 §4](../中层/3-路由设计.md)）：每个 endpoint 一条业务连接 + remote daemon 的专用 Skill 隧道；跨 token 不共用；
+- **总览#208** [NO-TOKEN] 总览/1-四层整体架构与接口.md:322 — - 每个 role 有自己的文件根；根的回退、`~` 展开与相对路径解析的唯一 owner 是[多用户与注册 §4.2](../其他/1-多用户与注册.md)，本文不复制算法；
+- **总览#210** [NO-TOKEN] 总览/1-四层整体架构与接口.md:327 — 中层不仅负责发送请求，还要确认请求对应的目标、执行阶段和结果。路径不可见、连接失败、命令非零退出、Skill 错误和文件校验失败必须能够区分。
+- **总览#211** [NO-TOKEN] 总览/1-四层整体架构与接口.md:331 — 底层只连接一个 Virtuoso 会话并执行 Skill，不扩展成通用远程命令代理。**一个 token = 一个活动 daemon = 一个 CIW**；不同 token 不得共享同一个底层 Skill 通道；需要第二个 CIW 必须注册第二个 user/token。
+- **总览#212** [NO-TOKEN] 总览/1-四层整体架构与接口.md:335 — 中层按 token 隔离 Skill 端点与命令通道；文件侧只提供“每用户默认目录”约定，**不提供安全沙箱**（见 §5.6）。预算与记账的唯一 owner 是[并发设计 §2/§3](../中层/2-并发设计.md)，连接复用拓扑见[路由设计 §4](../中层/3-路由设计.md)：本文只保留
+- **总览#215** [WEAK] 总览/1-四层整体架构与接口.md:342 — - 各 role 的 `root` 只是该 role 的**默认工作目录约定**（部署文件、截图、日志、导入网表等），**不是沙箱**：文件操作允许访问业务服务器上任意可达路径；同 SSH 账号下不同 user 之间不承诺跨目录隔离，安全边界由 OS 账号权限提供；
+  - 命中：`root`→6
+- **总览#216** [WEAK] 总览/1-四层整体架构与接口.md:343 — - symlink、不存在的目标、覆盖目录按 OS 语义；目标不可见 → 结构化错误 `VB-PATH-NOT-VISIBLE`，不悄悄改写路径或隐式复制；
+  - 命中：`VB-PATH-NOT-VISIBLE`→4
+- **总览#218** [NO-TOKEN] 总览/1-四层整体架构与接口.md:348 — 同一个 Virtuoso CIW 的 Skill 请求必须串行，不同底层会话可以并行；命令默认串行、`parallel=True` 显式并行，文件传输天然并行。排队闸门与超时语义见[并发设计 §1](../中层/2-并发设计.md)。
+- **总览#219** [WEAK] 总览/1-四层整体架构与接口.md:352 — 五个业务接口调用使用端到端超时：单次调用默认 30s，连接建立默认 `runtime.connect_timeout=15s`；`timeout` 超出平台能力上限 → 参数错误，不夹紧（当前 Windows 上限 2_147_483s）；中层不得在内部阶段重新开始完整 timeout，子阶段只继承
+  - 命中：`timeout`→6
+- **总览#220** [NO-TOKEN] 总览/1-四层整体架构与接口.md:354 — **五业务接口 deadline 唯一表**（`timeout=None` 时；每个接口一次调用只有一条 deadline，下表各相位共享它）：
+- **总览#221** [NO-TOKEN] 总览/1-四层整体架构与接口.md:356 — | 接口 | 默认预算 | deadline 覆盖的相位（同一预算内顺序扣除，不重置；线程预算超限直接拒绝，不排队） |
+- **总览#223** [NO-TOKEN] 总览/1-四层整体架构与接口.md:358 — | Skill 执行 | 30s | 线程预算占用（超限即拒绝） + **投递前按 token 排队** + 隧道建立 + TCP 连接 + daemon 执行 + log 第二帧 |
+- **总览#224** [NO-TOKEN] 总览/1-四层整体架构与接口.md:359 — | 命令执行（默认串行） | 30s | 线程预算占用（超限即拒绝，不排队） + 等待该 token 的串行命令位 + 常驻 shell 内执行 |
+- **总览#225** [NO-TOKEN] 总览/1-四层整体架构与接口.md:360 — | 命令执行（`parallel=True`） | 30s | 线程预算占用（超限即拒绝，不排队） + channel 记账 + 连接建立 + 一次性 exec |
+- **总览#226** [NO-TOKEN] 总览/1-四层整体架构与接口.md:361 — | 文件执行（上传/下载） | 30s | 线程预算占用（超限即拒绝，不排队） + channel 记账 + 连接建立 + 传输 + 校验子命令 |
+- **总览#227** [NO-TOKEN] 总览/1-四层整体架构与接口.md:362 — | GUI 命令执行 | 30s | 线程预算占用（超限即拒绝，不排队） + channel 记账 + 连接建立 + 一次性命令 |
+- **总览#228** [NO-TOKEN] 总览/1-四层整体架构与接口.md:363 — | Spectre 命令执行 | 30s | 线程预算占用（超限即拒绝，不排队） + channel 记账 + 连接建立 + 一次性命令 |
+- **总览#229** [WEAK] 总览/1-四层整体架构与接口.md:365 — - `runtime.connect_timeout`（默认 15s）是**该预算内的子预算**，不额外增加总预算；建连阶段耗到该子预算 → `kind=timeout` / `returncode=124`；非超时的拒绝/断连 → `kind=transport` / `returncode=25
+  - 命中：`runtime.connect_timeout`→3
+- **总览#230** [NO-TOKEN] 总览/1-四层整体架构与接口.md:366 — - 建连重试与失效恢复（≤3 次总尝试、降级直连、常驻 shell 重建）的唯一口径见[并发设计 §4](../中层/2-并发设计.md)，与初次尝试共享同一条 deadline；
+- **总览#231** [NO-TOKEN] 总览/1-四层整体架构与接口.md:367 — - **注册各步**的 deadline（探测、部署、第五步各校验相位）唯一 owner 是[多用户与注册 §3.3](../其他/1-多用户与注册.md)，本表不重复。
+- **总览#233** [NO-TOKEN] 总览/1-四层整体架构与接口.md:371 — | 问题 | 唯一答案 |
+- **总览#235** [NO-TOKEN] 总览/1-四层整体架构与接口.md:373 — | `timeout=None` | 五个业务接口一律等于默认 30s（见上表） |
+- **总览#236** [NO-TOKEN] 总览/1-四层整体架构与接口.md:374 — | 建连重试 / 常驻 shell 重建 | 唯一口径见[并发设计 §4](../中层/2-并发设计.md) |
+- **总览#237** [NO-TOKEN] 总览/1-四层整体架构与接口.md:375 — | log 第二帧超时 | Skill 第一帧结果优先返回，`log=""` 并附固定 warning，见[日志返回设计标准 §6.3](../底层/6-日志返回设计标准.md) |
+- **总览#238** [NONE] 总览/1-四层整体架构与接口.md:377 — 本版不引入 `request_id` 参数/字段（等待请求留在**中层投递前队列**；daemon 同一时刻只接收/执行一个由闸门放行的 Skill 请求。日志增量由每请求的 `[start,end)` offset 定界）。无法判断请求是否已经产生副作用时返回“结果未知”，中层不盲目重发非幂等操作
+- **范围#004** [NO-TOKEN] 总览/add-本版范围与明确不支持.md:6 — > 状态：Normative（“本版不做什么”的唯一口径）
+- **范围#005** [NO-TOKEN] 总览/add-本版范围与明确不支持.md:7 — > 说明：本文是正式范围文档；README 中的清单只索引本文。每项给出本版口径，实现按此处理，不得静默降级。
+- **范围#006** [WEAK] 总览/add-本版范围与明确不支持.md:11 — 四层架构：上层通过中层**五个业务接口**（Skill 执行 / 命令执行 / 文件执行 / GUI 命令执行 / Spectre 命令执行）完成业务，另有一个只读查询 `query`（见[四层整体架构与接口 §4.2](1-四层整体架构与接口.md)）供参数准备；中层负责 local/SSH/多用
+  - 命中：`query`→6
+- **范围#007** [NO-TOKEN] 总览/add-本版范围与明确不支持.md:17 — | # | 不支持 | 本版口径 |
+- **范围#009** [WEAK] 总览/add-本版范围与明确不支持.md:19 — | 1 | Spectre 高层业务封装（仿真流程、结果解析、编排） | 只提供 **Spectre 命令执行**（一次性命令）与 `role.spectre.bin` 记录，不提供 `purpose`、不做仿真编排；封装留给上层后续；探测/校验失败只 warning、不阻断注册 |
+  - 命中：`purpose`→6；`role.spectre.bin`→1
+- **范围#010** [NONE] 总览/add-本版范围与明确不支持.md:20 — | 2 | GUI 图形化业务封装 / 独立 deploy role | 只提供 **GUI 命令执行**（一次性命令，窗口枚举/dismiss/bootstrap 类操作）；部署只投送到 `role.daemon.root`，不设独立 deploy role |
+- **范围#011** [NO-TOKEN] 总览/add-本版范围与明确不支持.md:24 — | # | 不支持 | 本版口径 |
+- **范围#013** [NO-TOKEN] 总览/add-本版范围与明确不支持.md:26 — | 3 | 无 token 旧客户端 / 旧 il | 请求缺失、null 或不匹配 token → NAK `invalid token`，SKILL 零接触 |
+- **范围#014** [NONE] 总览/add-本版范围与明确不支持.md:27 — | 4 | `profile` / `VB_*` / `.env` 及迁移适配 | 已删除、无兼容入口；新用户只走六步注册 |
+- **范围#015** [NO-TOKEN] 总览/add-本版范围与明确不支持.md:28 — | 5 | 非对称签名 / HMAC | token 是对称共享授权票，不做双方公私钥；四层边界不因未来升级而变（见[四层架构 §5.8](1-四层整体架构与接口.md)） |
+- **范围#016** [NONE] 总览/add-本版范围与明确不支持.md:29 — | 6 | `request_id` | 不引入请求字段；daemon 同一时刻只有一个 in-flight，增量按 `[start,end)` 定界（见[日志返回设计标准 §3](../底层/6-日志返回设计标准.md)） |
+- **范围#017** [NO-TOKEN] 总览/add-本版范围与明确不支持.md:30 — | 7 | argv / 无 shell 模式、异步 command handle | RunCommand 为同步 shell 字符串；长任务由上层 marker/轮询实现 |
+- **范围#018** [NO-TOKEN] 总览/add-本版范围与明确不支持.md:34 — | # | 不支持 | 本版口径 |
+- **范围#020** [WEAK] 总览/add-本版范围与明确不支持.md:36 — | 8 | split-host CDS.log | 不保证：daemon 能读到 IL 回传的 `path` 就按普通路径返回增量；读不到 → `log=""` + 固定 warning；`log_level=off` 时源头不读、无 warning；bridge 不做 split-host 判定
+  - 命中：`path`→6
+- **范围#021** [NO-TOKEN] 总览/add-本版范围与明确不支持.md:37 — | 9 | CDS.log 增量跟随 GUI 读取 | 增量读取固定锚定 **daemon**（读 IL 回传的 `path + [start,end)`），不在 GUI 主机读 CDS.log（X11 转发场景同样不做）；实现点见[日志返回设计标准 §2](../底层/6-日志返回设计标准.md)
+- **范围#022** [NO-TOKEN] 总览/add-本版范围与明确不支持.md:38 — | 10 | 全量日志 parser / push stream / 日志数据库 | 只做同步增量返回；全文经 File 接口自行读取 |
+- **范围#023** [NO-TOKEN] 总览/add-本版范围与明确不支持.md:42 — | # | 不支持 | 本版口径 |
+- **范围#025** [NO-TOKEN] 总览/add-本版范围与明确不支持.md:44 — | 11 | 文件空间安全沙箱 | `role.<name>.root` 只是各 role 的默认工作目录约定，不拦截 `..`/任意绝对路径；隔离依赖 OS 账号权限 |
+- **范围#026** [NO-TOKEN] 总览/add-本版范围与明确不支持.md:48 — | # | 不支持 | 本版口径 |
+- **范围#028** [WEAK] 总览/add-本版范围与明确不支持.md:50 — | 12 | 跨机启动 daemon 的协议（mpsserver / 远程 launcher 等） | 本版不实现；当前 daemon 是 CIW 的本地 `ipcBeginProcess` 子进程，启动方式与运行账号由站点拓扑决定，bridge 只忠实投送与连接、不参与也不校验 |
+  - 命中：`ipcBeginProcess`→5
+- **范围#029** [NO-TOKEN] 总览/add-本版范围与明确不支持.md:54 — | # | 不支持 | 本版口径 |
+- **范围#031** [WEAK] 总览/add-本版范围与明确不支持.md:56 — | 13 | 顶层任务等待池（挂起监督） | 本版不实现，作为下一代想法；长任务由上层业务包自行同步等待，或由调用方分次查询；顶层收到未定义的 `pending` 声明按未知字段处理 |
+  - 命中：`pending`→6
+- **范围#032** [NO-TOKEN] 总览/add-本版范围与明确不支持.md:60 — - 每项对应的“该怎么做”由各自 Normative 文档定义：接口见[四层整体架构与接口](1-四层整体架构与接口.md)，路由见[路由设计](../中层/3-路由设计.md)，注册见[多用户与注册](../其他/1-多用户与注册.md)，并发见[并发设计](../中层/2-并发设计.md)，日志
+- **配置#003** [NO-TOKEN] 中层/add-中层配置文档.md:5 — > 状态：Normative（字段目录、默认值、探测写回、注册表 schema、reservation 与 endpoint key 的唯一规范源）
+- **配置#005** [NO-TOKEN] 中层/add-中层配置文档.md:7 — > 定位：本文是[多用户与注册](../其他/1-多用户与注册.md)的**字段与 schema 详细补充**——六步状态机与授权归[多用户与注册](../其他/1-多用户与注册.md)；本文是字段与必填清单 owner（§4），并提供默认值、探测写回、注册表 schema、reservation 
+- **配置#006** [NO-TOKEN] 中层/add-中层配置文档.md:11 — - **唯一 owner**：字段名/类型/默认值、注册表 schema（§6.1）、reservation（§6.4）、endpoint canonical key（§6.5）只在本文定义；其它文档只索引，不复制。
+- **配置#012** [NO-TOKEN] 中层/add-中层配置文档.md:17 — - **默认值约定**：标“默认 X”可省略；标“必填”必须写入。
+- **配置#013** [NO-TOKEN] 中层/add-中层配置文档.md:23 — | 字段 | 作用 | 类型 | 默认/必填 |
+- **配置#015** [WEAK] 中层/add-中层配置文档.md:25 — | `token` | 每次调用携带的寻址与授权参数；每用户唯一、终生不变（格式见 §5，生命周期见[多用户与注册 §1](../其他/1-多用户与注册.md)） | 配置 | 注册生成（未提交则自动生成） |
+  - 命中：`token`→6
+- **配置#016** [WEAK] 中层/add-中层配置文档.md:26 — | `user` | 人类可读 id + 路径名，非安全凭证 | 配置 | 必填（格式见 §5） |
+  - 命中：`user`→6
+- **配置#017** [NO-TOKEN] 中层/add-中层配置文档.md:30 — | 字段 | 作用 | 类型 | 默认/必填 |
+- **配置#019** [WEAK] 中层/add-中层配置文档.md:32 — | `ssh.backend` | SSH 后端 openssh / paramiko；默认 paramiko：同一业务连接上多 channel 复用；Skill 隧道由外部 OpenSSH `ssh -N -L` 承载 | 配置 | 默认 `paramiko` |
+  - 命中：`paramiko`→6；`ssh.backend`→6
+- **配置#020** [WEAK] 中层/add-中层配置文档.md:33 — | `ssh.control_master` | openssh 后端的复用策略 auto/force/disable；复用边界是 token，跨 token 不共享；paramiko 不适用 | 配置 | 默认 `auto` |
+  - 命中：`auto`→6；`ssh.control_master`→2
+- **配置#021** [NONE] 中层/add-中层配置文档.md:34 — | `ssh.tool_override` | 可选 ssh/scp/tar 工具路径覆盖 | 配置 | 可选 |
+- **配置#022** [WEAK] 中层/add-中层配置文档.md:35 — | `runtime.thread_pool_size` | 线程预算：在途请求上限（任何未完成动作占位）；超限语义见[并发设计 §2](2-并发设计.md) | 配置 | 默认 `32` |
+  - 命中：`runtime.thread_pool_size`→6
+- **配置#023** [WEAK] 中层/add-中层配置文档.md:36 — | `runtime.channel_budget` | 最大通道数：token 内所有 endpoint 已打开 SSH 通道总数；超限语义见[并发设计 §2](2-并发设计.md) | 配置 | 默认 `10` |
+  - 命中：`runtime.channel_budget`→5
+- **配置#024** [WEAK] 中层/add-中层配置文档.md:37 — | `runtime.connect_timeout` | 连接建立超时（各步 deadline 的子预算，见[四层整体架构与接口 §5.8](../总览/1-四层整体架构与接口.md)） | 配置 | 默认 `15` 秒 |
+  - 命中：`runtime.connect_timeout`→3
+- **配置#025** [WEAK] 中层/add-中层配置文档.md:38 — | `cdslog.log_level` | 返回日志级别 off/all/warn/error；off 从 IL 源头不读不注入；业务接口可显式覆盖 | 配置 | 默认 `all` |
+  - 命中：`cdslog.log_level`→6
+- **配置#026** [WEAK] 中层/add-中层配置文档.md:39 — | `cdslog.log_max_bytes` | 单次日志内联长度上限，超限自动降级（规则见[日志返回设计标准 §5](../底层/6-日志返回设计标准.md)）；业务接口可显式覆盖 | 配置 | 默认 `65536` |
+  - 命中：`cdslog.log_max_bytes`→3
+- **配置#027** [NO-TOKEN] 中层/add-中层配置文档.md:43 — 五个 role（`gui / daemon / command / file / spectre`）各有下列公共字段。role 的职责、接口对应与连接复用见[路由设计 §2–§4](3-路由设计.md)，本文只定义字段与默认值。
+- **配置#028** [NO-TOKEN] 中层/add-中层配置文档.md:45 — | 字段 | 作用 | 类型 | 默认/必填 |
+- **配置#030** [WEAK] 中层/add-中层配置文档.md:47 — | `role.<name>.mode` | 投送方式：`local` = 中层就在该 role 目标主机上直接本地执行、不经 SSH（声明需管理权限，见[多用户与注册 §2](../其他/1-多用户与注册.md)）；`remote` = 经 SSH 投送；不同 role 可混合 | 配置 | 回退
+  - 命中：`local`→6；`mode.default`→2；`remote`→6
+- **配置#031** [WEAK] 中层/add-中层配置文档.md:48 — | `role.<name>.host/user/jump_host/jump_user/proxy` | 该 role 登录主机/账号/跳板/代理；`local` role 提交即参数错误 | 配置 | 回退 §2.5 全局默认（remote 需可解析） |
+  - 命中：`local`→6
+- **配置#032** [WEAK] 中层/add-中层配置文档.md:49 — | `role.<name>.key_dir/key` | 该 role 的 SSH 凭据目录/文件名，位于客户端侧（remote 使用；`local` role 不适用） | 配置 | 回退 §2.5 全局默认 |
+  - 命中：`local`→6
+- **配置#033** [NO-TOKEN] 中层/add-中层配置文档.md:50 — | `role.<name>.root` | 该 role 文件根；申请期缺省 `root.default/<role>`，探测后为最终绝对路径 | 配置 | 可选（探测写回，见 §6.2） |
+- **配置#034** [WEAK] 中层/add-中层配置文档.md:51 — | `role.<name>.max_sessions` | 该 role 解析到的 endpoint 的并发通道上限（配置在 role、生效在 endpoint；多 role 同 endpoint 取最小值；`local` 不适用） | 配置 | 默认 `10` |
+  - 命中：`local`→6
+- **配置#035** [WEAK] 中层/add-中层配置文档.md:52 — | `role.<name>.expected_fingerprint` | 该 role endpoint 的 host-key 指纹比对基准（业务 role 必检；spectre 例外，见 §3）；`mode=local` 无 endpoint，省略或为 `null` | 校验 | 探测写入 |
+  - 命中：`null`→6
+- **配置#036** [WEAK] 中层/add-中层配置文档.md:54 — - 各 role 可携带**用户组** `role.<name>.<组名>`（如 `role.command.calibre`）：值必须是对象且仅含标量字段；中层只做结构约束，**不校验语义、不探测**，注册原样落盘、`query` 原样返回，含义由上层业务包约定；组名不得与本节/§2.4 固定字段
+  - 命中：`query`→6；`role.command.calibre`→5
+- **配置#037** [NO-TOKEN] 中层/add-中层配置文档.md:58 — | 字段 | 作用 | 类型 | 默认/必填 |
+- **配置#039** [NONE] 中层/add-中层配置文档.md:60 — | `role.daemon.daemon_port` | daemon 监听端口，每用户分配不冲突 | 配置 | 缺省分配（见 §6.4） |
+- **配置#040** [WEAK] 中层/add-中层配置文档.md:61 — | `role.daemon.local_port` | `remote` 时是隧道本地端口；`local` 时直连端口，必须 `= daemon_port` | 配置 | 缺省分配 |
+  - 命中：`local`→6；`remote`→6
+- **配置#041** [WEAK] 中层/add-中层配置文档.md:62 — | `role.daemon.python` | daemon role 上的 python 解释器（部署/启动 daemon 消费；`local` 时即本机 python） | 环境 | 显式→校验，缺省→探测；失败=注册失败 |
+  - 命中：`local`→6；`role.daemon.python`→2
+- **配置#042** [NONE] 中层/add-中层配置文档.md:63 — | `role.daemon.expected_hostname` | daemon 主机名比对基准 | 校验 | 探测写入 |
+- **配置#043** [NONE] 中层/add-中层配置文档.md:64 — | `role.daemon.expected_user` | daemon 进程账号比对基准 | 校验 | 探测写入 |
+- **配置#044** [WEAK] 中层/add-中层配置文档.md:65 — | `role.spectre.bin` | spectre 可执行文件（显式→校验，缺省→探测；失败仅 warning） | 环境 | 可选 |
+  - 命中：`role.spectre.bin`→1
+- **配置#045** [WEAK] 中层/add-中层配置文档.md:66 — | `role.gui.display` | gui role 的 X server（`DISPLAY` 值，每用户单值）；经只读查询 `query` 返回，供上层拼 X11 命令（见[四层整体架构与接口 §4.2](../总览/1-四层整体架构与接口.md)） | 环境 | 显式→校验；缺省→探测
+  - 命中：`DISPLAY`→6；`query`→6
+- **配置#046** [NO-TOKEN] 中层/add-中层配置文档.md:70 — | 字段 | 作用 | 类型 | 默认/必填 |
+- **配置#048** [WEAK] 中层/add-中层配置文档.md:72 — | `mode.default` | 各 role 缺省 mode（local/remote） | 配置 | **必填，无默认** |
+  - 命中：`mode.default`→2
+- **配置#049** [NO-TOKEN] 中层/add-中层配置文档.md:73 — | `ssh.default.host/user` | 各 role 缺省登录主机/账号 | 配置 | 存在未在 role 级提供的 remote role 时必填 |
+- **配置#050** [NO-TOKEN] 中层/add-中层配置文档.md:74 — | `ssh.default.jump_host/jump_user/proxy` | 各 role 缺省跳板/代理 | 配置 | 可选 |
+- **配置#051** [WEAK] 中层/add-中层配置文档.md:75 — | `ssh.default.key_dir/key` | 各 role 缺省 SSH 凭据目录/文件名，位于客户端侧；`key_dir` 缺省 = 客户端 `~/.ssh` | 配置 | `key_dir` 可选；存在 remote role 时 `key` 必填 |
+  - 命中：`key_dir`→6
+- **配置#052** [WEAK] 中层/add-中层配置文档.md:76 — | `root.default` | 各 role 文件根的申请期基准；探测后写回各 `role.*.root`，运行期不依赖本字段 | 配置 | 默认 `~/.virtuoso-bridge/<userid>`（持久化 `null`） |
+  - 命中：`null`→6；`root.default`→3
+- **配置#053** [WEAK] 中层/add-中层配置文档.md:78 — - 回退是**逐字段**的：role 有值用自己的，否则回退对应全局默认；`null`/空串 = 未提供；
+  - 命中：`null`→6
+- **配置#056** [WEAK] 中层/add-中层配置文档.md:84 — - 本地工作目录不是注册字段（启动时传入，不传用实现默认）；子结构固定 `registry.json / config.json / temp/ / log/ / artifact/`，启动时自动创建（`config.json` 见[顶层补充 §5](../顶层/add-控制面与业务面.md)）；
+  - 命中：`config.json`→6
+- **配置#058** [NO-TOKEN] 中层/add-中层配置文档.md:89 — | 类型 | 规则 |
+- **配置#060** [NO-TOKEN] 中层/add-中层配置文档.md:91 — | 配置 | 用户提供；只做格式/范围/查重校验，失败拒绝；无自动探测 |
+- **配置#061** [NONE] 中层/add-中层配置文档.md:92 — | 环境 | 默认自动探测；用户显式提供时校验，不可用报告并拒绝。例外：spectre（失败级别与提交态见[多用户与注册 §4.1](../其他/1-多用户与注册.md)）与 `role.gui.display`（缺省探测失败仅留空 + WARNING，显式不可达仍拒绝） |
+- **配置#062** [NO-TOKEN] 中层/add-中层配置文档.md:93 — | 校验 | 探测写入各 role 的 `expected_*`，只用于比对、不参与业务；在注册探测时比对，**运行期不强制比对**。唯一例外：业务 role 的 host-key 指纹不匹配 = ERROR（含机器重装未确认），见[多用户与注册 §3.2/§5](../其他/1-多用户与注册.md
+- **配置#063** [WEAK] 中层/add-中层配置文档.md:95 — 探测动作本身（何时探测、逐 role 探测矩阵、失败级别）见[多用户与注册 §4](../其他/1-多用户与注册.md)，本文只定义字段类型规则。`root` 不是探测发现的环境值，而是按 §2.5 与[多用户与注册 §4.2](../其他/1-多用户与注册.md)的默认算法推导、探测期写回绝对路径
+  - 命中：`root`→6
+- **配置#065** [NO-TOKEN] 中层/add-中层配置文档.md:100 — - 条件必填：每个 remote role 必须可解析出目标（role 级 `host/user` 或 `ssh.default.*`）与凭据（role 级 `key_dir/key` 或 `ssh.default.key_dir/key`）；
+- **配置#068** [WEAK] 中层/add-中层配置文档.md:106 — - `user` 格式 `^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$`；禁止 `/`、`\`、`..`、绝对路径；Windows 大小写不敏感查重；拒绝保留设备名（CON/PRN/AUX/NUL/COM1–9/LPT1–9 及带扩展名）与结尾 `.`/空格；
+  - 命中：`user`→6
+- **配置#070** [WEAK] 中层/add-中层配置文档.md:108 — - `local` role 显式提交 `host/user/jump_host/jump_user/proxy` 或 `key_dir/key` → 参数错误；
+  - 命中：`local`→6
+- **配置#071** [WEAK] 中层/add-中层配置文档.md:109 — - remote role 必须解析出凭据（`key_dir`+`key`），否则拒绝；`key` 只允许文件名、不含目录成分；凭据按**公钥指纹**查重，已被其他条目登记 → 需**任一**已登记持有者的 token 或管理员凭据，否则拒绝（复用规则见[多用户与注册 §3](../其他/1-多用户
+  - 命中：`key_dir`→6
+- **配置#072** [WEAK] 中层/add-中层配置文档.md:110 — - `role.gui.display` 只接受 X display 形式（如 `:11`、`localhost:10.0`、`unix/:0`），禁止空白、引号、`$`、反引号、`;` 等 shell 元字符（防注入）；
+  - 命中：`localhost:10.0`→1
+- **配置#073** [NO-TOKEN] 中层/add-中层配置文档.md:111 — - 未知字段拒绝（`extra=forbid`）；各 role 的用户组例外：组名 `^[a-z][a-z0-9_-]{0,63}$`、不与固定字段重名，值为对象、字段值仅 JSON 标量且不含 NUL，每 role 用户组总大小 ≤ 16 KiB；语义由上层业务包约定；空串视为未提供；
+- **配置#075** [NO-TOKEN] 中层/add-中层配置文档.md:113 — - registry 持久化 UTF-8、权限 `0600`、tmp + 原子替换。
+- **配置#103** [NO-TOKEN] 中层/add-中层配置文档.md:150 — - 何时探测、何时写回、唯一写盘点见[多用户与注册 §3/§4](../其他/1-多用户与注册.md)；本节只约定提交后的字段形态；
+- **配置#107** [WEAK] 中层/add-中层配置文档.md:160 — **唯一性作用域**：`token`/`user` 全局；`daemon_port` 同一 daemon 目标主机（`mode=local` 时即本机）；`local_port` 本机。
+  - 命中：`daemon_port`→6；`local_port`→6；`token`→6；`user`→6
+- **配置#108** [WEAK] 中层/add-中层配置文档.md:162 — **联合端口**：`mode=local` 时 `daemon_port` 与 `local_port` 是同一个候选端口——任一缺省由同一值生成并同步写入，显式双值必须相等。
+  - 命中：`daemon_port`→6；`local_port`→6
+- **配置#111** [NO-TOKEN] 中层/add-中层配置文档.md:168 — **并发**：注册为低并发流程，由注册服务进程内协调；不设跨进程租约与宽限回收。
+- **配置#112** [NO-TOKEN] 中层/add-中层配置文档.md:170 — **分配算法**：具体算法与端口范围为实现自由度，合同只要求候选唯一且空闲。
+- **配置#118** [WEAK] 中层/add-中层配置文档.md:180 — - 两条独立规则：① 字符串规范化决定“是否同一 endpoint”（`Server-A`、`server-a.` 同 endpoint，指纹必须一致）；② 不做名称解析（不查 DNS、不把 alias 与真实 hostname 合并）；`~/.ssh/config` 只用于 transport 解
+  - 命中：`Server-A`→2
+- **配置#120** [NO-TOKEN] 中层/add-中层配置文档.md:182 — - 测试向量（必须逐条可测）：
+- **配置#121** [NO-TOKEN] 中层/add-中层配置文档.md:184 — | # | host | user | jump_host | jump_user | proxy | key 尾段（前加 `v1:`） |
+- **配置#123** [WEAK] 中层/add-中层配置文档.md:186 — | 1 | `server-a` | `ssh-user` | — | — | — | `8c6325e8a41f89a4c29d81eb66db201c4414d33f87702607d23d43a1baf94b0b` |
+  - 命中：`server-a`→6；`ssh-user`→6
+- **配置#124** [WEAK] 中层/add-中层配置文档.md:187 — | 2 | ` Server-A. ` | `ssh-user` | — | — | — | 与 #1 相同 |
+  - 命中：`ssh-user`→6
+- **配置#125** [WEAK] 中层/add-中层配置文档.md:188 — | 3 | `server-a` | `SSH-User` | — | — | — | `40701d25d46c873daea45c841226ee0d6d6939209630d5f57459e55c98c2733b` |
+  - 命中：`SSH-User`→1；`server-a`→6
+- **配置#126** [NO-TOKEN] 中层/add-中层配置文档.md:189 — | 4 | `[::1]` | `u` | — | — | — | `0bd185aaa4fa1ce6bd5cbeea0a86f061567a632f3ad6bf6f5a8f36b79556526b` |
+- **配置#127** [WEAK] 中层/add-中层配置文档.md:190 — | 5 | `server-a` | `u` | `bastion` | `jump-user` | — | `178df3e331df40f8d01408ff226fd22e6be04d8033db187f06bc64a5c3512391` |
+  - 命中：`bastion`→5；`jump-user`→1；`server-a`→6
+- **配置#128** [WEAK] 中层/add-中层配置文档.md:191 — | 6 | `server-a` | `u` | — | — | `socks5://Proxy:1080` | `f410f0afc8f618e5230416eb191fa6fcdd5c8313828c2e4c4348eed8cfb33630` |
+  - 命中：`f410f0afc8f618e5230416eb191fa6fcdd5c8313828c2e4c4348eed8cfb33630`→1；`server-a`→6
+- **配置#130** [NO-TOKEN] 中层/add-中层配置文档.md:194 — - 约束：SSH 端口固定 22（注册期校验目标/jump 解析端口，非 22 拒绝）；proxy 固定 `socks5://host:port`；jump 的 known_hosts 由系统 SSH 配置提供；不接受自定义 known_hosts 路径。
+- **注册#003** [NO-TOKEN] 其他/1-多用户与注册.md:5 — > 状态：Normative（注册侧唯一口径）
+- **注册#005** [NO-TOKEN] 其他/1-多用户与注册.md:7 — > 定位：本文只讲**注册**（六步法、授权、要填参数）与**注册表生命周期**；运行期路由与限流见[路由设计](../中层/3-路由设计.md)、[并发设计](../中层/2-并发设计.md)；字段与默认值的详细清单见[中层配置文档](../中层/add-中层配置文档.md)。
+- **注册#006** [WEAK] 其他/1-多用户与注册.md:11 — - **注册表是唯一持久化**：本地一份 `registry.json`，`user` 为键；启动时导入一次到内存快照，运行期**不自动读文件**，管理操作成功后由**业务进程管理端点**触发重新导入或重启（见[顶层补充 §1.1](../顶层/add-控制面与业务面.md)），不自动跨进程传播。
+  - 命中：`registry.json`→6；`user`→6
+- **注册#007** [NO-TOKEN] 其他/1-多用户与注册.md:12 — - **注册与使用解耦**：六步注册结束后，除文件系统变更（registry + 远端部署文件）外不得残留隧道、SSH 进程或控制 socket；
+- **注册#011** [NO-TOKEN] 其他/1-多用户与注册.md:16 — - **token 使用范围**：只用于路由与校验（注册表路由、daemon 比对、Skill 请求）；用户可读路径一律用唯一用户名，不用 token。
+- **注册#015** [NO-TOKEN] 其他/1-多用户与注册.md:24 — - **条件必填**：每个 remote role 必须可解析出目标与凭据——`role.<name>.host/user` 或 `ssh.default.host/user`，`role.<name>.key_dir/key` 或 `ssh.default.key_dir/key`；
+- **注册#018** [NO-TOKEN] 其他/1-多用户与注册.md:27 — - 非法字段、local role 的 host/user、未知字段一律拒绝（规则见[中层配置文档 §5](../中层/add-中层配置文档.md)）。
+- **注册#019** [WEAK] 其他/1-多用户与注册.md:33 — **①申请 → ②本地校验 → ③探测 → ④部署 → ⑤连通性测试 → ⑥写注册表**；**前五步不写 registry**（`registry.json` 零写入，候选只存内存），第六步是唯一写盘点；未完成六步即放弃全部内存候选。
+  - 命中：`registry.json`→6
+- **注册#020** [NO-TOKEN] 其他/1-多用户与注册.md:35 — | 步 | 预测目标（可观察） | 不达成时 | 重试 |
+- **注册#022** [NO-TOKEN] 其他/1-多用户与注册.md:37 — | 1 申请 | 必填参数齐全（见 §2） | 参数错误，零副作用 | 修改后重新申请 |
+- **注册#023** [WEAK] 其他/1-多用户与注册.md:38 — | 2 本地校验 | 无同名 user；`local_port` 本机未被占用；已提供的 `daemon_port` 在同一 daemon 目标主机上未冲突；凭据（公钥指纹）未被他人登记占用，占用 → 需**任一**已登记持有者 token 或管理权限；生成 reservation 候选（仅内存） 
+  - 命中：`daemon_port`→6；`local_port`→6
+- **注册#024** [NO-TOKEN] 其他/1-多用户与注册.md:39 — | 3 探测 | 逐 role 探测矩阵全过（见 §4）；`expected_*` 固化；`role.*.root` 回写绝对路径 | ERROR（spectre role 整体仅 WARNING） | 可原样重试；修正参数需 cancel 后重新 apply |
+- **注册#025** [WEAK] 其他/1-多用户与注册.md:40 — | 4 部署 | bridge 文件落到 `role.daemon.root`；产出 `setup_path`（daemon 侧绝对路径，供用户复制到 CIW） | ERROR | 可原样重试（覆盖式） |
+  - 命中：`setup_path`→6
+- **注册#026** [NO-TOKEN] 其他/1-多用户与注册.md:41 — | 4→5 之间 | 用户自己 `load(setup_path)` 并拉起 daemon；bridge 不参与、不判断是否拉得起来 | 不属于 bridge 一步 | 用户自行重试 |
+- **注册#027** [NO-TOKEN] 其他/1-多用户与注册.md:42 — | 5 连通性 | 能观察到 daemon 可达 + token 比对通过 + 双冒烟通过；**通过后只报告结果、不落盘** | ERROR | 可重试第五步 |
+- **注册#028** [NO-TOKEN] 其他/1-多用户与注册.md:43 — | 6 写注册表 | 用户**显式确认**后 final re-check 并原子落盘（第五步通过不自动保存） | ERROR | 可原地重试（重新 final re-check） |
+- **注册#029** [NO-TOKEN] 其他/1-多用户与注册.md:47 — | 现象 | 级别 | 处置 |
+- **注册#031** [NO-TOKEN] 其他/1-多用户与注册.md:49 — | daemon 端口不可达 | **ERROR** | 提示在 CIW `load(setup_path)`，不得落盘 |
+- **注册#032** [NO-TOKEN] 其他/1-多用户与注册.md:50 — | token NAK / 不匹配 | **ERROR** | SKILL 零接触；确认 load 的是本 user 的 setup |
+- **注册#033** [NO-TOKEN] 其他/1-多用户与注册.md:51 — | host-key 指纹不匹配 | **ERROR** | 唯一阻断的期望类校验 |
+- **注册#034** [NO-TOKEN] 其他/1-多用户与注册.md:52 — | banner hostname / daemon user 与 `expected_*` 不一致 | WARNING | 记入 report.warnings，不阻断 |
+- **注册#035** [NO-TOKEN] 其他/1-多用户与注册.md:53 — | 命令冒烟失败 / Skill 冒烟 `1+1`≠`2` | **ERROR** | 对应通道未打通 |
+- **注册#036** [WEAK] 其他/1-多用户与注册.md:57 — - 各步**各有一条独立的步级 deadline**（默认 30s），步内相位共享、不重置；`runtime.connect_timeout` 是其中的子预算；探测逐项顺序执行；第四步之后用户 `load` 的等待**不计时**；
+  - 命中：`load`→6；`runtime.connect_timeout`→3
+- **注册#038** [WEAK] 其他/1-多用户与注册.md:59 — - **各步失败均不释放候选**：可**原样重试同一步**（不携带参数修正）；**修正参数必须 `cancel` 后重新 `apply`**，从第一步重走；`cancel` / 服务重启才释放候选（见[中层配置文档 §6.4](../中层/add-中层配置文档.md)）；任何失败不写 registr
+  - 命中：`apply`→6；`cancel`→6
+- **注册#039** [WEAK] 其他/1-多用户与注册.md:60 — - `cancel` 合法于任意非 committed 进行中会话（含 failed），**幂等**；成功后丢弃候选、会话 token 立即失效，`GET /api/register/<user>` 返回无进行中会话；**apply 后必须手动 cancel 才释放**；cancel 或服务重启后同
+  - 命中：`apply`→6；`cancel`→6
+- **注册#040** [NO-TOKEN] 其他/1-多用户与注册.md:61 — - 第五步通过只报告连通性 OK，**不自动写盘**；第六步由用户显式确认触发（唯一写盘点）；
+- **注册#042** [NO-TOKEN] 其他/1-多用户与注册.md:68 — | role | 命令可用性（必测） | 专项探测 | 失败级别 |
+- **注册#044** [NONE] 其他/1-多用户与注册.md:70 — | `gui` | ✅ 一次性命令 | SSH 可达 + host-key；`role.gui.root` 可写 | ERROR |
+- **注册#045** [WEAK] 其他/1-多用户与注册.md:71 — | `daemon` | ✅ 一次性命令 | SSH 可达 + host-key；`role.daemon.python`；`daemon_port` 空闲；`role.daemon.root` 可写 | ERROR |
+  - 命中：`daemon`→6；`daemon_port`→6；`role.daemon.python`→2
+- **注册#046** [WEAK] 其他/1-多用户与注册.md:72 — | `command` | ✅ 一次性命令（命令冒烟） | SSH 可达 + host-key；`role.command.root` 可写 | ERROR |
+  - 命中：`command`→6
+- **注册#047** [WEAK] 其他/1-多用户与注册.md:73 — | `file` | ✅ 一次性命令 | SSH 可达 + host-key；`role.file.root` 可见、可写 | ERROR |
+  - 命中：`file`→6
+- **注册#048** [WEAK] 其他/1-多用户与注册.md:74 — | `spectre` | ✅ 一次性命令 | SSH 可达 + host-key；`role.spectre.root` 可写；`bin` 校验/探测 | **WARNING（不阻断）** |
+  - 命中：`spectre`→6
+- **注册#051** [WEAK] 其他/1-多用户与注册.md:78 — - `role.gui.display`：显式给出 → 在 gui role 上以该值运行 `xdpyinfo`/`xwininfo -root` 校验，不可达 → ERROR（报告参数问题，不静默改号）；未给出 → 仅在 gui 主机上能唯一确定 Virtuoso 进程时探测并写回，存在多个 Vi
+  - 命中：`null`→6；`xdpyinfo`→2
+- **注册#057** [NO-TOKEN] 其他/1-多用户与注册.md:90 — | 操作 | 语义 |
+- **注册#059** [NO-TOKEN] 其他/1-多用户与注册.md:92 — | 导入 | 启动一次读入内存快照；运行期不自动读文件，管理成功后显式重新导入 |
+- **注册#060** [WEAK] 其他/1-多用户与注册.md:93 — | `user update` | 路径以 user 定位、经管理权限校验后（端点口径见[顶层补充 §2](../顶层/add-控制面与业务面.md)），白名单字段（`ssh.*`、`root.default`、`role.*`、`runtime.*`、`cdslog.*`、`expected_*`
+  - 命中：`null`→6；`registered_at`→6；`role.root`→6；`root.default`→3；`token`→6
+- **注册#061** [NO-TOKEN] 其他/1-多用户与注册.md:94 — | `user remove` | 路径以 user 定位、经管理权限校验后（端点口径见[顶层补充 §2](../顶层/add-控制面与业务面.md)），原子移除条目并关缓存，成功后触发重新导入；**本机解绑 ≠ 远端吊销**（远端 daemon 仍接受原 token，直到 `RBStop()` +
+- **注册#062** [WEAK] 其他/1-多用户与注册.md:95 — | 机器重装 | 带外确认后显式 update `expected_fingerprint`；未确认前按不匹配拒绝 |
+  - 命中：`expected_fingerprint`→6
+- **注册#063** [NO-TOKEN] 其他/1-多用户与注册.md:96 — | 跨进程写 | registry 写采用 OS 文件锁 + 读改写原子替换，不丢更新 |
+- **注册#064** [NO-TOKEN] 其他/1-多用户与注册.md:97 — | 端口/租约 | reservation 候选（内存、作用域、冲突重分配）见[中层配置文档 §6.4](../中层/add-中层配置文档.md) |
+- **路由#003** [NO-TOKEN] 中层/3-路由设计.md:5 — > 状态：Normative（5 role 拓扑与职责、token↔主机边界、连接复用原则的唯一口径）
+- **路由#005** [NO-TOKEN] 中层/3-路由设计.md:7 — > 关联：字段定义见[中层配置文档 §2](../中层/add-中层配置文档.md)；接口基线见[四层整体架构与接口 §4](../总览/1-四层整体架构与接口.md)；并发与预算见[并发设计](2-并发设计.md)
+- **路由#008** [NO-TOKEN] 中层/3-路由设计.md:14 — 2. **第二步（用户内检查与投递）**：在用户内按 role 解析目标后，执行并发 owner 的限流检查（线程预算、最大通道数、单目标点上限，见[并发设计 §2/§3](2-并发设计.md)），**容得下才继续投递**；需要排队的进对应队列，不需要排队的直接投递（形态见[并发设计 §1](2-并
+- **路由#009** [NO-TOKEN] 中层/3-路由设计.md:15 — 3. 任一限流参数容不下 → 返回容量拒绝并**指明是哪个参数**（结果字段见[四层整体架构与接口 §4.5](../总览/1-四层整体架构与接口.md)）；拒绝文本与记账见[并发设计 §2/§3](2-并发设计.md)。
+- **路由#013** [NO-TOKEN] 中层/3-路由设计.md:20 — B --> C["第二步：并发限流检查（见 2-并发设计 §2/§3）"]
+- **路由#014** [NO-TOKEN] 中层/3-路由设计.md:21 — C -- 容不下 --> R["容量拒绝，指明哪个参数"]
+- **路由#015** [NO-TOKEN] 中层/3-路由设计.md:22 — C -- 容下 --> D["排队或直接投递（见 2-并发设计 §1）"]
+- **路由#018** [NO-TOKEN] 中层/3-路由设计.md:26 — - 排队/投递超时语义、预算与记账见[并发设计 §1–§3](2-并发设计.md)；注册表导入与 token 生命周期见[多用户与注册](../其他/1-多用户与注册.md)。
+- **路由#024** [NO-TOKEN] 中层/3-路由设计.md:38 — 这条准则同时是评审 P0-01 的关闭口径：规范不再承诺"gui 与 daemon 必须同机"，也不再假设；bridge 按配置投送。
+- **路由#025** [NO-TOKEN] 中层/3-路由设计.md:42 — | role | 职责 | 被哪个接口消费 | 额外字段 |
+- **路由#027** [WEAK] 中层/3-路由设计.md:44 — | `gui` | Virtuoso CIW / X11 所在主机；执行 GUI 侧一次性命令（窗口枚举、dismiss、bootstrap 等） | **GUI 命令执行**（一次性） | `display`（X server） |
+  - 命中：`display`→6
+- **路由#028** [WEAK] 中层/3-路由设计.md:45 — | `daemon` | SKILL daemon 监听主机；bridge 文件的部署目标 | **Skill 执行**（隧道到 daemon） | `daemon_port`、`local_port` |
+  - 命中：`daemon`→6；`daemon_port`→6；`local_port`→6
+- **路由#029** [WEAK] 中层/3-路由设计.md:46 — | `command` | 通用命令执行主机（默认常驻 shell；`parallel=True` 走一次性 exec） | **命令执行** | — |
+  - 命中：`command`→6
+- **路由#030** [WEAK] 中层/3-路由设计.md:47 — | `file` | 文件传输目标主机（上传/下载） | **文件执行** | — |
+  - 命中：`file`→6
+- **路由#031** [WEAK] 中层/3-路由设计.md:48 — | `spectre` | Spectre 执行主机；上层经 **Spectre 命令执行** 调用 spectre（本版第 5 接口；仿真流程编排留待后续） | **Spectre 命令执行**（一次性） | `bin`（可选记录） |
+  - 命中：`spectre`→6
+- **路由#032** [NO-TOKEN] 中层/3-路由设计.md:52 — - 一个 token 拥有**五个 role**，这些 role **可以分布在多个主机**（含混合 local/remote）；bridge 不因为 role 跨主机而拒绝注册或拒绝投送；
+- **路由#033** [WEAK] 中层/3-路由设计.md:53 — - 一个 token **只允许一个 daemon role、一个活动 daemon、一个 CIW**：daemon 是本版唯一“单实例”资源，第二处 `load` 同一 token 属于配置错误；需要第二个 CIW 时注册第二个 user/token；
+  - 命中：`load`→6
+- **路由#036** [NO-TOKEN] 中层/3-路由设计.md:56 — - 该边界是本文的唯一口径；其它文档不得再出现“一个 token 多主机：不支持”这类无限定的表述。
+- **路由#037** [NO-TOKEN] 中层/3-路由设计.md:58 — `role.<name>.mode=local` 表示中层就在该 role 的目标主机上、直接本地执行、不经 SSH；`mode=remote` 表示经 SSH 投送到该 role 的 host/user；**不同 role 可以混合 mode**（例如客户端就在 daemon 主机上 → daem
+- **路由#039** [NO-TOKEN] 中层/3-路由设计.md:64 — | # | 接口 | 目标 role | 执行形态 |
+- **路由#041** [WEAK] 中层/3-路由设计.md:66 — | 1 | Skill 执行 | `daemon` | 隧道 → daemon → Virtuoso（串行语义） |
+  - 命中：`daemon`→6
+- **路由#042** [WEAK] 中层/3-路由设计.md:67 — | 2 | 命令执行 | `command` | 默认常驻 shell；`parallel=True` 一次性 exec |
+  - 命中：`command`→6
+- **路由#043** [WEAK] 中层/3-路由设计.md:68 — | 3 | 文件执行（上传/下载） | `file` | 每次传输一个一次性通道 |
+  - 命中：`file`→6
+- **路由#044** [NO-TOKEN] 中层/3-路由设计.md:69 — | 4 | GUI 命令执行 | `gui` | **一次性命令**（不建常驻 shell） |
+- **路由#045** [WEAK] 中层/3-路由设计.md:70 — | 5 | Spectre 命令执行 | `spectre` | **一次性命令**（不建常驻 shell） |
+  - 命中：`spectre`→6
+- **路由#046** [NO-TOKEN] 中层/3-路由设计.md:72 — **GUI / Spectre 命令的本质**：它们是"用并行模式执行命令"——每次调用在对应 role 上执行一条一次性（one-shot）命令，不建立常驻会话、不保留 cwd/env，等价于 `parallel=True` 的命令语义。两者同样占用该 token 的 channel 预算（见[中
+- **路由#051** [NO-TOKEN] 中层/3-路由设计.md:81 — - **endpoint canonical key 的唯一 owner 是[中层配置文档 §6.5](../中层/add-中层配置文档.md)**（含规范化规则与测试向量），本文不复制算法。
+- **路由#052** [WEAK] 中层/3-路由设计.md:82 — - endpoint 身份只由 `(host, user, jump_host, jump_user, proxy)` 决定；**连接复用另要求解析后的 SSH 凭据（`key_dir`+`key`）一致**：同一 endpoint 但解析后凭据不同 → 不共用业务连接；经全局默认回退的 role 
+  - 命中：`key_dir`→6
+- **路由#053** [NO-TOKEN] 中层/3-路由设计.md:84 — **复用原则（唯一口径）**：
+- **路由#054** [NO-TOKEN] 中层/3-路由设计.md:86 — | 关系 | 是否复用 |
+- **路由#056** [NO-TOKEN] 中层/3-路由设计.md:88 — | 不同 token（即使 endpoint 相同） | **严格隔离，永不复用**——连接、隧道、常驻 shell、预算都按 token 分开 |
+- **路由#057** [NO-TOKEN] 中层/3-路由设计.md:89 — | 同 token 内不同 endpoint | **无法复用**——各自独立建连 |
+- **路由#058** [NO-TOKEN] 中层/3-路由设计.md:90 — | 同 token 内同一 endpoint（且解析后凭据一致） | **尽量复用**——一条业务连接（backend 内多 channel 复用；`backend=openssh` 时可启用 ControlMaster，`backend=paramiko` 时为其 transport）；remot
+- **路由#059** [NO-TOKEN] 中层/3-路由设计.md:92 — - 连接生命周期（建连/重试/关闭）见[并发设计 §4](2-并发设计.md)；
+- **路由#060** [NO-TOKEN] 中层/3-路由设计.md:93 — - 预算：线程预算与最大通道数**每 token 一份**（token 内所有 endpoint 共享），单目标点上限按 endpoint（字段配置在 role、共享 endpoint 取最小值）；记账矩阵见[并发设计 §2/§3](2-并发设计.md)，预算不因 role 数量而增加。
+- **路由#067** [NO-TOKEN] 中层/3-路由设计.md:106 — - 字段与默认值：[中层配置文档](../中层/add-中层配置文档.md)；
+- **路由#068** [NO-TOKEN] 中层/3-路由设计.md:107 — - 接口签名与错误模型：[四层整体架构与接口](../总览/1-四层整体架构与接口.md) §4；
+- **路由#070** [NO-TOKEN] 中层/3-路由设计.md:109 — - 并发、预算与连接复用：[并发设计](2-并发设计.md)；
+- **并发#003** [NO-TOKEN] 中层/2-并发设计.md:5 — > 状态：Normative（并发与限流唯一口径）
+- **并发#005** [NO-TOKEN] 中层/2-并发设计.md:7 — > 关联：字段定义见[中层配置文档 §2.2/§2.3](../中层/add-中层配置文档.md)；接口语义见[四层整体架构与接口 §4](../总览/1-四层整体架构与接口.md)；错误分类见[四层整体架构与接口 §4.5](../总览/1-四层整体架构与接口.md)
+- **并发#006** [NO-TOKEN] 中层/2-并发设计.md:11 — 五个业务接口按并发形态归为三类：
+- **并发#007** [NO-TOKEN] 中层/2-并发设计.md:13 — | 形态 | 接口 | 投递方式 | SSH 资源 |
+- **并发#009** [NO-TOKEN] 中层/2-并发设计.md:15 — | 串行·Skill | Skill 执行 | **排队投递**：上一请求结果返回、通道明确空闲后才投递下一个，否则排队 | 专用隧道连接 |
+- **并发#010** [NO-TOKEN] 中层/2-并发设计.md:16 — | 串行·命令 | 命令执行（默认，`parallel=False`） | **排队投递**：常驻 shell 空闲后才写入下一条 | 常驻 shell 会话 |
+- **并发#011** [NO-TOKEN] 中层/2-并发设计.md:17 — | 并行 | 文件执行、命令执行（`parallel=True`）、GUI 命令、Spectre 命令 | **直接开通道执行**，无逻辑排队 | 一次性通道，用完关闭 |
+- **并发#012** [NO-TOKEN] 中层/2-并发设计.md:19 — - 串行两类的排队都在中层**投递前**发生，按 token 隔离（per-token 闸门）；
+- **并发#013** [NO-TOKEN] 中层/2-并发设计.md:20 — - 排队等待消耗同一条端到端 deadline：**排队中超时 = 未投递**（确定未执行，该“可安全重试”仅属中层内部策略）；**已投递后超时 = 结果未知**（中层不重发；是否重试由上层业务操作自行决断）；Skill 对外超时一律视为结果未知，语义见[四层整体架构与接口 §4.5/§5.8](.
+- **并发#014** [NO-TOKEN] 中层/2-并发设计.md:24 — | 预算 | 字段 | 计量 | 作用域 | 超限 |
+- **并发#016** [WEAK] 中层/2-并发设计.md:26 — | 线程预算 | `runtime.thread_pool_size`（默认 32） | **在途请求数**：任何未完成的动作——排队中、执行中、传输中——都占 1，完成才释放 | 每 token | 容量拒绝（`thread pool exceeded`） |
+  - 命中：`runtime.thread_pool_size`→6
+- **并发#017** [WEAK] 中层/2-并发设计.md:27 — | 最大通道数 | `runtime.channel_budget`（默认 10） | token 内所有 role/endpoint **已打开的 SSH 通道总数**：开通道即占、关闭即释放；与客户端无关，纯看 ssh 开了多少通道 | 每 token（跨全部 role） | 容量拒绝（`cha
+  - 命中：`runtime.channel_budget`→5
+- **并发#018** [WEAK] 中层/2-并发设计.md:28 — | 单目标点通道上限 | `role.<name>.max_sessions`（默认 10） | 单个 **endpoint** 上的 SSH 通道数（计数与上限均按 endpoint）；字段配置在 role 上、生效在 endpoint；本地代理远端 sshd `MaxSessions`，防止冲崩
+  - 命中：`MaxSessions`→1
+- **并发#020** [NO-TOKEN] 中层/2-并发设计.md:31 — - 三个预算互相独立，任一超限 → 返回容量拒绝并指明具体预算（结果字段见[四层整体架构与接口 §4.5](../总览/1-四层整体架构与接口.md)），**不排队等待**；
+- **并发#022** [WEAK] 中层/2-并发设计.md:33 — - 多个 role 解析到同一 endpoint 时共享一个计数器，有效上限取这些 role 的 `max_sessions` 最小值；remote daemon 的专用 Skill tunnel 计入该 endpoint 的通道数；
+  - 命中：`max_sessions`→6
+- **并发#024** [NO-TOKEN] 中层/2-并发设计.md:38 — | 动作 | 线程预算 | 最大通道数（token 合计） | 单目标点通道上限 |
+- **并发#026** [NO-TOKEN] 中层/2-并发设计.md:40 — | 任意接口的在途调用（含排队中） | 占 1，完成释放 | 见对应行 | — |
+- **并发#027** [NO-TOKEN] 中层/2-并发设计.md:41 — | Skill 执行 | 占 1 | 隧道 forwarding 占 1（每 daemon endpoint 一条，连接建立时占、关闭时释放） | 占该 daemon endpoint 1 |
+- **并发#028** [NO-TOKEN] 中层/2-并发设计.md:42 — | 命令执行（默认串行） | 占 1 | 常驻 shell 会话占 1（每 command endpoint 一条） | 占该 command endpoint 1 |
+- **并发#029** [NO-TOKEN] 中层/2-并发设计.md:43 — | 并行命令 / 文件 / GUI / Spectre | 占 1 | 占 1（通道关闭即释放） | 占该 role 的 endpoint 1 |
+- **并发#030** [NO-TOKEN] 中层/2-并发设计.md:44 — | `mode=local` 的同类动作 | 占 1 | 不占 | 不占 |
+- **并发#034** [NO-TOKEN] 中层/2-并发设计.md:52 — - 建连失败只在无副作用阶段重试，**最多 3 次总尝试（含初次）**；ControlMaster 故障自动降级直连；重试共享同一条剩余预算；
+- **并发#038** [NO-TOKEN] 中层/2-并发设计.md:59 — - 字段与默认值：[中层配置文档 §2](../中层/add-中层配置文档.md)；
+- **并发#040** [NO-TOKEN] 中层/2-并发设计.md:61 — - 错误 kind 与保留码：[四层整体架构与接口 §4.5](../总览/1-四层整体架构与接口.md)；
+- **并发#042** [NO-TOKEN] 中层/2-并发设计.md:63 — - 本版不支持的并发能力：[本版范围与明确不支持](../总览/add-本版范围与明确不支持.md)。
+- **日志#003** [NO-TOKEN] 底层/6-日志返回设计标准.md:5 — > 状态：已冻结（CDS.log 返回唯一口径）
+- **日志#009** [NO-TOKEN] 底层/6-日志返回设计标准.md:15 — - **不向 CDS.log 注入任何输出**：不得因为“要返回日志”就往 CDS.log 写 BEGIN/END marker 或其他行——日志返回只读文件，不改文件；
+- **日志#011** [NO-TOKEN] 底层/6-日志返回设计标准.md:20 — | 职责 | 实现位置 |
+- **日志#013** [WEAK] 底层/6-日志返回设计标准.md:22 — | 执行用户 SKILL；当 log 开启时，请求前后各一次 `hiFlushLogFile()`+`fileLength()`，回传 `path + start_offset + end_offset` | 底层 `ramic_bridge.il` |
+  - 命中：`ramic_bridge.il`→6
+- **日志#014** [NO-TOKEN] 底层/6-日志返回设计标准.md:23 — | 读 `[start,end)`、级别过滤、限长降级、组装 JSON 回包；`off` 时完全不读 | `ramic_bridge_daemon_*.py` |
+- **日志#015** [WEAK] 底层/6-日志返回设计标准.md:24 — | 解析回包，把 `log` 挂到 `VirtuosoResult` | 中层 `SkillClient` / models |
+  - 命中：`SkillClient`→6；`VirtuosoResult`→6
+- **日志#035** [NO-TOKEN] 底层/6-日志返回设计标准.md:51 — - `[start,end)` 之外的并发输出不属于本次增量；等待请求留在中层投递前队列，daemon 同一时刻只接收/执行一个由闸门放行的 Skill 请求。
+- **日志#037** [NO-TOKEN] 底层/6-日志返回设计标准.md:57 — | 前缀 | 级别 |
+- **日志#039** [NO-TOKEN] 底层/6-日志返回设计标准.md:59 — | `\e` | error |
+- **日志#040** [NO-TOKEN] 底层/6-日志返回设计标准.md:60 — | `\w` | warning |
+- **日志#041** [NO-TOKEN] 底层/6-日志返回设计标准.md:61 — | 其他（`\o`/`\i`/`\p`/无前缀） | info |
+- **日志#045** [WEAK] 底层/6-日志返回设计标准.md:69 — `log_max_bytes`（默认 64KB）：
+  - 命中：`log_max_bytes`→6
+- **日志#055** [NO-TOKEN] 底层/6-日志返回设计标准.md:81 — - 最后一步按**字节截断、只取靠前部分**：例如上限 100 字节、本次增量起于 offset 10、error 增量到 200，则返回 10–110，之后内容本次不补发；
+- **日志#066** [NO-TOKEN] 底层/6-日志返回设计标准.md:103 — {"value": "3", "log": "\\e ...本次错误行...\\n"}
+- **日志#070** [NO-TOKEN] 底层/6-日志返回设计标准.md:108 — - **本版只解析 JSON payload**；旧 daemon（无 token）不在支持范围，收到非法帧按协议错误处理。
+- **日志#077** [WEAK] 底层/6-日志返回设计标准.md:120 — - 帧顺序固定：第一帧 `value/error`，第二帧 `meta`；两帧必须由 IL 合并为**一次 `ipcWriteProcess`** 写入，避免重排；
+  - 命中：`meta`→6
+- **日志#082** [WEAK] 底层/6-日志返回设计标准.md:128 — - `CDS.log` 不存在/不可读/路径变化且读取失败，或第二帧缺失/超时：**本次 log=""，Skill 结果照常返回**，`VirtuosoResult.warnings` 追加固定文本 `CDS.log unavailable: <reason>`（`<reason>` 仅作诊断，不回
+  - 命中：`CDS.log`→6
+- **日志#091** [WEAK] 底层/6-日志返回设计标准.md:140 — 7. 非法 `log_level`/`log_max_bytes` 直接拒绝报错；`CDS.log` 不可读时 `log=""` 且 `warnings` 含固定文本 `CDS.log unavailable: <reason>`；截断后尾部不输出半个 UTF-8 字符。
+  - 命中：`CDS.log`→6；`log_level`→6；`log_max_bytes`→6；`warnings`→6
+- **顶层#003** [NO-TOKEN] 顶层/1-顶层.md:5 — > 状态：Normative（顶层调度与响应壳唯一口径）
+- **顶层#005** [NO-TOKEN] 顶层/1-顶层.md:7 — > 定位：顶层只做入口与调度。业务包与业务操作契约见[上层 §2/§4](../上层/1-上层.md)；分层职责与依赖见[四层整体架构与接口 §3](../总览/1-四层整体架构与接口.md)；五业务接口与错误总则见[四层整体架构与接口 §4](../总览/1-四层整体架构与接口.md)。
+- **顶层#009** [NO-TOKEN] 顶层/1-顶层.md:14 — - 限流不是顶层职责：中层 per-token 预算由中层计账（见[并发设计 §2/§3](../中层/2-并发设计.md)），顶层不解释该预算；顶层自身业务请求准入上限见[控制面与业务面 §5](add-控制面与业务面.md)。
+- **顶层#018** [NO-TOKEN] 顶层/1-顶层.md:29 — - 一个业务包可以出现在多行（每个业务操作一行）；**单操作业务包只登记一行，同样成立**；同一业务操作名重复登记是启动错误；
+- **顶层#028** [WEAK] 顶层/1-顶层.md:48 — - 可测试约束：处理/调度模块只允许标准库、`common.paths`、`common.jsonutil`、`common.config`（纯工具基座）、`server.*`、`pyapi.*`；不得出现 `transport.*`、`socket`、`subprocess`、`paramiko`
+  - 命中：`common.config`→4；`common.jsonutil`→4；`common.paths`→6；`paramiko`→6；`socket`→6
+- **顶层#033** [NO-TOKEN] 顶层/1-顶层.md:58 — | 情形 | HTTP | 响应体 |
+- **顶层#035** [WEAK] 顶层/1-顶层.md:60 — | 非法 JSON、缺 `operation`/`token`、token 类型错 | 4xx | `ok=false`、`error` |
+  - 命中：`error`→6；`operation`→6；`token`→6
+- **顶层#036** [WEAK] 顶层/1-顶层.md:61 — | 未知 `operation` | 4xx | `ok=false`、`error` |
+  - 命中：`error`→6；`operation`→6
+- **顶层#037** [WEAK] 顶层/1-顶层.md:62 — | Request 构造失败（类型/必填/范围） | 4xx | `ok=false`、`error` |
+  - 命中：`error`→6
+- **顶层#038** [WEAK] 顶层/1-顶层.md:63 — | 业务运行期失败 | 2xx | `ok=false`、`error`、`data` 含步骤痕迹 |
+  - 命中：`data`→6；`error`→6
+- **顶层#039** [WEAK] 顶层/1-顶层.md:64 — | 业务操作未预期异常 | 5xx | `ok=false`、`error`；不带调用栈 |
+  - 命中：`error`→6
+- **顶层#042** [NO-TOKEN] 顶层/1-顶层.md:68 — - 未预期异常必须被顶层捕获：单请求失败不影响其它请求，不终止服务。
+- **顶层#050** [NO-TOKEN] 顶层/1-顶层.md:82 — - 分层职责、依赖方向、五业务接口与错误总则：[四层整体架构与接口](../总览/1-四层整体架构与接口.md) §3/§4；
+- **顶层#051** [NO-TOKEN] 顶层/1-顶层.md:83 — - 并发与限流：[并发设计](../中层/2-并发设计.md)；
+- **控制面#003** [NO-TOKEN] 顶层/add-控制面与业务面.md:5 — > 状态：Normative（顶层 HTTP 端点清单、端口划分与权限口径的唯一 owner）
+- **控制面#007** [NO-TOKEN] 顶层/add-控制面与业务面.md:12 — - **控制端口**：注册、用户管理、全局配置与人类操作；低并发，面向人与运维；
+- **控制面#008** [NO-TOKEN] 顶层/add-控制面与业务面.md:13 — - **业务端口**：业务包调度；程序调用，高并发。
+- **控制面#011** [NO-TOKEN] 顶层/add-控制面与业务面.md:16 — - 控制端口默认只绑定 `127.0.0.1`，管理操作经 SSH 隧道访问；业务端口绑定地址按部署配置。
+- **控制面#012** [NO-TOKEN] 顶层/add-控制面与业务面.md:20 — | 等级 | 含义 | 本版处理 |
+- **控制面#014** [NO-TOKEN] 顶层/add-控制面与业务面.md:22 — | 无权限 | 任何人可调用 | — |
+- **控制面#015** [WEAK] 顶层/add-控制面与业务面.md:23 — | 会话 token | 该注册会话自己的 token（`apply` 返回） | 请求携带并校验 |
+  - 命中：`apply`→6
+- **控制面#016** [NO-TOKEN] 顶层/add-控制面与业务面.md:24 — | 个人 token | 目标 user 自己的 token（注册表条目） | 请求携带；结构校验在顶层；业务端口的合法性与路由由中层判定，控制端口 `/api/bug` 例外见 §3 |
+- **控制面#017** [NONE] 顶层/add-控制面与业务面.md:25 — | 管理权限 | 管理员身份 | 本版 = 内置单管理员 token：服务端只存其 **SHA-256 哈希**（不存原文），比较用 `hmac.compare_digest`；私钥签名方案标为**后续版本** |
+- **控制面#022** [NO-TOKEN] 顶层/add-控制面与业务面.md:35 — | 方法 | 路径 | 用途 | 权限 |
+- **控制面#024** [NO-TOKEN] 顶层/add-控制面与业务面.md:37 — | GET | `/` | 注册页（HTML），人类操作入口 | 无权限 |
+- **控制面#025** [NO-TOKEN] 顶层/add-控制面与业务面.md:38 — | GET | `/health` | 存活探针（运维用） | 无权限 |
+- **控制面#026** [NO-TOKEN] 顶层/add-控制面与业务面.md:39 — | GET | `/help` | 端点清单与用法说明 | 无权限 |
+- **控制面#027** [NO-TOKEN] 顶层/add-控制面与业务面.md:40 — | POST | `/api/bug` | 提交 bug 报告（格式不做要求） | 个人 token |
+- **控制面#028** [NO-TOKEN] 顶层/add-控制面与业务面.md:42 — **六步注册**（语义唯一 owner 见[多用户与注册 §3](../其他/1-多用户与注册.md)）
+- **控制面#029** [NO-TOKEN] 顶层/add-控制面与业务面.md:44 — | 方法 | 路径 | 用途 | 权限 |
+- **控制面#031** [WEAK] 顶层/add-控制面与业务面.md:46 — | POST | `/api/register` | 注册命令：`{user, action, token?, enhanced_token?, 参数}`，`action` ∈ `apply / validate / probe / deploy / verify / commit / cancel
+  - 命中：`action`→6；`apply`→6；`enhanced_token`→6
+- **控制面#032** [NO-TOKEN] 顶层/add-控制面与业务面.md:47 — | GET | `/api/register/<user>` | 查询进行中的注册状态 | 会话 token |
+- **控制面#034** [NO-TOKEN] 顶层/add-控制面与业务面.md:51 — | action | 合法前提 |
+- **控制面#036** [WEAK] 顶层/add-控制面与业务面.md:53 — | `apply` | 无同名进行中会话 |
+  - 命中：`apply`→6
+- **控制面#037** [WEAK] 顶层/add-控制面与业务面.md:54 — | `validate` | 刚 `apply`；失败后可原样重试 |
+  - 命中：`apply`→6；`validate`→6
+- **控制面#038** [WEAK] 顶层/add-控制面与业务面.md:55 — | `probe` | 刚 `validate`；失败后可原样重试 |
+  - 命中：`probe`→6；`validate`→6
+- **控制面#039** [WEAK] 顶层/add-控制面与业务面.md:56 — | `deploy` | 刚 `probe`；失败后可原样重试 |
+  - 命中：`deploy`→6；`probe`→6
+- **控制面#040** [WEAK] 顶层/add-控制面与业务面.md:57 — | `verify` | 刚 `deploy`；或上一次 `verify` 失败（可原地重试） |
+  - 命中：`deploy`→6；`verify`→6
+- **控制面#041** [WEAK] 顶层/add-控制面与业务面.md:58 — | `commit` | 刚 `verify` 成功；失败后可原地重试 |
+  - 命中：`commit`→6；`verify`→6
+- **控制面#042** [WEAK] 顶层/add-控制面与业务面.md:59 — | `cancel` | 任意非 committed 的进行中会话 | 释放内存候选，不落盘
+  - 命中：`cancel`→6
+- **控制面#043** [NO-TOKEN] 顶层/add-控制面与业务面.md:61 — - 非法 action/顺序 → 4xx `{"error": "step order violation", "current_stage": …, "expected": …}`，**不改变会话状态**；
+- **控制面#044** [WEAK] 顶层/add-控制面与业务面.md:62 — - 各步失败后候选保留，可**原样重试同一步**（不携带参数修正）；**修正参数必须 `cancel` 后重新 `apply`**；只有 `cancel`（或服务重启）才释放候选；
+  - 命中：`apply`→6；`cancel`→6
+- **控制面#045** [WEAK] 顶层/add-控制面与业务面.md:63 — - `apply` 响应返回 `token`（用户显式提供则原样，缺省自动生成）；除 `apply` 外的 action 必须携带 `token`，服务端校验其与候选一致，缺失/不一致 → 4xx `invalid token`，**不改变会话状态**；
+  - 命中：`apply`→6；`token`→6
+- **控制面#049** [NO-TOKEN] 顶层/add-控制面与业务面.md:69 — | 方法 | 路径 | 用途 | 权限 |
+- **控制面#051** [NO-TOKEN] 顶层/add-控制面与业务面.md:71 — | GET | `/api/users` | 用户列表（响应脱敏 token） | 管理权限 |
+- **控制面#052** [NO-TOKEN] 顶层/add-控制面与业务面.md:72 — | GET | `/api/user/<user>` | 读取用户条目（响应脱敏 token） | 管理权限 |
+- **控制面#053** [NO-TOKEN] 顶层/add-控制面与业务面.md:73 — | POST | `/api/user/<user>/update` | 修改条目（白名单字段） | 管理权限 |
+- **控制面#054** [NO-TOKEN] 顶层/add-控制面与业务面.md:74 — | DELETE | `/api/user/<user>` | 删除条目（本机解绑 ≠ 远端吊销） | 管理权限 |
+- **控制面#056** [NO-TOKEN] 顶层/add-控制面与业务面.md:78 — | 方法 | 路径 | 用途 | 权限 |
+- **控制面#058** [WEAK] 顶层/add-控制面与业务面.md:80 — | GET / PUT | `/api/config` | 业务 server 线程池大小（`config.json`，仅 `business_thread_pool_size`） | 管理权限 |
+  - 命中：`business_thread_pool_size`→6；`config.json`→6
+- **控制面#060** [NO-TOKEN] 顶层/add-控制面与业务面.md:84 — | 方法 | 路径 | 用途 | 权限 |
+- **控制面#062** [WEAK] 顶层/add-控制面与业务面.md:86 — | GET | `/api/process/status` | 业务进程 pid/端口/工作路径/启动参数/状态（`starting` / `ready` / `crashed`） | 管理权限 |
+  - 命中：`crashed`→2；`ready`→6；`starting`→2
+- **控制面#063** [WEAK] 顶层/add-控制面与业务面.md:87 — | POST | `/api/process/reload` | 重新导入 `registry.json` 与 `config.json`、关闭旧 token 缓存；`business_thread_pool_size` 对**新请求**立即生效，在途不受影响 | 管理权限 |
+  - 命中：`business_thread_pool_size`→6；`config.json`→6；`registry.json`→6
+- **控制面#064** [NO-TOKEN] 顶层/add-控制面与业务面.md:88 — | POST | `/api/process/restart` | 拒绝新请求、等在途完成（上限 **30 秒**，超时强杀）、按原启动参数重新拉起；强杀覆盖业务进程组及 SSH 后代 | 管理权限 |
+- **控制面#066** [WEAK] 顶层/add-控制面与业务面.md:91 — - `status`：`starting/ready/crashed`（`starting` = 已拉起未 ready）；`restart` 期间监听保持，新请求 `503 + Retry-After`，在途排空 30s 后强杀并重拉；管理端同步等待、自身超时 > 30s；
+  - 命中：`restart`→6；`starting`→2；`status`→6
+- **控制面#069** [WEAK] 顶层/add-控制面与业务面.md:95 — - 修改类（update/delete）路径以 `user` 定位，**收归管理员**：个人 token 不能自助修改；update 请求体含 `token` 字段 → 拒绝；
+  - 命中：`token`→6；`user`→6
+- **控制面#071** [NO-TOKEN] 顶层/add-控制面与业务面.md:97 — - 请求体上限 **16 MiB**，超限 → `413`；
+- **控制面#072** [NO-TOKEN] 顶层/add-控制面与业务面.md:98 — - 控制端口不运行业务操作；`POST /api/bug` 携带个人 token，合法性由控制进程经注册与管理模块的 registry 内存快照校验（不经中层、不读注册表文件）；**无 token 或无效 → 4xx，不记录**；校验通过后，服务端**先剥离 token/Authorization 
+- **控制面#073** [NO-TOKEN] 顶层/add-控制面与业务面.md:102 — | 方法 | 路径 | 用途 | 权限 |
+- **控制面#075** [NO-TOKEN] 顶层/add-控制面与业务面.md:104 — | POST | `/api/operation` | 业务调度：`{operation, token, 业务字段}` → 查注册表 → 构造 Request → 调用对应方法 → 响应壳 | 个人 token |
+- **控制面#076** [NO-TOKEN] 顶层/add-控制面与业务面.md:105 — | GET | `/health` | 存活探针（运维用） | 无权限 |
+- **控制面#077** [NO-TOKEN] 顶层/add-控制面与业务面.md:106 — | GET | `/help` | 端点清单与用法说明 | 无权限 |
+- **控制面#079** [NO-TOKEN] 顶层/add-控制面与业务面.md:109 — - 调度顺序与响应壳的唯一口径见[顶层 §2/§3](1-顶层.md)。
+- **控制面#080** [WEAK] 顶层/add-控制面与业务面.md:113 — - 工作路径下除 `registry.json` 外，另存一份配置 JSON `config.json`；`GET/PUT /api/config` 操作该配置：GET 读内存快照，PUT 只覆盖请求里出现的顶层键、未出现的键原样保留，校验通过后更新快照并原子写回 `config.json`；
+  - 命中：`config.json`→6；`registry.json`→6
+- **控制面#081** [WEAK] 顶层/add-控制面与业务面.md:114 — - `config.json` 经 `common.config` 提供**进程级只读快照**（与 `common.paths` 同性质，四层可读）；控制面是唯一写者；业务进程启动与 `/api/process/reload` 或 `restart` 各导入一次，运行期不读文件、请求期零文件 IO；
+  - 命中：`common.config`→4；`common.paths`→6；`config.json`→6；`restart`→6
+- **控制面#083** [WEAK] 顶层/add-控制面与业务面.md:116 — - 控制面只理解并校验自己登记的键（本版 `business_thread_pool_size`），其余顶层键**原样透传、不解读**；`business_thread_pool_size` 是**可变准入上限**：reload 后新请求按新上限准入；在途数 ≥ 新上限时，新请求拒绝（`429 + 
+  - 命中：`business_thread_pool_size`→6
+- **控制面#085** [WEAK] 顶层/add-控制面与业务面.md:118 — - `runtime.thread_pool_size` 是**每 token** 的注册表配置（唯一 owner 见[并发设计 §2](../中层/2-并发设计.md)），与本节的“全局线程池上限”不是一回事：前者是单用户预算，后者是顶层进程能力上限；两者独立，不互相替代。
+  - 命中：`runtime.thread_pool_size`→6
+- **控制面#088** [NO-TOKEN] 顶层/add-控制面与业务面.md:124 — - 调度顺序、响应壳与错误分界：[顶层 §2/§3](1-顶层.md)；
+- **控制面#089** [NO-TOKEN] 顶层/add-控制面与业务面.md:125 — - 并发与限流：[并发设计](../中层/2-并发设计.md)；
+- **上层#003** [NO-TOKEN] 上层/1-上层.md:5 — > 状态：Normative（业务包与业务操作契约、插件注册唯一口径）
+- **上层#005** [NO-TOKEN] 上层/1-上层.md:7 — > 定位：五业务接口签名与错误总则见[四层整体架构与接口 §4](../总览/1-四层整体架构与接口.md)；顶层调度见[顶层 §2](../顶层/1-顶层.md)；role 与并发见[路由设计](../中层/3-路由设计.md)、[并发设计](../中层/2-并发设计.md)。
+- **上层#017** [NO-TOKEN] 上层/1-上层.md:31 — | 项 | 约定 |
+- **上层#019** [NO-TOKEN] 上层/1-上层.md:33 — | 入口 | 每个业务操作一个方法 `method(request) -> Result`；返回时业务已结束（成功或已失败） |
+- **上层#020** [NO-TOKEN] 上层/1-上层.md:34 — | 同步 | 返回时业务已结束（成功或已失败）；不返回任务句柄 |
+- **上层#021** [NO-TOKEN] 上层/1-上层.md:35 — | 无状态 | 包实例每次请求新建；中间数据不在实例属性里 |
+- **上层#022** [WEAK] 上层/1-上层.md:36 — | 注入 | 构造只接受 `Middle`；不创建连接/进程/隧道 |
+  - 命中：`Middle`→6
+- **上层#024** [NO-TOKEN] 上层/1-上层.md:42 — | 字段 | 类型 | 约定 |
+- **上层#026** [WEAK] 上层/1-上层.md:44 — | `token` | `str` | 必填；每次中层调用原样透传 |
+  - 命中：`token`→6
+- **上层#027** [NO-TOKEN] 上层/1-上层.md:45 — | 业务字段 | 包自定义 | 必须可序列化 |
+- **上层#028** [WEAK] 上层/1-上层.md:46 — | `ok` | `bool` | 业务是否成功 |
+  - 命中：`bool`→6
+- **上层#029** [WEAK] 上层/1-上层.md:47 — | `steps` | `list[dict]` | 步骤痕迹（§2.4） |
+  - 命中：`steps`→6
+- **上层#030** [WEAK] 上层/1-上层.md:48 — | `error` | `str` 或 `None` | 失败摘要；成功为 `None` |
+  - 命中：`None`→6；`error`→6
+- **上层#031** [NO-TOKEN] 上层/1-上层.md:52 — - 每步记 `{"step": 名, "ok": 布尔, "detail": 中层结果}`；默认任一步失败即停止；业务操作可自行决定是否重试某步（条件与痕迹自行约定）；
+- **上层#032** [WEAK] 上层/1-上层.md:53 — - 保留全部痕迹；失败不得伪装成成功，也不得只留一句 `error` 丢弃步骤。
+  - 命中：`error`→6
+- **上层#042** [NO-TOKEN] 上层/1-上层.md:74 — - 领域校验失败是业务失败，写成 `Result(ok=false)`，**不得抛异常表达**；
+- **上层#043** [NO-TOKEN] 上层/1-上层.md:75 — - 下层结构化失败按错误总则处置：校验和不一致不忽略；重试策略由业务操作自行决断；中层只做传输层透明重试（见[并发设计 §4](../中层/2-并发设计.md)）；
+- **上层#044** [NO-TOKEN] 上层/1-上层.md:76 — - 失败类别枚举的唯一 owner 见[四层整体架构与接口 §4.5](../总览/1-四层整体架构与接口.md)，本文不复制。
+- **上层#045** [NO-TOKEN] 上层/1-上层.md:82 — - **插件的登记单元是业务包，条目落在业务操作级**：`{业务操作名: (业务包类, 方法名, Request 模型)}`；注册表结构与重复登记错误由[顶层 §2.1](../顶层/1-顶层.md)唯一 owner；
+- **上层#047** [NO-TOKEN] 上层/1-上层.md:87 — | 项 | 约定 |
+- **上层#049** [NO-TOKEN] 上层/1-上层.md:89 — | 业务操作名 | 点分英文分段（领域.对象.动作）；发布后不改名 |
+- **上层#050** [WEAK] 上层/1-上层.md:90 — | 自描述 | 每个业务包导出：`Package` 类 + 每个业务操作的 `(操作名, 方法名, Request, Result)`；自描述是包级元数据，顶层注册表值仍为 §2.1 三元组（不含 Result） |
+  - 命中：`Package`→6
+- **上层#063** [NO-TOKEN] 上层/1-上层.md:115 — - 五业务接口签名与错误总则：[四层整体架构与接口 §4](../总览/1-四层整体架构与接口.md)；
+- **上层#066** [NO-TOKEN] 上层/1-上层.md:118 — - 排队、预算与 deadline：[并发设计](../中层/2-并发设计.md)；
+- **schematic#004** [NO-TOKEN] 上层/2-schematic.md:6 — > Supersedes：Draft v3（坐标口径再收口：**单点一律 `pos`**，弃用 `xy`，**不拆成两个字段**；见 §1.3）
+- **schematic#006** [NO-TOKEN] 上层/2-schematic.md:11 — 核心只有读和写。写是按对象对称的原子操作：instance / wire / label / pin 各有 place、delete、rename、set。net 是 label/pin 的派生对象，不做操作。
+- **schematic#007** [NO-TOKEN] 上层/2-schematic.md:15 — | 操作名 | 说明 | 步骤摘要 | 接口 |
+- **schematic#009** [WEAK] 上层/2-schematic.md:17 — | read | `focus` 可选，可组合；不填=全部；可带实例过滤与参数白名单 | 开只读 → 按 focus 执行对应 SKILL 段 → 解析 | S |
+  - 命中：`focus`→6
+- **schematic#010** [WEAK] 上层/2-schematic.md:18 — | screenshot | 原理图截图：默认 `lib/cell/view`，可选 `window_id`；格式 PNG | 找/开窗口 → hiWindowSaveImage → 下载 | S+D |
+  - 命中：`window_id`→6
+- **schematic#014** [WEAK] 上层/2-schematic.md:23 — - 可选 `object_filter`：每个对象一个条目，**不写默认 `all`**；条目可以是 `none`（该类一个都不读）。重点是"只看某实例的端子/位置"，不把整图读一遍：
+  - 命中：`none`→6；`object_filter`→4
+- **schematic#015** [WEAK] 上层/2-schematic.md:24 — - `instance`：`all`（默认）/ `none` / `{"names":[...]}` / `{"region":[pos0, pos1]}`；
+  - 命中：`instance`→6；`none`→6
+- **schematic#016** [WEAK] 上层/2-schematic.md:25 — - `wire` / `label` / `pin` / `note`：`all`（默认）/ `none` / `{"region":[pos0, pos1]}`。
+  - 命中：`label`→6；`none`→6；`note`→6；`wire`→6
+- **schematic#017** [WEAK] 上层/2-schematic.md:26 — - object_filter 只对 `positions`、`params`、不填=全部生效；`focus` 含 `connectivity` 时忽略（连接关系必须全量）。
+  - 命中：`connectivity`→6；`focus`→6；`params`→6；`positions`→4
+- **schematic#018** [WEAK] 上层/2-schematic.md:27 — - `screenshot`：目标默认 `lib/cell/view`，可选 `window_id`；可选 `region=[pos0, pos1]`（user units，截前 `hiZoomIn(window, bBox)` 把区域填满窗口）；`toplevel` / `centralWidge
+  - 命中：`centralWidget`→1；`leave_open`→5；`screenshot`→6；`toplevel`→5；`window_id`→6
+- **schematic#019** [WEAK] 上层/2-schematic.md:31 — 对外只有一个**通用写操作** `write`：调用方一次给一组原子命令，业务包内部组织 SKILL 逐个改写，最后统一 check/save。调用方不会按单个原子调用多次。
+  - 命中：`write`→6
+- **schematic#020** [NO-TOKEN] 上层/2-schematic.md:33 — | 操作名 | 说明 | 步骤摘要 | 接口 |
+- **schematic#022** [NO-TOKEN] 上层/2-schematic.md:35 — | write | 通用写：`lib/cell/view + commands[]` | 开 cellview(a) → 逐命令执行 → schCheck → dbSave | S |
+- **schematic#023** [WEAK] 上层/2-schematic.md:36 — | check_and_save | 对目标显式执行 `schCheck` + `dbSave` | 开 cellview(a) → check → save | S |
+  - 命中：`dbSave`→6；`schCheck`→4
+- **schematic#024** [NONE] 上层/2-schematic.md:38 — `write.commands` 每项 = `{"op": 原子名, ...该原子参数}`；业务包按顺序执行并保留每步痕迹。
+- **schematic#025** [NO-TOKEN] 上层/2-schematic.md:40 — **write 支持的原子命令**：每个原子 = `op` + **索引**（要动哪个对象）+ 附加参数。
+- **schematic#026** [NO-TOKEN] 上层/2-schematic.md:42 — | 原子名 | 索引（动哪个） | 附加参数 |
+- **schematic#028** [NO-TOKEN] 上层/2-schematic.md:44 — | place_instance | —（新建） | `master_lib, master_cell, master_view="symbol", name, pos, orient="R0"` |
+- **schematic#029** [WEAK] 上层/2-schematic.md:45 — | delete_instance | `name` | — |
+  - 命中：`name`→6
+- **schematic#030** [WEAK] 上层/2-schematic.md:46 — | rename_instance | `name` | `new_name` |
+  - 命中：`name`→6；`new_name`→6
+- **schematic#031** [WEAK] 上层/2-schematic.md:47 — | set_instance_params | `name` | `params: dict` |
+  - 命中：`name`→6
+- **schematic#032** [WEAK] 上层/2-schematic.md:48 — | set_term_nets | `name` | `term_nets: {term: net}`；内部超短 stub + label；可选样式 `justify/orient/font/height/stub_length`（不传用默认） |
+  - 命中：`name`→6
+- **schematic#033** [NO-TOKEN] 上层/2-schematic.md:49 — | place_wire | —（新建） | `points: [pos, …]`（≥2 点）；可选 `entry/route/width/color/line_style`（传了才拼，不传用底层默认） |
+- **schematic#034** [WEAK] 上层/2-schematic.md:50 — | delete_wire | `points`（wire 是多个 2 点 line segment，按 `pos` 端点匹配） | — |
+  - 命中：`points`→6
+- **schematic#035** [WEAK] 上层/2-schematic.md:51 — | set_wire_properties | `points` | `width?, color?, line_style?` |
+  - 命中：`points`→6
+- **schematic#036** [NO-TOKEN] 上层/2-schematic.md:52 — | place_label | —（新建） | `text, pos`；可选样式 `justify/orient/font/height/alias`（不传用默认） |
+- **schematic#037** [WEAK] 上层/2-schematic.md:53 — | delete_label | `pos`（可选加 `text` 消歧义） | — |
+  - 命中：`text`→6
+- **schematic#038** [WEAK] 上层/2-schematic.md:54 — | rename_label | `pos`（可选加 `old_text` 消歧义） | `new_text` |
+  - 命中：`new_text`→6；`old_text`→3
+- **schematic#039** [WEAK] 上层/2-schematic.md:55 — | set_label_properties | `pos`（可选加 `text`） | `justify?, orient?, font?, height?` |
+  - 命中：`text`→6
+- **schematic#040** [NO-TOKEN] 上层/2-schematic.md:56 — | place_pin | —（新建） | `name, pos`；可选 `direction/orient/off_sheet/power_sens/ground_sens/sig_type`（不传用默认/不拼） |
+- **schematic#041** [NO-TOKEN] 上层/2-schematic.md:57 — | delete_pin | `pos` | — |
+- **schematic#042** [WEAK] 上层/2-schematic.md:58 — | rename_pin | `pos` | `new_name` |
+  - 命中：`new_name`→6
+- **schematic#043** [NO-TOKEN] 上层/2-schematic.md:59 — | set_pin_properties | `pos` | `direction?` |
+- **schematic#044** [NO-TOKEN] 上层/2-schematic.md:60 — | place_note | —（新建） | `text, pos, justify="lowerLeft", orient="R0", font="stick", height=0.0625, type="normalLabel"` |
+- **schematic#045** [WEAK] 上层/2-schematic.md:61 — | delete_note | `pos`（可选加 `text`） | — |
+  - 命中：`text`→6
+- **schematic#046** [WEAK] 上层/2-schematic.md:62 — | rename_note | `pos`（可选加 `old_text`） | `new_text` |
+  - 命中：`new_text`→6；`old_text`→3
+- **schematic#047** [WEAK] 上层/2-schematic.md:63 — | set_note_properties | `pos`（可选加 `text`） | `justify?, orient?, font?, height?` |
+  - 命中：`text`→6
+- **schematic#048** [NO-TOKEN] 上层/2-schematic.md:67 — - **单点坐标一律一个字段 `pos`**，值是两元素数组 `[x, y]`（user units）：索引（delete/rename/set_*）、新建（place_*）、读回（read 的实例/端子/label/pin/note）**同一口径**；
+- **schematic#049** [WEAK] 上层/2-schematic.md:68 — - **不再出现 `xy` 字段**；**不把坐标拆成两个字段**（`{"x":…,"y":…}` 一律非法）；`pos` 缺字段/形状不对时校验必须报明缺哪个字段（不得裸 `KeyError`）；
+  - 命中：`KeyError`→3
+- **schematic#050** [WEAK] 上层/2-schematic.md:69 — - 多点：`points: [pos, …]`；区域/矩形：`region` / `bbox` 一律**对角两点** `[pos0, pos1]`（read 与 write 同形，**不再用四元组**）；
+  - 命中：`bbox`→6；`region`→6
+- **schematic#058** [NO-TOKEN] 上层/2-schematic.md:85 — 跟进时**不做兼容层**（`xy`/拆字段直接判非法），校验错误必须点名缺哪个字段；
+- **schematic#059** [NO-TOKEN] 上层/2-schematic.md:86 — - 唯一 name 索引只有 instance；wire=line segment 列表（无 name），label/note/pin 均按 `pos` 索引（可加 text/name 消歧义）；
+- **schematic#066** [WEAK] 上层/2-schematic.md:93 — - `check_and_save` 供显式补一次校验保存；读写目标都必须带 `view`，默认 `"schematic"`，不假设只有这个视图名。
+  - 命中：`check_and_save`→6；`view`→6
+- **symbol#004** [NO-TOKEN] 上层/3-symbol.md:6 — > Supersedes：Draft v2（坐标口径对齐 [2-schematic.md §1.3](2-schematic.md)：单点一律 `pos`，弃用 `xy`、不拆字段）
+- **symbol#010** [WEAK] 上层/3-symbol.md:17 — - `generate` 可以从 schematic 生成或覆盖 symbol，内部自带临时 view、校验、备份、回滚。
+  - 命中：`generate`→6
+- **symbol#011** [NO-TOKEN] 上层/3-symbol.md:23 — | 操作名 | 说明 | 步骤摘要 | 接口 |
+- **symbol#013** [WEAK] 上层/3-symbol.md:25 — | `read` | 读 terms/labels/shapes/orders/selection boxes；`focus` 可选 | 只读打开 → 收集 → 解析 | S |
+  - 命中：`focus`→6；`read`→6
+- **symbol#014** [WEAK] 上层/3-symbol.md:26 — | `screenshot` | symbol 截图；默认 `lib/cell/view`，可选 `window_id` | 找/开窗口 → `hiWindowSaveImage` → 下载 | S+D |
+  - 命中：`hiWindowSaveImage`→3；`screenshot`→6；`window_id`→6
+- **symbol#016** [NO-TOKEN] 上层/3-symbol.md:30 — | focus | 返回 |
+- **symbol#018** [WEAK] 上层/3-symbol.md:32 — | `terms` | 每个 terminal：`name / direction / num_bits / bbox / access_dir` |
+  - 命中：`terms`→6
+- **symbol#019** [WEAK] 上层/3-symbol.md:33 — | `labels` | 每个 label：`text / label_type / pos / layer / purpose / justify / orient / font / height / bbox` |
+  - 命中：`labels`→6
+- **symbol#020** [WEAK] 上层/3-symbol.md:34 — | `shapes` | 已知类型 line / rect / polygon / ellipse 及兜底类型（path / arc / inst / textDisplay 等）：`kind / layer / purpose / bbox / points` |
+  - 命中：`shapes`→6
+- **symbol#021** [WEAK] 上层/3-symbol.md:35 — | `orders` | `pin_order`（权威，`schGetPinOrder`）；`port_order` / `term_order` raw（兼容旧 reader） |
+  - 命中：`orders`→2；`pin_order`→5；`port_order`→2；`term_order`→1
+- **symbol#022** [WEAK] 上层/3-symbol.md:36 — | `selection_boxes` | `instance/drawing` 矩形列表 |
+  - 命中：`selection_boxes`→2
+- **symbol#023** [WEAK] 上层/3-symbol.md:38 — `read` 默认 `view="symbol"`、`view_type="schematicSymbol"`；必须返回通用 shapes，
+  - 命中：`read`→6
+- **symbol#026** [WEAK] 上层/3-symbol.md:43 — - `view_type` 默认 `schematicSymbol`；格式固定 PNG；
+  - 命中：`schematicSymbol`→6；`view_type`→6
+- **symbol#030** [NO-TOKEN] 上层/3-symbol.md:50 — | 操作名 | 说明 | 步骤摘要 | 接口 |
+- **symbol#032** [WEAK] 上层/3-symbol.md:52 — | `write` | 通用写：`lib/cell/view + commands[]` | 开 cellview(a) → 逐命令执行 → `schSymbolToPinList` → `dbSave` | S |
+  - 命中：`dbSave`→6；`write`→6
+- **symbol#033** [WEAK] 上层/3-symbol.md:53 — | `check_and_save` | 对目标显式执行 symbol check + `dbSave` | 开 cellview(a) → check → save | S |
+  - 命中：`check_and_save`→6；`dbSave`→6
+- **symbol#034** [WEAK] 上层/3-symbol.md:54 — | `generate` | 从 schematic 自动生成 symbol | 取 pin 序 → 临时 view → 校验 → 安装/回滚 | S |
+  - 命中：`generate`→6
+- **symbol#038** [NO-TOKEN] 上层/3-symbol.md:60 — 所以 write 必须先显式探测 view 是否存在，再进入 append 编辑。
+- **symbol#041** [NONE] 上层/3-symbol.md:64 — `write.commands` 每项 = `{"op": 原子名, ...该原子参数}`；按顺序执行并保留每步痕迹。
+- **symbol#042** [NO-TOKEN] 上层/3-symbol.md:68 — | 原子名 | 索引 | 附加参数 |
+- **symbol#044** [WEAK] 上层/3-symbol.md:70 — | `place_line` | —（新建） | `layer, purpose, points=[pos, …]`（=2 点） |
+  - 命中：`place_line`→5
+- **symbol#045** [WEAK] 上层/3-symbol.md:71 — | `place_rect` | —（新建） | `layer, purpose, bbox=[pos0, pos1]`（对角两点，与 read 同形） |
+  - 命中：`place_rect`→6
+- **symbol#046** [WEAK] 上层/3-symbol.md:72 — | `place_polygon` | —（新建） | `layer, purpose, points=[pos, …]`（≥3 点） |
+  - 命中：`place_polygon`→4
+- **symbol#047** [WEAK] 上层/3-symbol.md:73 — | `place_ellipse` | —（新建） | `layer, purpose, bbox=[pos0, pos1]` |
+  - 命中：`place_ellipse`→2
+- **symbol#048** [WEAK] 上层/3-symbol.md:74 — | `delete_shape` | `kind + bbox/points` | — |
+  - 命中：`delete_shape`→4
+- **symbol#049** [WEAK] 上层/3-symbol.md:75 — | `set_shape_properties` | `kind + bbox/points`（旧值定位） | `layer?, purpose?, new_bbox?, new_points?`（按 kind 取合法项） |
+  - 命中：`set_shape_properties`→4
+- **symbol#053** [NO-TOKEN] 上层/3-symbol.md:81 — - 新建原子的 `layer/purpose` 必填；不设默认层，避免猜 PDK。
+- **symbol#055** [NO-TOKEN] 上层/3-symbol.md:87 — | label_kind | 底层 |
+- **symbol#057** [WEAK] 上层/3-symbol.md:89 — | `drawing` | `dbCreateLabel` / `dbCreateLabel` + labelType |
+  - 命中：`dbCreateLabel`→2；`drawing`→6
+- **symbol#058** [WEAK] 上层/3-symbol.md:90 — | `pin_name` | `schCreateSymbolLabel` `"pin name"` |
+  - 命中：`pin_name`→3
+- **symbol#059** [WEAK] 上层/3-symbol.md:91 — | `instance` | `schCreateSymbolLabel` `"instance label"` |
+  - 命中：`instance`→6
+- **symbol#060** [WEAK] 上层/3-symbol.md:92 — | `logical` | `schCreateSymbolLabel` `"logical label"` |
+  - 命中：`logical`→2
+- **symbol#061** [NO-TOKEN] 上层/3-symbol.md:94 — | 原子名 | 索引 | 附加参数 |
+- **symbol#063** [WEAK] 上层/3-symbol.md:96 — | `place_label` | —（新建） | `label_kind, text, pos, layer?, purpose?, justify?, orient?, font?, height?` |
+  - 命中：`place_label`→6
+- **symbol#064** [WEAK] 上层/3-symbol.md:97 — | `delete_label` | `label_kind + pos`（可加 `text` 消歧） | — |
+  - 命中：`delete_label`→5；`text`→6
+- **symbol#065** [WEAK] 上层/3-symbol.md:98 — | `rename_label` | `label_kind + pos`（可加 `old_text`） | `new_text` |
+  - 命中：`new_text`→6；`old_text`→3；`rename_label`→6
+- **symbol#066** [WEAK] 上层/3-symbol.md:99 — | `set_label_properties` | `label_kind + pos`（可加 `text`） | `justify?, orient?, font?, height?`；`drawing` 可额外 `layer?, purpose?` |
+  - 命中：`drawing`→6；`set_label_properties`→5；`text`→6
+- **symbol#067** [NONE] 上层/3-symbol.md:103 — pin 以 **terminal name** 为唯一索引；旧代码 `symbol_create_pin` 本身就以
+- **symbol#069** [NO-TOKEN] 上层/3-symbol.md:106 — | 原子名 | 索引 | 附加参数 |
+- **symbol#071** [WEAK] 上层/3-symbol.md:108 — | `place_pin` | —（新建） | `name, pos, direction="inputOutput", half_size=0.0625, label=True, label_pos?, label_justify?, label_orient?, label_font?, lab
+  - 命中：`place_pin`→6
+- **symbol#072** [WEAK] 上层/3-symbol.md:109 — | `delete_pin` | `name` | — |
+  - 命中：`delete_pin`→6；`name`→6
+- **symbol#073** [WEAK] 上层/3-symbol.md:110 — | `rename_pin` | `name` | `new_name`（同步 terminal/net/pin 与 pin-name label） |
+  - 命中：`name`→6；`new_name`→6；`rename_pin`→6
+- **symbol#074** [WEAK] 上层/3-symbol.md:111 — | `set_pin_properties` | `name` | `direction?, access_dir?, label?, label_justify?, label_orient?, label_font?, label_height?` |
+  - 命中：`name`→6；`set_pin_properties`→5
+- **symbol#075** [WEAK] 上层/3-symbol.md:113 — `place_pin` 内部顺序：检查 terminal 不存在 → net → term → pin 矩形
+  - 命中：`place_pin`→6
+- **symbol#082** [NO-TOKEN] 上层/3-symbol.md:122 — 真机语义（必须遵守）：
+- **symbol#089** [NO-TOKEN] 上层/3-symbol.md:133 — | 原子名 | 索引 | 附加参数 |
+- **symbol#091** [WEAK] 上层/3-symbol.md:135 — | `set_selection_box` | 单例 | `bbox=[pos0, pos1]`（`instance/drawing` 矩形，替换旧框） |
+  - 命中：`set_selection_box`→2
+- **symbol#092** [WEAK] 上层/3-symbol.md:136 — | `set_pin_order` | —（整体） | `term_names=[...]`；底层 `schEditPinOrder`，不是写 `cv~>termOrder` |
+  - 命中：`set_pin_order`→2
+- **symbol#098** [NO-TOKEN] 上层/3-symbol.md:149 — | 参数 | 说明 |
+- **symbol#100** [NO-TOKEN] 上层/3-symbol.md:151 — | `lib / cell` | 必填 |
+- **symbol#101** [WEAK] 上层/3-symbol.md:152 — | `schematic_view` | 默认 `"schematic"` |
+  - 命中：`schematic_view`→6
+- **symbol#102** [WEAK] 上层/3-symbol.md:153 — | `symbol_view` | 默认 `"symbol"` |
+  - 命中：`symbol_view`→6
+- **symbol#103** [WEAK] 上层/3-symbol.md:154 — | `sort_pins` | `None / "alphanumeric" / "geometric"` |
+  - 命中：`sort_pins`→3
+- **symbol#104** [WEAK] 上层/3-symbol.md:155 — | `overwrite` | 默认 `false` |
+  - 命中：`false`→6；`overwrite`→6
+- **symbol#105** [WEAK] 上层/3-symbol.md:156 — | `timeout` | 可选 |
+  - 命中：`timeout`→6
+- **symbol#107** [NO-TOKEN] 上层/3-symbol.md:160 — 1. source/target view 必须不同；
+- **symbol#113** [NO-TOKEN] 上层/3-symbol.md:166 — 7. 任一步失败尝试回滚；回滚失败保留 backup view 并返回失败；
+- **symbol#117** [WEAK] 上层/3-symbol.md:172 — `schPinListToSymbolGen` 对显式 pin list 也按传入顺序生成，**`sort_pins` 参数保留但不承诺排序效果**。
+  - 命中：`sort_pins`→3
+- **symbol#118** [WEAK] 上层/3-symbol.md:173 — `schPinListToSymbolGen` 会自行 `dbSave`，因此只能用于临时 view（当前实现即如此）。
+  - 命中：`dbSave`→6
+- **symbol#121** [WEAK] 上层/3-symbol.md:180 — - `port_order` / `term_order` 的独立写入原子；
+  - 命中：`port_order`→2；`term_order`→1
+- **symbol#124** [NO-TOKEN] 上层/3-symbol.md:183 — - 移动类原子（`move_shape / move_label / move_pin`）：底层已确认 `dbMoveFig/dbMoveShape` 可用，
+- **symbol#130** [NO-TOKEN] 上层/3-symbol.md:189 — - circle / arc / donut / path 原子；
+- **symbol#131** [NO-TOKEN] 上层/3-symbol.md:190 — - 并发写。
+- **symbol#132** [NO-TOKEN] 上层/3-symbol.md:194 — | 项 | 结论 |
+- **symbol#134** [WEAK] 上层/3-symbol.md:196 — | `set_shape_properties` 可写字段 | line/polygon 的 `points`、rect/ellipse 的 `bBox`、`layerName`/`purpose` 均已真机验证生效 |
+  - 命中：`bBox`→3；`layerName`→1；`points`→6；`purpose`→6；`set_shape_properties`→4
+- **symbol#135** [WEAK] 上层/3-symbol.md:197 — | `set_pin_properties` 移动 pin | 本版不支持；`dbMoveFig` 可用，留作扩展 |
+  - 命中：`set_pin_properties`→5
+- **symbol#136** [WEAK] 上层/3-symbol.md:198 — | label 索引 | 坐标容差 0.001；`label_kind` 参与消歧，`pin_name` 另外要求 `pin/label` |
+  - 命中：`label_kind`→2；`pin_name`→3
+- **symbol#137** [WEAK] 上层/3-symbol.md:199 — | `rename_pin` 同步 | 不联动：必须显式 `dbRenameNet` + 手工改 pin-name label（已测） |
+  - 命中：`dbRenameNet`→1；`rename_pin`→6
+- **symbol#138** [WEAK] 上层/3-symbol.md:200 — | `schEditPinOrder` | 真机生效，`pin_order` 与 `port_order`/`term_order` 一致 |
+  - 命中：`pin_order`→5；`port_order`→2；`term_order`→1
+- **symbol#139** [NONE] 上层/3-symbol.md:201 — | `schCreateSymbolLabel` | `"pin name"`/`"instance label"`/`"logical label"` 可用；`"device label"` 在 symbol 里返回 nil（文档与实测不符） |
+- **symbol#140** [NONE] 上层/3-symbol.md:202 — | `read.shapes` 覆盖 | 已覆盖 line/rect/polygon/ellipse + 兜底 objType（path/arc/inst/textDisplay 等） |
+- **symbol#141** [NO-TOKEN] 上层/3-symbol.md:203 — | 截图 | symbol 窗口真机出图；空 symbol 窗口出 1 色黑图（无内容时的正常表现），有内容窗口出 7 色真实图 |
+- **symbol#142** [WEAK] 上层/3-symbol.md:204 — | `write` 执行方式 | 逐命令 `execute_skill` + 末尾统一 check/save，保留每步痕迹；**非事务**，失败响应带 `commands applied: k/n` |
+  - 命中：`execute_skill`→6；`write`→6
+- **layout#004** [NO-TOKEN] 上层/4-layout.md:6 — > Supersedes：Draft v4（坐标口径对齐 [2-schematic.md §1.3](2-schematic.md)：单点一律 `pos`，弃用 `xy`、不拆字段）
+- **layout#006** [NO-TOKEN] 上层/4-layout.md:11 — 核心是读和写。写是**按对象对称**的原子操作：shape（rect/polygon/path/line）、label、instance、mosaic、via
+- **layout#011** [WEAK] 上层/4-layout.md:18 — - viewType 固定 `maskLayout`，view 默认 `"layout"`；
+  - 命中：`maskLayout`→6
+- **layout#015** [NO-TOKEN] 上层/4-layout.md:22 — - 不提供"按当前选择集"的写操作（selection 是全局 GUI 状态，不能作业务索引）。
+- **layout#016** [NO-TOKEN] 上层/4-layout.md:26 — | 操作名 | 说明 | 步骤摘要 | 接口 |
+- **layout#018** [WEAK] 上层/4-layout.md:28 — | read | `focus` 可选、可组合；不填=全部；可带区域/对象过滤 | 开只读 → 按 focus 执行对应 SKILL 段 → 解析 | S |
+  - 命中：`focus`→6
+- **layout#019** [WEAK] 上层/4-layout.md:29 — | screenshot | 版图截图：默认 `lib/cell/view`，可选 `window_id`；格式 PNG | 找/开窗口 → hiWindowSaveImage → 下载 | S+D |
+  - 命中：`window_id`→6
+- **layout#023** [WEAK] 上层/4-layout.md:34 — - 可选 `detail`：`geometry`（默认，含坐标与属性）/ `index`（只回 type + LPP，供大版图廉价索引）；
+  - 命中：`detail`→6；`geometry`→6；`index`→6
+- **layout#024** [WEAK] 上层/4-layout.md:35 — - 可选 `object_filter`：每个对象一个条目，**不写默认 `all`**；条目可以是 `none`（该类一个都不读）；
+  - 命中：`none`→6；`object_filter`→4
+- **layout#028** [WEAK] 上层/4-layout.md:39 — - 可选 `region_mode`：`intersect`（默认）/ `contain`，作用于 object_filter 里的 region；
+  - 命中：`contain`→6；`intersect`→2；`region_mode`→1
+- **layout#029** [WEAK] 上层/4-layout.md:40 — - 可选 `depth`：`0`（默认，只读本层）/ `>0`（跨层，需同时给 `region` 或 `layers`）；
+  - 命中：`depth`→6；`layers`→6；`region`→6
+- **layout#033** [NO-TOKEN] 上层/4-layout.md:46 — | focus | 字段 |
+- **layout#035** [WEAK] 上层/4-layout.md:48 — | `summary` | `bbox`、`shape_count`、`instance_count`、`via_count`、按 LPP 的 shape 计数 |
+  - 命中：`bbox`→6；`instance_count`→1；`shape_count`→6；`summary`→6；`via_count`→1
+- **layout#036** [WEAK] 上层/4-layout.md:49 — | `shapes` | `obj_type / layer / purpose / lpp / bbox / points / width / path_style`；label 额外 `text / pos / height / justify / orient / font` |
+  - 命中：`shapes`→6
+- **layout#037** [WEAK] 上层/4-layout.md:50 — | `instances` | `name / master(lib,cell,view) / pos / orient / num_inst / bbox` |
+  - 命中：`instances`→6
+- **layout#038** [WEAK] 上层/4-layout.md:51 — | `vias` | `via_name / pos / orient / bbox` |
+  - 命中：`vias`→1
+- **layout#039** [WEAK] 上层/4-layout.md:55 — 对外只有一个**通用写操作** `write`：调用方一次给一组原子命令，业务包内部组织 SKILL 逐个改写，最后统一 `dbSave`。
+  - 命中：`dbSave`→6；`write`→6
+- **layout#040** [NO-TOKEN] 上层/4-layout.md:56 — 调用方不会按单个原子调用多次。
+- **layout#041** [NO-TOKEN] 上层/4-layout.md:58 — | 操作名 | 说明 | 步骤摘要 | 接口 |
+- **layout#043** [NO-TOKEN] 上层/4-layout.md:60 — | write | 通用写：`lib/cell/view + commands[]` | 探测 view 存在 → 开 cellview(a) → 逐命令 → dbSave | S |
+- **layout#044** [NO-TOKEN] 上层/4-layout.md:61 — | gds | GDS 导入/导出，`action=export\|import` | 见 §1.3 | S+C+U+D |
+- **layout#045** [NONE] 上层/4-layout.md:63 — `write.commands` 每项 = `{"op": 原子名, ...该原子参数}`；按顺序执行并保留每步痕迹。
+- **layout#047** [NO-TOKEN] 上层/4-layout.md:65 — **不得靠 `a` 模式凭空创建**；非事务——中途失败时前面的命令已生效，失败响应带 `commands applied: k/n`。
+- **layout#048** [NO-TOKEN] 上层/4-layout.md:67 — **write 支持的原子命令**：每个原子 = `op` + **索引**（要动哪个对象）+ 附加参数。
+- **layout#049** [NO-TOKEN] 上层/4-layout.md:69 — | 对象 | 原子名 | 索引（动哪个） | 附加参数 |
+- **layout#051** [WEAK] 上层/4-layout.md:71 — | rect | `place_rect` | —（新建） | `layer, purpose, bbox=[pos0, pos1]`（对角两点，**与 read 同形**） |
+  - 命中：`place_rect`→6
+- **layout#052** [WEAK] 上层/4-layout.md:72 — | ellipse | `place_ellipse` | —（新建） | `layer, purpose, bbox=[pos0, pos1]`（同上） |
+  - 命中：`place_ellipse`→2
+- **layout#053** [WEAK] 上层/4-layout.md:73 — | polygon | `place_polygon` | —（新建） | `layer, purpose, points=[pos, …]`（≥3 点，去重后非退化） |
+  - 命中：`place_polygon`→4
+- **layout#054** [WEAK] 上层/4-layout.md:74 — | path | `place_path` | —（新建） | `layer, purpose, points=[pos, …]`（≥2 点）, `width>0`；可选 `style`（7 个合法值，不传用 `truncateExtend`） |
+  - 命中：`place_path`→4；`style`→6
+- **layout#055** [WEAK] 上层/4-layout.md:75 — | line | `place_line` | —（新建） | `layer, purpose, points=[pos, …]`（=2 点） |
+  - 命中：`place_line`→5
+- **layout#056** [WEAK] 上层/4-layout.md:76 — | shape（通用） | `delete_shape` | `kind + layer/purpose + (bbox\|points)`；`all=false` 默认唯一命中 | — |
+  - 命中：`delete_shape`→4
+- **layout#057** [WEAK] 上层/4-layout.md:77 — | shape（通用） | `set_shape_properties` | 同 `delete_shape` | `new_bbox?（=[pos0, pos1]）, new_points?, new_width?` |
+  - 命中：`delete_shape`→4；`set_shape_properties`→4
+- **layout#058** [WEAK] 上层/4-layout.md:78 — | shape（按层批量） | `delete_shapes_on_layer` | `layer, purpose` | `types?`（缺省=该 LPP 全部类型） |
+  - 命中：`delete_shapes_on_layer`→2
+- **layout#059** [WEAK] 上层/4-layout.md:79 — | label | `place_label` | —（新建） | `layer, purpose, pos, text`；可选 `justify/orient/font/height`（不传用底层默认） |
+  - 命中：`place_label`→6
+- **layout#060** [WEAK] 上层/4-layout.md:80 — | label | `delete_label` | `pos`（可选加 `text`/`layer` 消歧义） | — |
+  - 命中：`delete_label`→5；`layer`→6；`text`→6
+- **layout#061** [WEAK] 上层/4-layout.md:81 — | label | `rename_label` | `pos`（可选加 `old_text`） | `new_text` |
+  - 命中：`new_text`→6；`old_text`→3；`rename_label`→6
+- **layout#062** [WEAK] 上层/4-layout.md:82 — | label | `set_label_properties` | `pos`（可选加 `text`） | `new_pos?, new_height?, new_justify?, new_orient?, new_font?`（至少给一个） |
+  - 命中：`set_label_properties`→5；`text`→6
+- **layout#063** [WEAK] 上层/4-layout.md:83 — | instance | `place_instance` | —（新建） | `master_lib, master_cell, master_view="layout", name, pos, orient="R0"`；可选 `num_inst`（数组实例，name 变 `A<0:n>`） |
+  - 命中：`num_inst`→1；`place_instance`→6
+- **layout#064** [WEAK] 上层/4-layout.md:84 — | instance | `delete_instance` | `name` | — |
+  - 命中：`delete_instance`→4；`name`→6
+- **layout#065** [WEAK] 上层/4-layout.md:85 — | instance | `rename_instance` | `name` | `new_name` |
+  - 命中：`name`→6；`new_name`→6；`rename_instance`→4
+- **layout#066** [WEAK] 上层/4-layout.md:86 — | instance | `set_instance_properties` | `name` | `new_pos?, new_orient?`（`new_pos` 必须写 point；`mag`/`master` 只读，不在本版） |
+  - 命中：`master`→6；`name`→6；`new_pos`→2；`set_instance_properties`→2
+- **layout#067** [WEAK] 上层/4-layout.md:87 — | mosaic | `place_mosaic` | —（新建） | `master_lib, master_cell, master_view="layout", name, pos, orient` , `rows, cols, row_pitch, col_pitch` |
+  - 命中：`place_mosaic`→2
+- **layout#068** [WEAK] 上层/4-layout.md:88 — | mosaic | `delete_mosaic` | `name` | — |
+  - 命中：`delete_mosaic`→2；`name`→6
+- **layout#069** [WEAK] 上层/4-layout.md:89 — | via | `place_via` | —（新建） | `via_name, pos, orient="R0"`；techfile-gated（§1.2.2） |
+  - 命中：`place_via`→2
+- **layout#070** [WEAK] 上层/4-layout.md:90 — | via | `delete_via` | `via_name + pos + orient` | — |
+  - 命中：`delete_via`→2
+- **layout#075** [NONE] 上层/4-layout.md:99 — - 底层 `dbCreateXxx` 失败**返回 nil 而不抛错** → 每个原子必须判返回值，失败即业务失败；
+- **layout#076** [WEAK] 上层/4-layout.md:100 — - 默认**不做** techfile 预检；`write` 可选 `strict_lpp=true` 时校验：`techGetLayerNum(tf, layer)` 非 nil +
+  - 命中：`write`→6
+- **layout#079** [NO-TOKEN] 上层/4-layout.md:103 — 批量删层用 `dbShapeQuery(cv lpp bbox 0 <stopLevel>)`，**stopLevel 必须覆盖层次**；
+- **layout#086** [NO-TOKEN] 上层/4-layout.md:117 — | 参数 | 说明 |
+- **layout#088** [WEAK] 上层/4-layout.md:119 — | `action` | `export` / `import`，必填 |
+  - 命中：`action`→6；`export`→6；`import`→6
+- **layout#089** [WEAK] 上层/4-layout.md:120 — | `lib / cell` | 必填；`view` 默认 `"layout"` |
+  - 命中：`view`→6
+- **layout#090** [WEAK] 上层/4-layout.md:121 — | `file_path` | export：本机 GDS 目标路径；import：GDS 源文件（本机→上传，远端→直接用） |
+  - 命中：`file_path`→6
+- **layout#091** [WEAK] 上层/4-layout.md:122 — | `layer_map` | layer map 文件（export 映射 OA LPP→stream 层号；import 用 `-layerMap` 把 stream 层号映射回 OA）。缺省时导出会走自动 mapping（层号不确定），导入在本环境会直接失败（`XSTRM-74`） |
+  - 命中：`layer_map`→6
+- **layout#092** [WEAK] 上层/4-layout.md:123 — | `ref_lib_file` | 仅 import：参考库清单（`-refLibList`），可选 |
+  - 命中：`ref_lib_file`→1
+- **layout#093** [WEAK] 上层/4-layout.md:124 — | `tech_lib` | import 必填：目标库绑定/对齐的技术库（`-attachTechFileOfLib`） |
+  - 命中：`tech_lib`→6
+- **layout#094** [WEAK] 上层/4-layout.md:125 — | `log_path` | export 默认 `<output stem>.xstream.log`；import 默认远端工作目录 `strmIn.log` |
+  - 命中：`log_path`→6；`strmIn.log`→1
+- **layout#095** [WEAK] 上层/4-layout.md:126 — | `timeout` / `poll_interval` | export 默认 300s / 0.5s；import 默认 600s / 3s |
+  - 命中：`poll_interval`→6；`timeout`→6
+- **layout#096** [WEAK] 上层/4-layout.md:127 — | `cleanup_policy` | 仅 export：`success`（默认）/ `always` / `never` |
+  - 命中：`always`→5；`cleanup_policy`→1；`never`→6；`success`→6
+- **layout#120** [WEAK] 上层/4-layout.md:155 — `XSTRM-234` + `Translation completed` 才算完成；**完成前不得读目标 cellview**（会读到旧版 stale bbox）；
+  - 命中：`XSTRM-234`→2
+- **layout#130** [NO-TOKEN] 上层/4-layout.md:171 — | 参数 | 说明 |
+- **layout#132** [NO-TOKEN] 上层/4-layout.md:173 — | `lib / cell / view` | 默认目标；用于在窗口列表里按 `w~>cellView` 的 lib/cell/view 匹配已开窗口 |
+- **layout#133** [WEAK] 上层/4-layout.md:174 — | `window_id` | 可选显式目标；**显式给了坏 id 直接业务失败，不做 X11/display 回退** |
+  - 命中：`window_id`→6
+- **layout#134** [WEAK] 上层/4-layout.md:175 — | `region` | `[pos0, pos1]`（user units）；截前 `hiZoomIn(window bbox)` 把区域填满窗口 |
+  - 命中：`region`→6
+- **layout#135** [WEAK] 上层/4-layout.md:176 — | `toplevel` / `central_widget` | 透传给 `hiWindowSaveImage` |
+  - 命中：`central_widget`→1；`hiWindowSaveImage`→3；`toplevel`→5
+- **layout#136** [WEAK] 上层/4-layout.md:177 — | `leave_open` | 默认 `false`；只关闭本操作自己打开的窗口，不动别人已开的窗口 |
+  - 命中：`false`→6；`leave_open`→5
+- **layout#139** [NONE] 上层/4-layout.md:182 — - **禁止不带 bbox 的 `hiZoomIn`/`hiZoomOut`**（会进交互橡皮筋并卡死 SKILL 通道）；
+- **layout#143** [NO-TOKEN] 上层/4-layout.md:190 — | 原子 | 底层 | 说明 |
+- **layout#145** [WEAK] 上层/4-layout.md:192 — | `set_layers_visible` | `leSetLayerVisible(lpp t/nil tf)` | 指定 LPP 显示/隐藏 |
+  - 命中：`set_layers_visible`→2
+- **layout#146** [WEAK] 上层/4-layout.md:193 — | `show_only_layers` | `leSetAllLayerVisible(nil tf)` + 逐个显示 | 只显示指定 LPP |
+  - 命中：`show_only_layers`→1
+- **layout#147** [WEAK] 上层/4-layout.md:194 — | `set_entry_layer` | `leSetEntryLayer(lpp tf)` | 录入层（LSW 当前层） |
+  - 命中：`set_entry_layer`→1
+- **layout#148** [WEAK] 上层/4-layout.md:195 — | `fit_view` / `zoom` | `hiZoomAbsoluteScale(w n)` / `hiZoomIn(w bbox)` | 需窗口；显式 `window_id` |
+  - 命中：`fit_view`→2；`window_id`→6；`zoom`→2
+- **layout#152** [NO-TOKEN] 上层/4-layout.md:204 — | 能力 | 归属 |
+- **layout#154** [NO-TOKEN] 上层/4-layout.md:206 — | view create/replace/delete/rename、cell delete | cellview |
+- **layout#155** [WEAK] 上层/4-layout.md:207 — | 结构 Verilog 导入 `ihdl`、PG label、标签后处理流水线 | digital-import |
+  - 命中：`ihdl`→1
+- **layout#156** [NO-TOKEN] 上层/4-layout.md:208 — | 截图机制（窗口解析、抓屏、下载） | gui 机制 + layout 领域封装 |
+- **layout#157** [NO-TOKEN] 上层/4-layout.md:209 — | selection / highlight / LSW 交互 | 不进业务 API |
+- **layout#158** [NONE] 上层/4-layout.md:213 — - 路由抽象（多层/总线）与 `clear_routing`：调用方用几何原子组合；
+- **layout#163** [NO-TOKEN] 上层/4-layout.md:218 — - 并发写。
+- **layout#164** [NO-TOKEN] 上层/4-layout.md:222 — | # | 决策 |
+- **layout#166** [WEAK] 上层/4-layout.md:224 — | 1 | `display` 作为 layout 的展示子操作（底层 `le*` SKILL，不需要 GUI 也能改可见性） |
+  - 命中：`display`→6
+- **layout#167** [NONE] 上层/4-layout.md:225 — | 2 | `export_gds` 放 layout 包（旧公开面即 `client.layout.export_gds`） |
+- **layout#168** [WEAK] 上层/4-layout.md:226 — | 3 | GDS 导出的 `reason` 收敛为 §1.3 的 9 个值，不沿用旧 13 值枚举 |
+  - 命中：`reason`→6
+- **layout#169** [NO-TOKEN] 上层/4-layout.md:227 — | 4 | via 本版实现，但标注 techfile-gated；真机验收需带 PDK 的环境 |
+- **layout#170** [NONE] 上层/4-layout.md:228 — | 5 | region 查询本版做；`depth>0` 只走 `dbShapeQuery` 路径，不展开完整层级树 |
+- **layout#171** [WEAK] 上层/4-layout.md:229 — | 6 | `strict_lpp` 默认 `false`（轻校验），严格模式可选 |
+  - 命中：`false`→6；`strict_lpp`→2
+- **layout#172** [WEAK] 上层/4-layout.md:230 — | 7 | 旧 `route_multilayer`/`route_bus`/`clear_routing` 降级为调用方组合；`set_visibility` 进 `display`；`select_delete`/`delete_cell` 不进 API（cell 删除归 cellview） |
+  - 命中：`delete_cell`→1；`display`→6
+- **layout#173** [WEAK] 上层/4-layout.md:231 — | 8 | **GDS 导入与导出都归本包**，收拢为一个 `gds` 操作（`action=export\|import`）；digital-import 只保留 `ihdl` / PG label / 标签后处理 |
+  - 命中：`ihdl`→1
+- **layout#174** [WEAK] 上层/4-layout.md:232 — | 9 | 截图口径**参考 schematic + maestro**：cellView 匹配窗口 → `geOpen` 兜底、`window_id` 显式则坏 id 直接失败、`region` 用 `hiZoomIn(bbox)`、`toplevel/central_widget` 透传、PNG
+  - 命中：`geOpen`→3；`region`→6；`window_id`→6
+- **layout#175** [WEAK] 上层/4-layout.md:233 — | 10 | `gds` 的参数按 vendor 选项拆开：`layer_map`（导出/导入的层映射）与 `ref_lib_file`（仅导入 `-refLibList`）；导入选 cell 用 `-topCell` |
+  - 命中：`layer_map`→6；`ref_lib_file`→1
+- **layout#176** [NO-TOKEN] 上层/4-layout.md:234 — | 11 | 索引容差由 0.001 收敛为 **0.0005**（半个 dbu）；via 索引改为 `pos + orient`（viaDef/name 不可回读） |
+- **layout#179** [NONE] 上层/4-layout.md:240 — 3. `dbCreateXxx` 失败分两类：**非法 LPP → 抛 SKILL 硬错误**；**几何非法 → nil + WARNING** →
+- **layout#180** [WEAK] 上层/4-layout.md:241 — 上层既要判返回值也要能收错误；`pos` 写 **point**（`7:8`），`bBox`/`points` 写 list；
+  - 命中：`bBox`→3；`points`→6
+- **layout#181** [WEAK] 上层/4-layout.md:242 — 4. **`dbClose` 不落盘**：必须显式 `dbSave` 后再 `dbClose`；未保存的 cellview 留在会话里会污染导出
+  - 命中：`dbClose`→6；`dbSave`→6
+- **layout#184** [NO-TOKEN] 上层/4-layout.md:245 — 6. 区域/层级查询显式给 level（`dbShapeQuery(cv lpp bbox 0 32)`）；3 参数默认形式会下探一层 instance
+- **layout#185** [NO-TOKEN] 上层/4-layout.md:246 — 但**不含 via 生成图形**，不要依赖默认；
+- **layout#189** [NO-TOKEN] 上层/4-layout.md:250 — 9. via 的 `~>viaDef` / `~>name` **不可读**（都是 nil）⇒ 只能按 `pos + orient` 索引；
+- **layout#196** [NO-TOKEN] 上层/4-layout.md:257 — **不能**用来判断 `dbCreate*` 是否接受某 LPP（真机已验证 `("y0" "pin")` 不在列表里但可建）；
+- **layout#199** [WEAK] 上层/4-layout.md:260 — 与 SKILL 侧会话的在内存库表**不是**同一份 ⇒ 会话 run 目录的 `cds.lib` 是唯一权威解析入口；
+  - 命中：`cds.lib`→6
+- **layout#202** [NO-TOKEN] 上层/4-layout.md:263 — 同会话后续 SKILL 调用全部超时（P-075）。批处理路径从根上避开，别再走窗体。
+- **cellview#006** [NO-TOKEN] 上层/5-cellview.md:11 — 重点在“文件”管理，对象体系分三层：**lib → cell → view**（categories 特殊，另行定义）。每层都有 list/create/copy/delete/rename；get/bind 只在 lib 层。
+- **cellview#007** [NO-TOKEN] 上层/5-cellview.md:15 — | 层级 | 操作名 | 说明 | 接口 |
+- **cellview#009** [NO-TOKEN] 上层/5-cellview.md:17 — | lib | list | 列出所有 lib | S |
+- **cellview#010** [NO-TOKEN] 上层/5-cellview.md:18 — | lib | get | 读 lib 元数据（path/tech） | S |
+- **cellview#011** [WEAK] 上层/5-cellview.md:19 — | cell | list | 列出指定 lib 中的所有 cell；给 `category` 时只列该分类下的 cell | S |
+  - 命中：`category`→4
+- **cellview#012** [NO-TOKEN] 上层/5-cellview.md:20 — | view | list | 列出指定 cell 中的所有 view | S |
+- **cellview#013** [NO-TOKEN] 上层/5-cellview.md:21 — | category | list | 列出指定 lib 的所有 categories | S |
+- **cellview#014** [NO-TOKEN] 上层/5-cellview.md:25 — | 层级 | 操作名 | 说明 | 接口 |
+- **cellview#016** [NO-TOKEN] 上层/5-cellview.md:27 — | lib | create | 新建 lib | S |
+- **cellview#017** [NO-TOKEN] 上层/5-cellview.md:28 — | lib | copy | 复制 lib | S |
+- **cellview#018** [NO-TOKEN] 上层/5-cellview.md:29 — | lib | delete | 删除 lib | S |
+- **cellview#019** [NO-TOKEN] 上层/5-cellview.md:30 — | lib | rename | lib 改名 | S |
+- **cellview#020** [NO-TOKEN] 上层/5-cellview.md:31 — | lib | bind | 绑定技术库（tech） | S |
+- **cellview#021** [NO-TOKEN] 上层/5-cellview.md:32 — | cell | copy | 复制 cell | S |
+- **cellview#022** [NO-TOKEN] 上层/5-cellview.md:33 — | cell | delete | 删除 cell | S |
+- **cellview#023** [NO-TOKEN] 上层/5-cellview.md:34 — | cell | rename | cell 改名 | S |
+- **cellview#024** [NO-TOKEN] 上层/5-cellview.md:35 — | view | create | 在指定 cell 中新建 view；cell 尚不存在时，首个 view 的创建即创建 cell | S |
+- **cellview#025** [NO-TOKEN] 上层/5-cellview.md:36 — | view | copy | 复制 view | S |
+- **cellview#026** [NO-TOKEN] 上层/5-cellview.md:37 — | view | delete | 删除 view | S |
+- **cellview#027** [NO-TOKEN] 上层/5-cellview.md:38 — | view | rename | view 改名 | S |
+- **cellview#028** [NO-TOKEN] 上层/5-cellview.md:39 — | category | create | 新建 category | S |
+- **cellview#029** [NO-TOKEN] 上层/5-cellview.md:40 — | category | delete | 删除 category（不级联删 cell） | S |
+- **cellview#030** [NO-TOKEN] 上层/5-cellview.md:41 — | category | rename | category 改名 | S |
+- **cellview#031** [NO-TOKEN] 上层/5-cellview.md:42 — | category | add_cell | 把 cell 加入 category | S |
+- **cellview#032** [NO-TOKEN] 上层/5-cellview.md:43 — | category | remove_cell | 把 cell 移出 category | S |
+- **cellview#038** [WEAK] 上层/5-cellview.md:57 — - **harvest**：输入一个 lib，一次性枚举 lib → cells → views 全貌，对 view 分类，并附带 Maestro setup/analysis 名与结果目录存在性，输出 JSON 报告。可由三层 `list` 拼出，先不实现。
+  - 命中：`list`→6
+- **maestro#003** [NO-TOKEN] 上层/6-maestro.md:5 — > 状态：Draft（操作与原子已成形；参数细节待逐项定稿；暂未纳入 README 治理）
+- **maestro#004** [NO-TOKEN] 上层/6-maestro.md:6 — > Supersedes：Draft v3（补全历史类读写与全部操作/原子的实现底层；去掉 history 复制）
+- **maestro#008** [NO-TOKEN] 上层/6-maestro.md:17 — | 大类 | 操作 | 一句话说明 | 接口 |
+- **maestro#010** [WEAK] 上层/6-maestro.md:19 — | 配置类 | `read_config` | 读当前配置（变量、参数、tests、corners、specs） | S |
+  - 命中：`read_config`→4
+- **maestro#011** [WEAK] 上层/6-maestro.md:20 — | 配置类 | `write` | 通用写，`commands[]` 里的配置原子 | S |
+  - 命中：`write`→6
+- **maestro#012** [WEAK] 上层/6-maestro.md:21 — | 结果类 | `write` | 同一个通用写，`commands[]` 里的结果原子（output / spec） | S |
+  - 命中：`write`→6
+- **maestro#013** [WEAK] 上层/6-maestro.md:22 — | 结果类 | `read_results` | 读结果点、spec 状态、yield；读单条波形 | S+D |
+  - 命中：`read_results`→6
+- **maestro#014** [WEAK] 上层/6-maestro.md:23 — | 导出类 | `export` | 按 `kind` 批量导出文件 | S+C+D |
+  - 命中：`export`→6；`kind`→6
+- **maestro#015** [WEAK] 上层/6-maestro.md:24 — | 历史类 | `read_history` | 不带 history：列出全部并给完成情况；带 history：给该条进度与详情 | S |
+  - 命中：`read_history`→3
+- **maestro#016** [WEAK] 上层/6-maestro.md:25 — | 历史类 | `write_history` | 通用写，`commands[]` 里的历史原子（删/改名/锁） | S |
+  - 命中：`write_history`→4
+- **maestro#017** [WEAK] 上层/6-maestro.md:26 — | 仿真类 | `open_gui` / `close_gui` | GUI 会话开关 | S+G |
+  - 命中：`close_gui`→3；`open_gui`→4
+- **maestro#018** [WEAK] 上层/6-maestro.md:27 — | 仿真类 | `run` | 启动仿真；`blocking` 决定是否等到完成（默认非阻塞） | S+C |
+  - 命中：`blocking`→6
+- **maestro#019** [WEAK] 上层/6-maestro.md:28 — | 展示类 | `open_waveform_gui` / `close_waveform_gui` | 给人看的交互波形窗口 | S+G |
+  - 命中：`close_waveform_gui`→2；`open_waveform_gui`→3
+- **maestro#022** [NO-TOKEN] 上层/6-maestro.md:38 — | 返回项 | 底层 |
+- **maestro#024** [WEAK] 上层/6-maestro.md:40 — | 变量表 | `maeGetVar` / `axlGetVars` |
+  - 命中：`axlGetVars`→2；`maeGetVar`→1
+- **maestro#025** [WEAK] 上层/6-maestro.md:41 — | 参数表 | `maeGetParameter` |
+  - 命中：`maeGetParameter`→1
+- **maestro#026** [NONE] 上层/6-maestro.md:42 — | tests | `axlGetTests` |
+- **maestro#027** [NONE] 上层/6-maestro.md:43 — | corners | `axlGetCorners`、`axlGetCornersForATest` |
+- **maestro#028** [NONE] 上层/6-maestro.md:44 — | specs | `axlGetSpecs` |
+- **maestro#029** [WEAK] 上层/6-maestro.md:45 — | analyses / outputs 列表 | **待定**：未找到现成枚举函数，需用 `maeGetTestSession` 逐 test 取 |
+  - 命中：`maeGetTestSession`→1
+- **maestro#030** [NO-TOKEN] 上层/6-maestro.md:49 — 每个原子 = `op` + **索引**（动哪个）+ 附加参数。整批在一个后台会话内顺序执行，末尾统一保存。
+- **maestro#031** [NO-TOKEN] 上层/6-maestro.md:51 — | 分组 | 原子 | 索引 | 附加参数 | 底层 |
+- **maestro#033** [WEAK] 上层/6-maestro.md:53 — | 器件 | set_test | test | lib / cell / view / simulator | `maeCreateTest` |
+  - 命中：`maeCreateTest`→1
+- **maestro#034** [NONE] 上层/6-maestro.md:54 — | 器件 | set_design | test | lib / cell / view | `maeSetDesign` |
+- **maestro#035** [WEAK] 上层/6-maestro.md:55 — | 分析 | set_analysis | test | analysis / enable / options | `maeSetAnalysis` |
+  - 命中：`maeSetAnalysis`→1
+- **maestro#036** [WEAK] 上层/6-maestro.md:56 — | 变量 | set_var | name | value / scope（global、test、corner） | `maeSetVar`（`?typeName`/`?typeValue`） |
+  - 命中：`maeSetVar`→1
+- **maestro#037** [NO-TOKEN] 上层/6-maestro.md:57 — | 变量 | delete_var | name | test? | `axlRemoveElement(axlGetVar(...))` |
+- **maestro#038** [NONE] 上层/6-maestro.md:58 — | 变量 | set_parameter | name | value / scope | `maeSetParameter` |
+- **maestro#039** [NONE] 上层/6-maestro.md:59 — | 环境 | set_env_option | test | options | `maeSetEnvOption` |
+- **maestro#040** [NONE] 上层/6-maestro.md:60 — | 环境 | set_sim_option | test | options | `maeSetSimOption` |
+- **maestro#041** [NONE] 上层/6-maestro.md:61 — | corner | set_corner | name | disable_tests? | `maeSetCorner` |
+- **maestro#042** [WEAK] 上层/6-maestro.md:62 — | corner | setup_corner | name | model_file / model_section / variables | `maeSetCorner` + `maeSetVar(corner)` + `axlGetCorner`/`axlPutModel`/`axlSetM
+  - 命中：`axlGetCorner`→1
+- **maestro#043** [NONE] 上层/6-maestro.md:63 — | corner | load_corners | —（文件导入） | filepath / sections / operation | `maeLoadCorners`（CSV 先经 File 接口上传） |
+- **maestro#044** [NONE] 上层/6-maestro.md:64 — | 运行 | set_run_mode | —（会话级） | run_mode | `maeSetCurrentRunMode` |
+- **maestro#045** [WEAK] 上层/6-maestro.md:65 — | 运行 | set_job_control_mode | —（会话级） | mode | `maeSetJobControlMode` |
+  - 命中：`maeSetJobControlMode`→2
+- **maestro#046** [WEAK] 上层/6-maestro.md:66 — | 运行 | set_job_policy | test? | policy / job_type | `maeSetJobPolicy` |
+  - 命中：`maeSetJobPolicy`→1
+- **maestro#047** [WEAK] 上层/6-maestro.md:67 — | 运行 | set_simulator_mode | test | mode | `asiSetHighPerformanceOptionVal`（内部映射 `'uniMode` / `'spectreXPreset`） |
+  - 命中：`asiSetHighPerformanceOptionVal`→1
+- **maestro#048** [NO-TOKEN] 上层/6-maestro.md:73 — | 原子 | 索引 | 附加参数 | 底层 |
+- **maestro#050** [NONE] 上层/6-maestro.md:75 — | add_output | test | name / output_type / signal_name / expr | `maeAddOutput` |
+- **maestro#051** [NONE] 上层/6-maestro.md:76 — | set_spec | test | name / lt / gt | `maeSetSpec` |
+- **maestro#052** [NO-TOKEN] 上层/6-maestro.md:80 — | 能力 | 底层 |
+- **maestro#054** [WEAK] 上层/6-maestro.md:82 — | 读全部点、spec 状态、yield | `maeExportOutputView` 导 Detail CSV → 下载 → 解析 |
+  - 命中：`maeExportOutputView`→1
+- **maestro#055** [NONE] 上层/6-maestro.md:83 — | 读单条波形 | `maeOpenResults` → `openResults` → `selectResults` → `ocnPrint` → 下载文本 |
+- **maestro#056** [NONE] 上层/6-maestro.md:84 — | 结果目录/最新 history 定位 | `asiGetResultsDir` + 旧代码的 mtime / 自然排序规则 |
+- **maestro#058** [NO-TOKEN] 上层/6-maestro.md:90 — | kind | 产物 | 底层 |
+- **maestro#060** [NONE] 上层/6-maestro.md:92 — | netlist | 指定 corner 的网表 | `maeCreateNetlistForCorner` |
+- **maestro#061** [NONE] 上层/6-maestro.md:93 — | script | 等价 OCEAN 脚本 | `maeWriteScript` |
+- **maestro#062** [WEAK] 上层/6-maestro.md:94 — | outputs_csv | outputs 表 CSV | `maeExportOutputView` |
+  - 命中：`maeExportOutputView`→1
+- **maestro#063** [WEAK] 上层/6-maestro.md:95 — | snapshot | 全量快照包（sdb / active.state / 过滤 XML / 按点 netlist 与 PSF） | 快照模板 + `find`/`tar` 打包 |
+  - 命中：`find`→6
+- **maestro#064** [WEAK] 上层/6-maestro.md:96 — | screenshot | Maestro 窗口 PNG | `hiWindowSaveImage`（窗口按 `cellView~>viewName` 定位） |
+  - 命中：`hiWindowSaveImage`→3
+- **maestro#067** [NO-TOKEN] 上层/6-maestro.md:106 — | 返回项 | 底层 |
+- **maestro#069** [WEAK] 上层/6-maestro.md:108 — | 全部 history 名称 | `axlGetHistory` |
+  - 命中：`axlGetHistory`→3
+- **maestro#070** [WEAK] 上层/6-maestro.md:109 — | 每个 history 的完成情况（running / done / failed） | `axlGetRunStatus` 逐条查询 |
+  - 命中：`axlGetRunStatus`→1
+- **maestro#071** [WEAK] 上层/6-maestro.md:110 — | 当前 history / 最新 history | `axlGetCurrentHistory`；旧代码的 mtime 排序 / 自然排序规则 |
+  - 命中：`axlGetCurrentHistory`→3
+- **maestro#073** [NO-TOKEN] 上层/6-maestro.md:114 — | 返回项 | 底层 |
+- **maestro#075** [WEAK] 上层/6-maestro.md:116 — | 进度（完成的点 / 测试 / corner 数） | `axlGetRunStatus`（指定 history） |
+  - 命中：`axlGetRunStatus`→1
+- **maestro#076** [WEAK] 上层/6-maestro.md:117 — | 锁状态 | `axlGetHistoryLock` / `maeGetHistoryLockFlag`（0–4 五种状态） |
+  - 命中：`maeGetHistoryLockFlag`→2
+- **maestro#077** [WEAK] 上层/6-maestro.md:118 — | 结果目录 | `axlGetResultsLocation` 等路径查询 |
+  - 命中：`axlGetResultsLocation`→1
+- **maestro#078** [NONE] 上层/6-maestro.md:119 — | 覆盖式运行目标 | `axlGetOverwriteHistoryName` |
+- **maestro#079** [NO-TOKEN] 上层/6-maestro.md:123 — | 原子 | 索引 | 附加参数 | 底层 |
+- **maestro#081** [NO-TOKEN] 上层/6-maestro.md:125 — | delete | history | — | Assembler：`axlRemoveElement(axlGetHistoryEntry(sdb, name))`；Explorer：`maeDeleteExplorerHistory(session, name)` |
+- **maestro#082** [NONE] 上层/6-maestro.md:126 — | delete_results | history | keep_netlist? / keep_quick_plot? | `maeDeleteSimulationData`（对应 GUI 三档）；备选 `axlRemoveSimulationResults` |
+- **maestro#083** [NO-TOKEN] 上层/6-maestro.md:127 — | rename | history | new_name | `axlSetHistoryName(handle, new_name)` |
+- **maestro#084** [WEAK] 上层/6-maestro.md:128 — | lock / unlock | history | — | `maeSetHistoryLock` / `axlSetHistoryLock` |
+  - 命中：`maeSetHistoryLock`→1
+- **maestro#086** [NO-TOKEN] 上层/6-maestro.md:136 — | 操作 | 底层 |
+- **maestro#088** [NO-TOKEN] 上层/6-maestro.md:138 — | open_gui | 窗口探测 → 关闭只读副本 → `deOpenCellView(..., "a")` → 找到并复用可编辑会话 |
+- **maestro#089** [WEAK] 上层/6-maestro.md:139 — | close_gui | 探测窗口 mode/已修改 → Reading 先 `maeMakeEditable` → `maeSaveSetup` → `hiCloseWindow` → `dbPurge` 释放编辑锁；**固定保存，不提供丢弃** |
+  - 命中：`dbPurge`→1；`hiCloseWindow`→6；`maeMakeEditable`→1；`maeSaveSetup`→3
+- **maestro#090** [NO-TOKEN] 上层/6-maestro.md:143 — | 参数 | 说明 |
+- **maestro#092** [WEAK] 上层/6-maestro.md:145 — | `blocking` | 是否阻塞到仿真结束；**默认 `false`**（立即返回 history 名） |
+  - 命中：`blocking`→6；`false`→6
+- **maestro#093** [NO-TOKEN] 上层/6-maestro.md:147 — | 模式 | 行为 | 底层 |
+- **maestro#095** [WEAK] 上层/6-maestro.md:149 — | 非阻塞（默认） | 启动后立即返回 history 名，调用方之后用 `read_history` 查进度 | `maeRunSimulation` |
+  - 命中：`maeRunSimulation`→2；`read_history`→3
+- **maestro#096** [WEAK] 上层/6-maestro.md:150 — | 阻塞（`blocking=true`） | 启动后在包内等到终态，返回 history 名 + 终态 | `maeRunSimulation` + 包内轮询 |
+  - 命中：`maeRunSimulation`→2
+- **maestro#102** [NO-TOKEN] 上层/6-maestro.md:164 — | 操作 | 底层 |
+- **maestro#104** [NONE] 上层/6-maestro.md:166 — | open_waveform_gui | `maeOpenSetup(?mode "r")` → `maeOpenResults(?history)` → `awvCreatePlotWindow` → `awvPlotWaveform(?expr signals)`；会话保持打开供窗口引用 |
+- **maestro#105** [WEAK] 上层/6-maestro.md:167 — | close_waveform_gui | `hiCloseWindow` + `maeCloseSession(?forceClose t)`，关闭后校验窗口与会话列表 |
+  - 命中：`hiCloseWindow`→6
+- **maestro#106** [NO-TOKEN] 上层/6-maestro.md:171 — | 节点 | 底层 | 被谁使用 |
+- **maestro#108** [WEAK] 上层/6-maestro.md:173 — | 后台会话 open / save / close | `maeOpenSetup` / `maeSaveSetup` / `maeCloseSession` | write、read_config、read_results、export、write_history |
+  - 命中：`maeCloseSession`→4；`maeOpenSetup`→4；`maeSaveSetup`→3
+- **maestro#109** [WEAK] 上层/6-maestro.md:174 — | 确保 maestro view 存在 | `maeOpenSetup` + `maeSaveSetup` | write、open_gui（对外不暴露） |
+  - 命中：`maeOpenSetup`→4；`maeSaveSetup`→3
+- **maestro#110** [NONE] 上层/6-maestro.md:175 — | 窗口状态探测（mode / 已修改） | `hiGetCurrentWindow` + 标题解析 + `davSession` | close_gui |
+- **maestro#111** [WEAK] 上层/6-maestro.md:176 — | Detail CSV 中间导出 | `maeExportOutputView` | read_results、export(outputs_csv) |
+  - 命中：`maeExportOutputView`→1
+- **maestro#113** [WEAK] 上层/6-maestro.md:182 — 1. 会话级原子的索引（`set_run_mode` / `set_job_control_mode` 现按"当前会话"处理）；
+  - 命中：`set_job_control_mode`→2；`set_run_mode`→2
+- **maestro#115** [NO-TOKEN] 上层/6-maestro.md:184 — 3. analyses / outputs 的枚举函数；
+- **maestro#118** [NO-TOKEN] 上层/6-maestro.md:187 — 6. 各原子的参数与默认值逐项定稿。
+- **maestro#119** [NO-TOKEN] 上层/6-maestro.md:189 — 待真机验证（写 spec 定稿前必须闭环）：
+- **spectre#017** [NO-TOKEN] 上层/7-spectre.md:27 — | 类别 | 操作名 | 说明 | 接口 |
+- **spectre#019** [WEAK] 上层/7-spectre.md:29 — | 环境 | `spectre.check_license` | 查 Spectre 二进制/版本/license | Sp+C |
+  - 命中：`spectre.check_license`→3
+- **spectre#020** [WEAK] 上层/7-spectre.md:30 — | 仿真 | `spectre.run` | 执行一个或多个独立仿真任务；`tasks[]` | U+Sp+D |
+  - 命中：`spectre.run`→6
+- **spectre#021** [WEAK] 上层/7-spectre.md:31 — | 结果 | `spectre.read_results` | 读/解析 PSF ASCII；自动识别 single/raw/sweep | D |
+  - 命中：`spectre.read_results`→1
+- **spectre#022** [WEAK] 上层/7-spectre.md:32 — | 结果 | `spectre.measure` | 在已解析数据上算 delay/bandwidth/noise 等 | — |
+  - 命中：`spectre.measure`→6
+- **spectre#023** [WEAK] 上层/7-spectre.md:33 — | 结果 | `spectre.export` | 已解析结果导出 CSV/JSON | — |
+  - 命中：`spectre.export`→2
+- **spectre#033** [WEAK] 上层/7-spectre.md:54 — - 每个 Request 必须有 `token: str`，可选 `timeout`；结构校验失败抛 `ValueError`/`TypeError`。
+  - 命中：`TypeError`→6；`ValueError`→6；`timeout`→6
+- **spectre#036** [WEAK] 上层/7-spectre.md:57 — - 业务失败写 `ok=false` + `error`；只有结构错误或未预期异常才抛出。
+  - 命中：`error`→6
+- **spectre#040** [NO-TOKEN] 上层/7-spectre.md:64 — - `run` 的 `job` 必须是安全名：`[A-Za-z0-9][A-Za-z0-9._-]*`，不得含 `/`、`\`、`..`。
+- **spectre#041** [NO-TOKEN] 上层/7-spectre.md:65 — - 包不生成 API 事后不可重建的随机路径；同一 `job` 必须能确定地定位同一组运行目录。
+- **spectre#055** [NO-TOKEN] 上层/7-spectre.md:99 — | 字段 | 类型 | 默认 | 说明 |
+- **spectre#057** [WEAK] 上层/7-spectre.md:101 — | `token` | str | — | 必填 |
+  - 命中：`token`→6
+- **spectre#058** [WEAK] 上层/7-spectre.md:102 — | `tasks` | list[Task] | — | 一个或多个仿真任务；单仿真也写单元素列表 |
+  - 命中：`tasks`→6
+- **spectre#059** [WEAK] 上层/7-spectre.md:103 — | `max_workers` | int | 4 | 上层并发上限，≥1 |
+  - 命中：`max_workers`→6
+- **spectre#060** [WEAK] 上层/7-spectre.md:104 — | `mode` | str | `"spectre"` | 批次默认 mode；task 可覆盖 |
+  - 命中：`mode`→6
+- **spectre#061** [WEAK] 上层/7-spectre.md:105 — | `spectre_args` | list[str] | `[]` | 批次默认额外 Spectre CLI flag |
+  - 命中：`spectre_args`→2
+- **spectre#062** [WEAK] 上层/7-spectre.md:106 — | `spectre_bin` | str \| None | `None` | 覆盖二进制/命令前缀；缺省用 query bin，再退化为 `spectre` |
+  - 命中：`None`→6；`spectre`→6；`spectre_bin`→6
+- **spectre#063** [WEAK] 上层/7-spectre.md:107 — | `parse` | str | `"auto"` | `auto`=下载后自动解析；`none`=只下载不解析 |
+  - 命中：`auto`→6；`none`→6；`parse`→6
+- **spectre#064** [WEAK] 上层/7-spectre.md:108 — | `download` | bool | `True` | 是否把 raw/log 下载到调用方 |
+  - 命中：`True`→6；`download`→6
+- **spectre#065** [WEAK] 上层/7-spectre.md:109 — | `output_root` | str \| None | `None` | 调用方输出根；各 task 用 `<output_root>/<job>`；缺省 `artifact_dir("spectre", job)` |
+  - 命中：`None`→6；`output_root`→2
+- **spectre#066** [WEAK] 上层/7-spectre.md:110 — | `keep_run_dir` | bool | `False` | 是否保留 role 侧 run_dir |
+  - 命中：`False`→6；`keep_run_dir`→6
+- **spectre#067** [WEAK] 上层/7-spectre.md:111 — | `timeout` | int \| None | `None` | 单次中层调用 deadline |
+  - 命中：`None`→6；`timeout`→6
+- **spectre#069** [NO-TOKEN] 上层/7-spectre.md:115 — | 字段 | 类型 | 默认 | 说明 |
+- **spectre#071** [NO-TOKEN] 上层/7-spectre.md:117 — | `job` | str | — | 安全名；决定 role 侧与调用方侧运行目录；批次内唯一 |
+- **spectre#072** [WEAK] 上层/7-spectre.md:118 — | `netlist` | str | — | 调用方 netlist 文件；U 上传到 run_dir |
+  - 命中：`netlist`→6
+- **spectre#073** [WEAK] 上层/7-spectre.md:119 — | `include_files` | list[str] | `[]` | 调用方 include 文件；按 basename 上传到 run_dir |
+  - 命中：`include_files`→1
+- **spectre#074** [WEAK] 上层/7-spectre.md:120 — | `mode` | str \| None | `None` | 为 None 时继承批次默认 |
+  - 命中：`None`→6；`mode`→6
+- **spectre#075** [WEAK] 上层/7-spectre.md:121 — | `spectre_args` | list[str] \| None | `None` | 为 None 时继承批次默认；提供时覆盖 |
+  - 命中：`None`→6；`spectre_args`→2
+- **spectre#077** [WEAK] 上层/7-spectre.md:125 — - `tasks` 非空；job 唯一且为安全名；`max_workers ≥ 1`。
+  - 命中：`tasks`→6
+- **spectre#078** [WEAK] 上层/7-spectre.md:126 — - `parse="auto"` 时 `download` 必须为 true；`parse="none"` 时必须 `keep_run_dir=true`，否则后续无法再用 `read_results` 定位 role 侧结果。
+  - 命中：`download`→6；`read_results`→6
+- **spectre#083** [NO-TOKEN] 上层/7-spectre.md:135 — 3. 上传 netlist 为 `<run_dir>/<netlist basename>`；上传 include 文件到同一目录。netlist 与 include 的 basename 必须唯一、不得冲突。
+- **spectre#092** [WEAK] 上层/7-spectre.md:146 — - 包内用受 `max_workers` 限制的并发执行所有 task；所有 task 都等待结束，任一失败不取消其余 task。
+  - 命中：`max_workers`→6
+- **spectre#093** [WEAK] 上层/7-spectre.md:147 — - 结果按 `tasks` 顺序返回。
+  - 命中：`tasks`→6
+- **spectre#094** [NO-TOKEN] 上层/7-spectre.md:148 — - 中层的 token/channel/thread 预算仍可能拒绝某次调用；被拒绝的 task 记失败，不自动重试。
+- **spectre#097** [WEAK] 上层/7-spectre.md:154 — - 默认参数（已存在则不重复）：`-64`、`+escchars`、`+log <run_dir>/spectre.out`、`-format psfascii`、`-raw <run_dir>/<stem>.raw`、`+lqtimeout 900`、`-maxw 5`、`-maxn 5`、`+l
+  - 命中：`spectre.out`→4
+- **spectre#098** [WEAK] 上层/7-spectre.md:155 — - 参数顺序：task 的 `spectre_args` 后接 mode 映射参数。
+  - 命中：`spectre_args`→2
+- **spectre#101** [NO-TOKEN] 上层/7-spectre.md:159 — | mode | 参数 |
+- **spectre#103** [WEAK] 上层/7-spectre.md:161 — | `spectre` | 无 |
+  - 命中：`spectre`→6
+- **spectre#104** [NO-TOKEN] 上层/7-spectre.md:162 — | `aps` | `+aps` |
+- **spectre#105** [NO-TOKEN] 上层/7-spectre.md:163 — | `x` | `+x` |
+- **spectre#106** [NO-TOKEN] 上层/7-spectre.md:164 — | `cx` | `+preset=cx +mt` |
+- **spectre#107** [NO-TOKEN] 上层/7-spectre.md:165 — | `ax` | `+preset=ax +mt` |
+- **spectre#108** [NO-TOKEN] 上层/7-spectre.md:166 — | `mx` | `+preset=mx +mt` |
+- **spectre#109** [NO-TOKEN] 上层/7-spectre.md:167 — | `lx` | `+preset=lx +mt` |
+- **spectre#110** [NO-TOKEN] 上层/7-spectre.md:168 — | `vx` | `+preset=vx +mt` |
+- **spectre#144** [NO-TOKEN] 上层/7-spectre.md:207 — - raw 已下载但解析失败：`status="partial"`，`ok=false`，保留解析错误和已下载文件。
+- **spectre#146** [NO-TOKEN] 上层/7-spectre.md:209 — - 终止失败标记至少包括：`error reading`、`read-in failed`、license error、明确 convergence failure、`spectre terminated prematurely due to fatal error`、`ERROR (`、segme
+- **spectre#147** [NO-TOKEN] 上层/7-spectre.md:215 — | 字段 | 类型 | 默认 | 说明 |
+- **spectre#149** [WEAK] 上层/7-spectre.md:217 — | `token` | str | — | 必填 |
+  - 命中：`token`→6
+- **spectre#150** [WEAK] 上层/7-spectre.md:218 — | `source` | str | — | role 文件或目录路径；相对 `file` role 根，绝对路径直通 |
+  - 命中：`file`→6；`source`→6
+- **spectre#151** [WEAK] 上层/7-spectre.md:219 — | `analysis` | str | `"all"` | `raw` 时的分析选择：`all`/`tran`/`dc`/`ac`/`info` |
+  - 命中：`analysis`→6；`info`→6；`tran`→6
+- **spectre#152** [WEAK] 上层/7-spectre.md:220 — | `output_dir` | str \| None | `None` | 调用方下载目录；缺省 `artifact_dir("spectre", "results", <source basename>)` |
+  - 命中：`None`→6；`output_dir`→3
+- **spectre#153** [WEAK] 上层/7-spectre.md:221 — | `timeout` | int \| None | `None` | 单次中层调用 deadline |
+  - 命中：`None`→6；`timeout`→6
+- **spectre#154** [NO-TOKEN] 上层/7-spectre.md:225 — | source | 自动判定 | 行为 |
+- **spectre#156** [WEAK] 上层/7-spectre.md:227 — | 单个 PSF ASCII 文件 | `single` | D 下载 → 解析 HEADER/TYPE/SWEEP/TRACE/VALUE |
+  - 命中：`single`→6
+- **spectre#157** [WEAK] 上层/7-spectre.md:228 — | 目录，含合法 classic/flat sweep 布局 | `sweep` | D 递归下载 → 建点索引 |
+  - 命中：`sweep`→5
+- **spectre#158** [WEAK] 上层/7-spectre.md:229 — | 其他目录 | `raw` | D 递归下载 → 按 `analysis` 合并 tran/dc/ac/info |
+  - 命中：`analysis`→6
+- **spectre#189** [NO-TOKEN] 上层/7-spectre.md:272 — | type | 必填 | 可选 | 返回 |
+- **spectre#191** [WEAK] 上层/7-spectre.md:274 — | `threshold_crossing` | `signal, threshold` | `direction=rise`, `edge=1`, `start`, `stop` | time |
+  - 命中：`start`→6；`stop`→6；`threshold_crossing`→3
+- **spectre#192** [WEAK] 上层/7-spectre.md:275 — | `delay` | `from_signal, to_signal, threshold` | `direction=rise`, `start`, `stop` | Δtime |
+  - 命中：`delay`→6；`start`→6；`stop`→6
+- **spectre#193** [WEAK] 上层/7-spectre.md:276 — | `min`/`max`/`mean`/`rms` | `signal` | `start`, `stop` | scalar |
+  - 命中：`mean`→6；`signal`→6；`start`→6；`stop`→6
+- **spectre#194** [WEAK] 上层/7-spectre.md:277 — | `ac_magnitude` | `signal, frequency` | `scale=db/linear` | magnitude |
+  - 命中：`ac_magnitude`→6
+- **spectre#195** [WEAK] 上层/7-spectre.md:278 — | `bandwidth` | `signal` | `drop_db=3`, `reference=dc/max` | Hz |
+  - 命中：`bandwidth`→3；`signal`→6
+- **spectre#196** [WEAK] 上层/7-spectre.md:279 — | `noise_integral` | `signal` | `start`, `stop` | integral |
+  - 命中：`noise_integral`→1；`signal`→6；`start`→6；`stop`→6
+- **spectre#197** [WEAK] 上层/7-spectre.md:281 — - `noise_integral` 需要数据中含频率轴（默认 `freq`）；`ac_magnitude`/`bandwidth` 只适用于 AC 复数数据。
+  - 命中：`ac_magnitude`→6；`bandwidth`→3；`freq`→6；`noise_integral`→1
+- **spectre#202** [WEAK] 上层/7-spectre.md:290 — - CSV：按 columns（缺省取 data 中 list 值的顺序，`time`/`freq`/`sweep_var` 优先）写出矩形表；复数按 `<signal>.re`/`<signal>.im` 展开；缺失值留空。
+  - 命中：`freq`→6；`sweep_var`→1；`time`→6
+- **spectre#205** [NO-TOKEN] 上层/7-spectre.md:296 — | 节点 | 作用 |
+- **spectre#207** [NO-TOKEN] 上层/7-spectre.md:298 — | run 目录/命令构造 | job 校验、run_dir、upload、`-64/+escchars/+log/-raw/+logstatus`、mode 映射 |
+- **spectre#208** [NO-TOKEN] 上层/7-spectre.md:299 — | 结果分类器 | rc、fatal marker、收敛失败、license 失败、partial/failure/error |
+- **spectre#209** [NO-TOKEN] 上层/7-spectre.md:300 — | PSF ASCII 解析 | HEADER/TYPE/SWEEP/TRACE/VALUE/END；delta 压缩；AC 复数；STRUCT OP 展平 |
+- **spectre#210** [NO-TOKEN] 上层/7-spectre.md:301 — | raw 目录分析发现 | tran/dc/ac/info 文件候选与合并 |
+- **spectre#211** [NO-TOKEN] 上层/7-spectre.md:302 — | sweep 布局归一化 | classic `<raw>/sw*.sweep*/N/...` 与 X/LX flat `<raw>/sw*-NNN_*` |
+- **spectre#212** [NO-TOKEN] 上层/7-spectre.md:303 — | CSV/JSON 写出 | 矩形表、复数 re/im、列顺序、精度 |
+- **spectre#214** [WEAK] 上层/7-spectre.md:307 — - swept 数据支持 delta 压缩：后续 step 缺省信号沿用前值；首个 step 未出现信号**内部**用缺失哨兵（实现取 `None`；**不得静默填 0**），
+  - 命中：`None`→6
+- **spectre#215** [WEAK] 上层/7-spectre.md:308 — **对外 `value.data` 一律转成 `null`/省略**（保持 JSON-safe）。边界唯一出口是 `psf_external()`：
+  - 命中：`null`→6
+- **spectre#216** [WEAK] 上层/7-spectre.md:309 — 缺失哨兵与任何非有限值（`NaN`/`±Inf`）都在那里收敛成 `null`，其余路径不得自行定义对外表示。
+  - 命中：`null`→6
+- **spectre#217** [NONE] 上层/7-spectre.md:310 — - AC 复数相量不得被破坏；对外 `value.data` 必须 JSON-safe：复数向量用 `{"re": [...], "im": [...]}`，单值用 `{"re": ..., "im": ...}`。
+- **spectre#221** [NO-TOKEN] 上层/7-spectre.md:317 — | 旧实现 | 新操作/说明 |
+- **spectre#223** [NONE] 上层/7-spectre.md:319 — | `SpectreSimulator.run_simulation` | `run(tasks=[<一个 task>])`；等价单仿真 |
+- **spectre#224** [NONE] 上层/7-spectre.md:320 — | `SpectreSimulator.run_parallel` | `run(tasks=[...], max_workers=N)` |
+- **spectre#225** [NONE] 上层/7-spectre.md:321 — | `parallel_pool` 增量 Future | 不在本版；分多次 `run` 实现 |
+- **spectre#226** [WEAK] 上层/7-spectre.md:322 — | `SpectreSimulator.check_license` | `check_license` |
+  - 命中：`check_license`→3
+- **spectre#227** [NONE] 上层/7-spectre.md:323 — | `parse_spectre_psf_ascii` | `read_results(source=<单个 PSF 文件>)` |
+- **spectre#228** [NONE] 上层/7-spectre.md:324 — | `parse_psf_ascii_directory` | `read_results(source=<raw 目录>)` |
+- **spectre#229** [NONE] 上层/7-spectre.md:325 — | `parse_sweep_psf_directory` | `read_results(source=<sweep 目录>)`（自动识别 sweep） |
+- **spectre#230** [NONE] 上层/7-spectre.md:326 — | `psf.py` 的 scalar/vector/frequency_hz | 内部解析/度量工具，不单独暴露业务操作 |
+- **spectre#231** [NO-TOKEN] 上层/7-spectre.md:327 — | examples 传播延迟计算 | `measure(metrics=[{type:"delay",...}])` |
+- **spectre#232** [NONE] 上层/7-spectre.md:328 — | examples `_result_io.py` | `export(format="csv")` / `export(format="json")` |
+- **spectre#233** [NONE] 上层/7-spectre.md:329 — | `spectre_mode_args` | `run.mode` 映射表 |
+- **spectre#234** [WEAK] 上层/7-spectre.md:330 — | `include_files` / `spectre_args` | `run.tasks[].include_files` / `run.spectre_args` |
+  - 命中：`include_files`→1；`spectre_args`→2
+- **spectre#235** [WEAK] 上层/7-spectre.md:331 — | `output_format="psfascii"` | 固定 `psfascii` |
+  - 命中：`psfascii`→2
+- **spectre#236** [WEAK] 上层/7-spectre.md:332 — | `work_dir` | `run.output_root` |
+  - 命中：`work_dir`→6
+- **spectre#237** [NONE] 上层/7-spectre.md:333 — | `keep_remote_files` | `run.keep_run_dir` |
+- **spectre#238** [WEAK] 上层/7-spectre.md:334 — | `SpectreSimulator.from_env` / `local` / `profile` | 不在包内；由 token 路由 + `query` 决定 target role |
+  - 命中：`local`→6；`query`→6
+- **spectre#252** [NO-TOKEN] 上层/7-spectre.md:357 — | # | 决策 |
+- **spectre#254** [WEAK] 上层/7-spectre.md:359 — | 1 | 按 schematic/maestro 的领域操作组织：对外收敛为 `check_license`/`run`/`read_results`/`measure`/`export` 五个操作。 |
+  - 命中：`check_license`→3；`export`→6；`measure`→6；`read_results`→6
+- **spectre#255** [NONE] 上层/7-spectre.md:360 — | 2 | `run` 用 `tasks[]` 统一单仿真与固定批次；不单独暴露 `run_batch`。 |
+- **spectre#256** [WEAK] 上层/7-spectre.md:361 — | 3 | `read_results` 自动识别单文件、raw 目录、参数扫描；请求层不暴露 `kind`，只在响应中回写识别结果。 |
+  - 命中：`kind`→6；`read_results`→6
+- **spectre#257** [WEAK] 上层/7-spectre.md:362 — | 4 | `measure` 与 `export` 分别纯 Python 计算/落盘，不接触 PSF 解析内部。 |
+  - 命中：`export`→6；`measure`→6
+- **spectre#258** [WEAK] 上层/7-spectre.md:363 — | 5 | 不引入本地/远程模式分支；全部操作只依赖 token + 五业务接口 + `query`；多 server/profile 用不同 token。 |
+  - 命中：`query`→6
+- **spectre#259** [WEAK] 上层/7-spectre.md:364 — | 6 | `run` 的文件布局统一建在 `spectre.root` 下；U/D 用绝对路径跨 role 访问，要求该 root 在 file role 与 spectre 主机均可见。 |
+  - 命中：`spectre.root`→2
+- **spectre#260** [NONE] 上层/7-spectre.md:365 — | 7 | 只支持 PSF ASCII；复数在对外 `value.data` 统一为 `{re, im}` JSON-safe 表示。 |
+- **spectre#261** [NO-TOKEN] 上层/7-spectre.md:366 — | 8 | 不提供 `-param` 注入；参数化由调用方生成多个 netlist。 |
+- **verilog#009** [NO-TOKEN] 上层/8-verilog.md:15 — | 类别 | 操作名 | 一句话说明 | 接口 |
+- **verilog#012** [WEAK] 上层/8-verilog.md:18 — | 写 | `virtuoso.verilog.write` | 通用写：对文本视图做原子文本编辑（只落盘） | S+U |
+  - 命中：`virtuoso.verilog.write`→1
+- **verilog#016** [NO-TOKEN] 上层/8-verilog.md:24 — | 载体 | 说明 |
+- **verilog#018** [WEAK] 上层/8-verilog.md:26 — | 文本视图 `text.v` | 主文件 `verilog.v`，与 `text.veriloga` 同属文件式文本视图，可直接写/读 |
+  - 命中：`text.v`→2；`text.veriloga`→1
+- **verilog#019** [WEAK] 上层/8-verilog.md:27 — | 导入生成的视图 | `functional`（`verilog.v` 文本 + `netlist.oa`，默认）、`symbol`、`schematic`（可选） |
+  - 命中：`functional`→3；`schematic`→6；`symbol`→6
+- **verilog#025** [NO-TOKEN] 上层/8-verilog.md:38 — | 操作名 | 说明 | 步骤摘要 | 接口 |
+- **verilog#027** [WEAK] 上层/8-verilog.md:40 — | read | `focus` 可选、可组合；不填=全部 | 定位源码路径 → 读文本/视图/诊断 | S+D |
+  - 命中：`focus`→6
+- **verilog#033** [NO-TOKEN] 上层/8-verilog.md:48 — | focus | 返回 |
+- **verilog#035** [WEAK] 上层/8-verilog.md:50 — | `source` | `text / path / size / sha256 / lines` |
+  - 命中：`source`→6
+- **verilog#036** [WEAK] 上层/8-verilog.md:51 — | `views` | 该 cell 的视图清单：`name / viewType / dataType / 文件`（用 `ddMapGetFileViewType`/`ddMapGetFileDataType` 判定） |
+  - 命中：`views`→6
+- **verilog#037** [WEAK] 上层/8-verilog.md:52 — | `diagnostics` | 最近一次 `import` 的 `log_path / status / error_count / errors[]` |
+  - 命中：`diagnostics`→5；`import`→6
+- **verilog#040** [NO-TOKEN] 上层/8-verilog.md:59 — | 操作名 | 说明 | 步骤摘要 | 接口 |
+- **verilog#042** [NO-TOKEN] 上层/8-verilog.md:61 — | write | 通用写：`lib/cell/view + commands[]` | 读现状 → 逐原子改文本 → 覆盖写 | S+U |
+- **verilog#043** [NONE] 上层/8-verilog.md:63 — `write.commands` 每项 = `{"op": 原子名, ...参数}`；**非事务**，失败响应带 `commands applied: k/n`。
+- **verilog#044** [NO-TOKEN] 上层/8-verilog.md:65 — | 对象 | 原子名 | 索引（动哪个） | 附加参数 |
+- **verilog#046** [WEAK] 上层/8-verilog.md:67 — | 代码 | `set_source` | 目标 view 或 file | `text`；可选 `expected_sha256`（不符则失败） |
+  - 命中：`expected_sha256`→3；`set_source`→4；`text`→6
+- **verilog#047** [WEAK] 上层/8-verilog.md:68 — | 代码 | `patch_source` | 目标 view 或 file | `edits[]`：`{old_text,new_text}` 或 `{start_line,end_line,new_text}`；匹配不唯一默认失败（可 `all=true`） |
+  - 命中：`patch_source`→3
+- **verilog#048** [WEAK] 上层/8-verilog.md:69 — | 文本视图 | `ensure_view` | `{library, cell, view}` | `view_type`（`text.v`）、可选 `create_if_missing=true`；内部写 `master.tag` + 主文件模板 |
+  - 命中：`ensure_view`→5；`master.tag`→2；`text.v`→2；`view_type`→6
+- **verilog#049** [WEAK] 上层/8-verilog.md:70 — | 文本视图 | `delete_view` | `{library, cell, view}` | —（`ddDeleteObj`，先确认无编辑器窗口/`*.cdslck`） |
+  - 命中：`ddDeleteObj`→6；`delete_view`→4
+- **verilog#051** [WEAK] 上层/8-verilog.md:73 — 结构校验走 `import`（见 §1.3）。有 `*.cdslck`（编辑器开着）时禁止外部写。
+  - 命中：`import`→6
+- **verilog#052** [NO-TOKEN] 上层/8-verilog.md:77 — | 参数 | 说明 |
+- **verilog#054** [WEAK] 上层/8-verilog.md:79 — | `file_path` + `file_is_local` | 源码文件（本机→上传；远端→直接用） |
+  - 命中：`file_is_local`→6；`file_path`→6
+- **verilog#055** [WEAK] 上层/8-verilog.md:80 — | `library` / `cell` | 目标库与顶层 cell（**显式给**，不用文件名推导） |
+  - 命中：`cell`→6；`library`→6
+- **verilog#056** [WEAK] 上层/8-verilog.md:81 — | `schematic_view` / `functional_view` / `symbol_view` | 产出视图名（默认 schematic/functional/symbol） |
+  - 命中：`schematic_view`→6；`symbol_view`→6
+- **verilog#057** [WEAK] 上层/8-verilog.md:82 — | `overwrite` | 映射 `import_if_exists` / `overwrite_symbol` |
+  - 命中：`overwrite`→6
+- **verilog#058** [WEAK] 上层/8-verilog.md:83 — | `timeout` / `poll_interval` | 轮询预算 |
+  - 命中：`poll_interval`→6；`timeout`→6
+- **verilog#060** [WEAK] 上层/8-verilog.md:86 — （ihdl 会往里追加 `DEFINE`，不能给共享/全局那份）；
+  - 命中：`DEFINE`→6
+- **verilog#062** [WEAK] 上层/8-verilog.md:88 — `structural_views`（1=schematic / 2=netlist / 4=functional / 5=schematic+functional / 6=netlist+functional，**默认 4**）、
+  - 命中：`structural_views`→2
+- **verilog#065** [NONE] 上层/8-verilog.md:91 — 3. 执行（**必须带 LD_LIBRARY_PATH 前缀**，否则缺 `libsasl2.so.2`、rc=127）：
+- **verilog#071** [NO-TOKEN] 上层/8-verilog.md:97 — 6. **返回码不可信**（语法错误也 rc=0）：只用日志 + 产物判成败。
+- **verilog#072** [WEAK] 上层/8-verilog.md:99 — `functional` 视图 = `verilog.v` 文本 + `netlist.oa`，是 AMS/仿真网表要消费的形态，默认就够；
+  - 命中：`functional`→3
+- **verilog#074** [NO-TOKEN] 上层/8-verilog.md:104 — | 参数 | 说明 |
+- **verilog#076** [WEAK] 上层/8-verilog.md:106 — | `library / cell / view` | 要导出的 OA 视图（默认 `schematic`） |
+  - 命中：`schematic`→6
+- **verilog#077** [WEAK] 上层/8-verilog.md:107 — | `output_path` | 本机目标 `.v` 路径 |
+  - 命中：`output_path`→6
+- **verilog#078** [WEAK] 上层/8-verilog.md:108 — | `recursive` | 是否连层级一起导出（`-recursive`） |
+  - 命中：`recursive`→6
+- **verilog#079** [WEAK] 上层/8-verilog.md:109 — | `timeout` | 单次命令 deadline |
+  - 命中：`timeout`→6
+- **verilog#086** [NO-TOKEN] 上层/8-verilog.md:122 — | 能力 | 归属 |
+- **verilog#088** [NO-TOKEN] 上层/8-verilog.md:124 — | view CRUD（OA 视图，如 schematic/symbol） | cellview |
+- **verilog#089** [WEAK] 上层/8-verilog.md:125 — | 文本视图（`text.v`）的建立与覆盖 | **本包例外**（cellview 建不了文本视图） |
+  - 命中：`text.v`→2
+- **verilog#090** [WEAK] 上层/8-verilog.md:126 — | VerilogA（`text.veriloga`） | veriloga 包 |
+  - 命中：`text.veriloga`→1
+- **verilog#091** [WEAK] 上层/8-verilog.md:127 — | GDS 导入/导出 | layout（`layout.gds`） |
+  - 命中：`layout.gds`→6
+- **verilog#092** [WEAK] 上层/8-verilog.md:128 — | 结构 connectivity / 端口 / 参数读回 | schematic（`schematic.read`） |
+  - 命中：`schematic.read`→6
+- **verilog#093** [NO-TOKEN] 上层/8-verilog.md:129 — | 仿真编译 | spectre 包 |
+- **verilog#097** [NO-TOKEN] 上层/8-verilog.md:136 — - 并发写同一 cell。
+- **verilog#099** [WEAK] 上层/8-verilog.md:141 — 2. `ihdl` 是 ksh 包装器：裸跑缺 `libsasl2.so.2`（rc=127），必须带
+  - 命中：`ihdl`→1
+- **verilog#101** [WEAK] 上层/8-verilog.md:143 — 3. `ihdl` **返回码不可信**：语法错误、参考库缺失、降级导入都是 rc=0；成功看 `357/372/345`，
+  - 命中：`ihdl`→1
+- **verilog#103** [WEAK] 上层/8-verilog.md:145 — 4. `ihdl` 会向 `-cdslib` 指定的文件**追加 DEFINE**（目标库未注册时还在 cwd 建同名库目录）→ 必须用按次副本；
+  - 命中：`ihdl`→1
+- **verilog#108** [WEAK] 上层/8-verilog.md:150 — 否则 `VERILOGIN-127` 拒绝并降级 functional；
+  - 命中：`VERILOGIN-127`→1
+- **verilog#111** [NO-TOKEN] 上层/8-verilog.md:156 — | # | 决策 |
+- **verilog#113** [WEAK] 上层/8-verilog.md:158 — | 1 | 包名 `verilog` / `8-verilog.md`，operation 前缀 `virtuoso.verilog.*` |
+  - 命中：`verilog`→6
+- **verilog#114** [WEAK] 上层/8-verilog.md:159 — | 2 | VerilogA 拆出为独立包 `veriloga`（`11-veriloga.md`），本包只管结构 Verilog |
+  - 命中：`veriloga`→5
+- **verilog#115** [WEAK] 上层/8-verilog.md:160 — | 3 | 结构装码 = `import`（ihdl）；`structural_views` 默认 `4`（functional only），schematic 显式可选 |
+  - 命中：`import`→6；`structural_views`→2
+- **verilog#116** [WEAK] 上层/8-verilog.md:161 — | 4 | 文本视图装码 = `write`（只落盘）；不提供 `check_and_save`（Virtuoso 无 Verilog 解析器） |
+  - 命中：`check_and_save`→6；`write`→6
+- **verilog#117** [WEAK] 上层/8-verilog.md:162 — | 5 | `export` 对 `ipin/opin` 噪声行原样导出 + warning，不静默改写 |
+  - 命中：`export`→6
+- **verilog#118** [NO-TOKEN] 上层/8-verilog.md:163 — | 6 | 不提供 open/close 等 GUI 展示操作 |
+- **skillref#007** [NO-TOKEN] 上层/9-skillref.md:13 — | 操作 | 对应交互 |
+- **skillref#010** [WEAK] 上层/9-skillref.md:16 — | `virtuoso.skillref.info` | 结果行点进去：按函数名取该函数的详细文档 |
+  - 命中：`virtuoso.skillref.info`→2
+- **skillref#017** [NO-TOKEN] 上层/9-skillref.md:26 — 3. **本地/远端同义**：同一操作在两种模式下语义一致，差别只在取数方式（见 §3）；
+- **skillref#019** [NO-TOKEN] 上层/9-skillref.md:33 — | 操作名 | 说明 | 步骤摘要 | 接口 |
+- **skillref#022** [WEAK] 上层/9-skillref.md:36 — | `virtuoso.skillref.info` | 单函数详细文档 | 取 `.tgf` → 查表 → 取 1 个 HTML → 抽取 → Markdown | C+D（远端模式） |
+  - 命中：`virtuoso.skillref.info`→2
+- **skillref#028** [NO-TOKEN] 上层/9-skillref.md:50 — | 层 | 文件 | 内容 | 实测规模（IC618） |
+- **skillref#030** [NO-TOKEN] 上层/9-skillref.md:52 — | 词条层 | `<doc_root>/finder/SKILL/**.fnd` | 函数名 + 语法 + 一行描述 | 37 文件 / 2 286 097 B → 9503 条 |
+- **skillref#031** [NO-TOKEN] 上层/9-skillref.md:53 — | 主题层 | `<doc_root>/api_more_info/api_more_info.tgf` | 函数名 → HTML 文件 + topic | 9730 行 / 3987 个目标文件 / 924 044 B |
+- **skillref#032** [NO-TOKEN] 上层/9-skillref.md:54 — | 正文层 | `<doc_root>/**.html/.htm/.txt/.xml/.json` | 参考手册正文与辅助文本 | **可搜索子集 223.8 MB / 9 426 文件**（`.html` 8 597 / 209.6 MB 为主；整树 6.5 GB 的其余部分是 mp4/gif/p
+- **skillref#034** [WEAK] 上层/9-skillref.md:59 — 取值顺序（先到先用，结果原样回带 `source` 与 `doc_root`，便于调用方复用与排错）：
+  - 命中：`doc_root`→4；`source`→6
+- **skillref#046** [NO-TOKEN] 上层/9-skillref.md:76 — | 字段 | 规则 |
+- **skillref#048** [WEAK] 上层/9-skillref.md:78 — | `source` | 必须是 `local` 或 `remote`（大小写不敏感） |
+  - 命中：`local`→6；`remote`→6；`source`→6
+- **skillref#049** [WEAK] 上层/9-skillref.md:79 — | `doc_root` | 非空绝对路径字符串、不含 NUL；`local` 模式要求在本进程可见，`remote` 模式是业务服务器上的绝对路径 |
+  - 命中：`doc_root`→4；`local`→6；`remote`→6
+- **skillref#050** [WEAK] 上层/9-skillref.md:80 — | `doc_token` | 只来自配置、请求参数不可覆盖；`remote` 模式必填，必须对应一个已注册 user（控制面 PUT 时校验），`local` 模式忽略 |
+  - 命中：`doc_token`→3；`local`→6；`remote`→6
+- **skillref#051** [WEAK] 上层/9-skillref.md:82 — **只有这三个字段**——`source` + `doc_root` 是数据源位置，`doc_token` 是远端执行代理账号（必须注册一个 user，用该 user 的远端执行）。
+  - 命中：`doc_root`→4；`doc_token`→3；`source`→6
+- **skillref#055** [NO-TOKEN] 上层/9-skillref.md:89 — （错误文案带该路径），不退回远端、也不猜别的路径。
+- **skillref#057** [NO-TOKEN] 上层/9-skillref.md:95 — | 层 | 取数方式 | 体积（实测） |
+- **skillref#059** [NO-TOKEN] 上层/9-skillref.md:97 — | 词条层 | 一次 `download_file(<doc_root>/finder/SKILL, <temp_dir()/skillref/…>, recursive=True)`（落点由包内部决定，§3.4） | 2.4 MB（tar.gz 压缩后更小） |
+- **skillref#060** [NO-TOKEN] 上层/9-skillref.md:98 — | 主题层 | 一次 `download_file(<doc_root>/api_more_info/api_more_info.tgf, ...)`；命中后只再取 1 个 HTML | 924 KB + 单文件 |
+- **skillref#061** [WEAK] 上层/9-skillref.md:99 — | 正文层 | 一次 `command.run` 跑远端候选搜索（`grep -r -l -m1`，形状见 `src_bak/virtuoso_bridge/virtuoso/docs_search.py:417-459`）→ `download_file` 取候选（≤ `max_candidate
+  - 命中：`command.run`→6；`download_file`→6
+- **skillref#062** [NO-TOKEN] 上层/9-skillref.md:101 — 路径纪律：远端路径一律按 POSIX 语义拼接，**禁止**对远端路径调用 `Path.exists()`。
+- **skillref#064** [NONE] 上层/9-skillref.md:104 — 业务失败必须指明"`skillref.doc_token` 无效或已删除"，不得只报 `command failed`。
+- **skillref#069** [WEAK] 上层/9-skillref.md:115 — 唯一搜索入口。一次请求 = 一个 `query` + 一组选项，选项只影响"搜到哪一层"与"怎么匹配"。
+  - 命中：`query`→6
+- **skillref#082** [NO-TOKEN] 上层/9-skillref.md:132 — | 参数 | 必填 | 默认 | 说明 |
+- **skillref#084** [WEAK] 上层/9-skillref.md:134 — | `query` | 是 | — | 唯一输入框；多词按 AND 处理（沿用旧 `_query_terms` 口径） |
+  - 命中：`query`→6
+- **skillref#085** [WEAK] 上层/9-skillref.md:135 — | `source` | 否 | 配置表值 | `local` / `remote`；与 `doc_root` 一起确定数据源（见 §3.1） |
+  - 命中：`doc_root`→4；`local`→6；`remote`→6；`source`→6
+- **skillref#086** [WEAK] 上层/9-skillref.md:136 — | `search_in` | 否 | `entry` | 匹配范围，逐级加深：`name` / `entry` / `topic` / `body`；`all` 是 `body` 的别名（见 §4.2） |
+  - 命中：`body`→6；`entry`→6；`name`→6；`search_in`→3；`topic`→3
+- **skillref#087** [WEAK] 上层/9-skillref.md:137 — | `mode` | 否 | `fuzzy` | 名称/标题列的匹配方式：`fuzzy` / `prefix` / `suffix` / `exact` / `regex`（见 §4.3） |
+  - 命中：`exact`→6；`fuzzy`→2；`mode`→6；`prefix`→6；`regex`→2
+- **skillref#088** [WEAK] 上层/9-skillref.md:138 — | `under` | 否 | — | doc root 下的相对子目录列表（如 `["cpf_ref"]`），限定正文层扫描范围 |
+  - 命中：`under`→6
+- **skillref#089** [WEAK] 上层/9-skillref.md:139 — | `limit` | 否 | 20 | 结果条数上限（1–200） |
+  - 命中：`limit`→6
+- **skillref#090** [NONE] 上层/9-skillref.md:140 — | `max_candidates` | 否 | 50 | 正文层候选上限（远端模式下同时限制下载文件数） |
+- **skillref#091** [WEAK] 上层/9-skillref.md:141 — | `max_files` | 否 | 5000 | 正文层未给 `under` 时的扫描文件上限，超出回 `truncated=true` |
+  - 命中：`max_files`→1；`under`→6
+- **skillref#092** [WEAK] 上层/9-skillref.md:142 — | `snippet` | 否 | `true` | 是否回带命中片段 |
+  - 命中：`snippet`→2；`true`→6
+- **skillref#093** [WEAK] 上层/9-skillref.md:143 — | `doc_root` | 否 | 配置表值 | 绝对路径；校验规则见 §3.1 |
+  - 命中：`doc_root`→4
+- **skillref#094** [WEAK] 上层/9-skillref.md:144 — | `doc_token` | **不可由请求给出** | 配置表值 | remote 模式的执行代理账号；只来自配置，请求参数不可覆盖（防提权，见 §3.1） |
+  - 命中：`doc_token`→3
+- **skillref#095** [WEAK] 上层/9-skillref.md:145 — | `timeout` | 否 | — | 单次 C/D 调用的超时（正文层远端候选搜索默认 120 s） |
+  - 命中：`timeout`→6
+- **skillref#096** [NO-TOKEN] 上层/9-skillref.md:149 — | 取值 | 搜什么 | 命中形态 | 成本（IC618 实测） |
+- **skillref#098** [WEAK] 上层/9-skillref.md:151 — | `name` | `.fnd` 函数名 | `{name, syntax}` | 与 `entry` 同（同一份索引解析） |
+  - 命中：`entry`→6；`name`→6
+- **skillref#099** [WEAK] 上层/9-skillref.md:152 — | `entry` | 函数名 + 语法 + 一行描述 | `{name, syntax, description}` | 词条层取数 2.4 MB / 1.16 s（远端） |
+  - 命中：`entry`→6
+- **skillref#100** [WEAK] 上层/9-skillref.md:153 — | `topic` | `entry` + `.tgf` 主题名与目标文件名 | `{topic, target_path, anchor}` | 追加 tgf 924 KB |
+  - 命中：`entry`→6；`topic`→3
+- **skillref#101** [WEAK] 上层/9-skillref.md:154 — | `body` | `topic` + 正文文件标题/相对路径/内容 | `{title, relative_path, line, snippet}` | 远端 `grep` 整树 0.10–0.15 s + 逐候选下载 ≈1.9 s/文件；本地纯 Python 全扫 189 s（须给 `und
+  - 命中：`body`→6；`grep`→6；`topic`→3；`under`→6
+- **skillref#102** [WEAK] 上层/9-skillref.md:156 — `name` 与 `entry` 的区别只在**是否把语法/描述并入匹配面**，两者共用同一份 `.fnd` 解析。
+  - 命中：`entry`→6；`name`→6
+- **skillref#103** [WEAK] 上层/9-skillref.md:157 — `all` = `body`（最深一档，给"我什么都想搜"的用户一个不用记顺序的取值）。
+  - 命中：`body`→6
+- **skillref#107** [WEAK] 上层/9-skillref.md:165 — （语法、描述、正文）一律按**大小写不敏感的子串 AND** 匹配，不受 `mode` 影响：
+  - 命中：`mode`→6
+- **skillref#108** [NO-TOKEN] 上层/9-skillref.md:167 — | mode | 名称列语义 |
+- **skillref#110** [WEAK] 上层/9-skillref.md:169 — | `fuzzy`（默认） | 大小写不敏感子串 |
+  - 命中：`fuzzy`→2
+- **skillref#111** [WEAK] 上层/9-skillref.md:170 — | `prefix` | 前缀（大小写敏感） |
+  - 命中：`prefix`→6
+- **skillref#112** [WEAK] 上层/9-skillref.md:171 — | `suffix` | 后缀（大小写敏感） |
+  - 命中：`suffix`→6
+- **skillref#113** [WEAK] 上层/9-skillref.md:172 — | `exact` | 全等（大小写敏感） |
+  - 命中：`exact`→6
+- **skillref#114** [WEAK] 上层/9-skillref.md:173 — | `regex` | Python 正则（`re.IGNORECASE`；非法正则回空结果） |
+  - 命中：`regex`→2
+- **skillref#116** [NO-TOKEN] 上层/9-skillref.md:179 — | 层 | 加分项 |
+- **skillref#118** [NO-TOKEN] 上层/9-skillref.md:181 — | 名称 | 全等 100 / 前缀 80 / 子串 60 |
+- **skillref#119** [NO-TOKEN] 上层/9-skillref.md:182 — | 词条 | 语法命中 +20 / 描述命中 +10 |
+- **skillref#120** [NO-TOKEN] 上层/9-skillref.md:183 — | 主题 | topic 全等 90 / 子串 70；目标文件名命中 +10 |
+- **skillref#121** [NO-TOKEN] 上层/9-skillref.md:184 — | 正文 | 标题命中 40 / 相对路径命中 30 / 正文命中 20；每个额外查询词 +5 |
+- **skillref#129** [WEAK] 上层/9-skillref.md:197 — 未命中返回空 `results` 且 `ok=true`（"查不到"是正常业务结果，不是错误）。
+  - 命中：`results`→6
+- **skillref#136** [WEAK] 上层/9-skillref.md:207 — 因此 `search_in="body"` 在 **local 模式必须给 `under`**（如 `["cpf_ref"]`，
+  - 命中：`under`→6
+- **skillref#140** [NONE] 上层/9-skillref.md:211 — 在本地打分与出摘要；`max_candidates` 同时是下载上限；
+- **skillref#141** [WEAK] 上层/9-skillref.md:212 — 4. `timeout` 显式传给每次 C/D 调用；正文层远端候选搜索默认给 120 s，调用方可覆盖。
+  - 命中：`timeout`→6
+- **skillref#144** [NO-TOKEN] 上层/9-skillref.md:219 — | 参数 | 必填 | 默认 | 说明 |
+- **skillref#146** [WEAK] 上层/9-skillref.md:221 — | `name` | 是 | — | 函数名；自动尝试 `_ocean` / `_viva_skill` 后缀回退 |
+  - 命中：`name`→6
+- **skillref#147** [WEAK] 上层/9-skillref.md:222 — | `include_raw` | 否 | `false` | 是否回带 `raw_html`（默认只回 Markdown） |
+  - 命中：`false`→6；`include_raw`→2；`raw_html`→1
+- **skillref#148** [WEAK] 上层/9-skillref.md:223 — | `source` / `doc_root` / `timeout` | 否 | — | 见 §3 |
+  - 命中：`doc_root`→4；`source`→6；`timeout`→6
+- **skillref#153** [NO-TOKEN] 上层/9-skillref.md:230 — 3. 抽取顺序（不可调换，旧实现 `skill_finder/more_info.py:157`）：
+- **skillref#166** [WEAK] 上层/9-skillref.md:250 — * 本段缺失或 `null` = 未配置，不阻断进程启动，只在调用时返回可读的业务失败。
+  - 命中：`null`→6
+- **skillref#167** [WEAK] 上层/9-skillref.md:252 — 实现口径（本包）：读取顺序 = 请求参数 `source`+`doc_root` → `common.config` 快照的
+  - 命中：`common.config`→4；`doc_root`→4；`source`→6
+- **skillref#173** [WEAK] 上层/9-skillref.md:261 — 一个入口，`search_in` 是唯一控制匹配深度的参数。旧 `skill-find` CLI 的语义对应
+  - 命中：`search_in`→3
+- **skillref#180** [NO-TOKEN] 上层/9-skillref.md:274 — 两者共享同一套解析口径（`.fnd` / `.tgf` / HTML→Markdown），实现以本包为唯一维护点。
+- **skillref#182** [NO-TOKEN] 上层/9-skillref.md:280 — | 项 | 实测 |
+- **skillref#184** [NO-TOKEN] 上层/9-skillref.md:282 — | 首次建索引 + 查一次（223.8 MB 文本 / 71 319 文件） | 187.66 s |
+- **skillref#185** [NONE] 上层/9-skillref.md:283 — | 索引体积 `index.sqlite` | 159.5 MB |
+- **skillref#186** [NO-TOKEN] 上层/9-skillref.md:284 — | 第二次查询（复用索引） | 0.21 s |
+- **skillref#187** [WEAK] 上层/9-skillref.md:285 — | 对照：不建索引（本地直扫 / 远端 `grep`） | 189 s / **0.10–0.15 s** |
+  - 命中：`grep`→6
+- **skillref#194** [NO-TOKEN] 上层/9-skillref.md:293 — → 文档升级后索引静默过期。若将来要建，必须补"文档树指纹"（文件数 + 最新 mtime），
+- **skillref#199** [NO-TOKEN] 上层/9-skillref.md:303 — | 方案 | 动作 | 后果 |
+- **skillref#201** [WEAK] 上层/9-skillref.md:305 — | **A. 保留 `doc_token`**（当前实现） | `1-上层.md §3.1` 加回一行例外（"配置预置的查询账户"） | 跨机器读文档：调用者 token 只做身份校验，数据源与执行账号由配置决定 |
+  - 命中：`doc_token`→3
+- **skillref#202** [WEAK] 上层/9-skillref.md:306 — | B. 撤销 `doc_token` | 本文 §3.1 删除 `doc_token`，remote 的 C/D 改用请求 token | 远端文档树必须对调用者 token 所在的 role 可见，否则查不了；配置段只剩 `source`+`doc_root` |
+  - 命中：`doc_root`→4；`doc_token`→3；`source`→6
+- **skillref#206** [WEAK] 上层/9-skillref.md:314 — 2. 正文层无持久索引：本地模式全树扫描 ~190 s（必须给 `under`）；远端模式靠 `grep` 候选
+  - 命中：`grep`→6；`under`→6
+- **skillref#211** [WEAK] 上层/9-skillref.md:319 — 6. 正文层远端的 `line` 只在本地算（候选下载后重扫），远端候选本身只保证文件级定位。
+  - 命中：`line`→6
+- **skillref#212** [WEAK] 上层/9-skillref.md:320 — 7. **不做路径探测**：`source` 与 `doc_root` 必须由配置表或请求给出；配错只会得到
+  - 命中：`doc_root`→4；`source`→6
+- **skillref#218** [NO-TOKEN] 上层/9-skillref.md:330 — | 组 | 用例 |
+- **skillref#220** [WEAK] 上层/9-skillref.md:332 — | search 范围 | `search_in` 四档各 1（`name` / `entry` / `topic` / `body`），断言层次与命中面一致 |
+  - 命中：`body`→6；`entry`→6；`name`→6；`search_in`→3；`topic`→3
+- **skillref#221** [WEAK] 上层/9-skillref.md:333 — | search 模式 | 五种 `mode` 各 1 + `limit` 截断 + 未知查询回空 |
+  - 命中：`limit`→6；`mode`→6
+- **skillref#222** [WEAK] 上层/9-skillref.md:334 — | search 正文层 | `under=["cpf_ref"]` 命中 `ground bounce`（0.7 s 级）；缺 `under` 时 `truncated` 边界 |
+  - 命中：`truncated`→6；`under`→6
+- **skillref#223** [WEAK] 上层/9-skillref.md:335 — | info | 现代标记命中（`dbOpenCellViewByType`）、legacy 命中、`NULL` topic 兜底、`_ocean` 回退（`ocnPrint`）、未知函数 `found=false` |
+  - 命中：`NULL`→6；`dbOpenCellViewByType`→6
+- **skillref#224** [WEAK] 上层/9-skillref.md:336 — | 数据源 | 请求参数给定（`local` / `remote` 各 1）、配置表给定（1）、未配置 → 明确失败（1） |
+  - 命中：`local`→6；`remote`→6
+- **skillref#225** [WEAK] 上层/9-skillref.md:337 — | 失败 | local 路径不存在、remote 路径不可见、`source` 非法值、正文层超 `max_files` |
+  - 命中：`max_files`→1；`source`→6
+- **skillref#227** [NO-TOKEN] 上层/9-skillref.md:341 — | 文件 | 内容 |
+- **skillref#229** [NO-TOKEN] 上层/9-skillref.md:343 — | `src/pyapi/packages/skillref.py` | 两个业务操作 + 数据源解析 + 本地/远端取数 |
+- **skillref#230** [NO-TOKEN] 上层/9-skillref.md:344 — | `src/pyapi/packages/_skillref_docs.py` | stdlib-only 解析层（`.fnd` / `.tgf` / HTML→Markdown / 正文打分） |
+- **skillref#231** [NO-TOKEN] 上层/9-skillref.md:345 — | `test/offline/unit/test_skillref_package.py` | 27 项单元测试（四层匹配、两种模式、配置快照、错误口径） |
+- **skillref#232** [NO-TOKEN] 上层/9-skillref.md:346 — | `test/semi/probes/skillref_probe.py` | 真机探针（`--from-config` 走 config.json 快照） |
+- **skillref#234** [NO-TOKEN] 上层/9-skillref.md:350 — | 调用 | 本地（`C:\Users\user\Desktop\doc`） | 远端（`/opt/eda/cadence/IC618/doc`，doc_token=vb-vblog） |
+- **skillref#236** [NO-TOKEN] 上层/9-skillref.md:352 — | `search_in=name` | 0.27 s | 3.50 s（首个调用含通道预热） |
+- **skillref#237** [NO-TOKEN] 上层/9-skillref.md:353 — | `search_in=entry` | 0.27 s | 1.80 s |
+- **skillref#238** [NO-TOKEN] 上层/9-skillref.md:354 — | `search_in=topic` | 0.28 s | 4.21 s |
+- **skillref#239** [NO-TOKEN] 上层/9-skillref.md:355 — | `search_in=body`（`under=["cpf_ref"]`） | 0.91 s（扫 16 文件，1 命中） | 7.65 s（grep 候选 1 个 + 下载，1 命中） |
+- **skillref#240** [NO-TOKEN] 上层/9-skillref.md:356 — | `info(dbOpenCellViewByType)` | 命中，Markdown 5 719 字符 | 4.56 s，同 5 719 字符 |
+- **skillref#241** [NO-TOKEN] 上层/9-skillref.md:357 — | `info(不存在)` | `found=false`（ok=true） | 2.67 s，`found=false` |
+- **skillref#243** [NO-TOKEN] 上层/9-skillref.md:361 — | 项 | 值 |
+- **skillref#245** [NO-TOKEN] 上层/9-skillref.md:363 — | `.fnd` | 37 文件 / 2 286 097 B → **9503 条** |
+- **skillref#246** [NO-TOKEN] 上层/9-skillref.md:364 — | `.tgf` | 924 044 B / 9730 行 / 3987 个目标文件 |
+- **skillref#247** [WEAK] 上层/9-skillref.md:365 — | 远端 doc root（实测路径） | `/opt/eda/cadence/IC618/doc`（同版本 `virtuoso` 在 `/opt/eda/cadence/IC618/tools/dfII/bin/`；本版只作为配置示例，不做探测） |
+  - 命中：`virtuoso`→6
+- **skillref#248** [NO-TOKEN] 上层/9-skillref.md:366 — | 远端词条层取数 | 一次递归下载 1.16 s（rc=0） |
+- **skillref#249** [WEAK] 上层/9-skillref.md:367 — | 正文层限定 `cpf_ref`（本地扫描） | 0.59–0.71 s，命中 `reference.html` 的 `ground bounce` |
+  - 命中：`cpf_ref`→2；`reference.html`→1
+- **skillref#250** [WEAK] 上层/9-skillref.md:368 — | 正文层整树（远端 `grep` 候选） | 0.10–0.15 s（文本子集 223.8 MB / 9 426 文件） |
+  - 命中：`grep`→6
+- **skillref#251** [NO-TOKEN] 上层/9-skillref.md:369 — | 正文层整树（本地纯 Python，对照） | 189.17 s |
+- **skillref#252** [NO-TOKEN] 上层/9-skillref.md:370 — | 远端单文件下载 | `.tgf` 924 KB → 2.58 s；HTML 188 KB → 1.86 s；243 KB → 1.96 s |
+- **skillref#253** [NO-TOKEN] 上层/9-skillref.md:374 — | 证据 | 位置 |
+- **skillref#255** [NO-TOKEN] 上层/9-skillref.md:376 — | 旧 finder 探测/解析/搜索 | `src_bak/virtuoso_bridge/virtuoso/skill_finder/__init__.py:75/103/111/155/191`、`parser.py:44/50/92` |
+- **skillref#256** [NO-TOKEN] 上层/9-skillref.md:377 — | 旧 More Info | `src_bak/virtuoso_bridge/virtuoso/skill_finder/more_info.py:53/79/84/131/157/184` |
+- **skillref#257** [NO-TOKEN] 上层/9-skillref.md:378 — | 旧文档检索 | `src_bak/virtuoso_bridge/virtuoso/docs_search.py:24/117/191/272/417/742/965` |
+- **skillref#258** [NO-TOKEN] 上层/9-skillref.md:379 — | 旧 CLI 入口 | `src_bak/virtuoso_bridge/cli.py:1774/1811/1827` |
+- **skillref#259** [NO-TOKEN] 上层/9-skillref.md:380 — | 8123 参考实现 | `tools/skill_doc_server.py:34/74/100/118/197/485/523/664` |
+- **skillref#260** [NO-TOKEN] 上层/9-skillref.md:381 — | 调研与方案 | `doc/report/skilltooling-调研与上层包设计方案.md` |
+- **skillref#261** [NO-TOKEN] 上层/9-skillref.md:382 — | 远端取数成本评估（实测） | `doc/report/skillref-远端取数成本评估.md` |
+- **skillref#262** [NO-TOKEN] 上层/9-skillref.md:383 — | 探针 | `test/semi/probes/skill_tooling_probe.py`、`test/semi/probes/docs_search_probe.py` |
+- **skillref#263** [NO-TOKEN] 上层/9-skillref.md:384 — | 包实现 | `src/pyapi/packages/skillref.py`、`src/pyapi/packages/_skillref_docs.py` |
+- **skillref#264** [NO-TOKEN] 上层/9-skillref.md:385 — | 包级真机探针与日志 | `test/semi/probes/skillref_probe.py`、`test/artifacts/evidence/skill-tooling-tb/skillref-probe-{local,remote,config-local,config-remote}.
+- **skillref#265** [NO-TOKEN] 上层/9-skillref.md:386 — | 实测记录 | `test/artifacts/evidence/skill-tooling-tb/docs-search-probe-20260921.log` |
+- **gui#006** [WEAK] 上层/10-gui.md:11 — 窗口处理面向“卡住弹窗的恢复”：唯一清单入口是 X11 顶层窗口列表，动作只接受显式 `window_id`。
+  - 命中：`window_id`→6
+- **gui#007** [NO-TOKEN] 上层/10-gui.md:15 — | 操作名 | 说明 | 步骤摘要 | 接口 |
+- **gui#009** [WEAK] 上层/10-gui.md:17 — | list_windows | 返回 X11 **顶层**窗口列表（含分类、suggested_action） | `query` 读 `gui.display` → `export DISPLAY` → `xprop _NET_CLIENT_LIST`（无 WM 退 root 直接子窗口）→ `
+  - 命中：`gui.display`→3；`query`→6
+- **gui#010** [WEAK] 上层/10-gui.md:18 — | screenshot | 截取任意 X11 窗口或整个显示并取回：`target∈{ciw, window_id, display}` | `query` 读 `gui.display` → `export DISPLAY` → `XGetImage(root/窗口)` → PPM → 下载 |
+  - 命中：`gui.display`→3；`query`→6
+- **gui#011** [NO-TOKEN] 上层/10-gui.md:22 — | 操作名 | 说明 | 步骤摘要 | 接口 |
+- **gui#013** [NO-TOKEN] 上层/10-gui.md:24 — | send_key | 对指定窗口注入按键：`key∈{enter, escape}` | 注入 XTest 按键 → 校验 still_mapped | G |
+- **gui#014** [NO-TOKEN] 上层/10-gui.md:25 — | auto_dismiss | 自动发现 modal/dialog 并逐个恢复 | 清单 → 分类 → 逐个 send_key → 逐窗口证据 | G |
+- **gui#016** [WEAK] 上层/10-gui.md:31 — - 唯一清单入口：`list_windows` 只列 X11 顶层窗口，不再提供 SKILL 会话内清单；
+  - 命中：`list_windows`→5
+- **gui#019** [WEAK] 上层/10-gui.md:34 — - 动作必须带显式 `window_id`，不存在“当前/最近窗口”隐式目标；
+  - 命中：`window_id`→6
+- **gui#022** [WEAK] 上层/10-gui.md:37 — - `auto_dismiss` 只处理分类为 dialog 的窗口，设次数上限并保留逐窗口证据；
+  - 命中：`auto_dismiss`→4
+- **veriloga#011** [NO-TOKEN] 上层/11-veriloga.md:19 — | 类别 | 操作名 | 一句话说明 | 接口 |
+- **veriloga#014** [WEAK] 上层/11-veriloga.md:22 — | 写 | `virtuoso.veriloga.write` | 通用写：对代码做原子文本编辑（只落盘） | S+U |
+  - 命中：`virtuoso.veriloga.write`→1
+- **veriloga#017** [NO-TOKEN] 上层/11-veriloga.md:27 — | 载体 | 说明 |
+- **veriloga#019** [WEAK] 上层/11-veriloga.md:29 — | 文本视图 `veriloga` | dfII viewType=`text.veriloga`、dataType=`VERILOGAText`、主文件 `veriloga.va`（+ `master.tag`） |
+  - 命中：`master.tag`→2；`text.veriloga`→1；`veriloga`→5；`veriloga.va`→1
+- **veriloga#020** [WEAK] 上层/11-veriloga.md:30 — | 持久化产物 | `check_and_save` 后生成 `veriloga/netlist.oa` + `veriloga/data.dm`，并更新 cell CDF 的 `viewInfo` |
+  - 命中：`check_and_save`→6
+- **veriloga#026** [NO-TOKEN] 上层/11-veriloga.md:41 — | 操作名 | 说明 | 步骤摘要 | 接口 |
+- **veriloga#028** [WEAK] 上层/11-veriloga.md:43 — | read | `focus` 可选、可组合；不填=全部 | 定位源码路径 → 读文本/端口/视图/诊断 | S+D |
+  - 命中：`focus`→6
+- **veriloga#033** [NO-TOKEN] 上层/11-veriloga.md:50 — | focus | 返回 |
+- **veriloga#035** [WEAK] 上层/11-veriloga.md:52 — | `source` | `text / path / size / sha256 / lines` |
+  - 命中：`source`→6
+- **veriloga#036** [WEAK] 上层/11-veriloga.md:53 — | `ports` | 端口表 `name / direction / width`（`ahdlToPinList`；AHDL 上下文未加载时返回 `unsupported` 并说明） |
+  - 命中：`ahdlToPinList`→1；`ports`→6；`unsupported`→6
+- **veriloga#037** [WEAK] 上层/11-veriloga.md:54 — | `views` | 该 cell 的视图清单（用 `ddMapGetFileViewType`/`ddMapGetFileDataType` 判定） |
+  - 命中：`views`→6
+- **veriloga#038** [WEAK] 上层/11-veriloga.md:55 — | `diagnostics` | 最近一次 `check_and_save` 的 `err_log / status / error_count / errors[]` |
+  - 命中：`check_and_save`→6；`diagnostics`→5
+- **veriloga#041** [WEAK] 上层/11-veriloga.md:59 — - `read` 纯只读：不得调用 `ahdlUpdateViewInfo` 等会改缓存/视图状态的函数。
+  - 命中：`ahdlUpdateViewInfo`→1；`read`→6
+- **veriloga#042** [NO-TOKEN] 上层/11-veriloga.md:63 — | 操作名 | 说明 | 步骤摘要 | 接口 |
+- **veriloga#044** [NO-TOKEN] 上层/11-veriloga.md:65 — | write | 通用写：`lib/cell/view + commands[]` | 读现状 → 逐原子改文本 → 覆盖写 | S+U |
+- **veriloga#045** [NONE] 上层/11-veriloga.md:67 — `write.commands` 每项 = `{"op": 原子名, ...参数}`；**非事务**，失败响应带 `commands applied: k/n`。
+- **veriloga#046** [NO-TOKEN] 上层/11-veriloga.md:69 — | 对象 | 原子名 | 索引（动哪个） | 附加参数 |
+- **veriloga#048** [WEAK] 上层/11-veriloga.md:71 — | 代码 | `set_source` | 目标 view 或 file | `text`；可选 `expected_sha256`（不符则失败） |
+  - 命中：`expected_sha256`→3；`set_source`→4；`text`→6
+- **veriloga#049** [WEAK] 上层/11-veriloga.md:72 — | 代码 | `patch_source` | 目标 view 或 file | `edits[]`：`{old_text,new_text}` 或 `{start_line,end_line,new_text}`；匹配不唯一默认失败（可 `all=true`） |
+  - 命中：`patch_source`→3
+- **veriloga#050** [WEAK] 上层/11-veriloga.md:73 — | 文本视图 | `ensure_view` | `{library, cell, view="veriloga"}` | `view_type="text.veriloga"`、可选 `create_if_missing=true`；内部写 `master.tag` + 主文件模板 |
+  - 命中：`ensure_view`→5；`master.tag`→2
+- **veriloga#051** [WEAK] 上层/11-veriloga.md:74 — | 文本视图 | `delete_view` | `{library, cell, view="veriloga"}` | —（`ddDeleteObj`，先确认无编辑器窗口/`*.cdslck`） |
+  - 命中：`ddDeleteObj`→6；`delete_view`→4
+- **veriloga#053** [WEAK] 上层/11-veriloga.md:78 — 1. 写临时文件 → 校验读回 → 原子替换 `veriloga.va`；
+  - 命中：`veriloga.va`→1
+- **veriloga#055** [WEAK] 上层/11-veriloga.md:80 — （`master.tag` = `-- Master.tag File, Rev:1.0\nveriloga.va\n`；模块名必须与 cell 名一致）；
+  - 命中：`master.tag`→2
+- **veriloga#057** [NO-TOKEN] 上层/11-veriloga.md:82 — 4. 有 `*.cdslck`（编辑器开着）时禁止外部写：报失败并提示关闭编辑器，不自动关别人的窗口。
+- **veriloga#058** [NO-TOKEN] 上层/11-veriloga.md:86 — | 操作名 | 说明 | 步骤摘要 | 接口 |
+- **veriloga#060** [WEAK] 上层/11-veriloga.md:88 — | check_and_save | GUI "Check and Save" 的 headless 等价序列 | `VerAParseModule` 检查 → `ahdlUpdateViewInfo` 保存/刷新 CDF | S+C |
+  - 命中：`VerAParseModule`→1；`ahdlUpdateViewInfo`→1
+- **veriloga#067** [NO-TOKEN] 上层/11-veriloga.md:96 — 4. 前置：AHDL 上下文必须已加载（`loadContext("<IC618>/.../ahdlSck.cxt")`，见 §4）；
+- **veriloga#068** [NONE] 上层/11-veriloga.md:97 — 5. **不用** `ahdlCheckModule` / `ahdlSaveFile` / `ahdlEdit`（编辑器 GUI 内部包装，错误或缺 symbol 会弹模态阻塞 CIW）。
+- **veriloga#069** [WEAK] 上层/11-veriloga.md:99 — 真机结论：上述序列与 GUI Check and Save 的落盘形态**逐文件一致**，唯一差别是不含 GUI 弹窗生成的 `symbol` 视图；
+  - 命中：`symbol`→6
+- **veriloga#072** [NO-TOKEN] 上层/11-veriloga.md:106 — | 能力 | 归属 |
+- **veriloga#074** [NO-TOKEN] 上层/11-veriloga.md:108 — | view CRUD（OA 视图） | cellview |
+- **veriloga#075** [WEAK] 上层/11-veriloga.md:109 — | 文本视图（`text.veriloga`）的建立与覆盖 | **本包例外**（cellview 建不了） |
+  - 命中：`text.veriloga`→1
+- **veriloga#076** [WEAK] 上层/11-veriloga.md:110 — | symbol 生成 | symbol（`ahdlToPinList` 的 ports + `schPinListToSymbol`，待 spike；`ahdlSymbolGen` 禁用） |
+  - 命中：`ahdlToPinList`→1
+- **veriloga#077** [WEAK] 上层/11-veriloga.md:111 — | 编译 / 仿真 / `ahdlSimDB` 缓存 | spectre 包 |
+  - 命中：`ahdlSimDB`→1
+- **veriloga#078** [NO-TOKEN] 上层/11-veriloga.md:112 — | 结构 Verilog | verilog 包 |
+- **veriloga#079** [WEAK] 上层/11-veriloga.md:113 — | GDS 导入/导出 | layout（`layout.gds`） |
+  - 命中：`layout.gds`→6
+- **veriloga#083** [NO-TOKEN] 上层/11-veriloga.md:120 — - 并发写同一 cell。
+- **veriloga#085** [NO-TOKEN] 上层/11-veriloga.md:125 — `dbOpenCellViewByType(..., "veriloga"/"text.veriloga", "w")` **恒 nil** → 必须走文件路径；
+- **veriloga#087** [WEAK] 上层/11-veriloga.md:127 — 3. 读源码用 `infile`/`gets` 或直接读文件；**`lineread` 不能读 `.va`**；
+  - 命中：`gets`→6
+- **veriloga#088** [NONE] 上层/11-veriloga.md:128 — 4. `ahdlCompile*` 不存在；编译只能由 Spectre（`ahdlcmi`）完成，缓存 `<netlist>.ahdlSimDB/<srcHash>.*.ahdlcmi/`；
+- **veriloga#089** [NONE] 上层/11-veriloga.md:129 — 5. AHDL 上下文（`ahdlSck.cxt`）默认未加载；**冷启动 `loadContext("<IC618>/tools.lnx86/dfII/etc/context/ahdlSck.cxt")`
+- **veriloga#092** [NONE] 上层/11-veriloga.md:132 — 7. 编辑器打开时产生 `veriloga.va.cdslck` 锁 → 外部写文件失效，必须先关编辑器；
+- **veriloga#094** [WEAK] 上层/11-veriloga.md:134 — 9. **headless 的 Check and Save 已真机闭环**：写文件 → `VerAParseModule`（错误进 errFile）→
+  - 命中：`VerAParseModule`→1
+- **veriloga#095** [WEAK] 上层/11-veriloga.md:135 — `ahdlUpdateViewInfo`（CDF + `netlist.oa`/`data.dm`），与 GUI 保存逐文件一致，唯一差别是无 `symbol` 视图；
+  - 命中：`ahdlUpdateViewInfo`→1；`symbol`→6
+- **veriloga#096** [NONE] 上层/11-veriloga.md:136 — 10. **不要用** `ahdlCheckModule`（错误弹 `QverilogaErr` 阻塞）、`ahdlSaveFile`（缺 symbol 弹模态）、
+- **veriloga#098** [NO-TOKEN] 上层/11-veriloga.md:141 — | # | 决策 |
+- **veriloga#100** [WEAK] 上层/11-veriloga.md:143 — | 1 | 包名 `veriloga` / `11-veriloga.md`，operation 前缀 `virtuoso.veriloga.*` |
+  - 命中：`veriloga`→5
+- **veriloga#101** [WEAK] 上层/11-veriloga.md:144 — | 2 | 装码 = `write` + `check_and_save`，不提供 import |
+  - 命中：`check_and_save`→6；`write`→6
+- **veriloga#102** [WEAK] 上层/11-veriloga.md:145 — | 3 | `check_and_save` = `VerAParseModule` + `ahdlUpdateViewInfo`；AHDL 上下文冷加载用 `loadContext` 全路径 |
+  - 命中：`VerAParseModule`→1；`ahdlUpdateViewInfo`→1；`check_and_save`→6；`loadContext`→1
+- **veriloga#103** [WEAK] 上层/11-veriloga.md:146 — | 4 | `write` 允许创建文本视图（`ensure_view`）——view CRUD 归属的显式例外 |
+  - 命中：`ensure_view`→5；`write`→6
+- **veriloga#104** [WEAK] 上层/11-veriloga.md:147 — | 5 | 端口方向以 `.va` 的 module 声明为准（默认 `inputOutput`），调用方不重复传方向 |
+  - 命中：`inputOutput`→6
+- **veriloga#105** [WEAK] 上层/11-veriloga.md:148 — | 6 | 不独立暴露 `reparse`/`ahdlUpdateViewInfo`，合并进 `check_and_save` |
+  - 命中：`ahdlUpdateViewInfo`→1；`check_and_save`→6
+- **veriloga#106** [NONE] 上层/11-veriloga.md:149 — | 7 | symbol 生成不在本包；需要时走 symbol 包（待 spike），`ahdlSymbolGen` 禁用 |
+- **veriloga#107** [WEAK] 上层/11-veriloga.md:153 — 1. `schPinListToSymbol` 用 `ahdlToPinList` 的 ports 生成 symbol 的可行性（端口顺序/方向）。
+  - 命中：`ahdlToPinList`→1
+- **calibre#014** [WEAK] 上层/12-calibre.md:21 — 5. **失败可定位**：错误带 `kind`、工具原文片段、run dir 路径；`unknown-effect` 一律不自动重试。
+  - 命中：`kind`→6；`unknown-effect`→3
+- **calibre#015** [NO-TOKEN] 上层/12-calibre.md:25 — | 操作名 | 说明 | 步骤摘要 | 接口 |
+- **calibre#018** [WEAK] 上层/12-calibre.md:28 — | `calibre.drc` | 启动 DRC | stage deck → 改写占位符 → 后台启动 | C(+U) |
+  - 命中：`calibre.drc`→6
+- **calibre#019** [WEAK] 上层/12-calibre.md:29 — | `calibre.lvs` | 启动 LVS（版图 vs CDL） | 同上 + 源网表 | C(+U) |
+  - 命中：`calibre.lvs`→6
+- **calibre#020** [WEAK] 上层/12-calibre.md:30 — | `calibre.pex` | 启动 PEX（`-xrc -phdb → -pdb → fmt`） | 三阶段串联，逐阶段校验产物 | C(+U) |
+  - 命中：`calibre.pex`→1
+- **calibre#022** [WEAK] 上层/12-calibre.md:32 — | `calibre.read_results` | 解析结果（DRC/LVS/PEX） | 读报告 → 结构化摘要 | D + 纯 Python |
+  - 命中：`calibre.read_results`→6
+- **calibre#023** [WEAK] 上层/12-calibre.md:33 — | `calibre.export` | 按名下载产物 | report / 结果库 / 网表 / pdb 目录 / 日志尾 | D |
+  - 命中：`calibre.export`→6
+- **calibre#031** [WEAK] 上层/12-calibre.md:47 — `job_id` 默认 `<kind>_<top>`（如 `drc_inv2`），请求可显式指定；
+  - 命中：`drc_inv2`→1；`job_id`→6
+- **calibre#057** [NO-TOKEN] 上层/12-calibre.md:83 — - 包内启动器固定先 `ulimit -n 65536`（Calibre 对 fd 上限敏感，实测默认 1024 会告警）；
+- **calibre#059** [WEAK] 上层/12-calibre.md:85 — 许可问题由工具日志暴露，`read_results`/`status` 负责把 `license` 相关错误单独归类为 `license`（可重试）。
+  - 命中：`license`→6；`read_results`→6；`status`→6
+- **calibre#060** [WEAK] 上层/12-calibre.md:89 — run 类操作默认 `blocking=false`：写 launcher、后台启动、立刻返回 `job_id`。
+  - 命中：`job_id`→6
+- **calibre#062** [NO-TOKEN] 上层/12-calibre.md:92 — | 判据 | 含义 |
+- **calibre#064** [WEAK] 上层/12-calibre.md:94 — | `job.json` 存在 + `pgrep -f <run_dir>` 命中 | `running` |
+  - 命中：`job.json`→1；`running`→6
+- **calibre#065** [WEAK] 上层/12-calibre.md:95 — | 日志尾出现完成标记（DRC: `CALIBRE::DRC-H COMPLETED`；LVS: `LVS completed`；PEX: `COMPLETED`） | `completed` |
+  - 命中：`COMPLETED`→1；`completed`→6
+- **calibre#066** [WEAK] 上层/12-calibre.md:96 — | 进程消失且无完成标记，或日志含 `FATAL ERROR`/`ERROR (OSSHNL-` | `failed`（区分 `license` / `input` / `unknown`） |
+  - 命中：`failed`→6；`input`→6；`license`→6；`unknown`→6
+- **calibre#067** [WEAK] 上层/12-calibre.md:97 — | 进程消失、无产物、无日志尾 | `unknown`（**不自动重试**） |
+  - 命中：`unknown`→6
+- **calibre#068** [WEAK] 上层/12-calibre.md:99 — `blocking=true` 时包内循环：`deadline = now + timeout`，按 `poll_interval`（默认 5 s）调 `status`，
+  - 命中：`poll_interval`→6；`status`→6
+- **calibre#069** [NO-TOKEN] 上层/12-calibre.md:100 — 终态或超时即返回；超时返回 `status=timeout` 且**后台作业继续跑**。
+- **calibre#071** [NO-TOKEN] 上层/12-calibre.md:106 — | 字段 | 内容 |
+- **calibre#073** [WEAK] 上层/12-calibre.md:108 — | `kind` | `drc` / `lvs` / `pex` |
+  - 命中：`kind`→6
+- **calibre#074** [WEAK] 上层/12-calibre.md:109 — | `summary` | DRC：`{total_results, rules_checked, by_rule:{规则名:条数}, first_offenders:[…]}`；LVS：`{status: correct/incorrect/not_compared/unknown, counts
+  - 命中：`summary`→6
+- **calibre#075** [WEAK] 上层/12-calibre.md:110 — | `first_offenders` | DRC：前 `limit` 条 `{rule, cell, bbox, count}`（来自 `DRC_RES.db`，layer 不含）；LVS 差异点在 `summary.differences` |
+  - 命中：`DRC_RES.db`→2；`first_offenders`→3；`limit`→6
+- **calibre#076** [WEAK] 上层/12-calibre.md:111 — | `log_tail` | 有界日志尾（默认 40 行） |
+  - 命中：`log_tail`→3
+- **calibre#077** [WEAK] 上层/12-calibre.md:112 — | `artifacts` | 已产出的关键文件清单（名 + 字节数 + mtime） |
+  - 命中：`artifacts`→6
+- **calibre#078** [NO-TOKEN] 上层/12-calibre.md:118 — | 参数 | 必填 | 说明 |
+- **calibre#080** [WEAK] 上层/12-calibre.md:120 — | `token` | 是 | 原样透传 |
+  - 命中：`token`→6
+- **calibre#081** [WEAK] 上层/12-calibre.md:121 — | `calibre_bin` | 否 | 默认 `calibre` |
+  - 命中：`calibre`→6；`calibre_bin`→4
+- **calibre#082** [WEAK] 上层/12-calibre.md:122 — | `deck` | 否 | 给了就顺带检查 deck 与同目录 `DFM/` 是否可见 |
+  - 命中：`deck`→6
+- **calibre#083** [WEAK] 上层/12-calibre.md:123 — | `timeout` | 否 | 默认 30 s |
+  - 命中：`timeout`→6
+- **calibre#085** [NO-TOKEN] 上层/12-calibre.md:129 — | 参数 | 必填 | 默认 | 说明 |
+- **calibre#087** [WEAK] 上层/12-calibre.md:131 — | `deck` | 是 | — | DRC deck 路径 |
+  - 命中：`deck`→6
+- **calibre#088** [WEAK] 上层/12-calibre.md:132 — | `gds` | 条件 | — | 版图 GDS 路径（可用 `virtuoso.layout.gds` 产出）；**只有 deck 里出现 `"GDSFILENAME"`/`"lvs_top.gds"` 等占位符时才必填** |
+  - 命中：`virtuoso.layout.gds`→6
+- **calibre#089** [NO-TOKEN] 上层/12-calibre.md:133 — | `top` | 条件 | — | 顶层 cell 名；同上（`"TOPCELLNAME"`/`"lvs_top"`） |
+- **calibre#090** [WEAK] 上层/12-calibre.md:134 — | `job_id` / `run_dir` | 否 | `<kind>_<top>` / role 根下 | 见 §3.1 |
+  - 命中：`job_id`→6；`run_dir`→6
+- **calibre#091** [WEAK] 上层/12-calibre.md:135 — | `turbo` | 否 | 4 | 传给 `-turbo` |
+  - 命中：`turbo`→5
+- **calibre#092** [WEAK] 上层/12-calibre.md:136 — | `hier` | 否 | true | `-hier` |
+  - 命中：`hier`→6
+- **calibre#093** [WEAK] 上层/12-calibre.md:137 — | `blocking` / `poll_interval` / `timeout` | 否 | false / 5 / 3600 | 见 §3.4 |
+  - 命中：`blocking`→6；`poll_interval`→6；`timeout`→6
+- **calibre#094** [WEAK] 上层/12-calibre.md:138 — | `params` | 否 | — | 无 set 时的取数口：键=**SVRF 语句头**（含空格），值=整条语句，原位改写 deck |
+  - 命中：`params`→6
+- **calibre#095** [WEAK] 上层/12-calibre.md:139 — | `runset` | 否 | — | 远端 Calibre Interactive set（`.lvs`/`.drc`/`.pex`）：**走官方批处理入口**，参数全交给 Calibre |
+  - 命中：`runset`→4
+- **calibre#096** [NO-TOKEN] 上层/12-calibre.md:141 — **参数一律用官方机制带**（两条路，互斥）：
+- **calibre#120** [NONE] 上层/12-calibre.md:176 — （先默认名，再 `job.json.report_file`，最后在 run dir 内扫描 `*.report/*.rep`），与 set 是否改名无关。
+- **calibre#123** [NO-TOKEN] 上层/12-calibre.md:181 — > 边界：set 只携带**参数**，不携带数据——它引用的 layout / 源网表 / hcell 文件必须已存在于远端；
+- **calibre#127** [WEAK] 上层/12-calibre.md:188 — 包会把它复制进 PEX 的 run dir）；`fmt` 可选 `none`/`spice`/`simple`（默认 `none`，即只到 `-pdb`）。
+  - 命中：`none`→6；`simple`→2；`spice`→5
+- **calibre#128** [NO-TOKEN] 上层/12-calibre.md:189 — 内部固定顺序：`-xrc -phdb` → `-xrc -pdb -rc <deck>` →（可选）`-xrc -fmt -<fmt>`，
+- **calibre#129** [NO-TOKEN] 上层/12-calibre.md:190 — **每个阶段校验产物存在**才进入下一阶段（phdb 必须是 xRC 类型，见可行性报告 §2）。
+- **calibre#132** [NO-TOKEN] 上层/12-calibre.md:197 — | 操作 | 关键参数 |
+- **calibre#134** [WEAK] 上层/12-calibre.md:199 — | `status` | `job_id` 或 `run_dir`；`timeout` |
+  - 命中：`job_id`→6；`run_dir`→6；`status`→6；`timeout`→6
+- **calibre#135** [WEAK] 上层/12-calibre.md:200 — | `read_results` | `job_id`/`run_dir`；`kind`（可自动探测）；`limit`（默认 20）；`log_lines`（默认 40） |
+  - 命中：`job_id`→6；`kind`→6；`limit`→6；`log_lines`→1；`read_results`→6
+- **calibre#136** [WEAK] 上层/12-calibre.md:201 — | `export` | `job_id`/`run_dir`；`items`（`summary`/`results_db`/`netlist`/`pdb_dir`/`log`/`all_small`）；`local_dir`（默认 `artifact_dir()/calibre/`） |
+  - 命中：`export`→6；`items`→6；`job_id`→6；`local_dir`→3；`netlist`→6
+- **calibre#140** [NO-TOKEN] 上层/12-calibre.md:209 — | 参数 | 必填 | 默认 | 说明 |
+- **calibre#142** [WEAK] 上层/12-calibre.md:211 — | `library` / `cell` | 是 | — | 要导出的 schematic 所在单元 |
+  - 命中：`cell`→6；`library`→6
+- **calibre#143** [WEAK] 上层/12-calibre.md:212 — | `view` | 否 | `schematic` | 起始视图 |
+  - 命中：`schematic`→6；`view`→6
+- **calibre#144** [WEAK] 上层/12-calibre.md:213 — | `netlist_name` | 否 | `<cell>.cdl` | 产物文件名（写入 run dir） |
+  - 命中：`netlist_name`→5
+- **calibre#145** [WEAK] 上层/12-calibre.md:214 — | `run_dir` | 否 | `<command root>/calibre/cdl_<cell>` | 导出工作目录 |
+  - 命中：`run_dir`→6
+- **calibre#146** [WEAK] 上层/12-calibre.md:215 — | `cds_lib` | 否 | CIW `getWorkingDir()/cds.lib` | cds.lib 路径；显式给出优先 |
+  - 命中：`cds_lib`→6
+- **calibre#147** [WEAK] 上层/12-calibre.md:216 — | `timeout` | 否 | 600 | si 超时 |
+  - 命中：`timeout`→6
+- **calibre#151** [WEAK] 上层/12-calibre.md:222 — **`checkCAPPERI=nil`**——IC618 auCdl batch 的默认值缺口，缺失即 `OSSHNL-411`）与一致的 `.simrc`；
+  - 命中：`OSSHNL-411`→1
+- **calibre#160** [NO-TOKEN] 上层/12-calibre.md:235 — 5. 不做并发调度：同一 token 建议串行跑 PDR；许可争用表现为工具报错，由调用方决定重试。
+- **calibre#171** [WEAK] 上层/12-calibre.md:252 — 2. 大设计的 `svdb`/`*.pdb` 可能很大：`export` 默认只取小文件，目录需显式点名；
+  - 命中：`export`→6；`svdb`→4
+- **calibre#172** [WEAK] 上层/12-calibre.md:253 — 3. `power`/`ground` 未给时沿用 deck 默认（可能触发 ERC 告警，见可行性报告 §2 的 LVS 实测）；
+  - 命中：`ground`→6；`power`→2
+- **calibre#173** [NO-TOKEN] 上层/12-calibre.md:254 — 4. 许可不足、并发争用未做全局串行（§5.5）。
+- **calibre#176** [NO-TOKEN] 上层/12-calibre.md:261 — | 组 | 用例 |
+- **calibre#178** [WEAK] 上层/12-calibre.md:263 — | env | `check_env` 返回路径/版本；deck 不可见时报 `deck_ok=false` 并给原因 |
+  - 命中：`check_env`→4
+- **calibre#179** [WEAK] 上层/12-calibre.md:264 — | EXPORT | `export_cdl` 产出**含 `.SUBCKT` + 器件行**的 CDL（只出端口壳即失败）；`netlist_name` 只能是纯文件名 |
+  - 命中：`export_cdl`→6；`netlist_name`→5
+- **calibre#180** [WEAK] 上层/12-calibre.md:265 — | DRC | 小 GDS（`lay_e2e.gds` 顶层 `lay_e2e`）跑通：`status=completed`、`read_results` 给 rules_checked/结果计数；对照可行性报告基线（1737 规则 / 36 结果） |
+  - 命中：`lay_e2e`→4；`lay_e2e.gds`→1；`read_results`→6
+- **calibre#181** [WEAK] 上层/12-calibre.md:266 — | LVS | `ctle.gds`+`ctle.cdl`：`status=completed`、`summary.status ∈ {match, incorrect}`、产物含 `svdb/*.phdb` |
+  - 命中：`ctle.cdl`→2；`ctle.gds`→2
+- **calibre#182** [WEAK] 上层/12-calibre.md:267 — | LVS 闭环 | `export_cdl` 的 CDL 直接喂 LVS（`CMP_LIB/inv2` + `inv2.gds`）；`VB_CALIBRE_REQUIRE_LVS_VERDICT=1` 时要求 `correct` |
+  - 命中：`correct`→6；`export_cdl`→6；`inv2.gds`→4
+- **calibre#183** [NO-TOKEN] 上层/12-calibre.md:268 — | PEX | 同组输入跑到 `-pdb`：`svdb/*.pdb/` 存在、`summary.errors==0`；`fmt=spice` 时产出网表 |
+- **calibre#184** [WEAK] 上层/12-calibre.md:269 — | 三件套 | `blocking=true` 与 `blocking=false`+`status` 轮询两种用法结果一致 |
+  - 命中：`status`→6
+- **calibre#185** [NO-TOKEN] 上层/12-calibre.md:270 — | 失败 | deck 路径不存在 → 明确失败；GDS 顶层名错 → 工具原文回带；不给 token → 400 |
+- **calibre#186** [NO-TOKEN] 上层/12-calibre.md:271 — | 参数面 | deck 无占位符（自包含）时 `gds/top/cdl` 可省；deck 引用 `"lvs_top.cdl"` 而没给 `cdl` → 明确失败 |
+- **calibre#187** [NO-TOKEN] 上层/12-calibre.md:275 — | 证据 | 位置 |
+- **calibre#189** [NO-TOKEN] 上层/12-calibre.md:277 — | 可行性报告（DRC/LVS/PEX 实跑、CDL 调查、新用户 calprobe 会话） | `spec/research/calibre/02-可行性报告.md` |
+- **calibre#190** [NO-TOKEN] 上层/12-calibre.md:278 — | Calibre 环境探针 | `test/semi/probes/calibre_env_probe.py` |
+- **calibre#191** [NO-TOKEN] 上层/12-calibre.md:279 — | CDL 批处理探针（si.env/.simrc 生成） | `test/semi/probes/calibre_cdl_probe.py` |
+- **calibre#192** [NO-TOKEN] 上层/12-calibre.md:280 — | auCdl 导出机制调查（官方链路、runset/control-file 实测） | `spec/research/calibre/03-网表导出机制调查报告.md`（§8/§9） |
+- **calibre#193** [NO-TOKEN] 上层/12-calibre.md:281 — | 实跑现场（远端） | `/home/Gent/project/vblog/calibre_probe/{drc_run,lvs_run,rcx_run}/` |
+- **calibre#194** [WEAK] 上层/12-calibre.md:282 — | 新注册用户与独立 env | `/home/Gent/project/calprobe/`（`calprobe`，见可行性报告 §3.4） |
+  - 命中：`calprobe`→6

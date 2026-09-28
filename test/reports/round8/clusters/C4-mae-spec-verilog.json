@@ -1,0 +1,6824 @@
+[
+ {
+  "id": "maestro#003",
+  "kind": "clause",
+  "section": "上层业务包：maestro",
+  "line": 5,
+  "text": "> 状态：Draft（操作与原子已成形；参数细节待逐项定稿；暂未纳入 README 治理）",
+  "doc": "上层/6-maestro.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "maestro#004",
+  "kind": "clause",
+  "section": "上层业务包：maestro",
+  "line": 6,
+  "text": "> Supersedes：Draft v3（补全历史类读写与全部操作/原子的实现底层；去掉 history 复制）",
+  "doc": "上层/6-maestro.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "maestro#008",
+  "kind": "table-row",
+  "section": "2. 操作总表",
+  "line": 17,
+  "text": "| 大类 | 操作 | 一句话说明 | 接口 |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "maestro#010",
+  "kind": "table-row",
+  "section": "2. 操作总表",
+  "line": 19,
+  "text": "| 配置类 | `read_config` | 读当前配置（变量、参数、tests、corners、specs） | S |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "read_config"
+  ],
+  "hits": {
+   "read_config": [
+    "test/offline/unit/test_maestro_command_exprs.py",
+    "test/offline/unit/test_maestro_package_flow.py",
+    "test/semi/probes/maestro_pkg_probe.py",
+    "test/live/packages/maestro_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/maestro_e2e_tests.py",
+   "test/offline/unit/test_maestro_command_exprs.py",
+   "test/offline/unit/test_maestro_package_flow.py",
+   "test/semi/probes/maestro_pkg_probe.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "maestro#011",
+  "kind": "table-row",
+  "section": "2. 操作总表",
+  "line": 20,
+  "text": "| 配置类 | `write` | 通用写，`commands[]` 里的配置原子 | S |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "write"
+  ],
+  "hits": {
+   "write": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "maestro#012",
+  "kind": "table-row",
+  "section": "2. 操作总表",
+  "line": 21,
+  "text": "| 结果类 | `write` | 同一个通用写，`commands[]` 里的结果原子（output / spec） | S |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "write"
+  ],
+  "hits": {
+   "write": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "maestro#013",
+  "kind": "table-row",
+  "section": "2. 操作总表",
+  "line": 22,
+  "text": "| 结果类 | `read_results` | 读结果点、spec 状态、yield；读单条波形 | S+D |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "read_results"
+  ],
+  "hits": {
+   "read_results": [
+    "test/offline/unit/test_calibre_package.py",
+    "test/offline/unit/test_calibre_parsers.py",
+    "test/offline/unit/test_calibre_verdict_consistency.py",
+    "test/offline/unit/test_maestro_package_flow.py",
+    "test/offline/unit/test_spectre_contracts.py",
+    "test/semi/probes/calibre_package_http_probe.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/packages/calibre_e2e_tests.py",
+   "test/live/packages/maestro_e2e_tests.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "maestro#014",
+  "kind": "table-row",
+  "section": "2. 操作总表",
+  "line": 23,
+  "text": "| 导出类 | `export` | 按 `kind` 批量导出文件 | S+C+D |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "export",
+   "kind"
+  ],
+  "hits": {
+   "export": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/integration/test_supervisor_process.py",
+    "test/offline/unit/test_calibre_package.py",
+    "test/offline/unit/test_gui_package.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_layout_publish_contracts.py"
+   ],
+   "kind": [
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/unit/test_calibre_argv_contracts.py",
+    "test/offline/unit/test_calibre_job_state.py",
+    "test/offline/unit/test_calibre_package.py",
+    "test/offline/unit/test_daemon_runtime_contracts.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py",
+   "test/live/flows/multihop_jump_tb.py",
+   "test/live/flows/project_flow_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "maestro#015",
+  "kind": "table-row",
+  "section": "2. 操作总表",
+  "line": 24,
+  "text": "| 历史类 | `read_history` | 不带 history：列出全部并给完成情况；带 history：给该条进度与详情 | S |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "read_history"
+  ],
+  "hits": {
+   "read_history": [
+    "test/offline/unit/test_maestro_package_flow.py",
+    "test/semi/probes/maestro_pkg_probe.py",
+    "test/live/packages/maestro_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/maestro_e2e_tests.py",
+   "test/offline/unit/test_maestro_package_flow.py",
+   "test/semi/probes/maestro_pkg_probe.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "maestro#016",
+  "kind": "table-row",
+  "section": "2. 操作总表",
+  "line": 25,
+  "text": "| 历史类 | `write_history` | 通用写，`commands[]` 里的历史原子（删/改名/锁） | S |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "write_history"
+  ],
+  "hits": {
+   "write_history": [
+    "test/offline/unit/test_maestro_command_exprs.py",
+    "test/offline/unit/test_maestro_package_flow.py",
+    "test/semi/probes/maestro_pkg_probe.py",
+    "test/live/packages/maestro_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/maestro_e2e_tests.py",
+   "test/offline/unit/test_maestro_command_exprs.py",
+   "test/offline/unit/test_maestro_package_flow.py",
+   "test/semi/probes/maestro_pkg_probe.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "maestro#017",
+  "kind": "table-row",
+  "section": "2. 操作总表",
+  "line": 26,
+  "text": "| 仿真类 | `open_gui` / `close_gui` | GUI 会话开关 | S+G |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "close_gui",
+   "open_gui"
+  ],
+  "hits": {
+   "close_gui": [
+    "test/offline/unit/test_maestro_package_flow.py",
+    "test/semi/probes/maestro_pkg_probe.py",
+    "test/live/packages/maestro_e2e_tests.py"
+   ],
+   "open_gui": [
+    "test/offline/unit/test_maestro_package_flow.py",
+    "test/semi/probes/maestro_pkg_probe.py",
+    "test/semi/probes/maestro_screenshot_probe.py",
+    "test/live/packages/maestro_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/maestro_e2e_tests.py",
+   "test/offline/unit/test_maestro_package_flow.py",
+   "test/semi/probes/maestro_pkg_probe.py",
+   "test/semi/probes/maestro_screenshot_probe.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "maestro#018",
+  "kind": "table-row",
+  "section": "2. 操作总表",
+  "line": 27,
+  "text": "| 仿真类 | `run` | 启动仿真；`blocking` 决定是否等到完成（默认非阻塞） | S+C |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "blocking"
+  ],
+  "hits": {
+   "blocking": [
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/integration/test_business_child_supervision.py",
+    "test/offline/integration/test_daemon_handler.py",
+    "test/offline/unit/test_calibre_package.py",
+    "test/offline/unit/test_daemon_runtime_contracts.py",
+    "test/offline/unit/test_maestro_package_flow.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/packages/calibre_e2e_tests.py",
+   "test/live/packages/maestro_e2e_tests.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "maestro#019",
+  "kind": "table-row",
+  "section": "2. 操作总表",
+  "line": 28,
+  "text": "| 展示类 | `open_waveform_gui` / `close_waveform_gui` | 给人看的交互波形窗口 | S+G |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "close_waveform_gui",
+   "open_waveform_gui"
+  ],
+  "hits": {
+   "close_waveform_gui": [
+    "test/semi/probes/maestro_pkg_probe.py",
+    "test/live/packages/maestro_e2e_tests.py"
+   ],
+   "open_waveform_gui": [
+    "test/offline/unit/test_maestro_package_flow.py",
+    "test/semi/probes/maestro_pkg_probe.py",
+    "test/live/packages/maestro_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/maestro_e2e_tests.py",
+   "test/offline/unit/test_maestro_package_flow.py",
+   "test/semi/probes/maestro_pkg_probe.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "maestro#022",
+  "kind": "table-row",
+  "section": "3.1 read_config",
+  "line": 38,
+  "text": "| 返回项 | 底层 |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "maestro#024",
+  "kind": "table-row",
+  "section": "3.1 read_config",
+  "line": 40,
+  "text": "| 变量表 | `maeGetVar` / `axlGetVars` |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "axlGetVars",
+   "maeGetVar"
+  ],
+  "hits": {
+   "axlGetVars": [
+    "test/offline/unit/test_maestro_command_exprs.py",
+    "test/offline/unit/test_maestro_package_flow.py"
+   ],
+   "maeGetVar": [
+    "test/offline/unit/test_maestro_command_exprs.py"
+   ]
+  },
+  "files": [
+   "test/offline/unit/test_maestro_command_exprs.py",
+   "test/offline/unit/test_maestro_package_flow.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "maestro#025",
+  "kind": "table-row",
+  "section": "3.1 read_config",
+  "line": 41,
+  "text": "| 参数表 | `maeGetParameter` |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "maeGetParameter"
+  ],
+  "hits": {
+   "maeGetParameter": [
+    "test/offline/unit/test_maestro_command_exprs.py"
+   ]
+  },
+  "files": [
+   "test/offline/unit/test_maestro_command_exprs.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "maestro#026",
+  "kind": "table-row",
+  "section": "3.1 read_config",
+  "line": 42,
+  "text": "| tests | `axlGetTests` |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "axlGetTests"
+  ],
+  "hits": {},
+  "files": [],
+  "status": "NONE"
+ },
+ {
+  "id": "maestro#027",
+  "kind": "table-row",
+  "section": "3.1 read_config",
+  "line": 43,
+  "text": "| corners | `axlGetCorners`、`axlGetCornersForATest` |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "axlGetCorners",
+   "axlGetCornersForATest"
+  ],
+  "hits": {},
+  "files": [],
+  "status": "NONE"
+ },
+ {
+  "id": "maestro#028",
+  "kind": "table-row",
+  "section": "3.1 read_config",
+  "line": 44,
+  "text": "| specs | `axlGetSpecs` |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "axlGetSpecs"
+  ],
+  "hits": {},
+  "files": [],
+  "status": "NONE"
+ },
+ {
+  "id": "maestro#029",
+  "kind": "table-row",
+  "section": "3.1 read_config",
+  "line": 45,
+  "text": "| analyses / outputs 列表 | **待定**：未找到现成枚举函数，需用 `maeGetTestSession` 逐 test 取 |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "maeGetTestSession"
+  ],
+  "hits": {
+   "maeGetTestSession": [
+    "test/semi/probes/maestro_e2e_probe.py"
+   ]
+  },
+  "files": [
+   "test/semi/probes/maestro_e2e_probe.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "maestro#030",
+  "kind": "clause",
+  "section": "3.2 write（配置原子）",
+  "line": 49,
+  "text": "每个原子 = `op` + **索引**（动哪个）+ 附加参数。整批在一个后台会话内顺序执行，末尾统一保存。",
+  "doc": "上层/6-maestro.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "maestro#031",
+  "kind": "table-row",
+  "section": "3.2 write（配置原子）",
+  "line": 51,
+  "text": "| 分组 | 原子 | 索引 | 附加参数 | 底层 |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "maestro#033",
+  "kind": "table-row",
+  "section": "3.2 write（配置原子）",
+  "line": 53,
+  "text": "| 器件 | set_test | test | lib / cell / view / simulator | `maeCreateTest` |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "maeCreateTest"
+  ],
+  "hits": {
+   "maeCreateTest": [
+    "test/semi/probes/maestro_e2e_probe.py"
+   ]
+  },
+  "files": [
+   "test/semi/probes/maestro_e2e_probe.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "maestro#034",
+  "kind": "table-row",
+  "section": "3.2 write（配置原子）",
+  "line": 54,
+  "text": "| 器件 | set_design | test | lib / cell / view | `maeSetDesign` |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "maeSetDesign"
+  ],
+  "hits": {},
+  "files": [],
+  "status": "NONE"
+ },
+ {
+  "id": "maestro#035",
+  "kind": "table-row",
+  "section": "3.2 write（配置原子）",
+  "line": 55,
+  "text": "| 分析 | set_analysis | test | analysis / enable / options | `maeSetAnalysis` |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "maeSetAnalysis"
+  ],
+  "hits": {
+   "maeSetAnalysis": [
+    "test/semi/probes/maestro_e2e_probe.py"
+   ]
+  },
+  "files": [
+   "test/semi/probes/maestro_e2e_probe.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "maestro#036",
+  "kind": "table-row",
+  "section": "3.2 write（配置原子）",
+  "line": 56,
+  "text": "| 变量 | set_var | name | value / scope（global、test、corner） | `maeSetVar`（`?typeName`/`?typeValue`） |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "maeSetVar"
+  ],
+  "hits": {
+   "maeSetVar": [
+    "test/offline/unit/test_maestro_package_flow.py"
+   ]
+  },
+  "files": [
+   "test/offline/unit/test_maestro_package_flow.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "maestro#037",
+  "kind": "table-row",
+  "section": "3.2 write（配置原子）",
+  "line": 57,
+  "text": "| 变量 | delete_var | name | test? | `axlRemoveElement(axlGetVar(...))` |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "maestro#038",
+  "kind": "table-row",
+  "section": "3.2 write（配置原子）",
+  "line": 58,
+  "text": "| 变量 | set_parameter | name | value / scope | `maeSetParameter` |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "maeSetParameter"
+  ],
+  "hits": {},
+  "files": [],
+  "status": "NONE"
+ },
+ {
+  "id": "maestro#039",
+  "kind": "table-row",
+  "section": "3.2 write（配置原子）",
+  "line": 59,
+  "text": "| 环境 | set_env_option | test | options | `maeSetEnvOption` |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "maeSetEnvOption"
+  ],
+  "hits": {},
+  "files": [],
+  "status": "NONE"
+ },
+ {
+  "id": "maestro#040",
+  "kind": "table-row",
+  "section": "3.2 write（配置原子）",
+  "line": 60,
+  "text": "| 环境 | set_sim_option | test | options | `maeSetSimOption` |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "maeSetSimOption"
+  ],
+  "hits": {},
+  "files": [],
+  "status": "NONE"
+ },
+ {
+  "id": "maestro#041",
+  "kind": "table-row",
+  "section": "3.2 write（配置原子）",
+  "line": 61,
+  "text": "| corner | set_corner | name | disable_tests? | `maeSetCorner` |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "maeSetCorner"
+  ],
+  "hits": {},
+  "files": [],
+  "status": "NONE"
+ },
+ {
+  "id": "maestro#042",
+  "kind": "table-row",
+  "section": "3.2 write（配置原子）",
+  "line": 62,
+  "text": "| corner | setup_corner | name | model_file / model_section / variables | `maeSetCorner` + `maeSetVar(corner)` + `axlGetCorner`/`axlPutModel`/`axlSetModelFile`/`axlSetModelSection` |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "axlGetCorner",
+   "axlPutModel",
+   "axlSetModelFile",
+   "axlSetModelSection",
+   "maeSetCorner"
+  ],
+  "hits": {
+   "axlGetCorner": [
+    "test/offline/unit/test_maestro_command_exprs.py"
+   ]
+  },
+  "files": [
+   "test/offline/unit/test_maestro_command_exprs.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "maestro#043",
+  "kind": "table-row",
+  "section": "3.2 write（配置原子）",
+  "line": 63,
+  "text": "| corner | load_corners | —（文件导入） | filepath / sections / operation | `maeLoadCorners`（CSV 先经 File 接口上传） |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "maeLoadCorners"
+  ],
+  "hits": {},
+  "files": [],
+  "status": "NONE"
+ },
+ {
+  "id": "maestro#044",
+  "kind": "table-row",
+  "section": "3.2 write（配置原子）",
+  "line": 64,
+  "text": "| 运行 | set_run_mode | —（会话级） | run_mode | `maeSetCurrentRunMode` |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "maeSetCurrentRunMode"
+  ],
+  "hits": {},
+  "files": [],
+  "status": "NONE"
+ },
+ {
+  "id": "maestro#045",
+  "kind": "table-row",
+  "section": "3.2 write（配置原子）",
+  "line": 65,
+  "text": "| 运行 | set_job_control_mode | —（会话级） | mode | `maeSetJobControlMode` |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "maeSetJobControlMode"
+  ],
+  "hits": {
+   "maeSetJobControlMode": [
+    "test/offline/unit/test_maestro_package_flow.py",
+    "test/semi/probes/maestro_e2e_probe.py"
+   ]
+  },
+  "files": [
+   "test/offline/unit/test_maestro_package_flow.py",
+   "test/semi/probes/maestro_e2e_probe.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "maestro#046",
+  "kind": "table-row",
+  "section": "3.2 write（配置原子）",
+  "line": 66,
+  "text": "| 运行 | set_job_policy | test? | policy / job_type | `maeSetJobPolicy` |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "maeSetJobPolicy"
+  ],
+  "hits": {
+   "maeSetJobPolicy": [
+    "test/live/packages/maestro_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/maestro_e2e_tests.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "maestro#047",
+  "kind": "table-row",
+  "section": "3.2 write（配置原子）",
+  "line": 67,
+  "text": "| 运行 | set_simulator_mode | test | mode | `asiSetHighPerformanceOptionVal`（内部映射 `'uniMode` / `'spectreXPreset`） |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "asiSetHighPerformanceOptionVal"
+  ],
+  "hits": {
+   "asiSetHighPerformanceOptionVal": [
+    "test/live/packages/maestro_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/maestro_e2e_tests.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "maestro#048",
+  "kind": "table-row",
+  "section": "4.1 write（结果原子）",
+  "line": 73,
+  "text": "| 原子 | 索引 | 附加参数 | 底层 |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "maestro#050",
+  "kind": "table-row",
+  "section": "4.1 write（结果原子）",
+  "line": 75,
+  "text": "| add_output | test | name / output_type / signal_name / expr | `maeAddOutput` |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "maeAddOutput"
+  ],
+  "hits": {},
+  "files": [],
+  "status": "NONE"
+ },
+ {
+  "id": "maestro#051",
+  "kind": "table-row",
+  "section": "4.1 write（结果原子）",
+  "line": 76,
+  "text": "| set_spec | test | name / lt / gt | `maeSetSpec` |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "maeSetSpec"
+  ],
+  "hits": {},
+  "files": [],
+  "status": "NONE"
+ },
+ {
+  "id": "maestro#052",
+  "kind": "table-row",
+  "section": "4.2 read_results",
+  "line": 80,
+  "text": "| 能力 | 底层 |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "maestro#054",
+  "kind": "table-row",
+  "section": "4.2 read_results",
+  "line": 82,
+  "text": "| 读全部点、spec 状态、yield | `maeExportOutputView` 导 Detail CSV → 下载 → 解析 |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "maeExportOutputView"
+  ],
+  "hits": {
+   "maeExportOutputView": [
+    "test/offline/unit/test_maestro_package_flow.py"
+   ]
+  },
+  "files": [
+   "test/offline/unit/test_maestro_package_flow.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "maestro#055",
+  "kind": "table-row",
+  "section": "4.2 read_results",
+  "line": 83,
+  "text": "| 读单条波形 | `maeOpenResults` → `openResults` → `selectResults` → `ocnPrint` → 下载文本 |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "maeOpenResults",
+   "ocnPrint",
+   "openResults",
+   "selectResults"
+  ],
+  "hits": {},
+  "files": [],
+  "status": "NONE"
+ },
+ {
+  "id": "maestro#056",
+  "kind": "table-row",
+  "section": "4.2 read_results",
+  "line": 84,
+  "text": "| 结果目录/最新 history 定位 | `asiGetResultsDir` + 旧代码的 mtime / 自然排序规则 |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "asiGetResultsDir"
+  ],
+  "hits": {},
+  "files": [],
+  "status": "NONE"
+ },
+ {
+  "id": "maestro#058",
+  "kind": "table-row",
+  "section": "5. 导出类",
+  "line": 90,
+  "text": "| kind | 产物 | 底层 |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "maestro#060",
+  "kind": "table-row",
+  "section": "5. 导出类",
+  "line": 92,
+  "text": "| netlist | 指定 corner 的网表 | `maeCreateNetlistForCorner` |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "maeCreateNetlistForCorner"
+  ],
+  "hits": {},
+  "files": [],
+  "status": "NONE"
+ },
+ {
+  "id": "maestro#061",
+  "kind": "table-row",
+  "section": "5. 导出类",
+  "line": 93,
+  "text": "| script | 等价 OCEAN 脚本 | `maeWriteScript` |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "maeWriteScript"
+  ],
+  "hits": {},
+  "files": [],
+  "status": "NONE"
+ },
+ {
+  "id": "maestro#062",
+  "kind": "table-row",
+  "section": "5. 导出类",
+  "line": 94,
+  "text": "| outputs_csv | outputs 表 CSV | `maeExportOutputView` |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "maeExportOutputView"
+  ],
+  "hits": {
+   "maeExportOutputView": [
+    "test/offline/unit/test_maestro_package_flow.py"
+   ]
+  },
+  "files": [
+   "test/offline/unit/test_maestro_package_flow.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "maestro#063",
+  "kind": "table-row",
+  "section": "5. 导出类",
+  "line": 95,
+  "text": "| snapshot | 全量快照包（sdb / active.state / 过滤 XML / 按点 netlist 与 PSF） | 快照模板 + `find`/`tar` 打包 |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "find"
+  ],
+  "hits": {
+   "find": [
+    "test/offline/unit/test_maestro_package_flow.py",
+    "test/offline/unit/test_persistent_shell_protocol.py",
+    "test/offline/unit/test_registration_server_edges.py",
+    "test/offline/unit/test_skillref_package.py",
+    "test/offline/unit/test_ssh_edges.py",
+    "test/offline/unit/test_symbol_generate.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py",
+   "test/offline/unit/test_maestro_package_flow.py",
+   "test/offline/unit/test_persistent_shell_protocol.py",
+   "test/offline/unit/test_registration_server_edges.py",
+   "test/offline/unit/test_skillref_package.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "maestro#064",
+  "kind": "table-row",
+  "section": "5. 导出类",
+  "line": 96,
+  "text": "| screenshot | Maestro 窗口 PNG | `hiWindowSaveImage`（窗口按 `cellView~>viewName` 定位） |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "hiWindowSaveImage"
+  ],
+  "hits": {
+   "hiWindowSaveImage": [
+    "test/offline/unit/test_maestro_package_flow.py",
+    "test/semi/probes/symbol_screenshot_probe.py",
+    "test/live/packages/maestro_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/maestro_e2e_tests.py",
+   "test/offline/unit/test_maestro_package_flow.py",
+   "test/semi/probes/symbol_screenshot_probe.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "maestro#067",
+  "kind": "table-row",
+  "section": "6.1 read_history",
+  "line": 106,
+  "text": "| 返回项 | 底层 |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "maestro#069",
+  "kind": "table-row",
+  "section": "6.1 read_history",
+  "line": 108,
+  "text": "| 全部 history 名称 | `axlGetHistory` |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "axlGetHistory"
+  ],
+  "hits": {
+   "axlGetHistory": [
+    "test/offline/unit/test_maestro_command_exprs.py",
+    "test/offline/unit/test_maestro_package_flow.py",
+    "test/semi/probes/maestro_e2e_probe.py"
+   ]
+  },
+  "files": [
+   "test/offline/unit/test_maestro_command_exprs.py",
+   "test/offline/unit/test_maestro_package_flow.py",
+   "test/semi/probes/maestro_e2e_probe.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "maestro#070",
+  "kind": "table-row",
+  "section": "6.1 read_history",
+  "line": 109,
+  "text": "| 每个 history 的完成情况（running / done / failed） | `axlGetRunStatus` 逐条查询 |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "axlGetRunStatus"
+  ],
+  "hits": {
+   "axlGetRunStatus": [
+    "test/semi/probes/maestro_e2e_probe.py"
+   ]
+  },
+  "files": [
+   "test/semi/probes/maestro_e2e_probe.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "maestro#071",
+  "kind": "table-row",
+  "section": "6.1 read_history",
+  "line": 110,
+  "text": "| 当前 history / 最新 history | `axlGetCurrentHistory`；旧代码的 mtime 排序 / 自然排序规则 |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "axlGetCurrentHistory"
+  ],
+  "hits": {
+   "axlGetCurrentHistory": [
+    "test/offline/unit/test_maestro_command_exprs.py",
+    "test/offline/unit/test_maestro_package_flow.py",
+    "test/semi/probes/maestro_e2e_probe.py"
+   ]
+  },
+  "files": [
+   "test/offline/unit/test_maestro_command_exprs.py",
+   "test/offline/unit/test_maestro_package_flow.py",
+   "test/semi/probes/maestro_e2e_probe.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "maestro#073",
+  "kind": "table-row",
+  "section": "6.1 read_history",
+  "line": 114,
+  "text": "| 返回项 | 底层 |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "maestro#075",
+  "kind": "table-row",
+  "section": "6.1 read_history",
+  "line": 116,
+  "text": "| 进度（完成的点 / 测试 / corner 数） | `axlGetRunStatus`（指定 history） |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "axlGetRunStatus"
+  ],
+  "hits": {
+   "axlGetRunStatus": [
+    "test/semi/probes/maestro_e2e_probe.py"
+   ]
+  },
+  "files": [
+   "test/semi/probes/maestro_e2e_probe.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "maestro#076",
+  "kind": "table-row",
+  "section": "6.1 read_history",
+  "line": 117,
+  "text": "| 锁状态 | `axlGetHistoryLock` / `maeGetHistoryLockFlag`（0–4 五种状态） |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "axlGetHistoryLock",
+   "maeGetHistoryLockFlag"
+  ],
+  "hits": {
+   "maeGetHistoryLockFlag": [
+    "test/offline/unit/test_maestro_command_exprs.py",
+    "test/offline/unit/test_maestro_package_flow.py"
+   ]
+  },
+  "files": [
+   "test/offline/unit/test_maestro_command_exprs.py",
+   "test/offline/unit/test_maestro_package_flow.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "maestro#077",
+  "kind": "table-row",
+  "section": "6.1 read_history",
+  "line": 118,
+  "text": "| 结果目录 | `axlGetResultsLocation` 等路径查询 |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "axlGetResultsLocation"
+  ],
+  "hits": {
+   "axlGetResultsLocation": [
+    "test/offline/unit/test_maestro_package_flow.py"
+   ]
+  },
+  "files": [
+   "test/offline/unit/test_maestro_package_flow.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "maestro#078",
+  "kind": "table-row",
+  "section": "6.1 read_history",
+  "line": 119,
+  "text": "| 覆盖式运行目标 | `axlGetOverwriteHistoryName` |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "axlGetOverwriteHistoryName"
+  ],
+  "hits": {},
+  "files": [],
+  "status": "NONE"
+ },
+ {
+  "id": "maestro#079",
+  "kind": "table-row",
+  "section": "6.2 write_history（历史原子）",
+  "line": 123,
+  "text": "| 原子 | 索引 | 附加参数 | 底层 |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "maestro#081",
+  "kind": "table-row",
+  "section": "6.2 write_history（历史原子）",
+  "line": 125,
+  "text": "| delete | history | — | Assembler：`axlRemoveElement(axlGetHistoryEntry(sdb, name))`；Explorer：`maeDeleteExplorerHistory(session, name)` |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "maestro#082",
+  "kind": "table-row",
+  "section": "6.2 write_history（历史原子）",
+  "line": 126,
+  "text": "| delete_results | history | keep_netlist? / keep_quick_plot? | `maeDeleteSimulationData`（对应 GUI 三档）；备选 `axlRemoveSimulationResults` |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "axlRemoveSimulationResults",
+   "maeDeleteSimulationData"
+  ],
+  "hits": {},
+  "files": [],
+  "status": "NONE"
+ },
+ {
+  "id": "maestro#083",
+  "kind": "table-row",
+  "section": "6.2 write_history（历史原子）",
+  "line": 127,
+  "text": "| rename | history | new_name | `axlSetHistoryName(handle, new_name)` |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "maestro#084",
+  "kind": "table-row",
+  "section": "6.2 write_history（历史原子）",
+  "line": 128,
+  "text": "| lock / unlock | history | — | `maeSetHistoryLock` / `axlSetHistoryLock` |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "axlSetHistoryLock",
+   "maeSetHistoryLock"
+  ],
+  "hits": {
+   "maeSetHistoryLock": [
+    "test/offline/unit/test_maestro_command_exprs.py"
+   ]
+  },
+  "files": [
+   "test/offline/unit/test_maestro_command_exprs.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "maestro#086",
+  "kind": "table-row",
+  "section": "7.1 open_gui / close_gui",
+  "line": 136,
+  "text": "| 操作 | 底层 |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "maestro#088",
+  "kind": "table-row",
+  "section": "7.1 open_gui / close_gui",
+  "line": 138,
+  "text": "| open_gui | 窗口探测 → 关闭只读副本 → `deOpenCellView(..., \"a\")` → 找到并复用可编辑会话 |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "maestro#089",
+  "kind": "table-row",
+  "section": "7.1 open_gui / close_gui",
+  "line": 139,
+  "text": "| close_gui | 探测窗口 mode/已修改 → Reading 先 `maeMakeEditable` → `maeSaveSetup` → `hiCloseWindow` → `dbPurge` 释放编辑锁；**固定保存，不提供丢弃** |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "dbPurge",
+   "hiCloseWindow",
+   "maeMakeEditable",
+   "maeSaveSetup"
+  ],
+  "hits": {
+   "dbPurge": [
+    "test/semi/probes/twouser_same_view_probe.py"
+   ],
+   "hiCloseWindow": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/semi/probes/symbol_screenshot_probe.py",
+    "test/live/packages/gui_e2e_tests.py",
+    "test/live/packages/layout_e2e_tests.py"
+   ],
+   "maeMakeEditable": [
+    "test/offline/unit/test_maestro_command_exprs.py"
+   ],
+   "maeSaveSetup": [
+    "test/offline/unit/test_maestro_command_exprs.py",
+    "test/offline/unit/test_maestro_package_flow.py",
+    "test/semi/probes/maestro_e2e_probe.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/gui_e2e_tests.py",
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/offline/unit/test_layout_contracts.py",
+   "test/offline/unit/test_maestro_command_exprs.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "maestro#090",
+  "kind": "table-row",
+  "section": "7.2 run",
+  "line": 143,
+  "text": "| 参数 | 说明 |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "maestro#092",
+  "kind": "table-row",
+  "section": "7.2 run",
+  "line": 145,
+  "text": "| `blocking` | 是否阻塞到仿真结束；**默认 `false`**（立即返回 history 名） |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "blocking",
+   "false"
+  ],
+  "hits": {
+   "blocking": [
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/integration/test_business_child_supervision.py",
+    "test/offline/integration/test_daemon_handler.py",
+    "test/offline/unit/test_calibre_package.py",
+    "test/offline/unit/test_daemon_runtime_contracts.py",
+    "test/offline/unit/test_maestro_package_flow.py"
+   ],
+   "false": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/unit/test_daemon_runtime_contracts.py",
+    "test/offline/unit/test_gui_package.py",
+    "test/offline/unit/test_jsonutil.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_layout_publish_contracts.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/packages/calibre_e2e_tests.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "maestro#093",
+  "kind": "table-row",
+  "section": "7.2 run",
+  "line": 147,
+  "text": "| 模式 | 行为 | 底层 |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "maestro#095",
+  "kind": "table-row",
+  "section": "7.2 run",
+  "line": 149,
+  "text": "| 非阻塞（默认） | 启动后立即返回 history 名，调用方之后用 `read_history` 查进度 | `maeRunSimulation` |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "maeRunSimulation",
+   "read_history"
+  ],
+  "hits": {
+   "maeRunSimulation": [
+    "test/offline/unit/test_maestro_package_flow.py",
+    "test/semi/probes/maestro_e2e_probe.py"
+   ],
+   "read_history": [
+    "test/offline/unit/test_maestro_package_flow.py",
+    "test/semi/probes/maestro_pkg_probe.py",
+    "test/live/packages/maestro_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/maestro_e2e_tests.py",
+   "test/offline/unit/test_maestro_package_flow.py",
+   "test/semi/probes/maestro_e2e_probe.py",
+   "test/semi/probes/maestro_pkg_probe.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "maestro#096",
+  "kind": "table-row",
+  "section": "7.2 run",
+  "line": 150,
+  "text": "| 阻塞（`blocking=true`） | 启动后在包内等到终态，返回 history 名 + 终态 | `maeRunSimulation` + 包内轮询 |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "maeRunSimulation"
+  ],
+  "hits": {
+   "maeRunSimulation": [
+    "test/offline/unit/test_maestro_package_flow.py",
+    "test/semi/probes/maestro_e2e_probe.py"
+   ]
+  },
+  "files": [
+   "test/offline/unit/test_maestro_package_flow.py",
+   "test/semi/probes/maestro_e2e_probe.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "maestro#102",
+  "kind": "table-row",
+  "section": "8. 展示类",
+  "line": 164,
+  "text": "| 操作 | 底层 |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "maestro#104",
+  "kind": "table-row",
+  "section": "8. 展示类",
+  "line": 166,
+  "text": "| open_waveform_gui | `maeOpenSetup(?mode \"r\")` → `maeOpenResults(?history)` → `awvCreatePlotWindow` → `awvPlotWaveform(?expr signals)`；会话保持打开供窗口引用 |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "awvCreatePlotWindow"
+  ],
+  "hits": {},
+  "files": [],
+  "status": "NONE"
+ },
+ {
+  "id": "maestro#105",
+  "kind": "table-row",
+  "section": "8. 展示类",
+  "line": 167,
+  "text": "| close_waveform_gui | `hiCloseWindow` + `maeCloseSession(?forceClose t)`，关闭后校验窗口与会话列表 |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "hiCloseWindow"
+  ],
+  "hits": {
+   "hiCloseWindow": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/semi/probes/symbol_screenshot_probe.py",
+    "test/live/packages/gui_e2e_tests.py",
+    "test/live/packages/layout_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/gui_e2e_tests.py",
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/offline/unit/test_layout_contracts.py",
+   "test/offline/unit/test_schematic_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "maestro#106",
+  "kind": "table-row",
+  "section": "9. 内部中间节点（不对外）",
+  "line": 171,
+  "text": "| 节点 | 底层 | 被谁使用 |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "maestro#108",
+  "kind": "table-row",
+  "section": "9. 内部中间节点（不对外）",
+  "line": 173,
+  "text": "| 后台会话 open / save / close | `maeOpenSetup` / `maeSaveSetup` / `maeCloseSession` | write、read_config、read_results、export、write_history |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "maeCloseSession",
+   "maeOpenSetup",
+   "maeSaveSetup"
+  ],
+  "hits": {
+   "maeCloseSession": [
+    "test/offline/unit/test_maestro_command_exprs.py",
+    "test/offline/unit/test_maestro_package_flow.py",
+    "test/semi/probes/maestro_e2e_probe.py",
+    "test/live/packages/maestro_e2e_tests.py"
+   ],
+   "maeOpenSetup": [
+    "test/offline/unit/test_maestro_command_exprs.py",
+    "test/offline/unit/test_maestro_package_flow.py",
+    "test/semi/probes/maestro_e2e_probe.py",
+    "test/live/packages/maestro_e2e_tests.py"
+   ],
+   "maeSaveSetup": [
+    "test/offline/unit/test_maestro_command_exprs.py",
+    "test/offline/unit/test_maestro_package_flow.py",
+    "test/semi/probes/maestro_e2e_probe.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/maestro_e2e_tests.py",
+   "test/offline/unit/test_maestro_command_exprs.py",
+   "test/offline/unit/test_maestro_package_flow.py",
+   "test/semi/probes/maestro_e2e_probe.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "maestro#109",
+  "kind": "table-row",
+  "section": "9. 内部中间节点（不对外）",
+  "line": 174,
+  "text": "| 确保 maestro view 存在 | `maeOpenSetup` + `maeSaveSetup` | write、open_gui（对外不暴露） |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "maeOpenSetup",
+   "maeSaveSetup"
+  ],
+  "hits": {
+   "maeOpenSetup": [
+    "test/offline/unit/test_maestro_command_exprs.py",
+    "test/offline/unit/test_maestro_package_flow.py",
+    "test/semi/probes/maestro_e2e_probe.py",
+    "test/live/packages/maestro_e2e_tests.py"
+   ],
+   "maeSaveSetup": [
+    "test/offline/unit/test_maestro_command_exprs.py",
+    "test/offline/unit/test_maestro_package_flow.py",
+    "test/semi/probes/maestro_e2e_probe.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/maestro_e2e_tests.py",
+   "test/offline/unit/test_maestro_command_exprs.py",
+   "test/offline/unit/test_maestro_package_flow.py",
+   "test/semi/probes/maestro_e2e_probe.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "maestro#110",
+  "kind": "table-row",
+  "section": "9. 内部中间节点（不对外）",
+  "line": 175,
+  "text": "| 窗口状态探测（mode / 已修改） | `hiGetCurrentWindow` + 标题解析 + `davSession` | close_gui |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "davSession",
+   "hiGetCurrentWindow"
+  ],
+  "hits": {},
+  "files": [],
+  "status": "NONE"
+ },
+ {
+  "id": "maestro#111",
+  "kind": "table-row",
+  "section": "9. 内部中间节点（不对外）",
+  "line": 176,
+  "text": "| Detail CSV 中间导出 | `maeExportOutputView` | read_results、export(outputs_csv) |",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "maeExportOutputView"
+  ],
+  "hits": {
+   "maeExportOutputView": [
+    "test/offline/unit/test_maestro_package_flow.py"
+   ]
+  },
+  "files": [
+   "test/offline/unit/test_maestro_package_flow.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "maestro#113",
+  "kind": "clause",
+  "section": "10. 待定与待验证",
+  "line": 182,
+  "text": "1. 会话级原子的索引（`set_run_mode` / `set_job_control_mode` 现按\"当前会话\"处理）；",
+  "doc": "上层/6-maestro.md",
+  "tokens": [
+   "set_job_control_mode",
+   "set_run_mode"
+  ],
+  "hits": {
+   "set_job_control_mode": [
+    "test/offline/unit/test_maestro_command_exprs.py",
+    "test/live/packages/maestro_e2e_tests.py"
+   ],
+   "set_run_mode": [
+    "test/offline/unit/test_maestro_command_exprs.py",
+    "test/live/packages/maestro_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/maestro_e2e_tests.py",
+   "test/offline/unit/test_maestro_command_exprs.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "maestro#115",
+  "kind": "clause",
+  "section": "10. 待定与待验证",
+  "line": 184,
+  "text": "3. analyses / outputs 的枚举函数；",
+  "doc": "上层/6-maestro.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "maestro#118",
+  "kind": "clause",
+  "section": "10. 待定与待验证",
+  "line": 187,
+  "text": "6. 各原子的参数与默认值逐项定稿。",
+  "doc": "上层/6-maestro.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "maestro#119",
+  "kind": "clause",
+  "section": "10. 待定与待验证",
+  "line": 189,
+  "text": "待真机验证（写 spec 定稿前必须闭环）：",
+  "doc": "上层/6-maestro.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "spectre#017",
+  "kind": "table-row",
+  "section": "2. 操作总表",
+  "line": 27,
+  "text": "| 类别 | 操作名 | 说明 | 接口 |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "spectre#019",
+  "kind": "table-row",
+  "section": "2. 操作总表",
+  "line": 29,
+  "text": "| 环境 | `spectre.check_license` | 查 Spectre 二进制/版本/license | Sp+C |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "spectre.check_license"
+  ],
+  "hits": {
+   "spectre.check_license": [
+    "test/offline/unit/test_spectre_contracts.py",
+    "test/live/flows/adc_sar_flow_tb.py",
+    "test/live/packages/spectre_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/packages/spectre_e2e_tests.py",
+   "test/offline/unit/test_spectre_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "spectre#020",
+  "kind": "table-row",
+  "section": "2. 操作总表",
+  "line": 30,
+  "text": "| 仿真 | `spectre.run` | 执行一个或多个独立仿真任务；`tasks[]` | U+Sp+D |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "spectre.run"
+  ],
+  "hits": {
+   "spectre.run": [
+    "test/offline/core/api_server_tb.py",
+    "test/semi/probes/p076_fix_verify_probe.py",
+    "test/semi/probes/p076_spectre_run_hang_probe.py",
+    "test/semi/probes/spectre_ac_pipeline_probe.py",
+    "test/semi/probes/spectre_channel_map_probe.py",
+    "test/live/flows/design_iterate_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/s11_postsim_compare.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/packages/infra_e2e_tests.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "spectre#021",
+  "kind": "table-row",
+  "section": "2. 操作总表",
+  "line": 31,
+  "text": "| 结果 | `spectre.read_results` | 读/解析 PSF ASCII；自动识别 single/raw/sweep | D |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "spectre.read_results"
+  ],
+  "hits": {
+   "spectre.read_results": [
+    "test/live/packages/spectre_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/spectre_e2e_tests.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "spectre#022",
+  "kind": "table-row",
+  "section": "2. 操作总表",
+  "line": 32,
+  "text": "| 结果 | `spectre.measure` | 在已解析数据上算 delay/bandwidth/noise 等 | — |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "spectre.measure"
+  ],
+  "hits": {
+   "spectre.measure": [
+    "test/semi/probes/spectre_ac_pipeline_probe.py",
+    "test/live/flows/design_iterate_tb.py",
+    "test/live/flows/project_flow_tb.py",
+    "test/live/flows/serdes_rx_flow_tb.py",
+    "test/live/packages/spectre_e2e_tests.py",
+    "test/live/packages/spectre_params_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/packages/spectre_e2e_tests.py",
+   "test/live/packages/spectre_params_e2e_tests.py",
+   "test/semi/probes/spectre_ac_pipeline_probe.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "spectre#023",
+  "kind": "table-row",
+  "section": "2. 操作总表",
+  "line": 33,
+  "text": "| 结果 | `spectre.export` | 已解析结果导出 CSV/JSON | — |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "spectre.export"
+  ],
+  "hits": {
+   "spectre.export": [
+    "test/live/packages/spectre_e2e_tests.py",
+    "test/live/packages/spectre_params_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/spectre_e2e_tests.py",
+   "test/live/packages/spectre_params_e2e_tests.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "spectre#033",
+  "kind": "clause",
+  "section": "3.1 Request / Result",
+  "line": 54,
+  "text": "- 每个 Request 必须有 `token: str`，可选 `timeout`；结构校验失败抛 `ValueError`/`TypeError`。",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "TypeError",
+   "ValueError",
+   "timeout"
+  ],
+  "hits": {
+   "TypeError": [
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/unit/test_common_config.py",
+    "test/offline/unit/test_config_snapshot_edges.py",
+    "test/offline/unit/test_maestro_util_edges.py",
+    "test/offline/unit/test_pyapi_interface_contract.py",
+    "test/offline/unit/test_registration_server_edges.py"
+   ],
+   "ValueError": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/integration/test_business_child_supervision.py",
+    "test/offline/integration/test_supervisor_process.py",
+    "test/offline/unit/test_api_server_main.py",
+    "test/offline/unit/test_calibre_argv_contracts.py"
+   ],
+   "timeout": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "spectre#036",
+  "kind": "clause",
+  "section": "3.1 Request / Result",
+  "line": 57,
+  "text": "- 业务失败写 `ok=false` + `error`；只有结构错误或未预期异常才抛出。",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "error"
+  ],
+  "hits": {
+   "error": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "spectre#040",
+  "kind": "clause",
+  "section": "3.2 路径与 job",
+  "line": 64,
+  "text": "- `run` 的 `job` 必须是安全名：`[A-Za-z0-9][A-Za-z0-9._-]*`，不得含 `/`、`\\`、`..`。",
+  "doc": "上层/7-spectre.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "spectre#041",
+  "kind": "clause",
+  "section": "3.2 路径与 job",
+  "line": 65,
+  "text": "- 包不生成 API 事后不可重建的随机路径；同一 `job` 必须能确定地定位同一组运行目录。",
+  "doc": "上层/7-spectre.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "spectre#055",
+  "kind": "table-row",
+  "section": "5.1 Request",
+  "line": 99,
+  "text": "| 字段 | 类型 | 默认 | 说明 |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "spectre#057",
+  "kind": "table-row",
+  "section": "5.1 Request",
+  "line": 101,
+  "text": "| `token` | str | — | 必填 |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "token"
+  ],
+  "hits": {
+   "token": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/integration/test_business_child_supervision.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "spectre#058",
+  "kind": "table-row",
+  "section": "5.1 Request",
+  "line": 102,
+  "text": "| `tasks` | list[Task] | — | 一个或多个仿真任务；单仿真也写单元素列表 |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "tasks"
+  ],
+  "hits": {
+   "tasks": [
+    "test/offline/unit/test_spectre_contracts.py",
+    "test/semi/probes/p076_fix_verify_probe.py",
+    "test/semi/probes/p076_spectre_run_hang_probe.py",
+    "test/semi/probes/spectre_ac_pipeline_probe.py",
+    "test/semi/probes/spectre_channel_map_probe.py",
+    "test/live/flows/design_iterate_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/s11_postsim_compare.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/packages/spectre_e2e_tests.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "spectre#059",
+  "kind": "table-row",
+  "section": "5.1 Request",
+  "line": 103,
+  "text": "| `max_workers` | int | 4 | 上层并发上限，≥1 |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "max_workers"
+  ],
+  "hits": {
+   "max_workers": [
+    "test/offline/scenario/test_business_local.py",
+    "test/offline/unit/test_spectre_contracts.py",
+    "test/semi/probes/p076_fix_verify_probe.py",
+    "test/semi/probes/p076_spectre_run_hang_probe.py",
+    "test/semi/probes/spectre_ac_pipeline_probe.py",
+    "test/semi/probes/spectre_channel_map_probe.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/multiuser_layout_handoff_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "spectre#060",
+  "kind": "table-row",
+  "section": "5.1 Request",
+  "line": 104,
+  "text": "| `mode` | str | `\"spectre\"` | 批次默认 mode；task 可覆盖 |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "mode"
+  ],
+  "hits": {
+   "mode": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/integration/test_business_child_supervision.py",
+    "test/offline/integration/test_daemon_handler.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py",
+   "test/live/flows/multihop_jump_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "spectre#061",
+  "kind": "table-row",
+  "section": "5.1 Request",
+  "line": 105,
+  "text": "| `spectre_args` | list[str] | `[]` | 批次默认额外 Spectre CLI flag |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "spectre_args"
+  ],
+  "hits": {
+   "spectre_args": [
+    "test/offline/unit/test_spectre_contracts.py",
+    "test/live/flows/s11_full_flow.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/s11_full_flow.py",
+   "test/offline/unit/test_spectre_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "spectre#062",
+  "kind": "table-row",
+  "section": "5.1 Request",
+  "line": 106,
+  "text": "| `spectre_bin` | str \\| None | `None` | 覆盖二进制/命令前缀；缺省用 query bin，再退化为 `spectre` |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "None",
+   "spectre",
+   "spectre_bin"
+  ],
+  "hits": {
+   "None": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ],
+   "spectre": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/integration/test_business_child_supervision.py",
+    "test/offline/integration/test_supervisor_process.py"
+   ],
+   "spectre_bin": [
+    "test/offline/core/semantics_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/unit/test_middle_contracts.py",
+    "test/offline/unit/test_spectre_contracts.py",
+    "test/live/packages/spectre_params_e2e_tests.py",
+    "test/live/registration/registration_role_split_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "spectre#063",
+  "kind": "table-row",
+  "section": "5.1 Request",
+  "line": 107,
+  "text": "| `parse` | str | `\"auto\"` | `auto`=下载后自动解析；`none`=只下载不解析 |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "auto",
+   "none",
+   "parse"
+  ],
+  "hits": {
+   "auto": [
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/integration/test_supervisor_process.py",
+    "test/offline/unit/test_daemon_log_contract.py",
+    "test/offline/unit/test_daemon_log_utf8_budget.py",
+    "test/offline/unit/test_gui_package.py"
+   ],
+   "none": [
+    "test/offline/integration/test_daemon_handler.py",
+    "test/offline/unit/test_calibre_argv_contracts.py",
+    "test/offline/unit/test_gui_package.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_paramiko.py",
+    "test/offline/unit/test_paramiko_helpers.py"
+   ],
+   "parse": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py",
+   "test/live/flows/multihop_jump_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "spectre#064",
+  "kind": "table-row",
+  "section": "5.1 Request",
+  "line": 108,
+  "text": "| `download` | bool | `True` | 是否把 raw/log 下载到调用方 |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "True",
+   "download"
+  ],
+  "hits": {
+   "True": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ],
+   "download": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/scenario/test_business_local.py",
+    "test/offline/unit/test_calibre_package.py",
+    "test/offline/unit/test_gui_package.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "spectre#065",
+  "kind": "table-row",
+  "section": "5.1 Request",
+  "line": 109,
+  "text": "| `output_root` | str \\| None | `None` | 调用方输出根；各 task 用 `<output_root>/<job>`；缺省 `artifact_dir(\"spectre\", job)` |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "None",
+   "output_root"
+  ],
+  "hits": {
+   "None": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ],
+   "output_root": [
+    "test/offline/unit/test_spectre_contracts.py",
+    "test/live/packages/spectre_params_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "spectre#066",
+  "kind": "table-row",
+  "section": "5.1 Request",
+  "line": 110,
+  "text": "| `keep_run_dir` | bool | `False` | 是否保留 role 侧 run_dir |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "False",
+   "keep_run_dir"
+  ],
+  "hits": {
+   "False": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ],
+   "keep_run_dir": [
+    "test/offline/unit/test_spectre_contracts.py",
+    "test/semi/probes/p076_fix_verify_probe.py",
+    "test/semi/probes/p076_spectre_run_hang_probe.py",
+    "test/semi/probes/spectre_ac_pipeline_probe.py",
+    "test/semi/probes/spectre_channel_map_probe.py",
+    "test/live/flows/design_iterate_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py",
+   "test/live/flows/multihop_jump_tb.py",
+   "test/live/flows/multiuser_layout_handoff_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "spectre#067",
+  "kind": "table-row",
+  "section": "5.1 Request",
+  "line": 111,
+  "text": "| `timeout` | int \\| None | `None` | 单次中层调用 deadline |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "None",
+   "timeout"
+  ],
+  "hits": {
+   "None": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ],
+   "timeout": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "spectre#069",
+  "kind": "table-row",
+  "section": "5.1 Request",
+  "line": 115,
+  "text": "| 字段 | 类型 | 默认 | 说明 |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "spectre#071",
+  "kind": "table-row",
+  "section": "5.1 Request",
+  "line": 117,
+  "text": "| `job` | str | — | 安全名；决定 role 侧与调用方侧运行目录；批次内唯一 |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "spectre#072",
+  "kind": "table-row",
+  "section": "5.1 Request",
+  "line": 118,
+  "text": "| `netlist` | str | — | 调用方 netlist 文件；U 上传到 run_dir |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "netlist"
+  ],
+  "hits": {
+   "netlist": [
+    "test/offline/unit/test_calibre_job_state.py",
+    "test/offline/unit/test_calibre_package.py",
+    "test/offline/unit/test_maestro_package_flow.py",
+    "test/offline/unit/test_spectre_contracts.py",
+    "test/semi/probes/calibre_cdl_probe.py",
+    "test/semi/probes/cdl_export_variants_probe.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/s11_postsim_compare.py",
+   "test/live/flows/serdes_rx_flow_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "spectre#073",
+  "kind": "table-row",
+  "section": "5.1 Request",
+  "line": 119,
+  "text": "| `include_files` | list[str] | `[]` | 调用方 include 文件；按 basename 上传到 run_dir |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "include_files"
+  ],
+  "hits": {
+   "include_files": [
+    "test/offline/unit/test_spectre_contracts.py"
+   ]
+  },
+  "files": [
+   "test/offline/unit/test_spectre_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "spectre#074",
+  "kind": "table-row",
+  "section": "5.1 Request",
+  "line": 120,
+  "text": "| `mode` | str \\| None | `None` | 为 None 时继承批次默认 |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "None",
+   "mode"
+  ],
+  "hits": {
+   "None": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ],
+   "mode": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/integration/test_business_child_supervision.py",
+    "test/offline/integration/test_daemon_handler.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "spectre#075",
+  "kind": "table-row",
+  "section": "5.1 Request",
+  "line": 121,
+  "text": "| `spectre_args` | list[str] \\| None | `None` | 为 None 时继承批次默认；提供时覆盖 |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "None",
+   "spectre_args"
+  ],
+  "hits": {
+   "None": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ],
+   "spectre_args": [
+    "test/offline/unit/test_spectre_contracts.py",
+    "test/live/flows/s11_full_flow.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "spectre#077",
+  "kind": "clause",
+  "section": "5.1 Request",
+  "line": 125,
+  "text": "- `tasks` 非空；job 唯一且为安全名；`max_workers ≥ 1`。",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "tasks"
+  ],
+  "hits": {
+   "tasks": [
+    "test/offline/unit/test_spectre_contracts.py",
+    "test/semi/probes/p076_fix_verify_probe.py",
+    "test/semi/probes/p076_spectre_run_hang_probe.py",
+    "test/semi/probes/spectre_ac_pipeline_probe.py",
+    "test/semi/probes/spectre_channel_map_probe.py",
+    "test/live/flows/design_iterate_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/s11_postsim_compare.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/packages/spectre_e2e_tests.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "spectre#078",
+  "kind": "clause",
+  "section": "5.1 Request",
+  "line": 126,
+  "text": "- `parse=\"auto\"` 时 `download` 必须为 true；`parse=\"none\"` 时必须 `keep_run_dir=true`，否则后续无法再用 `read_results` 定位 role 侧结果。",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "download",
+   "read_results"
+  ],
+  "hits": {
+   "download": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/scenario/test_business_local.py",
+    "test/offline/unit/test_calibre_package.py",
+    "test/offline/unit/test_gui_package.py"
+   ],
+   "read_results": [
+    "test/offline/unit/test_calibre_package.py",
+    "test/offline/unit/test_calibre_parsers.py",
+    "test/offline/unit/test_calibre_verdict_consistency.py",
+    "test/offline/unit/test_maestro_package_flow.py",
+    "test/offline/unit/test_spectre_contracts.py",
+    "test/semi/probes/calibre_package_http_probe.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py",
+   "test/live/flows/multihop_jump_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "spectre#083",
+  "kind": "clause",
+  "section": "5.2 执行链路（每个 task）",
+  "line": 135,
+  "text": "3. 上传 netlist 为 `<run_dir>/<netlist basename>`；上传 include 文件到同一目录。netlist 与 include 的 basename 必须唯一、不得冲突。",
+  "doc": "上层/7-spectre.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "spectre#092",
+  "kind": "clause",
+  "section": "5.2 执行链路（每个 task）",
+  "line": 146,
+  "text": "- 包内用受 `max_workers` 限制的并发执行所有 task；所有 task 都等待结束，任一失败不取消其余 task。",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "max_workers"
+  ],
+  "hits": {
+   "max_workers": [
+    "test/offline/scenario/test_business_local.py",
+    "test/offline/unit/test_spectre_contracts.py",
+    "test/semi/probes/p076_fix_verify_probe.py",
+    "test/semi/probes/p076_spectre_run_hang_probe.py",
+    "test/semi/probes/spectre_ac_pipeline_probe.py",
+    "test/semi/probes/spectre_channel_map_probe.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/multiuser_layout_handoff_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "spectre#093",
+  "kind": "clause",
+  "section": "5.2 执行链路（每个 task）",
+  "line": 147,
+  "text": "- 结果按 `tasks` 顺序返回。",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "tasks"
+  ],
+  "hits": {
+   "tasks": [
+    "test/offline/unit/test_spectre_contracts.py",
+    "test/semi/probes/p076_fix_verify_probe.py",
+    "test/semi/probes/p076_spectre_run_hang_probe.py",
+    "test/semi/probes/spectre_ac_pipeline_probe.py",
+    "test/semi/probes/spectre_channel_map_probe.py",
+    "test/live/flows/design_iterate_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/s11_postsim_compare.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/packages/spectre_e2e_tests.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "spectre#094",
+  "kind": "clause",
+  "section": "5.2 执行链路（每个 task）",
+  "line": 148,
+  "text": "- 中层的 token/channel/thread 预算仍可能拒绝某次调用；被拒绝的 task 记失败，不自动重试。",
+  "doc": "上层/7-spectre.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "spectre#097",
+  "kind": "clause",
+  "section": "5.3 命令构造",
+  "line": 154,
+  "text": "- 默认参数（已存在则不重复）：`-64`、`+escchars`、`+log <run_dir>/spectre.out`、`-format psfascii`、`-raw <run_dir>/<stem>.raw`、`+lqtimeout 900`、`-maxw 5`、`-maxn 5`、`+logstatus`。",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "spectre.out"
+  ],
+  "hits": {
+   "spectre.out": [
+    "test/offline/unit/test_spectre_contracts.py",
+    "test/semi/probes/p076_fix_verify_probe.py",
+    "test/live/packages/spectre_params_e2e_tests.py",
+    "test/shared/runners/make_bug_cards.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/spectre_params_e2e_tests.py",
+   "test/offline/unit/test_spectre_contracts.py",
+   "test/semi/probes/p076_fix_verify_probe.py",
+   "test/shared/runners/make_bug_cards.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "spectre#098",
+  "kind": "clause",
+  "section": "5.3 命令构造",
+  "line": 155,
+  "text": "- 参数顺序：task 的 `spectre_args` 后接 mode 映射参数。",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "spectre_args"
+  ],
+  "hits": {
+   "spectre_args": [
+    "test/offline/unit/test_spectre_contracts.py",
+    "test/live/flows/s11_full_flow.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/s11_full_flow.py",
+   "test/offline/unit/test_spectre_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "spectre#101",
+  "kind": "table-row",
+  "section": "5.3 命令构造",
+  "line": 159,
+  "text": "| mode | 参数 |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "spectre#103",
+  "kind": "table-row",
+  "section": "5.3 命令构造",
+  "line": 161,
+  "text": "| `spectre` | 无 |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "spectre"
+  ],
+  "hits": {
+   "spectre": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/integration/test_business_child_supervision.py",
+    "test/offline/integration/test_supervisor_process.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/s11_inprocess_lvs_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "spectre#104",
+  "kind": "table-row",
+  "section": "5.3 命令构造",
+  "line": 162,
+  "text": "| `aps` | `+aps` |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "spectre#105",
+  "kind": "table-row",
+  "section": "5.3 命令构造",
+  "line": 163,
+  "text": "| `x` | `+x` |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "spectre#106",
+  "kind": "table-row",
+  "section": "5.3 命令构造",
+  "line": 164,
+  "text": "| `cx` | `+preset=cx +mt` |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "spectre#107",
+  "kind": "table-row",
+  "section": "5.3 命令构造",
+  "line": 165,
+  "text": "| `ax` | `+preset=ax +mt` |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "spectre#108",
+  "kind": "table-row",
+  "section": "5.3 命令构造",
+  "line": 166,
+  "text": "| `mx` | `+preset=mx +mt` |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "spectre#109",
+  "kind": "table-row",
+  "section": "5.3 命令构造",
+  "line": 167,
+  "text": "| `lx` | `+preset=lx +mt` |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "spectre#110",
+  "kind": "table-row",
+  "section": "5.3 命令构造",
+  "line": 168,
+  "text": "| `vx` | `+preset=vx +mt` |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "spectre#144",
+  "kind": "clause",
+  "section": "5.4 结果与状态",
+  "line": 207,
+  "text": "- raw 已下载但解析失败：`status=\"partial\"`，`ok=false`，保留解析错误和已下载文件。",
+  "doc": "上层/7-spectre.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "spectre#146",
+  "kind": "clause",
+  "section": "5.4 结果与状态",
+  "line": 209,
+  "text": "- 终止失败标记至少包括：`error reading`、`read-in failed`、license error、明确 convergence failure、`spectre terminated prematurely due to fatal error`、`ERROR (`、segmentation/core dump。",
+  "doc": "上层/7-spectre.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "spectre#147",
+  "kind": "table-row",
+  "section": "6.1 Request",
+  "line": 215,
+  "text": "| 字段 | 类型 | 默认 | 说明 |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "spectre#149",
+  "kind": "table-row",
+  "section": "6.1 Request",
+  "line": 217,
+  "text": "| `token` | str | — | 必填 |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "token"
+  ],
+  "hits": {
+   "token": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/integration/test_business_child_supervision.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "spectre#150",
+  "kind": "table-row",
+  "section": "6.1 Request",
+  "line": 218,
+  "text": "| `source` | str | — | role 文件或目录路径；相对 `file` role 根，绝对路径直通 |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "file",
+   "source"
+  ],
+  "hits": {
+   "file": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ],
+   "source": [
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/integration/test_daemon_handler.py",
+    "test/offline/unit/test_calibre_argv_contracts.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "spectre#151",
+  "kind": "table-row",
+  "section": "6.1 Request",
+  "line": 219,
+  "text": "| `analysis` | str | `\"all\"` | `raw` 时的分析选择：`all`/`tran`/`dc`/`ac`/`info` |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "analysis",
+   "info",
+   "tran"
+  ],
+  "hits": {
+   "analysis": [
+    "test/offline/unit/test_calibre_argv_contracts.py",
+    "test/offline/unit/test_maestro_command_exprs.py",
+    "test/offline/unit/test_maestro_package_flow.py",
+    "test/offline/unit/test_spectre_contracts.py",
+    "test/offline/unit/test_spectre_util_contracts.py",
+    "test/offline/unit/test_spectre_util_psf_contracts.py"
+   ],
+   "info": [
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/unit/test_cellview_contracts.py",
+    "test/offline/unit/test_daemon_log_contract.py",
+    "test/offline/unit/test_daemon_log_utf8_budget.py",
+    "test/offline/unit/test_daemon_parity.py",
+    "test/offline/unit/test_daemon_runtime_contracts.py"
+   ],
+   "tran": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py",
+    "test/offline/frontend/registration_mock_server.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py",
+   "test/live/flows/multihop_jump_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "spectre#152",
+  "kind": "table-row",
+  "section": "6.1 Request",
+  "line": 220,
+  "text": "| `output_dir` | str \\| None | `None` | 调用方下载目录；缺省 `artifact_dir(\"spectre\", \"results\", <source basename>)` |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "None",
+   "output_dir"
+  ],
+  "hits": {
+   "None": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ],
+   "output_dir": [
+    "test/offline/unit/test_spectre_contracts.py",
+    "test/live/flows/s11_postsim_compare.py",
+    "test/live/packages/spectre_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "spectre#153",
+  "kind": "table-row",
+  "section": "6.1 Request",
+  "line": 221,
+  "text": "| `timeout` | int \\| None | `None` | 单次中层调用 deadline |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "None",
+   "timeout"
+  ],
+  "hits": {
+   "None": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ],
+   "timeout": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "spectre#154",
+  "kind": "table-row",
+  "section": "6.2 自动识别",
+  "line": 225,
+  "text": "| source | 自动判定 | 行为 |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "spectre#156",
+  "kind": "table-row",
+  "section": "6.2 自动识别",
+  "line": 227,
+  "text": "| 单个 PSF ASCII 文件 | `single` | D 下载 → 解析 HEADER/TYPE/SWEEP/TRACE/VALUE |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "single"
+  ],
+  "hits": {
+   "single": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/integration/test_daemon_handler.py",
+    "test/offline/unit/test_cellview_contracts.py",
+    "test/offline/unit/test_daemon_runtime_contracts.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_maestro_command_exprs.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/registration/registration_http_six_step_tb.py",
+   "test/offline/core/api_server_tb.py",
+   "test/offline/integration/test_daemon_handler.py",
+   "test/offline/unit/test_cellview_contracts.py",
+   "test/offline/unit/test_daemon_runtime_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "spectre#157",
+  "kind": "table-row",
+  "section": "6.2 自动识别",
+  "line": 228,
+  "text": "| 目录，含合法 classic/flat sweep 布局 | `sweep` | D 递归下载 → 建点索引 |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "sweep"
+  ],
+  "hits": {
+   "sweep": [
+    "test/offline/unit/test_daemon_log_utf8_budget.py",
+    "test/offline/unit/test_output_json_safety.py",
+    "test/offline/unit/test_spectre_contracts.py",
+    "test/offline/unit/test_spectre_util_contracts.py",
+    "test/offline/unit/test_spectre_util_psf_contracts.py"
+   ]
+  },
+  "files": [
+   "test/offline/unit/test_daemon_log_utf8_budget.py",
+   "test/offline/unit/test_output_json_safety.py",
+   "test/offline/unit/test_spectre_contracts.py",
+   "test/offline/unit/test_spectre_util_contracts.py",
+   "test/offline/unit/test_spectre_util_psf_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "spectre#158",
+  "kind": "table-row",
+  "section": "6.2 自动识别",
+  "line": 229,
+  "text": "| 其他目录 | `raw` | D 递归下载 → 按 `analysis` 合并 tran/dc/ac/info |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "analysis"
+  ],
+  "hits": {
+   "analysis": [
+    "test/offline/unit/test_calibre_argv_contracts.py",
+    "test/offline/unit/test_maestro_command_exprs.py",
+    "test/offline/unit/test_maestro_package_flow.py",
+    "test/offline/unit/test_spectre_contracts.py",
+    "test/offline/unit/test_spectre_util_contracts.py",
+    "test/offline/unit/test_spectre_util_psf_contracts.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/s11_postsim_compare.py",
+   "test/live/packages/maestro_e2e_tests.py",
+   "test/live/packages/spectre_e2e_tests.py",
+   "test/offline/unit/test_calibre_argv_contracts.py",
+   "test/offline/unit/test_maestro_command_exprs.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "spectre#189",
+  "kind": "table-row",
+  "section": "7. `spectre.measure`",
+  "line": 272,
+  "text": "| type | 必填 | 可选 | 返回 |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "spectre#191",
+  "kind": "table-row",
+  "section": "7. `spectre.measure`",
+  "line": 274,
+  "text": "| `threshold_crossing` | `signal, threshold` | `direction=rise`, `edge=1`, `start`, `stop` | time |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "start",
+   "stop",
+   "threshold_crossing"
+  ],
+  "hits": {
+   "start": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ],
+   "stop": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py",
+    "test/offline/frontend/registration_mock_server.py"
+   ],
+   "threshold_crossing": [
+    "test/offline/unit/test_spectre_util_contracts.py",
+    "test/live/flows/project_flow_tb.py",
+    "test/live/packages/spectre_params_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "spectre#192",
+  "kind": "table-row",
+  "section": "7. `spectre.measure`",
+  "line": 275,
+  "text": "| `delay` | `from_signal, to_signal, threshold` | `direction=rise`, `start`, `stop` | Δtime |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "delay",
+   "start",
+   "stop"
+  ],
+  "hits": {
+   "delay": [
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/unit/test_registration_mock_server.py",
+    "test/offline/unit/test_skill_admission.py",
+    "test/offline/unit/test_spectre_util_contracts.py",
+    "test/offline/unit/test_ssh_edges.py"
+   ],
+   "start": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ],
+   "stop": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py",
+    "test/offline/frontend/registration_mock_server.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "spectre#193",
+  "kind": "table-row",
+  "section": "7. `spectre.measure`",
+  "line": 276,
+  "text": "| `min`/`max`/`mean`/`rms` | `signal` | `start`, `stop` | scalar |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "mean",
+   "signal",
+   "start",
+   "stop"
+  ],
+  "hits": {
+   "mean": [
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/unit/test_common_config.py",
+    "test/offline/unit/test_maestro_util.py",
+    "test/offline/unit/test_maestro_util_edges.py",
+    "test/offline/unit/test_spectre_util_contracts.py",
+    "test/live/flows/project_flow_tb.py"
+   ],
+   "signal": [
+    "test/offline/unit/test_daemon_runtime_contracts.py",
+    "test/offline/unit/test_maestro_command_exprs.py",
+    "test/offline/unit/test_maestro_package_flow.py",
+    "test/offline/unit/test_output_json_safety.py",
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_spectre_contracts.py"
+   ],
+   "start": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ],
+   "stop": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py",
+    "test/offline/frontend/registration_mock_server.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "spectre#194",
+  "kind": "table-row",
+  "section": "7. `spectre.measure`",
+  "line": 277,
+  "text": "| `ac_magnitude` | `signal, frequency` | `scale=db/linear` | magnitude |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "ac_magnitude"
+  ],
+  "hits": {
+   "ac_magnitude": [
+    "test/offline/unit/test_spectre_metrics.py",
+    "test/offline/unit/test_spectre_util_contracts.py",
+    "test/offline/unit/test_spectre_util_psf_contracts.py",
+    "test/semi/probes/spectre_ac_pipeline_probe.py",
+    "test/live/flows/design_iterate_tb.py",
+    "test/live/flows/serdes_rx_flow_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/offline/unit/test_spectre_metrics.py",
+   "test/offline/unit/test_spectre_util_contracts.py",
+   "test/offline/unit/test_spectre_util_psf_contracts.py",
+   "test/semi/probes/spectre_ac_pipeline_probe.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "spectre#195",
+  "kind": "table-row",
+  "section": "7. `spectre.measure`",
+  "line": 278,
+  "text": "| `bandwidth` | `signal` | `drop_db=3`, `reference=dc/max` | Hz |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "bandwidth",
+   "signal"
+  ],
+  "hits": {
+   "bandwidth": [
+    "test/offline/unit/test_spectre_util_contracts.py",
+    "test/live/flows/design_iterate_tb.py",
+    "test/live/flows/serdes_rx_flow_tb.py"
+   ],
+   "signal": [
+    "test/offline/unit/test_daemon_runtime_contracts.py",
+    "test/offline/unit/test_maestro_command_exprs.py",
+    "test/offline/unit/test_maestro_package_flow.py",
+    "test/offline/unit/test_output_json_safety.py",
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_spectre_contracts.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/packages/maestro_e2e_tests.py",
+   "test/live/packages/spectre_e2e_tests.py",
+   "test/live/packages/spectre_params_e2e_tests.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "spectre#196",
+  "kind": "table-row",
+  "section": "7. `spectre.measure`",
+  "line": 279,
+  "text": "| `noise_integral` | `signal` | `start`, `stop` | integral |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "noise_integral",
+   "signal",
+   "start",
+   "stop"
+  ],
+  "hits": {
+   "noise_integral": [
+    "test/offline/unit/test_spectre_util_contracts.py"
+   ],
+   "signal": [
+    "test/offline/unit/test_daemon_runtime_contracts.py",
+    "test/offline/unit/test_maestro_command_exprs.py",
+    "test/offline/unit/test_maestro_package_flow.py",
+    "test/offline/unit/test_output_json_safety.py",
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_spectre_contracts.py"
+   ],
+   "start": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ],
+   "stop": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py",
+    "test/offline/frontend/registration_mock_server.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "spectre#197",
+  "kind": "clause",
+  "section": "7. `spectre.measure`",
+  "line": 281,
+  "text": "- `noise_integral` 需要数据中含频率轴（默认 `freq`）；`ac_magnitude`/`bandwidth` 只适用于 AC 复数数据。",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "ac_magnitude",
+   "bandwidth",
+   "freq",
+   "noise_integral"
+  ],
+  "hits": {
+   "ac_magnitude": [
+    "test/offline/unit/test_spectre_metrics.py",
+    "test/offline/unit/test_spectre_util_contracts.py",
+    "test/offline/unit/test_spectre_util_psf_contracts.py",
+    "test/semi/probes/spectre_ac_pipeline_probe.py",
+    "test/live/flows/design_iterate_tb.py",
+    "test/live/flows/serdes_rx_flow_tb.py"
+   ],
+   "bandwidth": [
+    "test/offline/unit/test_spectre_util_contracts.py",
+    "test/live/flows/design_iterate_tb.py",
+    "test/live/flows/serdes_rx_flow_tb.py"
+   ],
+   "freq": [
+    "test/offline/unit/test_spectre_metrics.py",
+    "test/offline/unit/test_spectre_util_contracts.py",
+    "test/offline/unit/test_spectre_util_psf_contracts.py",
+    "test/semi/probes/spectre_ac_pipeline_probe.py",
+    "test/live/flows/design_iterate_tb.py",
+    "test/live/flows/serdes_rx_flow_tb.py"
+   ],
+   "noise_integral": [
+    "test/offline/unit/test_spectre_util_contracts.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/packages/maestro_e2e_tests.py",
+   "test/offline/unit/test_spectre_metrics.py",
+   "test/offline/unit/test_spectre_util_contracts.py",
+   "test/offline/unit/test_spectre_util_psf_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "spectre#202",
+  "kind": "clause",
+  "section": "8. `spectre.export`",
+  "line": 290,
+  "text": "- CSV：按 columns（缺省取 data 中 list 值的顺序，`time`/`freq`/`sweep_var` 优先）写出矩形表；复数按 `<signal>.re`/`<signal>.im` 展开；缺失值留空。",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "freq",
+   "sweep_var",
+   "time"
+  ],
+  "hits": {
+   "freq": [
+    "test/offline/unit/test_spectre_metrics.py",
+    "test/offline/unit/test_spectre_util_contracts.py",
+    "test/offline/unit/test_spectre_util_psf_contracts.py",
+    "test/semi/probes/spectre_ac_pipeline_probe.py",
+    "test/live/flows/design_iterate_tb.py",
+    "test/live/flows/serdes_rx_flow_tb.py"
+   ],
+   "sweep_var": [
+    "test/offline/unit/test_spectre_util_psf_contracts.py"
+   ],
+   "time": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "spectre#205",
+  "kind": "table-row",
+  "section": "9. 内部中间节点（不对外）",
+  "line": 296,
+  "text": "| 节点 | 作用 |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "spectre#207",
+  "kind": "table-row",
+  "section": "9. 内部中间节点（不对外）",
+  "line": 298,
+  "text": "| run 目录/命令构造 | job 校验、run_dir、upload、`-64/+escchars/+log/-raw/+logstatus`、mode 映射 |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "spectre#208",
+  "kind": "table-row",
+  "section": "9. 内部中间节点（不对外）",
+  "line": 299,
+  "text": "| 结果分类器 | rc、fatal marker、收敛失败、license 失败、partial/failure/error |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "spectre#209",
+  "kind": "table-row",
+  "section": "9. 内部中间节点（不对外）",
+  "line": 300,
+  "text": "| PSF ASCII 解析 | HEADER/TYPE/SWEEP/TRACE/VALUE/END；delta 压缩；AC 复数；STRUCT OP 展平 |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "spectre#210",
+  "kind": "table-row",
+  "section": "9. 内部中间节点（不对外）",
+  "line": 301,
+  "text": "| raw 目录分析发现 | tran/dc/ac/info 文件候选与合并 |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "spectre#211",
+  "kind": "table-row",
+  "section": "9. 内部中间节点（不对外）",
+  "line": 302,
+  "text": "| sweep 布局归一化 | classic `<raw>/sw*.sweep*/N/...` 与 X/LX flat `<raw>/sw*-NNN_*` |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "spectre#212",
+  "kind": "table-row",
+  "section": "9. 内部中间节点（不对外）",
+  "line": 303,
+  "text": "| CSV/JSON 写出 | 矩形表、复数 re/im、列顺序、精度 |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "spectre#214",
+  "kind": "clause",
+  "section": "9. 内部中间节点（不对外）",
+  "line": 307,
+  "text": "- swept 数据支持 delta 压缩：后续 step 缺省信号沿用前值；首个 step 未出现信号**内部**用缺失哨兵（实现取 `None`；**不得静默填 0**），",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "None"
+  ],
+  "hits": {
+   "None": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "spectre#215",
+  "kind": "clause",
+  "section": "9. 内部中间节点（不对外）",
+  "line": 308,
+  "text": "**对外 `value.data` 一律转成 `null`/省略**（保持 JSON-safe）。边界唯一出口是 `psf_external()`：",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "null",
+   "value.data"
+  ],
+  "hits": {
+   "null": [
+    "test/offline/unit/test_commit_shape.py",
+    "test/offline/unit/test_jsonutil.py",
+    "test/offline/unit/test_output_json_safety.py",
+    "test/offline/unit/test_register_flow.py",
+    "test/offline/unit/test_skillref_package.py",
+    "test/offline/unit/test_spectre_util_psf_contracts.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py",
+   "test/live/flows/multiuser_layout_handoff_tb.py",
+   "test/live/flows/serdes_rx_flow_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "spectre#216",
+  "kind": "clause",
+  "section": "9. 内部中间节点（不对外）",
+  "line": 309,
+  "text": "缺失哨兵与任何非有限值（`NaN`/`±Inf`）都在那里收敛成 `null`，其余路径不得自行定义对外表示。",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "null"
+  ],
+  "hits": {
+   "null": [
+    "test/offline/unit/test_commit_shape.py",
+    "test/offline/unit/test_jsonutil.py",
+    "test/offline/unit/test_output_json_safety.py",
+    "test/offline/unit/test_register_flow.py",
+    "test/offline/unit/test_skillref_package.py",
+    "test/offline/unit/test_spectre_util_psf_contracts.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py",
+   "test/live/flows/multiuser_layout_handoff_tb.py",
+   "test/live/flows/serdes_rx_flow_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "spectre#217",
+  "kind": "clause",
+  "section": "9. 内部中间节点（不对外）",
+  "line": 310,
+  "text": "- AC 复数相量不得被破坏；对外 `value.data` 必须 JSON-safe：复数向量用 `{\"re\": [...], \"im\": [...]}`，单值用 `{\"re\": ..., \"im\": ...}`。",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "value.data"
+  ],
+  "hits": {},
+  "files": [],
+  "status": "NONE"
+ },
+ {
+  "id": "spectre#221",
+  "kind": "table-row",
+  "section": "10. 旧功能覆盖映射",
+  "line": 317,
+  "text": "| 旧实现 | 新操作/说明 |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "spectre#223",
+  "kind": "table-row",
+  "section": "10. 旧功能覆盖映射",
+  "line": 319,
+  "text": "| `SpectreSimulator.run_simulation` | `run(tasks=[<一个 task>])`；等价单仿真 |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "SpectreSimulator.run_simulation"
+  ],
+  "hits": {},
+  "files": [],
+  "status": "NONE"
+ },
+ {
+  "id": "spectre#224",
+  "kind": "table-row",
+  "section": "10. 旧功能覆盖映射",
+  "line": 320,
+  "text": "| `SpectreSimulator.run_parallel` | `run(tasks=[...], max_workers=N)` |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "SpectreSimulator.run_parallel"
+  ],
+  "hits": {},
+  "files": [],
+  "status": "NONE"
+ },
+ {
+  "id": "spectre#225",
+  "kind": "table-row",
+  "section": "10. 旧功能覆盖映射",
+  "line": 321,
+  "text": "| `parallel_pool` 增量 Future | 不在本版；分多次 `run` 实现 |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "parallel_pool"
+  ],
+  "hits": {},
+  "files": [],
+  "status": "NONE"
+ },
+ {
+  "id": "spectre#226",
+  "kind": "table-row",
+  "section": "10. 旧功能覆盖映射",
+  "line": 322,
+  "text": "| `SpectreSimulator.check_license` | `check_license` |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "SpectreSimulator.check_license",
+   "check_license"
+  ],
+  "hits": {
+   "check_license": [
+    "test/offline/unit/test_spectre_contracts.py",
+    "test/live/flows/adc_sar_flow_tb.py",
+    "test/live/packages/spectre_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/packages/spectre_e2e_tests.py",
+   "test/offline/unit/test_spectre_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "spectre#227",
+  "kind": "table-row",
+  "section": "10. 旧功能覆盖映射",
+  "line": 323,
+  "text": "| `parse_spectre_psf_ascii` | `read_results(source=<单个 PSF 文件>)` |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "parse_spectre_psf_ascii"
+  ],
+  "hits": {},
+  "files": [],
+  "status": "NONE"
+ },
+ {
+  "id": "spectre#228",
+  "kind": "table-row",
+  "section": "10. 旧功能覆盖映射",
+  "line": 324,
+  "text": "| `parse_psf_ascii_directory` | `read_results(source=<raw 目录>)` |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "parse_psf_ascii_directory"
+  ],
+  "hits": {},
+  "files": [],
+  "status": "NONE"
+ },
+ {
+  "id": "spectre#229",
+  "kind": "table-row",
+  "section": "10. 旧功能覆盖映射",
+  "line": 325,
+  "text": "| `parse_sweep_psf_directory` | `read_results(source=<sweep 目录>)`（自动识别 sweep） |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "parse_sweep_psf_directory"
+  ],
+  "hits": {},
+  "files": [],
+  "status": "NONE"
+ },
+ {
+  "id": "spectre#230",
+  "kind": "table-row",
+  "section": "10. 旧功能覆盖映射",
+  "line": 326,
+  "text": "| `psf.py` 的 scalar/vector/frequency_hz | 内部解析/度量工具，不单独暴露业务操作 |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "psf.py"
+  ],
+  "hits": {},
+  "files": [],
+  "status": "NONE"
+ },
+ {
+  "id": "spectre#231",
+  "kind": "table-row",
+  "section": "10. 旧功能覆盖映射",
+  "line": 327,
+  "text": "| examples 传播延迟计算 | `measure(metrics=[{type:\"delay\",...}])` |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "spectre#232",
+  "kind": "table-row",
+  "section": "10. 旧功能覆盖映射",
+  "line": 328,
+  "text": "| examples `_result_io.py` | `export(format=\"csv\")` / `export(format=\"json\")` |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "_result_io.py"
+  ],
+  "hits": {},
+  "files": [],
+  "status": "NONE"
+ },
+ {
+  "id": "spectre#233",
+  "kind": "table-row",
+  "section": "10. 旧功能覆盖映射",
+  "line": 329,
+  "text": "| `spectre_mode_args` | `run.mode` 映射表 |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "run.mode",
+   "spectre_mode_args"
+  ],
+  "hits": {},
+  "files": [],
+  "status": "NONE"
+ },
+ {
+  "id": "spectre#234",
+  "kind": "table-row",
+  "section": "10. 旧功能覆盖映射",
+  "line": 330,
+  "text": "| `include_files` / `spectre_args` | `run.tasks[].include_files` / `run.spectre_args` |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "include_files",
+   "run.spectre_args",
+   "spectre_args"
+  ],
+  "hits": {
+   "include_files": [
+    "test/offline/unit/test_spectre_contracts.py"
+   ],
+   "spectre_args": [
+    "test/offline/unit/test_spectre_contracts.py",
+    "test/live/flows/s11_full_flow.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/s11_full_flow.py",
+   "test/offline/unit/test_spectre_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "spectre#235",
+  "kind": "table-row",
+  "section": "10. 旧功能覆盖映射",
+  "line": 331,
+  "text": "| `output_format=\"psfascii\"` | 固定 `psfascii` |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "psfascii"
+  ],
+  "hits": {
+   "psfascii": [
+    "test/offline/unit/test_spectre_contracts.py",
+    "test/live/flows/s11_full_flow.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/s11_full_flow.py",
+   "test/offline/unit/test_spectre_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "spectre#236",
+  "kind": "table-row",
+  "section": "10. 旧功能覆盖映射",
+  "line": 332,
+  "text": "| `work_dir` | `run.output_root` |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "run.output_root",
+   "work_dir"
+  ],
+  "hits": {
+   "work_dir": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/integration/test_business_child_supervision.py",
+    "test/offline/integration/test_integration.py",
+    "test/offline/integration/test_supervisor_process.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/multihop_jump_tb.py",
+   "test/live/flows/multiuser_layout_handoff_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/role_split_tb.py",
+   "test/live/flows/s11_inprocess_lvs_tb.py",
+   "test/live/flows/scale_100_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "spectre#237",
+  "kind": "table-row",
+  "section": "10. 旧功能覆盖映射",
+  "line": 333,
+  "text": "| `keep_remote_files` | `run.keep_run_dir` |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "keep_remote_files",
+   "run.keep_run_dir"
+  ],
+  "hits": {},
+  "files": [],
+  "status": "NONE"
+ },
+ {
+  "id": "spectre#238",
+  "kind": "table-row",
+  "section": "10. 旧功能覆盖映射",
+  "line": 334,
+  "text": "| `SpectreSimulator.from_env` / `local` / `profile` | 不在包内；由 token 路由 + `query` 决定 target role |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "SpectreSimulator.from_env",
+   "local",
+   "profile",
+   "query"
+  ],
+  "hits": {
+   "local": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py",
+    "test/offline/frontend/registration_mock_server.py"
+   ],
+   "query": [
+    "test/offline/core/semantics_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/unit/test_calibre_argv_contracts.py",
+    "test/offline/unit/test_calibre_package.py",
+    "test/offline/unit/test_gui_package.py",
+    "test/offline/unit/test_layout_contracts.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "spectre#252",
+  "kind": "table-row",
+  "section": "13. 决策记录（2026-09-21）",
+  "line": 357,
+  "text": "| # | 决策 |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "spectre#254",
+  "kind": "table-row",
+  "section": "13. 决策记录（2026-09-21）",
+  "line": 359,
+  "text": "| 1 | 按 schematic/maestro 的领域操作组织：对外收敛为 `check_license`/`run`/`read_results`/`measure`/`export` 五个操作。 |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "check_license",
+   "export",
+   "measure",
+   "read_results"
+  ],
+  "hits": {
+   "check_license": [
+    "test/offline/unit/test_spectre_contracts.py",
+    "test/live/flows/adc_sar_flow_tb.py",
+    "test/live/packages/spectre_e2e_tests.py"
+   ],
+   "export": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/integration/test_supervisor_process.py",
+    "test/offline/unit/test_calibre_package.py",
+    "test/offline/unit/test_gui_package.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_layout_publish_contracts.py"
+   ],
+   "measure": [
+    "test/offline/scenario/test_business_local.py",
+    "test/offline/unit/test_api_server_main.py",
+    "test/offline/unit/test_spectre_contracts.py",
+    "test/offline/unit/test_spectre_util_psf_contracts.py",
+    "test/semi/probes/spectre_ac_pipeline_probe.py",
+    "test/live/flows/design_iterate_tb.py"
+   ],
+   "read_results": [
+    "test/offline/unit/test_calibre_package.py",
+    "test/offline/unit/test_calibre_parsers.py",
+    "test/offline/unit/test_calibre_verdict_consistency.py",
+    "test/offline/unit/test_maestro_package_flow.py",
+    "test/offline/unit/test_spectre_contracts.py",
+    "test/semi/probes/calibre_package_http_probe.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "spectre#255",
+  "kind": "table-row",
+  "section": "13. 决策记录（2026-09-21）",
+  "line": 360,
+  "text": "| 2 | `run` 用 `tasks[]` 统一单仿真与固定批次；不单独暴露 `run_batch`。 |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "run_batch"
+  ],
+  "hits": {},
+  "files": [],
+  "status": "NONE"
+ },
+ {
+  "id": "spectre#256",
+  "kind": "table-row",
+  "section": "13. 决策记录（2026-09-21）",
+  "line": 361,
+  "text": "| 3 | `read_results` 自动识别单文件、raw 目录、参数扫描；请求层不暴露 `kind`，只在响应中回写识别结果。 |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "kind",
+   "read_results"
+  ],
+  "hits": {
+   "kind": [
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/unit/test_calibre_argv_contracts.py",
+    "test/offline/unit/test_calibre_job_state.py",
+    "test/offline/unit/test_calibre_package.py",
+    "test/offline/unit/test_daemon_runtime_contracts.py"
+   ],
+   "read_results": [
+    "test/offline/unit/test_calibre_package.py",
+    "test/offline/unit/test_calibre_parsers.py",
+    "test/offline/unit/test_calibre_verdict_consistency.py",
+    "test/offline/unit/test_maestro_package_flow.py",
+    "test/offline/unit/test_spectre_contracts.py",
+    "test/semi/probes/calibre_package_http_probe.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py",
+   "test/live/flows/multihop_jump_tb.py",
+   "test/live/flows/project_flow_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "spectre#257",
+  "kind": "table-row",
+  "section": "13. 决策记录（2026-09-21）",
+  "line": 362,
+  "text": "| 4 | `measure` 与 `export` 分别纯 Python 计算/落盘，不接触 PSF 解析内部。 |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "export",
+   "measure"
+  ],
+  "hits": {
+   "export": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/integration/test_supervisor_process.py",
+    "test/offline/unit/test_calibre_package.py",
+    "test/offline/unit/test_gui_package.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_layout_publish_contracts.py"
+   ],
+   "measure": [
+    "test/offline/scenario/test_business_local.py",
+    "test/offline/unit/test_api_server_main.py",
+    "test/offline/unit/test_spectre_contracts.py",
+    "test/offline/unit/test_spectre_util_psf_contracts.py",
+    "test/semi/probes/spectre_ac_pipeline_probe.py",
+    "test/live/flows/design_iterate_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "spectre#258",
+  "kind": "table-row",
+  "section": "13. 决策记录（2026-09-21）",
+  "line": 363,
+  "text": "| 5 | 不引入本地/远程模式分支；全部操作只依赖 token + 五业务接口 + `query`；多 server/profile 用不同 token。 |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "query"
+  ],
+  "hits": {
+   "query": [
+    "test/offline/core/semantics_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/unit/test_calibre_argv_contracts.py",
+    "test/offline/unit/test_calibre_package.py",
+    "test/offline/unit/test_gui_package.py",
+    "test/offline/unit/test_layout_contracts.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/role_split_tb.py",
+   "test/live/packages/gui_e2e_tests.py",
+   "test/live/packages/skillref_e2e_tests.py",
+   "test/offline/core/semantics_tb.py",
+   "test/offline/frontend/registration_mock_server.py",
+   "test/offline/unit/_fake_middle.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "spectre#259",
+  "kind": "table-row",
+  "section": "13. 决策记录（2026-09-21）",
+  "line": 364,
+  "text": "| 6 | `run` 的文件布局统一建在 `spectre.root` 下；U/D 用绝对路径跨 role 访问，要求该 root 在 file role 与 spectre 主机均可见。 |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "spectre.root"
+  ],
+  "hits": {
+   "spectre.root": [
+    "test/offline/unit/test_commit_shape.py",
+    "test/offline/unit/test_register_flow.py"
+   ]
+  },
+  "files": [
+   "test/offline/unit/test_commit_shape.py",
+   "test/offline/unit/test_register_flow.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "spectre#260",
+  "kind": "table-row",
+  "section": "13. 决策记录（2026-09-21）",
+  "line": 365,
+  "text": "| 7 | 只支持 PSF ASCII；复数在对外 `value.data` 统一为 `{re, im}` JSON-safe 表示。 |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [
+   "value.data"
+  ],
+  "hits": {},
+  "files": [],
+  "status": "NONE"
+ },
+ {
+  "id": "spectre#261",
+  "kind": "table-row",
+  "section": "13. 决策记录（2026-09-21）",
+  "line": 366,
+  "text": "| 8 | 不提供 `-param` 注入；参数化由调用方生成多个 netlist。 |",
+  "doc": "上层/7-spectre.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "verilog#009",
+  "kind": "table-row",
+  "section": "1. 业务操作",
+  "line": 15,
+  "text": "| 类别 | 操作名 | 一句话说明 | 接口 |",
+  "doc": "上层/8-verilog.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "verilog#011",
+  "kind": "table-row",
+  "section": "1. 业务操作",
+  "line": 17,
+  "text": "| 读 | `virtuoso.verilog.read` | 读源码文本 / 视图清单 / 导入诊断（`focus` 可选） | S+D |",
+  "doc": "上层/8-verilog.md",
+  "tokens": [
+   "focus",
+   "virtuoso.verilog.read"
+  ],
+  "hits": {
+   "focus": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/offline/unit/test_verilog_contracts.py",
+    "test/semi/probes/shared_cdf_pollution_probe.py",
+    "test/semi/probes/symbol_generate_hierarchy_handle_probe.py"
+   ],
+   "virtuoso.verilog.read": [
+    "test/live/packages/verilog_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/layout_suite_p044_workaround_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/live/packages/verilog_e2e_tests.py"
+  ],
+  "status": "CANDIDATE"
+ },
+ {
+  "id": "verilog#012",
+  "kind": "table-row",
+  "section": "1. 业务操作",
+  "line": 18,
+  "text": "| 写 | `virtuoso.verilog.write` | 通用写：对文本视图做原子文本编辑（只落盘） | S+U |",
+  "doc": "上层/8-verilog.md",
+  "tokens": [
+   "virtuoso.verilog.write"
+  ],
+  "hits": {
+   "virtuoso.verilog.write": [
+    "test/live/packages/verilog_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/verilog_e2e_tests.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "verilog#013",
+  "kind": "table-row",
+  "section": "1. 业务操作",
+  "line": 19,
+  "text": "| 导入 | `virtuoso.verilog.import` | 结构 Verilog → functional/symbol（默认），可选 schematic（`ihdl`） | S+C+U |",
+  "doc": "上层/8-verilog.md",
+  "tokens": [
+   "ihdl",
+   "virtuoso.verilog.import"
+  ],
+  "hits": {
+   "ihdl": [
+    "test/offline/unit/test_verilog_contracts.py"
+   ],
+   "virtuoso.verilog.import": [
+    "test/live/packages/verilog_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/verilog_e2e_tests.py",
+   "test/offline/unit/test_verilog_contracts.py"
+  ],
+  "status": "CANDIDATE"
+ },
+ {
+  "id": "verilog#014",
+  "kind": "table-row",
+  "section": "1. 业务操作",
+  "line": 20,
+  "text": "| 导出 | `virtuoso.verilog.export` | `oa2verilog`：schematic → Verilog-2001 网表 | C+D |",
+  "doc": "上层/8-verilog.md",
+  "tokens": [
+   "oa2verilog",
+   "virtuoso.verilog.export"
+  ],
+  "hits": {
+   "oa2verilog": [
+    "test/live/packages/verilog_e2e_tests.py"
+   ],
+   "virtuoso.verilog.export": [
+    "test/live/packages/verilog_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/verilog_e2e_tests.py"
+  ],
+  "status": "CANDIDATE"
+ },
+ {
+  "id": "verilog#016",
+  "kind": "table-row",
+  "section": "1. 业务操作",
+  "line": 24,
+  "text": "| 载体 | 说明 |",
+  "doc": "上层/8-verilog.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "verilog#018",
+  "kind": "table-row",
+  "section": "1. 业务操作",
+  "line": 26,
+  "text": "| 文本视图 `text.v` | 主文件 `verilog.v`，与 `text.veriloga` 同属文件式文本视图，可直接写/读 |",
+  "doc": "上层/8-verilog.md",
+  "tokens": [
+   "text.v",
+   "text.veriloga",
+   "verilog.v"
+  ],
+  "hits": {
+   "text.v": [
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/offline/unit/test_verilog_contracts.py"
+   ],
+   "text.veriloga": [
+    "test/offline/unit/test_veriloga_contracts.py"
+   ]
+  },
+  "files": [
+   "test/offline/unit/test_verilog_contracts.py",
+   "test/offline/unit/test_veriloga_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "verilog#019",
+  "kind": "table-row",
+  "section": "1. 业务操作",
+  "line": 27,
+  "text": "| 导入生成的视图 | `functional`（`verilog.v` 文本 + `netlist.oa`，默认）、`symbol`、`schematic`（可选） |",
+  "doc": "上层/8-verilog.md",
+  "tokens": [
+   "functional",
+   "netlist.oa",
+   "schematic",
+   "symbol",
+   "verilog.v"
+  ],
+  "hits": {
+   "functional": [
+    "test/offline/unit/test_verilog_contracts.py",
+    "test/semi/probes/maestro_env_probe.py",
+    "test/live/packages/verilog_e2e_tests.py"
+   ],
+   "schematic": [
+    "test/offline/unit/test_calibre_package.py",
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/offline/unit/test_symbol_generate.py",
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/offline/unit/test_verilog_contracts.py"
+   ],
+   "symbol": [
+    "test/offline/unit/test_maestro_util.py",
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_skill_text_utils.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/offline/unit/test_symbol_generate.py",
+    "test/offline/unit/test_veriloga_contracts.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py",
+   "test/live/flows/multiuser_serdes_rx_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "verilog#025",
+  "kind": "table-row",
+  "section": "1.1 读操作（read）",
+  "line": 38,
+  "text": "| 操作名 | 说明 | 步骤摘要 | 接口 |",
+  "doc": "上层/8-verilog.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "verilog#027",
+  "kind": "table-row",
+  "section": "1.1 读操作（read）",
+  "line": 40,
+  "text": "| read | `focus` 可选、可组合；不填=全部 | 定位源码路径 → 读文本/视图/诊断 | S+D |",
+  "doc": "上层/8-verilog.md",
+  "tokens": [
+   "focus"
+  ],
+  "hits": {
+   "focus": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/offline/unit/test_verilog_contracts.py",
+    "test/semi/probes/shared_cdf_pollution_probe.py",
+    "test/semi/probes/symbol_generate_hierarchy_handle_probe.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/layout_suite_p044_workaround_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/live/packages/verilog_e2e_tests.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "verilog#033",
+  "kind": "table-row",
+  "section": "1.1 读操作（read）",
+  "line": 48,
+  "text": "| focus | 返回 |",
+  "doc": "上层/8-verilog.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "verilog#035",
+  "kind": "table-row",
+  "section": "1.1 读操作（read）",
+  "line": 50,
+  "text": "| `source` | `text / path / size / sha256 / lines` |",
+  "doc": "上层/8-verilog.md",
+  "tokens": [
+   "source"
+  ],
+  "hits": {
+   "source": [
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/integration/test_daemon_handler.py",
+    "test/offline/unit/test_calibre_argv_contracts.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/serdes_rx_flow_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "verilog#036",
+  "kind": "table-row",
+  "section": "1.1 读操作（read）",
+  "line": 51,
+  "text": "| `views` | 该 cell 的视图清单：`name / viewType / dataType / 文件`（用 `ddMapGetFileViewType`/`ddMapGetFileDataType` 判定） |",
+  "doc": "上层/8-verilog.md",
+  "tokens": [
+   "ddMapGetFileDataType",
+   "ddMapGetFileViewType",
+   "views"
+  ],
+  "hits": {
+   "views": [
+    "test/offline/unit/test_symbol_generate.py",
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/offline/unit/test_verilog_contracts.py",
+    "test/semi/probes/maestro_env_probe.py",
+    "test/semi/probes/symbol_generate_hierarchy_handle_probe.py",
+    "test/live/flows/project_flow_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/packages/cellview_e2e_tests.py",
+   "test/live/packages/verilog_e2e_tests.py",
+   "test/offline/unit/test_symbol_generate.py",
+   "test/offline/unit/test_verilog_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "verilog#037",
+  "kind": "table-row",
+  "section": "1.1 读操作（read）",
+  "line": 52,
+  "text": "| `diagnostics` | 最近一次 `import` 的 `log_path / status / error_count / errors[]` |",
+  "doc": "上层/8-verilog.md",
+  "tokens": [
+   "diagnostics",
+   "import"
+  ],
+  "hits": {
+   "diagnostics": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/offline/unit/test_verilog_contracts.py",
+    "test/live/packages/veriloga_e2e_tests.py",
+    "test/shared/runners/coverage_evidence.py"
+   ],
+   "import": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "verilog#040",
+  "kind": "table-row",
+  "section": "1.2 写操作（write）",
+  "line": 59,
+  "text": "| 操作名 | 说明 | 步骤摘要 | 接口 |",
+  "doc": "上层/8-verilog.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "verilog#042",
+  "kind": "table-row",
+  "section": "1.2 写操作（write）",
+  "line": 61,
+  "text": "| write | 通用写：`lib/cell/view + commands[]` | 读现状 → 逐原子改文本 → 覆盖写 | S+U |",
+  "doc": "上层/8-verilog.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "verilog#043",
+  "kind": "clause",
+  "section": "1.2 写操作（write）",
+  "line": 63,
+  "text": "`write.commands` 每项 = `{\"op\": 原子名, ...参数}`；**非事务**，失败响应带 `commands applied: k/n`。",
+  "doc": "上层/8-verilog.md",
+  "tokens": [
+   "write.commands"
+  ],
+  "hits": {},
+  "files": [],
+  "status": "NONE"
+ },
+ {
+  "id": "verilog#044",
+  "kind": "table-row",
+  "section": "1.2 写操作（write）",
+  "line": 65,
+  "text": "| 对象 | 原子名 | 索引（动哪个） | 附加参数 |",
+  "doc": "上层/8-verilog.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "verilog#046",
+  "kind": "table-row",
+  "section": "1.2 写操作（write）",
+  "line": 67,
+  "text": "| 代码 | `set_source` | 目标 view 或 file | `text`；可选 `expected_sha256`（不符则失败） |",
+  "doc": "上层/8-verilog.md",
+  "tokens": [
+   "expected_sha256",
+   "set_source",
+   "text"
+  ],
+  "hits": {
+   "expected_sha256": [
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/offline/unit/test_verilog_contracts.py",
+    "test/live/packages/veriloga_e2e_tests.py"
+   ],
+   "set_source": [
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/offline/unit/test_verilog_contracts.py",
+    "test/live/packages/veriloga_e2e_tests.py",
+    "test/live/packages/verilog_e2e_tests.py"
+   ],
+   "text": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "verilog#047",
+  "kind": "table-row",
+  "section": "1.2 写操作（write）",
+  "line": 68,
+  "text": "| 代码 | `patch_source` | 目标 view 或 file | `edits[]`：`{old_text,new_text}` 或 `{start_line,end_line,new_text}`；匹配不唯一默认失败（可 `all=true`） |",
+  "doc": "上层/8-verilog.md",
+  "tokens": [
+   "patch_source"
+  ],
+  "hits": {
+   "patch_source": [
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/offline/unit/test_verilog_contracts.py",
+    "test/live/packages/veriloga_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/veriloga_e2e_tests.py",
+   "test/offline/unit/test_verilog_contracts.py",
+   "test/offline/unit/test_veriloga_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "verilog#048",
+  "kind": "table-row",
+  "section": "1.2 写操作（write）",
+  "line": 69,
+  "text": "| 文本视图 | `ensure_view` | `{library, cell, view}` | `view_type`（`text.v`）、可选 `create_if_missing=true`；内部写 `master.tag` + 主文件模板 |",
+  "doc": "上层/8-verilog.md",
+  "tokens": [
+   "ensure_view",
+   "master.tag",
+   "text.v",
+   "view_type"
+  ],
+  "hits": {
+   "ensure_view": [
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/offline/unit/test_verilog_contracts.py",
+    "test/live/flows/serdes_rx_flow_tb.py",
+    "test/live/packages/veriloga_e2e_tests.py",
+    "test/live/packages/verilog_e2e_tests.py"
+   ],
+   "master.tag": [
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/offline/unit/test_verilog_contracts.py"
+   ],
+   "text.v": [
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/offline/unit/test_verilog_contracts.py"
+   ],
+   "view_type": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/offline/unit/test_verilog_contracts.py",
+    "test/semi/probes/gds_then_skill_probe.py",
+    "test/semi/probes/schematic_pin_ops_probe.py",
+    "test/semi/probes/shared_cdf_pollution_probe.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/packages/cellview_e2e_tests.py",
+   "test/live/packages/layout_e2e_tests.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "verilog#049",
+  "kind": "table-row",
+  "section": "1.2 写操作（write）",
+  "line": 70,
+  "text": "| 文本视图 | `delete_view` | `{library, cell, view}` | —（`ddDeleteObj`，先确认无编辑器窗口/`*.cdslck`） |",
+  "doc": "上层/8-verilog.md",
+  "tokens": [
+   "ddDeleteObj",
+   "delete_view"
+  ],
+  "hits": {
+   "ddDeleteObj": [
+    "test/offline/unit/test_cellview_contracts.py",
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/offline/unit/test_verilog_contracts.py",
+    "test/semi/probes/layout_p044_second_write_probe.py",
+    "test/semi/probes/twouser_same_view_probe.py",
+    "test/live/flows/multiuser_layout_handoff_tb.py"
+   ],
+   "delete_view": [
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/offline/unit/test_verilog_contracts.py",
+    "test/live/packages/layout_e2e_tests.py",
+    "test/live/packages/veriloga_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/multiuser_layout_handoff_tb.py",
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/live/packages/verilog_e2e_tests.py",
+   "test/live/packages/veriloga_e2e_tests.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "verilog#051",
+  "kind": "clause",
+  "section": "1.2 写操作（write）",
+  "line": 73,
+  "text": "结构校验走 `import`（见 §1.3）。有 `*.cdslck`（编辑器开着）时禁止外部写。",
+  "doc": "上层/8-verilog.md",
+  "tokens": [
+   "import"
+  ],
+  "hits": {
+   "import": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "verilog#052",
+  "kind": "table-row",
+  "section": "1.3 导入（import）",
+  "line": 77,
+  "text": "| 参数 | 说明 |",
+  "doc": "上层/8-verilog.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "verilog#054",
+  "kind": "table-row",
+  "section": "1.3 导入（import）",
+  "line": 79,
+  "text": "| `file_path` + `file_is_local` | 源码文件（本机→上传；远端→直接用） |",
+  "doc": "上层/8-verilog.md",
+  "tokens": [
+   "file_is_local",
+   "file_path"
+  ],
+  "hits": {
+   "file_is_local": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_layout_publish_contracts.py",
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/offline/unit/test_verilog_contracts.py",
+    "test/semi/probes/gds_publish_path_edges_probe.py",
+    "test/semi/probes/gds_then_skill_probe.py"
+   ],
+   "file_path": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_probe.py",
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/offline/unit/test_verilog_contracts.py",
+    "test/semi/probes/gds_publish_path_edges_probe.py",
+    "test/semi/probes/gds_then_skill_probe.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/s11_inprocess_lvs_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "verilog#055",
+  "kind": "table-row",
+  "section": "1.3 导入（import）",
+  "line": 80,
+  "text": "| `library` / `cell` | 目标库与顶层 cell（**显式给**，不用文件名推导） |",
+  "doc": "上层/8-verilog.md",
+  "tokens": [
+   "cell",
+   "library"
+  ],
+  "hits": {
+   "cell": [
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/unit/test_calibre_package.py",
+    "test/offline/unit/test_calibre_parsers.py",
+    "test/offline/unit/test_cellview_contracts.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_layout_publish_contracts.py"
+   ],
+   "library": [
+    "test/offline/unit/test_calibre_package.py",
+    "test/offline/unit/test_cellview_contracts.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_layout_publish_contracts.py",
+    "test/offline/unit/test_maestro_command_exprs.py",
+    "test/offline/unit/test_maestro_package_flow.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py",
+   "test/live/flows/multiuser_layout_handoff_tb.py",
+   "test/live/flows/multiuser_serdes_rx_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "verilog#056",
+  "kind": "table-row",
+  "section": "1.3 导入（import）",
+  "line": 81,
+  "text": "| `schematic_view` / `functional_view` / `symbol_view` | 产出视图名（默认 schematic/functional/symbol） |",
+  "doc": "上层/8-verilog.md",
+  "tokens": [
+   "functional_view",
+   "schematic_view",
+   "symbol_view"
+  ],
+  "hits": {
+   "schematic_view": [
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/offline/unit/test_symbol_generate.py",
+    "test/semi/probes/schematic_pin_ops_probe.py",
+    "test/semi/probes/symbol_generate_hierarchy_handle_probe.py",
+    "test/semi/probes/symbol_http_400_repro.py",
+    "test/semi/probes/symbol_pkg_probe.py"
+   ],
+   "symbol_view": [
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/offline/unit/test_symbol_generate.py",
+    "test/semi/probes/schematic_pin_ops_probe.py",
+    "test/semi/probes/symbol_generate_hierarchy_handle_probe.py",
+    "test/semi/probes/symbol_http_400_repro.py",
+    "test/semi/probes/symbol_pkg_probe.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/live/packages/symbol_e2e_tests.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "verilog#057",
+  "kind": "table-row",
+  "section": "1.3 导入（import）",
+  "line": 82,
+  "text": "| `overwrite` | 映射 `import_if_exists` / `overwrite_symbol` |",
+  "doc": "上层/8-verilog.md",
+  "tokens": [
+   "import_if_exists",
+   "overwrite",
+   "overwrite_symbol"
+  ],
+  "hits": {
+   "overwrite": [
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/unit/test_registry_decoupling.py",
+    "test/offline/unit/test_registry_more.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/offline/unit/test_symbol_generate.py",
+    "test/semi/probes/schematic_pin_ops_probe.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/multiuser_serdes_rx_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/serdes_rx_flow_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "verilog#058",
+  "kind": "table-row",
+  "section": "1.3 导入（import）",
+  "line": 83,
+  "text": "| `timeout` / `poll_interval` | 轮询预算 |",
+  "doc": "上层/8-verilog.md",
+  "tokens": [
+   "poll_interval",
+   "timeout"
+  ],
+  "hits": {
+   "poll_interval": [
+    "test/offline/unit/test_calibre_package.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_maestro_package_flow.py",
+    "test/semi/probes/maestro_pkg_probe.py",
+    "test/live/packages/layout_e2e_tests.py",
+    "test/live/packages/maestro_e2e_tests.py"
+   ],
+   "timeout": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "verilog#060",
+  "kind": "clause",
+  "section": "1.3 导入（import）",
+  "line": 86,
+  "text": "（ihdl 会往里追加 `DEFINE`，不能给共享/全局那份）；",
+  "doc": "上层/8-verilog.md",
+  "tokens": [
+   "DEFINE"
+  ],
+  "hits": {
+   "DEFINE": [
+    "test/offline/unit/test_calibre_job_state.py",
+    "test/live/flows/design_iterate_tb.py",
+    "test/live/flows/multiuser_serdes_rx_tb.py",
+    "test/live/flows/s11_full_flow.py",
+    "test/live/flows/serdes_rx_flow_tb.py",
+    "test/live/stress/layout_multiuser_lock_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/multiuser_serdes_rx_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/stress/layout_multiuser_lock_tb.py",
+   "test/offline/unit/test_calibre_job_state.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "verilog#062",
+  "kind": "clause",
+  "section": "1.3 导入（import）",
+  "line": 88,
+  "text": "`structural_views`（1=schematic / 2=netlist / 4=functional / 5=schematic+functional / 6=netlist+functional，**默认 4**）、",
+  "doc": "上层/8-verilog.md",
+  "tokens": [
+   "structural_views"
+  ],
+  "hits": {
+   "structural_views": [
+    "test/offline/unit/test_verilog_contracts.py",
+    "test/live/packages/verilog_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/verilog_e2e_tests.py",
+   "test/offline/unit/test_verilog_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "verilog#065",
+  "kind": "clause",
+  "section": "1.3 导入（import）",
+  "line": 91,
+  "text": "3. 执行（**必须带 LD_LIBRARY_PATH 前缀**，否则缺 `libsasl2.so.2`、rc=127）：",
+  "doc": "上层/8-verilog.md",
+  "tokens": [
+   "libsasl2.so.2"
+  ],
+  "hits": {},
+  "files": [],
+  "status": "NONE"
+ },
+ {
+  "id": "verilog#071",
+  "kind": "clause",
+  "section": "1.3 导入（import）",
+  "line": 97,
+  "text": "6. **返回码不可信**（语法错误也 rc=0）：只用日志 + 产物判成败。",
+  "doc": "上层/8-verilog.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "verilog#072",
+  "kind": "clause",
+  "section": "1.3 导入（import）",
+  "line": 99,
+  "text": "`functional` 视图 = `verilog.v` 文本 + `netlist.oa`，是 AMS/仿真网表要消费的形态，默认就够；",
+  "doc": "上层/8-verilog.md",
+  "tokens": [
+   "functional",
+   "netlist.oa",
+   "verilog.v"
+  ],
+  "hits": {
+   "functional": [
+    "test/offline/unit/test_verilog_contracts.py",
+    "test/semi/probes/maestro_env_probe.py",
+    "test/live/packages/verilog_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/verilog_e2e_tests.py",
+   "test/offline/unit/test_verilog_contracts.py",
+   "test/semi/probes/maestro_env_probe.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "verilog#074",
+  "kind": "table-row",
+  "section": "1.4 导出（export）",
+  "line": 104,
+  "text": "| 参数 | 说明 |",
+  "doc": "上层/8-verilog.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "verilog#076",
+  "kind": "table-row",
+  "section": "1.4 导出（export）",
+  "line": 106,
+  "text": "| `library / cell / view` | 要导出的 OA 视图（默认 `schematic`） |",
+  "doc": "上层/8-verilog.md",
+  "tokens": [
+   "schematic"
+  ],
+  "hits": {
+   "schematic": [
+    "test/offline/unit/test_calibre_package.py",
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/offline/unit/test_symbol_generate.py",
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/offline/unit/test_verilog_contracts.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py",
+   "test/live/flows/multiuser_serdes_rx_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "verilog#077",
+  "kind": "table-row",
+  "section": "1.4 导出（export）",
+  "line": 107,
+  "text": "| `output_path` | 本机目标 `.v` 路径 |",
+  "doc": "上层/8-verilog.md",
+  "tokens": [
+   "output_path"
+  ],
+  "hits": {
+   "output_path": [
+    "test/offline/unit/test_gui_package.py",
+    "test/offline/unit/test_spectre_contracts.py",
+    "test/semi/probes/gui_display_probe.py",
+    "test/semi/probes/maestro_pkg_probe.py",
+    "test/live/packages/gui_e2e_tests.py",
+    "test/live/packages/infra_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/gui_e2e_tests.py",
+   "test/live/packages/infra_e2e_tests.py",
+   "test/live/packages/spectre_e2e_tests.py",
+   "test/live/packages/spectre_params_e2e_tests.py",
+   "test/live/packages/verilog_e2e_tests.py",
+   "test/offline/unit/test_gui_package.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "verilog#078",
+  "kind": "table-row",
+  "section": "1.4 导出（export）",
+  "line": 108,
+  "text": "| `recursive` | 是否连层级一起导出（`-recursive`） |",
+  "doc": "上层/8-verilog.md",
+  "tokens": [
+   "recursive"
+  ],
+  "hits": {
+   "recursive": [
+    "test/offline/core/semantics_tb.py",
+    "test/offline/scenario/test_business_local.py",
+    "test/offline/unit/test_calibre_package.py",
+    "test/offline/unit/test_gui_package.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_layout_publish_contracts.py"
+   ]
+  },
+  "files": [
+   "test/offline/core/semantics_tb.py",
+   "test/offline/scenario/test_business_local.py",
+   "test/offline/unit/_fake_middle.py",
+   "test/offline/unit/test_calibre_package.py",
+   "test/offline/unit/test_gui_package.py",
+   "test/offline/unit/test_layout_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "verilog#079",
+  "kind": "table-row",
+  "section": "1.4 导出（export）",
+  "line": 109,
+  "text": "| `timeout` | 单次命令 deadline |",
+  "doc": "上层/8-verilog.md",
+  "tokens": [
+   "timeout"
+  ],
+  "hits": {
+   "timeout": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "verilog#086",
+  "kind": "table-row",
+  "section": "2. 归属（不在本包）",
+  "line": 122,
+  "text": "| 能力 | 归属 |",
+  "doc": "上层/8-verilog.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "verilog#088",
+  "kind": "table-row",
+  "section": "2. 归属（不在本包）",
+  "line": 124,
+  "text": "| view CRUD（OA 视图，如 schematic/symbol） | cellview |",
+  "doc": "上层/8-verilog.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "verilog#089",
+  "kind": "table-row",
+  "section": "2. 归属（不在本包）",
+  "line": 125,
+  "text": "| 文本视图（`text.v`）的建立与覆盖 | **本包例外**（cellview 建不了文本视图） |",
+  "doc": "上层/8-verilog.md",
+  "tokens": [
+   "text.v"
+  ],
+  "hits": {
+   "text.v": [
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/offline/unit/test_verilog_contracts.py"
+   ]
+  },
+  "files": [
+   "test/offline/unit/test_verilog_contracts.py",
+   "test/offline/unit/test_veriloga_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "verilog#090",
+  "kind": "table-row",
+  "section": "2. 归属（不在本包）",
+  "line": 126,
+  "text": "| VerilogA（`text.veriloga`） | veriloga 包 |",
+  "doc": "上层/8-verilog.md",
+  "tokens": [
+   "text.veriloga"
+  ],
+  "hits": {
+   "text.veriloga": [
+    "test/offline/unit/test_veriloga_contracts.py"
+   ]
+  },
+  "files": [
+   "test/offline/unit/test_veriloga_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "verilog#091",
+  "kind": "table-row",
+  "section": "2. 归属（不在本包）",
+  "line": 127,
+  "text": "| GDS 导入/导出 | layout（`layout.gds`） |",
+  "doc": "上层/8-verilog.md",
+  "tokens": [
+   "layout.gds"
+  ],
+  "hits": {
+   "layout.gds": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_layout_publish_contracts.py",
+    "test/semi/probes/gds_publish_path_edges_probe.py",
+    "test/semi/probes/gds_then_skill_probe.py",
+    "test/live/flows/adc_sar_flow_tb.py",
+    "test/live/flows/design_iterate_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "verilog#092",
+  "kind": "table-row",
+  "section": "2. 归属（不在本包）",
+  "line": 128,
+  "text": "| 结构 connectivity / 端口 / 参数读回 | schematic（`schematic.read`） |",
+  "doc": "上层/8-verilog.md",
+  "tokens": [
+   "schematic.read"
+  ],
+  "hits": {
+   "schematic.read": [
+    "test/semi/probes/gds_then_skill_probe.py",
+    "test/semi/probes/schematic_pin_ops_probe.py",
+    "test/semi/probes/shared_cdf_pollution_probe.py",
+    "test/semi/probes/twouser_same_view_probe.py",
+    "test/live/flows/adc_sar_flow_tb.py",
+    "test/live/flows/design_iterate_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py",
+   "test/live/flows/multiuser_serdes_rx_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "verilog#093",
+  "kind": "table-row",
+  "section": "2. 归属（不在本包）",
+  "line": 129,
+  "text": "| 仿真编译 | spectre 包 |",
+  "doc": "上层/8-verilog.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "verilog#097",
+  "kind": "clause",
+  "section": "3. 不在本版",
+  "line": 136,
+  "text": "- 并发写同一 cell。",
+  "doc": "上层/8-verilog.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "verilog#099",
+  "kind": "clause",
+  "section": "4. 真机事实（IC6.1.8，2026-09-21 实测）",
+  "line": 141,
+  "text": "2. `ihdl` 是 ksh 包装器：裸跑缺 `libsasl2.so.2`（rc=127），必须带",
+  "doc": "上层/8-verilog.md",
+  "tokens": [
+   "ihdl",
+   "libsasl2.so.2"
+  ],
+  "hits": {
+   "ihdl": [
+    "test/offline/unit/test_verilog_contracts.py"
+   ]
+  },
+  "files": [
+   "test/offline/unit/test_verilog_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "verilog#101",
+  "kind": "clause",
+  "section": "4. 真机事实（IC6.1.8，2026-09-21 实测）",
+  "line": 143,
+  "text": "3. `ihdl` **返回码不可信**：语法错误、参考库缺失、降级导入都是 rc=0；成功看 `357/372/345`，",
+  "doc": "上层/8-verilog.md",
+  "tokens": [
+   "ihdl"
+  ],
+  "hits": {
+   "ihdl": [
+    "test/offline/unit/test_verilog_contracts.py"
+   ]
+  },
+  "files": [
+   "test/offline/unit/test_verilog_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "verilog#103",
+  "kind": "clause",
+  "section": "4. 真机事实（IC6.1.8，2026-09-21 实测）",
+  "line": 145,
+  "text": "4. `ihdl` 会向 `-cdslib` 指定的文件**追加 DEFINE**（目标库未注册时还在 cwd 建同名库目录）→ 必须用按次副本；",
+  "doc": "上层/8-verilog.md",
+  "tokens": [
+   "ihdl"
+  ],
+  "hits": {
+   "ihdl": [
+    "test/offline/unit/test_verilog_contracts.py"
+   ]
+  },
+  "files": [
+   "test/offline/unit/test_verilog_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "verilog#108",
+  "kind": "clause",
+  "section": "4. 真机事实（IC6.1.8，2026-09-21 实测）",
+  "line": 150,
+  "text": "否则 `VERILOGIN-127` 拒绝并降级 functional；",
+  "doc": "上层/8-verilog.md",
+  "tokens": [
+   "VERILOGIN-127"
+  ],
+  "hits": {
+   "VERILOGIN-127": [
+    "test/offline/unit/test_verilog_contracts.py"
+   ]
+  },
+  "files": [
+   "test/offline/unit/test_verilog_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "verilog#111",
+  "kind": "table-row",
+  "section": "5. 决策记录（2026-09-21，已确认）",
+  "line": 156,
+  "text": "| # | 决策 |",
+  "doc": "上层/8-verilog.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "verilog#113",
+  "kind": "table-row",
+  "section": "5. 决策记录（2026-09-21，已确认）",
+  "line": 158,
+  "text": "| 1 | 包名 `verilog` / `8-verilog.md`，operation 前缀 `virtuoso.verilog.*` |",
+  "doc": "上层/8-verilog.md",
+  "tokens": [
+   "verilog"
+  ],
+  "hits": {
+   "verilog": [
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/offline/unit/test_verilog_contracts.py",
+    "test/live/packages/veriloga_e2e_tests.py",
+    "test/live/packages/verilog_e2e_tests.py",
+    "test/shared/runners/extract_spec_clauses.py",
+    "test/shared/runners/make_bug_cards.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/verilog_e2e_tests.py",
+   "test/live/packages/veriloga_e2e_tests.py",
+   "test/offline/unit/test_verilog_contracts.py",
+   "test/offline/unit/test_veriloga_contracts.py",
+   "test/shared/runners/extract_spec_clauses.py",
+   "test/shared/runners/make_bug_cards.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "verilog#114",
+  "kind": "table-row",
+  "section": "5. 决策记录（2026-09-21，已确认）",
+  "line": 159,
+  "text": "| 2 | VerilogA 拆出为独立包 `veriloga`（`11-veriloga.md`），本包只管结构 Verilog |",
+  "doc": "上层/8-verilog.md",
+  "tokens": [
+   "veriloga"
+  ],
+  "hits": {
+   "veriloga": [
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/live/packages/veriloga_e2e_tests.py",
+    "test/shared/runners/extract_spec_clauses.py",
+    "test/shared/runners/ops_used.py",
+    "test/shared/runners/run_all_http.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/veriloga_e2e_tests.py",
+   "test/offline/unit/test_veriloga_contracts.py",
+   "test/shared/runners/extract_spec_clauses.py",
+   "test/shared/runners/ops_used.py",
+   "test/shared/runners/run_all_http.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "verilog#115",
+  "kind": "table-row",
+  "section": "5. 决策记录（2026-09-21，已确认）",
+  "line": 160,
+  "text": "| 3 | 结构装码 = `import`（ihdl）；`structural_views` 默认 `4`（functional only），schematic 显式可选 |",
+  "doc": "上层/8-verilog.md",
+  "tokens": [
+   "import",
+   "structural_views"
+  ],
+  "hits": {
+   "import": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ],
+   "structural_views": [
+    "test/offline/unit/test_verilog_contracts.py",
+    "test/live/packages/verilog_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "verilog#116",
+  "kind": "table-row",
+  "section": "5. 决策记录（2026-09-21，已确认）",
+  "line": 161,
+  "text": "| 4 | 文本视图装码 = `write`（只落盘）；不提供 `check_and_save`（Virtuoso 无 Verilog 解析器） |",
+  "doc": "上层/8-verilog.md",
+  "tokens": [
+   "check_and_save",
+   "write"
+  ],
+  "hits": {
+   "check_and_save": [
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/semi/probes/schematic_pin_ops_probe.py",
+    "test/semi/probes/symbol_pkg_probe.py",
+    "test/live/flows/adc_sar_flow_tb.py"
+   ],
+   "write": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "verilog#117",
+  "kind": "table-row",
+  "section": "5. 决策记录（2026-09-21，已确认）",
+  "line": 162,
+  "text": "| 5 | `export` 对 `ipin/opin` 噪声行原样导出 + warning，不静默改写 |",
+  "doc": "上层/8-verilog.md",
+  "tokens": [
+   "export"
+  ],
+  "hits": {
+   "export": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/integration/test_supervisor_process.py",
+    "test/offline/unit/test_calibre_package.py",
+    "test/offline/unit/test_gui_package.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_layout_publish_contracts.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "verilog#118",
+  "kind": "table-row",
+  "section": "5. 决策记录（2026-09-21，已确认）",
+  "line": 163,
+  "text": "| 6 | 不提供 open/close 等 GUI 展示操作 |",
+  "doc": "上层/8-verilog.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "veriloga#011",
+  "kind": "table-row",
+  "section": "1. 业务操作",
+  "line": 19,
+  "text": "| 类别 | 操作名 | 一句话说明 | 接口 |",
+  "doc": "上层/11-veriloga.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "veriloga#013",
+  "kind": "table-row",
+  "section": "1. 业务操作",
+  "line": 21,
+  "text": "| 读 | `virtuoso.veriloga.read` | 读源码文本 / 端口 / 视图清单 / 诊断（`focus` 可选） | S+D |",
+  "doc": "上层/11-veriloga.md",
+  "tokens": [
+   "focus",
+   "virtuoso.veriloga.read"
+  ],
+  "hits": {
+   "focus": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/offline/unit/test_verilog_contracts.py",
+    "test/semi/probes/shared_cdf_pollution_probe.py",
+    "test/semi/probes/symbol_generate_hierarchy_handle_probe.py"
+   ],
+   "virtuoso.veriloga.read": [
+    "test/live/packages/veriloga_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/layout_suite_p044_workaround_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/live/packages/verilog_e2e_tests.py"
+  ],
+  "status": "CANDIDATE"
+ },
+ {
+  "id": "veriloga#014",
+  "kind": "table-row",
+  "section": "1. 业务操作",
+  "line": 22,
+  "text": "| 写 | `virtuoso.veriloga.write` | 通用写：对代码做原子文本编辑（只落盘） | S+U |",
+  "doc": "上层/11-veriloga.md",
+  "tokens": [
+   "virtuoso.veriloga.write"
+  ],
+  "hits": {
+   "virtuoso.veriloga.write": [
+    "test/live/packages/veriloga_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/veriloga_e2e_tests.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "veriloga#015",
+  "kind": "table-row",
+  "section": "1. 业务操作",
+  "line": 23,
+  "text": "| 检查保存 | `virtuoso.veriloga.check_and_save` | `VerAParseModule` 检查 + `ahdlUpdateViewInfo` 保存/刷新 CDF | S+C |",
+  "doc": "上层/11-veriloga.md",
+  "tokens": [
+   "VerAParseModule",
+   "ahdlUpdateViewInfo",
+   "virtuoso.veriloga.check_and_save"
+  ],
+  "hits": {
+   "VerAParseModule": [
+    "test/offline/unit/test_veriloga_contracts.py"
+   ],
+   "ahdlUpdateViewInfo": [
+    "test/offline/unit/test_veriloga_contracts.py"
+   ],
+   "virtuoso.veriloga.check_and_save": [
+    "test/live/packages/veriloga_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/veriloga_e2e_tests.py",
+   "test/offline/unit/test_veriloga_contracts.py"
+  ],
+  "status": "CANDIDATE"
+ },
+ {
+  "id": "veriloga#017",
+  "kind": "table-row",
+  "section": "1. 业务操作",
+  "line": 27,
+  "text": "| 载体 | 说明 |",
+  "doc": "上层/11-veriloga.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "veriloga#019",
+  "kind": "table-row",
+  "section": "1. 业务操作",
+  "line": 29,
+  "text": "| 文本视图 `veriloga` | dfII viewType=`text.veriloga`、dataType=`VERILOGAText`、主文件 `veriloga.va`（+ `master.tag`） |",
+  "doc": "上层/11-veriloga.md",
+  "tokens": [
+   "VERILOGAText",
+   "master.tag",
+   "text.veriloga",
+   "veriloga",
+   "veriloga.va"
+  ],
+  "hits": {
+   "master.tag": [
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/offline/unit/test_verilog_contracts.py"
+   ],
+   "text.veriloga": [
+    "test/offline/unit/test_veriloga_contracts.py"
+   ],
+   "veriloga": [
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/live/packages/veriloga_e2e_tests.py",
+    "test/shared/runners/extract_spec_clauses.py",
+    "test/shared/runners/ops_used.py",
+    "test/shared/runners/run_all_http.py"
+   ],
+   "veriloga.va": [
+    "test/offline/unit/test_veriloga_contracts.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/veriloga_e2e_tests.py",
+   "test/offline/unit/test_verilog_contracts.py",
+   "test/offline/unit/test_veriloga_contracts.py",
+   "test/shared/runners/extract_spec_clauses.py",
+   "test/shared/runners/ops_used.py",
+   "test/shared/runners/run_all_http.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "veriloga#020",
+  "kind": "table-row",
+  "section": "1. 业务操作",
+  "line": 30,
+  "text": "| 持久化产物 | `check_and_save` 后生成 `veriloga/netlist.oa` + `veriloga/data.dm`，并更新 cell CDF 的 `viewInfo` |",
+  "doc": "上层/11-veriloga.md",
+  "tokens": [
+   "check_and_save",
+   "viewInfo"
+  ],
+  "hits": {
+   "check_and_save": [
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/semi/probes/schematic_pin_ops_probe.py",
+    "test/semi/probes/symbol_pkg_probe.py",
+    "test/live/flows/adc_sar_flow_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/multiuser_serdes_rx_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/serdes_rx_flow_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "veriloga#026",
+  "kind": "table-row",
+  "section": "1.1 读操作（read）",
+  "line": 41,
+  "text": "| 操作名 | 说明 | 步骤摘要 | 接口 |",
+  "doc": "上层/11-veriloga.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "veriloga#028",
+  "kind": "table-row",
+  "section": "1.1 读操作（read）",
+  "line": 43,
+  "text": "| read | `focus` 可选、可组合；不填=全部 | 定位源码路径 → 读文本/端口/视图/诊断 | S+D |",
+  "doc": "上层/11-veriloga.md",
+  "tokens": [
+   "focus"
+  ],
+  "hits": {
+   "focus": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/offline/unit/test_verilog_contracts.py",
+    "test/semi/probes/shared_cdf_pollution_probe.py",
+    "test/semi/probes/symbol_generate_hierarchy_handle_probe.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/layout_suite_p044_workaround_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/live/packages/verilog_e2e_tests.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "veriloga#033",
+  "kind": "table-row",
+  "section": "1.1 读操作（read）",
+  "line": 50,
+  "text": "| focus | 返回 |",
+  "doc": "上层/11-veriloga.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "veriloga#035",
+  "kind": "table-row",
+  "section": "1.1 读操作（read）",
+  "line": 52,
+  "text": "| `source` | `text / path / size / sha256 / lines` |",
+  "doc": "上层/11-veriloga.md",
+  "tokens": [
+   "source"
+  ],
+  "hits": {
+   "source": [
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/integration/test_daemon_handler.py",
+    "test/offline/unit/test_calibre_argv_contracts.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/serdes_rx_flow_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "veriloga#036",
+  "kind": "table-row",
+  "section": "1.1 读操作（read）",
+  "line": 53,
+  "text": "| `ports` | 端口表 `name / direction / width`（`ahdlToPinList`；AHDL 上下文未加载时返回 `unsupported` 并说明） |",
+  "doc": "上层/11-veriloga.md",
+  "tokens": [
+   "ahdlToPinList",
+   "ports",
+   "unsupported"
+  ],
+  "hits": {
+   "ahdlToPinList": [
+    "test/offline/unit/test_veriloga_contracts.py"
+   ],
+   "ports": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/unit/test_api_server_main.py",
+    "test/offline/unit/test_api_server_method_not_allowed.py",
+    "test/offline/unit/test_calibre_package.py",
+    "test/offline/unit/test_calibre_parsers.py",
+    "test/offline/unit/test_commit_shape.py"
+   ],
+   "unsupported": [
+    "test/offline/unit/test_probe.py",
+    "test/offline/unit/test_registration_server.py",
+    "test/offline/unit/test_runtime_env.py",
+    "test/offline/unit/test_spectre_contracts.py",
+    "test/offline/unit/test_spectre_util_contracts.py",
+    "test/offline/unit/test_symbol_generate.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py",
+   "test/live/flows/role_split_tb.py",
+   "test/live/flows/s11_postsim_compare.py",
+   "test/live/flows/scale_100_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "veriloga#037",
+  "kind": "table-row",
+  "section": "1.1 读操作（read）",
+  "line": 54,
+  "text": "| `views` | 该 cell 的视图清单（用 `ddMapGetFileViewType`/`ddMapGetFileDataType` 判定） |",
+  "doc": "上层/11-veriloga.md",
+  "tokens": [
+   "ddMapGetFileDataType",
+   "ddMapGetFileViewType",
+   "views"
+  ],
+  "hits": {
+   "views": [
+    "test/offline/unit/test_symbol_generate.py",
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/offline/unit/test_verilog_contracts.py",
+    "test/semi/probes/maestro_env_probe.py",
+    "test/semi/probes/symbol_generate_hierarchy_handle_probe.py",
+    "test/live/flows/project_flow_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/packages/cellview_e2e_tests.py",
+   "test/live/packages/verilog_e2e_tests.py",
+   "test/offline/unit/test_symbol_generate.py",
+   "test/offline/unit/test_verilog_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "veriloga#038",
+  "kind": "table-row",
+  "section": "1.1 读操作（read）",
+  "line": 55,
+  "text": "| `diagnostics` | 最近一次 `check_and_save` 的 `err_log / status / error_count / errors[]` |",
+  "doc": "上层/11-veriloga.md",
+  "tokens": [
+   "check_and_save",
+   "diagnostics"
+  ],
+  "hits": {
+   "check_and_save": [
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/semi/probes/schematic_pin_ops_probe.py",
+    "test/semi/probes/symbol_pkg_probe.py",
+    "test/live/flows/adc_sar_flow_tb.py"
+   ],
+   "diagnostics": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/offline/unit/test_verilog_contracts.py",
+    "test/live/packages/veriloga_e2e_tests.py",
+    "test/shared/runners/coverage_evidence.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/multiuser_serdes_rx_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/serdes_rx_flow_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "veriloga#041",
+  "kind": "clause",
+  "section": "1.1 读操作（read）",
+  "line": 59,
+  "text": "- `read` 纯只读：不得调用 `ahdlUpdateViewInfo` 等会改缓存/视图状态的函数。",
+  "doc": "上层/11-veriloga.md",
+  "tokens": [
+   "ahdlUpdateViewInfo",
+   "read"
+  ],
+  "hits": {
+   "ahdlUpdateViewInfo": [
+    "test/offline/unit/test_veriloga_contracts.py"
+   ],
+   "read": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "veriloga#042",
+  "kind": "table-row",
+  "section": "1.2 写操作（write）",
+  "line": 63,
+  "text": "| 操作名 | 说明 | 步骤摘要 | 接口 |",
+  "doc": "上层/11-veriloga.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "veriloga#044",
+  "kind": "table-row",
+  "section": "1.2 写操作（write）",
+  "line": 65,
+  "text": "| write | 通用写：`lib/cell/view + commands[]` | 读现状 → 逐原子改文本 → 覆盖写 | S+U |",
+  "doc": "上层/11-veriloga.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "veriloga#045",
+  "kind": "clause",
+  "section": "1.2 写操作（write）",
+  "line": 67,
+  "text": "`write.commands` 每项 = `{\"op\": 原子名, ...参数}`；**非事务**，失败响应带 `commands applied: k/n`。",
+  "doc": "上层/11-veriloga.md",
+  "tokens": [
+   "write.commands"
+  ],
+  "hits": {},
+  "files": [],
+  "status": "NONE"
+ },
+ {
+  "id": "veriloga#046",
+  "kind": "table-row",
+  "section": "1.2 写操作（write）",
+  "line": 69,
+  "text": "| 对象 | 原子名 | 索引（动哪个） | 附加参数 |",
+  "doc": "上层/11-veriloga.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "veriloga#048",
+  "kind": "table-row",
+  "section": "1.2 写操作（write）",
+  "line": 71,
+  "text": "| 代码 | `set_source` | 目标 view 或 file | `text`；可选 `expected_sha256`（不符则失败） |",
+  "doc": "上层/11-veriloga.md",
+  "tokens": [
+   "expected_sha256",
+   "set_source",
+   "text"
+  ],
+  "hits": {
+   "expected_sha256": [
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/offline/unit/test_verilog_contracts.py",
+    "test/live/packages/veriloga_e2e_tests.py"
+   ],
+   "set_source": [
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/offline/unit/test_verilog_contracts.py",
+    "test/live/packages/veriloga_e2e_tests.py",
+    "test/live/packages/verilog_e2e_tests.py"
+   ],
+   "text": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "veriloga#049",
+  "kind": "table-row",
+  "section": "1.2 写操作（write）",
+  "line": 72,
+  "text": "| 代码 | `patch_source` | 目标 view 或 file | `edits[]`：`{old_text,new_text}` 或 `{start_line,end_line,new_text}`；匹配不唯一默认失败（可 `all=true`） |",
+  "doc": "上层/11-veriloga.md",
+  "tokens": [
+   "patch_source"
+  ],
+  "hits": {
+   "patch_source": [
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/offline/unit/test_verilog_contracts.py",
+    "test/live/packages/veriloga_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/veriloga_e2e_tests.py",
+   "test/offline/unit/test_verilog_contracts.py",
+   "test/offline/unit/test_veriloga_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "veriloga#050",
+  "kind": "table-row",
+  "section": "1.2 写操作（write）",
+  "line": 73,
+  "text": "| 文本视图 | `ensure_view` | `{library, cell, view=\"veriloga\"}` | `view_type=\"text.veriloga\"`、可选 `create_if_missing=true`；内部写 `master.tag` + 主文件模板 |",
+  "doc": "上层/11-veriloga.md",
+  "tokens": [
+   "ensure_view",
+   "master.tag"
+  ],
+  "hits": {
+   "ensure_view": [
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/offline/unit/test_verilog_contracts.py",
+    "test/live/flows/serdes_rx_flow_tb.py",
+    "test/live/packages/veriloga_e2e_tests.py",
+    "test/live/packages/verilog_e2e_tests.py"
+   ],
+   "master.tag": [
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/offline/unit/test_verilog_contracts.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/packages/verilog_e2e_tests.py",
+   "test/live/packages/veriloga_e2e_tests.py",
+   "test/offline/unit/test_verilog_contracts.py",
+   "test/offline/unit/test_veriloga_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "veriloga#051",
+  "kind": "table-row",
+  "section": "1.2 写操作（write）",
+  "line": 74,
+  "text": "| 文本视图 | `delete_view` | `{library, cell, view=\"veriloga\"}` | —（`ddDeleteObj`，先确认无编辑器窗口/`*.cdslck`） |",
+  "doc": "上层/11-veriloga.md",
+  "tokens": [
+   "ddDeleteObj",
+   "delete_view"
+  ],
+  "hits": {
+   "ddDeleteObj": [
+    "test/offline/unit/test_cellview_contracts.py",
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/offline/unit/test_verilog_contracts.py",
+    "test/semi/probes/layout_p044_second_write_probe.py",
+    "test/semi/probes/twouser_same_view_probe.py",
+    "test/live/flows/multiuser_layout_handoff_tb.py"
+   ],
+   "delete_view": [
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/offline/unit/test_verilog_contracts.py",
+    "test/live/packages/layout_e2e_tests.py",
+    "test/live/packages/veriloga_e2e_tests.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/multiuser_layout_handoff_tb.py",
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/live/packages/verilog_e2e_tests.py",
+   "test/live/packages/veriloga_e2e_tests.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "veriloga#053",
+  "kind": "clause",
+  "section": "1.2 写操作（write）",
+  "line": 78,
+  "text": "1. 写临时文件 → 校验读回 → 原子替换 `veriloga.va`；",
+  "doc": "上层/11-veriloga.md",
+  "tokens": [
+   "veriloga.va"
+  ],
+  "hits": {
+   "veriloga.va": [
+    "test/offline/unit/test_veriloga_contracts.py"
+   ]
+  },
+  "files": [
+   "test/offline/unit/test_veriloga_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "veriloga#055",
+  "kind": "clause",
+  "section": "1.2 写操作（write）",
+  "line": 80,
+  "text": "（`master.tag` = `-- Master.tag File, Rev:1.0\\nveriloga.va\\n`；模块名必须与 cell 名一致）；",
+  "doc": "上层/11-veriloga.md",
+  "tokens": [
+   "master.tag"
+  ],
+  "hits": {
+   "master.tag": [
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/offline/unit/test_verilog_contracts.py"
+   ]
+  },
+  "files": [
+   "test/offline/unit/test_verilog_contracts.py",
+   "test/offline/unit/test_veriloga_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "veriloga#057",
+  "kind": "clause",
+  "section": "1.2 写操作（write）",
+  "line": 82,
+  "text": "4. 有 `*.cdslck`（编辑器开着）时禁止外部写：报失败并提示关闭编辑器，不自动关别人的窗口。",
+  "doc": "上层/11-veriloga.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "veriloga#058",
+  "kind": "table-row",
+  "section": "1.3 检查与保存（check_and_save）",
+  "line": 86,
+  "text": "| 操作名 | 说明 | 步骤摘要 | 接口 |",
+  "doc": "上层/11-veriloga.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "veriloga#060",
+  "kind": "table-row",
+  "section": "1.3 检查与保存（check_and_save）",
+  "line": 88,
+  "text": "| check_and_save | GUI \"Check and Save\" 的 headless 等价序列 | `VerAParseModule` 检查 → `ahdlUpdateViewInfo` 保存/刷新 CDF | S+C |",
+  "doc": "上层/11-veriloga.md",
+  "tokens": [
+   "VerAParseModule",
+   "ahdlUpdateViewInfo"
+  ],
+  "hits": {
+   "VerAParseModule": [
+    "test/offline/unit/test_veriloga_contracts.py"
+   ],
+   "ahdlUpdateViewInfo": [
+    "test/offline/unit/test_veriloga_contracts.py"
+   ]
+  },
+  "files": [
+   "test/offline/unit/test_veriloga_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "veriloga#067",
+  "kind": "clause",
+  "section": "1.3 检查与保存（check_and_save）",
+  "line": 96,
+  "text": "4. 前置：AHDL 上下文必须已加载（`loadContext(\"<IC618>/.../ahdlSck.cxt\")`，见 §4）；",
+  "doc": "上层/11-veriloga.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "veriloga#068",
+  "kind": "clause",
+  "section": "1.3 检查与保存（check_and_save）",
+  "line": 97,
+  "text": "5. **不用** `ahdlCheckModule` / `ahdlSaveFile` / `ahdlEdit`（编辑器 GUI 内部包装，错误或缺 symbol 会弹模态阻塞 CIW）。",
+  "doc": "上层/11-veriloga.md",
+  "tokens": [
+   "ahdlCheckModule",
+   "ahdlEdit",
+   "ahdlSaveFile"
+  ],
+  "hits": {},
+  "files": [],
+  "status": "NONE"
+ },
+ {
+  "id": "veriloga#069",
+  "kind": "clause",
+  "section": "1.3 检查与保存（check_and_save）",
+  "line": 99,
+  "text": "真机结论：上述序列与 GUI Check and Save 的落盘形态**逐文件一致**，唯一差别是不含 GUI 弹窗生成的 `symbol` 视图；",
+  "doc": "上层/11-veriloga.md",
+  "tokens": [
+   "symbol"
+  ],
+  "hits": {
+   "symbol": [
+    "test/offline/unit/test_maestro_util.py",
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_skill_text_utils.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/offline/unit/test_symbol_generate.py",
+    "test/offline/unit/test_veriloga_contracts.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/multiuser_serdes_rx_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/s11_inprocess_lvs_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "veriloga#072",
+  "kind": "table-row",
+  "section": "2. 归属（不在本包）",
+  "line": 106,
+  "text": "| 能力 | 归属 |",
+  "doc": "上层/11-veriloga.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "veriloga#074",
+  "kind": "table-row",
+  "section": "2. 归属（不在本包）",
+  "line": 108,
+  "text": "| view CRUD（OA 视图） | cellview |",
+  "doc": "上层/11-veriloga.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "veriloga#075",
+  "kind": "table-row",
+  "section": "2. 归属（不在本包）",
+  "line": 109,
+  "text": "| 文本视图（`text.veriloga`）的建立与覆盖 | **本包例外**（cellview 建不了） |",
+  "doc": "上层/11-veriloga.md",
+  "tokens": [
+   "text.veriloga"
+  ],
+  "hits": {
+   "text.veriloga": [
+    "test/offline/unit/test_veriloga_contracts.py"
+   ]
+  },
+  "files": [
+   "test/offline/unit/test_veriloga_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "veriloga#076",
+  "kind": "table-row",
+  "section": "2. 归属（不在本包）",
+  "line": 110,
+  "text": "| symbol 生成 | symbol（`ahdlToPinList` 的 ports + `schPinListToSymbol`，待 spike；`ahdlSymbolGen` 禁用） |",
+  "doc": "上层/11-veriloga.md",
+  "tokens": [
+   "ahdlSymbolGen",
+   "ahdlToPinList",
+   "schPinListToSymbol"
+  ],
+  "hits": {
+   "ahdlToPinList": [
+    "test/offline/unit/test_veriloga_contracts.py"
+   ]
+  },
+  "files": [
+   "test/offline/unit/test_veriloga_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "veriloga#077",
+  "kind": "table-row",
+  "section": "2. 归属（不在本包）",
+  "line": 111,
+  "text": "| 编译 / 仿真 / `ahdlSimDB` 缓存 | spectre 包 |",
+  "doc": "上层/11-veriloga.md",
+  "tokens": [
+   "ahdlSimDB"
+  ],
+  "hits": {
+   "ahdlSimDB": [
+    "test/shared/runners/scenario.py"
+   ]
+  },
+  "files": [
+   "test/shared/runners/scenario.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "veriloga#078",
+  "kind": "table-row",
+  "section": "2. 归属（不在本包）",
+  "line": 112,
+  "text": "| 结构 Verilog | verilog 包 |",
+  "doc": "上层/11-veriloga.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "veriloga#079",
+  "kind": "table-row",
+  "section": "2. 归属（不在本包）",
+  "line": 113,
+  "text": "| GDS 导入/导出 | layout（`layout.gds`） |",
+  "doc": "上层/11-veriloga.md",
+  "tokens": [
+   "layout.gds"
+  ],
+  "hits": {
+   "layout.gds": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_layout_publish_contracts.py",
+    "test/semi/probes/gds_publish_path_edges_probe.py",
+    "test/semi/probes/gds_then_skill_probe.py",
+    "test/live/flows/adc_sar_flow_tb.py",
+    "test/live/flows/design_iterate_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "veriloga#083",
+  "kind": "clause",
+  "section": "3. 不在本版",
+  "line": 120,
+  "text": "- 并发写同一 cell。",
+  "doc": "上层/11-veriloga.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "veriloga#085",
+  "kind": "clause",
+  "section": "4. 真机事实（IC6.1.8，2026-09-21 实测）",
+  "line": 125,
+  "text": "`dbOpenCellViewByType(..., \"veriloga\"/\"text.veriloga\", \"w\")` **恒 nil** → 必须走文件路径；",
+  "doc": "上层/11-veriloga.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "veriloga#087",
+  "kind": "clause",
+  "section": "4. 真机事实（IC6.1.8，2026-09-21 实测）",
+  "line": 127,
+  "text": "3. 读源码用 `infile`/`gets` 或直接读文件；**`lineread` 不能读 `.va`**；",
+  "doc": "上层/11-veriloga.md",
+  "tokens": [
+   "gets",
+   "infile",
+   "lineread"
+  ],
+  "hits": {
+   "gets": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py",
+    "test/offline/integration/test_daemon_handler.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/registration/registration_http_six_step_tb.py",
+   "test/live/registration/registration_py27_tb.py",
+   "test/live/stress/production_face_stress_tb.py",
+   "test/offline/core/api_server_tb.py",
+   "test/offline/core/daemon_log_protocol_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "veriloga#088",
+  "kind": "clause",
+  "section": "4. 真机事实（IC6.1.8，2026-09-21 实测）",
+  "line": 128,
+  "text": "4. `ahdlCompile*` 不存在；编译只能由 Spectre（`ahdlcmi`）完成，缓存 `<netlist>.ahdlSimDB/<srcHash>.*.ahdlcmi/`；",
+  "doc": "上层/11-veriloga.md",
+  "tokens": [
+   "ahdlcmi"
+  ],
+  "hits": {},
+  "files": [],
+  "status": "NONE"
+ },
+ {
+  "id": "veriloga#089",
+  "kind": "clause",
+  "section": "4. 真机事实（IC6.1.8，2026-09-21 实测）",
+  "line": 129,
+  "text": "5. AHDL 上下文（`ahdlSck.cxt`）默认未加载；**冷启动 `loadContext(\"<IC618>/tools.lnx86/dfII/etc/context/ahdlSck.cxt\")`",
+  "doc": "上层/11-veriloga.md",
+  "tokens": [
+   "ahdlSck.cxt"
+  ],
+  "hits": {},
+  "files": [],
+  "status": "NONE"
+ },
+ {
+  "id": "veriloga#092",
+  "kind": "clause",
+  "section": "4. 真机事实（IC6.1.8，2026-09-21 实测）",
+  "line": 132,
+  "text": "7. 编辑器打开时产生 `veriloga.va.cdslck` 锁 → 外部写文件失效，必须先关编辑器；",
+  "doc": "上层/11-veriloga.md",
+  "tokens": [
+   "veriloga.va.cdslck"
+  ],
+  "hits": {},
+  "files": [],
+  "status": "NONE"
+ },
+ {
+  "id": "veriloga#094",
+  "kind": "clause",
+  "section": "4. 真机事实（IC6.1.8，2026-09-21 实测）",
+  "line": 134,
+  "text": "9. **headless 的 Check and Save 已真机闭环**：写文件 → `VerAParseModule`（错误进 errFile）→",
+  "doc": "上层/11-veriloga.md",
+  "tokens": [
+   "VerAParseModule"
+  ],
+  "hits": {
+   "VerAParseModule": [
+    "test/offline/unit/test_veriloga_contracts.py"
+   ]
+  },
+  "files": [
+   "test/offline/unit/test_veriloga_contracts.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "veriloga#095",
+  "kind": "clause",
+  "section": "4. 真机事实（IC6.1.8，2026-09-21 实测）",
+  "line": 135,
+  "text": "`ahdlUpdateViewInfo`（CDF + `netlist.oa`/`data.dm`），与 GUI 保存逐文件一致，唯一差别是无 `symbol` 视图；",
+  "doc": "上层/11-veriloga.md",
+  "tokens": [
+   "ahdlUpdateViewInfo",
+   "data.dm",
+   "netlist.oa",
+   "symbol"
+  ],
+  "hits": {
+   "ahdlUpdateViewInfo": [
+    "test/offline/unit/test_veriloga_contracts.py"
+   ],
+   "symbol": [
+    "test/offline/unit/test_maestro_util.py",
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_skill_text_utils.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/offline/unit/test_symbol_generate.py",
+    "test/offline/unit/test_veriloga_contracts.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/multiuser_serdes_rx_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/s11_inprocess_lvs_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "veriloga#096",
+  "kind": "clause",
+  "section": "4. 真机事实（IC6.1.8，2026-09-21 实测）",
+  "line": 136,
+  "text": "10. **不要用** `ahdlCheckModule`（错误弹 `QverilogaErr` 阻塞）、`ahdlSaveFile`（缺 symbol 弹模态）、",
+  "doc": "上层/11-veriloga.md",
+  "tokens": [
+   "QverilogaErr",
+   "ahdlCheckModule",
+   "ahdlSaveFile"
+  ],
+  "hits": {},
+  "files": [],
+  "status": "NONE"
+ },
+ {
+  "id": "veriloga#098",
+  "kind": "table-row",
+  "section": "5. 决策记录（2026-09-21，已确认）",
+  "line": 141,
+  "text": "| # | 决策 |",
+  "doc": "上层/11-veriloga.md",
+  "tokens": [],
+  "hits": {},
+  "status": "NO-TOKEN"
+ },
+ {
+  "id": "veriloga#100",
+  "kind": "table-row",
+  "section": "5. 决策记录（2026-09-21，已确认）",
+  "line": 143,
+  "text": "| 1 | 包名 `veriloga` / `11-veriloga.md`，operation 前缀 `virtuoso.veriloga.*` |",
+  "doc": "上层/11-veriloga.md",
+  "tokens": [
+   "veriloga"
+  ],
+  "hits": {
+   "veriloga": [
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/live/packages/veriloga_e2e_tests.py",
+    "test/shared/runners/extract_spec_clauses.py",
+    "test/shared/runners/ops_used.py",
+    "test/shared/runners/run_all_http.py"
+   ]
+  },
+  "files": [
+   "test/live/packages/veriloga_e2e_tests.py",
+   "test/offline/unit/test_veriloga_contracts.py",
+   "test/shared/runners/extract_spec_clauses.py",
+   "test/shared/runners/ops_used.py",
+   "test/shared/runners/run_all_http.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "veriloga#101",
+  "kind": "table-row",
+  "section": "5. 决策记录（2026-09-21，已确认）",
+  "line": 144,
+  "text": "| 2 | 装码 = `write` + `check_and_save`，不提供 import |",
+  "doc": "上层/11-veriloga.md",
+  "tokens": [
+   "check_and_save",
+   "write"
+  ],
+  "hits": {
+   "check_and_save": [
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/semi/probes/schematic_pin_ops_probe.py",
+    "test/semi/probes/symbol_pkg_probe.py",
+    "test/live/flows/adc_sar_flow_tb.py"
+   ],
+   "write": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "veriloga#102",
+  "kind": "table-row",
+  "section": "5. 决策记录（2026-09-21，已确认）",
+  "line": 145,
+  "text": "| 3 | `check_and_save` = `VerAParseModule` + `ahdlUpdateViewInfo`；AHDL 上下文冷加载用 `loadContext` 全路径 |",
+  "doc": "上层/11-veriloga.md",
+  "tokens": [
+   "VerAParseModule",
+   "ahdlUpdateViewInfo",
+   "check_and_save",
+   "loadContext"
+  ],
+  "hits": {
+   "VerAParseModule": [
+    "test/offline/unit/test_veriloga_contracts.py"
+   ],
+   "ahdlUpdateViewInfo": [
+    "test/offline/unit/test_veriloga_contracts.py"
+   ],
+   "check_and_save": [
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/semi/probes/schematic_pin_ops_probe.py",
+    "test/semi/probes/symbol_pkg_probe.py",
+    "test/live/flows/adc_sar_flow_tb.py"
+   ],
+   "loadContext": [
+    "test/offline/unit/test_veriloga_contracts.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/multiuser_serdes_rx_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/serdes_rx_flow_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "veriloga#103",
+  "kind": "table-row",
+  "section": "5. 决策记录（2026-09-21，已确认）",
+  "line": 146,
+  "text": "| 4 | `write` 允许创建文本视图（`ensure_view`）——view CRUD 归属的显式例外 |",
+  "doc": "上层/11-veriloga.md",
+  "tokens": [
+   "ensure_view",
+   "write"
+  ],
+  "hits": {
+   "ensure_view": [
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/offline/unit/test_verilog_contracts.py",
+    "test/live/flows/serdes_rx_flow_tb.py",
+    "test/live/packages/veriloga_e2e_tests.py",
+    "test/live/packages/verilog_e2e_tests.py"
+   ],
+   "write": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/layout_suite_p044_workaround_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "veriloga#104",
+  "kind": "table-row",
+  "section": "5. 决策记录（2026-09-21，已确认）",
+  "line": 147,
+  "text": "| 5 | 端口方向以 `.va` 的 module 声明为准（默认 `inputOutput`），调用方不重复传方向 |",
+  "doc": "上层/11-veriloga.md",
+  "tokens": [
+   "inputOutput"
+  ],
+  "hits": {
+   "inputOutput": [
+    "test/offline/unit/test_maestro_util.py",
+    "test/live/flows/adc_sar_flow_tb.py",
+    "test/live/flows/design_iterate_tb.py",
+    "test/live/flows/multiuser_serdes_rx_tb.py",
+    "test/live/flows/project_flow_tb.py",
+    "test/live/flows/s11_full_flow.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/multiuser_serdes_rx_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/serdes_rx_flow_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "veriloga#105",
+  "kind": "table-row",
+  "section": "5. 决策记录（2026-09-21，已确认）",
+  "line": 148,
+  "text": "| 6 | 不独立暴露 `reparse`/`ahdlUpdateViewInfo`，合并进 `check_and_save` |",
+  "doc": "上层/11-veriloga.md",
+  "tokens": [
+   "ahdlUpdateViewInfo",
+   "check_and_save",
+   "reparse"
+  ],
+  "hits": {
+   "ahdlUpdateViewInfo": [
+    "test/offline/unit/test_veriloga_contracts.py"
+   ],
+   "check_and_save": [
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/semi/probes/schematic_pin_ops_probe.py",
+    "test/semi/probes/symbol_pkg_probe.py",
+    "test/live/flows/adc_sar_flow_tb.py"
+   ]
+  },
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/multiuser_serdes_rx_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/serdes_rx_flow_tb.py"
+  ],
+  "status": "WEAK"
+ },
+ {
+  "id": "veriloga#106",
+  "kind": "table-row",
+  "section": "5. 决策记录（2026-09-21，已确认）",
+  "line": 149,
+  "text": "| 7 | symbol 生成不在本包；需要时走 symbol 包（待 spike），`ahdlSymbolGen` 禁用 |",
+  "doc": "上层/11-veriloga.md",
+  "tokens": [
+   "ahdlSymbolGen"
+  ],
+  "hits": {},
+  "files": [],
+  "status": "NONE"
+ },
+ {
+  "id": "veriloga#107",
+  "kind": "clause",
+  "section": "6. 待验证（实现前需 spike）",
+  "line": 153,
+  "text": "1. `schPinListToSymbol` 用 `ahdlToPinList` 的 ports 生成 symbol 的可行性（端口顺序/方向）。",
+  "doc": "上层/11-veriloga.md",
+  "tokens": [
+   "ahdlToPinList",
+   "schPinListToSymbol"
+  ],
+  "hits": {
+   "ahdlToPinList": [
+    "test/offline/unit/test_veriloga_contracts.py"
+   ]
+  },
+  "files": [
+   "test/offline/unit/test_veriloga_contracts.py"
+  ],
+  "status": "WEAK"
+ }
+]

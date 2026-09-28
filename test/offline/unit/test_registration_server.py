@@ -19,7 +19,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src"))
 import register.server as register_server
 from register.server import RegistrationServer
 from common.registry import UserEntry, load_registry
-from common.paths import registry_path, override_work_dir_for_tests
+from common.paths import init_work_dir, registry_path, work_root
 from _ssh_cred import make_credential
 
 
@@ -127,7 +127,7 @@ class TestProcessEndpoints(unittest.TestCase):
     """顶层补充 v27 §3：/api/process/*（管理员，target=business）。"""
 
     def setUp(self):
-        self.wd = override_work_dir_for_tests(Path(tempfile.mkdtemp(prefix="vb-")))
+        self.wd = work_root()
         self.registry = load_registry(registry_path())
         self.manager = _StubManager()
         self.srv = _ServerThread(self.registry, self.manager)
@@ -246,7 +246,15 @@ class TestProcessEndpoints(unittest.TestCase):
 
 class TestRegistrationServer(unittest.TestCase):
     def setUp(self):
-        self.wd = override_work_dir_for_tests(Path(tempfile.mkdtemp(prefix="vb-")))
+        self.wd = work_root()
+        # 共享 work root：本类只关心自己写的 bug 报告 —— 先清空该目录，
+        # 等价于"从一个干净的 bug_reports/ 开始"（不换根）。
+        reports = Path(self.wd) / "log" / "bug_reports"
+        for stale in reports.glob("*") if reports.is_dir() else ():
+            try:
+                stale.unlink()
+            except OSError:
+                pass
         self.registry = load_registry(registry_path())
         self.srv = _ServerThread(self.registry)
 
@@ -650,19 +658,39 @@ class TestRegistrationServer(unittest.TestCase):
                 self.assertIn(b"request body too large", data)
 
     def test_json_parser_limits_return_400(self):
-        """超长整数字面量/超深嵌套必须回 JSON 400，不得静默断连。"""
+        """超长整数字面量/超深嵌套必须 **400 结构化**返回，不得静默断连。
+
+        跨解释器口径（第五轮 Linux 矩阵实测，`round5-linux-client/`）：
+        * long-int：3.9 / 3.14 都拒 → `invalid JSON body`（跨版本稳定，钉死）；
+        * deep（5000 层）：py<3.14 的 C 扫描器按层递归 → RecursionError →
+          `invalid JSON body`；**3.14 的扫描器不再按层递归**，同一载荷被正常解析，
+          随后由业务逻辑拒绝（400 + 业务错误体）。两者都满足"结构化 400、无断连"，
+          所以这里钉的是这条**安全性不变量**；"必须报 invalid JSON body"
+          只对跨版本稳定的 long-int 断言（避免把某个解释器的实现细节当产品契约）。
+        """
         long_int = b'{"user":"nobody","action":"cancel","token":"x","n":' + b"9" * 5000 + b"}"
-        deep = (
-            b'{"user":"nobody","action":"cancel","token":"x","n":'
-            + b"[" * 5000 + b"]" * 5000 + b"}"
-        )
-        for label, body in (("long-int", long_int), ("deep", deep)):
-            with self.subTest(label=label):
-                status, raw = self.srv.request_raw(
-                    "POST", "/api/register", body
-                )
-                self.assertEqual(status, 400, raw)
-                self.assertIn("invalid JSON body", raw)
+        status, raw = self.srv.request_raw("POST", "/api/register", long_int)
+        self.assertEqual(status, 400, raw)
+        self.assertIn("invalid JSON body", raw)
+
+        def _deep(depth: int) -> bytes:
+            return (
+                b'{"user":"nobody","action":"cancel","token":"x","n":'
+                + b"[" * depth + b"]" * depth + b"}"
+            )
+
+        # 5000 层：解释器相关（3.9 拒 → 400 invalid JSON；3.14 解析后由业务层拒绝）。
+        # 这里只钉**安全性不变量**：一定有 JSON 响应壳、绝不静默断连。
+        status, raw = self.srv.request_raw("POST", "/api/register", _deep(5000))
+        self.assertIn(status, (200, 400), raw)
+        payload = json.loads(raw)  # 断连/裸文本会在这里红
+        self.assertIn("error", payload)
+
+        # 200000 层：两个解释器都超出扫描器能力 → 必须走同一条 400 invalid JSON 路径
+        # （实测边界：3.9 ≈ 1000 层；3.14 ≈ 10^5 层。见 round5-linux-client/json-depth.txt）
+        status, raw = self.srv.request_raw("POST", "/api/register", _deep(200000))
+        self.assertEqual(status, 400, raw)
+        self.assertIn("invalid JSON body", raw)
 
     def test_long_int_rejected_without_interpreter_limit(self):
         if not hasattr(sys, "set_int_max_str_digits"):
@@ -1258,7 +1286,7 @@ class TestManagementReload(unittest.TestCase):
     """r16: successful user update/remove reloads the business snapshot."""
 
     def setUp(self):
-        self.wd = override_work_dir_for_tests(Path(tempfile.mkdtemp(prefix="vb-")))
+        self.wd = work_root()
         self.registry = load_registry(registry_path())
         entry = UserEntry(token="tok-manage-reload", mode="local")
         for name in ("gui", "daemon", "command", "file", "spectre"):

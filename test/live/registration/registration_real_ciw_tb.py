@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=====================
-# 作者: 设计/Codex
-# 最后改动: 2026-09-28 16:35
+# 作者: 测试/root
+# 最后改动: 2026-09-28 20:40
 # 依赖: 无
 # =====================================================================
 # 六步流程（按 test/docs/写TB规范.md §1–§6）：
@@ -41,6 +41,22 @@ import uuid
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
+
+
+def _load_admin_token() -> str:
+    """加强凭据（admin）：同一 SSH 公钥重复登记时必须带（spec r21/r22）。
+
+    `VB_ADMIN_TOKEN` → gitignored `test/artifacts/admin-token.txt`；都缺返回空串
+    （首次运行不受影响，重复运行会被查重挡下并如实记 FAIL）。
+    """
+    token = os.environ.get("VB_ADMIN_TOKEN", "").strip()
+    if token:
+        return token
+    path = ROOT / "test" / "artifacts" / "admin-token.txt"
+    return path.read_text(encoding="utf-8").strip() if path.exists() else ""
+
+
+ADMIN_TOKEN = _load_admin_token()
 SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
@@ -251,6 +267,9 @@ def main(argv: list[str] | None = None) -> int:
                       "gui": ({"display": args.display} if args.display else {})},
             "log_level": "off",
         }
+        if ADMIN_TOKEN:
+            # 同一把客户端公钥已登记过其他用户时必须带加强凭据（spec r21/r22）
+            request_payload["enhanced_token"] = ADMIN_TOKEN
         status, body = http.call("POST", "/api/register", request_payload)
         session = body.get("token")
         results.add("step1-apply", status == 200 and body.get("stage") == "applied",

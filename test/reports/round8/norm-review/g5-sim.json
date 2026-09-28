@@ -1,0 +1,1240 @@
+[
+ {
+  "id": "maestro#004",
+  "doc": "上层/6-maestro.md",
+  "line": 6,
+  "section": "上层业务包：maestro",
+  "text": "> Supersedes：Draft v3（补全历史类读写与全部操作/原子的实现底层；去掉 history 复制）",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "na",
+  "evidence": [],
+  "reason": "Supersedes 注记（文档版本说明）",
+  "gap_test": ""
+ },
+ {
+  "id": "maestro#030",
+  "doc": "上层/6-maestro.md",
+  "line": 49,
+  "section": "3.2 write（配置原子）",
+  "text": "每个原子 = `op` + **索引**（动哪个）+ 附加参数。整批在一个后台会话内顺序执行，末尾统一保存。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_maestro_command_exprs.py",
+   "test/offline/unit/test_maestro_package_flow.py",
+   "test/semi/probes/maestro_pkg_probe.py"
+  ],
+  "reason": "write 原子=op+索引、整批后台会话顺序执行、末尾统一保存：契约 + 真机包探针",
+  "gap_test": ""
+ },
+ {
+  "id": "maestro#113",
+  "doc": "上层/6-maestro.md",
+  "line": 182,
+  "section": "10. 待定与待验证",
+  "text": "1. 会话级原子的索引（`set_run_mode` / `set_job_control_mode` 现按\"当前会话\"处理）；",
+  "tokens": [
+   "set_job_control_mode",
+   "set_run_mode"
+  ],
+  "hits": {
+   "set_job_control_mode": [
+    "test/offline/unit/test_maestro_command_exprs.py",
+    "test/live/packages/maestro_e2e_tests.py"
+   ],
+   "set_run_mode": [
+    "test/offline/unit/test_maestro_command_exprs.py",
+    "test/live/packages/maestro_e2e_tests.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "na",
+  "evidence": [],
+  "reason": "待定项①：会话级原子索引口径。spec 自述待定/待验证（非冻结要求）；已在 round8 报告‘明缺口’登记为待设计定稿",
+  "gap_test": ""
+ },
+ {
+  "id": "maestro#115",
+  "doc": "上层/6-maestro.md",
+  "line": 184,
+  "section": "10. 待定与待验证",
+  "text": "3. analyses / outputs 的枚举函数；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "na",
+  "evidence": [],
+  "reason": "待定项③：analyses/outputs 枚举函数。spec 自述待定/待验证（非冻结要求）；已在 round8 报告‘明缺口’登记为待设计定稿",
+  "gap_test": ""
+ },
+ {
+  "id": "maestro#118",
+  "doc": "上层/6-maestro.md",
+  "line": 187,
+  "section": "10. 待定与待验证",
+  "text": "6. 各原子的参数与默认值逐项定稿。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "na",
+  "evidence": [],
+  "reason": "待定项⑥：各原子参数与默认值逐项定稿。spec 自述待定/待验证（非冻结要求）；已在 round8 报告‘明缺口’登记为待设计定稿",
+  "gap_test": ""
+ },
+ {
+  "id": "maestro#119",
+  "doc": "上层/6-maestro.md",
+  "line": 189,
+  "section": "10. 待定与待验证",
+  "text": "待真机验证（写 spec 定稿前必须闭环）：",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "na",
+  "evidence": [],
+  "reason": "‘待真机验证’小节标题（其条目按相邻编号分别裁定）",
+  "gap_test": ""
+ },
+ {
+  "id": "spectre#033",
+  "doc": "上层/7-spectre.md",
+  "line": 54,
+  "section": "3.1 Request / Result",
+  "text": "- 每个 Request 必须有 `token: str`，可选 `timeout`；结构校验失败抛 `ValueError`/`TypeError`。",
+  "tokens": [
+   "TypeError",
+   "ValueError",
+   "timeout"
+  ],
+  "hits": {
+   "TypeError": [
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/unit/test_common_config.py",
+    "test/offline/unit/test_config_snapshot_edges.py",
+    "test/offline/unit/test_maestro_util_edges.py",
+    "test/offline/unit/test_pyapi_interface_contract.py",
+    "test/offline/unit/test_registration_server_edges.py"
+   ],
+   "ValueError": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/frontend/registration_mock_server.py",
+    "test/offline/integration/test_business_child_supervision.py",
+    "test/offline/integration/test_supervisor_process.py",
+    "test/offline/unit/test_api_server_main.py",
+    "test/offline/unit/test_calibre_argv_contracts.py"
+   ],
+   "timeout": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_spectre_contracts.py",
+   "test/offline/unit/test_pyapi_interface_contract.py"
+  ],
+  "reason": "Request 必带 token/可选 timeout；结构错误抛 ValueError/TypeError，有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "spectre#036",
+  "doc": "上层/7-spectre.md",
+  "line": 57,
+  "section": "3.1 Request / Result",
+  "text": "- 业务失败写 `ok=false` + `error`；只有结构错误或未预期异常才抛出。",
+  "tokens": [
+   "error"
+  ],
+  "hits": {
+   "error": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_spectre_contracts.py"
+  ],
+  "reason": "业务失败 ok=false+error、结构错误才抛，均有断言（含 status 语义用例）",
+  "gap_test": ""
+ },
+ {
+  "id": "spectre#040",
+  "doc": "上层/7-spectre.md",
+  "line": 64,
+  "section": "3.2 路径与 job",
+  "text": "- `run` 的 `job` 必须是安全名：`[A-Za-z0-9][A-Za-z0-9._-]*`，不得含 `/`、`\\`、`..`。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_spectre_contracts.py::test_require_bool_and_job",
+   "test/offline/unit/test_spectre_contracts.py (bad/name 用例)"
+  ],
+  "reason": "job 安全名（拒绝 / \\ ..）有校验用例",
+  "gap_test": ""
+ },
+ {
+  "id": "spectre#041",
+  "doc": "上层/7-spectre.md",
+  "line": 65,
+  "section": "3.2 路径与 job",
+  "text": "- 包不生成 API 事后不可重建的随机路径；同一 `job` 必须能确定地定位同一组运行目录。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_spectre_contracts.py",
+   "test/artifacts/tmp/repro_p076_rounds.py"
+  ],
+  "reason": "job → 确定性 run 目录（无随机路径）：契约断言 + 复现脚本按 job 定位运行目录",
+  "gap_test": ""
+ },
+ {
+  "id": "spectre#077",
+  "doc": "上层/7-spectre.md",
+  "line": 125,
+  "section": "5.1 Request",
+  "text": "- `tasks` 非空；job 唯一且为安全名；`max_workers ≥ 1`。",
+  "tokens": [
+   "tasks"
+  ],
+  "hits": {
+   "tasks": [
+    "test/offline/unit/test_spectre_contracts.py",
+    "test/semi/probes/p076_fix_verify_probe.py",
+    "test/semi/probes/p076_spectre_run_hang_probe.py",
+    "test/semi/probes/spectre_ac_pipeline_probe.py",
+    "test/semi/probes/spectre_channel_map_probe.py",
+    "test/live/flows/design_iterate_tb.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_spectre_contracts.py"
+  ],
+  "reason": "tasks 非空/job 唯一且安全/max_workers≥1 均有校验断言（含重复 job 拒绝）",
+  "gap_test": ""
+ },
+ {
+  "id": "spectre#078",
+  "doc": "上层/7-spectre.md",
+  "line": 126,
+  "section": "5.1 Request",
+  "text": "- `parse=\"auto\"` 时 `download` 必须为 true；`parse=\"none\"` 时必须 `keep_run_dir=true`，否则后续无法再用 `read_results` 定位 role 侧结果。",
+  "tokens": [
+   "download",
+   "read_results"
+  ],
+  "hits": {
+   "download": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/scenario/test_business_local.py",
+    "test/offline/unit/test_calibre_package.py",
+    "test/offline/unit/test_gui_package.py"
+   ],
+   "read_results": [
+    "test/offline/unit/test_calibre_package.py",
+    "test/offline/unit/test_calibre_parsers.py",
+    "test/offline/unit/test_calibre_verdict_consistency.py",
+    "test/offline/unit/test_maestro_package_flow.py",
+    "test/offline/unit/test_spectre_contracts.py",
+    "test/semi/probes/calibre_package_http_probe.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_spectre_contracts.py (auto/download 与 none/keep_run_dir 用例)"
+  ],
+  "reason": "parse=auto 必须 download=true；parse=none 必须 keep_run_dir=true，有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "spectre#083",
+  "doc": "上层/7-spectre.md",
+  "line": 135,
+  "section": "5.2 执行链路（每个 task）",
+  "text": "3. 上传 netlist 为 `<run_dir>/<netlist basename>`；上传 include 文件到同一目录。netlist 与 include 的 basename 必须唯一、不得冲突。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_spectre_contracts.py",
+   "test/semi/probes/spectre_ac_pipeline_probe.py"
+  ],
+  "reason": "netlist 上传到 run_dir/basename、include 同目录、basename 冲突拒绝：契约 + 真机 AC 链路探针",
+  "gap_test": ""
+ },
+ {
+  "id": "spectre#092",
+  "doc": "上层/7-spectre.md",
+  "line": 146,
+  "section": "5.2 执行链路（每个 task）",
+  "text": "- 包内用受 `max_workers` 限制的并发执行所有 task；所有 task 都等待结束，任一失败不取消其余 task。",
+  "tokens": [
+   "max_workers"
+  ],
+  "hits": {
+   "max_workers": [
+    "test/offline/scenario/test_business_local.py",
+    "test/offline/unit/test_spectre_contracts.py",
+    "test/semi/probes/p076_fix_verify_probe.py",
+    "test/semi/probes/p076_spectre_run_hang_probe.py",
+    "test/semi/probes/spectre_ac_pipeline_probe.py",
+    "test/semi/probes/spectre_channel_map_probe.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_spectre_contracts.py",
+   "test/offline/core/thread_lifecycle_tb.py"
+  ],
+  "reason": "max_workers 并发、全部等待、单 task 失败不取消其余（含线程残留判据）有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "spectre#093",
+  "doc": "上层/7-spectre.md",
+  "line": 147,
+  "section": "5.2 执行链路（每个 task）",
+  "text": "- 结果按 `tasks` 顺序返回。",
+  "tokens": [
+   "tasks"
+  ],
+  "hits": {
+   "tasks": [
+    "test/offline/unit/test_spectre_contracts.py",
+    "test/semi/probes/p076_fix_verify_probe.py",
+    "test/semi/probes/p076_spectre_run_hang_probe.py",
+    "test/semi/probes/spectre_ac_pipeline_probe.py",
+    "test/semi/probes/spectre_channel_map_probe.py",
+    "test/live/flows/design_iterate_tb.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_spectre_contracts.py"
+  ],
+  "reason": "结果按 tasks 顺序返回，有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "spectre#094",
+  "doc": "上层/7-spectre.md",
+  "line": 148,
+  "section": "5.2 执行链路（每个 task）",
+  "text": "- 中层的 token/channel/thread 预算仍可能拒绝某次调用；被拒绝的 task 记失败，不自动重试。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_endpoint_budgets.py",
+   "test/offline/unit/test_spectre_contracts.py"
+  ],
+  "reason": "预算拒绝 → 该 task 记失败、不自动重试（预算用例 + task 失败语义）",
+  "gap_test": ""
+ },
+ {
+  "id": "spectre#097",
+  "doc": "上层/7-spectre.md",
+  "line": 154,
+  "section": "5.3 命令构造",
+  "text": "- 默认参数（已存在则不重复）：`-64`、`+escchars`、`+log <run_dir>/spectre.out`、`-format psfascii`、`-raw <run_dir>/<stem>.raw`、`+lqtimeout 900`、`-maxw 5`、`-maxn 5`、`+logstatus`。",
+  "tokens": [
+   "spectre.out"
+  ],
+  "hits": {
+   "spectre.out": [
+    "test/offline/unit/test_spectre_contracts.py",
+    "test/semi/probes/p076_fix_verify_probe.py",
+    "test/live/packages/spectre_params_e2e_tests.py",
+    "test/shared/runners/make_bug_cards.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_spectre_contracts.py (默认参数用例 84-98)"
+  ],
+  "reason": "-64/+escchars/+log/-format psfascii/-raw/+lqtimeout/-maxw/-maxn/+logstatus 逐项断言",
+  "gap_test": ""
+ },
+ {
+  "id": "spectre#098",
+  "doc": "上层/7-spectre.md",
+  "line": 155,
+  "section": "5.3 命令构造",
+  "text": "- 参数顺序：task 的 `spectre_args` 后接 mode 映射参数。",
+  "tokens": [
+   "spectre_args"
+  ],
+  "hits": {
+   "spectre_args": [
+    "test/offline/unit/test_spectre_contracts.py",
+    "test/live/flows/s11_full_flow.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_spectre_contracts.py (用户参数覆盖用例)"
+  ],
+  "reason": "spectre_args 后接 mode 映射参数、用户值覆盖默认（+lqtimeout 60、-maxw 1）有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "spectre#144",
+  "doc": "上层/7-spectre.md",
+  "line": 207,
+  "section": "5.4 结果与状态",
+  "text": "- raw 已下载但解析失败：`status=\"partial\"`，`ok=false`，保留解析错误和已下载文件。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_spectre_contracts.py::test_fatal_output_with_raw_present_is_partial"
+  ],
+  "reason": "raw 已下载但解析失败 → status=partial、ok=false 且保留错误与文件，有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "spectre#146",
+  "doc": "上层/7-spectre.md",
+  "line": 209,
+  "section": "5.4 结果与状态",
+  "text": "- 终止失败标记至少包括：`error reading`、`read-in failed`、license error、明确 convergence failure、`spectre terminated prematurely due to fatal error`、`ERROR (`、segmentation/core dump。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_spectre_contracts.py (classify_errors 用例 129-141)"
+  ],
+  "reason": "终止失败标记清单（error reading / terminated prematurely / license/convergence…）逐条断言",
+  "gap_test": ""
+ },
+ {
+  "id": "spectre#197",
+  "doc": "上层/7-spectre.md",
+  "line": 281,
+  "section": "7. `spectre.measure`",
+  "text": "- `noise_integral` 需要数据中含频率轴（默认 `freq`）；`ac_magnitude`/`bandwidth` 只适用于 AC 复数数据。",
+  "tokens": [
+   "ac_magnitude",
+   "bandwidth",
+   "freq",
+   "noise_integral"
+  ],
+  "hits": {
+   "ac_magnitude": [
+    "test/offline/unit/test_spectre_metrics.py",
+    "test/offline/unit/test_spectre_util_contracts.py",
+    "test/offline/unit/test_spectre_util_psf_contracts.py",
+    "test/semi/probes/spectre_ac_pipeline_probe.py",
+    "test/live/flows/design_iterate_tb.py",
+    "test/live/flows/serdes_rx_flow_tb.py"
+   ],
+   "bandwidth": [
+    "test/offline/unit/test_spectre_util_contracts.py",
+    "test/live/flows/design_iterate_tb.py",
+    "test/live/flows/serdes_rx_flow_tb.py"
+   ],
+   "freq": [
+    "test/offline/unit/test_spectre_metrics.py",
+    "test/offline/unit/test_spectre_util_contracts.py",
+    "test/offline/unit/test_spectre_util_psf_contracts.py",
+    "test/semi/probes/spectre_ac_pipeline_probe.py",
+    "test/live/flows/design_iterate_tb.py",
+    "test/live/flows/serdes_rx_flow_tb.py"
+   ],
+   "noise_integral": [
+    "test/offline/unit/test_spectre_util_contracts.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_spectre_metrics.py",
+   "test/offline/unit/test_spectre_util_contracts.py"
+  ],
+  "reason": "noise_integral 需频率轴、ac_magnitude/bandwidth 仅 AC：类型/数据前置校验有断言（含 P-020 非法 dB）",
+  "gap_test": ""
+ },
+ {
+  "id": "spectre#202",
+  "doc": "上层/7-spectre.md",
+  "line": 290,
+  "section": "8. `spectre.export`",
+  "text": "- CSV：按 columns（缺省取 data 中 list 值的顺序，`time`/`freq`/`sweep_var` 优先）写出矩形表；复数按 `<signal>.re`/`<signal>.im` 展开；缺失值留空。",
+  "tokens": [
+   "freq",
+   "sweep_var",
+   "time"
+  ],
+  "hits": {
+   "freq": [
+    "test/offline/unit/test_spectre_metrics.py",
+    "test/offline/unit/test_spectre_util_contracts.py",
+    "test/offline/unit/test_spectre_util_psf_contracts.py",
+    "test/semi/probes/spectre_ac_pipeline_probe.py",
+    "test/live/flows/design_iterate_tb.py",
+    "test/live/flows/serdes_rx_flow_tb.py"
+   ],
+   "sweep_var": [
+    "test/offline/unit/test_spectre_util_psf_contracts.py"
+   ],
+   "time": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_spectre_util_psf_contracts.py",
+   "test/offline/unit/test_spectre_contracts.py"
+  ],
+  "reason": "export CSV：columns 缺省优先级、复数 re/im、缺失留空，有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "spectre#214",
+  "doc": "上层/7-spectre.md",
+  "line": 307,
+  "section": "9. 内部中间节点（不对外）",
+  "text": "- swept 数据支持 delta 压缩：后续 step 缺省信号沿用前值；首个 step 未出现信号**内部**用缺失哨兵（实现取 `None`；**不得静默填 0**），",
+  "tokens": [
+   "None"
+  ],
+  "hits": {
+   "None": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_spectre_util_psf_contracts.py"
+  ],
+  "reason": "swept delta 压缩/首步缺失哨兵（不得静默填 0）有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "spectre#215",
+  "doc": "上层/7-spectre.md",
+  "line": 308,
+  "section": "9. 内部中间节点（不对外）",
+  "text": "**对外 `value.data` 一律转成 `null`/省略**（保持 JSON-safe）。边界唯一出口是 `psf_external()`：",
+  "tokens": [
+   "null",
+   "value.data"
+  ],
+  "hits": {
+   "null": [
+    "test/offline/unit/test_commit_shape.py",
+    "test/offline/unit/test_jsonutil.py",
+    "test/offline/unit/test_output_json_safety.py",
+    "test/offline/unit/test_register_flow.py",
+    "test/offline/unit/test_skillref_package.py",
+    "test/offline/unit/test_spectre_util_psf_contracts.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_output_json_safety.py",
+   "test/offline/unit/test_spectre_util_psf_contracts.py"
+  ],
+  "reason": "对外 data 一律 null/省略、唯一出口 psf_external：P-049 修复后 3/3 绿",
+  "gap_test": ""
+ },
+ {
+  "id": "spectre#216",
+  "doc": "上层/7-spectre.md",
+  "line": 309,
+  "section": "9. 内部中间节点（不对外）",
+  "text": "缺失哨兵与任何非有限值（`NaN`/`±Inf`）都在那里收敛成 `null`，其余路径不得自行定义对外表示。",
+  "tokens": [
+   "null"
+  ],
+  "hits": {
+   "null": [
+    "test/offline/unit/test_commit_shape.py",
+    "test/offline/unit/test_jsonutil.py",
+    "test/offline/unit/test_output_json_safety.py",
+    "test/offline/unit/test_register_flow.py",
+    "test/offline/unit/test_skillref_package.py",
+    "test/offline/unit/test_spectre_util_psf_contracts.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_output_json_safety.py"
+  ],
+  "reason": "缺失哨兵与 NaN/±Inf 在 psf_external 收敛为 null，有断言（含业务面负控制）",
+  "gap_test": ""
+ },
+ {
+  "id": "spectre#217",
+  "doc": "上层/7-spectre.md",
+  "line": 310,
+  "section": "9. 内部中间节点（不对外）",
+  "text": "- AC 复数相量不得被破坏；对外 `value.data` 必须 JSON-safe：复数向量用 `{\"re\": [...], \"im\": [...]}`，单值用 `{\"re\": ..., \"im\": ...}`。",
+  "tokens": [
+   "value.data"
+  ],
+  "hits": {},
+  "premap_status": "NONE",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_spectre_util_psf_contracts.py"
+  ],
+  "reason": "AC 复数相量 re/im 形态保持、JSON-safe，有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "verilog#043",
+  "doc": "上层/8-verilog.md",
+  "line": 63,
+  "section": "1.2 写操作（write）",
+  "text": "`write.commands` 每项 = `{\"op\": 原子名, ...参数}`；**非事务**，失败响应带 `commands applied: k/n`。",
+  "tokens": [
+   "write.commands"
+  ],
+  "hits": {},
+  "premap_status": "NONE",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_verilog_contracts.py (applied 前缀用例 313-326)"
+  ],
+  "reason": "write 非事务、失败带 commands applied: k/n，有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "verilog#060",
+  "doc": "上层/8-verilog.md",
+  "line": 86,
+  "section": "1.3 导入（import）",
+  "text": "（ihdl 会往里追加 `DEFINE`，不能给共享/全局那份）；",
+  "tokens": [
+   "DEFINE"
+  ],
+  "hits": {
+   "DEFINE": [
+    "test/offline/unit/test_calibre_job_state.py",
+    "test/live/flows/design_iterate_tb.py",
+    "test/live/flows/multiuser_serdes_rx_tb.py",
+    "test/live/flows/s11_full_flow.py",
+    "test/live/flows/serdes_rx_flow_tb.py",
+    "test/live/stress/layout_multiuser_lock_tb.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "indirect",
+  "evidence": [
+   "src/pyapi/packages/verilog.py:504-519（run_dir 内 cds.lib 副本）",
+   "test/live/packages/verilog_e2e_tests.py"
+  ],
+  "reason": "实现在 run_dir 生成 cds.lib 副本（不给共享份）；真机导入成功隐含该路径，但**无断言共享 cds.lib 未被追加 DEFINE**",
+  "gap_test": "真机补：import 前后对比共享 cds.lib sha256 不变 + run_dir 副本存在"
+ },
+ {
+  "id": "verilog#062",
+  "doc": "上层/8-verilog.md",
+  "line": 88,
+  "section": "1.3 导入（import）",
+  "text": "`structural_views`（1=schematic / 2=netlist / 4=functional / 5=schematic+functional / 6=netlist+functional，**默认 4**）、",
+  "tokens": [
+   "structural_views"
+  ],
+  "hits": {
+   "structural_views": [
+    "test/offline/unit/test_verilog_contracts.py",
+    "test/live/packages/verilog_e2e_tests.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_verilog_contracts.py",
+   "test/live/packages/verilog_e2e_tests.py"
+  ],
+  "reason": "structural_views 编码（默认 4）与 functional 视图产物有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "verilog#065",
+  "doc": "上层/8-verilog.md",
+  "line": 91,
+  "section": "1.3 导入（import）",
+  "text": "3. 执行（**必须带 LD_LIBRARY_PATH 前缀**，否则缺 `libsasl2.so.2`、rc=127）：",
+  "tokens": [
+   "libsasl2.so.2"
+  ],
+  "hits": {},
+  "premap_status": "NONE",
+  "verdict": "indirect",
+  "evidence": [
+   "src/pyapi/packages/verilog.py:517（LD_LIBRARY_PATH 前缀）",
+   "test/live/packages/verilog_e2e_tests.py"
+  ],
+  "reason": "真机 import 成功即证明前缀生效（否则 libsasl2 缺失 rc=127）；**无直接断言命令前缀**",
+  "gap_test": "可选加固：离线断言生成命令以 LD_LIBRARY_PATH=… 开头"
+ },
+ {
+  "id": "verilog#071",
+  "doc": "上层/8-verilog.md",
+  "line": 97,
+  "section": "1.3 导入（import）",
+  "text": "6. **返回码不可信**（语法错误也 rc=0）：只用日志 + 产物判成败。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_verilog_contracts.py::test_parse_failure_and_incomplete_log",
+   "test/offline/unit/test_verilog_contracts.py::test_ihdl_nonzero_exit_and_validation"
+  ],
+  "reason": "rc 不可信：rc=0+缺 End of Logfile → incomplete_log；语法错误日志 → parse_failure；rc≠0 原样回显，均有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "verilog#072",
+  "doc": "上层/8-verilog.md",
+  "line": 99,
+  "section": "1.3 导入（import）",
+  "text": "`functional` 视图 = `verilog.v` 文本 + `netlist.oa`，是 AMS/仿真网表要消费的形态，默认就够；",
+  "tokens": [
+   "functional",
+   "netlist.oa",
+   "verilog.v"
+  ],
+  "hits": {
+   "functional": [
+    "test/offline/unit/test_verilog_contracts.py",
+    "test/semi/probes/maestro_env_probe.py",
+    "test/live/packages/verilog_e2e_tests.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_verilog_contracts.py",
+   "test/live/packages/verilog_e2e_tests.py"
+  ],
+  "reason": "functional 视图 = verilog.v + netlist.oa（默认产物）有契约与真机证据",
+  "gap_test": ""
+ },
+ {
+  "id": "verilog#097",
+  "doc": "上层/8-verilog.md",
+  "line": 136,
+  "section": "3. 不在本版",
+  "text": "- 并发写同一 cell。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "na",
+  "evidence": [],
+  "reason": "「不在本版」：并发写同一 cell，明确不做",
+  "gap_test": ""
+ },
+ {
+  "id": "verilog#099",
+  "doc": "上层/8-verilog.md",
+  "line": 141,
+  "section": "4. 真机事实（IC6.1.8，2026-09-21 实测）",
+  "text": "2. `ihdl` 是 ksh 包装器：裸跑缺 `libsasl2.so.2`（rc=127），必须带",
+  "tokens": [
+   "ihdl",
+   "libsasl2.so.2"
+  ],
+  "hits": {
+   "ihdl": [
+    "test/offline/unit/test_verilog_contracts.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "indirect",
+  "evidence": [
+   "test/live/packages/verilog_e2e_tests.py"
+  ],
+  "reason": "ihdl ksh 包装器/缺 libsasl2 是真机事实；由真机导入成功承担，无独立断言",
+  "gap_test": ""
+ },
+ {
+  "id": "verilog#101",
+  "doc": "上层/8-verilog.md",
+  "line": 143,
+  "section": "4. 真机事实（IC6.1.8，2026-09-21 实测）",
+  "text": "3. `ihdl` **返回码不可信**：语法错误、参考库缺失、降级导入都是 rc=0；成功看 `357/372/345`，",
+  "tokens": [
+   "ihdl"
+  ],
+  "hits": {
+   "ihdl": [
+    "test/offline/unit/test_verilog_contracts.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "partial",
+  "evidence": [
+   "test/offline/unit/test_verilog_contracts.py (日志判成败用例)"
+  ],
+  "reason": "‘rc 不可信、只看日志+产物’有断言；**成功标记 357/372/345 的识别分支**无用例",
+  "gap_test": "补离线：三种成功标记日志 → 判成功；缺失标记 → incomplete_log"
+ },
+ {
+  "id": "verilog#103",
+  "doc": "上层/8-verilog.md",
+  "line": 145,
+  "section": "4. 真机事实（IC6.1.8，2026-09-21 实测）",
+  "text": "4. `ihdl` 会向 `-cdslib` 指定的文件**追加 DEFINE**（目标库未注册时还在 cwd 建同名库目录）→ 必须用按次副本；",
+  "tokens": [
+   "ihdl"
+  ],
+  "hits": {
+   "ihdl": [
+    "test/offline/unit/test_verilog_contracts.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "partial",
+  "evidence": [
+   "test/offline/unit/test_verilog_contracts.py",
+   "src/pyapi/packages/verilog.py:504-519"
+  ],
+  "reason": "按次副本在建命令里有体现；**ihdl 向 -cdslib 追加 DEFINE 的防污染效果**（共享文件保持不变）无断言",
+  "gap_test": "真机补：import 后共享 cds.lib 未被追加（sha 对比）+ 无 cwd 同名库目录残留"
+ },
+ {
+  "id": "verilog#108",
+  "doc": "上层/8-verilog.md",
+  "line": 150,
+  "section": "4. 真机事实（IC6.1.8，2026-09-21 实测）",
+  "text": "否则 `VERILOGIN-127` 拒绝并降级 functional；",
+  "tokens": [
+   "VERILOGIN-127"
+  ],
+  "hits": {
+   "VERILOGIN-127": [
+    "test/offline/unit/test_verilog_contracts.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_verilog_contracts.py (VERILOGIN-127 警告解析 64-90)"
+  ],
+  "reason": "VERILOGIN-127（及 19）警告提取、降级 functional 的判定有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "veriloga#041",
+  "doc": "上层/11-veriloga.md",
+  "line": 59,
+  "section": "1.1 读操作（read）",
+  "text": "- `read` 纯只读：不得调用 `ahdlUpdateViewInfo` 等会改缓存/视图状态的函数。",
+  "tokens": [
+   "ahdlUpdateViewInfo",
+   "read"
+  ],
+  "hits": {
+   "ahdlUpdateViewInfo": [
+    "test/offline/unit/test_veriloga_contracts.py"
+   ],
+   "read": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/p076_tar_completion_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_veriloga_contracts.py (read 生成式不调用 ahdlUpdateViewInfo)",
+   "test/live/packages/veriloga_e2e_tests.py"
+  ],
+  "reason": "read 纯只读（不调用会改缓存/视图状态的函数）由生成式断言 + 真机 read 用例钉住",
+  "gap_test": ""
+ },
+ {
+  "id": "veriloga#045",
+  "doc": "上层/11-veriloga.md",
+  "line": 67,
+  "section": "1.2 写操作（write）",
+  "text": "`write.commands` 每项 = `{\"op\": 原子名, ...参数}`；**非事务**，失败响应带 `commands applied: k/n`。",
+  "tokens": [
+   "write.commands"
+  ],
+  "hits": {},
+  "premap_status": "NONE",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_veriloga_contracts.py"
+  ],
+  "reason": "write 非事务、失败带 commands applied: k/n，有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "veriloga#053",
+  "doc": "上层/11-veriloga.md",
+  "line": 78,
+  "section": "1.2 写操作（write）",
+  "text": "1. 写临时文件 → 校验读回 → 原子替换 `veriloga.va`；",
+  "tokens": [
+   "veriloga.va"
+  ],
+  "hits": {
+   "veriloga.va": [
+    "test/offline/unit/test_veriloga_contracts.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_veriloga_contracts.py (写临时文件→校验读回→原子替换)"
+  ],
+  "reason": "文件写路径（临时文件→读回校验→原子替换）有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "veriloga#055",
+  "doc": "上层/11-veriloga.md",
+  "line": 80,
+  "section": "1.2 写操作（write）",
+  "text": "（`master.tag` = `-- Master.tag File, Rev:1.0\\nveriloga.va\\n`；模块名必须与 cell 名一致）；",
+  "tokens": [
+   "master.tag"
+  ],
+  "hits": {
+   "master.tag": [
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/offline/unit/test_verilog_contracts.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_veriloga_contracts.py (master.tag 上传断言 321)"
+  ],
+  "reason": "master.tag 内容与模块名=cell 名约束有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "veriloga#057",
+  "doc": "上层/11-veriloga.md",
+  "line": 82,
+  "section": "1.2 写操作（write）",
+  "text": "4. 有 `*.cdslck`（编辑器开着）时禁止外部写：报失败并提示关闭编辑器，不自动关别人的窗口。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_veriloga_contracts.py (*.cdslck 检测 268)",
+   "test/live/packages/veriloga_e2e_tests.py"
+  ],
+  "reason": "编辑器锁存在 → 拒绝外部写且不自动关窗，有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "veriloga#068",
+  "doc": "上层/11-veriloga.md",
+  "line": 97,
+  "section": "1.3 检查与保存（check_and_save）",
+  "text": "5. **不用** `ahdlCheckModule` / `ahdlSaveFile` / `ahdlEdit`（编辑器 GUI 内部包装，错误或缺 symbol 会弹模态阻塞 CIW）。",
+  "tokens": [
+   "ahdlCheckModule",
+   "ahdlEdit",
+   "ahdlSaveFile"
+  ],
+  "hits": {},
+  "premap_status": "NONE",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_veriloga_contracts.py::test_check_and_save_sequence"
+  ],
+  "reason": "check_and_save 序列不含 ahdlCheckModule/SaveFile/Edit（防模态阻塞），有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "veriloga#069",
+  "doc": "上层/11-veriloga.md",
+  "line": 99,
+  "section": "1.3 检查与保存（check_and_save）",
+  "text": "真机结论：上述序列与 GUI Check and Save 的落盘形态**逐文件一致**，唯一差别是不含 GUI 弹窗生成的 `symbol` 视图；",
+  "tokens": [
+   "symbol"
+  ],
+  "hits": {
+   "symbol": [
+    "test/offline/unit/test_maestro_util.py",
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_skill_text_utils.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/offline/unit/test_symbol_generate.py",
+    "test/offline/unit/test_veriloga_contracts.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/live/packages/veriloga_e2e_tests.py",
+   "test/artifacts/evidence/round8 (veriloga 段)"
+  ],
+  "reason": "headless Check and Save 与 GUI 落盘逐文件一致（唯一差别无 symbol）：真机闭环用例",
+  "gap_test": ""
+ },
+ {
+  "id": "veriloga#083",
+  "doc": "上层/11-veriloga.md",
+  "line": 120,
+  "section": "3. 不在本版",
+  "text": "- 并发写同一 cell。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "na",
+  "evidence": [],
+  "reason": "「不在本版」：并发写同一 cell，明确不做",
+  "gap_test": ""
+ },
+ {
+  "id": "veriloga#085",
+  "doc": "上层/11-veriloga.md",
+  "line": 125,
+  "section": "4. 真机事实（IC6.1.8，2026-09-21 实测）",
+  "text": "`dbOpenCellViewByType(..., \"veriloga\"/\"text.veriloga\", \"w\")` **恒 nil** → 必须走文件路径；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "NO-TOKEN",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_veriloga_contracts.py"
+  ],
+  "reason": "dbOpenCellViewByType(veriloga w) 恒 nil → 必须走文件路径：生成式断言",
+  "gap_test": ""
+ },
+ {
+  "id": "veriloga#087",
+  "doc": "上层/11-veriloga.md",
+  "line": 127,
+  "section": "4. 真机事实（IC6.1.8，2026-09-21 实测）",
+  "text": "3. 读源码用 `infile`/`gets` 或直接读文件；**`lineread` 不能读 `.va`**；",
+  "tokens": [
+   "gets",
+   "infile",
+   "lineread"
+  ],
+  "hits": {
+   "gets": [
+    "test/offline/core/api_server_tb.py",
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/semantics_tb.py",
+    "test/offline/core/thread_lifecycle_tb.py",
+    "test/offline/integration/test_daemon_handler.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_veriloga_contracts.py (infile/gets 生成式)"
+  ],
+  "reason": "读源码走 infile/gets（不用 lineread 读 .va）有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "veriloga#088",
+  "doc": "上层/11-veriloga.md",
+  "line": 128,
+  "section": "4. 真机事实（IC6.1.8，2026-09-21 实测）",
+  "text": "4. `ahdlCompile*` 不存在；编译只能由 Spectre（`ahdlcmi`）完成，缓存 `<netlist>.ahdlSimDB/<srcHash>.*.ahdlcmi/`；",
+  "tokens": [
+   "ahdlcmi"
+  ],
+  "hits": {},
+  "premap_status": "NONE",
+  "verdict": "indirect",
+  "evidence": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/packages/veriloga_e2e_tests.py"
+  ],
+  "reason": "ahdlCompile* 不存在、编译由 Spectre（ahdlcmi 缓存）完成：由 ADC/veriloga 真机仿真闭环承担，无独立断言",
+  "gap_test": ""
+ },
+ {
+  "id": "veriloga#089",
+  "doc": "上层/11-veriloga.md",
+  "line": 129,
+  "section": "4. 真机事实（IC6.1.8，2026-09-21 实测）",
+  "text": "5. AHDL 上下文（`ahdlSck.cxt`）默认未加载；**冷启动 `loadContext(\"<IC618>/tools.lnx86/dfII/etc/context/ahdlSck.cxt\")`",
+  "tokens": [
+   "ahdlSck.cxt"
+  ],
+  "hits": {},
+  "premap_status": "NONE",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_veriloga_contracts.py (loadContext 断言 247/457)"
+  ],
+  "reason": "cold start 需 loadContext(ahdlSck.cxt) 有断言",
+  "gap_test": ""
+ },
+ {
+  "id": "veriloga#092",
+  "doc": "上层/11-veriloga.md",
+  "line": 132,
+  "section": "4. 真机事实（IC6.1.8，2026-09-21 实测）",
+  "text": "7. 编辑器打开时产生 `veriloga.va.cdslck` 锁 → 外部写文件失效，必须先关编辑器；",
+  "tokens": [
+   "veriloga.va.cdslck"
+  ],
+  "hits": {},
+  "premap_status": "NONE",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_veriloga_contracts.py",
+   "test/live/packages/veriloga_e2e_tests.py"
+  ],
+  "reason": "编辑器锁（veriloga.va.cdslck）→ 外部写失效，必须先关编辑器：与 #057 同族断言",
+  "gap_test": ""
+ },
+ {
+  "id": "veriloga#094",
+  "doc": "上层/11-veriloga.md",
+  "line": 134,
+  "section": "4. 真机事实（IC6.1.8，2026-09-21 实测）",
+  "text": "9. **headless 的 Check and Save 已真机闭环**：写文件 → `VerAParseModule`（错误进 errFile）→",
+  "tokens": [
+   "VerAParseModule"
+  ],
+  "hits": {
+   "VerAParseModule": [
+    "test/offline/unit/test_veriloga_contracts.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/live/packages/veriloga_e2e_tests.py",
+   "test/live/flows/adc_sar_flow_tb.py"
+  ],
+  "reason": "headless Check and Save 真机闭环（写→VerAParseModule→ahdlUpdateViewInfo）由 E2E + ADC 场景验证",
+  "gap_test": ""
+ },
+ {
+  "id": "veriloga#095",
+  "doc": "上层/11-veriloga.md",
+  "line": 135,
+  "section": "4. 真机事实（IC6.1.8，2026-09-21 实测）",
+  "text": "`ahdlUpdateViewInfo`（CDF + `netlist.oa`/`data.dm`），与 GUI 保存逐文件一致，唯一差别是无 `symbol` 视图；",
+  "tokens": [
+   "ahdlUpdateViewInfo",
+   "data.dm",
+   "netlist.oa",
+   "symbol"
+  ],
+  "hits": {
+   "ahdlUpdateViewInfo": [
+    "test/offline/unit/test_veriloga_contracts.py"
+   ],
+   "symbol": [
+    "test/offline/unit/test_maestro_util.py",
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_skill_text_utils.py",
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/offline/unit/test_symbol_generate.py",
+    "test/offline/unit/test_veriloga_contracts.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_veriloga_contracts.py",
+   "test/live/packages/veriloga_e2e_tests.py"
+  ],
+  "reason": "CDF + netlist.oa/data.dm 更新与 GUI 保存一致（无 symbol 视图差异）有契约与真机证据",
+  "gap_test": ""
+ },
+ {
+  "id": "veriloga#096",
+  "doc": "上层/11-veriloga.md",
+  "line": 136,
+  "section": "4. 真机事实（IC6.1.8，2026-09-21 实测）",
+  "text": "10. **不要用** `ahdlCheckModule`（错误弹 `QverilogaErr` 阻塞）、`ahdlSaveFile`（缺 symbol 弹模态）、",
+  "tokens": [
+   "QverilogaErr",
+   "ahdlCheckModule",
+   "ahdlSaveFile"
+  ],
+  "hits": {},
+  "premap_status": "NONE",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_veriloga_contracts.py"
+  ],
+  "reason": "不得使用 ahdlCheckModule/ahdlSaveFile 等模态包装：生成式缺席断言",
+  "gap_test": ""
+ },
+ {
+  "id": "veriloga#107",
+  "doc": "上层/11-veriloga.md",
+  "line": 153,
+  "section": "6. 待验证（实现前需 spike）",
+  "text": "1. `schPinListToSymbol` 用 `ahdlToPinList` 的 ports 生成 symbol 的可行性（端口顺序/方向）。",
+  "tokens": [
+   "ahdlToPinList",
+   "schPinListToSymbol"
+  ],
+  "hits": {
+   "ahdlToPinList": [
+    "test/offline/unit/test_veriloga_contracts.py"
+   ]
+  },
+  "premap_status": "WEAK",
+  "verdict": "na",
+  "evidence": [],
+  "reason": "待验证项（实现前 spike：schPinListToSymbol 可行性）。spec 自述待定/待验证（非冻结要求）；已在 round8 报告‘明缺口’登记为待设计定稿",
+  "gap_test": ""
+ }
+]

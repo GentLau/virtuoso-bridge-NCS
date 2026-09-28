@@ -6,8 +6,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src"))
 
 from common.registry import UserEntry
+from register.candidate import fingerprint_conflicts_candidate
 from register.models import RegistrationRequest
-from transport.roles import fingerprint_conflicts, resolve
+from transport.roles import resolve
 from common.validation import validate_display, validate_token, validate_user_name
 
 
@@ -47,9 +48,9 @@ class TestRoleResolution(unittest.TestCase):
         targets = resolve(e, "alice")
         self.assertEqual(targets.command.mode, "remote")
         self.assertEqual(targets.command.key, targets.file.key)
-        self.assertEqual(fingerprint_conflicts(e, "alice"), [])
+        self.assertEqual(fingerprint_conflicts_candidate(e, "alice"), [])
         e.roles.file.expected_fingerprint = "B"
-        self.assertTrue(fingerprint_conflicts(e, "alice"))
+        self.assertTrue(fingerprint_conflicts_candidate(e, "alice"))
 
     def test_local_role_resolution(self):
         e = UserEntry(token="t", mode="local")
@@ -127,6 +128,25 @@ class TestRoleResolution(unittest.TestCase):
             roles={"command": {"calibre": ""}},
         )
         self.assertNotIn("calibre", entry.roles.command.model_dump())
+
+    def test_role_user_group_size_limit_boundary(self):
+        """配置文档 §5：每 role 用户组总大小 ≤16 KiB（第八轮 g1 补测，src 有实现此前无用例）。"""
+        import json
+
+        from common.validation import ROLE_GROUP_MAX_BYTES
+
+        def encoded_len(value):
+            return len(json.dumps(value, ensure_ascii=False, separators=(",", ":"),
+                                  sort_keys=True).encode("utf-8"))
+
+        # 恰好 16 KiB：允许（实现是 total > limit 才拒绝）
+        exact = {"calibre": {"note": "x" * (ROLE_GROUP_MAX_BYTES - 11)}}
+        self.assertEqual(ROLE_GROUP_MAX_BYTES, encoded_len(exact["calibre"]))
+        UserEntry(token="t", mode="remote", roles={"command": exact})
+        # 超 1 字节：拒绝
+        over = {"calibre": {"note": "x" * (ROLE_GROUP_MAX_BYTES - 10)}}
+        with self.assertRaises(ValueError):
+            UserEntry(token="t", mode="remote", roles={"command": over})
 
 
 if __name__ == "__main__":

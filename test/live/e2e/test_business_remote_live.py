@@ -1,3 +1,15 @@
+# === TB 注释头（规范见 test/docs/写TB规范.md §0）=====================
+# 作者: 设计/Codex
+# 最后改动: 2026-09-28 12:04
+# 依赖: 无
+# =====================================================================
+# 六步流程（按 test/docs/写TB规范.md §1–§6）：
+# §1 环境检查：VB_E2E 门禁 + 发现真实 daemon，未发现则 skip。
+# §2 构建：真实用户注册表、隧道端口和 BusinessServer。
+# §3 最终检查：确认 daemon/token/隧道端口就绪。
+# §4 执行：多用户并发 skill/command/file 动作。
+# §5 比对：RBDToken 不串号、命令/文件结果与期望一致。
+# §6 重复/收尾：多轮并发重复；保留资源盘点与证据。
 """Live business simulation in remote mode against real Virtuoso daemons.
 
 Requires ``VB_E2E=1`` and running bridge daemons on ``wsl-gent`` (the
@@ -12,10 +24,10 @@ import os
 import socket
 import subprocess
 import sys
-import tempfile
 import threading
 import time
 import unittest
+import uuid
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -24,7 +36,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src"))
 from transport.middle import BusinessServer
 from register.probe import allocate_local_port
 from common.registry import UserEntry, load_registry
-from common.paths import registry_path, override_work_dir_for_tests
+from common.paths import registry_path, work_root
 
 HOST = "wsl-gent"
 USER = "Gent"
@@ -85,7 +97,7 @@ class TestBusinessRemoteLive(unittest.TestCase):
             raise unittest.SkipTest("no live bridge daemons found")
         limit = int(os.environ.get("VB_E2E_USERS") or len(daemons))
         cls.daemons = daemons[:limit]
-        cls.wd = override_work_dir_for_tests(Path(tempfile.mkdtemp(prefix="vb-")))
+        cls.wd = work_root()
         registry = load_registry(registry_path())
         reserved: set[int] = set()
         for username, token, port in cls.daemons:
@@ -119,7 +131,7 @@ class TestBusinessRemoteLive(unittest.TestCase):
             entry.ssh.control_master = "disable"
             entry.runtime.channel_budget = 12
             registry.register(username, entry)
-        cls.server = BusinessServer(cls.wd)
+        cls.server = BusinessServer()
 
     @classmethod
     def tearDownClass(cls) -> None:
@@ -224,7 +236,7 @@ class TestBusinessRemoteLive(unittest.TestCase):
             tok = tokens[i % len(tokens)]
             root = roots[i % len(roots)]
             try:
-                src = Path(tempfile.mkdtemp(prefix="vb-")) / "f.bin"
+                src = work_root() / f"e2e-upload-{uuid.uuid4().hex[:8]}.bin"
                 src.write_bytes(tok.encode())
                 remote = f"{root}/files/e2e-conc-{i}.bin"
                 u = self.server.upload_file(src, remote, token=tok)
@@ -243,7 +255,7 @@ class TestBusinessRemoteLive(unittest.TestCase):
             root = roots[i % len(roots)]
             try:
                 remote = f"{root}/files/e2e-conc-{i}.bin"
-                dst = Path(tempfile.mkdtemp(prefix="vb-")) / "g.bin"
+                dst = work_root() / f"e2e-download-{uuid.uuid4().hex[:8]}.bin"
                 d = self.server.download_file(remote, dst, token=tok)
                 while d.returncode == 1 and "exceeded" in d.stderr:
                     time.sleep(0.02)

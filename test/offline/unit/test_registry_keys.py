@@ -12,12 +12,12 @@ from pydantic import ValidationError
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src"))
 
 from common.registry import RoleConfig, SshDefaults, UserEntry, load_registry
-from common.paths import registry_path, override_work_dir_for_tests
+from common.paths import init_work_dir, registry_path, work_root
 
 
 class TestRegistryCredentialFields(unittest.TestCase):
     def setUp(self):
-        self.wd = override_work_dir_for_tests(Path(tempfile.mkdtemp(prefix="vb-")))
+        self.wd = work_root()
         self.registry = load_registry(registry_path())
 
     def _entry(self) -> UserEntry:

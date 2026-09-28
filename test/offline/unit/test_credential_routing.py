@@ -14,7 +14,7 @@ from unittest import mock
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src"))
 
 from common.registry import UserEntry
-from transport.remote_roles import resolve
+from transport.roles import resolve
 from transport.tunnel import RemoteClient
 from _ssh_cred import make_credential
 

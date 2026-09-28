@@ -1,3 +1,15 @@
+# === TB 注释头（规范见 test/docs/写TB规范.md §0）=====================
+# 作者: 设计/Codex
+# 最后改动: 2026-09-28 12:04
+# 依赖: 无
+# =====================================================================
+# 六步流程（按 test/docs/写TB规范.md §1–§6）：
+# §1 环境检查：本地 HTTP server/mock，无需远端环境 → 跳过。
+# §2 构建：临时 loopback server + 注入请求夹具。
+# §3 最终检查：确认端口监听、路由和注入体可发送。
+# §4 执行：发送 lone-surrogate / 非法 JSON / 合法请求。
+# §5 比对：是否返回 HTTP 状态且连接不中断，与期望一致。
+# §6 重复/收尾：多种注入重复；server 回收，结果留证据。
 """Probe: lone-surrogate request fields must not drop the HTTP connection.
 
 ``src/common/jsonutil.py`` promises that hostile JSON (non-finite numbers,

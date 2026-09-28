@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
-# 作者: 设计/上层开发
-# 最后改动: 2026-09-28 21:10
+# 作者: 测试/root
+# 最后改动: 2026-09-28 20:23
 # 依赖: 无
 # =======================================================================
 # 六步流程（test/docs/写TB规范.md §1）：
@@ -13,9 +13,12 @@ Run with ``--transport direct`` or ``--transport http``.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import posixpath
 import sys
+import time
+from concurrent.futures import ThreadPoolExecutor
 import urllib.error
 import urllib.request
 import uuid
@@ -111,7 +114,7 @@ def _case_basic(transport) -> None:
     gui = _op(transport, "basic.gui.run", cmd="echo gui-ok")
     _check((gui.get("result") or [1])[0] == 0, f"gui: {gui}")
 
-    spectre = _op(transport, "basic.spectre.run", cmd="echo spectre-ok")
+    spectre = _op(transport, "basic.spectre.run", cmd="echo spectre-ok", timeout=30)
     _check((spectre.get("result") or [1])[0] == 0, f"spectre: {spectre}")
 
 
@@ -130,6 +133,83 @@ def _case_file_roundtrip(transport) -> None:
     _check(local_out.read_text(encoding="utf-8") == local_in.read_text(encoding="utf-8"),
            "file roundtrip mismatch")
     _op(transport, "basic.command.run", cmd=f"rm -rf {run_dir}")
+
+
+def _case_recursive_file_tree(transport) -> None:
+    """`recursive=True` 的目录上/下行：两层树、逐字节回环。"""
+    tree = SCRATCH / "rt_tree"
+    if tree.exists():
+        for path in sorted(tree.rglob("*"), reverse=True):
+            path.unlink() if path.is_file() else path.rmdir()
+    (tree / "inner").mkdir(parents=True, exist_ok=True)
+    (tree / "root.txt").write_text("root-level\n", encoding="utf-8")
+    (tree / "inner" / "leaf.txt").write_text("leaf-level\n", encoding="utf-8")
+    (tree / "inner" / "blob.bin").write_bytes(bytes(range(256)) * 4)
+
+    run_dir = _remote_run_dir("rt-tree")
+    up = _op(transport, "basic.file.upload",
+             local_path=str(tree), remote_path=run_dir, recursive=True, timeout=120)
+    _check((up.get("result") or [1])[0] == 0, f"recursive upload: {up}")
+    listing = _op(transport, "basic.command.run",
+                  cmd=f"find {run_dir} -type f | sort", timeout=60)
+    files = (listing.get("result") or ["", ""])[1]
+    _check("root.txt" in files and "leaf.txt" in files and "blob.bin" in files,
+           f"remote tree incomplete: {files}")
+
+    back = SCRATCH / "rt_tree_back"
+    if back.exists():
+        for path in sorted(back.rglob("*"), reverse=True):
+            path.unlink() if path.is_file() else path.rmdir()
+    down = _op(transport, "basic.file.download",
+               remote_path=run_dir, local_path=str(back), recursive=True, timeout=120)
+    _check((down.get("result") or [1])[0] == 0, f"recursive download: {down}")
+    got = sorted(p.relative_to(back).as_posix() for p in back.rglob("*") if p.is_file())
+    want = sorted(p.relative_to(tree).as_posix() for p in tree.rglob("*") if p.is_file())
+    _check(got == want, f"tree file set mismatch: got={got} want={want}")
+    for rel in want:
+        src = (tree / rel).read_bytes()
+        dst = (back / rel).read_bytes()
+        _check(hashlib.sha256(src).digest() == hashlib.sha256(dst).digest(),
+               f"recursive bytes mismatch: {rel}")
+    _op(transport, "basic.command.run", cmd=f"rm -rf {run_dir}", timeout=60)
+
+
+def _case_command_parallel(transport) -> None:
+    """spec §5.7：命令默认串行；`parallel=True` 时两条 sleep 必须真正并行。"""
+    def timed(parallel: bool) -> float:
+        def one() -> dict[str, Any]:
+            return _op(transport, "basic.command.run",
+                       cmd="sleep 2; echo done", parallel=parallel, timeout=60)
+
+        started = time.monotonic()
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            futures = [pool.submit(one) for _ in range(2)]
+            for future in futures:
+                result = future.result()
+                _check((result.get("result") or [1])[0] == 0,
+                       f"sleep command failed: {result}")
+        return time.monotonic() - started
+
+    serial = timed(False)
+    parallel = timed(True)
+    _check(serial > 3.6, f"serial commands must not overlap: {serial:.2f}s")
+    _check(parallel < 3.6, f"parallel=True must overlap: {parallel:.2f}s")
+
+
+def _case_command_timeout(transport) -> None:
+    """spec §4.5/§5.8：命令超时必须 kind=timeout / rc=124，而不是普通失败。"""
+    response = transport.call({
+        "operation": "basic.command.run", "token": TOKEN,
+        "cmd": "sleep 5", "timeout": 1})
+    _check(not response.get("ok"), "sleep 5 with timeout=1 must fail")
+    result = (response.get("data") or {}).get("result") or []
+    _check(result and result[0] == 124,
+           f"timeout rc must be 124: {result}")
+    detail = (response.get("data") or {}).get("steps") or [{}]
+    kind = ((detail[0].get("detail") or {}).get("kind")
+            if isinstance(detail[0].get("detail"), dict) else None)
+    if kind is not None:
+        _check(kind == "timeout", f"timeout kind must be 'timeout': {kind}")
 
 
 def _case_gui(transport) -> None:
@@ -170,6 +250,9 @@ def run_suite(transport) -> list[tuple[str, str]]:
 
     run("BASIC-01 skill/command/gui/spectre", lambda: _case_basic(transport))
     run("BASIC-02 file upload/download", lambda: _case_file_roundtrip(transport))
+    run("BASIC-03 recursive file tree", lambda: _case_recursive_file_tree(transport))
+    run("BASIC-04 command serial/parallel", lambda: _case_command_parallel(transport))
+    run("BASIC-05 command timeout semantics", lambda: _case_command_timeout(transport))
     run("GUI-01 list/auto_dismiss/send_key/screenshot", lambda: _case_gui(transport))
     return results
 

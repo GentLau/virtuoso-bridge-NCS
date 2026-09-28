@@ -26,7 +26,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src"))
 
 from transport.middle import BusinessServer
 from common.registry import UserEntry, load_registry
-from common.paths import registry_path, override_work_dir_for_tests
+from common.paths import init_work_dir, registry_path, work_root
 
 STX = "\x02"
 NAK = "\x15"
@@ -107,11 +107,11 @@ def _entry(token: str, daemon: FakeDaemon) -> UserEntry:
 
 class TestBusinessLocal(unittest.TestCase):
     def setUp(self) -> None:
-        self.wd = override_work_dir_for_tests(Path(tempfile.mkdtemp(prefix="vb-")))
+        self.wd = work_root()
         self.daemon = FakeDaemon("tok-a")
         self.registry = load_registry(registry_path())
         self.registry.register("alice", _entry("tok-a", self.daemon))
-        self.server = BusinessServer(self.wd)
+        self.server = BusinessServer()
         self.root = Path(tempfile.mkdtemp(prefix="vb-"))
 
     def tearDown(self) -> None:
@@ -279,7 +279,7 @@ class TestBusinessMultiUserLocal(unittest.TestCase):
 
     def test_mixed_concurrency_retries_until_all_succeed(self):
         users = 20
-        wd = override_work_dir_for_tests(Path(tempfile.mkdtemp(prefix="vb-")))
+        wd = work_root()
         registry = load_registry(registry_path())
         daemons = []
         try:
@@ -290,8 +290,7 @@ class TestBusinessMultiUserLocal(unittest.TestCase):
                 entry = _entry(token, d)
                 entry.runtime.thread_pool_size = 8
                 registry.register(f"u{i:02d}", entry)
-            server = BusinessServer(wd)
-
+            server = BusinessServer()
             errors: list[str] = []
             lock = threading.Lock()
             tokens = [f"tok-{i:02d}" for i in range(users)]

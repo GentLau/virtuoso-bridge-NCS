@@ -13,8 +13,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src"))
 from pyapi.models import CommandResult
 from common.registry import UserEntry
 from common.remote_paths import RemotePathError
-from transport.remote_roles import resolve
-from common.paths import override_work_dir_for_tests
+from transport.roles import resolve
+from common.paths import init_work_dir
 from transport.tunnel import RemoteClient
 
 
@@ -102,7 +102,6 @@ def make_entry(**kwargs):
 
 class TestRemoteClientTransport(unittest.TestCase):
     def setUp(self):
-        override_work_dir_for_tests(Path(tempfile.mkdtemp(prefix="vb-")))
         FakeRunner.instances.clear()
 
     def test_serial_command_uses_command_runner(self):
@@ -220,7 +219,6 @@ class TestRemoteClientTransport(unittest.TestCase):
 
 class TestRemoteClientEdges(unittest.TestCase):
     def setUp(self):
-        override_work_dir_for_tests(Path(tempfile.mkdtemp(prefix="vb-")))
         FakeRunner.instances.clear()
 
     def test_jump_suppressed_when_target_is_jump_host(self):
@@ -359,7 +357,6 @@ class TestRemoteClientEdges(unittest.TestCase):
 
 class TestRemoteClientRecursiveUpload(unittest.TestCase):
     def setUp(self):
-        override_work_dir_for_tests(Path(tempfile.mkdtemp(prefix="vb-")))
         FakeRunner.instances.clear()
 
     def test_directory_without_recursive_is_rejected(self):

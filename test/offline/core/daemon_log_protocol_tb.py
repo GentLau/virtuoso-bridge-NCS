@@ -1,3 +1,15 @@
+# === TB 注释头（规范见 test/docs/写TB规范.md §0）=====================
+# 作者: 设计/Codex
+# 最后改动: 2026-09-28 12:04
+# 依赖: 无
+# =====================================================================
+# 六步流程（按 test/docs/写TB规范.md §1–§6）：
+# §1 环境检查：纯本地临时日志/子进程，无需远端环境 → 跳过。
+# §2 构建：临时 CDS.log、帧数据、py3/py27 daemon 变体。
+# §3 最终检查：先确认日志偏移、级别、轮转/截断基线。
+# §4 执行：off、级别过滤、增量、轮转、第二帧超时等协议动作。
+# §5 比对：日志字节/截断提示/警告文案与期望一致。
+# §6 重复/收尾：py3/py27 双 variant 重复；临时目录回收，JSON 留证。
 """CDS.log return-protocol TB (daemon side, scripted CIW).
 
 Covers the daemon half of ``test/plans/日志返回.md`` without needing a real
@@ -300,6 +312,7 @@ CASES = {
 
 
 def main() -> int:
+    # 六步 §1–§3：协议日志 TB 完全使用本机临时文件/子进程，不需要远端环境。
     parser = argparse.ArgumentParser()
     parser.add_argument("--case", choices=sorted(CASES), action="append", default=[])
     parser.add_argument("--variant", choices=sorted(DAEMON_FILES), action="append", default=[])

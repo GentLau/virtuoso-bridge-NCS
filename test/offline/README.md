@@ -1,7 +1,7 @@
 # `test/offline/` —— 离线级
 
 > **级别：离线测试**（不需要真实环境，纯 Python；允许 mock/stub/fake 夹具）。
-> 判定与目录映射见 [`../docs/测试架构.md`](../docs/测试架构.md) §2。
+> 判定与目录映射见 [`../docs/README.md`](../docs/README.md) §1 / §3。
 
 ## 内容
 

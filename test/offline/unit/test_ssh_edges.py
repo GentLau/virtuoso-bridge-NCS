@@ -466,8 +466,25 @@ class TestOpensshDownloadAttempt(unittest.TestCase):
             plan = self._plan(Path(tmp))
             ssh_proc = _FakeProc(returncode=1, err=b"ssh: connection lost")
             tar_proc = _FakeProc(returncode=2, err=b"tar: broken archive")
+
+            # 用 callable 而不是固定 list：ssh 失败后产品会按"≤3 次总尝试"重试，
+            # 重试次数受**负载/时钟**影响（Linux 高负载下实测多调用一次 Popen，
+            # StopIteration 把用例打成假红）。这里让每次调用都拿到"失败但可用"的
+            # 进程对象，断言仍然钉在"最终失败 + stderr 合并 + stage 被丢弃"上。
+            calls = {"n": 0}
+
+            def _belongs(args) -> bool:
+                """只数**本用例**的调用：别的用例遗留的隧道重试线程也在调 Popen。"""
+                joined = " ".join(str(arg) for arg in args)
+                return "/remote/dir" in joined or str(plan.stage_path) in joined
+
+            def fake_popen(args, **kwargs):
+                if _belongs(args):
+                    calls["n"] += 1
+                return tar_proc if args[0] == "tar" else ssh_proc
+
             with mock.patch.object(
-                subprocess, "Popen", side_effect=[ssh_proc, tar_proc]
+                subprocess, "Popen", side_effect=fake_popen
             ):
                 result = runner._run_openssh_download_attempt(
                     plan, _TimeoutBudget.start(30, 30)
@@ -475,6 +492,7 @@ class TestOpensshDownloadAttempt(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("connection lost", result.stderr)
             self.assertFalse(plan.stage_path.exists())
+            self.assertLessEqual(calls["n"], 4, "建连重试必须有界（≤3 次总尝试 + tar 收尾）")
 
     def test_missing_expected_directory_is_reported(self):
         runner = _runner()
@@ -819,7 +837,24 @@ class TestPersistentShellLockedBranches(unittest.TestCase):
 
     def test_empty_queue_times_out_and_closes_shell(self):
         runner = self._runner_with_queue()
-        budget = _TimeoutBudget.start(0.05, 0.05)
+
+        # 把用例钉在"脚本已写出、等回包时超时"这条路径上：
+        # 真实 ``_TimeoutBudget.start(0.05, 0.05)`` 在高负载机器上会让写出前的
+        # ``budget.remaining()`` 先超时——那也是一条合法路径（未投递 ⇒ 不关
+        # shell，可安全重试），但它不经过本用例要断言的 cleanup 分支，
+        # 会让门禁在 CI 高负载下随机转红（第五轮主覆盖率跑到过一次，
+        # 单跑 12 次全绿 → 时序抖动）。用可控预算让 remaining() 恒通过，
+        # 超时只可能发生在空队列的 get() 上，结果确定。
+        class _WaitOnlyBudget:
+            timeout = 0.05
+
+            def remaining(self, _command=None):  # noqa: D401 - 桩
+                return 0.05
+
+            def available(self):
+                return 0.05
+
+        budget = _WaitOnlyBudget()
         with mock.patch.object(
             runner, "_close_persistent_shell_locked"
         ) as closer:
@@ -833,7 +868,10 @@ class TestPersistentShellLockedBranches(unittest.TestCase):
         runner = self._runner_with_queue()
         # one preamble line arrives in time; the loop then notices the deadline
         # has passed before it can consume the next line
-        budget = _TimeoutBudget(timeout=5, deadline=time.monotonic() + 0.05)
+        # NOTE: 1.0s（而非 50ms）—— 满负载全量跑时 50ms 可能在写入脚本前就
+        # 到期，走的是「写前超时」分支（不 close shell），本用例会假红
+        # （2026-09-28 全量离线实测）。1.0s 仍远短于任何真实等待。
+        budget = _TimeoutBudget(timeout=5, deadline=time.monotonic() + 1.0)
         runner._shell_queue.put("preamble\n")
         with mock.patch.object(
             runner, "_close_persistent_shell_locked"
@@ -1037,8 +1075,15 @@ class TestTunnelBranches(unittest.TestCase):
         runner = SSHRunner("server-a", user=None, backend="openssh",
                            control_master="disable")
         captured = {}
+        real_popen = subprocess.Popen
 
         def fake_popen(args, **kwargs):
+            # 只拦"本用例这条 forward"（本地端口 6503）的 ssh 调用：
+            # 2026-09-23 实测整目录跑时，**别的用例遗留的后台隧道重试线程**也会调
+            # `subprocess.Popen`，会把 captured 覆盖成它自己的 `u@server-a`，导致本用例
+            # 偶发假红（`'u@server-a' != 'server-a'`）。按端口过滤后只观察本用例的调用。
+            if not any("6503" in str(arg) for arg in args):
+                return real_popen(args, **kwargs)
             captured["args"] = args
             raise OSError("ssh missing")
 
@@ -1049,11 +1094,20 @@ class TestTunnelBranches(unittest.TestCase):
         self.assertEqual(captured["args"][-1], "server-a")
         self.assertIsNone(runner._tunnel_stderr_path)
 
+    @unittest.skipUnless(
+        ssh_mod._IS_WINDOWS,
+        "Windows-only 隧道启动重试路径（产品侧 `if _IS_WINDOWS:`）；POSIX 上走的是另一条分支",
+    )
     def test_windows_forward_retries_transient_drop(self):
         runner = _runner(control_master="disable")
         attempts = {"count": 0}
+        # 只统计"本用例这条 forward"的 ssh 调用：整目录跑时别的用例留下的后台隧道线程
+        # 也会调 `subprocess.Popen`，会把 count 抬高（2026-09-23 实测 4 != 2，同类于 P-065）。
+        real_popen = subprocess.Popen
 
         def fake_popen(args, **kwargs):
+            if not any("6504" in str(arg) for arg in args):
+                return real_popen(args, **kwargs)
             attempts["count"] += 1
             if attempts["count"] > 1:
                 raise OSError("ssh vanished")
@@ -1069,10 +1123,17 @@ class TestTunnelBranches(unittest.TestCase):
                 runner._start_port_forward_locked(6504, 0.1)
         self.assertEqual(attempts["count"], 2, "transient drop must be retried")
 
+    @unittest.skipUnless(
+        ssh_mod._IS_WINDOWS,
+        "Windows-only 隧道启动重试路径（产品侧 `if _IS_WINDOWS:`）；POSIX 上走的是另一条分支",
+    )
     def test_windows_forward_reports_failure_after_three_attempts(self):
         runner = _runner(control_master="disable")
+        real_popen = subprocess.Popen
 
         def fake_popen(args, **kwargs):
+            if not any("6505" in str(arg) for arg in args):
+                return real_popen(args, **kwargs)
             stream = kwargs.get("stderr")
             if hasattr(stream, "write"):
                 stream.write(b"banner exchange timeout\n")
@@ -1086,12 +1147,22 @@ class TestTunnelBranches(unittest.TestCase):
         self.assertIn("failed to start on Windows", str(ctx.exception))
         self.assertGreaterEqual(runner._tunnel_failures, 1)
 
+    @unittest.skipUnless(
+        ssh_mod._IS_WINDOWS,
+        "Windows-only 隧道启动重试路径（产品侧 `if _IS_WINDOWS:`）；POSIX 上走的是另一条分支",
+    )
     def test_windows_forward_reuses_external_listener(self):
         runner = _runner(control_master="disable")
         proc = _TunnelProc(rc=None)
         real_monotonic = ssh_mod.time.monotonic
         base = real_monotonic()
         calls = {"n": 0}
+        real_popen = subprocess.Popen
+
+        def fake_popen(args, **kwargs):
+            if not any("6506" in str(arg) for arg in args):
+                return real_popen(args, **kwargs)
+            return proc
 
         def clock():
             calls["n"] += 1
@@ -1101,7 +1172,7 @@ class TestTunnelBranches(unittest.TestCase):
 
         with mock.patch.object(
                 runner, "can_reach_port", side_effect=[False, True]), \
-                mock.patch.object(subprocess, "Popen", return_value=proc), \
+                mock.patch.object(subprocess, "Popen", side_effect=fake_popen), \
                 mock.patch.object(ssh_mod.time, "monotonic", side_effect=clock):
             result = runner._start_port_forward_locked(6506, 0.1)
         self.assertIsNone(result)

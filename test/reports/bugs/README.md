@@ -13,11 +13,23 @@
 3. **刷新方式**：改 `test/shared/runners/make_bug_cards.py` 的 `OPEN` / `CLOSED_RECENT` 段，
    然后 `python test/shared/runners/make_bug_cards.py`（幂等；`--check` 只校验不写盘）。
 
-## 1. 未关闭（1 条）
+## 1. 未关闭（13 条）
 
 | ID | 层 | 级别 | 归属 | 状态 | 一句话 | 卡片 |
 |---|---|---|---|---|---|---|
+| **P-089** | 上层（maestro 包） | P3（静默无效参数，与 P-084 同类） | 设计侧（实现语义或从模型/spec 删除） | 待设计修 | `maestro.open_waveform_gui.result` 声明但**从不被实现读取**（静默无效） | [P-089-maestro-open-waveform-result-ignored.md](P-089-maestro-open-waveform-result-ignored.md) |
+| **P-088** | 上层（maestro 包） | P2（用户清理/teardown 常用路径不可用；现有套件用 try/except 掩盖） | 设计侧（maestro 包 delete_var 的 all 分支 SKILL） | 待设计修 | `maestro.write(delete_var, scope=..all..)` 确定性失败：Cannot find a setup database entry for handle 0 | [P-088-maestro-delete-var-all-scope-broken.md](P-088-maestro-delete-var-all-scope-broken.md) |
+| **P-083** | 上层（spectre 包） | P3（口径/文档；会造成「导入的 CSV 精度与预期不符」） | 设计侧（spec 写明语义，或实现改小数位） | 待归属 | `spectre.export.precision` 语义未定义：实现按**有效数字**（`%.Ng`），用户直觉是小数位 | [P-083-spectre-export-precision-semantics-undefined.md](P-083-spectre-export-precision-semantics-undefined.md) |
+| **P-084** | 上层（maestro 包） | P2（静默无效参数：调用方以为能控制是否携带结果文件） | 设计侧（实现语义或从模型/spec 删除） | 待设计修 | `maestro.export.include_results` 是声明参数但实现**从不读取**（静默无效） | [P-084-maestro-export-include-results-ignored.md](P-084-maestro-export-include-results-ignored.md) |
 | **P-070** | 上层（maestro/spectre 包） | P2（能力缺失） | 待决策（产品口径：支持驱动 MC or 明确不做）→ 设计侧实现/写 spec | 待决策 | 蒙特卡洛能力缺失：只能读回 MC 结果，不能驱动 MC 仿真 | [P-070-monte-carlo-missing.md](P-070-monte-carlo-missing.md) |
+| **P-078** | 上层（schematic 包） | P2（静默错误结果 + 硬报错） | 设计侧（schematic 包） | 待设计修 | `place_wire` 样式参数拼接重复：width 静默建出 path、color/line_style 直接报错 | [P-078-place-wire-style-args.md](P-078-place-wire-style-args.md) |
+| **P-079** | 其他（注册流程） | P3（参数被静默丢弃） | 设计侧（注册口径二选一，建议显式拒绝） | 待设计修 | local 模式显式 `daemon_port`≠`local_port` 被静默归一化（spec 要求双值相等；`_probe` 守卫不可达） | [P-079-local-joint-port-silent-coercion.md](P-079-local-joint-port-silent-coercion.md) |
+| **P-080** | 上层（verilog / veriloga 包） | P2（参数合同不一致 + 死参数） | 设计侧（verilog / veriloga 包）；"view_type 是否参与寻址"需 spec owner 定口径 | 待设计修 | `view_type` 在 read 路径不校验（空串/整数/bogus 静默接受）；write 校验后取值又被忽略 | [P-080-view-type-read-unvalidated.md](P-080-view-type-read-unvalidated.md) |
+| **P-081** | 上层（verilog / veriloga 包）· Windows/Linux 一致性 | P2（该模式在 Windows 客户端完全不可用） | 设计侧（verilog / veriloga 包） | 待设计修 | `file_is_local=False` 时 Windows 客户端把 POSIX 远端路径转成反斜杠 → 远端找不到文件 | [P-081-remote-posix-path-mangling.md](P-081-remote-posix-path-mangling.md) |
+| **P-082** | 上层（schematic + layout 包） | P2（spec 合规请求直接失败） | 设计侧（schematic / layout 包对齐 P-074 定版） | 待设计修 | region 口径漂移（P-074 同类）：spec 定版‘对角两点、禁四元组’，实现（读过滤/截图）仍只收四元组 | [P-082-region-quad-vs-two-points.md](P-082-region-quad-vs-two-points.md) |
+| **P-085** | 上层（layout 包） | P2（spec 声明的参数组合确定性不可用） | 设计侧（layout 包）；与 P-082 同源但独立 | 待设计修 | `layout.read(depth>0)` 与 `region` 组合**任何写法都失败**（扁平→`_bbox` 拒；两点→`_filter_region` 拒） | [P-085-layout-depth-region-unusable.md](P-085-layout-depth-region-unusable.md) |
+| **P-086** | 底层 daemon / 中层连接（多用户场景） | P3（观察：可恢复，但窗口期错误不可读、无结构化语义） | 待归属（底层 daemon 请求生命周期 / 中层连接复用，二选一或联合） | 观察 | 多用户同视图场景后 ~30–90s 窗口内同 token 请求得到 `Empty response from daemon`（随后自愈） | [P-086-empty-response-window-after-long-skill.md](P-086-empty-response-window-after-long-skill.md) |
+| **P-087** | 上层（maestro 包）· 会话复用 | P2（静默跨请求污染用户 setup + 清理失败） | 设计侧（maestro 包）；`save` 的对外语义需 spec owner 定稿 | 待设计修 | `save=False` 的改动不被隔离：后续任意一次 save 会把它静默带走（跨请求污染）；同场景 `delete_var` 清理报 handle 错误 | [P-087-maestro-write-save-false-still-persists.md](P-087-maestro-write-save-false-still-persists.md) |
 
 > 优先级口径：**P1** = Linux 侧资源/安全或核心指标链路断（P-056、P-053）；
 > **P2** = 真实设计流会给出错的/空的结果，且多数**静默**；**P3/观察** = 非阻塞但建议顺手修。

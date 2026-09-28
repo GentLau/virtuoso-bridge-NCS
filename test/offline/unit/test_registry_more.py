@@ -1,6 +1,8 @@
 """Registry persistence / integrity edge cases."""
 
 import json
+import os
+import stat
 import subprocess
 import sys
 import tempfile
@@ -12,12 +14,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src"))
 
 from pydantic import ValidationError
 from common.registry import Registry, RegistryError, UserEntry, load_registry
-from common.paths import registry_path, override_work_dir_for_tests
+from common.paths import init_work_dir, registry_path, work_root
 
 
 class TestRegistryMore(unittest.TestCase):
     def setUp(self):
-        self.wd = override_work_dir_for_tests(Path(tempfile.mkdtemp(prefix="vb-")))
+        self.wd = work_root()
 
     def test_register_auto_timestamps_and_persists(self):
         reg = load_registry(registry_path())
@@ -27,6 +29,14 @@ class TestRegistryMore(unittest.TestCase):
         self.assertFalse(registry_path().with_suffix(".json.tmp").exists())
         reg2 = load_registry(registry_path())
         self.assertEqual(reg2.get("alice").registered_at, entry.registered_at)
+
+    @unittest.skipIf(os.name == "nt", "POSIX file mode semantics only")
+    def test_registry_file_mode_is_0600(self):
+        """配置文档 §5：registry 持久化权限 0600（第八轮 g1 补测；src/registry.py:423 有实现，此前无用例）。"""
+        reg = load_registry(registry_path())
+        reg.register("alice", UserEntry(token="tok-1", mode="remote"))
+        mode = stat.S_IMODE(registry_path().stat().st_mode)
+        self.assertEqual(0o600, mode, oct(mode))
 
     def test_overwrite_refreshes_timestamp(self):
         reg = load_registry(registry_path())
@@ -134,7 +144,7 @@ class TestRegistryUpdate(unittest.TestCase):
     """Registry.update：锁内读改写、深合并、整体校验、token 不可变。"""
 
     def setUp(self):
-        self.wd = override_work_dir_for_tests(Path(tempfile.mkdtemp(prefix="vb-")))
+        self.wd = work_root()
         self.reg = load_registry(registry_path())
 
     def _register(self, user="alice", token="tok-u"):
@@ -193,7 +203,7 @@ class TestCrossProcessLock(unittest.TestCase):
     """§5: registry 写采用 OS 文件锁；锁被别的进程持有时必须超时报错。"""
 
     def setUp(self):
-        self.wd = override_work_dir_for_tests(Path(tempfile.mkdtemp(prefix="vb-")))
+        self.wd = work_root()
 
     def test_file_lock_times_out_when_held_by_another_process(self):
         from common import registry as registry_mod

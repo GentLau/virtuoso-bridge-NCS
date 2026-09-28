@@ -17,15 +17,15 @@ from common.paths import (
     artifact_dir,
     log_dir,
     registry_path,
-    override_work_dir_for_tests,
     temp_dir,
+    work_root,
 )
 from common.skill_client import SkillClient
 
 
 class TestFoundations(unittest.TestCase):
     def setUp(self):
-        self.wd = override_work_dir_for_tests(Path(tempfile.mkdtemp(prefix="vb-")))
+        self.wd = work_root()
 
     def test_working_dir_subdirs(self):
         self.assertEqual(temp_dir().name, "temp")

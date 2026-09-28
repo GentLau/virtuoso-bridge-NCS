@@ -1,3 +1,15 @@
+# === TB 注释头（规范见 test/docs/写TB规范.md §0）=====================
+# 作者: 设计/Codex
+# 最后改动: 2026-09-28 12:04
+# 依赖: 无
+# =====================================================================
+# 六步流程（按 test/docs/写TB规范.md §1–§6）：
+# §1 环境检查：已调用 require_environment(work_dir, token)。
+# §2 构建：绑定 work root、建立真实五接口 BusinessServer。
+# §3 最终检查：环境检查已覆盖 face/token/SKILL 通道。
+# §4 执行：skill/command/upload/download/gui/spectre 全量动作。
+# §5 比对：marker、sha256、返回码、kind 与期望一致。
+# §6 重复/收尾：多接口一次覆盖；保留 JSON 证据，不改共享库。
 """Real remote coverage TB: Windows client -> WSL real Virtuoso daemon.
 
 Run under coverage:
@@ -16,8 +28,14 @@ from pathlib import Path
 SRC = Path(__file__).resolve().parents[3] / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
+ROOT = Path(__file__).resolve().parents[3]
+RUNNERS = ROOT / "test" / "shared" / "runners"
+if str(RUNNERS) not in sys.path:
+    sys.path.insert(0, str(RUNNERS))
 
 from transport.middle import BusinessServer
+from common.paths import init_work_dir
+from env_check import require_environment
 
 
 def main() -> int:
@@ -28,11 +46,16 @@ def main() -> int:
     args = parser.parse_args()
     wd = Path(args.work_dir).resolve()
     out = Path(args.out) if args.out else wd / "cov-remote-real-evidence.json"
-    server = BusinessServer(wd)
+    # 六步 §1：确认目标实例的 token / command / SKILL 通道可用。
+    environment = require_environment(work_dir=str(wd), token=args.token)
+    # 六步 §2/§3：绑定 work root 并建立真实五接口客户端。
+    init_work_dir(wd)
+    server = BusinessServer()
     temp = tempfile.TemporaryDirectory(prefix="vb-cov-remote-")
-    result = {"steps": []}
+    result = {"steps": [], "environment": environment}
     exit_code = 0
     try:
+        # 六步 §4/§5：每个接口执行后读回实际输出/字节并逐项比对。
         skill_marker = f"cov-skill-{uuid.uuid4().hex[:10]}"
         skill = server.execute_skill(f'strcat("{skill_marker}")', token=args.token)
         result["steps"].append({"name": "skill",

@@ -13,6 +13,8 @@ from __future__ import annotations
 
 import tempfile
 import unittest
+
+import pytest
 from pathlib import Path
 from unittest import mock
 
@@ -292,6 +294,21 @@ class TestWriteRequestGuards(unittest.TestCase):
         self.assertIn("layers", str(ctx.exception))
         with self.assertRaises(ValueError):
             pkg.read(L.ReadRequest(token="t", library="L", cell="C", object_filter="x"))
+
+    @pytest.mark.xfail(strict=True,
+                       reason="P-082: region 两点口径未落地（实现只收四元组）")
+    def test_object_filter_region_uses_two_points_per_p074_spec(self):
+        """P-082（钉住，修复前 xfail）：object_filter.region 必须是对角两点。
+
+        spec 4-layout §1.1/§1.3：`{"region":[pos0, pos1]}` 且「bbox …（对角两点，
+        与 read 同形）」。实测（2026-09-28）：两点形式被拒（"must be [x0, y0, x1, y1]"），
+        四元组反而被接受；同文件的 `_bbox`（write 侧）已是两点口径 —— 同一份 spec 两种形状。
+        修复后：两点可用、四元组显式拒绝。
+        """
+        two = {"shape": {"region": [[0.0, 0.0], [1.0, 1.0]]}}
+        self.assertEqual([0.0, 0.0, 1.0, 1.0], L._filter_region(two))
+        with self.assertRaises(ValueError):
+            L._filter_region({"shape": {"region": [0.0, 0.0, 1.0, 1.0]}})
 
 
 class TestXstreamLogHelpers(unittest.TestCase):

@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=====================
-# 作者: 设计/Codex
-# 最后改动: 2026-09-28 15:19
+# 作者: 测试/root
+# 最后改动: 2026-09-28 20:40
 # 依赖: 无
 # =====================================================================
 # 六步流程（按 test/docs/写TB规范.md §1–§6）：
@@ -53,6 +53,25 @@ if str(_FIXTURES) not in sys.path:
 from common.paths import init_work_dir, registry_path  # noqa: E402
 from common.registry import load_registry  # noqa: E402
 from register.server import RegistrationServer  # noqa: E402
+import os  # noqa: E402
+
+
+def _load_admin_token() -> str:
+    """加强凭据（admin），用于绕过"同一 SSH 公钥已被登记"的查重闸门。
+
+    没有它，本 TB 第二次运行（同一把 id_ed25519 + 新随机用户名）会在第 1 步被
+    `credential reuse requires enhanced_token` 挡下 —— 2026-09-28 实测踩到。
+    取法：``VB_ADMIN_TOKEN`` 环境变量 → gitignored 的
+    ``test/artifacts/admin-token.txt``；都缺时返回空串（仅影响重复运行）。
+    """
+    token = os.environ.get("VB_ADMIN_TOKEN", "").strip()
+    if token:
+        return token
+    path = ROOT / "test" / "artifacts" / "admin-token.txt"
+    return path.read_text(encoding="utf-8").strip() if path.exists() else ""
+
+
+ADMIN_TOKEN = _load_admin_token()
 
 try:
     from _win import no_window  # type: ignore
@@ -336,6 +355,9 @@ def main(argv: list[str] | None = None) -> int:
             "roles": {"daemon": {"python": args.py27, "daemon_port": daemon_port}},
             "log_level": "off",
         }
+        if ADMIN_TOKEN:
+            # 同一把客户端公钥已登记过其他用户时必须带加强凭据（spec r21/r22）
+            request_payload["enhanced_token"] = ADMIN_TOKEN
         status, body = call(request_payload)
         session = body.get("token")
         results.add("step1-apply", status == 200 and body.get("stage") == "applied",

@@ -1,0 +1,165 @@
+"""操作 × 参数覆盖矩阵（第八轮的"每个可传参数"口径）。
+
+来源（两者合并，避免单边遗漏）：
+1. **实现**：`src/pyapi/packages/*.py` 的 `OPERATIONS` 表 → op → 请求模型 → pydantic 字段；
+   原子 op（schematic/symbol/layout 的 write commands）从 spec 表格行解析。
+2. **spec**：上层文档的操作/字段表行（`| op | 参数 | … |`）。
+
+覆盖判定（保守）：在**包含该 op 的 TB 文件**里找参数名字面量（`"param"` / `param=`）；
+命中 → CANDIDATE（需人工确认是正向还是负向用法）；零命中 → **GAP**（必须补 TB）。
+
+输出：`test/reports/round8/op-param-matrix.md` + `.json`
+用法::
+
+    python test/shared/runners/build_op_param_matrix.py
+"""
+from __future__ import annotations
+
+import json
+import re
+import sys
+from pathlib import Path
+
+sys.stdout.reconfigure(encoding="utf-8")
+ROOT = Path(__file__).resolve().parents[3]
+OUT = ROOT / "test" / "reports" / "round8"
+PKG = ROOT / "src" / "pyapi" / "packages"
+TB_DIRS = ["test/offline", "test/semi", "test/live", "test/shared/fixtures",
+           "test/shared/runners"]
+
+OPS_RE = re.compile(r'OPERATIONS\s*=\s*\(([\s\S]*?)\n\)')
+ENTRY_RE = re.compile(r'\(\s*"([\w.]+)"\s*,\s*"(\w+)"\s*,\s*(\w+)')
+CLASS_RE = re.compile(r"^class\s+(\w+)\s*[\(:]", re.M)
+FIELD_RE = re.compile(r"^\s{4}([a-z_][a-z0-9_]*)\s*:\s*([^=\n#]+?)\s*(?:=\s*(.+))?$", re.M)
+SPEC_ATOM_RE = re.compile(r"^\|\s*([a-z][a-z0-9_]{3,})\s*\|(.+)\|\s*$", re.M)
+IDENT_RE = re.compile(r"[a-z_][a-z0-9_]{1,}")
+
+
+def load_operations() -> dict[str, dict]:
+    ops: dict[str, dict] = {}
+    for path in sorted(PKG.glob("*.py")):
+        text = path.read_text(encoding="utf-8", errors="replace")
+        match = OPS_RE.search(text)
+        if not match:
+            continue
+        classes = {m.group(1): m.start() for m in CLASS_RE.finditer(text)}
+        top_starts = sorted(m.start() for m in re.finditer(r"^(?:class|def|@)", text, re.M))
+
+        def class_body(start: int) -> str:
+            nxt = [s for s in top_starts if s > start]
+            return text[start:(nxt[0] if nxt else len(text))]
+
+        for op, method, model in ENTRY_RE.findall(match.group(1)):
+            fields: dict[str, dict] = {}
+            start = classes.get(model)
+            if start is not None:
+                body = class_body(start)
+                for name, typ, default in FIELD_RE.findall(body):
+                    fields[name] = {
+                        "type": " ".join(typ.split()),
+                        "has_default": default is not None and default.strip() != "",
+                        "default": (default or "").strip()[:60],
+                    }
+            ops[op] = {"package": path.name, "method": method, "model": model,
+                       "params": fields}
+    return ops
+
+
+def load_spec_atoms() -> dict[str, set[str]]:
+    atoms: dict[str, set[str]] = {}
+    #: 原子 op → 实现里真正读取的 `cmd` 键（从包源码抽，避免把表行里的散文词当参数）
+    pkg_keys: dict[str, set[str]] = {}
+    for pkg in ("schematic", "symbol", "layout"):
+        text = (PKG / f"{pkg}.py").read_text(encoding="utf-8", errors="replace")
+        pkg_keys[pkg] = set(re.findall(r'cmd(?:\.get\(|\[)\s*"(\w+)"', text))
+    for rel, pkg in (("上层/2-schematic.md", "schematic"),
+                     ("上层/3-symbol.md", "symbol"),
+                     ("上层/4-layout.md", "layout")):
+        path = ROOT / "spec" / "design-concepts" / rel
+        if not path.exists():
+            continue
+        for op, rest in SPEC_ATOM_RE.findall(path.read_text(encoding="utf-8")):
+            params = {t for t in IDENT_RE.findall(rest) if t in pkg_keys[pkg]}
+            atoms.setdefault(op, set()).update(params)
+    return atoms
+
+
+def main() -> int:
+    OUT.mkdir(parents=True, exist_ok=True)
+    ops = load_operations()
+    spec_atoms = load_spec_atoms()
+    print(f"实现 OPERATIONS: {len(ops)} 个 op")
+    print(f"spec 原子表: {len(spec_atoms)} 个原子 op")
+
+    corpus: dict[str, str] = {}
+    for rel in TB_DIRS:
+        for path in (ROOT / rel).rglob("*.py"):
+            corpus[path.relative_to(ROOT).as_posix()] = path.read_text(
+                encoding="utf-8", errors="replace")
+
+    def op_aliases(op: str) -> list[str]:
+        """TB 里常见 `OP + "lib.list"` 的拼接写法 —— 同时按末两段匹配。"""
+        parts = op.split(".")
+        alias = ".".join(parts[-2:]) if len(parts) >= 3 else op
+        return [op] if alias == op else [op, alias]
+
+    def method_aliases(op: str) -> list[str]:
+        """包方法名（如 `upload_file`）也是 TB 的真实入口。
+
+        2026-09-28 修：原实现只按 op 字符串选文件，`self.server.upload_file(...)`
+        这类方法调用形态会被漏掉 → 参数被判 GAP（假阳）。方法名作为补充别名，
+        仅在**找到方法调用**（`name(`）时才算命中文件；且只收**含下划线**的
+        特征名（`read`/`write`/`export` 这类通用词不收，避免把无关 TB 拉进来）。
+        """
+        info = ops.get(op)
+        name = info["method"] if info else ""
+        return [name] if name and "_" in name else []
+
+    rows = []
+    for op, info in sorted(ops.items()):
+        aliases = op_aliases(op)
+        methods = method_aliases(op)
+        files = [rel for rel, body in corpus.items()
+                 if any(alias in body for alias in aliases)
+                 or any(f"{m}(" in body for m in methods)]
+        for param, meta in sorted(info["params"].items()):
+            pattern = re.compile(rf'["\']{re.escape(param)}["\']|{re.escape(param)}\s*=')
+            hits = [rel for rel in files if pattern.search(corpus[rel])]
+            rows.append({
+                "op": op, "layer": "request", "param": param,
+                "required": not meta["has_default"], "type": meta["type"],
+                "op_tb_files": len(files), "param_hits": hits[:6],
+                "status": "CANDIDATE" if hits else ("GAP" if files else "NO-OP-TB"),
+            })
+    for atom, params in sorted(spec_atoms.items()):
+        files = [rel for rel, body in corpus.items()
+                 if any(alias in body for alias in op_aliases(atom))]
+        for param in sorted(params):
+            pattern = re.compile(rf'["\']{re.escape(param)}["\']|{re.escape(param)}\s*=')
+            hits = [rel for rel in files if pattern.search(corpus[rel])]
+            rows.append({
+                "op": atom, "layer": "atomic", "param": param,
+                "required": False, "type": "spec-table",
+                "op_tb_files": len(files), "param_hits": hits[:6],
+                "status": "CANDIDATE" if hits else ("GAP" if files else "NO-OP-TB"),
+            })
+
+    (OUT / "op-param-matrix.json").write_text(
+        json.dumps(rows, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+
+    gaps = [r for r in rows if r["status"] != "CANDIDATE"]
+    lines = ["# 操作 × 参数覆盖矩阵（机器预判）", "",
+             f"- 条目 {len(rows)}：CANDIDATE {len(rows) - len(gaps)} / 非 CANDIDATE {len(gaps)}",
+             "- `GAP` = 有 TB 引用了该 op 但**没有任何 TB 出现该参数**；"
+             "`NO-OP-TB` = 没有任何 TB 引用该 op（优先处理）。", ""]
+    for row in gaps:
+        lines.append(f"- [{row['status']}] `{row['op']}` · `{row['param']}` "
+                     f"({row['type'][:40]}, required={row['required']}) — "
+                     f"op_tb_files={row['op_tb_files']}")
+    (OUT / "op-param-matrix.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    print(f"矩阵 {len(rows)} 条；非 CANDIDATE {len(gaps)}（明细见 op-param-matrix.md）")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

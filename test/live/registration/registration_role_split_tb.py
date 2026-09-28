@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=====================
 # 作者: 设计/Codex
-# 最后改动: 2026-09-28 16:35
+# 最后改动: 2026-09-28 20:58
 # 依赖: 无
 # =====================================================================
 # 六步流程（按 test/docs/写TB规范.md §1–§6）：
@@ -373,6 +373,12 @@ def main(argv: list[str] | None = None) -> int:
                 results.add("deploy-not-on-command-file-roots",
                             lab_no_tree.returncode == 0 and "clean" in (lab_no_tree.stdout or ""),
                             command_root=f"{lab_root}/command", file_root=f"{lab_root}/file")
+                # 注册#011（第八轮缺口动作）：用户可读路径一律用唯一用户名，**不得含 token 值**。
+                paths = [setup_path, f"{ws_root}/daemon", f"{ws_root}/gui",
+                         f"{ws_root}/spectre", f"{lab_root}/command", f"{lab_root}/file"]
+                leaked = [p for p in paths if token and token in p]
+                results.add("deploy-paths-contain-no-token", not leaked,
+                            token_present_in=leaked, paths=paths)
         results.add("steps-1-4-zero-registry-write",
                     (registry_path().read_bytes() if registry_path().exists() else None)
                     == registry_snapshot)

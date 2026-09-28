@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
-# 作者: 设计/上层开发
-# 最后改动: 2026-09-28 22:40
+# 作者: 测试/root
+# 最后改动: 2026-09-28 19:59
 # 依赖: 无
 # =======================================================================
 # 六步流程（test/docs/写TB规范.md §1）：
@@ -170,6 +170,57 @@ def _case_errors(transport) -> None:
     _check(not bad_source.get("ok"), "invalid source must fail")
 
 
+def _case_params(transport) -> None:
+    """SEARCH-03 / INFO-02：limit / max_files / snippet / max_candidates / include_raw。"""
+    name_base = dict(source="local", doc_root=LOCAL_DOC_ROOT, query="dbOpenCellView",
+                     search_in="name")
+    one = _search(transport, limit=1, timeout=60, **name_base)
+    hits1 = one.get("results") or []
+    _check(len(hits1) == 1, f"limit=1 must cap results: {one}")
+    five = _search(transport, limit=5, timeout=60, **name_base)
+    hits5 = five.get("results") or []
+    _check(1 <= len(hits5) <= 5, f"limit=5 cap: {len(hits5)}")
+
+    # snippet：body 层命中带 snippet；False 时必须剥掉该字段
+    body = dict(source="local", doc_root=LOCAL_DOC_ROOT, query="ground bounce",
+                search_in="body", under=["cpf_ref"])
+    with_snip = _search(transport, snippet=True, limit=5, timeout=120, **body)
+    body_hits = with_snip.get("results") or []
+    _check(any(h.get("snippet") for h in body_hits),
+           f"default snippet=True must produce snippets: {body_hits[:1]}")
+    nosnip = _search(transport, snippet=False, limit=5, timeout=120, **body)
+    _check((nosnip.get("results") or [])
+           and all("snippet" not in h for h in nosnip["results"]),
+           "snippet=False must drop snippet fields")
+
+    # max_files：本地扫描上限（max_files=1 → scanned_files ≤ 1）
+    capped = _search(transport, max_files=1, limit=50, timeout=120, **body)
+    _check(int(capped.get("scanned_files") or 0) <= 1,
+           f"max_files=1 must cap scanned files: {capped.get('scanned_files')}")
+
+    # max_candidates：远端 grep 候选上限（看 body-grep step 的 candidates）
+    remote_base = dict(source="remote", doc_root=REMOTE_DOC_ROOT,
+                       query="dbOpenCellView", search_in="body")
+    cap1 = _search(transport, max_candidates=1, limit=50, timeout=240, **remote_base)
+    step1 = next((s for s in cap1.get("steps") or [] if s.get("name") == "body-grep"), {})
+    cand1 = int((step1.get("detail") or {}).get("candidates") or 0)
+    _check(cand1 <= 1, f"max_candidates=1 must cap grep: {step1}")
+    full = _search(transport, max_candidates=50, limit=50, timeout=240, **remote_base)
+    step2 = next((s for s in full.get("steps") or [] if s.get("name") == "body-grep"), {})
+    cand50 = int((step2.get("detail") or {}).get("candidates") or 0)
+    _check(cand50 >= cand1, f"max_candidates=50 must not cap below 1: {step2}")
+
+    # include_raw：原始 HTML 只在显式要求时返回
+    with_raw = _info(transport, source="local", doc_root=LOCAL_DOC_ROOT,
+                     name="dbOpenCellViewByType", include_raw=True, timeout=60)
+    _check(bool(with_raw.get("raw_html")),
+           "include_raw=True must return raw_html")
+    without_raw = _info(transport, source="local", doc_root=LOCAL_DOC_ROOT,
+                        name="dbOpenCellViewByType", include_raw=False, timeout=60)
+    _check(not without_raw.get("raw_html"),
+           "include_raw=False must omit raw_html")
+
+
 def run_suite(transport) -> list[tuple[str, str]]:
     results: list[tuple[str, str]] = []
 
@@ -185,6 +236,7 @@ def run_suite(transport) -> list[tuple[str, str]]:
     run("SEARCH-02 modes + unknown", lambda: _case_search_modes(transport))
     run("INFO-01 local found/missing", lambda: _case_info_local(transport))
     run("SEARCH/INFO-02 remote", lambda: _case_remote(transport))
+    run("SEARCH/INFO-03 params", lambda: _case_params(transport))
     run("ERR-01 bad source/root", lambda: _case_errors(transport))
     return results
 

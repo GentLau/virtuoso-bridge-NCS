@@ -91,9 +91,12 @@ def build_doc_tree(root: Path) -> Path:
 class FakeMiddle:
     """假中层：query 校验 + C/D 用本地 fixture 模拟远端。"""
 
-    def __init__(self, remote_root: Path | None = None) -> None:
+    def __init__(self, remote_root: Path | None = None,
+                 candidates: list[str] | None = None) -> None:
         self.remote_root = remote_root
         self.calls: list[tuple] = []
+        self.command_timeouts: list = []
+        self.candidates = candidates
 
     def query(self, *, token: str) -> QueryResult:
         self.calls.append(("query", token))
@@ -103,8 +106,10 @@ class FakeMiddle:
 
     def run_command(self, cmd, timeout=None, *, token, parallel=False) -> CommandResult:
         self.calls.append(("run_command", token, cmd))
+        self.command_timeouts.append(timeout)
+        stdout = ("\n".join(self.candidates) + "\n") if self.candidates else "cpf_ref/reference.html\n"
         return CommandResult(
-            returncode=0, stdout="cpf_ref/reference.html\n", stderr="", kind="command"
+            returncode=0, stdout=stdout, stderr="", kind="command"
         )
 
     def download_file(self, remote_path, local_path, timeout=None, *, token,
@@ -158,6 +163,33 @@ class TestSearchLocal(SkillrefBase):
             {op[0] for op in OPERATIONS},
             {"virtuoso.skillref.search", "virtuoso.skillref.info"},
         )
+
+    def test_missing_local_doc_root_reports_path_without_transport(self):
+        """skillref#055：doc_root 不可见 → 错误文案带该路径，且不触达传输层。"""
+        middle = FakeMiddle()
+        missing = str(self.tmp / "no-such-doc-root")
+        result = self.local_search(middle, doc_root=missing)
+        self.assertFalse(result.ok)
+        self.assertIn(missing, result.error or "")
+        remote = [c for c in middle.calls if c[0] in ("run_command", "download_file")]
+        self.assertEqual(remote, [], "缺 doc_root 时不得发生任何远端 C/D 调用")
+
+    def test_search_in_all_equals_body(self):
+        """skillref#103：`all` = 最深一档 body（层序与 body 命中一致）。"""
+        all_result = self.local_search(
+            FakeMiddle(), query="ground bounce", search_in="all", under=["cpf_ref"])
+        body_result = self.local_search(
+            FakeMiddle(), query="ground bounce", search_in="body", under=["cpf_ref"])
+        self.assertTrue(all_result.ok and body_result.ok,
+                        f"{all_result.error} / {body_result.error}")
+        self.assertEqual(all_result.layers_run, body_result.layers_run)
+        self.assertEqual(all_result.search_in, "body")
+        body_hits = [h["relative_path"] for h in all_result.results if h["layer"] == "body"]
+        self.assertEqual(
+            body_hits,
+            [h["relative_path"] for h in body_result.results if h["layer"] == "body"],
+        )
+        self.assertTrue(body_hits, "all/body 都必须产出正文层命中")
 
     def test_name_layer_exact(self):
         middle = FakeMiddle()
@@ -281,6 +313,38 @@ class TestSearchRemote(SkillrefBase):
             [hit["relative_path"] for hit in result.results if hit["layer"] == "body"],
             ["cpf_ref/reference.html"],
         )
+
+    def test_max_candidates_caps_downloads(self):
+        """skillref#140：max_candidates 同时是下载上限。"""
+        self.config({"source": "remote", "doc_root": str(self.doc),
+                     "doc_token": DOC_TOKEN})
+        middle = FakeMiddle(remote_root=self.doc,
+                            candidates=["cpf_ref/reference.html"] * 5)
+        result = Package(middle).search(SearchRequest(
+            token=FPX, query="ground bounce", search_in="body",
+            under=["cpf_ref"], max_candidates=2, limit=50,
+        ))
+        self.assertTrue(result.ok, result.error)
+        downloads = [call for call in middle.calls
+                     if call[0] == "download_file" and "cpf_ref/" in str(call[2])]
+        self.assertLessEqual(len(downloads), 2,
+                             f"下载次数必须 ≤ max_candidates=2：{downloads}")
+
+    def test_body_remote_timeout_defaults_to_120_and_can_be_overridden(self):
+        """skillref#141：正文层远端候选搜索默认 120s；调用方可覆盖。"""
+        self.config({"source": "remote", "doc_root": str(self.doc),
+                     "doc_token": DOC_TOKEN})
+        default_middle = FakeMiddle(remote_root=self.doc)
+        Package(default_middle).search(SearchRequest(
+            token=FPX, query="ground bounce", search_in="body", under=["cpf_ref"],
+        ))
+        self.assertEqual(default_middle.command_timeouts, [120])
+        override_middle = FakeMiddle(remote_root=self.doc)
+        Package(override_middle).search(SearchRequest(
+            token=FPX, query="ground bounce", search_in="body", under=["cpf_ref"],
+            timeout=240,
+        ))
+        self.assertEqual(override_middle.command_timeouts, [240])
 
     def test_invalid_doc_token_message(self):
         self.config({"source": "remote", "doc_root": str(self.doc), "doc_token": "revoked"})

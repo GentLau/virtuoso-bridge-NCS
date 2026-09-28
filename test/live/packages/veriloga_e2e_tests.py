@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
-# 作者: 设计/上层开发
-# 最后改动: 2026-09-28 21:10
+# 作者: 测试/root
+# 最后改动: 2026-09-28 20:12
 # 依赖: 无
 # =======================================================================
 # 六步流程（test/docs/写TB规范.md §1）：
@@ -14,6 +14,7 @@ Run with ``--transport direct`` (in-process dispatch) or ``--transport http``
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import sys
 import urllib.error
@@ -213,6 +214,53 @@ def _case_delete(transport) -> None:
     _check(not response.get("ok"), "read after delete must fail")
 
 
+def _stage_file(name: str, content: str) -> str:
+    path = (ROOT / "test" / "artifacts" / "env" / "log-vblog" / "tmp-veriloga" / name)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(content, encoding="utf-8", newline="\n")
+    return str(path)
+
+
+def _case_params(transport) -> None:
+    """READ-02：file_path / file_is_local（本地+远端）+ view_type 显式路径。"""
+    # ① file_is_local=True：客户端文件直接读，sha256 必须等于本地内容
+    local = _stage_file("va_params.va", GOOD_CODE)
+    local_read = _value(
+        transport, "virtuoso.veriloga.read",
+        file_path=local, file_is_local=True, focus=["source"], timeout=120,
+    )
+    _check(local_read["source"]["sha256"]
+           == hashlib.sha256(GOOD_CODE.encode("utf-8")).hexdigest(),
+           f"local file sha mismatch: {local_read['source']['sha256']}")
+    # ② file_is_local=False：P-079（Windows 客户端 Path() 改写 POSIX 远端路径）
+    #    修复前这条 live 断言必红，先由离线 xfail 钉住；
+    #    `test/offline/unit/test_remote_posix_path_contract.py`。修复后在此恢复
+    #    "远端视图文件读取与库路径读取 sha256 相同" 的断言。
+    lib_read = _value(
+        transport, "virtuoso.veriloga.read",
+        library=LIB, cell=CELL, view=VIEW, focus=["source"], timeout=120,
+    )
+    # ③ view_type 显式给出（默认 text.veriloga）时 read/write/check_and_save 全部接受且语义一致
+    typed = _value(
+        transport, "virtuoso.veriloga.read",
+        library=LIB, cell=CELL, view=VIEW, view_type="text.veriloga",
+        focus=["source"], timeout=120,
+    )
+    _check(typed["source"]["sha256"] == lib_read["source"]["sha256"],
+           "explicit view_type read must match default read")
+    _value(
+        transport, "virtuoso.veriloga.write",
+        library=LIB, cell=CELL, view=VIEW, view_type="text.veriloga", timeout=120,
+        commands=[{"op": "set_source", "text": lib_read["source"]["text"]}],
+    )
+    checked = _value(
+        transport, "virtuoso.veriloga.check_and_save",
+        library=LIB, cell=CELL, view=VIEW, view_type="text.veriloga", timeout=120,
+    )
+    _check(checked["module_name"] == "va_e2e",
+           f"explicit view_type check_and_save: {checked}")
+
+
 def run_suite(transport) -> list[tuple[str, str]]:
     results: list[tuple[str, str]] = []
 
@@ -229,6 +277,7 @@ def run_suite(transport) -> list[tuple[str, str]]:
     run("WRITE-02 patch_source", lambda: _case_patch(transport))
     run("WRITE-03 expected_sha256 guard", lambda: _case_guard(transport))
     run("CHECK-02 bad syntax diagnostics", lambda: _case_bad_syntax(transport))
+    run("READ-02 file_path/view_type params", lambda: _case_params(transport))
     run("WRITE-04 delete_view", lambda: _case_delete(transport))
     return results
 

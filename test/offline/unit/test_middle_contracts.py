@@ -17,7 +17,7 @@ from pyapi.models import CommandResult, VirtuosoResult, ExecutionStatus
 from transport.middle import BusinessServer
 from common.registry import UserEntry, load_registry
 from common.remote_paths import RemotePathError
-from common.paths import registry_path, override_work_dir_for_tests
+from common.paths import init_work_dir, registry_path, work_root
 from common.ssh import UnknownEffectError
 
 
@@ -73,10 +73,9 @@ def remote_entry():
 class MiddleContractBase(unittest.TestCase):
     def setUp(self):
         wd = Path(tempfile.mkdtemp(prefix="vb-"))
-        override_work_dir_for_tests(wd)
         registry = load_registry(registry_path())
         registry.register("alice", remote_entry())
-        self.server = BusinessServer(wd)
+        self.server = BusinessServer()
         self.fake = FakeRemote()
         fakes = {"tok-c": self.fake}
         self._patched = mock.patch.object(
@@ -269,7 +268,7 @@ class TestQueryContract(unittest.TestCase):
     """§4.2 只读查询：返回 role root、gui display、spectre bin。"""
 
     def setUp(self):
-        self.wd = override_work_dir_for_tests(Path(tempfile.mkdtemp(prefix="vb-")))
+        self.wd = work_root()
         self.registry = load_registry(registry_path())
         entry = UserEntry(token="tok-q", mode="remote")
         entry.ssh.default.host = "server-a"

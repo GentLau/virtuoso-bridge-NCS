@@ -2,6 +2,7 @@
 
 import os
 import sys
+import shutil
 import tempfile
 import threading
 import time
@@ -14,7 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src"))
 from pyapi.models import CommandResult, ExecutionStatus, VirtuosoResult
 from transport.middle import BusinessServer
 from common.registry import UserEntry, load_registry
-from common.paths import registry_path, override_work_dir_for_tests
+from common.paths import init_work_dir, registry_path, work_root
 from transport import middle as middle_mod
 
 
@@ -83,13 +84,13 @@ class FakeSkillClient:
 
 class TestBusinessServerRouting(unittest.TestCase):
     def setUp(self):
-        self.wd = override_work_dir_for_tests(Path(tempfile.mkdtemp(prefix="vb-")))
+        self.wd = work_root()
         self.reg = load_registry(registry_path())
         FakeRemoteClient.instances.clear()
         FakeSkillClient.instances.clear()
 
     def _server(self):
-        return BusinessServer(self.wd)
+        return BusinessServer()
 
     def test_execute_skill_remote_routes_and_tunnels(self):
         entry = make_remote_entry()
@@ -192,8 +193,8 @@ class TestBusinessServerRouting(unittest.TestCase):
 
 class TestMiddleErrorAndLocalPaths(unittest.TestCase):
     def setUp(self):
-        self.wd = override_work_dir_for_tests(Path(tempfile.mkdtemp(prefix="vb-")))
-        self.server = BusinessServer(self.wd)
+        self.wd = work_root()
+        self.server = BusinessServer()
 
     def test_run_command_unknown_token(self):
         r = self.server.run_command("echo x", token="ghost")
@@ -225,25 +226,32 @@ class TestMiddleErrorAndLocalPaths(unittest.TestCase):
 
     def test_local_upload_directory_requires_recursive(self):
         src = Path(self.wd) / "tree"
+        dst = Path(self.wd) / "dst"
+        shutil.rmtree(src, ignore_errors=True)
+        shutil.rmtree(dst, ignore_errors=True)
         src.mkdir()
-        r = self.server._local_upload(src, str(Path(self.wd) / "dst"), recursive=False)
+        r = self.server._local_upload(src, str(dst), recursive=False)
         self.assertEqual(r.returncode, 1)
         self.assertIn("recursive=True", r.stderr)
 
     def test_local_upload_recursive(self):
         src = Path(self.wd) / "tree"
+        dst = Path(self.wd) / "copy"
+        shutil.rmtree(src, ignore_errors=True)
+        shutil.rmtree(dst, ignore_errors=True)
         (src / "sub").mkdir(parents=True)
         (src / "sub" / "f.txt").write_text("x", encoding="utf-8")
-        dst = Path(self.wd) / "copy"
         r = self.server._local_upload(src, str(dst), recursive=True)
         self.assertEqual(r.returncode, 0)
         self.assertEqual((dst / "sub" / "f.txt").read_text(encoding="utf-8"), "x")
 
     def test_local_download_recursive(self):
         src = Path(self.wd) / "tree"
+        dst = Path(self.wd) / "copy"
+        shutil.rmtree(src, ignore_errors=True)
+        shutil.rmtree(dst, ignore_errors=True)
         (src / "sub").mkdir(parents=True)
         (src / "sub" / "f.txt").write_text("x", encoding="utf-8")
-        dst = Path(self.wd) / "copy"
         r = self.server._local_download(str(src), dst, recursive=True)
         self.assertEqual(r.returncode, 0)
         self.assertEqual((dst / "sub" / "f.txt").read_text(encoding="utf-8"), "x")
@@ -275,7 +283,7 @@ class TestReloadDefersInFlightClose(unittest.TestCase):
     """v27: /api/process/reload 不打断在途请求。"""
 
     def setUp(self):
-        self.wd = override_work_dir_for_tests(Path(tempfile.mkdtemp(prefix="vb-")))
+        self.wd = work_root()
         self.reg = load_registry(registry_path())
 
     def test_reload_defers_cache_close_for_in_flight_token(self):
@@ -313,9 +321,7 @@ class TestLocalShellStartupBound(unittest.TestCase):
     """端到端 deadline：本地常驻 shell 起不来时必须报错，不能永久挂起。"""
 
     def setUp(self):
-        self.wd = override_work_dir_for_tests(
-            Path(tempfile.mkdtemp(prefix="vb-"))
-        )
+        self.wd = work_root()
 
     def test_local_shell_startup_is_bounded(self):
         read_fd, write_fd = os.pipe()

@@ -22,7 +22,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src"))
 import register.server as register_server
 from register.server import RegistrationServer
 from common.registry import UserEntry, load_registry
-from common.paths import registry_path, override_work_dir_for_tests
+from common.paths import registry_path, work_root
 from _ssh_cred import make_credential
 
 _ADMIN_TOKEN = "test-admin-token"
@@ -38,9 +38,7 @@ class TestUpdateHostKeyProbe(unittest.TestCase):
         register_server._ADMIN_TOKEN_HASH = hashlib.sha256(
             _ADMIN_TOKEN.encode("utf-8")
         ).hexdigest()
-        self.wd = override_work_dir_for_tests(
-            Path(tempfile.mkdtemp(prefix="vb-"))
-        )
+        self.wd = work_root()
         self.registry = load_registry(registry_path())
         key = make_credential()
         entry = UserEntry(token="tok-upd-probe", mode="remote")

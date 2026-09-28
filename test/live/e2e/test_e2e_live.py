@@ -1,3 +1,15 @@
+# === TB 注释头（规范见 test/docs/写TB规范.md §0）=====================
+# 作者: 设计/Codex
+# 最后改动: 2026-09-28 12:04
+# 依赖: 无
+# =====================================================================
+# 六步流程（按 test/docs/写TB规范.md §1–§6）：
+# §1 环境检查：VB_E2E 门禁 + 发现真实 daemon；不满足则 skip。
+# §2 构建：六步注册测试账号、绑定 work_root、建立 server。
+# §3 最终检查：确认注册/runtime/隧道就绪。
+# §4 执行：注册 + skill/command/file 全链路。
+# §5 比对：阶段、marker、文件字节和下载结果与期望一致。
+# §6 重复/收尾：单链一次完整执行；保留证据，不清理真实持久对象。
 """Live end-to-end middle+bottom test against the real Virtuoso (wsl-gent).
 
 Run with:  python -m unittest test.e2e.test_e2e_live -v
@@ -10,7 +22,6 @@ import os
 import socket
 import subprocess
 import sys
-import tempfile
 import threading
 import time
 import unittest
@@ -21,7 +32,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src"))
 
 from transport.middle import BusinessServer
 from register import RegistrationFlow, RegistrationRequest
-from common.paths import override_work_dir_for_tests
+from common.paths import work_root
 from common.ssh import SSHRunner
 
 HOST = "wsl-gent"
@@ -46,6 +57,11 @@ def _discover_current_daemon() -> tuple[str, int] | None:
     pinned_port = os.environ.get("VB_E2E_BOOTSTRAP_PORT")
     if pinned_token and pinned_port:
         return pinned_token, int(pinned_port)
+    # P-046（2026-09-23）：**默认不再自动挑**。引导请求是 RBStop()+load(新 setup)，
+    # 挑中别人的 CIW 会把那个实例的 daemon 换掉（本轮实测把在用实例打挂过）。
+    # 只有在明确声明"整机专用、随便挑"时才允许自动发现。
+    if os.environ.get("VB_E2E_ALLOW_AUTO_DISCOVER") != "1":
+        return None
     try:
         out = subprocess.run(
             ["ssh", HOST, 'pgrep -fa "ramic_bridge_daemon_(3|27)\\.py"'],
@@ -123,15 +139,18 @@ class TestLiveE2E(unittest.TestCase):
     @unittest.skipUnless(os.environ.get("VB_E2E") == "1", "set VB_E2E=1 to run live tests")
     def test_full_flow(self):
         token = "e2e-" + uuid.uuid4().hex[:8]
-        wd = override_work_dir_for_tests(Path(tempfile.mkdtemp(prefix="vb-")))
-        server = BusinessServer(wd)
-
+        wd = work_root()
+        server = BusinessServer()
         # 1-4. six-step registration: apply (validate + probe + deploy)
         flow = RegistrationFlow(server.registry)
         local_port = _free_local_port()  # avoid stale detached tunnels
         state = flow.apply(RegistrationRequest(
             mode="remote", user="e2e", token=token,
-            ssh={"default": {"host": HOST, "user": USER}},
+            # spec r22: remote role 必须带 SSH 凭据（key_dir 缺省 ~/.ssh，key 必填）。
+            # 本 TB 之前没带 → 注册第一步直接 ValidationError（第五轮 live 复跑抓到）。
+            ssh={"default": {"host": HOST, "user": USER,
+                             "key_dir": os.environ.get("VB_E2E_KEY_DIR", "~/.ssh"),
+                             "key": os.environ.get("VB_E2E_KEY", "id_ed25519")}},
             root={"default": SCRATCH},
             roles={"daemon": {"local_port": local_port}},
         ))
@@ -140,7 +159,11 @@ class TestLiveE2E(unittest.TestCase):
 
         # load into CIW (through whichever new daemon is running)
         current = _discover_current_daemon()
-        self.assertIsNotNone(current, "no running bridge daemon to bootstrap from")
+        if current is None:
+            self.skipTest(
+                "需要**专用**引导 CIW：设 VB_E2E_BOOTSTRAP_TOKEN/PORT（或明确声明整机专用时 "
+                "设 VB_E2E_ALLOW_AUTO_DISCOVER=1）。默认不自动挑实例 —— 见 P-046："
+                "引导会 RBStop()+load(新 setup)，挑中别人的 CIW 会把对方打挂。")
         cur_token, cur_port = current
         _send_load(state.setup_path, cur_token, cur_port)
         time.sleep(2)

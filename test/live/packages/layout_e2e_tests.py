@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
-# 作者: 设计/上层开发
-# 最后改动: 2026-09-28 16:44
+# 作者: 测试/root
+# 最后改动: 2026-09-28 20:23
 # 依赖: 无
 # =======================================================================
 
@@ -507,6 +507,143 @@ def _case_gds(transport) -> None:
     )
 
 
+def _case_read_params(transport) -> None:
+    """READ-02：region_mode / view_type 与 display 的 view_type 差异。
+
+    `depth>0` 单列在 `test/semi/probes/layout_depth_probe.py`：P-082 未修前
+    任何 depth>0 请求都会先在 `_bbox(region)` 上抛格式错误（region 是扁平
+    4 元组、`_bbox` 要嵌套两点），本 TB 不断言它以免假红；修复后把
+    depth 断言迁回本用例（见 P-082 卡片）。
+    """
+    # region_mode：同一条 region，intersect 命中跨界 rect，contain 排除
+    straddle = {"shape": {"region": [1, 0, 3, 1.5]},
+                "instance": "none", "via": "none"}
+    inter = _value(transport, "virtuoso.layout.read", library=LIB, cell=CELL,
+                   view=VIEW, focus=["shapes"], detail="index",
+                   object_filter=straddle, region_mode="intersect")
+    inside = _value(transport, "virtuoso.layout.read", library=LIB, cell=CELL,
+                    view=VIEW, focus=["shapes"], detail="index",
+                    object_filter=straddle, region_mode="contain")
+    _check(len(inter["shapes"]) >= 1,
+           f"intersect must hit straddling rect: {inter['shapes']}")
+    _check(len(inside["shapes"]) == 0,
+           f"contain must exclude straddling rect: {inside['shapes']}")
+
+    # view_type：显式 maskLayout 与默认等价；错误类型必须结构化失败
+    explicit = _value(transport, "virtuoso.layout.read", library=LIB, cell=CELL,
+                      view=VIEW, view_type="maskLayout", focus=["summary"])
+    default = _value(transport, "virtuoso.layout.read", library=LIB, cell=CELL,
+                     view=VIEW, focus=["summary"])
+    _check(explicit["shape_count"] == default["shape_count"],
+           f"explicit view_type changed read: {explicit['shape_count']} vs "
+           f"{default['shape_count']}")
+    wrong = transport.call({
+        "operation": "virtuoso.layout.read", "token": TOKEN,
+        "library": LIB, "cell": CELL, "view": VIEW,
+        "view_type": "schematic", "focus": ["summary"]})
+    _check(not wrong.get("ok"), "wrong view_type must fail")
+
+    # display：显式 view_type 可用；错误 view_type 打不开 layout 视图
+    _value(transport, "virtuoso.layout.display", library=LIB, cell=CELL,
+           view=VIEW, view_type="maskLayout",
+           commands=[{"op": "fit_view"}], timeout=120)
+    bad_display = transport.call({
+        "operation": "virtuoso.layout.display", "token": TOKEN,
+        "library": LIB, "cell": CELL, "view": VIEW,
+        "view_type": "schematic", "commands": [{"op": "fit_view"}]})
+    _check(not bad_display.get("ok"),
+           f"display with wrong view_type must fail: {bad_display}")
+
+
+def _case_gds_params(transport) -> None:
+    """GDS-02：log_path / cleanup_policy / ref_lib_file / view_type。"""
+    artifact = ROOT / "test" / "artifacts" / "evidence" / "layout-tb"
+    map_file = artifact / "y_map.map"
+    _write_stream_map(map_file)
+    refs = artifact / "ref_libs.txt"
+    refs.write_text("cdsDefTechLib\n", encoding="utf-8", newline="\n")
+
+    def _run_dir_exists(run_dir: str) -> bool:
+        out = transport.call({"operation": "basic.command.run", "token": TOKEN,
+                              "cmd": f"test -d {run_dir} && echo YES || echo NO"})
+        return "YES" in str((out.get("data") or {}).get("result") or "")
+
+    # cleanup_policy=never：run dir 保留；自定义 log_path 必须落盘
+    gds_a = artifact / "lay_params_never.gds"
+    log_a = artifact / "lay_params_never.xstream.log"
+    for stale in (gds_a, log_a):
+        stale.unlink(missing_ok=True)
+    response = transport.call({
+        "operation": "virtuoso.layout.gds", "token": TOKEN, "action": "export",
+        "library": LIB, "cell": CELL, "view": VIEW, "view_type": "maskLayout",
+        "file_path": str(gds_a), "log_path": str(log_a), "layer_map": str(map_file),
+        "cleanup_policy": "never", "timeout": 180})
+    _check(response.get("ok"), f"export failed: {response.get('error')}")
+    data = response.get("data") or {}
+    exported = data.get("value") or {}
+    _check(exported["reason"] == "completed", f"export: {exported}")
+    _check(log_a.is_file() and log_a.stat().st_size > 0, f"log_path not written: {log_a}")
+    _check("XSTRM-234" in log_a.read_text(encoding="utf-8", errors="replace"),
+           "custom log missing completion marker")
+    step_names = {step.get("name") for step in data.get("steps") or []}
+    _check("stage_map" in step_names, f"layer_map not staged: {step_names}")
+    run_dir = str(exported.get("remote_run_dir") or "")
+    _check(run_dir and _run_dir_exists(run_dir),
+           f"cleanup_policy=never must keep run dir: {run_dir}")
+    transport.call({"operation": "basic.command.run", "token": TOKEN,
+                    "cmd": f"rm -rf {run_dir}"})
+
+    # ref_lib_file 仅 import 生效：导入时 -refLibList 必须被 staging（step=stage_refs）
+    import_lib = "laygds2_lib"
+    _skill(
+        transport,
+        "let((lib wd) wd = getWorkingDir() lib = ddGetObj(\"%s\") "
+        "unless(lib lib = ddCreateLib(\"%s\" strcat(wd \"/%s\"))) "
+        "unless(lib error(\"library create failed\")) ddUpdateLibList() \"lib-ok\")"
+        % (import_lib, import_lib, import_lib),
+    )
+    try:
+        imp = transport.call({
+            "operation": "virtuoso.layout.gds", "token": TOKEN, "action": "import",
+            "library": import_lib, "file_path": str(gds_a),
+            "tech_lib": "cdsDefTechLib", "layer_map": str(map_file),
+            "ref_lib_file": str(refs), "ref_lib_file_is_local": True,
+            "top_cell": CELL, "timeout": 180, "poll_interval": 1})
+        _check(imp.get("ok"), f"import with ref_lib_file failed: {imp.get('error')}")
+        imp_steps = {step.get("name"): step.get("ok")
+                     for step in (imp.get("data") or {}).get("steps") or []}
+        _check("stage_refs" in imp_steps and imp_steps["stage_refs"] is True,
+               f"ref_lib_file not staged on import: {imp_steps}")
+    finally:
+        _skill(
+            transport,
+            "let((o) o = ddGetObj(\"%s\" \"%s\") when(o ddDeleteObj(o)) "
+            "o = ddGetObj(\"%s\") when(o ddDeleteObj(o)) \"cleaned\")"
+            % (import_lib, CELL, import_lib),
+        )
+
+    # cleanup_policy=success（默认）：跑完 run dir 必须消失
+    gds_b = artifact / "lay_params_success.gds"
+    gds_b.unlink(missing_ok=True)
+    exported_b = _value(
+        transport, "virtuoso.layout.gds", action="export",
+        library=LIB, cell=CELL, view=VIEW,
+        file_path=str(gds_b), layer_map=str(map_file), timeout=180,
+    )
+    _check(exported_b["reason"] == "completed", f"export(success): {exported_b}")
+    run_dir_b = str(exported_b.get("remote_run_dir") or "")
+    _check(run_dir_b and not _run_dir_exists(run_dir_b),
+           f"cleanup_policy=success must remove run dir: {run_dir_b}")
+
+    # cleanup_policy 非法值必须结构化拒绝
+    bad = transport.call({
+        "operation": "virtuoso.layout.gds", "token": TOKEN, "action": "export",
+        "library": LIB, "cell": CELL, "view": VIEW,
+        "file_path": str(artifact / "lay_params_bad.gds"),
+        "cleanup_policy": "bogus", "timeout": 60})
+    _check(not bad.get("ok"), "invalid cleanup_policy must fail")
+
+
 def run_suite(transport) -> list[tuple[str, str]]:
     results: list[tuple[str, str]] = []
 
@@ -524,10 +661,12 @@ def run_suite(transport) -> list[tuple[str, str]]:
     run("WRITE-02 instance + mosaic atoms", lambda: _case_instances(transport))
     run("WRITE-03 set/delete/rename atoms", lambda: _case_mutate(transport))
     run("WRITE-04 guards", lambda: _case_guards(transport))
+    run("READ-02 region_mode/depth/view_type", lambda: _case_read_params(transport))
     run("VIA-01 place/read/delete via", lambda: _case_via(transport))
     run("DISPLAY-01 layers/entry layer", lambda: _case_display(transport))
     run("SHOT-01 screenshot", lambda: _case_screenshot(transport))
     run("GDS-01 export + import round trip", lambda: _case_gds(transport))
+    run("GDS-02 log_path/cleanup_policy/ref_lib_file", lambda: _case_gds_params(transport))
     return results
 
 

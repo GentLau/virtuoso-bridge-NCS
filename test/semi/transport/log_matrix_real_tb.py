@@ -1,3 +1,15 @@
+# === TB 注释头（规范见 test/docs/写TB规范.md §0）=====================
+# 作者: 设计/Codex
+# 最后改动: 2026-09-28 12:04
+# 依赖: 无
+# =====================================================================
+# 六步流程（按 test/docs/写TB规范.md §1–§6）：
+# §1 环境检查：已调用 require_environment(work_dir, token)。
+# §2 构建：绑定 work root、补注册表、发现活动 CDS.log。
+# §3 最终检查：先记录日志长度/offset 和级别基线。
+# §4 执行：off、level、增量、轮转、降级等日志动作。
+# §5 比对：日志字节、截断、警告文案与期望逐项比对。
+# §6 重复/收尾：多 case 重复；保留现场与 JSON 证据，不清远端日志。
 """Real-machine CDS.log matrix TB (Windows client -> real Virtuoso daemon).
 
 Covers the machine-facing half of ``test/plans/日志返回.md``: byte identity with
@@ -30,10 +42,14 @@ if str(SRC) not in sys.path:
 _SUPPORT = Path(__file__).resolve().parents[2] / "shared" / "fixtures"
 if str(_SUPPORT) not in sys.path:
     sys.path.insert(0, str(_SUPPORT))
+_RUNNERS = ROOT / "test" / "shared" / "runners"
+if str(_RUNNERS) not in sys.path:
+    sys.path.insert(0, str(_RUNNERS))
 
 from transport.middle import BusinessServer  # noqa: E402
 from common.registry import UserEntry, load_registry  # noqa: E402
-from common.paths import registry_path, override_work_dir_for_tests  # noqa: E402
+from common.paths import registry_path, init_work_dir  # noqa: E402
+from env_check import require_environment  # noqa: E402
 
 try:  # Windows: keep ssh/scp console windows hidden
     from _win import no_window  # type: ignore
@@ -51,7 +67,7 @@ class Env:
         self.args = args
         self.work_dir = Path(args.work_dir).resolve()
         self.work_dir.mkdir(parents=True, exist_ok=True)
-        override_work_dir_for_tests(self.work_dir)
+        init_work_dir(self.work_dir)
         registry = load_registry(registry_path())
         self.token = args.token
         if registry.get(args.user) is None:
@@ -72,7 +88,8 @@ class Env:
             entry.cdslog.log_level = args.log_level
             entry.cdslog.log_max_bytes = args.log_max_bytes
             registry.register(args.user, entry)
-        self.server = BusinessServer(self.work_dir)
+        init_work_dir(self.work_dir)
+        self.server = BusinessServer()
         self.cds_log = args.cds_log or self._discover_log_path()
 
     def _discover_log_path(self) -> str:
@@ -337,6 +354,12 @@ def main() -> int:
     parser.add_argument("--out", default="")
     args = parser.parse_args()
 
+    # 六步 §1：先确认这个 token/实例就是本 TB 需要的环境。
+    environment = require_environment(
+        work_dir=str(Path(args.work_dir).resolve()),
+        token=args.token,
+    )
+    # 六步 §2/§3：构建测试现场，并由各 case 在动作前做日志基线检查。
     env = Env(args)
     selected = args.case or sorted(CASES)
     results = {}
@@ -345,6 +368,7 @@ def main() -> int:
         for name in selected:
             started = time.monotonic()
             try:
+                # 六步 §4/§5：执行动作后逐字节/逐行比对常量期望。
                 case = CASES[name]
                 detail = case() if name == "il-log-flag-prefix-guard" else case(env)
                 results[name] = {"status": "pass", "detail": detail}
@@ -360,6 +384,7 @@ def main() -> int:
         "cds_log": env.cds_log,
         "work_dir": str(env.work_dir),
         "token": args.token,
+        "environment": environment,
         "results": results,
     }
     text = json.dumps(payload, ensure_ascii=False, indent=2)

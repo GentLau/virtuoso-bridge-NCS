@@ -1,6 +1,18 @@
+# === TB 注释头（规范见 test/docs/写TB规范.md §0）=====================
+# 作者: 设计/Codex
+# 最后改动: 2026-09-28 12:04
+# 依赖: 无
+# =====================================================================
+# 六步流程（按 test/docs/写TB规范.md §1–§6）：
+# §1 环境检查：真实两把 SSH 凭据；先检查 key 文件、指纹和可达性。
+# §2 构建：临时 work root、注册表、两种 role 凭据配置。
+# §3 最终检查：确认两把钥不同、对应 endpoint 可连接。
+# §4 执行：按 role 发送命令/文件请求，检查凭据选择。
+# §5 比对：实际使用的 key/回显/文件结果与期望一致。
+# §6 重复/收尾：多 case 重复；保留结果证据，不污染用户密钥。
 """按 role 分离凭据的半真机 TB（用测试环境已有的双钥，不改任何远端文件）。
 
-环境事实见 ``test/docs/环境说明.md`` §3.1（测试工程师整理，2026-09-23）：
+环境事实见 ``test/reports/internal/环境Runbook-内部.md`` §3.1（测试工程师整理，2026-09-23）：
 
 * ``~/.ssh/id_ed25519``（comment ``openclaw-workspace``）授权到 wsl-gent 的
   ``Gent`` / ``vbuser1`` / ``vbuser2``；
@@ -33,7 +45,7 @@ if str(SRC) not in sys.path:
 
 from common.registry import UserEntry  # noqa: E402
 from common.ssh_credentials import public_key_fingerprint  # noqa: E402
-from transport.remote_roles import resolve  # noqa: E402
+from transport.roles import resolve  # noqa: E402
 from transport.tunnel import RemoteClient  # noqa: E402
 
 
@@ -73,6 +85,8 @@ def main() -> int:
         return Path(key[0]).expanduser() / key[1]
 
     try:
+        # 六步 §1：凭据文件存在、指纹可计算且两把钥确实不同——这是本 TB
+        # 需要的环境条件；不满足则后续所有路由结论无效。
         case("environment_keys_present",
              all((key_path(k).is_file() and key_path(k).with_name(k[1] + ".pub").is_file())
                  for k in (key_a, key_b)),

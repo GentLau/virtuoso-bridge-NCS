@@ -1,3 +1,15 @@
+# === TB 注释头（规范见 test/docs/写TB规范.md §0）=====================
+# 作者: 设计/Codex
+# 最后改动: 2026-09-28 12:04
+# 依赖: 无
+# =====================================================================
+# 六步流程（按 test/docs/写TB规范.md §1–§6）：
+# §1 环境检查：已调用 require_environment(base, token)。
+# §2 构建：确定 HTTP /api/operation 入口和合法 SKILL case 列表。
+# §3 最终检查：环境检查通过后逐 case 构造请求，无额外持久对象。
+# §4 执行：单行/多行/注释/progn/let 等合法 SKILL。
+# §5 比对：expected / actual / status 逐项比对并写入 JSON。
+# §6 重复/收尾：10 个 case 全量重复；证据写 --out，不改远端现场。
 """Real-Virtuoso matrix for legal SKILL text through the public Skill API.
 
 The bridge must be transparent to the caller: if the caller supplies legal
@@ -19,6 +31,10 @@ import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
+_RUNNERS = ROOT / "test" / "shared" / "runners"
+if str(_RUNNERS) not in sys.path:
+    sys.path.insert(0, str(_RUNNERS))
+from env_check import require_environment  # noqa: E402
 
 
 CASES = [
@@ -69,10 +85,16 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--timeout", type=float, default=30.0)
     parser.add_argument(
         "--out",
-        default=str(ROOT / "test" / "artifacts" / "skill-syntax-matrix.json"),
+        default=str(ROOT / "test" / "artifacts" / "evidence" / "skill-syntax-matrix.json"),
     )
     args = parser.parse_args(argv)
 
+    # 六步 §1：确认 HTTP 业务面和 token 对应的环境可用。
+    base = args.base.rstrip("/")
+    if not base.endswith("/api/operation"):
+        base += "/api/operation"
+    environment = require_environment(base=base, token=args.token)
+    # 六步 §2–§5：逐 case 执行合法 SKILL，并记录 expected / actual / 判定。
     records = []
     failed = 0
     for name, skill, expected in CASES:
@@ -106,6 +128,7 @@ def main(argv: list[str] | None = None) -> int:
     payload = {
         "base": args.base,
         "token": args.token,
+        "environment": environment,
         "passed": len(records) - failed,
         "failed": failed,
         "total": len(records),

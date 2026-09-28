@@ -73,6 +73,13 @@ def main() -> int:
                 token=args.token, library=LIB, cell=CELL, view="schematic"))
         except Exception:  # noqa: BLE001 - 不存在就继续
             pass
+        # 上一轮跑完会留下 symbol view；不清掉的话 generate#1（overwrite=False）
+        # 会被"已存在"挡下，探针变成不可重复运行（2026-09-28 实测踩到）。
+        try:
+            cv.Package(middle).view_delete(cv.ViewDeleteRequest(
+                token=args.token, library=LIB, cell=CELL, view="symbol"))
+        except Exception:  # noqa: BLE001 - 不存在就继续
+            pass
         created = cv.Package(middle).view_create(cv.ViewCreateRequest(
             token=args.token, library=LIB, cell=CELL, view="schematic",
             view_type="schematic"))

@@ -26,7 +26,7 @@ from common.registry import (
     UserEntry,
     load_registry,
 )
-from common.paths import registry_path, override_work_dir_for_tests
+from common.paths import init_work_dir, registry_path, work_root
 from _ssh_cred import make_credential
 
 
@@ -51,7 +51,7 @@ class _FakeProbeRunner:
 
 class TestRegistryCommitPolicy(unittest.TestCase):
     def setUp(self) -> None:
-        self.wd = override_work_dir_for_tests(Path(tempfile.mkdtemp(prefix="vb-")))
+        self.wd = work_root()
         self.reg = load_registry(registry_path())
 
     def test_duplicate_user_rejected_without_overwrite(self) -> None:
@@ -150,7 +150,7 @@ class TestRegistryCommitPolicy(unittest.TestCase):
 
 class TestProbeNeverPersists(unittest.TestCase):
     def setUp(self) -> None:
-        self.wd = override_work_dir_for_tests(Path(tempfile.mkdtemp(prefix="vb-")))
+        self.wd = work_root()
 
     def test_local_probe_does_not_touch_registry(self) -> None:
         result = probe_user(RegistrationRequest(user="alice", mode="local", roles={"spectre": {"bin": sys.executable}}), token="tok-1")
@@ -185,15 +185,15 @@ class TestProbeNeverPersists(unittest.TestCase):
 
 class TestRuntimeFacadePurity(unittest.TestCase):
     def setUp(self) -> None:
-        self.wd = override_work_dir_for_tests(Path(tempfile.mkdtemp(prefix="vb-")))
+        self.wd = work_root()
 
     def test_business_server_has_no_setup_phase_methods(self) -> None:
-        server = BusinessServer(self.wd)
+        server = BusinessServer()
         for name in ("register_user", "deploy", "connect"):
             self.assertFalse(hasattr(server, name), name)
 
     def test_token_is_required_keyword(self) -> None:
-        server = BusinessServer(self.wd)
+        server = BusinessServer()
         with self.assertRaises(TypeError):
             server.execute_skill("1+1")  # noqa: B008
         with self.assertRaises(TypeError):
@@ -206,13 +206,13 @@ class TestRuntimeFacadePurity(unittest.TestCase):
     def test_runtime_consumes_registry_in_memory_only(self) -> None:
         reg = load_registry(registry_path())
         reg.register("alice", UserEntry(token="tok-1", mode="local"))
-        server = BusinessServer(self.wd)  # load once from disk
+        server = BusinessServer()  # load once from disk
         # mutate disk behind the loaded registry's back
         registry_path().write_text(json.dumps({}), encoding="utf-8")
         self.assertIsNotNone(server.registry.by_token("tok-1"))
 
     def test_explicit_reload_refreshes_registry_snapshot(self) -> None:
-        server = BusinessServer(self.wd)
+        server = BusinessServer()
         fresh_registry = load_registry(registry_path())
         fresh_registry.register("bob", UserEntry(token="tok-bob", mode="local"))
         server.reload_registry()
