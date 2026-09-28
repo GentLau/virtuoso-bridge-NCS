@@ -15,7 +15,7 @@ import posixpath
 import re
 import shlex
 import time
-from concurrent.futures import ThreadPoolExecutor, wait as _wait_futures
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -44,18 +44,6 @@ _MODE_ARGS = {
     "vx": ["+preset=vx", "+mt"],
 }
 _ANALYSES = ("all", "tran", "dc", "ac", "info")
-
-#: 看门狗轮询间隔（秒）。
-RUN_WATCHDOG_TICK_SECONDS = 0.5
-#: 单次中层调用 deadline 之外允许的调度/传输余量（秒）。
-RUN_CALL_SLACK_SECONDS = 5.0
-#: ``timeout=None`` 时五个接口的默认 deadline（中层 spec §5.8）。
-RUN_DEFAULT_CALL_TIMEOUT = 30.0
-
-
-def run_silence_limit(call_timeout: float) -> float:
-    """同一 task 两次中层调用之间允许的最长静默（超过即判该调用不守 deadline）。"""
-    return call_timeout + max(RUN_CALL_SLACK_SECONDS, call_timeout * 0.1)
 
 
 @dataclass
@@ -508,60 +496,23 @@ class Package:
                 })
             )
 
-            # 看门狗：run 是阻塞操作，但"阻塞"不等于"永久挂住"。每个 task 内的
-            # 每次中层调用都有自己的 deadline（`timeout`，缺省按中层默认 30s）；
-            # 两次调用之间静默超过 deadline+余量，就说明中间层这次调用没有守约，
-            # 此时必须结构化失败并交出"卡在哪一步"的证据，而不是把请求线程占死
-            # （P-076 观测：spectre 已 0 error 跑完，业务请求 25 分钟不返回）。
-            call_timeout = (
-                float(defaults["timeout"]) if defaults["timeout"] is not None
-                else RUN_DEFAULT_CALL_TIMEOUT
-            )
-            silence_limit = run_silence_limit(call_timeout)
-            progress: list[list[dict[str, Any]]] = [[] for _ in tasks]
             runs: list[dict[str, Any] | None] = [None] * len(tasks)
-            executor = ThreadPoolExecutor(max_workers=effective_workers)
-            try:
+            with ThreadPoolExecutor(max_workers=effective_workers) as executor:
                 futures = [
-                    (index, executor.submit(self._run_one, task, defaults, progress[index]))
+                    (index, executor.submit(self._run_one, task, defaults))
                     for index, task in enumerate(tasks)
                 ]
-                pending = {future: index for index, future in futures}
-                activity = {index: time.monotonic() for index in range(len(tasks))}
-                seen_steps = {index: 0 for index in range(len(tasks))}
-                while pending:
-                    done, _pending = _wait_futures(
-                        list(pending), timeout=RUN_WATCHDOG_TICK_SECONDS,
-                    )
-                    now = time.monotonic()
-                    for future in done:
-                        index = pending.pop(future)
-                        try:
-                            runs[index] = future.result()
-                        except Exception as exc:  # noqa: BLE001
-                            runs[index] = {
-                                "job": tasks[index]["job"],
-                                "ok": False,
-                                "error": f"{type(exc).__name__}: {exc}",
-                                "steps": list(progress[index]),
-                                "value": None,
-                            }
-                        activity[index] = now
-                    for future, index in list(pending.items()):
-                        if len(progress[index]) != seen_steps[index]:
-                            seen_steps[index] = len(progress[index])
-                            activity[index] = now
-                            continue
-                        if now - activity[index] <= silence_limit:
-                            continue
-                        future.cancel()
-                        pending.pop(future)
-                        runs[index] = self._stalled_run(
-                            tasks[index], defaults, progress[index], silence_limit,
-                        )
-            finally:
-                # 不 join 卡住的 worker：请求必须能返回（P-076）。
-                executor.shutdown(wait=False, cancel_futures=True)
+                for index, future in futures:
+                    try:
+                        runs[index] = future.result()
+                    except Exception as exc:  # noqa: BLE001
+                        runs[index] = {
+                            "job": tasks[index]["job"],
+                            "ok": False,
+                            "error": f"{type(exc).__name__}: {exc}",
+                            "steps": [],
+                            "value": None,
+                        }
 
             completed = [item for item in runs if item is not None]
             succeeded = sum(1 for item in completed if item.get("ok"))
@@ -580,14 +531,10 @@ class Package:
             return Result(False, steps, f"{type(exc).__name__}: {exc}")
 
     def _run_one(
-        self,
-        task: dict[str, Any],
-        defaults: dict[str, Any],
-        steps: list[dict[str, Any]] | None = None,
+        self, task: dict[str, Any], defaults: dict[str, Any]
     ) -> dict[str, Any]:
         started = time.perf_counter()
-        if steps is None:
-            steps = []
+        steps: list[dict[str, Any]] = []
         job = task["job"]
         run_dir = posixpath.join(defaults["root"], "spectre", job)
         output_dir: Path | None = None
@@ -879,30 +826,6 @@ class Package:
             "layout": None, "data": {}, "points": {}, "analyses": [],
             "output_files": [], "errors": [], "warnings": [],
             "duration": 0.0,
-        }
-
-    def _stalled_run(
-        self,
-        task: dict[str, Any],
-        defaults: dict[str, Any],
-        steps: list[dict[str, Any]],
-        silence_limit: float,
-    ) -> dict[str, Any]:
-        """task 静默超限（某次中层调用不守自己的 deadline）的结构化失败。"""
-        job = task["job"]
-        last = steps[-1]["name"] if steps else "none"
-        run_dir = posixpath.join(defaults["root"], "spectre", job)
-        value = self._empty_run_value(job, run_dir, "error")
-        value["errors"] = [
-            f"task_deadline_exceeded: {silence_limit:g}s 内无进展；"
-            f"最后一次完成的中层调用是 {last!r}"
-        ]
-        return {
-            "job": job,
-            "ok": False,
-            "error": value["errors"][0],
-            "steps": list(steps),
-            "value": value,
         }
 
     # -- read_results ---------------------------------------------------------
