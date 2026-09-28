@@ -435,33 +435,6 @@ OPEN = [
                   "（真机一次）；② 不支持 —— spec 明确写「只读 MC 结果、不驱动」并标为明确不做",
         "next": "设计侧先定口径；定了之后测试侧补真机 MC 验证（或补不覆盖声明），并把「两项目全链」里的 MC/PVT 一栏按口径收口",
     },
-    {
-        "id": "P-069",
-        "slug": "lvs-cdl-chain",
-        "title": "Calibre LVS 全链跑不通：auCdl 对 PDK 器件导出 CDL 失败 → 无源网表",
-        "level": "P2（业务包功能不可用）",
-        "owner": "设计侧",
-        "status": "观察（第七轮复验 **correct**，等上层销案）",
-        "where": "`si -batch`（auCdl）↔ PDK 属性模板（`hnlCDLParamList` / `hnlCDLFormatInst`）↔ `calibre.lvs` 输入",
-        "symptom": "含 PDK 器件的 cell 走 CDL 导出时 `si -batch` 失败，报 `hnlCDLParamList` / "
-                   "`hnlCDLFormatInst` 缺失 → **没有可用源网表** → `calibre.lvs` 只能到 "
-                   "`NOT COMPARED`（再叠加 P-062 还会被截成 `not`）。DRC 侧正常"
-                   "（completed，1737 rulechecks / 36 结果）。用户 2026-09-24 判定："
-                   "这是**业务包本身跑不通**，立案为缺陷（此前误记为「环境/配方口径问题」）。",
-        "repro": "在 wsl-gent 上对含 PDK 器件的 cell 做 CDL 导出（`si -batch`）后跑 "
-                 "`calibre.lvs`；或 `python test/semi/probes/calibre_package_http_probe.py --kind lvs`"
-                 "（专用环境 `test/artifacts/env/s11-calibre` + 业务面 8128）",
-        "evidence": "**第七轮复验（2026-09-24 晚）**：`test/artifacts/evidence/round7/design-iterate/iterate-lvs.json`"
-                    "——`calibre.export_cdl(CMP_LIB/inv2, 680 B)` → `virtuoso.layout.gds` → "
-                    "`calibre.lvs(deck+cdl)` → `calibre.read_results`：**`status=correct`**、"
-                    "ports 4/4、nets 4/4、inst 1/1、`differences=[]`；S11 全链（`test/artifacts/env/s11/`）"
-                    "也拿到确定结论（`cdl` 693 B）。旧证据（首报时）：`round5-main/s11-flow2.log`（lvs FAIL）、"
-                    "`round5-main/calibre-lvs.json`（`status=NOT COMPARED`）",
-        "accept": "含 PDK 器件的 cell 能导出可用 CDL，且 `calibre.lvs` 给出 **CORRECT / INCORRECT** "
-                  "的确定结论（不再是 NOT COMPARED）；S11 `lvs` 阶段 PASS",
-        "next": "测试侧已复验通过（deck 入口 + runset 入口两条都好）；等上层/设计确认后把卡片移入 `已关闭-近期.md`。"
-                "注意：`_calibre.lvs_`（tvf 格式）不是合法 runset，用它当失败证据属『用错文件』",
-    },
 ]
 
 #: 本轮明确闭环（保留记录，避免「消失了没人知道为什么」）
@@ -577,6 +550,12 @@ CLOSED_RECENT = [
     ("P-046", "S10 e2e 引导源未固定 → `RBStop()+load()` 会覆盖别人的 CIW（测试侧缺陷）",
      "**已修（测试侧）**：默认不再自动挑实例 —— `test_e2e_live.py` 用 `VB_E2E_BOOTSTRAP_TOKEN/PORT` 固定引导，"
      "未固定且未显式 `VB_E2E_ALLOW_AUTO_DISCOVER=1` 时直接拒绝（`test/live/e2e/test_e2e_live.py:56-63`）"),
+    ("P-069", "Calibre LVS 全链跑不通：auCdl 对含 PDK 器件的 cell 导出 CDL 失败 → 无源网表",
+     "**测试侧复验通过（第七轮）**：`round7/design-iterate/iterate-lvs.json` —— "
+     "`calibre.export_cdl(CMP_LIB/inv2, 680 B)` → `layout.gds` → `calibre.lvs(deck+cdl)` → "
+     "`read_results`：**`status=correct`**、ports 4/4、nets 4/4、inst 1/1、`differences=[]`；"
+     "S11 全链也拿到确定结论（`cdl` 693 B、lvs rc=0）。等上层销案；"
+     "注意 `_calibre.lvs_`（tvf）不是合法 runset，用它当失败证据属用错文件"),
 ]
 
 #: 非缺陷跟踪项（文档/环境/审计/覆盖度）：不建卡，只在 README 索引，避免与缺陷视图混淆

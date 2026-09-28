@@ -13,7 +13,7 @@
 3. **刷新方式**：改 `test/shared/runners/make_bug_cards.py` 的 `OPEN` / `CLOSED_RECENT` 段，
    然后 `python test/shared/runners/make_bug_cards.py`（幂等；`--check` 只校验不写盘）。
 
-## 1. 未关闭（15 条）
+## 1. 未关闭（14 条）
 
 | ID | 级别 | 归属 | 状态 | 一句话 | 卡片 |
 |---|---|---|---|---|---|
@@ -31,12 +31,11 @@
 | **P-073** | P2（写操作语义错误；set_pin_properties 静默改坏用户数据） | 设计侧（上层 schematic 包 `_atomic_skill`） | 待设计修 | 原理图 pin 原子操作与「pin 有效名」不一致：rename_pin 静默无效、set_pin_properties 把 pin 名改成自动名 | [P-073-pin-atomic-ops-name-mismatch.md](P-073-pin-atomic-ops-name-mismatch.md) |
 | **P-074** | P3（文档口径不一致，会绊住所有写 TB 的人） | 设计侧（spec 或实现，二选一改齐） | 待归属 | spec 表格把 pin 的索引写成 `xy`，实现要 `x`/`y`（delete/rename/set_pin_properties） | [P-074-pin-index-xy-doc-mismatch.md](P-074-pin-index-xy-doc-mismatch.md) |
 | **P-070** | P2（能力缺失） | 待决策（产品口径：支持驱动 MC or 明确不做）→ 设计侧实现/写 spec | 待决策 | 蒙特卡洛能力缺失：只能读回 MC 结果，不能驱动 MC 仿真 | [P-070-monte-carlo-missing.md](P-070-monte-carlo-missing.md) |
-| **P-069** | P2（业务包功能不可用） | 设计侧 | 观察（第七轮复验 **correct**，等上层销案） | Calibre LVS 全链跑不通：auCdl 对 PDK 器件导出 CDL 失败 → 无源网表 | [P-069-lvs-cdl-chain.md](P-069-lvs-cdl-chain.md) |
 
 > 优先级口径：**P1** = Linux 侧资源/安全或核心指标链路断（P-056、P-053）；
 > **P2** = 真实设计流会给出错的/空的结果，且多数**静默**；**P3/观察** = 非阻塞但建议顺手修。
 
-## 2. 本轮/近期已关闭（37 条，保留记录）
+## 2. 本轮/近期已关闭（38 条，保留记录）
 
 | ID | 事项 | 关闭依据（证据） |
 |---|---|---|
@@ -77,6 +76,7 @@
 | P-041 | `verilog._read_views` 守卫长度与取值下标不匹配（`>=3` 却读 `[3]`） | **已修**：守卫改 `len(file_entry) >= 4`；离线用例改名 `test_short_view_entry_is_skipped` 并断言 `views == []`（`verilog.py:273`；`test_verilog_contracts.py` 全绿） |
 | P-042 | `layout.gds` 遇版图锁时误报 "layout view not found" | **已修**：导出先走 `_view_state_expr` 三态（missing/mismatch/locked），锁冲突单独报 "is locked by another session"（`layout.py:1008-1030`） |
 | P-046 | S10 e2e 引导源未固定 → `RBStop()+load()` 会覆盖别人的 CIW（测试侧缺陷） | **已修（测试侧）**：默认不再自动挑实例 —— `test_e2e_live.py` 用 `VB_E2E_BOOTSTRAP_TOKEN/PORT` 固定引导，未固定且未显式 `VB_E2E_ALLOW_AUTO_DISCOVER=1` 时直接拒绝（`test/live/e2e/test_e2e_live.py:56-63`） |
+| P-069 | Calibre LVS 全链跑不通：auCdl 对含 PDK 器件的 cell 导出 CDL 失败 → 无源网表 | **测试侧复验通过（第七轮）**：`round7/design-iterate/iterate-lvs.json` —— `calibre.export_cdl(CMP_LIB/inv2, 680 B)` → `layout.gds` → `calibre.lvs(deck+cdl)` → `read_results`：**`status=correct`**、ports 4/4、nets 4/4、inst 1/1、`differences=[]`；S11 全链也拿到确定结论（`cdl` 693 B、lvs rc=0）。等上层销案；注意 `_calibre.lvs_`（tvf）不是合法 runset，用它当失败证据属用错文件 |
 
 详见 [已关闭-近期.md](已关闭-近期.md)。
 
