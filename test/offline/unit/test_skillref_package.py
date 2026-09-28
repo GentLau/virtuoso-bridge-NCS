@@ -1,6 +1,9 @@
 """skillref 业务包单元测试：本地/远端取数、四层匹配、错误口径。
 
 用临时 doc 树 + 假 Middle（不碰真机），覆盖 spec ``9-skillref.md`` §4/§5 的主要分支。
+六步流程（test/docs/写TB规范.md §1）——离线用例：
+① 环境检查**不适用**：纯函数 / 假 middle，不连真机；②③ 前置构建/校验**不适用**：无持久对象；
+④⑤ = Arrange→Act→Assert；⑥ 无现场可留（不落盘、不起服务、不占端口）。
 """
 from __future__ import annotations
 
@@ -13,7 +16,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src"))
 
-from common.paths import override_work_dir_for_tests
+from common.paths import init_work_dir
 from pyapi.models import CommandResult, ExecutionStatus, QueryResult
 from pyapi.packages import skillref as skillref_mod
 from pyapi.packages.skillref import (
@@ -130,7 +133,6 @@ class FakeMiddle:
 class SkillrefBase(unittest.TestCase):
     def setUp(self) -> None:
         self.tmp = Path(tempfile.mkdtemp(prefix="vb-skillref-"))
-        override_work_dir_for_tests(self.tmp / "work")
         self.doc = build_doc_tree(self.tmp / "doc")
         self._orig_snapshot = skillref_mod._config_snapshot
         skillref_mod._config_snapshot = lambda: None
@@ -368,6 +370,7 @@ class TestConfigSnapshotWiring(SkillrefBase):
         from common import config as common_config
 
         self.common_config = common_config
+        (self.tmp / "work").mkdir(parents=True, exist_ok=True)
         self.config_path = self.tmp / "work" / "config.json"
 
     def test_section_from_real_snapshot(self):

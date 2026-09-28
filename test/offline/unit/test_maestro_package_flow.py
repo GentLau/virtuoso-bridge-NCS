@@ -2,6 +2,9 @@
 
 真机 TB 只覆盖主流程；本文件用假 middle 覆盖读配置/写/历史/结果/导出的
 失败分支与参数分支，把 maestro 的离线覆盖率抬上来（不需要 Virtuoso）。
+六步流程（test/docs/写TB规范.md §1）——离线用例：
+① 环境检查**不适用**：纯函数 / 假 middle，不连真机；②③ 前置构建/校验**不适用**：无持久对象；
+④⑤ = Arrange→Act→Assert；⑥ 无现场可留（不落盘、不起服务、不占端口）。
 """
 from __future__ import annotations
 
@@ -11,7 +14,7 @@ import shutil
 from pathlib import Path
 from typing import Any
 
-from common.paths import override_work_dir_for_tests
+from common.paths import init_work_dir
 from pyapi.models import (
     CommandResult,
     ExecutionStatus,
@@ -103,7 +106,6 @@ class TestReadConfigFlow(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls._wd = tempfile.mkdtemp(prefix="vb-maestro-flow-")
-        override_work_dir_for_tests(cls._wd)
 
     @classmethod
     def tearDownClass(cls):
@@ -148,7 +150,6 @@ class TestWriteFlow(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls._wd = tempfile.mkdtemp(prefix="vb-maestro-flow-")
-        override_work_dir_for_tests(cls._wd)
 
     @classmethod
     def tearDownClass(cls):
@@ -221,7 +222,6 @@ class TestHistoryFlow(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls._wd = tempfile.mkdtemp(prefix="vb-maestro-flow-")
-        override_work_dir_for_tests(cls._wd)
 
     @classmethod
     def tearDownClass(cls):
@@ -261,7 +261,6 @@ class TestReadHistoryFlow(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls._wd = tempfile.mkdtemp(prefix="vb-maestro-flow-")
-        override_work_dir_for_tests(cls._wd)
 
     @classmethod
     def tearDownClass(cls):
@@ -285,7 +284,6 @@ class TestReadResultsFlow(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls._wd = tempfile.mkdtemp(prefix="vb-maestro-flow-")
-        override_work_dir_for_tests(cls._wd)
 
     @classmethod
     def tearDownClass(cls):
@@ -355,7 +353,6 @@ class TestExportFlow(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls._wd = tempfile.mkdtemp(prefix="vb-maestro-flow-")
-        override_work_dir_for_tests(cls._wd)
 
     @classmethod
     def tearDownClass(cls):
@@ -397,7 +394,6 @@ class TestRunFlow(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls._wd = tempfile.mkdtemp(prefix="vb-maestro-flow-")
-        override_work_dir_for_tests(cls._wd)
 
     @classmethod
     def tearDownClass(cls):
@@ -445,7 +441,6 @@ class TestGuiFlow(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls._wd = tempfile.mkdtemp(prefix="vb-maestro-flow-")
-        override_work_dir_for_tests(cls._wd)
 
     @classmethod
     def tearDownClass(cls):

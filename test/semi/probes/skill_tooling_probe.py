@@ -1,3 +1,11 @@
+# === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
+# 作者: 设计/上层开发
+# 最后改动: 2026-09-28 22:40
+# 依赖: 无
+# =======================================================================
+# 六步流程（test/docs/写TB规范.md §1）：
+# ① 环境检查（靶机指纹 / 业务面）；②③ 造并校验基线；④ 只做被测动作；
+# ⑤ 读回比对（期望/实际入证据）；⑥ 跑完不清理现场。某步不适用时正文有注释说明。
 """Probe: remote SKILL Finder tree -> local parse -> search (design PoC).
 
 Validates the skill_tooling data path before the package exists:
@@ -24,7 +32,7 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 
 DEFAULT_TREE = (
-    ROOT / "test" / "artifacts" / "skill-tooling-tb" / "probe" / "finder" / "SKILL"
+    ROOT / "test" / "artifacts" / "evidence" / "skill-tooling-tb" / "probe" / "finder" / "SKILL"
 )
 DOC_SERVER = ROOT / "tools" / "skill_doc_server.py"
 DOC_SERVICE = "http://127.0.0.1:8123"

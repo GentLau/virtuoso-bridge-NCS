@@ -1,4 +1,8 @@
-"""Skill 投递闸门：排队、串行；对外超时统一为结果未知（spec v17）。"""
+"""Skill 投递闸门：排队、串行；对外超时统一为结果未知（spec v17）。
+六步流程（test/docs/写TB规范.md §1）——离线用例：
+① 环境检查**不适用**：纯函数 / 假 middle，不连真机；②③ 前置构建/校验**不适用**：无持久对象；
+④⑤ = Arrange→Act→Assert；⑥ 无现场可留（不落盘、不起服务、不占端口）。
+"""
 
 import sys
 import tempfile
@@ -13,7 +17,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src"))
 from pyapi.models import ExecutionStatus, VirtuosoResult
 from transport.middle import BusinessServer
 from common.registry import UserEntry, load_registry
-from common.paths import registry_path, override_work_dir_for_tests
+from common.paths import registry_path, init_work_dir
 
 
 class RecordingSkillClient:
@@ -55,12 +59,11 @@ class SkillAdmissionBase(unittest.TestCase):
 
     def setUp(self):
         wd = Path(tempfile.mkdtemp(prefix="vb-"))
-        override_work_dir_for_tests(wd)
         self.registry = load_registry(registry_path())
         entry = UserEntry(token="tok-skill", mode="local")
         entry.runtime.thread_pool_size = type(self).pool_size
         self.registry.register("alice", entry)
-        self.server = BusinessServer(wd)
+        self.server = BusinessServer()
         self.addCleanup(self.server.close)
 
     def use_client(self, client):

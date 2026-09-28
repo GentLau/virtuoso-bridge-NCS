@@ -1,3 +1,11 @@
+# === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
+# 作者: 设计/上层开发
+# 最后改动: 2026-09-28 22:40
+# 依赖: 无
+# =======================================================================
+# 六步流程（test/docs/写TB规范.md §1）：
+# ① 环境检查（靶机指纹 / 业务面）；②③ 造并校验基线；④ 只做被测动作；
+# ⑤ 读回比对（期望/实际入证据）；⑥ 跑完不清理现场。某步不适用时正文有注释说明。
 """Read-only diagnostic for Maestro GUI/background session conflicts.
 
 This probe intentionally does not force-close any session or open a GUI
@@ -25,7 +33,7 @@ TOKEN = "vb-vblog"
 
 
 def main() -> int:
-    init_work_dir(str(ROOT / "test" / "artifacts" / "log-vblog"))
+    init_work_dir(str(ROOT / "test" / "artifacts" / "env" / "log-vblog"))
     middle = BusinessServer()
     pkg = maestro.Package(middle)
     try:
