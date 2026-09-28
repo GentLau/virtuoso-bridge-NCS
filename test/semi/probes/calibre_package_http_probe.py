@@ -74,8 +74,10 @@ def call(base: str, operation: str, token: str, **fields) -> dict:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--base", default="http://127.0.0.1:8128/api/operation")
-    parser.add_argument("--token", default="vb-s11cal")
+    # 默认走**常驻业务面**（8127 + vb-vblog）：calibre_bin 已配在该 token 的 command role 上。
+    # 历史专用面 8128 / vb-s11cal 已停用；要用需先按 §0 准备（或显式 --base/--token 指到别的实例）。
+    parser.add_argument("--base", default="http://127.0.0.1:8127/api/operation")
+    parser.add_argument("--token", default="vb-vblog")
     parser.add_argument("--kind", choices=("env", "drc", "lvs"), default="drc")
     parser.add_argument("--gds", default="/home/Gent/project/vblog/s11_inv/s11/inv.gds")
     parser.add_argument("--top", default="inv")
