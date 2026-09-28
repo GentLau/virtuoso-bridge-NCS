@@ -137,7 +137,7 @@
   注册表却写 `:100`/`:101`，导致 `virtuoso.gui.*` 报 `no CIW window found`；已把两个注册表改成实际值并写入 `docs/环境与场景.md` 的 DISPLAY 纪律。
 - 复现入口见 `docs/环境与场景.md` §7「Linux 客户端真机链路」。**仍不覆盖**：Linux 客户端下跑 *全部* 包套件与 flows（本轮只跑 base 五接口 + 文件族；包/流程层仍以 Windows 客户端为主，见 §7 G6）。
 - **注册**：six-local ok、py27 **10/10**、role-split **29/29**（含 `deploy-paths-contain-no-token`；
-  证据 `evidence/round8/registration-role-split-r8b.json`，2026-09-29 00:35 复跑）、real-ciw **12/12**；
+  证据 `evidence/round8/registration-role-split.json`，2026-09-29 00:42 干净 work-dir 复跑）、real-ciw **12/12**；
 - **流程/规模/并发**：multihop 10/10、scale-100（100 fake）ok、多用户版图接力 12/12、多用户 SerDes **17/17**、ADC **24/24**、role-credential-isolation 8/8、
   生产面混合压测 **108 步 / 0 失败**（`evidence/production-face-stress.json`：`steps_total=108, steps_failed=0`；36 轮 × 3 步）。
   （红队 REVIEW-C #7 更正：原报告"216 步"在该证据文件里**没有依据**——216 若指历史某次，需另附证据；本报告统一引用 108。）
@@ -232,6 +232,11 @@
      `libap_sh.so: cannot open shared object file`；
   ④ `run/.cdsinit` 会自动 `load(setup/virtuoso_setup.il)`，daemon 随 CIW 起来（本次 45s 内 65121 恢复 LISTEN）；
   ⑤ 冒烟：`basic.skill.execute 1+2 == 3`（本次已通过）。**注意**：这次事故是 P-095 的真实复现，不是环境噪声。
+- **注册 TB 禁止并发**（2026-09-29 00:28–00:40 实测教训）：root 与子代理同时对 `wsl-gent`+`w1-gent` 跑 role-split 时，
+  两边的短连接风暴互相挤压 → 一边报 `ssh … ss/hostname timed out after 20–30s`、另一边撞上
+  `credential reuse requires enhanced_token`（复用了对方刚建的 work-dir 凭据）。**单跑结果 29/29**（`registration-role-split-r8b.json`），
+  被并发污染的三份产物已移入 `evidence/round8/superseded/`，不得引用。→ 纪律：同一时刻只允许一条注册 TB 占用这两台靶机；
+  复用 work-dir 前必须清空 `registered_users`。
 
 ## 9. 复现入口（节选）
 
