@@ -8,8 +8,8 @@
 # §2 构建：构造“channel 已结束 + 本地 tar 已退出 + pump 线程卡死”的夹具。
 # §3 最终检查：确认两个完成门已就绪、pump 仍 alive。
 # §4 执行：调用真实 _wait_tar_transfer / download_tar。
-# §5 比对：必须立即返回，且 download_tar 必须走到 install、目标产物存在。
-# §6 重复/收尾：两个 case；释放阻塞线程、清临时目录，JSON 留证。
+# §5 比对：必须立即返回、必须 install、返回后不得留下 pump 线程。
+# §6 重复/收尾：三个 case；释放阻塞线程、清临时目录，JSON 留证。
 """P-076 确定性 TB：递归 tar 下载的完成判定不得依赖 pump 线程。
 
 现场是间歇的：对端 channel 已关闭、本地 tar 已结束，但
@@ -17,14 +17,17 @@
 ``ChannelFile.read()``；旧代码要求所有 pump 线程死亡才结束，于是
 ``download_tar`` 一直等到 per-call deadline，``install_staged_path`` 永不执行。
 
-本 TB 用两个确定性 case 复现：
+本 TB 用三个确定性 case 复现：
 
 1. ``wait_completion_ignores_stuck_pump``：直接调用真实
    ``_wait_tar_transfer``；channel/process 已完成，pump 永远 alive。
 2. ``download_installs_with_stuck_pump``：调用真实 ``download_tar``，
    卡住 copy 线程，断言返回 0 且最终目标目录已安装。
+3. ``no_residual_pump_after_download``：同样卡住 channel 读，但断言
+   ``download_tar`` 返回后所有 pump 线程都已退出——只有协作取消才过。
 
-旧代码下两个 case 都会在 timeout 处失败；修复后同一 TB 必须全绿。
+旧完成判定下 case 1/2 会 timeout；只有“完成判定 + 可取消 pump”都修好，
+三个 case 才会全绿。
 
 用法::
 
@@ -102,7 +105,15 @@ def case_download_installs_with_stuck_pump() -> dict:
                 return None
 
             def makefile(self, *args, **kwargs):
-                return io.BytesIO(b"")
+                class _Blocked:
+                    def read(self, _n):
+                        release.wait(timeout=10)
+                        return b""
+
+                    def close(self):
+                        return None
+
+                return _Blocked()
 
             def makefile_stderr(self, *args, **kwargs):
                 return io.BytesIO(b"")
@@ -115,6 +126,18 @@ def case_download_installs_with_stuck_pump() -> dict:
 
             def recv_exit_status(self):
                 return 0
+
+            def recv_ready(self):
+                return False
+
+            def recv(self, _n):
+                return b""
+
+            def recv_stderr_ready(self):
+                return False
+
+            def recv_stderr(self, _n):
+                return b""
 
         class Process:
             def __init__(self):
@@ -132,9 +155,6 @@ def case_download_installs_with_stuck_pump() -> dict:
 
         release = threading.Event()
 
-        def stuck_copy(*args, **kwargs):
-            release.wait(timeout=10)
-
         def fake_popen(command, **kwargs):
             plan.staged_item.mkdir(parents=True, exist_ok=True)
             (plan.staged_item / "payload.txt").write_text("ok", encoding="utf-8")
@@ -146,7 +166,6 @@ def case_download_installs_with_stuck_pump() -> dict:
                  mock.patch.object(backend, "_open_session_channel",
                                    return_value=Channel()), \
                  mock.patch.object(pb.subprocess, "Popen", side_effect=fake_popen), \
-                 mock.patch.object(pb, "_copy_stream", new=stuck_copy), \
                  mock.patch.object(pb, "_read_stream", new=lambda *a, **k: None):
                 rc, out, err = backend.download_tar(plan, timeout=2)
         except Exception as exc:  # noqa: BLE001
@@ -165,9 +184,128 @@ def case_download_installs_with_stuck_pump() -> dict:
         }
 
 
+def case_no_residual_pump_after_download() -> dict:
+    """Every pump created by download_tar must exit before it returns."""
+    with tempfile.TemporaryDirectory(prefix="vb-p076-") as temp:
+        target = Path(temp) / "out"
+        plan = build_tar_download_plan("tar", "/remote/dir", target)
+        backend = object.__new__(ParamikoSessionBackend)
+        release = threading.Event()
+
+        @contextmanager
+        def fake_lease(*args, **kwargs):
+            yield object()
+
+        class BlockedRead:
+            """Worst-case ChannelFile: close does not interrupt read()."""
+
+            def read(self, _n):
+                release.wait(timeout=10)
+                return b""
+
+            def close(self):
+                return None
+
+        class Channel:
+            def settimeout(self, value):
+                return None
+
+            def exec_command(self, command):
+                return None
+
+            def makefile(self, *args, **kwargs):
+                return BlockedRead()
+
+            def makefile_stderr(self, *args, **kwargs):
+                return io.BytesIO(b"")
+
+            def recv_ready(self):
+                return False
+
+            def recv(self, _n):
+                return b""
+
+            def recv_stderr_ready(self):
+                return False
+
+            def recv_stderr(self, _n):
+                return b""
+
+            def exit_status_ready(self):
+                return True
+
+            def recv_exit_status(self):
+                return 0
+
+            def close(self):
+                return None
+
+        class Process:
+            def __init__(self):
+                self.stdin = io.BytesIO()
+                self.stderr = io.BytesIO()
+
+            def poll(self):
+                return 0
+
+            def wait(self, timeout=None):
+                return 0
+
+            def kill(self):
+                return None
+
+        def fake_popen(command, **kwargs):
+            plan.staged_item.mkdir(parents=True, exist_ok=True)
+            (plan.staged_item / "payload.txt").write_text("ok", encoding="utf-8")
+            return Process()
+
+        created: list[threading.Thread] = []
+        real_thread = threading.Thread
+
+        def tracking_thread(*args, **kwargs):
+            thread = real_thread(*args, **kwargs)
+            created.append(thread)
+            return thread
+
+        started = time.monotonic()
+        rc = None
+        err = ""
+        error = ""
+        try:
+            with mock.patch.object(backend, "_session_lease", fake_lease), \
+                 mock.patch.object(backend, "_open_session_channel",
+                                   return_value=Channel()), \
+                 mock.patch.object(pb.subprocess, "Popen", side_effect=fake_popen), \
+                 mock.patch.object(pb.threading, "Thread", side_effect=tracking_thread):
+                rc, out, err = backend.download_tar(plan, timeout=2)
+        except Exception as exc:  # noqa: BLE001
+            error = f"{type(exc).__name__}: {exc}"
+
+        # Check before releasing the synthetic blocking read: a blocking pump
+        # must still be visible here, while a cooperative pump has exited.
+        deadline = time.monotonic() + 0.5
+        while time.monotonic() < deadline and any(t.is_alive() for t in created):
+            time.sleep(0.01)
+        leaked = [getattr(t, "name", repr(t)) for t in created if t.is_alive()]
+        release.set()
+        for thread in created:
+            thread.join(timeout=0.2)
+        if error:
+            return {"ok": False, "error": error,
+                    "elapsed_s": round(time.monotonic() - started, 3)}
+        return {
+            "ok": rc == 0 and not leaked,
+            "rc": rc,
+            "leaked_threads": leaked,
+            "created_threads": len(created),
+            "elapsed_s": round(time.monotonic() - started, 3),
+        }
+
+
 CASES = (
     ("wait_completion_ignores_stuck_pump", case_wait_completion_ignores_stuck_pump),
     ("download_installs_with_stuck_pump", case_download_installs_with_stuck_pump),
+    ("no_residual_pump_after_download", case_no_residual_pump_after_download),
 )
 
 

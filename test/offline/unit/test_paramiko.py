@@ -311,6 +311,24 @@ class TestBackendExecutionPaths(unittest.TestCase):
             def makefile_stderr(self, *args, **kwargs):
                 return io.BytesIO(b"")
 
+            def recv_ready(self):
+                return False
+
+            def recv(self, _n):
+                return b""
+
+            def recv_stderr_ready(self):
+                return False
+
+            def recv_stderr(self, _n):
+                return b""
+
+            def exit_status_ready(self):
+                return True
+
+            def shutdown_write(self):
+                return None
+
             def close(self):
                 return None
 

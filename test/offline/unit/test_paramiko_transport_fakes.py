@@ -193,13 +193,25 @@ class TestStreamHelpers(unittest.TestCase):
         pb._send_stream_to_channel(_Stream(), channel, failures)
         self.assertIsInstance(failures.get_nowait(), OSError)
 
-    def test_copy_stream_writes_and_closes_destination(self):
-        class _Stream:
+    def test_pump_channel_writes_and_closes_target(self):
+        class _Channel:
             def __init__(self):
                 self._chunks = [b"1", b"2", b""]
 
-            def read(self, _n):
+            def recv_ready(self):
+                return bool(self._chunks)
+
+            def recv(self, _n):
                 return self._chunks.pop(0)
+
+            def recv_stderr_ready(self):
+                return False
+
+            def recv_stderr(self, _n):
+                return b""
+
+            def exit_status_ready(self):
+                return True
 
         class _Sink:
             def __init__(self):
@@ -214,25 +226,57 @@ class TestStreamHelpers(unittest.TestCase):
 
         sink = _Sink()
         failures: queue.Queue = queue.Queue()
-        pb._copy_stream(_Stream(), sink, failures)
+        pb._pump_channel(
+            _Channel(), sink.write, failures, threading.Event(),
+            close_target=sink,
+        )
         self.assertEqual(sink.data, b"12")
         self.assertTrue(sink.closed)
         self.assertTrue(failures.empty())
 
-    def test_copy_stream_swallows_close_error_and_reports_read_error(self):
-        class _Stream:
-            def read(self, _n):
+    def test_pump_channel_stops_on_event_without_data(self):
+        class _Channel:
+            def recv_ready(self):
+                return False
+
+            def recv_stderr_ready(self):
+                return False
+
+            def exit_status_ready(self):
+                return False
+
+        stop = threading.Event()
+        worker = threading.Thread(
+            target=pb._pump_channel,
+            args=(_Channel(), b"".join, queue.Queue(), stop),
+            daemon=True,
+        )
+        worker.start()
+        time.sleep(0.05)
+        stop.set()
+        worker.join(timeout=1)
+        self.assertFalse(worker.is_alive())
+
+    def test_pump_channel_reports_read_error_and_swallows_close_error(self):
+        class _Channel:
+            def recv_ready(self):
                 raise OSError("read failed")
 
-        class _Sink:
-            def write(self, _chunk):
-                return None
+            def recv_stderr_ready(self):
+                return False
 
+            def exit_status_ready(self):
+                return False
+
+        class _Sink:
             def close(self):
                 raise OSError("close failed")
 
         failures: queue.Queue = queue.Queue()
-        pb._copy_stream(_Stream(), _Sink(), failures)
+        pb._pump_channel(
+            _Channel(), b"".join, failures, threading.Event(),
+            close_target=_Sink(),
+        )
         self.assertIsInstance(failures.get_nowait(), OSError)
 
     def test_channel_open_failure_detection(self):
