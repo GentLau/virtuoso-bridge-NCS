@@ -28,6 +28,7 @@ BUGS_DIR = ROOT / "test" / "reports" / "bugs"
 OPEN = [
     {
         "id": "P-038",
+        "layer": "其他（公共 / 打包）",
         "slug": "py39-pep604-needs-backport",
         "reported": "第五轮（2026-09-22；已报 `bug-20260922T141119Z-vblog-5e939e33`）",
         "updated": "2026-09-28（复测：lab py3.9 因已装 backport 能跑，裸装仍会挂）",
@@ -45,6 +46,7 @@ OPEN = [
     },
     {
         "id": "P-077",
+        "layer": "其他（注册 / 控制面）",
         "slug": "explicit-daemon-python-bare-name-rejected",
         "reported": "2026-09-28（注册专项；已报 `bug-20260928T075610Z-vblog-ff0b59eb`）",
         "updated": "2026-09-28（测试侧 P3/P4 实跑后立卡）",
@@ -71,6 +73,7 @@ OPEN = [
     },
     {
         "id": "P-076",
+        "layer": "上层（spectre 包；第二嫌疑：中层持久 shell）",
         "slug": "spectre-run-request-never-returns",
         "title": "间歇：`spectre.run` 请求永不返回（spectre 已 0 error 跑完；服务端线程不释放，需重启业务面）",
         "level": "P2（间歇性挂起；占住 in_flight 线程，客户端只能杀进程）",
@@ -101,6 +104,7 @@ OPEN = [
     },
     {
         "id": "P-075",
+        "layer": "上层（layout/gui 包）",
         "slug": "gds-export-modal-blocks-session",
         "title": "`virtuoso.layout.gds` 导出后会话残留模态对话框（\"Stream out translation complete\"）→ 同会话 SKILL 通道挂死，必须重启实例",
         "level": "P1（会话被挂死；多用户/GDS 后继续操作的流程直接卡住）",
@@ -148,6 +152,7 @@ OPEN = [
     },
     {
         "id": "C0",
+        "layer": "测试侧（规范 / 覆盖）",
         # 保持独立审计原文件名（用户/评审引用的就是这条路径），不要改成 ASCII slug
         "slug": "测试规范-AAA与状态还原缺失",
         "title": "测试规范缺失：无显式 TB 流程约定（环境检查→构建→完备校验→执行→比对），"
@@ -236,6 +241,7 @@ OPEN = [
     },
     {
         "id": "P-073",
+        "layer": "上层（schematic 包）",
         "slug": "pin-atomic-ops-name-mismatch",
         "title": "原理图 pin 原子操作与「pin 有效名」不一致：rename_pin 静默无效、set_pin_properties 把 pin 名改成自动名",
         "level": "P2（写操作语义错误；set_pin_properties 静默改坏用户数据）",
@@ -269,6 +275,7 @@ OPEN = [
     },
     {
         "id": "P-070",
+        "layer": "上层（maestro/spectre 包）",
         "slug": "monte-carlo-missing",
         "title": "蒙特卡洛能力缺失：只能读回 MC 结果，不能驱动 MC 仿真",
         "level": "P2（能力缺失）",
@@ -450,6 +457,7 @@ CARD_BODY = """# {id} · {title}
 | 字段 | 值 |
 |---|---|
 | 级别 | {level} |
+| 层 | {layer} |
 | 归属 | {owner} |
 | 状态 | **{status}** |
 | 位置 | {where} |
@@ -496,10 +504,10 @@ def _slug(bug: dict) -> str:
 
 
 def render_readme() -> str:
-    rows = ["| ID | 级别 | 归属 | 状态 | 一句话 | 卡片 |",
-            "|---|---|---|---|---|---|"]
+    rows = ["| ID | 层 | 级别 | 归属 | 状态 | 一句话 | 卡片 |",
+            "|---|---|---|---|---|---|---|"]
     for bug in OPEN:
-        rows.append(f"| **{bug['id']}** | {bug['level']} | {bug['owner']} | {bug['status']} | "
+        rows.append(f"| **{bug['id']}** | {bug.get('layer', '—')} | {bug['level']} | {bug['owner']} | {bug['status']} | "
                     f"{bug['title'].replace('|', chr(92) + '|')} | "
                     f"[{bug['id']}-{_slug(bug)}.md]({bug['id']}-{_slug(bug)}.md) |")
     closed = "\n".join(f"| {i} | {t} | {e} |" for i, t, e in CLOSED_RECENT)
@@ -583,6 +591,7 @@ def build_plan() -> dict[Path, str]:
         repro="最小复现命令（可粘贴执行）", evidence="证据路径（JSON / 日志 / 探针）",
         accept="修好后哪条用例或探针转绿", next="谁做什么，含复验方式",
         reported="<YYYY-MM-DD>（已报 `bug-…`）", updated="<YYYY-MM-DD>",
+        layer="上层 / 其他 / 测试侧",
         extra="## 补充（可选；需要时由 `extra` 字段注入）\n")
     plan = {BUGS_DIR / "README.md": render_readme(),
             BUGS_DIR / "_模板.md": template,
@@ -592,7 +601,8 @@ def build_plan() -> dict[Path, str]:
         plan[BUGS_DIR / f"{bug['id']}-{_slug(bug)}.md"] = CARD_BODY.format(
             **{**bug, "extra": bug.get("extra", ""),
                "reported": bug.get("reported", "第五轮（2026-09-23）／见台账"),
-               "updated": bug.get("updated", "2026-09-24（测试侧整理 bug 卡）")})
+               "updated": bug.get("updated", "2026-09-24（测试侧整理 bug 卡）"),
+               "layer": bug.get("layer", "—")})
     return plan
 
 

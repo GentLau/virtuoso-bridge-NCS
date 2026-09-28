@@ -3,6 +3,7 @@
 | 字段 | 值 |
 |---|---|
 | 级别 | P2（间歇性挂起；占住 in_flight 线程，客户端只能杀进程） |
+| 层 | 上层（spectre 包；第二嫌疑：中层持久 shell） |
 | 归属 | 设计侧（上层 spectre 包的 run 路径：等待完成/递归下载） |
 | 状态 | **观察（1 次复现，待设计侧定位）** |
 | 位置 | `src/pyapi/packages/spectre.py` `run` → `_run_one`（execute → `download_file(recursive=True)` → 解析）；中间层 `run_spectre_command` / 持久 shell 路径 |

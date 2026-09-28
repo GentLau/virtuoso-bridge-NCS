@@ -3,6 +3,7 @@
 | 字段 | 值 |
 |---|---|
 | 级别 | P2（能力缺失） |
+| 层 | 上层（maestro/spectre 包） |
 | 归属 | 待决策（产品口径：支持驱动 MC or 明确不做）→ 设计侧实现/写 spec |
 | 状态 | **待决策** |
 | 位置 | `src/pyapi/packages/_maestro_util.py:141`（唯一 MC 相关代码）、`:291-313`（`parse_overall_yield`）；spec：`6-maestro.md:130`（唯一 MC 提及，锁语义）、`7-spectre.md`（分析枚举无 montecarlo） |

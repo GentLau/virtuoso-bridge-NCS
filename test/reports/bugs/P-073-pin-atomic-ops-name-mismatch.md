@@ -3,6 +3,7 @@
 | 字段 | 值 |
 |---|---|
 | 级别 | P2（写操作语义错误；set_pin_properties 静默改坏用户数据） |
+| 层 | 上层（schematic 包） |
 | 归属 | 设计侧（上层 schematic 包 `_atomic_skill`） |
 | 状态 | **待设计修** |
 | 位置 | `src/pyapi/packages/schematic.py:615-637`（`delete_pin`/`rename_pin`/`set_pin_properties` 按 **pin 实例** 匹配并把实例名当 pin 名）、`:601-614`（`place_pin`）；spec `2-schematic.md:59` 表格 |

@@ -3,6 +3,7 @@
 | 字段 | 值 |
 |---|---|
 | 级别 | P1（会话被挂死；多用户/GDS 后继续操作的流程直接卡住） |
+| 层 | 上层（layout/gui 包） |
 | 归属 | 设计侧（上层 layout.gds / strmout 调用路径） |
 | 状态 | **待设计修** |
 | 位置 | `src/pyapi/packages/layout.py` 的 `virtuoso.layout.gds`（strmout/XStream 调用）＋ `src/pyapi/packages/gui.py` 的 `auto_dismiss`（现有规避手段对它无效） |

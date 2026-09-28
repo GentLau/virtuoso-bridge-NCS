@@ -3,6 +3,7 @@
 | 字段 | 值 |
 |---|---|
 | 级别 | P3（口径不一致：注册探测 vs 运行时；会绊住手写配置的用户） |
+| 层 | 其他（注册 / 控制面） |
 | 归属 | 设计侧（定口径：探测接受 PATH 名 or spec 写明必须绝对路径） |
 | 状态 | **待归属** |
 | 位置 | `src/register/flow.py:747`（`remote_executable_exists` → `test -x <显式值>`；`src/register/probe.py:194-199`）vs `src/bridge/resources/ramic_bridge.il:259`（daemon 启动走 `/usr/bin/env … <RBPython>`，PATH 可解析） |

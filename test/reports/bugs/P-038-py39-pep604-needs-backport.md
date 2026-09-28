@@ -3,6 +3,7 @@
 | 字段 | 值 |
 |---|---|
 | 级别 | P2（任何 3.9 客户端/CI 作业不可用；跨客户端一致性在 3.9 上不成立） |
+| 层 | 其他（公共 / 打包） |
 | 归属 | 设计侧（打包/依赖或 requires-python 口径） |
 | 状态 | **待设计修（已报 `bug-20260922T141119Z-vblog-5e939e33`）** |
 | 位置 | `src/common/registry.py:155`（`mode: Literal["local","remote"] | None`）；`pyproject.toml:9`（`requires-python = ">=3.9"`）；dev extra 未含 `eval_type_backport` |
