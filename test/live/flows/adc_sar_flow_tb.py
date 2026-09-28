@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=====================
 # 作者: 测试/root
-# 最后改动: 2026-09-28 21:10
+# 最后改动: 2026-09-28 16:15
 # 依赖: 无
 # =====================================================================
 """ADC(SAR) 实际项目全流程 TB（真机级）。
@@ -143,9 +143,16 @@ def main(argv: list[str] | None = None) -> int:
         response = call("virtuoso.schematic.write", token_a, library=lib, cell=cell, commands=cmds)
         record(f"A-write:{cell}", bool(response.get("ok")), response.get("error"))
 
-    for cell in (cmp_cell, latch_cell):
+    for cell, cmds in ((cmp_cell, cmp_cmds), (latch_cell, lap_cmds)):
         generated = call("virtuoso.symbol.generate", token_a, library=lib, cell=cell, overwrite=True)
         record(f"A-symbol:{cell}", bool(generated.get("ok")), generated.get("error"))
+        # B3（C0）：symbol 端口与原理图引脚**直接比对**（不再只判 generate 的 ok）。
+        expected = sorted(c["name"] for c in cmds if c.get("op") == "place_pin")
+        read = call("virtuoso.symbol.read", token_a, library=lib, cell=cell, view="symbol")
+        value = (read.get("data") or {}).get("value") or {}
+        terms = sorted(t.get("name") for t in (value.get("terms") or []) if t.get("name"))
+        record(f"A-symbol-terms:{cell}", terms == expected,
+               {"expected": expected, "terms": terms})
 
     top_cmds = [
         {"op": "place_instance", "master_lib": lib, "master_cell": cmp_cell,

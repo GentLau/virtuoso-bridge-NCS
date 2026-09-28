@@ -13,7 +13,7 @@
 3. **刷新方式**：改 `test/shared/runners/make_bug_cards.py` 的 `OPEN` / `CLOSED_RECENT` 段，
    然后 `python test/shared/runners/make_bug_cards.py`（幂等；`--check` 只校验不写盘）。
 
-## 1. 未关闭（7 条）
+## 1. 未关闭（6 条）
 
 | ID | 层 | 级别 | 归属 | 状态 | 一句话 | 卡片 |
 |---|---|---|---|---|---|---|
@@ -21,14 +21,13 @@
 | **P-077** | 其他（注册 / 控制面） | P3（口径不一致：注册探测 vs 运行时；会绊住手写配置的用户） | 设计侧（定口径：探测接受 PATH 名 or spec 写明必须绝对路径） | 待归属 | 显式 `role.daemon.python` 传裸命令名（如 `python3`）时注册第 3 步失败；运行时可解析 PATH | [P-077-explicit-daemon-python-bare-name-rejected.md](P-077-explicit-daemon-python-bare-name-rejected.md) |
 | **P-076** | 上层（spectre 包；第二嫌疑：中层持久 shell） | P2（间歇性挂起；占住 in_flight 线程，客户端只能杀进程） | 设计侧（上层 spectre 包的 run 路径：等待完成/递归下载） | 观察（1 次复现，待设计侧定位） | 间歇：`spectre.run` 请求永不返回（spectre 已 0 error 跑完；服务端线程不释放，需重启业务面） | [P-076-spectre-run-request-never-returns.md](P-076-spectre-run-request-never-returns.md) |
 | **P-075** | 上层（layout/gui 包） | P1（会话被挂死；多用户/GDS 后继续操作的流程直接卡住） | 设计侧（上层 layout.gds / strmout 调用路径） | 待设计修 | `virtuoso.layout.gds` 导出后会话残留模态对话框（"Stream out translation complete"）→ 同会话 SKILL 通道挂死，必须重启实例 | [P-075-gds-export-modal-blocks-session.md](P-075-gds-export-modal-blocks-session.md) |
-| **C0** | 测试侧（规范 / 覆盖） | P2（测试规范缺陷；导致覆盖系统性缺口 + 缺陷漏检） | 测试侧（规范制定 + 覆盖补齐） | 规范已落地（2026-09-28）；覆盖补齐进行中（B1–B4） | 测试规范缺失：无显式 TB 流程约定（环境检查→构建→完备校验→执行→比对），delete/rename/set 类原子在 semi/live 层系统性无覆盖 | [C0-测试规范-AAA与状态还原缺失.md](C0-测试规范-AAA与状态还原缺失.md) |
 | **P-073** | 上层（schematic 包） | P2（写操作语义错误；set_pin_properties 静默改坏用户数据） | 设计侧（上层 schematic 包 `_atomic_skill`） | 待设计修 | 原理图 pin 原子操作与「pin 有效名」不一致：rename_pin 静默无效、set_pin_properties 把 pin 名改成自动名 | [P-073-pin-atomic-ops-name-mismatch.md](P-073-pin-atomic-ops-name-mismatch.md) |
 | **P-070** | 上层（maestro/spectre 包） | P2（能力缺失） | 待决策（产品口径：支持驱动 MC or 明确不做）→ 设计侧实现/写 spec | 待决策 | 蒙特卡洛能力缺失：只能读回 MC 结果，不能驱动 MC 仿真 | [P-070-monte-carlo-missing.md](P-070-monte-carlo-missing.md) |
 
 > 优先级口径：**P1** = Linux 侧资源/安全或核心指标链路断（P-056、P-053）；
 > **P2** = 真实设计流会给出错的/空的结果，且多数**静默**；**P3/观察** = 非阻塞但建议顺手修。
 
-## 2. 本轮/近期已关闭（45 条，保留记录）
+## 2. 本轮/近期已关闭（46 条，保留记录）
 
 | ID | 事项 | 关闭依据（证据） |
 |---|---|---|
@@ -77,6 +76,7 @@
 | P-031 | schematic `check_and_save`/`write` 忽略 `schCheck` 失败（check-failed 仍 ok） | **已修（`b36bade` + `bd75d3d`）**：保存前校验 output 含 saved 标记（`schematic.py:785,862`），并在保存路径补 `dbSetConnCurrent`（避免 si -batch OSSHNL-108/109）。验证：`test_schematic_contracts.py` 37/37 绿（无 xfail 残留） |
 | P-032 | `verilog._imported_cells` 去重顺序错误（未清洗 token 参与比较） | **已修（`b36bade`）**：先清洗 `[.,;:]` 尾字符再去重（`verilog.py:659-667`）。验证：`test_verilog_contracts.py` 28/28 绿 |
 | P-074 | pin 坐标口径三处不一致（read `xy` / write `x`,`y` / spec `xy`） | **已修（`48fc800`）**：实现统一为 `pos: [x, y]`，`xy`/拆开的 `x`/`y` 一律拒绝并点名违规字段（`schematic.py:480-487`）；spec《2-schematic》已改「单点一律 pos、弃用 xy」。验证：`schematic_pin_ops_probe` 以 `pos` 形状跑通写路径（`round7/pin-ops.json`，2026-09-28 复跑） |
+| C0 | 测试规范缺失（六步/状态还原）＋ 原子级覆盖系统性缺口 | **已闭环（2026-09-28）**：① 规范落地 `test/docs/写TB规范.md`（六步＋判据强度＋状态还原＋原子级覆盖义务）；② 机器核账 `audit_atom_coverage.py` → **gap=0 / weak=0 / 待分诊 0**（`atom-coverage-2026-09-28.json`）；③ B3 修弱判据：serdes calibre 补 `read_results`（DRC 1737 规则/28 结果；LVS 显式记录 not_compared 局限）、ADC/多用户 SerDes 补 `symbol.read` 端口比对、S11 gds 补 `stat+sha256`（PASS）；④ B4 抽查报告 `test/reports/TB规范抽查-2026-09-28.md`（5 份，发现 design_iterate 缺 §1 env_check → 已修） |
 
 详见 [已关闭-近期.md](已关闭-近期.md)。
 

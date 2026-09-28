@@ -34,6 +34,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 import time
 import urllib.error
@@ -250,6 +251,22 @@ def stage_gds(runner: Runner) -> None:
         return
     runner.state["gds"] = gds
     runner.record("gds", payload, response, "PASS", f"gds -> {gds}")
+    # B3（C0）：导出 ok 之外，对靶机产物本身取证（大小 + sha256sum），
+    # 避免"只看 ok"的弱判据；下游 drc/lvs 也才有可信输入。
+    verify = call("basic.command.run", runner.token,
+                  cmd=f"stat -c '%s' {gds}; sha256sum {gds}", timeout=60)
+    result = (verify.get("data") or {}).get("result")
+    if isinstance(result, list) and len(result) >= 2:
+        out = str(result[1])
+    elif isinstance(result, dict):
+        out = str(result.get("stdout") or "")
+    else:
+        out = ""
+    size = re.search(r"^\s*(\d+)", out)
+    sha = re.search(r"\b[0-9a-f]{64}\b", out)
+    runner.record("gds-stat", {"gds": gds}, {"output": out.strip()[:200]},
+                  "PASS" if (size and sha) else "FAIL",
+                  f"size={size.group(1) if size else '?'} sha256={sha.group(0)[:12] if sha else '?'}")
 
 
 def stage_drc(runner: Runner) -> None:

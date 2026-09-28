@@ -36,9 +36,20 @@ EOF
 
 echo "== 起 Virtuoso（headless X，独立 display）=="
 cd "$ROOT/run"
-if pgrep -f "virtuoso -cdslib $ROOT/run/cds.lib" >/dev/null; then
+# 进程检测按 **cwd** 匹配：实例的 argv 是 `virtuoso -cdslib ./cds.lib`（相对路径），
+# 用 "$ROOT/run/cds.lib" 去 pgrep -f 永远匹配不到 → 会重复拉起。
+RUNNING=""
+for p in $(pgrep -f "dfII/bin/64bit/virtuoso" || true); do
+    if [ "$(readlink "/proc/$p/cwd" 2>/dev/null || true)" = "$ROOT/run" ]; then
+        RUNNING=$p
+    fi
+done
+if [ -n "$RUNNING" ]; then
     echo "  已在运行，跳过"
 else
+    # 上一次会话被挂死/强杀时会留下 CDS.log.cdslck，新实例会直接
+    # "Log file Initialization failure" 起不来（P-021 类陈旧锁）。
+    rm -f "$ROOT/run/CDS.log.cdslck"
     nohup xvfb-run -a --server-args="-screen 0 1280x1024x24" \
         virtuoso -cdslib ./cds.lib -log ./CDS.log > start.log 2>&1 &
     echo "  launched pid=$!"

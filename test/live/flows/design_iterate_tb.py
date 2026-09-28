@@ -50,6 +50,11 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "src"))
+_RUNNERS = ROOT / "test" / "shared" / "runners"
+if str(_RUNNERS) not in sys.path:
+    sys.path.insert(0, str(_RUNNERS))
+
+from env_check import require_environment  # noqa: E402
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
@@ -936,6 +941,8 @@ def main(argv: list[str] | None = None) -> int:
                     help="保留固定 cell 名（buf_stage / inv_only）——只在确认库干净时用")
     ap.add_argument("--out", type=Path, default=WORK_DIR)
     args = ap.parse_args(argv)
+    # §1 环境检查（规范 §9）：业务面可达 + 本 token 能看到 PDK 库（DI65 建在它上面）。
+    require_environment(base=args.base, token=args.token, require_lib=[PDK_LIB])
 
     # 每次跑用**自己的 cell 名**：DI65 库里可能留着上一轮的对象/锁（实测踩过
     # "schematic view DI65/buf_stage/schematic is locked by another session"）。

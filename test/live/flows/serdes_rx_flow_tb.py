@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=====================
 # 作者: 测试/root
-# 最后改动: 2026-09-28 21:10
+# 最后改动: 2026-09-28 16:15
 # 依赖: 无
 # =====================================================================
 """SerDes RX 前端全流程 TB（第五轮新增的真实业务场景）。
@@ -650,13 +650,53 @@ def stage_calibre(t: HttpTransport, cfg) -> Stage:
     lvs_deck = f"{PDK_ROOT}/Calibre/lvs/calibre.lvs"
     drc = raw_call(t, "calibre.drc", gds=gds, top=CTLE, deck=drc_deck,
                    blocking=True, timeout=1800)
-    st.value["drc"] = {"ok": drc.get("ok"), "error": drc.get("error")}
+    drc_value = ((drc.get("data") or {}).get("value")) or {}
+    st.value["drc"] = {"ok": drc.get("ok"), "error": drc.get("error"),
+                       "job_id": drc_value.get("job_id"), "run_dir": drc_value.get("run_dir")}
     (st.ok if drc.get("ok") else st.bad)("drc", drc.get("error"))
+    if drc.get("ok"):
+        # B3（C0）：不只判 ok —— 必须把结果读回来，断言解析出了计数。
+        req: dict[str, Any] = {"kind": "drc", "timeout": 300}
+        if drc_value.get("job_id"):
+            req["job_id"] = drc_value["job_id"]
+        elif drc_value.get("run_dir"):
+            req["run_dir"] = drc_value["run_dir"]
+        res = raw_call(t, "calibre.read_results", **req)
+        summary = (((res.get("data") or {}).get("value")) or {}).get("summary") or {}
+        rules, total = summary.get("rules_checked"), summary.get("total_results")
+        st.value["drc_read_results"] = summary
+        (st.ok if isinstance(rules, int) and rules > 0 and isinstance(total, int)
+         else st.bad)("drc-results-parsed", {"rules_checked": rules, "total_results": total})
     if cfg.cdl_remote:
         lvs = raw_call(t, "calibre.lvs", gds=gds, top=CTLE, deck=lvs_deck,
                        cdl=cfg.cdl_remote, blocking=True, timeout=1800)
-        st.value["lvs"] = {"ok": lvs.get("ok"), "error": lvs.get("error")}
+        lvs_value = ((lvs.get("data") or {}).get("value")) or {}
+        st.value["lvs"] = {"ok": lvs.get("ok"), "error": lvs.get("error"),
+                           "job_id": lvs_value.get("job_id"), "run_dir": lvs_value.get("run_dir")}
         (st.ok if lvs.get("ok") else st.bad)("lvs", lvs.get("error"))
+        if lvs.get("ok"):
+            # B3（C0）：读回 LVS 结论（CORRECT/INCORRECT/NOT COMPARED 的确定枚举 + counts），
+            # 不再只看 calibre.lvs 的 ok。
+            req = {"kind": "lvs", "timeout": 300}
+            if lvs_value.get("job_id"):
+                req["job_id"] = lvs_value["job_id"]
+            elif lvs_value.get("run_dir"):
+                req["run_dir"] = lvs_value["run_dir"]
+            res = raw_call(t, "calibre.read_results", **req)
+            summary = (((res.get("data") or {}).get("value")) or {}).get("summary") or {}
+            verdict = str(summary.get("status") or "").lower()
+            counts = summary.get("counts") or {}
+            st.value["lvs_read_results"] = {"status": verdict, "counts": counts}
+            if verdict == "not_compared":
+                # 本 TB 手搭的 ctle 版图没有端口层/标签，LVS 只能给 not_compared ——
+                # 这是 TB 局限，**不是**"接口 ok 就算过"：明确记录并指向正例。
+                st.ok("lvs-verdict-readback",
+                      {"status": verdict, "counts": counts,
+                       "note": "TB 手搭版图限制；correct 正例见 "
+                               "design_iterate_tb --with-lvs（真实 cell CMP_LIB/inv2）"})
+            else:
+                (st.ok if verdict in ("correct", "incorrect") and counts else st.bad)(
+                    "lvs-verdict-readback", {"status": verdict, "counts": counts})
     return st
 
 
@@ -859,6 +899,10 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps({k: v for k, v in st.to_json().items() if k != "steps"},
                          ensure_ascii=False))
         print(f"  evidence: {path}")
+        # 判据聚合：任何 `st.bad(...)` 步骤都必须让整条 TB 失败，
+        # 否则"失败被判据记录、退出码仍 0"（C0 同类问题）。
+        if any(step.get("ok") is False for step in st.steps):
+            failed = True
         if failed:
             break
 

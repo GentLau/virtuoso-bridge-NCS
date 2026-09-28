@@ -151,95 +151,6 @@ OPEN = [
                 "测试侧：新探针先钉住红灯（已加），修好后跑「探针 + ADC TB + 一次多用户 GDS→改单」三轮复验。",
     },
     {
-        "id": "C0",
-        "layer": "测试侧（规范 / 覆盖）",
-        # 保持独立审计原文件名（用户/评审引用的就是这条路径），不要改成 ASCII slug
-        "slug": "测试规范-AAA与状态还原缺失",
-        "title": "测试规范缺失：无显式 TB 流程约定（环境检查→构建→完备校验→执行→比对），"
-                 "delete/rename/set 类原子在 semi/live 层系统性无覆盖",
-        "level": "P2（测试规范缺陷；导致覆盖系统性缺口 + 缺陷漏检）",
-        "owner": "测试侧（规范制定 + 覆盖补齐）",
-        "status": "规范已落地（2026-09-28）；覆盖补齐进行中（B1–B4）",
-        "where": "`test/docs/写TB规范.md`（六步流程与状态还原，2026-09-28 精简合并后的唯一规范入口）"
-                 " + 三层测试的写原子覆盖；核账脚本 `test/shared/runners/audit_atom_coverage.py`",
-        "symptom": "独立审计（2026-09-27）发现 delete/rename/set 类写原子在**半真机与真机两层无覆盖**，"
-                   "其离线证据只是「拼出合法 SKILL 文本」的契约断言（FakeMiddle mock），从不执行、无结果比对。"
-                   "测试侧 2026-09-28 核账（60 个原子，schematic/layout/symbol）：**semi/live 两层零引用 12 个**——"
-                   "schematic 的 `delete_instance/delete_note/delete_wire/place_note/place_wire/rename_note/"
-                   "set_note_properties/set_wire_properties`、layout 的 `delete_instance/delete_mosaic/"
-                   "`fit_view/zoom`；另有 20+ 原子 **semi 层**单缺。\n"
-                   "根因：`test/reports/internal/测试架构-内部.md §3` 的覆盖度模型是**能力域级**（「某包测没测」），"
-                   "粒度不足以发现包内原子缺口；且此前**没有** TB 执行流程与状态还原约定，"
-                   "delete/rename/set 类原子需要「先造既有对象」，成本高被系统性绕开。",
-        "repro": "`python test/shared/runners/audit_atom_coverage.py --md`（打印 60 原子 × 三层引用面 + GAP 列表）；"
-                 "证据 `test/artifacts/evidence/atom-coverage-2026-09-28.json`；"
-                 "离线文本断言的典型形态见 `test/offline/unit/test_schematic_contracts.py:209-257`",
-        "evidence": "`test/reports/原子覆盖审查-2026-09-28.md`（逐条复核 C0 的清单与「只发不核」意见）；"
-                    "`test/docs/写TB规范.md`（六步流程 + 状态还原 + 最小判定强度）；"
-                    "`test/artifacts/evidence/atom-coverage-2026-09-28.json` / `.txt`",
-        "accept": "① 六步 TB 流程与状态还原规则落地为规范（**已满足**，见 `test/docs/写TB规范.md`）；"
-                  "② 12 个两层缺口原子按六步补齐 semi 探针或 live e2e（place→read→delete→read 消失 / "
-                  "rename→read 改名 / set→read 属性变化），`audit_atom_coverage.py` 的 gap 列表逐步清零；"
-                  "③ 2 处弱判据（SerDes 的 calibre lvs/drc 只看 ok）改为读 `calibre.read_results` 结论",
-        "next": "测试侧：B1（schematic 8 原子）→ B2（layout 4 原子，display 原子用窗口/截图判据）→ "
-                "B3（弱判据修正）→ B4（按规范 §7 清单抽查 5 份现役 TB）。"
-                "每批完成即重跑核账脚本更新本卡状态；关闭判据是 gap=0 且 weak=0",
-        "extra": (
-            "## 独立审计原文（2026-09-27，逐字保留）\n"
-            "\n"
-            "> 来源：独立审计卡片 `C0-测试规范-AAA与状态还原缺失.md`。测试侧 2026-09-28 把它并入生成器"
-            "（`make_bug_cards.py`）以防刷新丢失；上面「现象/根因/验收」是测试侧的**核账后**版本，"
-            "本节保留审计原文以便对照。\n"
-            "\n"
-            "### 现象\n"
-            "\n"
-            "独立审计（2026-09-27）发现：**12 个写原子在半真机（semi）和真机（live）两层均无任何测试覆盖**，"
-            "且**全部集中在 delete/rename/set（删除/改属性）类**：\n"
-            "\n"
-            "- schematic（10）：`delete_instance`、`rename_instance`、`place_wire`、`delete_wire`、"
-            "`set_wire_properties`、`set_label_properties`、`place_note`、`delete_note`、`rename_note`、"
-            "`set_note_properties`\n"
-            "- layout（6）：`delete_label`、`set_label_properties`、`delete_instance`、`delete_mosaic`、"
-            "`fit_view`、`zoom`\n"
-            "\n"
-            "这些原子在**离线层只有「拼出合法 SKILL 文本」的契约断言**（FakeMiddle mock），从不经真机执行、无结果比对。\n"
-            "\n"
-            "### 根因（测试规范缺陷）\n"
-            "\n"
-            "测试没有一条显式的 TB 流程规范（环境检查 → 构建 → 完备校验 → 执行 → 比对）与**前置构建干净基线**的约定，导致：\n"
-            "\n"
-            "1. place（新建）类 Arrange = 空画布，几乎免费，被充分测试；\n"
-            "2. delete/rename/set 类 Arrange = 需先 seed 一个已知对象（本身依赖 place 或 fixture 注入），成本高，被系统性绕开；\n"
-            "3. cellview 是**持久化**对象（非无状态函数），无「前置构建/还原干净基线」约定 → 跨用例污染风险，"
-            "进一步劝退写 delete/set 类测试。\n"
-            "\n"
-            "### 关联缺陷（由本规范缺陷直接/间接导致）\n"
-            "\n"
-            "- **P-073**（rename_pin 静默无效）：rename 类长期无真机闭环，拖到真机探针才暴露；\n"
-            "- **P-074**（spec/实现 pin 索引口径不一致）：定位参数语义无真机验证的同类症状；\n"
-            "- **P-072**（init_work_dir 一次性化）、**P-068**（两用户工艺绑定不一致）：同为「状态管理无规范」的症状。\n"
-            "\n"
-            "### TB 规范流程（6 步，已定 —— 已落入 `test/docs/写TB规范.md` §1）\n"
-            "\n"
-            "每份 TB 按如下顺序执行，**完成后不清理现场**；现场干净由第 2、3 步（前置构建）负责：\n"
-            "\n"
-            "1. **检查环境是否为所需测试环境**：不是所需环境 → TB 直接失败（所需环境通常为日常；写 TB 尽量用日常，"
-            "非日常需求写好 TB 后移交测试工程师）。\n"
-            "2. **检查当前环境并构建测试环境**：要读原理图就准备一张要读的原理图；要写原理图就准备一张**要被写的原理图**"
-            "（并还原到未写基线）。\n"
-            "3. **最终检查环境**：确认被测动作所需环境已完备（该有的对象/视图/前置状态都在、且干净）。\n"
-            "4. **执行操作**。\n"
-            "5. **比对结果并记录**（理想 vs 实际）。\n"
-            "6. **重复 4、5**，直到本 TB 完结。\n"
-            "\n"
-            "### 审计给出的验收判据\n"
-            "\n"
-            "1. 上述 6 步 TB 流程落地为测试规范文档；\n"
-            "2. 上述 12 个双缺失原子按 6 步流程补上 semi 探针或 live e2e"
-            "（「place→read→delete→read 确认消失 / rename→read 确认改名」闭环）。\n"
-        ),
-    },
-    {
         "id": "P-073",
         "layer": "上层（schematic 包）",
         "slug": "pin-atomic-ops-name-mismatch",
@@ -430,6 +341,12 @@ CLOSED_RECENT = [
      "**已修（`b36bade`）**：先清洗 `[.,;:]` 尾字符再去重（`verilog.py:659-667`）。验证：`test_verilog_contracts.py` 28/28 绿"),
     ("P-074", "pin 坐标口径三处不一致（read `xy` / write `x`,`y` / spec `xy`）",
      "**已修（`48fc800`）**：实现统一为 `pos: [x, y]`，`xy`/拆开的 `x`/`y` 一律拒绝并点名违规字段（`schematic.py:480-487`）；spec《2-schematic》已改「单点一律 pos、弃用 xy」。验证：`schematic_pin_ops_probe` 以 `pos` 形状跑通写路径（`round7/pin-ops.json`，2026-09-28 复跑）"),
+    ("C0", "测试规范缺失（六步/状态还原）＋ 原子级覆盖系统性缺口",
+     "**已闭环（2026-09-28）**：① 规范落地 `test/docs/写TB规范.md`（六步＋判据强度＋状态还原＋原子级覆盖义务）；"
+     "② 机器核账 `audit_atom_coverage.py` → **gap=0 / weak=0 / 待分诊 0**（`atom-coverage-2026-09-28.json`）；"
+     "③ B3 修弱判据：serdes calibre 补 `read_results`（DRC 1737 规则/28 结果；LVS 显式记录 not_compared 局限）、"
+     "ADC/多用户 SerDes 补 `symbol.read` 端口比对、S11 gds 补 `stat+sha256`（PASS）；"
+     "④ B4 抽查报告 `test/reports/TB规范抽查-2026-09-28.md`（5 份，发现 design_iterate 缺 §1 env_check → 已修）"),
 ]
 
 #: 非缺陷跟踪项（文档/环境/审计/覆盖度）：不建卡，只在 README 索引，避免与缺陷视图混淆

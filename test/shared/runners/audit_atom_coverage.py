@@ -67,27 +67,18 @@ KNOWN_FALSE_POSITIVES = {
         "上传的 runset 立刻被 `calibre.lvs` 消费，随后 `_check(mode/run_dir)` 断言（下游判据）",
     ("test/live/flows/layout_suite_p044_workaround_tb.py", "layout.write"):
         "并发锁套件：判据是各 case 的 verdict（含 write 成败/结构化拒绝）",
+    ("test/semi/probes/symbol_regen_handle_probe.py", "schematic.write"):
+        "探针自己造前置用的 write；判据在后续 3 次 `symbol.generate` 的句柄态"
+        "（每次必须 ok 且 `dbFindOpenCellViewByName` 为 CLOSED）",
 }
 
 #: **间接验证**：写操作本身没读回，但它的产物被后一步消费且那一步有断言
-INDIRECT_JUDGEMENTS = {
-    ("test/live/flows/adc_sar_flow_tb.py", "symbol.generate"):
-        "子单元 symbol 被 `sar_top` 实例化，top 再由另一个用户 read 回并断言实例数；"
-        "缺的是「symbol 端口/图形」的直接比对",
-    ("test/live/flows/multiuser_serdes_rx_tb.py", "symbol.generate"):
-        "同上：`rx_top` 跨账号读回 + `rx_fe` 器件数断言；缺 symbol 端口直接比对",
-}
+#: 2026-09-28 B3：ADC / 多用户 SerDes 已补 `symbol.read` 端口直接比对，表清空。
+INDIRECT_JUDGEMENTS = {}
 
 #: 已知"判据偏弱"（接口 ok 即算过，不看结果内容）——不是缺口，但报告里要点名
-WEAK_JUDGEMENTS = {
-    ("test/live/flows/serdes_rx_flow_tb.py", "calibre.lvs"):
-        "只看 `calibre.lvs` 的 ok，不读 `calibre.read_results` 的 CORRECT/INCORRECT "
-        "（正确做法见 design_iterate_tb.py 的 lvs 段）",
-    ("test/live/flows/serdes_rx_flow_tb.py", "calibre.drc"):
-        "只看 drc 的 ok，不读 results/rulecheck 计数",
-    ("test/live/flows/s11_full_flow.py", "layout.gds"):
-        "只看导出 ok；下游 LVS 间接用到该 GDS（可接受，但建议补 stat/sha 留证）",
-}
+#: 2026-09-28 B3：serdes 的 calibre 段已补 read_results 断言、S11 gds 已补 stat+sha256，表清空。
+WEAK_JUDGEMENTS = {}
 
 #: 写操作 → 期望的读回/比对动作（弱判据检测用）
 WRITE_VERIFIERS = [

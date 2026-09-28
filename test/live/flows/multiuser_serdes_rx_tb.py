@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=====================
 # 作者: 测试/root
-# 最后改动: 2026-09-28 21:10
+# 最后改动: 2026-09-28 16:15
 # 依赖: 无
 # =====================================================================
 """SERDES RX 多用户协同共建 TB（真机级 · S13）。
@@ -161,10 +161,18 @@ def main(argv: list[str] | None = None) -> int:
     record("A-write:clk_buf", bool(buf.get("ok")), buf.get("error"))
 
     # ---- 4) A 生成 symbol ----------------------------------------------------
-    for cell in (rx_fe, clk_buf):
+    for cell, cmds in ((rx_fe, fe_cmds), (clk_buf, buf_cmds)):
         gen = call(args.base, "virtuoso.symbol.generate", token_a,
                    library=lib, cell=cell, overwrite=True)
         record(f"A-symbol:{cell}", bool(gen.get("ok")), gen.get("error"))
+        # B3（C0）：symbol 端口与原理图引脚**直接比对**（跨用户读回前先确认本体正确）。
+        expected = sorted(c["name"] for c in cmds if c.get("op") == "place_pin")
+        read = call(args.base, "virtuoso.symbol.read", token_a,
+                    library=lib, cell=cell, view="symbol")
+        value = (read.get("data") or {}).get("value") or {}
+        terms = sorted(t.get("name") for t in (value.get("terms") or []) if t.get("name"))
+        record(f"A-symbol-terms:{cell}", terms == expected,
+               {"expected": expected, "terms": terms})
 
     # ---- 5) A 画 rx_top（实例化 rx_fe + 引脚）--------------------------------
     top_cmds = [
