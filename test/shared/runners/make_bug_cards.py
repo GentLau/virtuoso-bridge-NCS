@@ -28,6 +28,58 @@ BUGS_DIR = ROOT / "test" / "reports" / "bugs"
 OPEN = [
 
     {
+        "id": "P-099",
+        "layer": "上层（verilog 包）",
+        "slug": "verilog-import-returns-empty-views",
+        "title": "`virtuoso.verilog.import` 返回值里的 `views` 恒为空，与真机实际视图不符（functional/symbol 明明已生成）",
+        "level": "P2（结构化返回值与事实不符：调用方按 `views` 判断产物会得出「什么都没导入」的结论）",
+        "owner": "设计侧（verilog 包 `_read_views`）",
+        "status": "待设计修",
+        "where": "`src/pyapi/packages/verilog.py:251-281`（`_read_views`：SKILL `sprintf(nil \"%L\" out)` → `basic.parse_sexpr` → 遍历取 view/type/data/file）；"
+                 "调用点 `_verify_import:594` / `import_verilog:566`（结果 `views` 直接取它）。",
+        "symptom": "真机（vblog，`schemtest/vimp_top`）实测：\n"
+                   "① `virtuoso.verilog.import(file_is_local=True, ref_libs=[\"basic\"], overwrite=True)` 返回 "
+                   "`{\"reason\": \"completed\", \"cells\": [\"vimp_top_child\",\"vimp_top\"], \"views\": [], "
+                   "\"instance_count\": 1, \"net_count\": 2, \"term_count\": 2, \"bbox\": [...]}`；\n"
+                   "② 同一 cell 用 SKILL 直接查（`mapcar(lambda((v) v~>name) c~>views)`）得到 `(\"functional\" \"symbol\")`；\n"
+                   "③ 把 `_read_views` 的**同一条 SKILL 文本**离线跑一遍（`basic.parse_sexpr` + 同一遍历），"
+                   "能正常解析出 6 条 view/file 记录 ⇒ 解析逻辑离线可用，问题在真机链路里的实际返回值形态（需设计侧在进程内复现）。",
+        "repro": "`PYTHONPATH=src python test/live/packages/verilog_import_params_e2e_tests.py --transport http`"
+                 "（IMP-08 是红钉；IMP-01/03 打印 `NOTE P-096` 对照真机实际 views）",
+        "evidence": "`test/artifacts/evidence/round8/verilog-import-params/verilog-import-params.json`；"
+                    "cell `schemtest/vimp_top` + `schemtest/vimp_top_views`（现场保留，不清理）",
+        "accept": "① import 返回值 `views` 至少包含真实生成的视图（与 `mapcar ~>views` 一致）；② IMP-08 红钉转绿。",
+        "next": "设计侧在 `_read_views` 里加一行原始返回（`raw`）日志定位真机形态差异；测试侧复跑 IMP-08。",
+        "reported": "2026-09-28（第八轮 verilog.import 参数面实测，root 直接发现）",
+        "updated": "2026-09-28（新立）",
+    },
+
+    {
+        "id": "P-097",
+        "layer": "上层（verilog 包）/ 库视图刷新时序",
+        "slug": "verilog-import-cell-not-found-after-overwrite",
+        "title": "覆盖式再导入后紧跟的视图查询偶发 `*Error* cell not found`（同 cell 连导时出现 1 次，之后 2/2 复跑皆成功）",
+        "level": "P3（观察：未稳定复现，但用户串行导入同一 cell 时会撞到，表现为整体失败）",
+        "owner": "待归属（verilog 包 `_read_views` 与 ihdl 覆盖写后的库视图刷新时序）",
+        "status": "观察",
+        "where": "`src/pyapi/packages/verilog.py:251-256`（`_read_views` 里 `unless(cell error(\"cell not found\"))`）"
+                 "+ `import_verilog:558`（`ddUpdateLibList()` 在 `_verify_import` 之前只刷一次）。",
+        "symptom": "2026-09-28 23:03 实测：IMP-01（`file_is_local=True`，overwrite=True）成功后，IMP-02"
+                   "（同一 cell、`file_is_local=False`、overwrite=True）在 `_read_views` 处抛 "
+                   "`RuntimeError: (\"error\" 0 t nil (\"*Error* cell not found\"))` → 整个 import 返回失败；\n"
+                   "随后手工复跑同参数 2 次（远端就地 + overwrite）**2/2 全成功**（`views` 仍为空见 P-096），"
+                   "且 `ddGetObj(\"schemtest\" \"vimp_top\")` 一直存在 ⇒ 判定为**时序/刷新**类瞬时现象，非稳定缺陷。",
+        "repro": "同参数连跑两次：见 `test/live/packages/verilog_import_params_e2e_tests.py` IMP-01→IMP-02 顺序；"
+                 "复现尝试记录见本卡片证据。",
+        "evidence": "`test/artifacts/evidence/round8/verilog-import-params/verilog-import-params.json`（`failure` 字段原文）",
+        "accept": "① 覆盖式再导入后 `_read_views` 不再出现 cell not found（或在覆盖写后补一次 `ddUpdateLibList()` 再查）；"
+                  "② 若确认是瞬时，给 `_read_views` 有界重试并在结果里标注。",
+        "next": "设计侧评估覆盖写后的视图刷新时序；测试侧在 IMP-02 前插一次 `ddUpdateLibList` 观察是否消失（不改判据，只做定位）。",
+        "reported": "2026-09-28（第八轮 verilog.import 参数面实测，root 直接发现）",
+        "updated": "2026-09-28（新立，含 2/2 未复现说明）",
+    },
+
+    {
         "id": "P-092",
         "layer": "上层（calibre 包）",
         "slug": "calibre-power-ground-dead-params",
@@ -599,6 +651,30 @@ OPEN = [
                   "③ 与 P-095 的 watchdog 修复联动（ASSEMBLER/ADE 模态兜底）。",
         "next": "设计侧定“死属主锁”处置口径并实现；测试侧在 `maestro_pkg_probe`/新探针里补“陈旧锁恢复”回归（先手工造锁再验证行为）。",
         "reported": "2026-09-28（第八轮：vblog 崩溃恢复时实测）",
+        "updated": "2026-09-28",
+    },
+    {
+        "id": "P-098",
+        "layer": "上层（calibre 包）· 阻塞轮询口径",
+        "slug": "calibre-blocking-timeout-status-not-timeout",
+        "title": "`blocking=true` 超时返回最后一次 `status`（running/unknown），未按 spec 返回 `status=timeout`",
+        "level": "P3（口径偏差：调用方按 spec 判 `status==\"timeout\"` 会永远不成立；作业本身不杀、行为其余正确）",
+        "owner": "设计侧（calibre 包轮询收尾）",
+        "status": "待设计修",
+        "where": "`src/pyapi/packages/calibre.py:575-594`（deadline 到点后 `value.update({\"status\": last.get(\"status\", \"timeout\")})`——"
+                 "`last` 在跑过至少一次 poll 后必非空，于是永远是最后一次观测值 `running`/`unknown`）；"
+                 "spec：`上层/12-calibre.md:117-121`（§3.4「终态或超时即返回；**超时返回 `status=timeout`** 且后台作业继续跑」）",
+        "symptom": "离线可复现（假 middle 让作业永远 running）：`drc(blocking=True, timeout=0.2, poll_interval=0.01)` → "
+                   "返回 `value.status='running'`、`elapsed_ms≈202`、`error='drc did not complete: running'`；"
+                   "spec 要求的 `status='timeout'` 只会在**从未 poll 过**时意外落到默认值。"
+                   "后台作业继续跑（无 kill 命令）这一半符合 spec。",
+        "repro": "python -m pytest test/offline/unit/test_calibre_package.py -q -k timeout_reports --runxfail   # 当前红（'timeout' != 'running'）",
+        "evidence": "红灯钉 `test/offline/unit/test_calibre_package.py::PackageTests::test_drc_blocking_timeout_reports_timeout_status`"
+                    "（strict-xfail；value 全量打印见 --runxfail 输出）",
+        "accept": "① deadline 到点且最后状态非终态时，对外 `status` 必须是 `\"timeout\"`（可加 `last_status` 字段保留观测值）；"
+                  "② 不得杀后台作业；③ 红钉转绿（XPASS 后删 strict 标记）。",
+        "next": "设计侧改收尾口径 → 测试侧复跑该钉与 calibre 套件。",
+        "reported": "2026-09-28（第八轮 calibre#069 缺口核账时按 spec 对表发现并复现）",
         "updated": "2026-09-28",
     },
 ]

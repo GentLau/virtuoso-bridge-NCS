@@ -99,6 +99,15 @@ def _check(condition: Any, message: str) -> None:
         raise AssertionError(message)
 
 
+def _ground_truth_views(transport, lib: str, cell: str) -> list[str]:
+    """直接用 SKILL 问 cell 的真实视图名（不看 import 的返回值）。"""
+    value = _value(transport, "basic.skill.execute",
+                   skill_code=(f'let((c) c = ddGetObj("{lib}" "{cell}") '
+                               f'if(c mapcar(lambda((v) v~>name) c~>views) nil))'))
+    output = str((value.get("result") or {}).get("output") or "").strip()
+    return [part.strip('"') for part in output.strip("()").split() if part.startswith('"')]
+
+
 def run_suite(transport) -> list[tuple[str, str]]:
     results: list[tuple[str, str]] = []
 
@@ -139,8 +148,10 @@ def run_suite(transport) -> list[tuple[str, str]]:
                        file_is_local=True, ref_libs=["basic"], overwrite=True, timeout=600)
         _check(value.get("reason") == "completed", f"import 未完成: {value.get('reason')}")
         _check(value.get("cells"), f"cells 为空: {value}")
-        _check(value.get("views"), f"views 为空: {value}")
         _check(value.get("log_path"), f"log_path 缺失: {value}")
+        truth = _ground_truth_views(transport, LIB, CELL)
+        _check(truth, f"导入后 cell 里没有任何视图（真机核实）: {truth}")
+        print(f"NOTE  P-099: import 返回 views={value.get('views')}，真机实际 views={truth}", flush=True)
         return value
 
     def case_import_remote(base: dict) -> dict:
@@ -150,8 +161,10 @@ def run_suite(transport) -> list[tuple[str, str]]:
                        library=LIB, cell=CELL, file_path=remote_good,
                        file_is_local=False, ref_libs=["basic"], overwrite=True, timeout=600)
         _check(value.get("reason") == "completed", f"远端就地 import 未完成: {value.get('reason')}")
-        _check(value.get("views") == base.get("views"),
-               f"local/remote 两条路径产出的 views 不一致: {value.get('views')} vs {base.get('views')}")
+        _check(value.get("cells") == base.get("cells"),
+               f"local/remote 两条路径产出的 cells 不一致: {value.get('cells')} vs {base.get('cells')}")
+        _check(value.get("instance_count") == base.get("instance_count"),
+               f"local/remote 的 instance_count 不一致: {value} vs {base}")
         return value
 
     def case_custom_views() -> None:
@@ -161,9 +174,19 @@ def run_suite(transport) -> list[tuple[str, str]]:
                        schematic_view="sch_v", functional_view="func_v", symbol_view="sym_v",
                        power_net="VDDX", ground_net="VSSX", timeout=600)
         _check(value.get("reason") == "completed", f"自定义视图名 import 失败: {value.get('reason')}")
-        views = [str(v) for v in (value.get("views") or [])]
-        missing = [name for name in ("sch_v", "func_v", "sym_v") if name not in views]
-        _check(not missing, f"自定义视图名未出现在产物里（{missing}）: {views}")
+        truth = _ground_truth_views(transport, LIB, f"{CELL}_views")
+        missing = [name for name in ("sch_v", "func_v", "sym_v") if name not in truth]
+        _check(not missing, f"自定义视图名未出现在产物里（{missing}）: {truth}")
+
+    def case_result_views_red_pin() -> None:
+        """P-099 红钉：`import` 返回值里的 `views` 必须与真机视图一致（今天为 []）。"""
+        value = _value(transport, "virtuoso.verilog.import",
+                       library=LIB, cell=f"{CELL}_rp", file_path=str(local_good),
+                       file_is_local=True, ref_libs=["basic"], overwrite=True, timeout=600)
+        truth = _ground_truth_views(transport, LIB, f"{CELL}_rp")
+        _check(truth, f"红钉前置失败：cell 没有视图 {truth}")
+        returned = [str(entry.get("view")) for entry in (value.get("views") or [])]
+        _check(returned, f"P-099：import 返回 views 为空，但真机有 {truth}")
 
     def case_structural_and_lib_cells() -> None:
         value = _value(transport, "virtuoso.verilog.import",
@@ -224,6 +247,8 @@ def run_suite(transport) -> list[tuple[str, str]]:
     run("IMP-06 语法错源文件 → parse_failed + diagnostics", case_parse_error)
     run("IMP-07 overwrite=False 对已存在 cell 的行为", case_overwrite_false)
     run("EXP-01 export(recursive=False/True) 模块数对照", case_export_recursive)
+    # 红钉放最后：它今天必红，但不许挡住上面的覆盖率
+    run("IMP-08 result.views 与真机视图一致（P-099 红钉）", case_result_views_red_pin)
     return results
 
 

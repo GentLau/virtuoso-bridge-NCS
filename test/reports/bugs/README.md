@@ -13,10 +13,12 @@
 3. **刷新方式**：改 `test/shared/runners/make_bug_cards.py` 的 `OPEN` / `CLOSED_RECENT` 段，
    然后 `python test/shared/runners/make_bug_cards.py`（幂等；`--check` 只校验不写盘）。
 
-## 1. 未关闭（20 条）
+## 1. 未关闭（23 条）
 
 | ID | 层 | 级别 | 归属 | 状态 | 一句话 | 卡片 |
 |---|---|---|---|---|---|---|
+| **P-099** | 上层（verilog 包） | P2（结构化返回值与事实不符：调用方按 `views` 判断产物会得出「什么都没导入」的结论） | 设计侧（verilog 包 `_read_views`） | 待设计修 | `virtuoso.verilog.import` 返回值里的 `views` 恒为空，与真机实际视图不符（functional/symbol 明明已生成） | [P-099-verilog-import-returns-empty-views.md](P-099-verilog-import-returns-empty-views.md) |
+| **P-097** | 上层（verilog 包）/ 库视图刷新时序 | P3（观察：未稳定复现，但用户串行导入同一 cell 时会撞到，表现为整体失败） | 待归属（verilog 包 `_read_views` 与 ihdl 覆盖写后的库视图刷新时序） | 观察 | 覆盖式再导入后紧跟的视图查询偶发 `*Error* cell not found`（同 cell 连导时出现 1 次，之后 2/2 复跑皆成功） | [P-097-verilog-import-cell-not-found-after-overwrite.md](P-097-verilog-import-cell-not-found-after-overwrite.md) |
 | **P-092** | 上层（calibre 包） | P3（静默无效参数，与 P-084 同类；误导调用方以为能指定电源/地网名） | 设计侧（实现语义或从模型/spec 删除） | 待设计修 | `calibre.drc/lvs/pex` 的 `power` / `ground` 声明并校验，但实现**从不读取**（静默无效） | [P-092-calibre-power-ground-dead-params.md](P-092-calibre-power-ground-dead-params.md) |
 | **P-093** | 上层（calibre 包） | P2（该参数组合下 DRC 完全跑不了，且呈现为工具 usage dump 而非可读错误） | 设计侧（calibre 包 `_argv_for`） | 待设计修 | `calibre.drc(hier=False)` 命令行非法：`-turbo` 与 flat 模式冲突 → Calibre 打 usage、作业秒退 | [P-093-calibre-flat-drc-turbo-invalid-argv.md](P-093-calibre-flat-drc-turbo-invalid-argv.md) |
 | **P-094** | 上层（calibre 包）· 失败检测 | P2（1 秒失败的作业占满 30 分钟预算，且用户拿不到失败原因） | 设计侧（calibre 运行器轮询/状态判定） | 待设计修 | 工具秒退不被检测：`status` 只报 `unknown`、`blocking=True` 会等满 timeout（日志里的 `ERROR:` 看不见） | [P-094-calibre-tool-death-not-detected.md](P-094-calibre-tool-death-not-detected.md) |
@@ -37,6 +39,7 @@
 | **P-087** | 上层（maestro 包）· 会话复用 | P2（静默跨请求污染用户 setup + 清理失败） | 设计侧（maestro 包）；`save` 的对外语义需 spec owner 定稿 | 待设计修 | `save=False` 的改动不被隔离：后续任意一次 save 会把它静默带走（跨请求污染）；同场景 `delete_var` 清理报 handle 错误 | [P-087-maestro-write-save-false-still-persists.md](P-087-maestro-write-save-false-still-persists.md) |
 | **P-095** | 上层（maestro 包）· GUI 模态 | P1（可把实例 CIW 挂死；P-086 持久形态的直接根因） | 设计侧（maestro 包 run 流程 + 对话框 watchdog） | 待设计修 | `maestro.run` 的 Overwrite History 目标悬空：`ASSEMBLER-3018` 模态框阻塞 CIW → daemon 空响应（watchdog 不处理） | [P-095-maestro-run-stale-overwrite-history-modal.md](P-095-maestro-run-stale-overwrite-history-modal.md) |
 | **P-096** | 上层（maestro 包）· 崩溃恢复 / OA 写锁 | P2（崩溃后该 cell 的 maestro 打不开且会挂死实例，需人工删锁） | 设计侧（maestro 打开/写路径的锁判定；可参考 schematic 的“locked by another session”结构化失败） | 待设计修 | 陈旧 OA 写锁（属主进程已死）触发 `axlOpenInRead0` 模态框 → CIW/daemon 再次挂死；应结构化失败或自动强制 | [P-096-maestro-stale-write-lock-modal-wedge.md](P-096-maestro-stale-write-lock-modal-wedge.md) |
+| **P-098** | 上层（calibre 包）· 阻塞轮询口径 | P3（口径偏差：调用方按 spec 判 `status=="timeout"` 会永远不成立；作业本身不杀、行为其余正确） | 设计侧（calibre 包轮询收尾） | 待设计修 | `blocking=true` 超时返回最后一次 `status`（running/unknown），未按 spec 返回 `status=timeout` | [P-098-calibre-blocking-timeout-status-not-timeout.md](P-098-calibre-blocking-timeout-status-not-timeout.md) |
 
 > 优先级口径：**P1** = Linux 侧资源/安全或核心指标链路断（P-056、P-053）；
 > **P2** = 真实设计流会给出错的/空的结果，且多数**静默**；**P3/观察** = 非阻塞但建议顺手修。

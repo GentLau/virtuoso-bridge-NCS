@@ -25,6 +25,9 @@
 | **P-094** 工具秒退不被检测 | 同一真机探针的 `status` 步：`status=unknown, failure_kind=null, process_alive=false, error_surfaced=false`（工具 1 秒死亡但 API 既没判失败也没把日志里的 ERROR 抛出来）；离线 `test_calibre_job_state.py` 分类用例 | 🔴（真机 RED：error_surfaced=false）；离线判据需补"日志前部 ERROR → 失败" |
 | **P-095** 悬空 Overwrite-History → ASSEMBLER-3018 模态挂死 | 复现件 `tmp/_r8_vblog_wait.py` + `_r8_make_history*.py`；跨重启标志实测 `(t \"Interactive.8\")` → 清 nil 后 run 成功 | ⚠️ 缺常驻红灯：建议新增 semi 探针（构造悬空目标 → 期望结构化失败而非挂死），本轮先以现场+复现件登记 |
 | **P-096** 陈旧 OA 写锁 → axlOpenInRead0 模态挂死 | 复现件 `tmp/_r8_opengui2.py`（kill 实例后 open_gui → Empty response）+ 删锁恢复对照 | ⚠️ 缺常驻红灯：建议新增"造陈旧锁→open_gui 应结构化失败"探针 |
+| **P-097** 覆盖式再导入后偶发 `cell not found` | 无稳定红钉（1 次现场 + 2/2 复跑成功） | ⚪ 观察项：需先复现条件（建议在 verilog 参数套件里连导同一 cell N 次定位） |
+| **P-098** blocking 超时不返回 `status=timeout` | 离线红钉 `test_calibre_package.py::PackageTests::test_drc_blocking_timeout_reports_timeout_status`（strict-xfail；`--runxfail` 可见 `'timeout' != 'running'`） | 🔴（xfail，方向明确） |
+| **P-099** `verilog.import` 返回 `views` 恒空 | 车道红钉 `verilog_import_params_e2e_tests.py` IMP-08（真机：真机实际有视图而返回 []） | 🔴（真机红；注意该套件 IMP-01 另有 P-097 偶发阻断） |
 
 ## 结论
 

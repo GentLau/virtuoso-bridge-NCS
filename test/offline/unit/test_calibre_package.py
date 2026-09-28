@@ -12,6 +12,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src"))
 
 from common.paths import init_work_dir
@@ -416,6 +418,54 @@ class PackageTests(unittest.TestCase):
         ))
         self.assertTrue(result.ok, result.error)
         self.assertEqual(result.value["status"], "completed")
+
+    @pytest.mark.xfail(strict=True,
+                       reason="P-097: blocking 超时应返回 status=timeout（spec 12-calibre §3.4）")
+    def test_drc_blocking_timeout_reports_timeout_status(self):
+        """方向明确的口径钉（P-097）。
+
+        spec `12-calibre.md` §3.4：终态或超时即返回，**超时返回 `status=timeout`**
+        且后台作业继续跑（不杀 launcher）。
+        实现（`calibre.py:574-594`）在 deadline 到点后取的是 `last["status"]`
+        （运行中 → `running`/`unknown`），只有从未 poll 过才会落到 `"timeout"` 默认值。
+        修好后本用例转绿；strict-xfail 会在修好时 XPASS 提醒删标记。
+        """
+        class RunningForever(FakeMiddle):
+            """启动**之前**看不到作业（预检查可过）；启动之后永远 running。"""
+
+            launched = False
+
+            def run_command(self, cmd, timeout=None, *, token, parallel=False):
+                if "launch.sh" in cmd and "###JOB" not in cmd:
+                    self.launched = True
+                    return super().run_command(cmd, timeout=timeout, token=token,
+                                               parallel=parallel)
+                if "###JOB" in cmd:  # status snapshot：进程活着、无终态标记
+                    self.commands.append(cmd)
+                    if not self.launched:
+                        # 预检查阶段：假装 run_dir 里还没有作业 → status_snapshot=None
+                        return CommandResult(0, "", "", "command")
+                    return CommandResult(
+                        0,
+                        '###JOB\n{"kind": "drc", "job_id": "drc_inv2"}\n'
+                        '###PID\n4242\n###ALIVE\n4242\n'
+                        '###LOGS\n== drc.log\nstill running\n'
+                        '###FILES\njob.json\n',
+                        "", "command",
+                    )
+                return super().run_command(cmd, timeout=timeout, token=token,
+                                           parallel=parallel)
+
+        middle = RunningForever()
+        result = Package(middle).drc(RunRequest(
+            token=TOKEN, gds="/x/lay_e2e.gds", top="lay_e2e", deck=DECK,
+            blocking=True, poll_interval=0.01, timeout=0.2,
+        ))
+        self.assertEqual("timeout", (result.value or {}).get("status"),
+                         f"超时应返回 status=timeout，实际 {result.value}")
+        # 后台作业继续跑：实现不得发出 kill 类命令
+        self.assertFalse(any("kill" in c for c in middle.commands),
+                         "超时不得杀后台作业")
 
     def test_lvs_deck_without_source_fails_only_when_placeholder_present(self):
         """deck 没给 cdl 又真的引用了 source → 明确失败（不再靠无条件的 cdl 必填）。"""
