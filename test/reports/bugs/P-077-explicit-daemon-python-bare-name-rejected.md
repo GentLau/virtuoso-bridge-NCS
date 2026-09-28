@@ -6,8 +6,8 @@
 | 归属 | 设计侧（定口径：探测接受 PATH 名 or spec 写明必须绝对路径） |
 | 状态 | **待归属** |
 | 位置 | `src/register/flow.py:747`（`remote_executable_exists` → `test -x <显式值>`；`src/register/probe.py:194-199`）vs `src/bridge/resources/ramic_bridge.il:259`（daemon 启动走 `/usr/bin/env … <RBPython>`，PATH 可解析） |
-| 首报 | 第五轮（2026-09-23）／见台账 |
-| 最近更新 | 2026-09-24（测试侧整理 bug 卡） |
+| 首报 | 2026-09-28（注册专项；已报 `bug-20260928T075610Z-vblog-ff0b59eb`） |
+| 最近更新 | 2026-09-28（测试侧 P3/P4 实跑后立卡） |
 
 ## 现象
 

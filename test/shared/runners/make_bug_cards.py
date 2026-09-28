@@ -29,6 +29,8 @@ OPEN = [
     {
         "id": "P-077",
         "slug": "explicit-daemon-python-bare-name-rejected",
+        "reported": "2026-09-28（注册专项；已报 `bug-20260928T075610Z-vblog-ff0b59eb`）",
+        "updated": "2026-09-28（测试侧 P3/P4 实跑后立卡）",
         "title": "显式 `role.daemon.python` 传裸命令名（如 `python3`）时注册第 3 步失败；运行时可解析 PATH",
         "level": "P3（口径不一致：注册探测 vs 运行时；会绊住手写配置的用户）",
         "owner": "设计侧（定口径：探测接受 PATH 名 or spec 写明必须绝对路径）",
@@ -455,8 +457,8 @@ CARD_BODY = """# {id} · {title}
 | 归属 | {owner} |
 | 状态 | **{status}** |
 | 位置 | {where} |
-| 首报 | 第五轮（2026-09-23）／见台账 |
-| 最近更新 | 2026-09-24（测试侧整理 bug 卡） |
+| 首报 | {reported} |
+| 最近更新 | {updated} |
 
 ## 现象
 
@@ -584,6 +586,7 @@ def build_plan() -> dict[Path, str]:
         where="`src/...:line`（根因锚点）", symptom="现象（含实测数字与「静默/报错」判定）",
         repro="最小复现命令（可粘贴执行）", evidence="证据路径（JSON / 日志 / 探针）",
         accept="修好后哪条用例或探针转绿", next="谁做什么，含复验方式",
+        reported="<YYYY-MM-DD>（已报 `bug-…`）", updated="<YYYY-MM-DD>",
         extra="## 补充（可选；需要时由 `extra` 字段注入）\n")
     plan = {BUGS_DIR / "README.md": render_readme(),
             BUGS_DIR / "_模板.md": template,
@@ -591,7 +594,9 @@ def build_plan() -> dict[Path, str]:
     for bug in OPEN:
         # `extra` 是给"卡片上后来追加的讨论/决策"留的位置（默认空）——见 CARD_BODY 末尾的警告。
         plan[BUGS_DIR / f"{bug['id']}-{_slug(bug)}.md"] = CARD_BODY.format(
-            **{**bug, "extra": bug.get("extra", "")})
+            **{**bug, "extra": bug.get("extra", ""),
+               "reported": bug.get("reported", "第五轮（2026-09-23）／见台账"),
+               "updated": bug.get("updated", "2026-09-24（测试侧整理 bug 卡）")})
     return plan
 
 
