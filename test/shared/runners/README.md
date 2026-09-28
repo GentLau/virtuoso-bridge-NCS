@@ -13,6 +13,7 @@
 - `check_tb_headers.py`：**TB 注释头核账**（规范 §0）——扫描 `test/{semi,live,offline/core}` 的 TB/探针，校验 3 栏（作者 / 最后改动到分钟 / 依赖），`--emit` 生成补全草案（作者名留空由本人填），`--fail` 预留门禁。
 - `bringup_user.sh` / `start_lab_fakes.sh` / `make_run_env_complete.py`：真机实例与 lab fake 的起法（详见 [`../../docs/环境与场景.md`](../../docs/环境与场景.md) §2 与 [`../../reports/internal/环境Runbook-内部.md`](../../reports/internal/环境Runbook-内部.md)）。
 - `make_multihop_env.py` / `start_hop_fake.sh`：**多跳（jump/SOCKS5）专项环境**（S15）——生成 `test/artifacts/env/multihop/registry.json`、在 w1-gent 起 65203/`vb-hopfake`；配套 TB `test/live/flows/multihop_jump_tb.py`。
+- `start_disposable_ciw.sh` / `stop_disposable_ciw.sh` / `ciw_load_setup.py`：**可丢弃 CIW（注册专项 P4）**——在 wsl-gent 起一个 headless 真 Virtuoso + 注入用最小 daemon（bootstrap `vb-<name>`）；TB 用 `ciw_load_setup.py` 执行 `RBStop() + load(<注册第 4 步生成的 setup>)`，把 CIW 换成注册生成的真实 daemon（`--verify-port/--verify-token` 轮询 `1+2` 确认后才返回 0）。用法见 [`../../docs/环境与场景.md`](../../docs/环境与场景.md) §7。
 - `hold_ports.py`：占住一段本机端口，用来复现/回归"机器级端口被占"造成的假红（P-063）。
 - `verify_spec_matrix_evidence.py`：拿最新 JUnit 核对 spec 覆盖矩阵每一行的证据文件**这轮到底跑没跑**（产出矩阵 §14）。
 - `make_bug_cards.py`：生成/刷新 `test/reports/bugs/`（**未关闭缺陷的唯一跟踪视图**：逐条卡片 + README 索引 + 已关闭记录）；`--check` 只校验不写盘。

@@ -240,6 +240,16 @@ wsl-gent 上还有 vbe2e / vbmu2 / vbmu3 三台非日常 CIW + 一个 65082 孤�
 
 ### 10.1 追加经验（2026-09-28 晚：改造 TB 时又踩到的）
 
+## 11. 注册专项环境（2026-09-28 建成/核实）
+
+- **P1 py2.7**：`test/live/registration/registration_py27_tb.py` 实测 **10/10**（wsl-gent，XCELIUM 自带 2.7.6；不需 8127）。
+- **P2 Linux 客户端**：仓库副本 `wsl-gent:~/project/vblog/tb-sandbox/linux-client/repo`（src + test/shared + test/live/registration + test/docs；admin token 已放副本的 `test/artifacts/admin-token.txt`，600）。`/usr/bin/python3.9` 跑六步 `--local-mode` 实测 **8/8**。**src 变更后必须重同步**（Windows 侧 tar→ssh 解包，排除 `test/artifacts`）。
+- **P4 可丢弃 CIW**：`start_disposable_ciw.sh <name> <port>` 起 headless 真 Virtuoso + 注入用最小 daemon（`vb-<name>`；ramic 资源取 Linux 客户端仓库副本，可用 `VB_RESOURCES` 覆盖）。TB 侧用 `ciw_load_setup.py --bootstrap-port … --setup <第4步生成的 setup> --verify-port … --verify-token …`；实测注入后新 daemon 应答 `1+2=3`。`stop_disposable_ciw.sh` 回收（RBStop → 按 cwd 精确 kill → 清子进程 → 报端口）。
+  - 口径：RBStop 会切断"正在执行的那一发注入请求"，注入侧收不到回包**属预期**；判据是 `--verify-*` 的新 daemon 应答。
+  - 端口：可丢弃实例用 **6530x** 段；用完必须确认释放，别留监听。
+- **P5 host-key 轮换端点**：`w4-gent`（172.20.170.24:22，user dev，key `C:\wsl\shared\keys\lab_w4_ed25519`，`sudo -n` 可用；host key 在 `/etc/ssh/ssh_host_*`）。产品侧注册**强制目标/jump 解析到 22 端口**（`src/register/flow.py:631`），w4 满足。
+  - **纪律**：测试期间独占 w4；换 key 会让本机 known_hosts 对不上，**结束必须恢复原 host key**；lab WSL 空闲会自动停机，注册探测前先保活。
+
 1. **重启用户实例必须"按 PID 杀干净"**：只 `pkill -f '<virtuoso 的某段命令行>'` 可能漏（例如老的
    calprobe 实例是用 `-log /home/Gent/virtuoso_calprobe.log` 起的，没有 `-cdslib` 段）。
    漏杀的后果：旧 **daemon 仍占着端口**（65401），新实例看起来"起来了"（端口在听）但 SKILL 永远超时。
