@@ -6,7 +6,7 @@
   "param": "cmd",
   "required": true,
   "type": "str",
-  "op_tb_files": 25,
+  "op_tb_files": 26,
   "op_sites": [
    "test/live/flows/adc_sar_flow_tb.py:199",
    "test/live/flows/adc_sar_flow_tb.py:242",
@@ -37,7 +37,7 @@
   "param": "parallel",
   "required": false,
   "type": "bool",
-  "op_tb_files": 25,
+  "op_tb_files": 26,
   "op_sites": [
    "test/live/flows/adc_sar_flow_tb.py:199",
    "test/live/flows/adc_sar_flow_tb.py:242",
@@ -61,7 +61,7 @@
   "param": "timeout",
   "required": false,
   "type": "int | None",
-  "op_tb_files": 25,
+  "op_tb_files": 26,
   "op_sites": [
    "test/live/flows/adc_sar_flow_tb.py:199",
    "test/live/flows/adc_sar_flow_tb.py:242",
@@ -92,7 +92,7 @@
   "param": "token",
   "required": true,
   "type": "str",
-  "op_tb_files": 25,
+  "op_tb_files": 26,
   "op_sites": [
    "test/live/flows/adc_sar_flow_tb.py:199",
    "test/live/flows/adc_sar_flow_tb.py:242",
@@ -493,7 +493,7 @@
   "param": "skill_code",
   "required": true,
   "type": "str",
-  "op_tb_files": 24,
+  "op_tb_files": 25,
   "op_sites": [
    "test/live/flows/adc_sar_flow_tb.py:115",
    "test/live/flows/adc_sar_flow_tb.py:173",
@@ -524,7 +524,7 @@
   "param": "timeout",
   "required": false,
   "type": "float | None",
-  "op_tb_files": 24,
+  "op_tb_files": 25,
   "op_sites": [
    "test/live/flows/adc_sar_flow_tb.py:115",
    "test/live/flows/adc_sar_flow_tb.py:173",
@@ -555,7 +555,7 @@
   "param": "token",
   "required": true,
   "type": "str",
-  "op_tb_files": 24,
+  "op_tb_files": 25,
   "op_sites": [
    "test/live/flows/adc_sar_flow_tb.py:115",
    "test/live/flows/adc_sar_flow_tb.py:173",
@@ -12140,15 +12140,21 @@
   "param": "cell",
   "required": true,
   "type": "str",
-  "op_tb_files": 1,
+  "op_tb_files": 2,
   "op_sites": [
    "test/live/packages/verilog_e2e_tests.py:203",
    "test/live/packages/verilog_e2e_tests.py:227",
    "test/live/packages/verilog_e2e_tests.py:237",
-   "test/live/packages/verilog_e2e_tests.py:248"
+   "test/live/packages/verilog_e2e_tests.py:248",
+   "test/live/packages/verilog_import_params_e2e_tests.py:204",
+   "test/live/packages/verilog_import_params_e2e_tests.py:207",
+   "test/live/packages/verilog_import_params_e2e_tests.py:245",
+   "test/live/packages/verilog_import_params_e2e_tests.py:268"
   ],
   "param_hits": [
-   "test/live/packages/verilog_e2e_tests.py:203"
+   "test/live/packages/verilog_e2e_tests.py:203",
+   "test/live/packages/verilog_import_params_e2e_tests.py:204",
+   "test/live/packages/verilog_import_params_e2e_tests.py:207"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -12160,15 +12166,21 @@
   "param": "library",
   "required": true,
   "type": "str",
-  "op_tb_files": 1,
+  "op_tb_files": 2,
   "op_sites": [
    "test/live/packages/verilog_e2e_tests.py:203",
    "test/live/packages/verilog_e2e_tests.py:227",
    "test/live/packages/verilog_e2e_tests.py:237",
-   "test/live/packages/verilog_e2e_tests.py:248"
+   "test/live/packages/verilog_e2e_tests.py:248",
+   "test/live/packages/verilog_import_params_e2e_tests.py:204",
+   "test/live/packages/verilog_import_params_e2e_tests.py:207",
+   "test/live/packages/verilog_import_params_e2e_tests.py:245",
+   "test/live/packages/verilog_import_params_e2e_tests.py:268"
   ],
   "param_hits": [
-   "test/live/packages/verilog_e2e_tests.py:203"
+   "test/live/packages/verilog_e2e_tests.py:203",
+   "test/live/packages/verilog_import_params_e2e_tests.py:204",
+   "test/live/packages/verilog_import_params_e2e_tests.py:207"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -12180,15 +12192,21 @@
   "param": "output_path",
   "required": false,
   "type": "str | None",
-  "op_tb_files": 1,
+  "op_tb_files": 2,
   "op_sites": [
    "test/live/packages/verilog_e2e_tests.py:203",
    "test/live/packages/verilog_e2e_tests.py:227",
    "test/live/packages/verilog_e2e_tests.py:237",
-   "test/live/packages/verilog_e2e_tests.py:248"
+   "test/live/packages/verilog_e2e_tests.py:248",
+   "test/live/packages/verilog_import_params_e2e_tests.py:204",
+   "test/live/packages/verilog_import_params_e2e_tests.py:207",
+   "test/live/packages/verilog_import_params_e2e_tests.py:245",
+   "test/live/packages/verilog_import_params_e2e_tests.py:268"
   ],
   "param_hits": [
-   "test/live/packages/verilog_e2e_tests.py:203"
+   "test/live/packages/verilog_e2e_tests.py:203",
+   "test/live/packages/verilog_import_params_e2e_tests.py:204",
+   "test/live/packages/verilog_import_params_e2e_tests.py:207"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -12200,15 +12218,22 @@
   "param": "recursive",
   "required": false,
   "type": "bool",
-  "op_tb_files": 1,
+  "op_tb_files": 2,
   "op_sites": [
    "test/live/packages/verilog_e2e_tests.py:203",
    "test/live/packages/verilog_e2e_tests.py:227",
    "test/live/packages/verilog_e2e_tests.py:237",
-   "test/live/packages/verilog_e2e_tests.py:248"
+   "test/live/packages/verilog_e2e_tests.py:248",
+   "test/live/packages/verilog_import_params_e2e_tests.py:204",
+   "test/live/packages/verilog_import_params_e2e_tests.py:207",
+   "test/live/packages/verilog_import_params_e2e_tests.py:245",
+   "test/live/packages/verilog_import_params_e2e_tests.py:268"
   ],
-  "param_hits": [],
-  "status": "GAP",
+  "param_hits": [
+   "test/live/packages/verilog_import_params_e2e_tests.py:204",
+   "test/live/packages/verilog_import_params_e2e_tests.py:207"
+  ],
+  "status": "CANDIDATE",
   "generic": false
  },
  {
@@ -12218,15 +12243,21 @@
   "param": "timeout",
   "required": false,
   "type": "float | None",
-  "op_tb_files": 1,
+  "op_tb_files": 2,
   "op_sites": [
    "test/live/packages/verilog_e2e_tests.py:203",
    "test/live/packages/verilog_e2e_tests.py:227",
    "test/live/packages/verilog_e2e_tests.py:237",
-   "test/live/packages/verilog_e2e_tests.py:248"
+   "test/live/packages/verilog_e2e_tests.py:248",
+   "test/live/packages/verilog_import_params_e2e_tests.py:204",
+   "test/live/packages/verilog_import_params_e2e_tests.py:207",
+   "test/live/packages/verilog_import_params_e2e_tests.py:245",
+   "test/live/packages/verilog_import_params_e2e_tests.py:268"
   ],
   "param_hits": [
-   "test/live/packages/verilog_e2e_tests.py:203"
+   "test/live/packages/verilog_e2e_tests.py:203",
+   "test/live/packages/verilog_import_params_e2e_tests.py:204",
+   "test/live/packages/verilog_import_params_e2e_tests.py:207"
   ],
   "status": "CANDIDATE",
   "generic": true
@@ -12238,16 +12269,23 @@
   "param": "token",
   "required": true,
   "type": "str",
-  "op_tb_files": 1,
+  "op_tb_files": 2,
   "op_sites": [
    "test/live/packages/verilog_e2e_tests.py:203",
    "test/live/packages/verilog_e2e_tests.py:227",
    "test/live/packages/verilog_e2e_tests.py:237",
-   "test/live/packages/verilog_e2e_tests.py:248"
+   "test/live/packages/verilog_e2e_tests.py:248",
+   "test/live/packages/verilog_import_params_e2e_tests.py:204",
+   "test/live/packages/verilog_import_params_e2e_tests.py:207",
+   "test/live/packages/verilog_import_params_e2e_tests.py:245",
+   "test/live/packages/verilog_import_params_e2e_tests.py:268"
   ],
   "param_hits": [
    "test/live/packages/verilog_e2e_tests.py:203",
-   "test/live/packages/verilog_e2e_tests.py:227"
+   "test/live/packages/verilog_e2e_tests.py:227",
+   "test/live/packages/verilog_import_params_e2e_tests.py:204",
+   "test/live/packages/verilog_import_params_e2e_tests.py:207",
+   "test/live/packages/verilog_import_params_e2e_tests.py:245"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -12259,15 +12297,21 @@
   "param": "view",
   "required": false,
   "type": "str",
-  "op_tb_files": 1,
+  "op_tb_files": 2,
   "op_sites": [
    "test/live/packages/verilog_e2e_tests.py:203",
    "test/live/packages/verilog_e2e_tests.py:227",
    "test/live/packages/verilog_e2e_tests.py:237",
-   "test/live/packages/verilog_e2e_tests.py:248"
+   "test/live/packages/verilog_e2e_tests.py:248",
+   "test/live/packages/verilog_import_params_e2e_tests.py:204",
+   "test/live/packages/verilog_import_params_e2e_tests.py:207",
+   "test/live/packages/verilog_import_params_e2e_tests.py:245",
+   "test/live/packages/verilog_import_params_e2e_tests.py:268"
   ],
   "param_hits": [
-   "test/live/packages/verilog_e2e_tests.py:203"
+   "test/live/packages/verilog_e2e_tests.py:203",
+   "test/live/packages/verilog_import_params_e2e_tests.py:204",
+   "test/live/packages/verilog_import_params_e2e_tests.py:207"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -12279,7 +12323,7 @@
   "param": "cell",
   "required": true,
   "type": "str",
-  "op_tb_files": 1,
+  "op_tb_files": 2,
   "op_sites": [
    "test/live/packages/verilog_e2e_tests.py:172",
    "test/live/packages/verilog_e2e_tests.py:182",
@@ -12287,12 +12331,18 @@
    "test/live/packages/verilog_e2e_tests.py:225",
    "test/live/packages/verilog_e2e_tests.py:227",
    "test/live/packages/verilog_e2e_tests.py:237",
-   "test/live/packages/verilog_e2e_tests.py:248"
+   "test/live/packages/verilog_e2e_tests.py:248",
+   "test/live/packages/verilog_import_params_e2e_tests.py:137"
   ],
   "param_hits": [
    "test/live/packages/verilog_e2e_tests.py:172",
    "test/live/packages/verilog_e2e_tests.py:182",
-   "test/live/packages/verilog_e2e_tests.py:196"
+   "test/live/packages/verilog_e2e_tests.py:196",
+   "test/live/packages/verilog_import_params_e2e_tests.py:137",
+   "test/live/packages/verilog_import_params_e2e_tests.py:149",
+   "test/live/packages/verilog_import_params_e2e_tests.py:158",
+   "test/live/packages/verilog_import_params_e2e_tests.py:169",
+   "test/live/packages/verilog_import_params_e2e_tests.py:177"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -12304,7 +12354,7 @@
   "param": "file_is_local",
   "required": false,
   "type": "bool",
-  "op_tb_files": 1,
+  "op_tb_files": 2,
   "op_sites": [
    "test/live/packages/verilog_e2e_tests.py:172",
    "test/live/packages/verilog_e2e_tests.py:182",
@@ -12312,10 +12362,19 @@
    "test/live/packages/verilog_e2e_tests.py:225",
    "test/live/packages/verilog_e2e_tests.py:227",
    "test/live/packages/verilog_e2e_tests.py:237",
-   "test/live/packages/verilog_e2e_tests.py:248"
+   "test/live/packages/verilog_e2e_tests.py:248",
+   "test/live/packages/verilog_import_params_e2e_tests.py:137"
   ],
-  "param_hits": [],
-  "status": "GAP",
+  "param_hits": [
+   "test/live/packages/verilog_import_params_e2e_tests.py:137",
+   "test/live/packages/verilog_import_params_e2e_tests.py:149",
+   "test/live/packages/verilog_import_params_e2e_tests.py:158",
+   "test/live/packages/verilog_import_params_e2e_tests.py:169",
+   "test/live/packages/verilog_import_params_e2e_tests.py:177",
+   "test/live/packages/verilog_import_params_e2e_tests.py:185",
+   "test/live/packages/verilog_import_params_e2e_tests.py:195"
+  ],
+  "status": "CANDIDATE",
   "generic": false
  },
  {
@@ -12325,7 +12384,7 @@
   "param": "file_path",
   "required": true,
   "type": "str",
-  "op_tb_files": 1,
+  "op_tb_files": 2,
   "op_sites": [
    "test/live/packages/verilog_e2e_tests.py:172",
    "test/live/packages/verilog_e2e_tests.py:182",
@@ -12333,12 +12392,18 @@
    "test/live/packages/verilog_e2e_tests.py:225",
    "test/live/packages/verilog_e2e_tests.py:227",
    "test/live/packages/verilog_e2e_tests.py:237",
-   "test/live/packages/verilog_e2e_tests.py:248"
+   "test/live/packages/verilog_e2e_tests.py:248",
+   "test/live/packages/verilog_import_params_e2e_tests.py:137"
   ],
   "param_hits": [
    "test/live/packages/verilog_e2e_tests.py:172",
    "test/live/packages/verilog_e2e_tests.py:182",
-   "test/live/packages/verilog_e2e_tests.py:196"
+   "test/live/packages/verilog_e2e_tests.py:196",
+   "test/live/packages/verilog_import_params_e2e_tests.py:137",
+   "test/live/packages/verilog_import_params_e2e_tests.py:149",
+   "test/live/packages/verilog_import_params_e2e_tests.py:158",
+   "test/live/packages/verilog_import_params_e2e_tests.py:169",
+   "test/live/packages/verilog_import_params_e2e_tests.py:177"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -12350,7 +12415,7 @@
   "param": "functional_view",
   "required": false,
   "type": "str",
-  "op_tb_files": 1,
+  "op_tb_files": 2,
   "op_sites": [
    "test/live/packages/verilog_e2e_tests.py:172",
    "test/live/packages/verilog_e2e_tests.py:182",
@@ -12358,10 +12423,13 @@
    "test/live/packages/verilog_e2e_tests.py:225",
    "test/live/packages/verilog_e2e_tests.py:227",
    "test/live/packages/verilog_e2e_tests.py:237",
-   "test/live/packages/verilog_e2e_tests.py:248"
+   "test/live/packages/verilog_e2e_tests.py:248",
+   "test/live/packages/verilog_import_params_e2e_tests.py:137"
   ],
-  "param_hits": [],
-  "status": "GAP",
+  "param_hits": [
+   "test/live/packages/verilog_import_params_e2e_tests.py:158"
+  ],
+  "status": "CANDIDATE",
   "generic": false
  },
  {
@@ -12371,7 +12439,7 @@
   "param": "ground_net",
   "required": false,
   "type": "str",
-  "op_tb_files": 1,
+  "op_tb_files": 2,
   "op_sites": [
    "test/live/packages/verilog_e2e_tests.py:172",
    "test/live/packages/verilog_e2e_tests.py:182",
@@ -12379,10 +12447,13 @@
    "test/live/packages/verilog_e2e_tests.py:225",
    "test/live/packages/verilog_e2e_tests.py:227",
    "test/live/packages/verilog_e2e_tests.py:237",
-   "test/live/packages/verilog_e2e_tests.py:248"
+   "test/live/packages/verilog_e2e_tests.py:248",
+   "test/live/packages/verilog_import_params_e2e_tests.py:137"
   ],
-  "param_hits": [],
-  "status": "GAP",
+  "param_hits": [
+   "test/live/packages/verilog_import_params_e2e_tests.py:158"
+  ],
+  "status": "CANDIDATE",
   "generic": false
  },
  {
@@ -12392,7 +12463,7 @@
   "param": "import_lib_cells",
   "required": false,
   "type": "int",
-  "op_tb_files": 1,
+  "op_tb_files": 2,
   "op_sites": [
    "test/live/packages/verilog_e2e_tests.py:172",
    "test/live/packages/verilog_e2e_tests.py:182",
@@ -12400,10 +12471,13 @@
    "test/live/packages/verilog_e2e_tests.py:225",
    "test/live/packages/verilog_e2e_tests.py:227",
    "test/live/packages/verilog_e2e_tests.py:237",
-   "test/live/packages/verilog_e2e_tests.py:248"
+   "test/live/packages/verilog_e2e_tests.py:248",
+   "test/live/packages/verilog_import_params_e2e_tests.py:137"
   ],
-  "param_hits": [],
-  "status": "GAP",
+  "param_hits": [
+   "test/live/packages/verilog_import_params_e2e_tests.py:169"
+  ],
+  "status": "CANDIDATE",
   "generic": false
  },
  {
@@ -12413,7 +12487,7 @@
   "param": "library",
   "required": true,
   "type": "str",
-  "op_tb_files": 1,
+  "op_tb_files": 2,
   "op_sites": [
    "test/live/packages/verilog_e2e_tests.py:172",
    "test/live/packages/verilog_e2e_tests.py:182",
@@ -12421,12 +12495,18 @@
    "test/live/packages/verilog_e2e_tests.py:225",
    "test/live/packages/verilog_e2e_tests.py:227",
    "test/live/packages/verilog_e2e_tests.py:237",
-   "test/live/packages/verilog_e2e_tests.py:248"
+   "test/live/packages/verilog_e2e_tests.py:248",
+   "test/live/packages/verilog_import_params_e2e_tests.py:137"
   ],
   "param_hits": [
    "test/live/packages/verilog_e2e_tests.py:172",
    "test/live/packages/verilog_e2e_tests.py:182",
-   "test/live/packages/verilog_e2e_tests.py:196"
+   "test/live/packages/verilog_e2e_tests.py:196",
+   "test/live/packages/verilog_import_params_e2e_tests.py:137",
+   "test/live/packages/verilog_import_params_e2e_tests.py:149",
+   "test/live/packages/verilog_import_params_e2e_tests.py:158",
+   "test/live/packages/verilog_import_params_e2e_tests.py:169",
+   "test/live/packages/verilog_import_params_e2e_tests.py:177"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -12438,7 +12518,7 @@
   "param": "overwrite",
   "required": false,
   "type": "bool",
-  "op_tb_files": 1,
+  "op_tb_files": 2,
   "op_sites": [
    "test/live/packages/verilog_e2e_tests.py:172",
    "test/live/packages/verilog_e2e_tests.py:182",
@@ -12446,10 +12526,19 @@
    "test/live/packages/verilog_e2e_tests.py:225",
    "test/live/packages/verilog_e2e_tests.py:227",
    "test/live/packages/verilog_e2e_tests.py:237",
-   "test/live/packages/verilog_e2e_tests.py:248"
+   "test/live/packages/verilog_e2e_tests.py:248",
+   "test/live/packages/verilog_import_params_e2e_tests.py:137"
   ],
-  "param_hits": [],
-  "status": "GAP",
+  "param_hits": [
+   "test/live/packages/verilog_import_params_e2e_tests.py:137",
+   "test/live/packages/verilog_import_params_e2e_tests.py:149",
+   "test/live/packages/verilog_import_params_e2e_tests.py:158",
+   "test/live/packages/verilog_import_params_e2e_tests.py:169",
+   "test/live/packages/verilog_import_params_e2e_tests.py:177",
+   "test/live/packages/verilog_import_params_e2e_tests.py:185",
+   "test/live/packages/verilog_import_params_e2e_tests.py:195"
+  ],
+  "status": "CANDIDATE",
   "generic": false
  },
  {
@@ -12459,7 +12548,7 @@
   "param": "power_net",
   "required": false,
   "type": "str",
-  "op_tb_files": 1,
+  "op_tb_files": 2,
   "op_sites": [
    "test/live/packages/verilog_e2e_tests.py:172",
    "test/live/packages/verilog_e2e_tests.py:182",
@@ -12467,10 +12556,13 @@
    "test/live/packages/verilog_e2e_tests.py:225",
    "test/live/packages/verilog_e2e_tests.py:227",
    "test/live/packages/verilog_e2e_tests.py:237",
-   "test/live/packages/verilog_e2e_tests.py:248"
+   "test/live/packages/verilog_e2e_tests.py:248",
+   "test/live/packages/verilog_import_params_e2e_tests.py:137"
   ],
-  "param_hits": [],
-  "status": "GAP",
+  "param_hits": [
+   "test/live/packages/verilog_import_params_e2e_tests.py:158"
+  ],
+  "status": "CANDIDATE",
   "generic": false
  },
  {
@@ -12480,7 +12572,7 @@
   "param": "ref_libs",
   "required": false,
   "type": "list[str]",
-  "op_tb_files": 1,
+  "op_tb_files": 2,
   "op_sites": [
    "test/live/packages/verilog_e2e_tests.py:172",
    "test/live/packages/verilog_e2e_tests.py:182",
@@ -12488,10 +12580,19 @@
    "test/live/packages/verilog_e2e_tests.py:225",
    "test/live/packages/verilog_e2e_tests.py:227",
    "test/live/packages/verilog_e2e_tests.py:237",
-   "test/live/packages/verilog_e2e_tests.py:248"
+   "test/live/packages/verilog_e2e_tests.py:248",
+   "test/live/packages/verilog_import_params_e2e_tests.py:137"
   ],
-  "param_hits": [],
-  "status": "GAP",
+  "param_hits": [
+   "test/live/packages/verilog_import_params_e2e_tests.py:137",
+   "test/live/packages/verilog_import_params_e2e_tests.py:149",
+   "test/live/packages/verilog_import_params_e2e_tests.py:158",
+   "test/live/packages/verilog_import_params_e2e_tests.py:169",
+   "test/live/packages/verilog_import_params_e2e_tests.py:177",
+   "test/live/packages/verilog_import_params_e2e_tests.py:185",
+   "test/live/packages/verilog_import_params_e2e_tests.py:195"
+  ],
+  "status": "CANDIDATE",
   "generic": false
  },
  {
@@ -12501,7 +12602,7 @@
   "param": "schematic_view",
   "required": false,
   "type": "str",
-  "op_tb_files": 1,
+  "op_tb_files": 2,
   "op_sites": [
    "test/live/packages/verilog_e2e_tests.py:172",
    "test/live/packages/verilog_e2e_tests.py:182",
@@ -12509,10 +12610,13 @@
    "test/live/packages/verilog_e2e_tests.py:225",
    "test/live/packages/verilog_e2e_tests.py:227",
    "test/live/packages/verilog_e2e_tests.py:237",
-   "test/live/packages/verilog_e2e_tests.py:248"
+   "test/live/packages/verilog_e2e_tests.py:248",
+   "test/live/packages/verilog_import_params_e2e_tests.py:137"
   ],
-  "param_hits": [],
-  "status": "GAP",
+  "param_hits": [
+   "test/live/packages/verilog_import_params_e2e_tests.py:158"
+  ],
+  "status": "CANDIDATE",
   "generic": false
  },
  {
@@ -12522,7 +12626,7 @@
   "param": "structural_views",
   "required": false,
   "type": "int",
-  "op_tb_files": 1,
+  "op_tb_files": 2,
   "op_sites": [
    "test/live/packages/verilog_e2e_tests.py:172",
    "test/live/packages/verilog_e2e_tests.py:182",
@@ -12530,10 +12634,12 @@
    "test/live/packages/verilog_e2e_tests.py:225",
    "test/live/packages/verilog_e2e_tests.py:227",
    "test/live/packages/verilog_e2e_tests.py:237",
-   "test/live/packages/verilog_e2e_tests.py:248"
+   "test/live/packages/verilog_e2e_tests.py:248",
+   "test/live/packages/verilog_import_params_e2e_tests.py:137"
   ],
   "param_hits": [
-   "test/live/packages/verilog_e2e_tests.py:196"
+   "test/live/packages/verilog_e2e_tests.py:196",
+   "test/live/packages/verilog_import_params_e2e_tests.py:169"
   ],
   "status": "CANDIDATE",
   "generic": false
@@ -12545,7 +12651,7 @@
   "param": "symbol_view",
   "required": false,
   "type": "str",
-  "op_tb_files": 1,
+  "op_tb_files": 2,
   "op_sites": [
    "test/live/packages/verilog_e2e_tests.py:172",
    "test/live/packages/verilog_e2e_tests.py:182",
@@ -12553,10 +12659,13 @@
    "test/live/packages/verilog_e2e_tests.py:225",
    "test/live/packages/verilog_e2e_tests.py:227",
    "test/live/packages/verilog_e2e_tests.py:237",
-   "test/live/packages/verilog_e2e_tests.py:248"
+   "test/live/packages/verilog_e2e_tests.py:248",
+   "test/live/packages/verilog_import_params_e2e_tests.py:137"
   ],
-  "param_hits": [],
-  "status": "GAP",
+  "param_hits": [
+   "test/live/packages/verilog_import_params_e2e_tests.py:158"
+  ],
+  "status": "CANDIDATE",
   "generic": false
  },
  {
@@ -12566,7 +12675,7 @@
   "param": "timeout",
   "required": false,
   "type": "float | None",
-  "op_tb_files": 1,
+  "op_tb_files": 2,
   "op_sites": [
    "test/live/packages/verilog_e2e_tests.py:172",
    "test/live/packages/verilog_e2e_tests.py:182",
@@ -12574,12 +12683,18 @@
    "test/live/packages/verilog_e2e_tests.py:225",
    "test/live/packages/verilog_e2e_tests.py:227",
    "test/live/packages/verilog_e2e_tests.py:237",
-   "test/live/packages/verilog_e2e_tests.py:248"
+   "test/live/packages/verilog_e2e_tests.py:248",
+   "test/live/packages/verilog_import_params_e2e_tests.py:137"
   ],
   "param_hits": [
    "test/live/packages/verilog_e2e_tests.py:172",
    "test/live/packages/verilog_e2e_tests.py:182",
-   "test/live/packages/verilog_e2e_tests.py:196"
+   "test/live/packages/verilog_e2e_tests.py:196",
+   "test/live/packages/verilog_import_params_e2e_tests.py:137",
+   "test/live/packages/verilog_import_params_e2e_tests.py:149",
+   "test/live/packages/verilog_import_params_e2e_tests.py:158",
+   "test/live/packages/verilog_import_params_e2e_tests.py:169",
+   "test/live/packages/verilog_import_params_e2e_tests.py:177"
   ],
   "status": "CANDIDATE",
   "generic": true
@@ -12591,7 +12706,7 @@
   "param": "token",
   "required": true,
   "type": "str",
-  "op_tb_files": 1,
+  "op_tb_files": 2,
   "op_sites": [
    "test/live/packages/verilog_e2e_tests.py:172",
    "test/live/packages/verilog_e2e_tests.py:182",
@@ -12599,14 +12714,18 @@
    "test/live/packages/verilog_e2e_tests.py:225",
    "test/live/packages/verilog_e2e_tests.py:227",
    "test/live/packages/verilog_e2e_tests.py:237",
-   "test/live/packages/verilog_e2e_tests.py:248"
+   "test/live/packages/verilog_e2e_tests.py:248",
+   "test/live/packages/verilog_import_params_e2e_tests.py:137"
   ],
   "param_hits": [
    "test/live/packages/verilog_e2e_tests.py:172",
    "test/live/packages/verilog_e2e_tests.py:182",
    "test/live/packages/verilog_e2e_tests.py:196",
    "test/live/packages/verilog_e2e_tests.py:225",
-   "test/live/packages/verilog_e2e_tests.py:227"
+   "test/live/packages/verilog_e2e_tests.py:227",
+   "test/live/packages/verilog_import_params_e2e_tests.py:137",
+   "test/live/packages/verilog_import_params_e2e_tests.py:149",
+   "test/live/packages/verilog_import_params_e2e_tests.py:158"
   ],
   "status": "CANDIDATE",
   "generic": false

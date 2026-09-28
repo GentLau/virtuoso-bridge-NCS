@@ -16,6 +16,7 @@
    "test/live/packages/layout_e2e_tests.py",
    "test/live/packages/screenshot_params_e2e_tests.py",
    "test/live/packages/spectre_params_e2e_tests.py",
+   "test/live/packages/verilog_import_params_e2e_tests.py",
    "test/live/stress/production_face_stress_tb.py",
    "test/offline/core/api_server_tb.py",
    "test/offline/integration/test_business_child_supervision.py",
@@ -28,7 +29,7 @@
    "test/semi/probes/spectre_ac_pipeline_probe.py",
    "test/shared/runners/env_check.py"
   ],
-  "call_sites": 108
+  "call_sites": 114
  },
  "basic.file.download": {
   "package": "basic.py",
@@ -82,6 +83,7 @@
    "test/live/packages/screenshot_params_e2e_tests.py",
    "test/live/packages/symbol_e2e_tests.py",
    "test/live/packages/verilog_e2e_tests.py",
+   "test/live/packages/verilog_import_params_e2e_tests.py",
    "test/live/stress/production_face_stress_tb.py",
    "test/offline/core/api_server_tb.py",
    "test/semi/probes/_maestro_tb.py",
@@ -92,7 +94,7 @@
    "test/shared/runners/skill_eval.py",
    "test/shared/runners/skill_query.py"
   ],
-  "call_sites": 176
+  "call_sites": 180
  },
  "basic.spectre.run": {
   "package": "basic.py",
@@ -311,6 +313,7 @@
    "test/live/packages/spectre_e2e_tests.py",
    "test/live/packages/symbol_e2e_tests.py",
    "test/live/packages/verilog_e2e_tests.py",
+   "test/live/packages/verilog_import_params_e2e_tests.py",
    "test/live/packages/veriloga_e2e_tests.py",
    "test/live/registration/registration_http_six_step_tb.py",
    "test/live/registration/registration_py27_tb.py",
@@ -370,7 +373,7 @@
    "test/shared/runners/run_core_multi.py",
    "test/shared/runners/run_semi_probes.py"
   ],
-  "call_sites": 78
+  "call_sites": 79
  },
  "label": {
   "package": "(atomic)",
@@ -438,6 +441,7 @@
    "test/live/packages/spectre_params_e2e_tests.py",
    "test/live/packages/symbol_e2e_tests.py",
    "test/live/packages/verilog_e2e_tests.py",
+   "test/live/packages/verilog_import_params_e2e_tests.py",
    "test/live/packages/veriloga_e2e_tests.py",
    "test/live/registration/registration_http_six_step_tb.py",
    "test/live/registration/registration_py27_tb.py",
@@ -548,7 +552,7 @@
    "test/shared/runners/triage_spec_clauses.py",
    "test/shared/runners/verify_spec_matrix_evidence.py"
   ],
-  "call_sites": 129
+  "call_sites": 130
  },
  "mosaic": {
   "package": "(atomic)",
@@ -592,6 +596,7 @@
    "test/live/packages/spectre_params_e2e_tests.py",
    "test/live/packages/symbol_e2e_tests.py",
    "test/live/packages/verilog_e2e_tests.py",
+   "test/live/packages/verilog_import_params_e2e_tests.py",
    "test/live/packages/veriloga_e2e_tests.py",
    "test/live/registration/registration_http_six_step_tb.py",
    "test/live/registration/registration_py27_tb.py",
@@ -811,7 +816,7 @@
    "test/shared/runners/triage_spec_clauses.py",
    "test/shared/runners/verify_spec_matrix_evidence.py"
   ],
-  "call_sites": 249
+  "call_sites": 250
  },
  "place_instance": {
   "package": "(atomic)",
@@ -930,6 +935,7 @@
    "test/live/packages/spectre_params_e2e_tests.py",
    "test/live/packages/symbol_e2e_tests.py",
    "test/live/packages/verilog_e2e_tests.py",
+   "test/live/packages/verilog_import_params_e2e_tests.py",
    "test/live/packages/veriloga_e2e_tests.py",
    "test/live/registration/registration_http_six_step_tb.py",
    "test/live/registration/registration_py27_tb.py",
@@ -1103,7 +1109,7 @@
    "test/shared/runners/triage_spec_clauses.py",
    "test/shared/runners/verify_spec_matrix_evidence.py"
   ],
-  "call_sites": 203
+  "call_sites": 204
  },
  "rect": {
   "package": "(atomic)",
@@ -1880,16 +1886,18 @@
  "virtuoso.verilog.export": {
   "package": "verilog.py",
   "files": [
-   "test/live/packages/verilog_e2e_tests.py"
+   "test/live/packages/verilog_e2e_tests.py",
+   "test/live/packages/verilog_import_params_e2e_tests.py"
   ],
-  "call_sites": 4
+  "call_sites": 8
  },
  "virtuoso.verilog.import": {
   "package": "verilog.py",
   "files": [
-   "test/live/packages/verilog_e2e_tests.py"
+   "test/live/packages/verilog_e2e_tests.py",
+   "test/live/packages/verilog_import_params_e2e_tests.py"
   ],
-  "call_sites": 7
+  "call_sites": 17
  },
  "virtuoso.verilog.read": {
   "package": "verilog.py",
@@ -1959,6 +1967,7 @@
    "test/live/packages/spectre_params_e2e_tests.py",
    "test/live/packages/symbol_e2e_tests.py",
    "test/live/packages/verilog_e2e_tests.py",
+   "test/live/packages/verilog_import_params_e2e_tests.py",
    "test/live/packages/veriloga_e2e_tests.py",
    "test/live/registration/registration_http_six_step_tb.py",
    "test/live/registration/registration_py27_tb.py",
@@ -2103,6 +2112,6 @@
    "test/shared/runners/triage_spec_clauses.py",
    "test/shared/runners/verify_spec_matrix_evidence.py"
   ],
-  "call_sites": 173
+  "call_sites": 174
  }
 }

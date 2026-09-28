@@ -9,7 +9,7 @@
 |---|---|---|
 | **A. spec 条款** | `spec/design-concepts/**` 全量 1131 条 → 分诊 NORM 297 / OPS 793 / PROSE 41 | NORM：**direct 221 / indirect 16 / partial 7 / gap 0 / na 53**；OPS 由 op×param + 原子矩阵承担；PROSE 逐条给了"不可测"理由 |
 | **B. 原子操作** | `src/pyapi/packages` 写原子 60 个 | `audit_atom_coverage.py`：**GAP=0**、`needs_triage=0`（证据：`evidence/round8/atom-coverage.json`） |
-| **C. op × 参数** | OPERATIONS + spec 字段表 628 条 | 机器矩阵：CANDIDATE 529 / GAP 70 / 无调用点 29；`timeout` 家族 38 条已由 `test_param_timeout_contract.py`（79/79 op 拒绝非法值）收口；余项见 §5 |
+| **C. op × 参数** | OPERATIONS + spec 字段表 628 条 | 机器矩阵：CANDIDATE 539 / GAP 60 / 无调用点 29；`timeout` 家族 38 条已由 `test_param_timeout_contract.py`（79/79 op 拒绝非法值）收口；余项见 §5 |
 
 **本轮新发现缺陷 12 条**（P-078…P-089，全部有红灯证据与最小复现）：`place_wire` 样式参数、local 联合端口、
 `view_type` 合同、远端 POSIX 路径、region 口径、`precision` 语义、`include_results` 死参数、
@@ -82,7 +82,7 @@
 
 ## 4. op × 参数（轴 C）
 
-- 机器矩阵 628 条：`CANDIDATE 529 / GAP 70 / NO-OP-TB 29`（AST 解析；76 处调用点无法静态解析，单独列出）。
+- 机器矩阵 628 条：`CANDIDATE 539 / GAP 60 / NO-OP-TB 29`（AST 解析；78 处调用点无法静态解析，单独列出）。
 - 本轮已收口的家族：
   - `timeout`（38 条 GAP）：`test/offline/unit/test_param_timeout_contract.py` —— **79/79 op 对 `timeout=0` 返回 400**，
     证据 `evidence/round8/timeout-contract.json`；

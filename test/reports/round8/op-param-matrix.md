@@ -1,8 +1,8 @@
 # 操作 × 参数覆盖矩阵（机器，AST 解析；**不是覆盖结论**）
 
-- 条目 628：CANDIDATE 529 / GAP 70 / NO-OP-TB 29
-- 非 CANDIDATE 中：通用 `timeout` 字段 38 条（由 `test/offline/unit/test_param_timeout_contract.py` 的 79/79 op 合同承担）；其余 61 条为逐 op 缺口。
-- 无法静态解析的调用点 76 个（不计覆盖，需人工复核）
+- 条目 628：CANDIDATE 539 / GAP 60 / NO-OP-TB 29
+- 非 CANDIDATE 中：通用 `timeout` 字段 38 条（由 `test/offline/unit/test_param_timeout_contract.py` 的 79/79 op 合同承担）；其余 51 条为逐 op 缺口。
+- 无法静态解析的调用点 78 个（不计覆盖，需人工复核）
 - CANDIDATE = 参数名在目标 op 的调用点出现；是否断言语义仍要逐条看 TB 判据。
 - op 调用点清单见 `op-coverage.json`；未解析明细见本文件末尾。
 
@@ -102,22 +102,6 @@
 
 - [GAP] `view` (str, required=False) — op_tb_files=1
 
-### `virtuoso.verilog.export`
-
-- [GAP] `recursive` (bool, required=False) — op_tb_files=1
-
-### `virtuoso.verilog.import`
-
-- [GAP] `file_is_local` (bool, required=False) — op_tb_files=1
-- [GAP] `functional_view` (str, required=False) — op_tb_files=1
-- [GAP] `ground_net` (str, required=False) — op_tb_files=1
-- [GAP] `import_lib_cells` (int, required=False) — op_tb_files=1
-- [GAP] `overwrite` (bool, required=False) — op_tb_files=1
-- [GAP] `power_net` (str, required=False) — op_tb_files=1
-- [GAP] `ref_libs` (list[str], required=False) — op_tb_files=1
-- [GAP] `schematic_view` (str, required=False) — op_tb_files=1
-- [GAP] `symbol_view` (str, required=False) — op_tb_files=1
-
 ### `virtuoso.verilog.read`
 
 - [GAP] `view_type` (str, required=False) — op_tb_files=1
@@ -200,6 +184,8 @@
 - test/live/packages/veriloga_e2e_tests.py:101 `operation` (how=helper:_op, params=token)
 - test/live/packages/verilog_e2e_tests.py:105 `` (how=payload-dict, params=token)
 - test/live/packages/verilog_e2e_tests.py:112 `operation` (how=helper:_op, params=token)
+- test/live/packages/verilog_import_params_e2e_tests.py:79 `` (how=payload-dict, params=token)
+- test/live/packages/verilog_import_params_e2e_tests.py:83 `operation` (how=helper:_op, params=token)
 - test/live/stress/layout_multiuser_lock_tb.py:51 `` (how=payload-dict, params=token)
 - test/shared/fixtures/probe.py:13 `` (how=payload-dict, params=token)
 - test/shared/fixtures/probe.py:24 `op` (how=helper:call, params=token)
