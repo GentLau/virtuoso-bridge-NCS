@@ -25,8 +25,9 @@ import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-API = "http://127.0.0.1:8127/api/operation"
-HEALTH = "http://127.0.0.1:8127/health"
+BASE = "http://127.0.0.1:8127"
+API = f"{BASE}/api/operation"
+HEALTH = f"{BASE}/health"
 TOKEN = "d6af595b342647b58ec63ca6"
 STAGE = ROOT / "test" / "artifacts" / "evidence" / "round7" / "design-iterate" / "stage"
 OUT = ROOT / "test" / "artifacts" / "evidence" / "p076-repro"
@@ -42,11 +43,11 @@ def http_json(url: str, payload: dict | None = None, timeout: float = 30) -> dic
         return json.loads(response.read().decode("utf-8"))
 
 
-def server_pid() -> int:
+def server_pid(port: str = "8127") -> int:
     out = subprocess.run(
         ["powershell", "-NoProfile", "-Command",
          "(Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match "
-         "'server.api_server --port 8127' } | Select-Object -First 1).ProcessId"],
+         f"'server.api_server --port {port}' }} | Select-Object -First 1).ProcessId"],
         capture_output=True, text=True,
     )
     return int(out.stdout.strip().splitlines()[-1])
@@ -127,9 +128,14 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--rounds", type=int, default=6)
     parser.add_argument("--hang-after", type=float, default=90.0)
+    parser.add_argument("--base", default=BASE,
+                        help="业务面地址（默认 8127；独立面/临时面用这个参数指过去）")
     args = parser.parse_args()
-    pid = server_pid()
-    print(f"8127 pid={pid}")
+    global API, HEALTH
+    API, HEALTH = f"{args.base.rstrip('/')}/api/operation", f"{args.base.rstrip('/')}/health"
+    port = args.base.rstrip("/").rsplit(":", 1)[-1]
+    pid = server_pid(port)
+    print(f"{args.base} pid={pid}")
     OUT.mkdir(parents=True, exist_ok=True)
     records = []
     for index in range(1, args.rounds + 1):
