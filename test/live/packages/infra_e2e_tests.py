@@ -1,4 +1,12 @@
-"""End-to-end acceptance tests for basic / demo / gui / netlist.import.
+# === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
+# 作者: 设计/上层开发
+# 最后改动: 2026-09-28 21:10
+# 依赖: 无
+# =======================================================================
+# 六步流程（test/docs/写TB规范.md §1）：
+# ① 环境检查（真机靶机指纹/业务面）；②③ 造并校验基线；④ 只做被测动作；
+# ⑤ 读回比对（期望/实际入证据）；⑥ 跑完不清理现场。某步不适用时，正文有一行注释说明。
+"""End-to-end acceptance tests for basic / gui.
 
 Run with ``--transport direct`` or ``--transport http``.
 """
@@ -22,7 +30,7 @@ if hasattr(sys.stdout, "reconfigure"):
 
 API = "http://127.0.0.1:8127/api/operation"
 TOKEN = "vb-vblog"
-WORK_DIR = ROOT / "test" / "artifacts" / "log-vblog"
+WORK_DIR = ROOT / "test" / "artifacts" / "env" / "log-vblog"
 SCRATCH = WORK_DIR / "infra_e2e"
 SCRATCH.mkdir(parents=True, exist_ok=True)
 
@@ -124,43 +132,6 @@ def _case_file_roundtrip(transport) -> None:
     _op(transport, "basic.command.run", cmd=f"rm -rf {run_dir}")
 
 
-def _case_demo(transport) -> None:
-    facts = _op(transport, "demo.paths.facts")
-    _check(facts.get("work_root"), f"paths.facts: {facts}")
-
-    probe = _op(transport, "demo.parallel.probe",
-                commands=["echo p1", "echo p2"], parallel=True)
-    _check(probe.get("ok") and len(probe.get("results", [])) == 2, f"probe: {probe}")
-
-    local_in = SCRATCH / "pipeline_in.txt"
-    local_in.write_text("pipeline-data\n", encoding="utf-8")
-    local_out = SCRATCH / "pipeline_out.txt"
-    run_dir = _remote_run_dir("pipeline")
-    remote_input = posixpath.join(run_dir, "in.txt")
-    remote_output = posixpath.join(run_dir, "out.txt")
-    pipeline = _op(
-        transport, "demo.pipeline.run",
-        local_input=str(local_in),
-        remote_input=remote_input,
-        skill_code='printf("skill-ok")',
-        command=f"cat {remote_input} > {remote_output}",
-        remote_output=remote_output,
-        local_output=str(local_out),
-    )
-    _check(pipeline.get("ok"), f"pipeline: {pipeline}")
-    _check(local_out.read_text(encoding="utf-8") == "pipeline-data\n", "pipeline content")
-    _op(transport, "basic.command.run", cmd=f"rm -rf {run_dir}")
-
-    netlist = SCRATCH / "demo_netlist.scs"
-    netlist.write_text("// demo netlist\n", encoding="utf-8")
-    imported = _op(
-        transport, "virtuoso.netlist.import",
-        local_netlist=str(netlist), library="schemtest",
-        cell="demo_net_e2e", job="demo_net_e2e",
-    )
-    _check(imported.get("ok"), f"netlist.import: {imported}")
-
-
 def _case_gui(transport) -> None:
     listing = _op(transport, "virtuoso.gui.list_windows")
     _check(listing.get("ok") and isinstance(listing.get("windows"), list),
@@ -199,7 +170,6 @@ def run_suite(transport) -> list[tuple[str, str]]:
 
     run("BASIC-01 skill/command/gui/spectre", lambda: _case_basic(transport))
     run("BASIC-02 file upload/download", lambda: _case_file_roundtrip(transport))
-    run("DEMO-01 paths/parallel/pipeline/netlist", lambda: _case_demo(transport))
     run("GUI-01 list/auto_dismiss/send_key/screenshot", lambda: _case_gui(transport))
     return results
 

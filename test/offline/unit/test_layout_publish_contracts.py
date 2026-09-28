@@ -14,6 +14,9 @@
 * `_publish_remote_copy`（远端→远端，`file_is_local=false` 走这条）：直接 `cp`，**不建目录** ✗
 
 本用例只依赖假 middle，无需真机；修复前 `test_publish_remote_copy_creates_destination_dir` 为红。
+六步流程（test/docs/写TB规范.md §1）——离线用例：
+① 环境检查**不适用**：纯函数 / 假 middle，不连真机；②③ 前置构建/校验**不适用**：无持久对象；
+④⑤ = Arrange→Act→Assert；⑥ 无现场可留（不落盘、不起服务、不占端口）。
 """
 from __future__ import annotations
 

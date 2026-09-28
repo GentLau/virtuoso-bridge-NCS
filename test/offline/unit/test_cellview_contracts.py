@@ -6,6 +6,9 @@
    SKILL 必须能被解析——这是唯一能离线抓到的语法级缺陷）。
 2. **控制流**：用 FakeMiddle 走 ``_run_skill`` 的 ok / 错误码 / 结果畸形 / 执行失败
    四条分支，以及 ``lib_get`` 的值重塑。
+六步流程（test/docs/写TB规范.md §1）——离线用例：
+① 环境检查**不适用**：纯函数 / 假 middle，不连真机；②③ 前置构建/校验**不适用**：无持久对象；
+④⑤ = Arrange→Act→Assert；⑥ 无现场可留（不落盘、不起服务、不占端口）。
 """
 from __future__ import annotations
 

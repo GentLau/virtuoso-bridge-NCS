@@ -1,17 +1,18 @@
-六步流程（test/docs/写TB规范.md §1）：
-① `require_environment`（真机/靶机指纹）；②③ 每个用例自建并校验基线；
-④ 只做被测动作；⑤ 读回比对（期望/实际入证据）；⑥ 跑完不清理现场。
-（某步不适用时，下文会有一行注释说明原因。）
-
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
 # 作者: 设计/上层开发
 # 最后改动: 2026-09-28 20:25
 # 依赖: 无
 # =======================================================================
+
 """End-to-end acceptance tests for ``virtuoso.symbol.*``.
 
 Run with ``--transport direct`` (in-process dispatch) or ``--transport http``
 (the 8127 business face).
+
+六步流程（test/docs/写TB规范.md §1）：
+① `require_environment`（真机靶机指纹）；②③ 每个用例自建并校验基线；
+④ 只做被测动作；⑤ 读回比对（期望/实际入证据）；⑥ 跑完不清理现场。
+（某步不适用时，下文会有一行注释说明原因。）
 """
 from __future__ import annotations
 

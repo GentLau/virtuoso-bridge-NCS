@@ -12,6 +12,9 @@
 
 本 TB 用**真实报告裁剪样本**（``test/shared/fixtures/calibre_drc_rep_sample.txt``，
 取自 s11_inv/inv 的 DRC.rep）把"违规按规则聚合"和"不许有垃圾条目"钉住。
+六步流程（test/docs/写TB规范.md §1）——离线用例：
+① 环境检查**不适用**：纯函数 / 假 middle，不连真机；②③ 前置构建/校验**不适用**：无持久对象；
+④⑤ = Arrange→Act→Assert；⑥ 无现场可留（不落盘、不起服务、不占端口）。
 """
 from __future__ import annotations
 
