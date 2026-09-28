@@ -24,6 +24,7 @@ SUITES = [
 ]
 
 seen: dict[str, set[str]] = {}
+errors: list[str] = []
 original = dispatch_module.dispatch
 
 
@@ -52,14 +53,24 @@ for suite in SUITES:
     if not first_done:
         api_server_module.register_packages = lambda: {}
         first_done = True
+    # 一个套件抛异常不该让整份覆盖报告消失（2026-09-23：layout 卡 P-044 时
+    # 本脚本整体中断，ops_used.json 一直是 9/22 的旧数据）。
     try:
         results = module.run_suite(transport)
+        error = ""
+    except Exception as exc:  # noqa: BLE001 - 记下来继续跑剩下的套件
+        results = None
+        error = f"{type(exc).__name__}: {exc}"
     finally:
         middle = getattr(transport, "middle", None)
         if middle is not None:
             middle.close()
-    ok = all(status == "PASS" for _, status in results)
-    print(f"{suite:28} direct={'PASS' if ok else 'FAIL'} ops={len(seen.get(name, ()))}")
+    if results is None:
+        errors.append(f"{suite}: {error}")
+        print(f"{suite:28} direct=ERROR ops={len(seen.get(name, ()))} {error}")
+    else:
+        ok = all(status == "PASS" for _, status in results)
+        print(f"{suite:28} direct={'PASS' if ok else 'FAIL'} ops={len(seen.get(name, ()))}")
 
 all_ops = set(dispatch_module.operations())
 covered = set().union(*seen.values()) if seen else set()
@@ -72,7 +83,11 @@ out = {
     "covered": sorted(covered),
     "uncovered": sorted(all_ops - covered),
     "by_suite": {key: sorted(value) for key, value in seen.items()},
+    "suite_errors": errors,
 }
-path = ROOT / "test" / "artifacts" / "http-e2e" / "ops_used.json"
+path = ROOT / "test" / "artifacts" / "evidence" / "http-e2e" / "ops_used.json"
 path.write_text(json.dumps(out, ensure_ascii=False, indent=2), encoding="utf-8")
 print("written:", path)
+if errors:
+    print("SUITES WITH ERRORS:", "; ".join(errors))
+    raise SystemExit(1)

@@ -27,6 +27,13 @@ New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
 
 $all = @('schematic', 'symbol', 'layout', 'cellview', 'verilog', 'veriloga',
          'skillref', 'infra', 'maestro', 'spectre')
+# `powershell -File run_package_e2e.ps1 -Only layout,infra` binds the value as one
+# literal string ("layout,infra"), which used to select **nothing** and write a
+# summary.json with total_tbs=0 — a green-looking no-op. Split it here.
+if ($Only.Count -eq 1 -and $Only[0] -match ',') { $Only = $Only[0] -split ',' }
+if ($Skip.Count -eq 1 -and $Skip[0] -match ',') { $Skip = $Skip[0] -split ',' }
+$Only = @($Only | Where-Object { $_ } | ForEach-Object { $_.Trim() })
+$Skip = @($Skip | Where-Object { $_ } | ForEach-Object { $_.Trim() })
 if ($Only.Count -gt 0) { $all = $all | Where-Object { $Only -contains $_ } }
 if ($Skip.Count -gt 0) { $all = $all | Where-Object { $Skip -notcontains $_ } }
 
@@ -37,8 +44,15 @@ foreach ($tb in $all) {
     $logPath = Join-Path $OutDir "$tb.log"
     Write-Host "===== $tb ====="
     $started = Get-Date
+    # A TB that *prints a traceback* is a legitimate FAIL, but with
+    # $ErrorActionPreference='Stop' the native stderr record turned into a
+    # terminating error and aborted the whole run (2026-09-23: verilog died with
+    # a traceback and suites 4-10 never ran, no summary.json was written).
+    # Keep the run alive; the exit code below still marks the suite red.
+    $ErrorActionPreference = 'Continue'
     $output = & python $scriptPath --transport $Transport 2>&1
     $exit = $LASTEXITCODE
+    $ErrorActionPreference = 'Stop'
     $output | Tee-Object -FilePath $logPath
     $text = ($output | Out-String)
     $passes = ([regex]::Matches($text, '(?m)^PASS\b')).Count

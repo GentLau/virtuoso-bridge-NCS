@@ -1,39 +1,39 @@
 {
   "source_json": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\evidence\\cov-main\\coverage-main-strict.json",
   "totals": {
-    "covered_lines": 14771,
-    "num_statements": 16719,
-    "percent_covered": 86.2501674630465,
-    "percent_covered_display": "86",
-    "missing_lines": 1948,
-    "excluded_lines": 50,
-    "percent_statements_covered": 88.34858544171303,
-    "percent_statements_covered_display": "88",
-    "num_branches": 5674,
-    "num_partial_branches": 869,
-    "covered_branches": 4543,
-    "missing_branches": 1131,
-    "percent_branches_covered": 80.06697215368347,
-    "percent_branches_covered_display": "80"
+    "covered_lines": 11556,
+    "num_statements": 17168,
+    "percent_covered": 62.767888005530594,
+    "percent_covered_display": "63",
+    "missing_lines": 5612,
+    "excluded_lines": 58,
+    "percent_statements_covered": 67.31127679403542,
+    "percent_statements_covered_display": "67",
+    "num_branches": 5976,
+    "num_partial_branches": 1509,
+    "covered_branches": 2971,
+    "missing_branches": 3005,
+    "percent_branches_covered": 49.71552878179384,
+    "percent_branches_covered_display": "50"
   },
   "derived": {
-    "statement_pct": 88.35,
-    "branch_pct": 80.07,
-    "combined_pct": 86.25,
-    "files": 60,
-    "missing_line_entries": 1948,
-    "missing_branch_entries": 1131
+    "statement_pct": 67.31,
+    "branch_pct": 49.72,
+    "combined_pct": 62.77,
+    "files": 56,
+    "missing_line_entries": 5612,
+    "missing_branch_entries": 3005
   },
   "classification": {
     "counts": {
-      "unclassified": 1912,
-      "env-blocked": 30,
-      "defensive": 6
+      "unclassified": 5554,
+      "defensive": 8,
+      "env-blocked": 50
     },
-    "unclassified_count": 1912,
+    "unclassified_count": 5554,
     "invalid_entries": [],
     "stale_rules": [],
     "classification_file": null,
-    "rules_file": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\audit\\coverage-pack\\coverage-rules-auto.json"
+    "rules_file": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\reports\\coverage-pack\\coverage-rules-auto.json"
   }
 }

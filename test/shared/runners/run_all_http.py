@@ -13,7 +13,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-OUT = ROOT / "test" / "artifacts" / "http-e2e"
+OUT = ROOT / "test" / "artifacts" / "evidence" / "http-e2e"
 OUT.mkdir(parents=True, exist_ok=True)
 
 SUITES = [
@@ -27,6 +27,8 @@ SUITES = [
     "skillref_e2e_tests.py",
     "spectre_e2e_tests.py",
     "maestro_e2e_tests.py",
+    # P-060：calibre 进常驻套件（此前 0 真机覆盖）；依赖常驻注册表里的 role.command.calibre.bin
+    "calibre_e2e_tests.py",
 ]
 
 

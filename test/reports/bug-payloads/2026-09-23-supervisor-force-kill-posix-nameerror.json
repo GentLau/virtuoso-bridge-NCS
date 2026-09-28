@@ -1,0 +1,33 @@
+{
+ "token": "vb-vblog",
+ "severity": "P1",
+ "class": "source",
+ "title": "supervisor._force_kill_tree 是 @staticmethod 却用 self → POSIX 下 NameError，进程组强杀完全失效",
+ "anchor": "src/server/supervisor.py:280-307（@staticmethod def _force_kill_tree(...)：:301 self._signal_process_group(proc.pid, SIGTERM)、:306 … SIGKILL；调用点 :266 _dispose_child）",
+ "spec_anchor": "spec/design-concepts/顶层/add-控制面与业务面.md §3（process/restart：排空超时后强杀业务进程组与 SSH 后代，再重拉）",
+ "summary": "Windows 分支走 taskkill 正常；一旦走到 POSIX 分支（os.name != 'nt'），staticmethod 内引用 self 直接抛 NameError，SIGTERM/SIGKILL 都不会发出：挂死的业务进程组与其后代不会被清理，端口/SSH 会话可能被孤儿进程长期占用。Linux 客户端矩阵（3.9.25 / 3.14.6）各 3 条既有用例稳定复现。",
+ "repro": [
+  "Linux（wsl-gent）3.9.25：PYTHONPATH=src /usr/bin/python3.9 -m pytest test/offline/unit/test_process_lifetime.py::TestPosixBusinessProcessLifetime::test_dispose_kills_process_group_descendant test/offline/unit/test_supervisor_internals.py::TestForceKillTree -q",
+  "3.14.6：~/vb-ncs/.venv/bin/python -m pytest 同上",
+  "traceback：src/server/supervisor.py:266 _dispose_child → _force_kill_tree → :301 NameError: name 'self' is not defined"
+ ],
+ "observed": {
+  "py39": ["test_process_lifetime.py::TestPosixBusinessProcessLifetime::test_dispose_kills_process_group_descendant FAILED",
+           "test_supervisor_internals.py::TestForceKillTree::test_posix_group_sigkills_after_sigterm_timeout FAILED",
+           "test_supervisor_internals.py::TestForceKillTree::test_posix_group_sigterm_success_returns FAILED"],
+  "py314": "同上 3 条",
+  "windows_312": "同一套用例在 Windows 上 1656 passed（该分支不执行）"
+ },
+ "impact": "Linux/CI 上『排空超时→强杀→重启』的可靠性保证不成立：业务进程组可能残留、端口不复用、SSH 后代继续占连接；与历史上『子进程未被 Job 清除』同类，只是在 POSIX 侧复发。Windows 全绿掩盖了它。",
+ "suggested_fix": [
+  "把 _force_kill_tree 改回实例方法（去掉 @staticmethod），或在静态方法内改调 BusinessProcess._signal_process_group(proc.pid, sig)；",
+  "顺手把该分支加进 Linux CI 作业（.github/workflows/tests.yml 已有 3.9/3.13 矩阵，但 Linux 侧历史上从未真正采起来）；",
+  "验收：上述 3 条用例在 Linux 3.9 与 3.14 上转绿。"
+ ],
+ "evidence_paths": [
+  "test/artifacts/evidence/round5-linux-client/py39.log",
+  "test/artifacts/evidence/round5-linux-client/py314.log",
+  "test/reports/round5-Linux客户端矩阵.md",
+  "test/reports/问题登记.md（P-056 条目）"
+ ]
+}

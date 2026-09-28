@@ -1,4 +1,9 @@
 # -*- coding: utf-8 -*-
+# === TB 注释头（规范见 test/docs/写TB规范.md §0）=====================
+# 作者: 测试/root
+# 最后改动: 2026-09-28 21:10
+# 依赖: 无
+# =====================================================================
 """两用户同一 cellview 读写语义探针（真机，两个 CIW 共享同一库）。
 
 目的
@@ -39,6 +44,10 @@ from pathlib import Path
 SRC = Path(__file__).resolve().parents[3] / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
+_RUNNERS = Path(__file__).resolve().parents[3] / "test" / "shared" / "runners"
+if str(_RUNNERS) not in sys.path:
+    sys.path.insert(0, str(_RUNNERS))
+from env_check import require_environment  # noqa: E402
 
 from common.paths import init_work_dir  # noqa: E402
 from server import dispatch  # noqa: E402
@@ -106,6 +115,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     init_work_dir(str(Path(args.work_dir).resolve()))
+    require_environment(work_dir=args.work_dir, token=args.token_a)
     register_packages()
     server = BusinessServer()
 
@@ -127,7 +137,7 @@ def main(argv: list[str] | None = None) -> int:
     def write_label(token: str, text: str) -> dict:
         return _op(server, token, "virtuoso.schematic.write",
                    library=args.lib, cell=args.cell, view=args.view,
-                   commands=[{"op": "place_label", "text": text, "x": 0, "y": 0}])
+                   commands=[{"op": "place_label", "text": text, "pos": [0, 0]}])
 
     def read_labels(token: str) -> dict:
         return _op(server, token, "virtuoso.schematic.read",

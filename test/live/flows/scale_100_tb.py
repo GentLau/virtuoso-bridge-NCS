@@ -1,3 +1,15 @@
+# === TB 注释头（规范见 test/docs/写TB规范.md §0）=====================
+# 作者: 设计/Codex
+# 最后改动: 2026-09-28 12:04
+# 依赖: 无
+# =====================================================================
+# 六步流程（按 test/docs/写TB规范.md §1–§6）：
+# §1 环境检查：本地规模档，无需远端 Virtuoso → 跳过；确认 Python/端口前置。
+# §2 构建：本地 fake daemon 群 + 100 用户 registry。
+# §3 最终检查：daemon 端口/注册表条目全部就绪。
+# §4 执行：100 用户并发请求。
+# §5 比对：每 token 回显、无串号、失败/重试统计与期望一致。
+# §6 重复/收尾：多轮重复；关闭 fake，保留 JSON 证据。
 """S4 scale-100：100 个协议级 fake daemon × 100 token，验证规模下的隔离与预算。
 
 做法（见 ``test/docs/推荐测试环境.md`` S4）：
@@ -100,7 +112,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--prefix", default="cloud")
     ap.add_argument("--rounds", type=int, default=2)
     ap.add_argument("--workers", type=int, default=64)
-    ap.add_argument("--work-dir", default=str(ROOT / "test" / "artifacts" / "scenario-scale-100"))
+    ap.add_argument("--work-dir", default=str(ROOT / "test" / "artifacts" / "env" / "scenario-scale-100"))
     ap.add_argument("--out", default="")
     args = ap.parse_args(argv)
 
@@ -108,7 +120,7 @@ def main(argv: list[str] | None = None) -> int:
     work_dir.mkdir(parents=True, exist_ok=True)
     fleet_log = work_dir / "fleet.log"
 
-    from common.paths import init_work_dir, override_work_dir_for_tests  # noqa: E402
+    from common.paths import init_work_dir  # noqa: E402
     from common.registry import Registry  # noqa: E402
     from transport.middle import BusinessServer  # noqa: E402
 
@@ -181,9 +193,11 @@ def main(argv: list[str] | None = None) -> int:
         evidence["rounds_detail"] = rounds
         evidence["fleet_log"] = str(fleet_log)
 
-        # 负向对照：把 A 的 daemon_port 故意指到 B 的 fake 上。
-        # 如果 "output == 自己的 token" 这个判据是有效的，这里必须看到 B 的 token
-        # （即检测手段能抓到串台）；否则说明我们的断言是空的。
+        # 负向对照：把 cloud-b 的 daemon_port 故意指到 cloud-a 的 fake 上。
+        # 如果 "output == 自己的 token" 这个判据是有效的，这里必须**看不到** cloud-b
+        # （即检测手段能抓到串台/错答）；否则说明我们的断言是空的。
+        # 姿势：P-072 之后「一进程一 work root」——本进程已绑定主 work dir，
+        # 负向对照必须在**子进程**里绑 control_dir（见 test/docs/工作根与测试姿势.md）。
         control_dir = work_dir / "negative-control"
         control_dir.mkdir(parents=True, exist_ok=True)
         control_users = {
@@ -194,18 +208,27 @@ def main(argv: list[str] | None = None) -> int:
         control_users["cloud-b"] = json.loads(json.dumps(main["cloud01"]))
         control_users["cloud-a"]["token"] = "cloud-a"
         control_users["cloud-b"]["token"] = "cloud-b"
-        # A 指向 B 的端口：A 用自己的 token，但落到 B 的监听上 → 必然 NAK/串台
-        control_users["cloud-b"]["roles"]["daemon"]["daemon_port"] = args.base_port
         (control_dir / "registry.json").write_text(
             json.dumps(control_users, ensure_ascii=False, indent=1), encoding="utf-8")
-        # 一个进程只能 init_work_dir 一次；测试工具提供的 override 就是给这种切换用的
-        override_work_dir_for_tests(control_dir)
-        control_middle = BusinessServer()
-        probe_b = control_middle.execute_skill("RBDToken", timeout=30, token="cloud-b")
-        got = (probe_b.output or "").strip().strip('"')
+        child = subprocess.run(
+            [sys.executable,
+             str(ROOT / "test" / "shared" / "fixtures" / "scale100_negative_control.py"),
+             "--work-dir", str(control_dir), "--wrong-port", str(args.base_port)],
+            capture_output=True, text=True, timeout=120, **no_window(),
+        )
+        payload_b: dict = {}
+        for line in (child.stdout or "").strip().splitlines()[::-1]:
+            try:
+                payload_b = json.loads(line)
+                break
+            except json.JSONDecodeError:
+                continue
+        got = str(payload_b.get("output") or "")
         record("negative-control-detects-misroute",
-               (not probe_b.ok) or got != "cloud-b",
-               {"ok": probe_b.ok, "output": got, "errors": list(probe_b.errors or [])})
+               bool(payload_b) and ((not payload_b.get("ok")) or got != "cloud-b"),
+               {"child_rc": child.returncode, "ok": payload_b.get("ok"),
+                "output": got, "errors": payload_b.get("errors"),
+                "child_stderr": (child.stderr or "")[-300:]})
     finally:
         if fleet is not None:
             fleet.terminate()

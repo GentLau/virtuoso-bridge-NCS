@@ -1,3 +1,15 @@
+# === TB 注释头（规范见 test/docs/写TB规范.md §0）=====================
+# 作者: 设计/Codex
+# 最后改动: 2026-09-28 12:04
+# 依赖: 无
+# =====================================================================
+# 六步流程（按 test/docs/写TB规范.md §1–§6）：
+# §1 环境检查：离线协议/语义 case，无需远端环境 → 跳过。
+# §2 构建：每个 case 自建临时 work root、registry、server/伪 daemon。
+# §3 最终检查：case 构造后先确认 token、端口、目标对象和锁/预算基线。
+# §4 执行：单次动作、传输超时、并发闸门或跨进程注册动作。
+# §5 比对：实际返回值/时序/拒绝语义与期望逐项比对。
+# §6 重复/收尾：runner 逐 case 子进程重复；临时目录回收，JSON 留证。
 """Semantics TB: contracts the success-path TB does not drive.
 
 Each case encodes one *spec* contract and is expected to fail on the code
@@ -40,7 +52,7 @@ if str(_SUPPORT) not in sys.path:
 
 from transport.middle import BusinessServer  # noqa: E402
 from common.registry import Registry, UserEntry, load_registry  # noqa: E402
-from common.paths import registry_path, override_work_dir_for_tests  # noqa: E402
+from common.paths import init_work_dir, registry_path  # noqa: E402
 
 try:  # Windows: never pop a console for child processes
     from _win import no_window  # type: ignore
@@ -58,6 +70,7 @@ _TEMP_DIRS: list[Path] = []
 
 def temp_dir(prefix: str) -> Path:
     """Per-case temp dir, removed by ``cleanup_temp_dirs`` at the end of the run."""
+    # 六步 §1–§3：离线 case 的环境就是本进程私有临时 work root。
     path = Path(tempfile.mkdtemp(prefix=prefix))
     _TEMP_DIRS.append(path)
     return path
@@ -98,13 +111,13 @@ class StepClock:
 
 def local_server(token: str, *, root: Path | None = None) -> tuple[BusinessServer, Path]:
     wd = temp_dir("vb-sem-")
-    override_work_dir_for_tests(wd)
+    init_work_dir(wd)
     registry = load_registry(registry_path())
     entry = UserEntry(token=token, mode="local")
     if root is not None:
         entry.roles.file.root = str(root)
     registry.register(token, entry)
-    return BusinessServer(wd), wd
+    return BusinessServer(), wd
 
 
 def _timeout_case(*, kind: str, recursive: bool, timeout: float) -> dict:
@@ -217,9 +230,24 @@ def case_registry_cross_process() -> dict:
     deadline = time.monotonic() + 30
     while not all((wd / f"ready-{u}").exists() for u in users):
         if time.monotonic() > deadline:
+            # 抖动定位需要现场：谁没到、它输出了什么。2026-09-23 曾出现一次
+            # "children never reached the load barrier"（复跑 10/10 绿），
+            # 当时没有诊断信息，只能靠猜。
+            stuck = [u for u in users if not (wd / f"ready-{u}").exists()]
+            detail = []
+            for proc, user in zip(procs, users):
+                if user not in stuck:
+                    continue
+                if proc.poll() is None:
+                    detail.append(f"{user}: still running (pid {proc.pid})")
+                else:
+                    out, err = proc.communicate()
+                    detail.append(f"{user}: rc={proc.returncode} out={out.strip()[:200]!r} "
+                                  f"err={err.strip()[:200]!r}")
             for proc in procs:
                 proc.kill()
-            raise ProbeFailure("children never reached the load barrier")
+            raise ProbeFailure("children never reached the load barrier: "
+                               + "; ".join(detail))
         time.sleep(0.02)
     (wd / "gate").write_text("1", encoding="utf-8")
     errors = []
@@ -328,7 +356,7 @@ class _BlockingSkillClient:
 
 def _facts_server() -> tuple[BusinessServer, Path]:
     wd = temp_dir("vb-facts-")
-    override_work_dir_for_tests(wd)
+    init_work_dir(wd)
     registry = load_registry(registry_path())
     for name, host, root, bin_path in (
         ("alpha", "server-a", "/srv/alpha", "/cadence/bin/spectre"),
@@ -345,7 +373,7 @@ def _facts_server() -> tuple[BusinessServer, Path]:
         entry.roles.spectre.bin = bin_path
         entry.roles.gui.display = ":11"
         registry.register(name, entry)
-    return BusinessServer(wd), wd
+    return BusinessServer(), wd
 
 
 def case_query_shape() -> dict:
@@ -432,12 +460,12 @@ def case_query_isolation() -> dict:
 def case_query_no_budget() -> dict:
     """只读查询不占三类预算、不进队列：线程池被占满时仍立即返回。"""
     wd = temp_dir("vb-query-budget-")
-    override_work_dir_for_tests(wd)
+    init_work_dir(wd)
     registry = load_registry(registry_path())
     entry = UserEntry(token="tok-query", mode="local")
     entry.runtime.thread_pool_size = 1
     registry.register("alice", entry)
-    server = BusinessServer(wd)
+    server = BusinessServer()
     client = _BlockingSkillClient()
     try:
         with mock.patch.object(BusinessServer, "_skill", lambda self, token: client):
@@ -554,7 +582,12 @@ def main() -> int:
     parser.add_argument("--case", choices=sorted(CASES), action="append", default=[])
     parser.add_argument("--out", default="")
     args = parser.parse_args()
-    selected = args.case or sorted(CASES)
+    if not args.case:
+        # P-072 口径：**一进程一 work root**。本 TB 多个 case 各自要绑不同的临时根
+        # （隔离语义/预算语义本来就是"换根再验"），所以整跑必须**每个 case 一个子进程**；
+        # 见 test/docs/写TB规范.md §3（work root 口径）。单 case（--case X）仍在当前进程内跑。
+        return _run_all_in_children(args.out)
+    selected = args.case
     results = {}
     failed = 0
     for name in selected:
@@ -571,6 +604,44 @@ def main() -> int:
     text = json.dumps(payload, ensure_ascii=False, indent=2)
     if args.out:
         Path(args.out).write_text(text + "\n", encoding="utf-8")
+    print(text)
+    return 1 if failed else 0
+
+
+def _run_all_in_children(out_path: str) -> int:
+    """每个 case 起一个子进程跑（子进程内只绑一次 work root），父进程只汇总。"""
+    results: dict = {}
+    failed = 0
+    for name in sorted(CASES):
+        started = time.monotonic()
+        with tempfile.TemporaryDirectory(prefix=f"vb-sem-child-{name}-") as tmp:
+            child_out = Path(tmp) / "case.json"
+            proc = subprocess.run(
+                [sys.executable, str(Path(__file__).resolve()), "--case", name,
+                 "--out", str(child_out)],
+                cwd=str(Path(__file__).resolve().parents[3]),
+                capture_output=True, text=True, timeout=600,
+            )
+            payload: dict = {}
+            if child_out.is_file():
+                try:
+                    payload = json.loads(child_out.read_text(encoding="utf-8"))
+                except json.JSONDecodeError:
+                    payload = {}
+            case = (payload.get("results") or {}).get(name)
+            if case is None:
+                case = {"status": "fail",
+                        "error": f"child rc={proc.returncode} produced no result; "
+                                 f"stderr={ (proc.stderr or '')[-200:] }"}
+            results[name] = case
+            if case.get("status") != "pass":
+                failed += 1
+        results[name]["elapsed_s"] = round(time.monotonic() - started, 3)
+    payload = {"ok": failed == 0, "failed": failed, "mode": "per-case-subprocess",
+               "results": results}
+    text = json.dumps(payload, ensure_ascii=False, indent=2)
+    if out_path:
+        Path(out_path).write_text(text + "\n", encoding="utf-8")
     print(text)
     return 1 if failed else 0
 

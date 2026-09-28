@@ -122,24 +122,28 @@ $ignoreArgs = @()
 foreach ($path in $SkipTests) { $ignoreArgs += "--ignore=$path" }
 # No ``| Out-Null`` on the steps that can fail for a *test* reason: swallowing
 # pytest/TB output leaves a red gate with no diagnosis in the log.
-Invoke-Step 'offline suites' { python -m coverage run --branch --source=src -m pytest test/offline/unit test/offline/integration test/offline/scenario -q @ignoreArgs }
-Invoke-Step 'fault injection TB' { python -m coverage run --branch --source=src --append test/offline/core/fault_injection_tb.py --out test/artifacts/evidence/fault-injection-green.json | Out-Null }
-Invoke-Step 'semantics TB' { python -m coverage run --branch --source=src --append test/offline/core/semantics_tb.py --out test/artifacts/evidence/semantics-green.json | Out-Null }
-Invoke-Step 'daemon log protocol TB' { python -m coverage run --branch --source=src --append test/offline/core/daemon_log_protocol_tb.py --out test/artifacts/evidence/log-protocol.json | Out-Null }
-Invoke-Step 'top layer HTTP TB' { python -m coverage run --branch --source=src --append test/offline/core/api_server_tb.py --out test/artifacts/evidence/api-server.json | Out-Null }
+Invoke-Step 'offline suites (multi-process)' {
+    python test/shared/runners/run_offline_multi.py @ignoreArgs | Out-Null
+}
+Invoke-Step 'offline core TBs (multi-process)' {
+    python test/shared/runners/run_core_multi.py --out test/artifacts/evidence/core-multi.json | Out-Null
+}
 
 # ---- registration over the real HTTP API ----------------------------------------
 Invoke-Step 'registration 1-6 (local)' { python -m coverage run --branch --source=src --append test/live/registration/registration_http_six_step_tb.py --work-dir test/artifacts/env/reg-six-local --user vbsixlocal --local-mode --token vb-six-local --out test/artifacts/env/reg-six-local/evidence.json | Out-Null }
 Invoke-Step 'registration 1-4 (remote)' { python -m coverage run --branch --source=src --append test/live/registration/registration_http_six_step_tb.py --work-dir test/artifacts/env/reg-six-remote-14 --user vbsixremote --daemon-port 65133 --root /home/Gent/.virtuoso-bridge/vbsixremote --stop-after-deploy --out test/artifacts/env/reg-six-remote-14/evidence.json | Out-Null }
 
-# ---- HTTP mixed workload (Windows client) ---------------------------------------
-Invoke-Step 'http mixed stress (windows)' { python -m coverage run --branch --source=src --append test/live/stress/http_mixed_stress_tb.py --work-dir test/artifacts/env/http-stress2 --remote-token vb-vblog --remote-daemon-port 65121 --remote-root /home/Gent/.virtuoso-bridge/vblog --workers 6 --rounds 6 --out test/artifacts/env/http-stress2/evidence.json | Out-Null }
+# ---- 生产面混合并发（替代已删除的测试专用 stress_server 壳） ----------------------
+# 2026-09-24：`src/server/stress_server.py` 已从生产源码删除；压测对象改为生产面
+# `api_server + dispatch + basic 包 + 中层`。自起一个业务面（local 模式注册表）跑，
+# 不依赖任何测试专用 HTTP 壳，也不依赖真机。
+Invoke-Step 'production face stress (self-start)' { python -m coverage run --branch --source=src --append test/live/stress/production_face_stress_tb.py --workers 6 --rounds 6 --out test/artifacts/evidence/round6b-verify/production-stress.json | Out-Null }
 
 # ---- real machine TBs -------------------------------------------------------------
 # Live daemon used here is the standing ``vb-vblog`` instance (65121).  The
 # historical vb-vb11 token/daemon no longer exists, and a gate that can never
 # pass is worse than useless: point it at an instance that is part of the
-# documented environment (test/docs/推荐测试环境.md §3).
+# documented environment (test/docs/环境与场景.md §4).
 Invoke-Step 'real five interfaces' { python -m coverage run --branch --source=src --append test/live/transport/cov_remote_real.py --work-dir test/artifacts/env/log-vblog --token vb-vblog | Out-Null }
 Invoke-Step 'real registration 1-4' { python -m coverage run --branch --source=src --append test/semi/registration/cov_registration_real.py --work-dir test/artifacts/env/cov-registration --user covreg --token cov-token --port 65112 | Out-Null }
 Invoke-Step 'real CDS.log matrix' { python -m coverage run --branch --source=src --append test/semi/transport/log_matrix_real_tb.py --work-dir test/artifacts/env/log-vblog --token vb-vblog --out test/artifacts/evidence/log-matrix-real-green.json | Out-Null }
@@ -177,14 +181,6 @@ if ($IncludeExtended) {
         ssh $WslHost "tar -xzf $WslSandbox/wsl_sync.tgz -C $WslSandbox/repo"
         Remove-Item test/artifacts/tmp/wsl_sync.tgz -Force
     }
-    Invoke-Step 'http mixed stress (wsl client)' {
-        $wslRun = "$WslSandbox/runs/http-$(Get-Date -Format yyyyMMddHHmmss)"
-        ssh $WslHost "mkdir -p $wslRun"
-        ssh $WslHost "cd $WslSandbox/repo && PYTHONPATH=src $WslPython test/live/stress/http_mixed_stress_tb.py --work-dir $wslRun --remote-host localhost --remote-token vb-vblog --remote-daemon-port 65121 --remote-root /home/Gent/.virtuoso-bridge/vblog --workers 6 --rounds 6 --out $wslRun/evidence.json"
-        scp -q "${WslHost}:$wslRun/evidence.json" test/artifacts/evidence/http-stress-wsl-client.json
-        ssh $WslHost "rm -rf $wslRun"
-    }
-    Invoke-Step 'saturation profile' { python -m coverage run --branch --source=src --append test/live/stress/http_mixed_stress_tb.py --work-dir test/artifacts/env/http-stress-sat --remote-token vb-vblog --remote-daemon-port 65121 --remote-root /home/Gent/.virtuoso-bridge/vblog --workers 24 --rounds 3 --local-pool 4 --max-attempts 60 --out test/artifacts/env/http-stress-sat/evidence.json | Out-Null }
 }
 
 # ---- coverage report --------------------------------------------------------------

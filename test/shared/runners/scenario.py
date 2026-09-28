@@ -1,4 +1,4 @@
-"""Bring a whole test *scenario* to the required state (see docs/推荐测试环境.md 菜谱章).
+"""Bring a whole test *scenario* to the required state (see docs/环境与场景.md §4).
 
 一个场景 = 客户端 + 注册表 + 服务端组合（真机/fake、几个、带不带工艺库）。
 `up` 会把场景需要的东西起齐（不用的不动/停掉），`down` 收摊，`status` 体检。
@@ -8,7 +8,7 @@
     python test/shared/runners/scenario.py status role-split
     python test/shared/runners/scenario.py down role-split
 
-真实例按 docs/推荐测试环境.md §0.1 启动：cwd 用 ``~/.virtuoso-bridge/<user>/run/``，
+真实例按 docs/环境与场景.md §2 与 internal/环境Runbook-内部.md 启动：cwd 用 ``~/.virtuoso-bridge/<user>/run/``，
 运行态文件（CDS.log/锁/ahdlSimDB）留在该目录，工程目录只放 cds.lib 等设计产物。
 """
 from __future__ import annotations
@@ -75,7 +75,7 @@ SCENARIOS: dict[str, dict] = {
             {"host": "w1-gent", "port": 65201, "token": "vb-lab11", "user": "vbmu4"},
             {"host": "w2-gent", "port": 65301, "token": "vb-lab21", "user": "vbmu5"},
         ],
-        "tbs": ["python test/live/stress/http_mixed_stress_tb.py --work-dir test/artifacts/env/scenario-multi-user --workers 4 --rounds 4"],
+        "tbs": ["python test/live/stress/production_face_stress_tb.py --workers 4 --rounds 4"],
     },
     "concurrency": {
         "title": "高并发：真机 4 + lab fake 16（20 真机不可行，见文档 §5 内存账）",
@@ -90,7 +90,7 @@ SCENARIOS: dict[str, dict] = {
             for i in range(1, 5)
         ],
         "tbs": [
-            "python test/live/stress/http_mixed_stress_tb.py --work-dir test/artifacts/env/scenario-concurrency --workers 24 --rounds 3",
+            "python test/live/stress/production_face_stress_tb.py --workers 24 --rounds 3",
             "python test/shared/runners/ops_used.py",
         ],
     },

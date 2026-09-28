@@ -59,13 +59,13 @@ function Step([string]$name, [scriptblock]$body) {
 Step 'erase' { python -m coverage erase }
 # 不吞 pytest 输出：离线层一旦红，日志里必须能看到失败用例（2026-09-23 踩过：
 # 该步 rc=1 但输出被 Out-Null 吃掉，只能靠重跑才定位）。
-Step 'offline L0-L2' { python -m coverage run --branch --source=src -m pytest -p no:cacheprovider test/offline/unit test/offline/integration test/offline/scenario }
+Step 'offline L0-L2 (multi-process)' { python test/shared/runners/run_offline_multi.py }
 Step 'offline/core api-server' { python -m coverage run --branch --append --source=src test/offline/core/api_server_tb.py --out test/artifacts/evidence/api-server.json | Out-Null }
 Step 'offline/core semantics' { python -m coverage run --branch --append --source=src test/offline/core/semantics_tb.py --out test/artifacts/evidence/semantics-green.json | Out-Null }
 Step 'offline/core fault-injection' { python -m coverage run --branch --append --source=src test/offline/core/fault_injection_tb.py --out test/artifacts/evidence/fault-injection-green.json | Out-Null }
 Step 'offline/core daemon-log-protocol' { python -m coverage run --branch --append --source=src test/offline/core/daemon_log_protocol_tb.py --out test/artifacts/evidence/log-protocol.json | Out-Null }
 
-foreach ($suite in 'infra','cellview','schematic','symbol','layout','verilog','veriloga','skillref','spectre','maestro') {
+foreach ($suite in 'infra','cellview','schematic','symbol','layout','verilog','veriloga','skillref','spectre','maestro','calibre') {
     Step "packages/$suite (direct)" { python -m coverage run --branch --append --source=src "test/live/packages/${suite}_e2e_tests.py" --transport direct | Out-Null }
 }
 
@@ -73,7 +73,10 @@ Step 'transport cov_remote_real' { python -m coverage run --branch --append --so
 Step 'transport one_shot_burst' { python -m coverage run --branch --append --source=src test/semi/transport/one_shot_burst_tb.py --work-dir test/artifacts/env/one-shot-burst --token vb-vblog --out test/artifacts/evidence/one-shot-burst-green.json | Out-Null }
 Step 'registration six-step (local)' { python -m coverage run --branch --append --source=src test/live/registration/registration_http_six_step_tb.py --work-dir test/artifacts/env/reg-six-local --user vbsixlocal --local-mode --token vb-six-local --out test/artifacts/env/reg-six-local/evidence.json | Out-Null }
 Step 'registration 1-4 (remote)' { python -m coverage run --branch --append --source=src test/semi/registration/cov_registration_real.py --work-dir test/artifacts/env/cov-registration --user covreg --token cov-token --port 65112 | Out-Null }
-Step 'S11 full flow (LVS)' { python -m coverage run --branch --append --source=src test/live/flows/s11_full_flow.py --work-dir test/artifacts/env/s11 --token vb-s11 --lib CMP_LIB --cell cmp_top --out test/artifacts/env/s11/flow.json | Out-Null }
+# s11_full_flow.py 的 CLI 只有 --token/--only/--run-dir（--lib/--cell/--out 是
+# project_flow_tb.py 的旧口径）。第五轮实测：带旧参数=argparse 直接 rc=2，
+# 这一步等于从没真正跑过（主覆盖率运行器不中止，所以长期被"步骤失败"掩盖）。
+Step 'S11 full flow (LVS)' { python -m coverage run --branch --append --source=src test/live/flows/s11_full_flow.py --token vb-s11 --run-dir test/artifacts/env/s11 | Out-Null }
 
 # ---- evidence reports -------------------------------------------------------------
 # Two report thresholds over the same data file:

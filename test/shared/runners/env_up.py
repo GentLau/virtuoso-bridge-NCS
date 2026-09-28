@@ -1,4 +1,4 @@
-"""Bring the recommended lab environment up/down (see test/docs/推荐测试环境.md §3-E4).
+"""Bring the recommended lab environment up/down (see test/docs/环境与场景.md §4 与 §7).
 
 Only the **lab fake Virtuoso fleet** is automated here; real multi-Virtuoso on
 wsl-gent stays manual until the compliant bring-up lands (doc §0.1).
@@ -184,7 +184,7 @@ def _entry(token: str, host: str | None, user: str | None, roles: dict) -> dict:
 
 
 def _build_registry(tier: str, fleet: dict | None) -> dict:
-    """One registry per environment.  Layout/log rules: docs/推荐测试环境.md §0."""
+    """One registry per environment.  Layout/log rules: docs/写TB规范.md §6 与 docs/环境与场景.md §2."""
     base = LOCAL_PORT_BASE[tier]
     users: dict = {}
     if tier == "e1":

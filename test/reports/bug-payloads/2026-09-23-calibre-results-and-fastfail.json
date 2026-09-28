@@ -1,0 +1,33 @@
+{
+ "token": "vb-s11cal（专用 work-dir test/artifacts/env/s11-calibre，业务面 8128）",
+ "severity": "P2",
+ "class": "source",
+ "title": "calibre 结果读取与失败快退三处不可用：DRC.rep 解析垃圾 / LVS 结论截半 / 输入错误仍轮询 9+ 分钟",
+ "anchor": "src/pyapi/packages/calibre.py —— read_results 的 DRC 解析（逐规则计数/总数/offenders）、LVS verdict 正则 `LVS completed\\.\\s*(\\w+)`、blocking 轮询的失败快退",
+ "spec_anchor": "spec/design-concepts/上层/12-calibre.md（check_env/drc/lvs/read_results 的结果结构与失败语义）",
+ "summary": "本轮第一次把 calibre 包接到真机（Calibre v2025.1_16.10 可用、deck ok、DRC 跑出 36 条结果），随后发现读取侧三处问题：(1) DRC.rep 是真实 Calibre 2025 格式，逐规则计数解析为空、总数 null、offenders 取到头部告警；(2) LVS 日志 `LVS completed. NOT COMPARED.` 被正则截成 verdict=`not`、计数为空（结论半句丢一半）；(3) 输入错误（源网表打不开）时进程早已退出，blocking 轮询仍空转 9+ 分钟。",
+ "repro": [
+  "环境：work-dir `test/artifacts/env/s11-calibre`，token `vb-s11cal`，业务面 8128（calibre bin=/opt/eda/mentor/CALIBRE2025/aok_cal_2025.1_16.10/bin/calibre）",
+  "真机：python test/semi/probes/calibre_package_http_probe.py（或按 evidence 里的请求体重放）",
+  "离线：python -m pytest test/offline/unit/test_calibre_parsers.py test/offline/unit/test_calibre_job_state.py -q → 现为红（钉住缺陷）"
+ ],
+ "observed": {
+  "drc": {"status": "completed", "rulechecks": 1737, "results": 36, "parsed": "逐规则计数空、total=null、offenders=头部告警（P-059）"},
+  "lvs": {"log": "LVS completed. NOT COMPARED.", "verdict_parsed": "not", "counts": "空（P-062）"},
+  "fastfail": {"input_error": "Can not open source netlist file", "poll_until_give_up_s": ">540（P-061）"}
+ },
+ "impact": "DRC/LVS 结论不可信：调用方可能把『NOT COMPARED』当成通过或把告警当违规；失败场景下 agent/CI 白等 9+ 分钟，掩盖真实错误。",
+ "suggested_fix": [
+  "DRC.rep 解析按 Calibre 2025 实际段落（RULECHECK/RESULT 块）重写，并保留原始行号便于复核；",
+  "LVS verdict 解析成完整句式（`completed\\.\\s*([A-Z ]+?)\\.` 之类），并把 NOT COMPARED 作为独立结论值；",
+  "阻塞轮询加失败快退：每轮检查进程存活 + 日志终止标记（ERROR/FATAL），命中即返回结构化失败；",
+  "补 `test/live/packages/calibre_e2e_tests.py` 并入 run_all_http.py SUITES，让 calibre 成为常驻真机套件（P-060）。"
+ ],
+ "evidence_paths": [
+  "test/artifacts/evidence/round5-main/calibre-check-env.json",
+  "test/artifacts/evidence/round5-main/calibre-drc.json",
+  "test/artifacts/evidence/round5-main/calibre-lvs.json",
+  "test/artifacts/evidence/round5-main/calibre-lvs-fastfail.json",
+  "test/reports/round5-真机层.md §5"
+ ]
+}
