@@ -57,6 +57,11 @@ VARIANTS = [
      "view_list": '("auLvs" "schematic")', "stop_list": '("auLvs")'},
     {"name": "F-auLvs-first", "netlist_type": "hnl", "simulator": "auLvs",
      "view_list": '("auLvs" "auCdl" "schematic")', "stop_list": '("auLvs" "auCdl")'},
+    # G：**正解对照**（2026-09-24 定版配方，见 doc/report/calibre-网表导出机制调查报告.md §6）：
+    #   auCdl + checkCAPPERI = nil（IC618 batch header 的未绑定变量缺口）
+    {"name": "G-auCdl-checkCAPPERI", "netlist_type": "hnl", "simulator": "auCdl",
+     "view_list": '("auCdl" "schematic")', "stop_list": '("auCdl")',
+     "simrc_extra": "checkCAPPERI = nil\n"},
 ]
 
 
@@ -112,6 +117,7 @@ def main() -> int:
             f"cdlSimStopList = '{variant['stop_list']}\n"
             f"cdlNetlistType = '{variant['netlist_type']}\n"
             "cdlPrintComments = 't\n"
+            + variant.get("simrc_extra", "")
         )
         local_rc = stages / f"variant_{variant['name']}.simrc"
         local_rc.write_text(simrc, encoding="utf-8")
