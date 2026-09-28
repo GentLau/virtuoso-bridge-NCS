@@ -1,0 +1,33 @@
+{
+ "pid": "P-075",
+ "token": "vb-vblog",
+ "severity": "P1",
+ "class": "source",
+ "title": "virtuoso.layout.gds 导出后会话残留模态对话框（Stream out translation complete）→ 同会话 SKILL 通道挂死，必须重启实例",
+ "anchor": "src/pyapi/packages/layout.py（virtuoso.layout.gds 的 strmout/XStream 调用）＋ src/pyapi/packages/gui.py 的 auto_dismiss（现有规避手段对模态框无效）",
+ "spec_anchor": "spec/design-concepts/上层/4-layout.md（gds 导出语义）＋ 9-gui.md（auto_dismiss）",
+ "summary": "同一会话执行 virtuoso.layout.gds（导出 GDS 到新目录）后，该会话若出现模态 \"Stream out translation complete\"（XStream 完成框），其 SKILL 通道被模态对话框阻塞：窗口列表可见 \"Stream out translation complete\"＋\"XStream Out\"；此后该 token 的任何 basic.skill.execute 都 30s 超时。gui.auto_dismiss 返回 ok 但 dismissed=null，只能重启实例。已复现 3 次：多用户协同（A 出 GDS→B 改图→A 回读超时）与单会话「出 GDS 后继续写原理图」。差异：vblog/calprobe（非 headless）不挂；vbuser1（Xvfb headless）稳定留模态框并挂死。",
+ "repro": [
+  "PYTHONPATH=src python test/semi/probes/gds_then_skill_probe.py --token vb-vbuser1 --file-root /home/vbuser1/.virtuoso-bridge/vbuser1/file --skill-timeout 45 → 最后一步 skill-after-gds FAIL（30s 超时）",
+  "二分组：test/artifacts/tmp/bisect_cross_user_block.py（--symbol --layout 通过；+--gds 复现）",
+  "端到端：python test/live/flows/adc_sar_flow_tb.py --work-dir test/artifacts/env/log-vblog --token-a vb-vbuser1 --token-b vb-vbuser2 → 21/22（失败步 A-see:B's instance）",
+  "窗口取证：xwininfo -display <A 的 DISPLAY> -root -tree | grep -E 'Stream|XStream'"
+ ],
+ "observed": {
+  "挂死会话": "vbuser1（Xvfb :105 headless）：\"Stream out translation complete\" 模态 + SKILL 30s 超时",
+  "对照": "vblog / calprobe：只有非模态 \"XStream Out\" 主窗体，SKILL 可用",
+  "auto_dismiss": "返回 ok，dismissed=null（关不掉）"
+ },
+ "impact": "P1：会话被挂死，多用户协同与「GDS 后继续操作」的流程直接卡住，只能重启实例（丢会话态）。",
+ "suggested_fix": [
+  "定位 strmout/XStream 调用是否走了会弹完成框的 UI 路径（建议改批处理，或导出后显式关窗）；",
+  "让 gui.auto_dismiss 能识别/关闭该模态框；",
+  "验收：gds_then_skill_probe 转绿 + ADC TB 回 22/22 + 一次多用户 GDS→改单复验"
+ ],
+ "evidence_paths": [
+  "test/artifacts/evidence/round7/gds-then-skill.json",
+  "test/artifacts/evidence/round7/adc-sar-pos2.json",
+  "test/semi/probes/gds_then_skill_probe.py",
+  "test/reports/bugs/P-075-gds-export-modal-blocks-session.md"
+ ]
+}

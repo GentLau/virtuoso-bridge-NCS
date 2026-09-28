@@ -1,0 +1,30 @@
+{
+ "pid": "P-069",
+ "token": "vb-vblog",
+ "severity": "P2",
+ "class": "source",
+ "title": "Calibre LVS 全链跑不通：auCdl 对含 PDK 器件的 cell 导出 CDL 失败 → 无源网表（第七轮已复验 correct）",
+ "anchor": "src/pyapi/packages/calibre.py（export_cdl / lvs 的输入链路）＋原 `si -batch`(auCdl) 导出路径",
+ "spec_anchor": "spec/design-concepts/上层/12-calibre.md（check_env / drc / lvs / read_results 的结果结构与失败语义）",
+ "summary": "含 PDK 器件的 cell 走 CDL 导出时 `si -batch` 失败（报 hnlCDLParamList / hnlCDLFormatInst 缺失）→ 没有可用源网表 → calibre.lvs 只能停在 NOT COMPARED（再叠加 P-062 会被截成 `not`）。DRC 侧正常（completed，1737 rulechecks / 36 结果）。用户 2026-09-24 判定这是业务包本身跑不通，立案为产品缺陷（此前误记为环境/配方问题）。第七轮（2026-09-24 晚）测试侧按官方 auCdl + export_cdl 路径复验：`status=correct`、ports 4/4、nets 4/4、inst 1/1、differences=[]，S11 全链 lvs 也拿到确定结论。",
+ "repro": [
+  "对含 PDK 器件的 cell 做 CDL 导出（原 `si -batch`）后跑 calibre.lvs",
+  "或 python test/semi/probes/calibre_package_http_probe.py --kind lvs（专用 work-dir test/artifacts/env/s11-calibre + 业务面 8128）",
+  "第七轮复验（已通过）：python test/live/flows/design_iterate_tb.py --stage lvs"
+ ],
+ "observed": {
+  "首报": "round5-main/s11-flow2.log lvs FAIL；round5-main/calibre-lvs.json status=NOT COMPARED、counts={}",
+  "第七轮复验": "round7/design-iterate/iterate-lvs.json status=correct（ports 4/4、nets 4/4、inst 1/1、differences=[]）；S11 cdl 693 B、lvs 确定结论"
+ },
+ "impact": "业务包声称支持 Calibre LVS，但任何含 PDK 器件的真实设计都拿不到 LVS 结论，整条「版图→CDL→LVS」验收链断掉。",
+ "suggested_fix": [
+  "CDL 导出统一走官方路径（calibre.export_cdl / auCdl runset），明确 PDK 属性模板（hnlCDLParamList）由谁提供；",
+  "验收：对含 PDK 器件的 cell 导出可用 CDL，calibre.lvs 给出 CORRECT/INCORRECT 的确定结论（不是 NOT COMPARED）"
+ ],
+ "evidence_paths": [
+  "test/artifacts/evidence/round7/design-iterate/iterate-lvs.json",
+  "test/artifacts/evidence/round7/design-iterate/",
+  "test/artifacts/env/s11/",
+  "test/reports/bugs/P-069-lvs-cdl-chain.md"
+ ]
+}

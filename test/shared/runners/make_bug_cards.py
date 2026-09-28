@@ -14,7 +14,7 @@
 
 * `OPEN`：**未关闭**的缺陷/观察项 —— 每条生成一张卡片 + 进 README 索引表；
 * `CLOSED_RECENT`：本轮明确闭环的（保留近期记录，避免「消失了没人知道为什么」）；
-* `LEGACY_OPEN`：早期轮次仍未关闭的（多数已上报外部 bug 系统，这里只做索引与状态）。
+* `LEGACY_OPEN`：**非缺陷**跟踪项（文档/环境/审计/覆盖度）——不建卡，只在 README 索引。
 """
 from __future__ import annotations
 
@@ -26,6 +26,123 @@ BUGS_DIR = ROOT / "test" / "reports" / "bugs"
 
 #: 未关闭条目。状态只允许：待设计修 / 待测试侧 / 待归属 / 待决策 / 观察
 OPEN = [
+    {
+        "id": "P-026",
+        "slug": "maestro-session-title-substring-match",
+        "reported": "第五轮（2026-09-22；已报 `bug-20260922T121908Z-vblog-b06063ab`）",
+        "updated": "2026-09-28（补齐卡片）",
+        "title": "maestro 会话匹配用子串：`view=\"maestro\"` 命中库名 `maestro_tb` 的 Reading 窗口 → `maestro.run` 整体报错",
+        "level": "P2（同名/子串命名在真机很常见，一旦并存必然失败）",
+        "owner": "设计侧（`maestro.py` 窗口匹配）",
+        "status": "待设计修（已报 `bug-20260922T121908Z-vblog-b06063ab`）",
+        "where": "`src/pyapi/packages/maestro.py:472-486`（`library/cell/view in title` 子串判断）、抛错点 `:572-579`",
+        "symptom": "窗口快照里 `(\"fnxSession160\" 23 \"…Reading: maestro_tb opamp_probe schematic…\")` 与 "
+                   "`(\"fnxSession160\" 12 \"…Editing: maestro_tb opamp_probe maestro\")` 并存时，"
+                   "`view=\"maestro\"` 命中的是 Reading 窗口 → 走 reading 分支调 `maeMakeEditable` 失败 → `maestro.run` 报错。",
+        "repro": "真机 maestro 场景：库名含 maestro（maestro_tb）+ view=maestro；见台账 P-026 行窗口快照",
+        "evidence": "`test/reports/问题登记.md` P-026 行（窗口快照）；bug id `bug-20260922T121908Z-vblog-b06063ab`",
+        "accept": "解析窗口标题结构（Editing/Reading 后三个 token 逐字段相等），不再用 `in` 子串匹配；同名库/cell 场景 maestro.run 通过",
+        "next": "设计侧修；测试侧复验 maestro 包 E2E + 同名 cell 场景后移入已关闭",
+    },
+    {
+        "id": "P-027",
+        "slug": "netlist-import-false-success",
+        "reported": "第五轮（2026-09-22；已报 `bug-20260922T123859Z-vblog-202c4e37`）",
+        "updated": "2026-09-28（补齐卡片）",
+        "title": "`virtuoso.netlist.import` 假成功：对不存在的目标库仍返回 ok=true（三步全绿但什么都没建）",
+        "level": "P2（静默假成功会污染后续 symbol/LVS/仿真）",
+        "owner": "设计侧（`netlist_import.py`）",
+        "status": "待设计修（已报 `bug-20260922T123859Z-vblog-202c4e37`）",
+        "where": "`src/pyapi/packages/netlist_import.py:70-90`",
+        "symptom": "upload/import/symbol 三步全 ok=true，实际 SKILL 只是 `printf(\"import lib=…\")` / `printf(\"symbol lib=…\")`，"
+                   "不建 view、不建 symbol；同库 `view.list`/`cell.list` → `libraryNotFound`。",
+        "repro": "`netlist.import` 到一个不存在的库；证据 `test/artifacts/evidence/s11-probe/netlist-import-false-success.json`",
+        "evidence": "`test/artifacts/evidence/s11-probe/netlist-import-false-success.json`；bug id `bug-20260922T123859Z-vblog-202c4e37`",
+        "accept": "摘出运营面，或真正导入并用 `view.list` 校验后再返回成功；TB 断言改为「view 真实存在且内容非空」",
+        "next": "设计侧修；测试侧把 `infra_e2e_tests.py` 断言改为「必须失败且 error 明说 reference stub」（已改，见 round7）",
+    },
+    {
+        "id": "P-029",
+        "slug": "layout-gds-ignores-file-is-local",
+        "reported": "第五轮（2026-09-22；已报 `bug-20260922T123712Z-vblog-afac3523`）",
+        "updated": "2026-09-28（补齐卡片）",
+        "title": "`layout.gds` 导出忽略 `file_is_local=False`：产物被下载到客户端假路径树，靶机不留文件仍报 completed",
+        "level": "P2（调用方意图被静默忽略；客户端被写陌生绝对路径）",
+        "owner": "设计侧（`layout.py` 发布路径）",
+        "status": "待设计修（已报 `bug-20260922T123712Z-vblog-afac3523`）",
+        "where": "`src/pyapi/packages/layout.py:1061`（export 分支 `_publish_remote`）、`:1219-1238`（`_publish_remote` 无条件在客户端建目录+下载）、字段定义 `:84`",
+        "symptom": "靶机产物被\"下载\"到客户端假路径树（`C:\\home\\Gent\\...`），靶机上不留文件，返回值仍报 `reason=completed`；"
+                   "后续依赖靶机产物的步骤（LVS 取 GDS）必然失败。",
+        "repro": "`virtuoso.layout.gds` 带 `file_is_local=False` 导出到不存在目录；现场保留 `C:\\home\\Gent\\.virtuoso-bridge\\vbs11\\tmp\\cmp_top.gds`",
+        "evidence": "台账 P-029 行；bug id `bug-20260922T123712Z-vblog-afac3523`",
+        "accept": "按 `file_is_local` 分流，或明确报「该参数在导出方向不支持」+ 客户端路径合法性校验",
+        "next": "设计侧修；测试侧复验 S11 gds 阶段 + 路径边界探针",
+    },
+    {
+        "id": "P-030",
+        "slug": "set-term-nets-stub-length-unsafe",
+        "reported": "第五轮（2026-09-22；已报 `bug-20260922T122850Z-vblog-b7ed6176`）",
+        "updated": "2026-09-28（补齐卡片）",
+        "title": "`schematic.set_term_nets` 默认 `stub_length=0.5` 对 65nm PDK 过大 → 端子被路由到错误网络且静默通过",
+        "level": "P2（生成的原理图连接关系错误，会带到 CDL/LVS/仿真）",
+        "owner": "设计侧（`schematic.py` 默认值策略）",
+        "status": "待设计修（已报 `bug-20260922T122850Z-vblog-b7ed6176`）",
+        "where": "`src/pyapi/packages/schematic.py:469`（默认值）、`:476-483`（stub wire + label）",
+        "symptom": "`schCreateWire(entry=route)` 连不上，端子被路由到 `net1/net2` 等错误网络；接口仍 `ok=true`、无 warning。",
+        "repro": "`test/artifacts/env/scenario-project65/evidence-schematic*.json`（stub 0.5 vs 0.05 的 term→net 映射不同）",
+        "evidence": "`test/artifacts/env/scenario-project65/evidence-schematic*.json`；bug id `bug-20260922T122850Z-vblog-b7ed6176`",
+        "accept": "默认值改为与 PDK 无关的安全策略（由调用方显式给，或按 tech 的 minWidth 计算）",
+        "next": "设计侧修；测试侧在 65nm 环境复验 term→net 映射",
+    },
+    {
+        "id": "P-031",
+        "slug": "schematic-check-and-save-silent",
+        "reported": "第五轮（2026-09-22；已报 `bug-20260922T124018Z-vblog-0584e46b`）",
+        "updated": "2026-09-28（补齐卡片）",
+        "title": "schematic `check_and_save`/`write` 忽略 `schCheck` 失败：返回 check-failed 仍 ok=true",
+        "level": "P2（电气检查失败（悬空/短路/未连线）被静默当成功保存）",
+        "owner": "设计侧（`schematic.py`）",
+        "status": "待设计修（已报 `bug-20260922T124018Z-vblog-0584e46b`）",
+        "where": "`src/pyapi/packages/schematic.py:410`、`:690-693`、`:756-759`（layout 同路径有 `\"saved\" in output` 校验，属实现不一致）",
+        "symptom": "SKILL 返回 `\"check-failed\"` 时仍 `ok=true`。",
+        "repro": "`test/offline/unit/test_schematic_contracts.py`（`unittest.expectedFailure`×2）",
+        "evidence": "`test/offline/unit/test_schematic_contracts.py`；bug id `bug-20260922T124018Z-vblog-0584e46b`",
+        "accept": "比对 `output` 是否含 `\"saved\"`，与 `layout.py:490` 对齐；两条 xfail 转绿",
+        "next": "设计侧修；测试侧把 xfail 改回正常断言",
+    },
+    {
+        "id": "P-032",
+        "slug": "verilog-imported-cells-dedupe-order",
+        "reported": "第五轮（2026-09-22；已报 `bug-20260922T124456Z-vblog-70645f43`）",
+        "updated": "2026-09-28（补齐卡片）",
+        "title": "`verilog._imported_cells` 去重顺序错误：未清洗 token 与已清洗列表比较 → 同一 cell 多视图被重复计入",
+        "level": "P2/P3（返回元数据被污染；当前无真实 VERILOGIN 日志样本，可达性待现场确认）",
+        "owner": "设计侧（`verilog.py`）",
+        "status": "待设计修（已报 `bug-20260922T124456Z-vblog-70645f43`）",
+        "where": "`src/pyapi/packages/verilog.py:637-643`",
+        "symptom": "用未清洗 token（`counter8,`）与已清洗列表（`counter8`）比较 → 同一 cell 多视图导入时重复计入，调用方统计/后续处理受污染。",
+        "repro": "`test/offline/unit/test_verilog_contracts.py`（`expectedFailure`）",
+        "evidence": "`test/offline/unit/test_verilog_contracts.py`；bug id `bug-20260922T124456Z-vblog-70645f43`",
+        "accept": "先清洗再比较；xfail 转绿",
+        "next": "设计侧修；测试侧复验 verilog 包 E2E",
+    },
+    {
+        "id": "P-038",
+        "slug": "py39-pep604-needs-backport",
+        "reported": "第五轮（2026-09-22；已报 `bug-20260922T141119Z-vblog-5e939e33`）",
+        "updated": "2026-09-28（复测：lab py3.9 因已装 backport 能跑，裸装仍会挂）",
+        "title": "声明支持 Python 3.9，但裸装 3.9 无法导入（pydantic 求值 PEP 604 注解；pyproject 未声明 `eval_type_backport`）",
+        "level": "P2（任何 3.9 客户端/CI 作业不可用；跨客户端一致性在 3.9 上不成立）",
+        "owner": "设计侧（打包/依赖或 requires-python 口径）",
+        "status": "待设计修（已报 `bug-20260922T141119Z-vblog-5e939e33`）",
+        "where": "`src/common/registry.py:155`（`mode: Literal[\"local\",\"remote\"] | None`）；`pyproject.toml:9`（`requires-python = \">=3.9\"`）；dev extra 未含 `eval_type_backport`",
+        "symptom": "3.9 上 pydantic 求值 PEP 604 注解直接抛 `TypeError: Unable to evaluate type annotation ... install the eval_type_backport package`；"
+                   "全仓 48 文件 785 处 PEP 604 注解。**2026-09-28 复测**：wsl-gent `/usr/bin/python3.9`（pydantic 2.13.5）因已装 `eval_type_backport` 可正常 import；裸装 3.9 仍会挂。",
+        "repro": "`/usr/bin/python3.9 -c \"from common.registry import UserEntry\"`（未装 backport 时失败）；见 `round7-测试报告.md` §2 Linux 客户端口径",
+        "evidence": "台账 P-038 行；bug id `bug-20260922T141119Z-vblog-5e939e33`；wsl-gent py3.9 复测（`backport: True`、`registry import OK`）",
+        "accept": "二选一：`requires-python>=3.10` 并删 CI 3.9，或把 `eval_type_backport; python_version<\"3.10\"` 写进依赖并让 3.9 作业真跑绿",
+        "next": "设计侧定口径；测试侧按口径复跑 py3.9 离线三层",
+    },
     {
         "id": "P-077",
         "slug": "explicit-daemon-python-bare-name-rejected",
@@ -430,23 +547,56 @@ CLOSED_RECENT = [
      "NaN/±Inf 在那里收敛」；代码 `_spectre_util.py:70-71` 加了非有限→None 的收敛。"
      "**测试侧复跑：`test/offline/unit/test_output_json_safety.py` 3/3 绿**"
      "（2 条原红线转绿 + 业务面负控制）。spec 矩阵 X5 随之关闭"),
+    ("P-013", "客户端文件泄露（`err_dir` 兜底 / 隧道 stderr 日志成功路径不回收）",
+     "**已修**：`err_dir` 兜底改 `temp_dir()`（work root）并在 close 时 `rmtree`；隧道 stderr 日志新增 "
+     "`_discard_tunnel_stderr()`，成功/失败路径都清理（`transport/middle.py:191-205,450,687`；"
+     "`common/ssh.py:477-483,633,659,678`）"),
+    ("P-019", "孤立代理项（`\"\\ud800\"`）请求 → HTTP 面断连而非 4xx",
+     "**已修**：HTTP 面序列化改用 `jsonutil.dumps_strict`（`ensure_ascii=True` 兜底）"
+     "（`server/api_server.py:30,76,79`、`register/server.py:42,78,81`）；`lone_surrogate_probe` 复跑转绿"),
+    ("P-020", "`spectre.measure` 零幅度 AC 点输出 `-Infinity`（非法 JSON）",
+     "**已修**：改抛 `ValueError(\"magnitude must be positive for dB scale\")` → `_metric_error` 结构化失败"
+     "（commit `d49c892`；`_spectre_util.py:674-681`；`test_spectre_metrics.py` 全绿）"),
+    ("P-025", "Windows 多进程共享 work-dir 时 `log/commands.log` 轮转失败（WinError 32）",
+     "**已修**：命令日志按进程分片 `log/commands.<pid>.log` 后再轮转，跨进程不再争用句柄"
+     "（`common/ssh.py:52-80`；`log_rotation_lock_probe` → PASS (process-local rotation)）"),
+    ("P-034", "`calibre.pex` 第三阶段 argv 错误且失败被静默（`-xrc -fmt -spice`）",
+     "**已修**：argv 改 `-xrc -fmt <fmt>`；`read_results` 对日志 `stage\\d_failed` 返回结构化失败"
+     "（`calibre.py:700`、`:429-490`）"),
+    ("P-037", "paramiko 后端把 `ssh -G` 的 `true/false` 当非法值（StrictHostKeyChecking yes 连不上）",
+     "**已修**：`true→yes` / `false→no` 归一化，报错回显原始值（`common/paramiko_backend.py:738-751`）"),
+    ("P-039", "py2.7 daemon 对 `_read_frame` ValueError 回 NACK（与 py3 分歧）",
+     "**撤回**：伪红 —— 真 py2.7 建成后复判分歧不存在（`py27_handler_probe` → `silent drop (correct)`，"
+     "`round2-py27-handler-real.json`）；原 bug 报告应同步撤回"),
+    ("P-041", "`verilog._read_views` 守卫长度与取值下标不匹配（`>=3` 却读 `[3]`）",
+     "**已修**：守卫改 `len(file_entry) >= 4`；离线用例改名 `test_short_view_entry_is_skipped` 并断言 `views == []`"
+     "（`verilog.py:273`；`test_verilog_contracts.py` 全绿）"),
+    ("P-042", "`layout.gds` 遇版图锁时误报 \"layout view not found\"",
+     "**已修**：导出先走 `_view_state_expr` 三态（missing/mismatch/locked），锁冲突单独报 "
+     "\"is locked by another session\"（`layout.py:1008-1030`）"),
+    ("P-046", "S10 e2e 引导源未固定 → `RBStop()+load()` 会覆盖别人的 CIW（测试侧缺陷）",
+     "**已修（测试侧）**：默认不再自动挑实例 —— `test_e2e_live.py` 用 `VB_E2E_BOOTSTRAP_TOKEN/PORT` 固定引导，"
+     "未固定且未显式 `VB_E2E_ALLOW_AUTO_DISCOVER=1` 时直接拒绝（`test/live/e2e/test_e2e_live.py:56-63`）"),
 ]
 
-#: 早期轮次仍未关闭（多为已上报外部 bug 系统；这里只做索引，避免同一件事两份清单打架）
+#: 非缺陷跟踪项（文档/环境/审计/覆盖度）：不建卡，只在 README 索引，避免与缺陷视图混淆
 LEGACY_OPEN = [
-    ("P-001", "覆盖度报告（缺负责人）", "待定负责人"),
+    ("P-001", "覆盖度报告 `doc/测试覆盖报告.md` 与当前 `src/` 布局脱节（缺负责人）", "待定负责人"),
     ("P-003", "环境占用（跑测前检查清单已写）", "待固化到脚本"),
+    ("P-004", "`.pytest_cache` 里 14 条 lastfailed 指向已不存在的旧路径（缓存噪声）", "已记录（建议定期清缓存）"),
     ("P-005", "瞬态红灯（观察中）", "观察"),
-    ("P-006", "文件纪律（Q1 全链路 / Q2 逐 role / Q3 逐 TB 三项未覆盖）", "待补"),
+    ("P-006", "文件纪律审计（Q1 全链路 / Q2 逐 role / Q3 逐 TB 三项未覆盖）", "待补（审计项，非缺陷）"),
     ("P-010", "文档一致性（§7 需改「已确认发生、待清理」）", "待改文档"),
     ("P-011", "`/tmp` 口径待定稿（设计内例外 vs 泄露）", "待定稿"),
-    ("P-013", "客户端文件泄露（A-1 / A-2 两条代码锚点）", "待处理"),
     ("P-014", "现场观察（找不到创建者）", "待代码定位"),
-    ("P-016", "完成度评估 / 补测归口", "待处理"),
+    ("P-016", "完成度评估 / 补测归口（非缺陷）", "待处理"),
     ("P-017", "归属未定（先定创建者）", "待确认"),
-    ("P-019/P-020/P-025/P-026/P-027/P-029/P-030/P-031/P-032/P-034/P-037/P-038/P-039/P-041/P-042",
-     "早期轮次已上报外部 bug 系统的源码缺陷（`bug-2026…` 编号见台账）", "待设计修（外部系统跟踪）"),
-    ("P-046", "S10 e2e 引导源未固定 → 会覆盖别人的 CIW", "测试侧待修（本轮未动）"),
+    ("P-021", "历史实例启动位置不规范（`$HOME`/工程目录污染；规范已落地，现场清理与 legacy 重写待办）", "环境账，非缺陷"),
+    ("P-023", "wsl-gent 起 20 个真 Virtuoso 超出内存（真机上限 10–12；口径已写环境文档）", "待用户确认替代口径"),
+    ("P-028", "运行中的 vblog CIW 没有 PDK（已按 S1 专用实例口径处置）", "环境账，已给口径"),
+    ("P-033", "`test/artifacts` 231 个文件被跟踪（含 token/二进制；白名单保留需用户确认）", "仓库卫生，待确认"),
+    ("P-036", "lab fake 与 bridge 隧道兼容性（已复测可达，症状未复现）", "观察（降级，不再阻塞）"),
+    ("P-040", "仓库内 `.ps1` 一律 UTF-8 with BOM（约定，已写入首轮报告 §6.1）", "约定，非缺陷"),
 ]
 
 CARD_BODY = """# {id} · {title}
@@ -510,7 +660,7 @@ def render_readme() -> str:
     legacy = "\n".join(f"| {i} | {t} | {s} |" for i, t, s in LEGACY_OPEN)
     return f"""# `test/reports/bugs/` —— 未关闭缺陷的唯一跟踪视图
 
-> 维护者：测试工程师（我）｜最近刷新：2026-09-24
+> 维护者：测试工程师（我）｜最近刷新：2026-09-28
 > **这个目录回答一个问题：现在还有哪些 bug 没关、谁在等谁、修好的判据是什么。**
 
 ## 0. 三条规矩（动这里之前先看）
@@ -538,10 +688,10 @@ def render_readme() -> str:
 
 详见 [已关闭-近期.md](已关闭-近期.md)。
 
-## 3. 早期轮次仍未关闭（{len(LEGACY_OPEN)} 组）
+## 3. 非缺陷跟踪项（{len(LEGACY_OPEN)} 项，不建卡）
 
-这些多为**已上报外部 bug 系统**（`bug-2026…`）的历史条目，跟踪在外部系统里；这里只做索引，
-避免与台账「两份清单打架」。本轮**未复核**它们的最新状态。
+文档 / 环境 / 审计 / 覆盖度类条目：**不是产品缺陷**，只在台账与这里索引（避免与缺陷卡片混淆）。
+所有**缺陷**（含早期轮次已上报的 `bug-2026…`）都在上面 §1 的卡片里，或已移入 §2 已关闭记录。
 
 | ID | 事项 | 当前状态 |
 |---|---|---|

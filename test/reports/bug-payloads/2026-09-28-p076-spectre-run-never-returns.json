@@ -1,0 +1,31 @@
+{
+ "pid": "P-076",
+ "token": "vb-vblog",
+ "severity": "P2",
+ "class": "source",
+ "title": "间歇：spectre.run 请求永不返回（spectre 已 0 error 跑完；服务端线程不释放，需重启业务面）",
+ "anchor": "src/pyapi/packages/spectre.py run → _run_one（execute → download_file(recursive=True) → 解析）；中间层 run_spectre_command / 持久 shell 路径",
+ "spec_anchor": "spec/design-concepts/上层/7-spectre.md（run 的完成/超时语义）＋ 中层并发（in_flight 与超时）",
+ "summary": "2026-09-28 12:59 design_iterate_tb 的 r2_sim 阶段（calprobe，2 任务/max_workers=2）卡住 >25 分钟：spectre 本身 12:59:02 就跑完（两个 run 目录 spectre.out 均 completes with 0 errors，raw/结果文件都在），但 HTTP 请求不返回、/health in_flight=1 不降；客户端进程被杀后服务端线程仍不释放，只能重启 8127。两侧无 ssh/scp/tar → 阻塞在中间层 Python 路径。同面其它 token 的请求不受影响（卡住期间 1+2 与新 spectre.run 都正常）。未能最小复现（3 组尝试均正常返回）。",
+ "repro": [
+  "发生样本：test/artifacts/evidence/round7/design-iterate/（r1 各段 12:58 完成；r2_sim 无产物）",
+  "远端 run 目录：/home/Gent/.virtuoso-bridge/calprobe/spectre/spectre/buf_stage_125804_r2_{ac,tran}（均 0 error）",
+  "未复现尝试：test/artifacts/tmp/repro_spectre_second_run.py、repro_spectre_two_tasks_twice.py"
+ ],
+ "observed": {
+  "health": "卡住期间与杀进程后 in_flight 始终 =1",
+  "spectre": "12:59:02 完成、0 error，结果文件齐全",
+  "进程": "双侧 ps 无 ssh/scp/tar"
+ },
+ "impact": "间歇性挂起：占住 in_flight 线程，客户端只能杀进程且服务端不释放（要重启业务面），会卡死整条仿真流程且难以定位。",
+ "suggested_fix": [
+  "给等待完成/递归下载加硬 deadline，超时返回结构化错误而不是永久阻塞；",
+  "在 _run_one 的 execute/download/parse 三段加耗时日志，复现时用 py-spy 抓卡住线程栈；",
+  "验收：连跑 3 次 design_iterate_tb --stage all 不再挂"
+ ],
+ "evidence_paths": [
+  "test/artifacts/evidence/round7/design-iterate/",
+  "test/reports/bugs/P-076-spectre-run-request-never-returns.md",
+  "test/reports/round7-缺陷清单-上层.md"
+ ]
+}

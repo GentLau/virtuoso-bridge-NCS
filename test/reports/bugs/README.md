@@ -1,6 +1,6 @@
 # `test/reports/bugs/` —— 未关闭缺陷的唯一跟踪视图
 
-> 维护者：测试工程师（我）｜最近刷新：2026-09-24
+> 维护者：测试工程师（我）｜最近刷新：2026-09-28
 > **这个目录回答一个问题：现在还有哪些 bug 没关、谁在等谁、修好的判据是什么。**
 
 ## 0. 三条规矩（动这里之前先看）
@@ -13,10 +13,17 @@
 3. **刷新方式**：改 `test/shared/runners/make_bug_cards.py` 的 `OPEN` / `CLOSED_RECENT` 段，
    然后 `python test/shared/runners/make_bug_cards.py`（幂等；`--check` 只校验不写盘）。
 
-## 1. 未关闭（8 条）
+## 1. 未关闭（15 条）
 
 | ID | 级别 | 归属 | 状态 | 一句话 | 卡片 |
 |---|---|---|---|---|---|
+| **P-026** | P2（同名/子串命名在真机很常见，一旦并存必然失败） | 设计侧（`maestro.py` 窗口匹配） | 待设计修（已报 `bug-20260922T121908Z-vblog-b06063ab`） | maestro 会话匹配用子串：`view="maestro"` 命中库名 `maestro_tb` 的 Reading 窗口 → `maestro.run` 整体报错 | [P-026-maestro-session-title-substring-match.md](P-026-maestro-session-title-substring-match.md) |
+| **P-027** | P2（静默假成功会污染后续 symbol/LVS/仿真） | 设计侧（`netlist_import.py`） | 待设计修（已报 `bug-20260922T123859Z-vblog-202c4e37`） | `virtuoso.netlist.import` 假成功：对不存在的目标库仍返回 ok=true（三步全绿但什么都没建） | [P-027-netlist-import-false-success.md](P-027-netlist-import-false-success.md) |
+| **P-029** | P2（调用方意图被静默忽略；客户端被写陌生绝对路径） | 设计侧（`layout.py` 发布路径） | 待设计修（已报 `bug-20260922T123712Z-vblog-afac3523`） | `layout.gds` 导出忽略 `file_is_local=False`：产物被下载到客户端假路径树，靶机不留文件仍报 completed | [P-029-layout-gds-ignores-file-is-local.md](P-029-layout-gds-ignores-file-is-local.md) |
+| **P-030** | P2（生成的原理图连接关系错误，会带到 CDL/LVS/仿真） | 设计侧（`schematic.py` 默认值策略） | 待设计修（已报 `bug-20260922T122850Z-vblog-b7ed6176`） | `schematic.set_term_nets` 默认 `stub_length=0.5` 对 65nm PDK 过大 → 端子被路由到错误网络且静默通过 | [P-030-set-term-nets-stub-length-unsafe.md](P-030-set-term-nets-stub-length-unsafe.md) |
+| **P-031** | P2（电气检查失败（悬空/短路/未连线）被静默当成功保存） | 设计侧（`schematic.py`） | 待设计修（已报 `bug-20260922T124018Z-vblog-0584e46b`） | schematic `check_and_save`/`write` 忽略 `schCheck` 失败：返回 check-failed 仍 ok=true | [P-031-schematic-check-and-save-silent.md](P-031-schematic-check-and-save-silent.md) |
+| **P-032** | P2/P3（返回元数据被污染；当前无真实 VERILOGIN 日志样本，可达性待现场确认） | 设计侧（`verilog.py`） | 待设计修（已报 `bug-20260922T124456Z-vblog-70645f43`） | `verilog._imported_cells` 去重顺序错误：未清洗 token 与已清洗列表比较 → 同一 cell 多视图被重复计入 | [P-032-verilog-imported-cells-dedupe-order.md](P-032-verilog-imported-cells-dedupe-order.md) |
+| **P-038** | P2（任何 3.9 客户端/CI 作业不可用；跨客户端一致性在 3.9 上不成立） | 设计侧（打包/依赖或 requires-python 口径） | 待设计修（已报 `bug-20260922T141119Z-vblog-5e939e33`） | 声明支持 Python 3.9，但裸装 3.9 无法导入（pydantic 求值 PEP 604 注解；pyproject 未声明 `eval_type_backport`） | [P-038-py39-pep604-needs-backport.md](P-038-py39-pep604-needs-backport.md) |
 | **P-077** | P3（口径不一致：注册探测 vs 运行时；会绊住手写配置的用户） | 设计侧（定口径：探测接受 PATH 名 or spec 写明必须绝对路径） | 待归属 | 显式 `role.daemon.python` 传裸命令名（如 `python3`）时注册第 3 步失败；运行时可解析 PATH | [P-077-explicit-daemon-python-bare-name-rejected.md](P-077-explicit-daemon-python-bare-name-rejected.md) |
 | **P-076** | P2（间歇性挂起；占住 in_flight 线程，客户端只能杀进程） | 设计侧（上层 spectre 包的 run 路径：等待完成/递归下载） | 观察（1 次复现，待设计侧定位） | 间歇：`spectre.run` 请求永不返回（spectre 已 0 error 跑完；服务端线程不释放，需重启业务面） | [P-076-spectre-run-request-never-returns.md](P-076-spectre-run-request-never-returns.md) |
 | **P-075** | P1（会话被挂死；多用户/GDS 后继续操作的流程直接卡住） | 设计侧（上层 layout.gds / strmout 调用路径） | 待设计修 | `virtuoso.layout.gds` 导出后会话残留模态对话框（"Stream out translation complete"）→ 同会话 SKILL 通道挂死，必须重启实例 | [P-075-gds-export-modal-blocks-session.md](P-075-gds-export-modal-blocks-session.md) |
@@ -29,7 +36,7 @@
 > 优先级口径：**P1** = Linux 侧资源/安全或核心指标链路断（P-056、P-053）；
 > **P2** = 真实设计流会给出错的/空的结果，且多数**静默**；**P3/观察** = 非阻塞但建议顺手修。
 
-## 2. 本轮/近期已关闭（27 条，保留记录）
+## 2. 本轮/近期已关闭（37 条，保留记录）
 
 | ID | 事项 | 关闭依据（证据） |
 |---|---|---|
@@ -60,28 +67,42 @@
 | P-060 | calibre 包缺常驻真机入口（覆盖缺口） | **已闭环（测试侧，2026-09-24）**：① 常驻注册表补上 `role.command.calibre.bin`（vblog/vbs11/calprobe/vbuser1/vbuser2），S11 的 `drc` 阶段因此转 PASS；② 新增常驻套件 `test/live/packages/calibre_e2e_tests.py`（ENV-01 check_env / DRC-01 run+read_results / DRC-02 坏 deck 结构化失败 / LVS-01 结构契约+枚举一致），并接入 `run_all_http.py` → **11 套包 `all_passed=true`**（`round6b-verify/run-all-http-final.log`）。LVS 那条在 `not_compared` 时只打 WARN 指向 P-069，不假装跑通；P-069 修好后用 `VB_CALIBRE_REQUIRE_LVS_VERDICT=1` 打开强断言 |
 | P-072 | `init_work_dir` 一次性化 + 删除测试钩子 → 518 条离线用例无法运行 | **已按方案 ② 适配完成**（产品坚持一进程一 work root）：`test/conftest.py` 加 session fixture 绑定唯一一根 +用例级 `registry.json` 重置；28 个用例文件里 38 处 `init_work_dir(...)` 改为 `work_root()`、47 处冗余绑定删除；路径敏感用例改**子进程**（`test_workdir_contract.py`）；跨用例产物残留与 Popen 计数按本用例过滤。**离线三层 1725 项 / 0 红 / 7 skip**（`round6b-verify/offline-sharedroot4.xml`）；官方姿势文档：[test/docs/写TB规范.md](../../docs/写TB规范.md) §3 |
 | P-049 | 缺样本 trace 的 NaN 被放行到对外出参（spec :307 与 :308 冲突） | **已修复并验证**（提交 `d892608` + `a2f9aac`）：spec `7-spectre.md:307-309` 改写为「内部用缺失哨兵（实现取 `None`），**对外一律 `null`/省略**，唯一出口 `psf_external()`，NaN/±Inf 在那里收敛」；代码 `_spectre_util.py:70-71` 加了非有限→None 的收敛。**测试侧复跑：`test/offline/unit/test_output_json_safety.py` 3/3 绿**（2 条原红线转绿 + 业务面负控制）。spec 矩阵 X5 随之关闭 |
+| P-013 | 客户端文件泄露（`err_dir` 兜底 / 隧道 stderr 日志成功路径不回收） | **已修**：`err_dir` 兜底改 `temp_dir()`（work root）并在 close 时 `rmtree`；隧道 stderr 日志新增 `_discard_tunnel_stderr()`，成功/失败路径都清理（`transport/middle.py:191-205,450,687`；`common/ssh.py:477-483,633,659,678`） |
+| P-019 | 孤立代理项（`"\ud800"`）请求 → HTTP 面断连而非 4xx | **已修**：HTTP 面序列化改用 `jsonutil.dumps_strict`（`ensure_ascii=True` 兜底）（`server/api_server.py:30,76,79`、`register/server.py:42,78,81`）；`lone_surrogate_probe` 复跑转绿 |
+| P-020 | `spectre.measure` 零幅度 AC 点输出 `-Infinity`（非法 JSON） | **已修**：改抛 `ValueError("magnitude must be positive for dB scale")` → `_metric_error` 结构化失败（commit `d49c892`；`_spectre_util.py:674-681`；`test_spectre_metrics.py` 全绿） |
+| P-025 | Windows 多进程共享 work-dir 时 `log/commands.log` 轮转失败（WinError 32） | **已修**：命令日志按进程分片 `log/commands.<pid>.log` 后再轮转，跨进程不再争用句柄（`common/ssh.py:52-80`；`log_rotation_lock_probe` → PASS (process-local rotation)） |
+| P-034 | `calibre.pex` 第三阶段 argv 错误且失败被静默（`-xrc -fmt -spice`） | **已修**：argv 改 `-xrc -fmt <fmt>`；`read_results` 对日志 `stage\d_failed` 返回结构化失败（`calibre.py:700`、`:429-490`） |
+| P-037 | paramiko 后端把 `ssh -G` 的 `true/false` 当非法值（StrictHostKeyChecking yes 连不上） | **已修**：`true→yes` / `false→no` 归一化，报错回显原始值（`common/paramiko_backend.py:738-751`） |
+| P-039 | py2.7 daemon 对 `_read_frame` ValueError 回 NACK（与 py3 分歧） | **撤回**：伪红 —— 真 py2.7 建成后复判分歧不存在（`py27_handler_probe` → `silent drop (correct)`，`round2-py27-handler-real.json`）；原 bug 报告应同步撤回 |
+| P-041 | `verilog._read_views` 守卫长度与取值下标不匹配（`>=3` 却读 `[3]`） | **已修**：守卫改 `len(file_entry) >= 4`；离线用例改名 `test_short_view_entry_is_skipped` 并断言 `views == []`（`verilog.py:273`；`test_verilog_contracts.py` 全绿） |
+| P-042 | `layout.gds` 遇版图锁时误报 "layout view not found" | **已修**：导出先走 `_view_state_expr` 三态（missing/mismatch/locked），锁冲突单独报 "is locked by another session"（`layout.py:1008-1030`） |
+| P-046 | S10 e2e 引导源未固定 → `RBStop()+load()` 会覆盖别人的 CIW（测试侧缺陷） | **已修（测试侧）**：默认不再自动挑实例 —— `test_e2e_live.py` 用 `VB_E2E_BOOTSTRAP_TOKEN/PORT` 固定引导，未固定且未显式 `VB_E2E_ALLOW_AUTO_DISCOVER=1` 时直接拒绝（`test/live/e2e/test_e2e_live.py:56-63`） |
 
 详见 [已关闭-近期.md](已关闭-近期.md)。
 
-## 3. 早期轮次仍未关闭（12 组）
+## 3. 非缺陷跟踪项（16 项，不建卡）
 
-这些多为**已上报外部 bug 系统**（`bug-2026…`）的历史条目，跟踪在外部系统里；这里只做索引，
-避免与台账「两份清单打架」。本轮**未复核**它们的最新状态。
+文档 / 环境 / 审计 / 覆盖度类条目：**不是产品缺陷**，只在台账与这里索引（避免与缺陷卡片混淆）。
+所有**缺陷**（含早期轮次已上报的 `bug-2026…`）都在上面 §1 的卡片里，或已移入 §2 已关闭记录。
 
 | ID | 事项 | 当前状态 |
 |---|---|---|
-| P-001 | 覆盖度报告（缺负责人） | 待定负责人 |
+| P-001 | 覆盖度报告 `doc/测试覆盖报告.md` 与当前 `src/` 布局脱节（缺负责人） | 待定负责人 |
 | P-003 | 环境占用（跑测前检查清单已写） | 待固化到脚本 |
+| P-004 | `.pytest_cache` 里 14 条 lastfailed 指向已不存在的旧路径（缓存噪声） | 已记录（建议定期清缓存） |
 | P-005 | 瞬态红灯（观察中） | 观察 |
-| P-006 | 文件纪律（Q1 全链路 / Q2 逐 role / Q3 逐 TB 三项未覆盖） | 待补 |
+| P-006 | 文件纪律审计（Q1 全链路 / Q2 逐 role / Q3 逐 TB 三项未覆盖） | 待补（审计项，非缺陷） |
 | P-010 | 文档一致性（§7 需改「已确认发生、待清理」） | 待改文档 |
 | P-011 | `/tmp` 口径待定稿（设计内例外 vs 泄露） | 待定稿 |
-| P-013 | 客户端文件泄露（A-1 / A-2 两条代码锚点） | 待处理 |
 | P-014 | 现场观察（找不到创建者） | 待代码定位 |
-| P-016 | 完成度评估 / 补测归口 | 待处理 |
+| P-016 | 完成度评估 / 补测归口（非缺陷） | 待处理 |
 | P-017 | 归属未定（先定创建者） | 待确认 |
-| P-019/P-020/P-025/P-026/P-027/P-029/P-030/P-031/P-032/P-034/P-037/P-038/P-039/P-041/P-042 | 早期轮次已上报外部 bug 系统的源码缺陷（`bug-2026…` 编号见台账） | 待设计修（外部系统跟踪） |
-| P-046 | S10 e2e 引导源未固定 → 会覆盖别人的 CIW | 测试侧待修（本轮未动） |
+| P-021 | 历史实例启动位置不规范（`$HOME`/工程目录污染；规范已落地，现场清理与 legacy 重写待办） | 环境账，非缺陷 |
+| P-023 | wsl-gent 起 20 个真 Virtuoso 超出内存（真机上限 10–12；口径已写环境文档） | 待用户确认替代口径 |
+| P-028 | 运行中的 vblog CIW 没有 PDK（已按 S1 专用实例口径处置） | 环境账，已给口径 |
+| P-033 | `test/artifacts` 231 个文件被跟踪（含 token/二进制；白名单保留需用户确认） | 仓库卫生，待确认 |
+| P-036 | lab fake 与 bridge 隧道兼容性（已复测可达，症状未复现） | 观察（降级，不再阻塞） |
+| P-040 | 仓库内 `.ps1` 一律 UTF-8 with BOM（约定，已写入首轮报告 §6.1） | 约定，非缺陷 |
 
 ## 4. 关联文件
 
