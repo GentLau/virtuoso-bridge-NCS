@@ -320,7 +320,7 @@
    "test/offline/core/daemon_log_protocol_tb.py",
    "test/offline/integration/test_daemon_handler.py"
   ],
-  "reason": "成功帧 02…1e / 失败帧 15…1e 由帧常量构造与 roundtrip 断言覆盖",
+  "reason": "成功帧 02…1e / 失败帧 15…1e：test/offline/integration/test_daemon_handler.py 直接断言 raw.endswith(RS)（第 124/136 行），daemon_parity 的读帧循环也以 \\x1e 为终止符（review-D 复核确认）",
   "gap_test": "",
   "evidence_level": "offline"
  },
@@ -516,7 +516,7 @@
    "test/semi/transport/role_credential_isolation_tb.py",
    "test/offline/scenario/test_multi_user_isolation.py::test_two_users_route_to_their_own_daemons"
   ],
-  "reason": "endpoint 去重复用、凭据不同不复用、跨 token 不共享，均有断言 + 半真机验证",
+  "reason": "endpoint 去重复用、凭据不同不复用均有断言 + 半真机验证；跨 token 不共用由 test/offline/scenario/test_multi_user_isolation.py::test_two_users_route_to_their_own_daemons（第 78 行 assertIsNot(server._skill(\"tok-a\"), server._skill(\"tok-b\"))）直接断言（review-D 复核确认）",
   "gap_test": "",
   "evidence_level": "semi"
  },
@@ -1750,7 +1750,7 @@
   "evidence": [
    "test/offline/unit/test_endpoint_budgets.py"
   ],
-  "reason": "同 endpoint 多 role 共享计数、上限取最小值、daemon Skill 隧道计入，均有断言",
+  "reason": "同 endpoint 多 role 共享计数、上限取最小值有断言；daemon Skill 隧道计入通道由 test/offline/unit/test_endpoint_budgets.py::test_skill_tunnel_counts_channel_lease_and_releases 与 ::test_skill_tunnel_releases_lease_on_start_failure 两条钉住（review-D 复核确认）",
   "gap_test": "",
   "evidence_level": "offline"
  },
@@ -1876,9 +1876,10 @@
   "verdict": "direct",
   "evidence": [
    "test/offline/unit/test_common_config.py",
-   "test/offline/unit/test_daemon_log_utf8_budget.py"
+   "test/offline/unit/test_daemon_log_utf8_budget.py",
+   "test/offline/unit/test_registry_more.py::test_cdslog_defaults_and_bounds"
   ],
-  "reason": "默认 64KB 在配置默认值测试；字节预算是 diff/truncate 用例的边界",
+  "reason": "默认 65536 与下界由 test/offline/unit/test_registry_more.py::test_cdslog_defaults_and_bounds 直接断言（CdsLog() 默认 log_level=all、log_max_bytes=65536，0 值抛 ValidationError）；字节预算是 diff/truncate 用例的边界",
   "gap_test": "",
   "evidence_level": "offline"
  },
@@ -2584,11 +2585,10 @@
   "premap_status": "NO-TOKEN",
   "verdict": "direct",
   "evidence": [
-   "src/register/server.py:991",
    "test/offline/unit/test_registration_server.py",
-   "test/offline/unit/test_norm_gap_round8.py::TestRegistrationBindsLoopback"
+   "test/offline/unit/test_norm_gap_round8.py"
   ],
-  "reason": "默认绑定 127.0.0.1 由 test_norm_gap_round8::TestRegistrationBindsLoopback 钉住（第八轮补）",
+  "reason": "默认绑定 127.0.0.1 由 test_norm_gap_round8（TestRegistrationBindsLoopback）钉住；实现锚点 src/register/server.py:991 只写在 reason 里——仓库自查脚本只认 test/ 下的 :: 引用，src/:line 形式无法被机器校验",
   "gap_test": "",
   "evidence_level": "offline"
  },
@@ -4737,7 +4737,7 @@
   "evidence": [
    "test/offline/unit/test_layout_contracts.py"
   ],
-  "reason": "pos 写 point（7:8）、bBox/points 写 list —— 生成式文本断言",
+  "reason": "pos 写 point、bBox/points 写 list —— 生成式文本断言；口径差异（review-D 记录）：spec 4-layout.md:241 写 pos 写 point 7:8，实现 _point_expr(layout.py:195) 生成 list(x y)，live 写入全绿 ⇒ 措辞级差异，不判 back",
   "gap_test": "",
   "evidence_level": "offline"
  },

@@ -310,7 +310,7 @@
    "test/offline/core/daemon_log_protocol_tb.py",
    "test/offline/integration/test_daemon_handler.py"
   ],
-  "reason": "成功帧 02…1e / 失败帧 15…1e 由帧常量构造与 roundtrip 断言覆盖",
+  "reason": "成功帧 02…1e / 失败帧 15…1e：test/offline/integration/test_daemon_handler.py 直接断言 raw.endswith(RS)（第 124/136 行），daemon_parity 的读帧循环也以 \\x1e 为终止符（review-D 复核确认）",
   "gap_test": ""
  },
  {
@@ -500,7 +500,7 @@
    "test/semi/transport/role_credential_isolation_tb.py",
    "test/offline/scenario/test_multi_user_isolation.py::test_two_users_route_to_their_own_daemons"
   ],
-  "reason": "endpoint 去重复用、凭据不同不复用、跨 token 不共享，均有断言 + 半真机验证",
+  "reason": "endpoint 去重复用、凭据不同不复用均有断言 + 半真机验证；跨 token 不共用由 test/offline/scenario/test_multi_user_isolation.py::test_two_users_route_to_their_own_daemons（第 78 行 assertIsNot(server._skill(\"tok-a\"), server._skill(\"tok-b\"))）直接断言（review-D 复核确认）",
   "gap_test": ""
  },
  {

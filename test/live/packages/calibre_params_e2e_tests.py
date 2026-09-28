@@ -197,6 +197,13 @@ def run_suite(transport) -> list[tuple[str, str]]:
         uploaded = _op(transport, "basic.file.upload", local_path=str(local_set),
                        remote_path=remote_set, timeout=120)
         _check(uploaded.get("ok"), f"set 上传失败: {uploaded.get('error')}")
+        # 写回读：远端 sha256 必须与本地一致（不做"上传 ok 就算过"的弱判据）
+        import hashlib
+        local_digest = hashlib.sha256(local_set.read_bytes()).hexdigest()
+        remote_digest_out = _command(transport, f"sha256sum {remote_set} | cut -d' ' -f1")
+        remote_digest = str(remote_digest_out).split("'")[1].strip() if "'" in str(remote_digest_out) else str(remote_digest_out).strip()
+        _check(local_digest in str(remote_digest_out),
+               f"上传的 set 远端 sha256 与本地不一致: local={local_digest[:12]} remote_raw={str(remote_digest_out)[:120]}")
         value = _value(transport, "calibre.drc", runset=remote_set, blocking=True, timeout=1800)
         _check(value.get("mode") == "official-batch",
                f"不是官方批处理模式: {value.get('mode')}")

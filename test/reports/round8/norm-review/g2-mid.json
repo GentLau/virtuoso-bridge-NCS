@@ -437,7 +437,7 @@
   "evidence": [
    "test/offline/unit/test_endpoint_budgets.py"
   ],
-  "reason": "同 endpoint 多 role 共享计数、上限取最小值、daemon Skill 隧道计入，均有断言",
+  "reason": "同 endpoint 多 role 共享计数、上限取最小值有断言；daemon Skill 隧道计入通道由 test/offline/unit/test_endpoint_budgets.py::test_skill_tunnel_counts_channel_lease_and_releases 与 ::test_skill_tunnel_releases_lease_on_start_failure 两条钉住（review-D 复核确认）",
   "gap_test": ""
  },
  {
@@ -556,9 +556,10 @@
   "verdict": "direct",
   "evidence": [
    "test/offline/unit/test_common_config.py",
-   "test/offline/unit/test_daemon_log_utf8_budget.py"
+   "test/offline/unit/test_daemon_log_utf8_budget.py",
+   "test/offline/unit/test_registry_more.py::test_cdslog_defaults_and_bounds"
   ],
-  "reason": "默认 64KB 在配置默认值测试；字节预算是 diff/truncate 用例的边界",
+  "reason": "默认 65536 与下界由 test/offline/unit/test_registry_more.py::test_cdslog_defaults_and_bounds 直接断言（CdsLog() 默认 log_level=all、log_max_bytes=65536，0 值抛 ValidationError）；字节预算是 diff/truncate 用例的边界",
   "gap_test": ""
  },
  {

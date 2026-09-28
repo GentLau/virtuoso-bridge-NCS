@@ -11,7 +11,7 @@
 | **A. spec 条款** | `spec/design-concepts/**` 全量抽 1131 条 → 分诊 NORM 297 / OPS 793 / PROSE 41 | NORM **direct 222 / indirect 16 / partial 6 / gap 0 / na 53**；OPS 由 op×param + 原子矩阵承担；PROSE 逐条给"不可测"理由 |
 | **B. 原子操作** | `src/pyapi/packages` 写原子 60 个 | `audit_atom_coverage.py`：**GAP=0**、`needs_triage=0`（`evidence/round8/atom-coverage.json`） |
 | **C. op × 参数** | OPERATIONS + spec 字段表 628 条 | 机器矩阵：CANDIDATE 553 / **GAP 46** / 无调用点 29（本轮起点 116）；`timeout` 家族 36 条由统一合同用例覆盖（79/79 op 拒非法值），余项见 §4/§5 |
-| **覆盖率（组合口径）** | `run_main_coverage.ps1`（离线三层 + 离线 TB + 11 套包 direct + transport + 注册 + S11，**全部步骤通过**） | **语句 91.54% / 分支 83.62% / 合并 89.48%**；未分类未覆盖行 1435（AST 证明体系见 `coverage-pack/`） |
+| **覆盖率（组合口径）** | `run_main_coverage.ps1`（离线三层 + 离线 TB + 11 套包 direct + transport + 注册 + S11） | **语句 90.33% / 分支 82.26% / 合并 88.23%**（2026-09-29 01:55；**下界**——maestro 两步 rc=1）；未分类未覆盖行 1646（AST 证明体系见 `coverage-pack/`）；全绿快照 91.54/83.62/89.48 见 `coverage-main-strict-2333.json` |
 
 **缺陷**：本轮**新发现 24 条**（P-078…P-101，逐条有最小复现/证据），未关闭合计 **25 条**（含待产品决策的 P-070）。
 最重的一类不是单点功能错，而是**静默/误导**：`place_wire` 静默建出 path（P-078）、`layout.read depth>0` 组合确定性不可用（P-085）、
@@ -135,7 +135,7 @@
 | 压测 | 108 步 / 0 失败 | `evidence/round8/production-face-stress.json` |
 | 业务场景 | 10 条链全绿（见 §1.3） | `evidence/round8/*` |
 | 注册专项 | 4 条 TB 全绿（28/28、12/12、10/10、六步） | `evidence/round8/registration-*.json` |
-| 覆盖率 | 语句 91.54% / 分支 83.62% / 合并 89.48% | `evidence/cov-main/coverage-main-strict.json` + `test/reports/coverage-pack/summary.json` |
+| 覆盖率 | 语句 90.33% / 分支 82.26% / 合并 88.23%（下界，maestro 2 步 rc=1；全绿快照 91.54/83.62/89.48） | `evidence/cov-main/coverage-main-strict.json` + `coverage-main-strict-2333.json` + `test/reports/coverage-pack/summary.json` |
 | spec 条款 | 297 NORM 逐条：222/16/6/0/53 | `round8-spec覆盖矩阵.json` |
 | 原子 | 60 原子 GAP=0 | `evidence/round8/atom-coverage.json` |
 | op×参数 | 628 条：553/46/29 | `round8/op-param-matrix.json` |

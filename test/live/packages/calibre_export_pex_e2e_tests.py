@@ -116,6 +116,12 @@ def run_suite(transport) -> list[tuple[str, str]]:
                        run_dir=drc_dir, calibre_bin=CALIBRE_BIN, hier=True, turbo=2,
                        job_id=f"export_drc_{stamp}", blocking=True, timeout=1800)
         _check(value.get("status") == "completed", f"export 的输入 DRC 未完成: {value.get('status')}")
+        # 写回读：DRC 产物必须能被 read_results 解析（不做"跑完就算过"的弱判据）
+        read = _value(transport, "calibre.read_results", kind="drc", run_dir=drc_dir,
+                      limit=5, log_lines=5)
+        _check(read.get("report_used"), f"DRC 报告不可定位: {read.get('artifacts')}")
+        _check((read.get("summary") or {}).get("rules_checked"),
+               f"DRC read_results 未解析出规则数: {read.get('summary')}")
         return value
 
     def case_export_all_small() -> None:

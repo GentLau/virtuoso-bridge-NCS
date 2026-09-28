@@ -354,11 +354,10 @@
   "premap_status": "NO-TOKEN",
   "verdict": "direct",
   "evidence": [
-   "src/register/server.py:991",
    "test/offline/unit/test_registration_server.py",
-   "test/offline/unit/test_norm_gap_round8.py::TestRegistrationBindsLoopback"
+   "test/offline/unit/test_norm_gap_round8.py"
   ],
-  "reason": "默认绑定 127.0.0.1 由 test_norm_gap_round8::TestRegistrationBindsLoopback 钉住（第八轮补）",
+  "reason": "默认绑定 127.0.0.1 由 test_norm_gap_round8（TestRegistrationBindsLoopback）钉住；实现锚点 src/register/server.py:991 只写在 reason 里——仓库自查脚本只认 test/ 下的 :: 引用，src/:line 形式无法被机器校验",
   "gap_test": ""
  },
  {

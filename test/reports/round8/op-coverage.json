@@ -30,7 +30,7 @@
    "test/semi/probes/spectre_ac_pipeline_probe.py",
    "test/shared/runners/env_check.py"
   ],
-  "call_sites": 125
+  "call_sites": 126
  },
  "basic.file.download": {
   "package": "basic.py",
@@ -175,10 +175,11 @@
    "test/live/flows/s11_full_flow.py",
    "test/live/flows/serdes_rx_flow_tb.py",
    "test/live/packages/calibre_e2e_tests.py",
+   "test/live/packages/calibre_export_pex_e2e_tests.py",
    "test/live/packages/calibre_params_e2e_tests.py",
    "test/semi/probes/calibre_package_http_probe.py"
   ],
-  "call_sites": 29
+  "call_sites": 32
  },
  "calibre.status": {
   "package": "calibre.py",

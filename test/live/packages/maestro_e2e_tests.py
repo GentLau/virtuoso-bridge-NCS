@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
 # 作者: 测试/root
-# 最后改动: 2026-09-28 20:31
+# 最后改动: 2026-09-29 02:05
 # 依赖: 无
 # =======================================================================
 # 六步流程（test/docs/写TB规范.md §1）：
@@ -112,13 +112,24 @@ def _interactive_history(transport, cell: str) -> str:
     共享库的 current history 可能被他人换成 MonteCarlo.N；`run(history=…)` 的语义是
     **覆盖已存在的 history**（ASSEMBLER-3018：目标不存在即报错），所以必须挑现有的
     Interactive.* 而不是自造新名字。
+
+    2026-09-29 补充（测试/root）：套件自己的 HISTORY-01 会 rename/lock/unlock/delete 选中的
+    history，于是**跑过一次之后共享库里就没有 Interactive.N 了**（本轮全量覆盖重算因此失败）。
+    这里保持"必须挑已存在 history"的产品语义不变，只在没有 Interactive.N 时**退回用当前
+    存在的任意一条**（并打印 NOTE 说明做了什么）；一条都没有才判失败。
     """
     value = _value(transport, "virtuoso.maestro.read_history",
                    library="maestro_tb", cell=cell)
-    names = [item["name"] for item in value.get("histories") or []
-             if str(item.get("name", "")).startswith("Interactive.")]
-    _check(bool(names), f"no Interactive.* history to overwrite in maestro_tb/{cell}")
-    return names[-1]
+    all_names = [str(item.get("name", "")) for item in value.get("histories") or []]
+    interactive = [name for name in all_names if name.startswith("Interactive.")]
+    if interactive:
+        return interactive[-1]
+    if all_names:
+        print(f"NOTE  maestro_tb/{cell} 没有 Interactive.*（现有 {all_names[:3]}…），"
+              f"按'覆盖已存在 history'语义退回用 {all_names[-1]!r}", flush=True)
+        return all_names[-1]
+    _check(False, f"maestro_tb/{cell} 一条 history 都没有（HISTORY-01 自毁前置，需重建夹具）")
+    raise AssertionError("unreachable")
 
 
 def _expect_fail(transport, operation: str, **fields: Any) -> str:
