@@ -1,6 +1,6 @@
 # 第八轮条款缺口动作（partial → 待补测试）
 
-> 共 13 条；完成后把对应行的 verdict 提升并回填证据。
+> 共 12 条；完成后把对应行的 verdict 提升并回填证据。
 
 ## 总览#094（总览/1-四层整体架构与接口.md）
 
@@ -67,12 +67,6 @@
 - 条款：终态或超时即返回；超时返回 `status=timeout` 且**后台作业继续跑**。
 - 现状：终态判定有断言；**超时 → status=timeout 且后台作业继续跑**无直接用例
 - 待补：补离线：blocking 超时返回 status=timeout，launcher/作业进程未被杀
-
-## calibre#120（上层/12-calibre.md）
-
-- 条款：（先默认名，再 `job.json.report_file`，最后在 run dir 内扫描 `*.report/*.rep`），与 set 是否改名无关。
-- 现状：报告解析与 lvsReportFile 键有断言；**定位三级回退（默认名→job.json.report_file→扫描 *.rep）**无分支用例
-- 待补：补：三种报告定位回退各一条（含 set 改名后仍能定位）
 
 ## calibre#123（上层/12-calibre.md）
 

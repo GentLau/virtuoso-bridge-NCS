@@ -680,6 +680,83 @@ class PackageTests(unittest.TestCase):
         self.assertEqual(result.value["summary"]["rules_checked"], 1737)
         self.assertEqual(result.value["report_used"], "DRC.rep")
 
+    def test_read_results_follows_renamed_report_in_job_json(self):
+        """calibre#120 回退②：默认名不存在时按 `job.json.report_file` 定位（真实 set 会改名）。"""
+        class Renamed(FakeMiddle):
+            def run_command(self, cmd, timeout=None, *, token, parallel=False):
+                if "test -f" in cmd:
+                    self.commands.append(cmd)
+                    if "DRC.rep" in cmd:
+                        return CommandResult(0, "no\n", "", "command")
+                    if "job.json" in cmd or "renamed.report" in cmd:
+                        return CommandResult(0, "yes\n", "", "command")
+                    return CommandResult(0, "no\n", "", "command")
+                return super().run_command(cmd, timeout=timeout, token=token,
+                                           parallel=parallel)
+
+            def download_file(self, remote_path, local_path, timeout=None, *,
+                              token, recursive=False):
+                s = str(remote_path)
+                target = Path(local_path)
+                target.parent.mkdir(parents=True, exist_ok=True)
+                if s.endswith("job.json"):
+                    target.write_text(
+                        '{"kind": "drc", "job_id": "drc_lay_e2e", '
+                        '"report_file": "renamed.report"}', encoding="utf-8")
+                    return CommandResult(0, "", "", "command")
+                if s.endswith("renamed.report"):
+                    target.write_text(DRC_REPORT, encoding="utf-8")
+                    return CommandResult(0, "", "", "command")
+                return super().download_file(remote_path, local_path, timeout=timeout,
+                                             token=token, recursive=recursive)
+
+        result = Package(Renamed()).read_results(ReadResultsRequest(
+            token=TOKEN, job_id="drc_lay_e2e", kind="drc",
+        ))
+        self.assertTrue(result.ok, result.error)
+        self.assertEqual(result.value["report_used"], "renamed.report")
+        self.assertEqual(result.value["summary"]["rules_checked"], 1737)
+
+    def test_read_results_scans_run_dir_when_no_declared_report(self):
+        """calibre#120 回退③：默认名/job.json 都指不到时，在 run dir 里按模式扫描。"""
+        class Scanned(FakeMiddle):
+            def run_command(self, cmd, timeout=None, *, token, parallel=False):
+                if "ls -1t" in cmd:
+                    self.commands.append(cmd)
+                    return CommandResult(0, "scan_found.report\n", "", "command")
+                if "test -f" in cmd:
+                    self.commands.append(cmd)
+                    if "DRC.rep" in cmd:
+                        return CommandResult(0, "no\n", "", "command")
+                    if "job.json" in cmd or "scan_found.report" in cmd:
+                        return CommandResult(0, "yes\n", "", "command")
+                    return CommandResult(0, "no\n", "", "command")
+                return super().run_command(cmd, timeout=timeout, token=token,
+                                           parallel=parallel)
+
+            def download_file(self, remote_path, local_path, timeout=None, *,
+                              token, recursive=False):
+                s = str(remote_path)
+                target = Path(local_path)
+                target.parent.mkdir(parents=True, exist_ok=True)
+                if s.endswith("job.json"):
+                    # 没有 report_file 键 → 必须走 glob 扫描回退
+                    target.write_text('{"kind": "drc", "job_id": "drc_lay_e2e"}',
+                                      encoding="utf-8")
+                    return CommandResult(0, "", "", "command")
+                if s.endswith("scan_found.report"):
+                    target.write_text(DRC_REPORT, encoding="utf-8")
+                    return CommandResult(0, "", "", "command")
+                return super().download_file(remote_path, local_path, timeout=timeout,
+                                             token=token, recursive=recursive)
+
+        result = Package(Scanned()).read_results(ReadResultsRequest(
+            token=TOKEN, job_id="drc_lay_e2e", kind="drc",
+        ))
+        self.assertTrue(result.ok, result.error)
+        self.assertEqual(result.value["report_used"], "scan_found.report")
+        self.assertEqual(result.value["summary"]["rules_checked"], 1737)
+
     def test_read_results_pex(self):
         middle = FakeMiddle()
         result = Package(middle).read_results(ReadResultsRequest(

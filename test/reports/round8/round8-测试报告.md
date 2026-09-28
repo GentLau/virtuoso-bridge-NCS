@@ -7,7 +7,7 @@
 
 | 覆盖轴 | 口径 | 结果 |
 |---|---|---|
-| **A. spec 条款** | `spec/design-concepts/**` 全量 1131 条 → 分诊 NORM 297 / OPS 793 / PROSE 41 | NORM：**direct 221 / indirect 16 / partial 7 / gap 0 / na 53**；OPS 由 op×param + 原子矩阵承担；PROSE 逐条给了"不可测"理由 |
+| **A. spec 条款** | `spec/design-concepts/**` 全量 1131 条 → 分诊 NORM 297 / OPS 793 / PROSE 41 | NORM：**direct 222 / indirect 16 / partial 6 / gap 0 / na 53**；OPS 由 op×param + 原子矩阵承担；PROSE 逐条给了"不可测"理由 |
 | **B. 原子操作** | `src/pyapi/packages` 写原子 60 个 | `audit_atom_coverage.py`：**GAP=0**、`needs_triage=0`（证据：`evidence/round8/atom-coverage.json`） |
 | **C. op × 参数** | OPERATIONS + spec 字段表 628 条 | 机器矩阵：CANDIDATE 539 / 通用 `timeout` 38（跨 op 合同 `test_param_timeout_contract.py` 79/79 op 承担）/ 逐 op 缺口 51（其中 27 条为零调用点：calibre.pex/export 家族；24 条有调用点但该参数名未出现）；另有 78 处调用点无法静态解析待人工复核；余项见 §5 |
 
@@ -70,7 +70,7 @@
 
 - 机器抽取 1131 条（`spec-clause-triage.md`） → 分诊：**NORM 297 / OPS 793 / PROSE 41**。
 - NORM 297 条**逐条裁定**（`round8-spec覆盖矩阵.md/.json`，6 组独立评审后合并）：
-  `direct 221 / indirect 16 / partial 7 / na 53 / gap 0`。
+  `direct 222 / indirect 16 / partial 6 / na 53 / gap 0`。
   - `na` 一律给出"为什么不可测"（定义/指针/实现自由度/明确不做）；
   - `partial` 逐条写明**补什么**（`round8-gap-actions.md`，本轮已收口 8 条，余 15 条 → §5）。
 - 证据引用可复查：矩阵里引用的 **416** 个证据文件**全部存在**（脚本核对，见 §6）。

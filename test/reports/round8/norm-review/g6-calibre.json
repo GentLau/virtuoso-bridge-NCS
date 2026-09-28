@@ -904,13 +904,14 @@
   ],
   "hits": {},
   "premap_status": "NONE",
-  "verdict": "partial",
+  "verdict": "direct",
   "evidence": [
-   "test/offline/unit/test_calibre_package.py (lvsReportFile 解析)",
-   "test/offline/unit/test_calibre_parsers.py"
+   "test/offline/unit/test_calibre_package.py::test_read_results_drc",
+   "test/offline/unit/test_calibre_package.py::test_read_results_follows_renamed_report_in_job_json",
+   "test/offline/unit/test_calibre_package.py::test_read_results_scans_run_dir_when_no_declared_report"
   ],
-  "reason": "报告解析与 lvsReportFile 键有断言；**定位三级回退（默认名→job.json.report_file→扫描 *.rep）**无分支用例",
-  "gap_test": "补：三种报告定位回退各一条（含 set 改名后仍能定位）"
+  "reason": "三级报告定位回退逐条覆盖（第八轮补）：① 默认名 `DRC.rep`；② 默认名缺失时按 `job.json.report_file` （真实 set 改名场景）；③ 都指不到时在 run dir 按 `*.rep/*.report/*.sum` 模式扫描。三条用例均离线全过。",
+  "gap_test": ""
  },
  {
   "id": "calibre#123",

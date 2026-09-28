@@ -1,7 +1,7 @@
 # 第八轮 · Spec 条款覆盖矩阵（NORM 297 条逐条裁定）
 
 > 生成：`test/shared/runners/merge_round8_spec_matrix.py` ｜ 基线：HEAD=64c803c（工作区被测）
-> 统计：direct 221 / indirect 16 / partial 7 / gap 0 / na 53（共 297）
+> 统计：direct 222 / indirect 16 / partial 6 / gap 0 / na 53（共 297）
 
 判定口径：
 - **direct**：有直接判据（读回/数值/字节/结构化断言）；**indirect**：由下游消费间接体现；
@@ -18,7 +18,7 @@
 | g3-reg | 44 | 34 | 1 | 0 | 0 | 9 |
 | g4-edit | 60 | 47 | 5 | 1 | 0 | 7 |
 | g5-sim | 54 | 40 | 4 | 2 | 0 | 8 |
-| g6-calibre | 43 | 32 | 2 | 3 | 0 | 6 |
+| g6-calibre | 43 | 33 | 2 | 2 | 0 | 6 |
 
 ## 逐条矩阵
 
@@ -311,7 +311,7 @@
 | calibre#068 | 上层/12-calibre.md | **direct** | blocking=true 循环（poll_interval/deadline）有断言 | test/offline/unit/test_calibre_package.py::test_drc_blocking_completes |
 | calibre#069 | 上层/12-calibre.md | **partial** | 终态判定有断言；**超时 → status=timeout 且后台作业继续跑**无直接用例 ｜ **缺口**: 补离线：blocking 超时返回 status=timeout，launcher/作业进程未被杀 | test/offline/unit/test_calibre_job_state.py |
 | calibre#096 | 上层/12-calibre.md | **direct** | drc/lvs 参数走官方机制两条互斥路（control file / -gui -lvs -runset -batch）有断言 | test/offline/unit/test_calibre_package.py (runset/官方批处理用例 431-499) |
-| calibre#120 | 上层/12-calibre.md | **partial** | 报告解析与 lvsReportFile 键有断言；**定位三级回退（默认名→job.json.report_file→扫描 *.rep）**无分支用例 ｜ **缺口**: 补：三种报告定位回退各一条（含 set 改名后仍能定位） | test/offline/unit/test_calibre_package.py (lvsReportFile 解析)<br>test/offline/unit/test_calibre_parsers.py |
+| calibre#120 | 上层/12-calibre.md | **direct** | 三级报告定位回退逐条覆盖（第八轮补）：① 默认名 `DRC.rep`；② 默认名缺失时按 `job.json.report_file` （真实 set 改名场景）；③ 都指不到时在 run dir 按 `*.rep/*.report/*.sum` 模式扫描。三条用例均离线全过。 | test/offline/unit/test_calibre_package.py::test_read_results_drc<br>test/offline/unit/test_calibre_package.py::test_read_results_follows_renamed_report_in_job_json<br>test/offline/unit/test_calibre_package.py::test_read_ |
 | calibre#123 | 上层/12-calibre.md | **partial** | set 走官方入口有断言；**‘set 只带参数、引用数据必须已存在’的失败边界**无专门用例 ｜ **缺口**: 补：set 引用不存在的 deck/layout → 明确失败（不静默回退） | test/offline/unit/test_calibre_package.py (set/runset 用例) |
 | calibre#127 | 上层/12-calibre.md | **direct** | pex fmt=none/spice/simple 与非法值拒绝、deck 复制进 run dir，有断言 | test/offline/unit/test_calibre_argv_contracts.py (fmt 枚举与拒绝 56-93) |
 | calibre#128 | 上层/12-calibre.md | **direct** | pex 固定阶段顺序（phdb→pdb→fmt）逐条断言（P-034 修复后） | test/offline/unit/test_calibre_argv_contracts.py::test_pex_runs_two_stages<br>test/offline/unit/test_calibre_argv_contracts.py::test_pex_adds_a_format_stage_only_for_spice_like_formats |
