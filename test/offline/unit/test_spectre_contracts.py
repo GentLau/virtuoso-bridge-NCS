@@ -335,6 +335,42 @@ class TestRunOrchestration(unittest.TestCase):
         self.assertTrue(executed_netlist, middle.executed)
         self.assertIn("+escchars", executed_netlist[0])
 
+    def test_stalled_middle_call_fails_instead_of_hanging(self):
+        """P-076：某次中层调用永不返回时，run 必须结构化失败并指出卡在哪一步。
+
+        判据：run 在 silence_limit 内返回（不是永久阻塞），runs[0].error 是
+        task_deadline_exceeded，且 steps 里保留了 stall 之前已完成的调用。
+        """
+        import tempfile
+        import time as _time
+
+        class _Stalling(RunMiddle):
+            def run_spectre_command(self, cmd, timeout=None, *, token):
+                if cmd.startswith("mkdir -p") or "EXISTS" in cmd:
+                    return super().run_spectre_command(cmd, timeout=timeout, token=token)
+                _time.sleep(3)           # 模拟"中层不守自己的 deadline"
+                return super().run_spectre_command(cmd, timeout=timeout, token=token)
+
+        old_slack = S.RUN_CALL_SLACK_SECONDS
+        old_tick = S.RUN_WATCHDOG_TICK_SECONDS
+        S.RUN_CALL_SLACK_SECONDS = 0.2
+        S.RUN_WATCHDOG_TICK_SECONDS = 0.05
+        try:
+            with tempfile.TemporaryDirectory(prefix="vb-") as tmp:
+                started = _time.monotonic()
+                result = self._run(_Stalling(), self._netlist(Path(tmp)), timeout=0.2)
+                elapsed = _time.monotonic() - started
+        finally:
+            S.RUN_CALL_SLACK_SECONDS = old_slack
+            S.RUN_WATCHDOG_TICK_SECONDS = old_tick
+        self.assertFalse(result.ok)
+        self.assertIn("1/1 tasks failed", result.error or "")
+        run = result.value["runs"][0]
+        self.assertIn("task_deadline_exceeded", run["error"])
+        self.assertIn("upload_netlist", run["error"])
+        self.assertEqual([s["name"] for s in run["steps"]], ["prepare", "upload_netlist"])
+        self.assertLess(elapsed, 10.0, f"watchdog did not bound the call ({elapsed:.1f}s)")
+
     def test_keep_run_dir_skips_cleanup(self):
         import tempfile
         with tempfile.TemporaryDirectory(prefix="vb-") as tmp:

@@ -144,6 +144,11 @@ Task 字段：
 批次语义：
 
 - 包内用受 `max_workers` 限制的并发执行所有 task；所有 task 都等待结束，任一失败不取消其余 task。
+- **任务级看门狗**：每个 task 内部每两次中层调用之间的静默不得超过
+  `timeout + max(5s, 0.1×timeout)`（`timeout` 缺省按中层默认 30s），超限即判该次调用
+  没有守自己的 deadline：该 task 记 `task_deadline_exceeded` 结构化失败并带上已完成
+  的步骤（用来定位卡在哪次调用），其余 task 继续；`run` 不得因为某次中层调用
+  不返回而把请求线程永久占住。
 - 结果按 `tasks` 顺序返回。
 - 中层的 token/channel/thread 预算仍可能拒绝某次调用；被拒绝的 task 记失败，不自动重试。
 - 增量提交由调用方分多次 `run` 实现，不保留旧 `parallel_pool`/Future。
