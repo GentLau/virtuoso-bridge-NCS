@@ -179,9 +179,10 @@
   "verdict": "direct",
   "evidence": [
    "test/offline/unit/test_skillref_docs_contracts.py",
-   "test/offline/unit/test_skillref_package.py"
+   "test/offline/unit/test_skillref_package.py",
+   "test/live/packages/skillref_e2e_tests.py"
   ],
-  "reason": "name/entry 的匹配面差异（是否并入语法/描述）由解析/打分用例覆盖",
+  "reason": "name/entry 的匹配面差异（是否并入语法/描述）由解析/打分用例覆盖；行为面承接：skillref_e2e_tests.py",
   "gap_test": ""
  },
  {
@@ -634,9 +635,10 @@
   "verdict": "direct",
   "evidence": [
    "test/offline/unit/test_calibre_package.py::test_drc_start_nonblocking",
-   "test/offline/unit/test_calibre_package.py::test_drc_blocking_completes"
+   "test/offline/unit/test_calibre_package.py::test_drc_blocking_completes",
+   "test/live/packages/calibre_e2e_tests.py"
   ],
-  "reason": "默认非阻塞 + job_id/status/read_results 三件套与 blocking=true 轮询，均有断言",
+  "reason": "默认非阻塞 + job_id/status/read_results 三件套与 blocking=true 轮询，均有断言；行为面承接：calibre_e2e_tests.py",
   "gap_test": ""
  },
  {
@@ -748,9 +750,10 @@
   "premap_status": "NO-TOKEN",
   "verdict": "direct",
   "evidence": [
-   "test/offline/unit/test_calibre_package.py::test_launcher_backgrounds_and_marks_stages"
+   "test/offline/unit/test_calibre_package.py::test_launcher_backgrounds_and_marks_stages",
+   "test/live/packages/calibre_e2e_tests.py"
   ],
-  "reason": "launcher 固定先 ulimit -n 65536，有断言",
+  "reason": "launcher 固定先 ulimit -n 65536，有断言；行为面承接：calibre_e2e_tests.py",
   "gap_test": ""
  },
  {
@@ -820,9 +823,10 @@
   "premap_status": "WEAK",
   "verdict": "direct",
   "evidence": [
-   "test/offline/unit/test_calibre_package.py::test_drc_start_nonblocking"
+   "test/offline/unit/test_calibre_package.py::test_drc_start_nonblocking",
+   "test/live/packages/calibre_e2e_tests.py"
   ],
-  "reason": "blocking=false 默认：launcher+后台启动+立即 job_id 有断言",
+  "reason": "blocking=false 默认：launcher+后台启动+立即 job_id 有断言；行为面承接：calibre_e2e_tests.py",
   "gap_test": ""
  },
  {
@@ -856,9 +860,10 @@
   "premap_status": "WEAK",
   "verdict": "direct",
   "evidence": [
-   "test/offline/unit/test_calibre_package.py::test_drc_blocking_completes"
+   "test/offline/unit/test_calibre_package.py::test_drc_blocking_completes",
+   "test/live/packages/calibre_e2e_tests.py"
   ],
-  "reason": "blocking=true 循环（poll_interval/deadline）有断言",
+  "reason": "blocking=true 循环（poll_interval/deadline）有断言；行为面承接：calibre_e2e_tests.py",
   "gap_test": ""
  },
  {
@@ -1020,9 +1025,10 @@
   "premap_status": "WEAK",
   "verdict": "direct",
   "evidence": [
-   "test/offline/unit/test_calibre_package.py (auCdl 三件套 + checkCAPPERI 用例 509-531)"
+   "test/offline/unit/test_calibre_package.py (auCdl 三件套 + checkCAPPERI 用例 509-531)",
+   "test/live/flows/s11_full_flow.py"
   ],
-  "reason": "si.env 带 auCdl 三件套 + checkCAPPERI=nil + 一致 .simrc，有断言",
+  "reason": "si.env 带 auCdl 三件套 + checkCAPPERI=nil + 一致 .simrc，有断言；行为面承接：s11_full_flow.py",
   "gap_test": ""
  },
  {

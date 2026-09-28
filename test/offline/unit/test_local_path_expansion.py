@@ -43,6 +43,39 @@ class TestLocalTildeExpansion(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r)
         self.assertEqual(dst.read_bytes(), b"payload")
 
+    def test_root_is_default_dir_not_a_sandbox(self):
+        """总览#215：role `root` 只是**默认工作目录约定**，不是沙箱。
+
+        * 相对路径 → 拼到 root 下（默认目录约定的作用）；
+        * **绝对路径**（即使落在 root 之外）→ 原样使用，不被拦截；
+        * `..` → 按 OS 语义处理，可以落到 root 之外。
+
+        条款后半段"同账号不同 user 不承诺跨目录隔离、安全边界由 OS 权限提供"是**不承诺**语义，
+        没有可断言的正面行为，故不在本用例里伪造判据。
+        """
+        tmp = Path(tempfile.mkdtemp(prefix="vb-"))
+        src = tmp / "f.bin"
+        src.write_bytes(b"payload")
+        root = tmp / "rootdir"
+        root.mkdir()
+        outside = tmp / "outside"
+        outside.mkdir()
+
+        rel = BusinessServer._local_upload(src, "rel/f.bin", recursive=False, root=str(root))
+        self.assertEqual(rel.returncode, 0, rel)
+        self.assertTrue((root / "rel" / "f.bin").is_file())
+
+        target = outside / "abs.bin"
+        absolute = BusinessServer._local_upload(
+            src, str(target), recursive=False, root=str(root))
+        self.assertEqual(absolute.returncode, 0, absolute)
+        self.assertTrue(target.is_file(), "绝对路径（在 root 之外）被拦截了——root 不是沙箱")
+
+        dotted = BusinessServer._local_upload(
+            src, str(root / "sub" / ".." / "up.bin"), recursive=False, root=str(root))
+        self.assertEqual(dotted.returncode, 0, dotted)
+        self.assertTrue((root / "up.bin").is_file())
+
 
 if __name__ == "__main__":
     unittest.main()

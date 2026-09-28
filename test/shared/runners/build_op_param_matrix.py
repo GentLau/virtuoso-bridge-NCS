@@ -149,12 +149,17 @@ class FileAnalysis:
         self.op_bindings: dict[str, set[str]] = {}
         self.calls: list[dict] = []
         self.unresolved: list[dict] = []
+        #: Call 节点 -> 所在函数名（None = 模块级）；用于区分「管道行」与真正的未解析调用点
+        self.enclosing: dict[int, str | None] = {}
         if self.tree is not None:
             self._collect()
 
     # -- 模块级字符串常量 ------------------------------------------------
     def _collect(self) -> None:
         assert self.tree is not None
+        for func in [n for n in ast.walk(self.tree) if isinstance(n, ast.FunctionDef)]:
+            for node in ast.walk(func):
+                self.enclosing[id(node)] = func.name
         for node in ast.walk(self.tree):
             if isinstance(node, ast.Assign):
                 value = self._eval_str(node.value)
@@ -390,8 +395,13 @@ class FileAnalysis:
                 raw: str | None = None) -> None:
         line = getattr(node, "lineno", 0)
         if op is None:
+            # 「管道行」＝该调用点所在函数**自己**就是 op 载体（形如 _op(transport, operation, …)
+            # 把形参原样转发）。它把真实 op 交给调用者，本身不代表漏测，单列一类。
+            owner = self.enclosing.get(id(node))
+            plumbing = bool(owner and owner in self.op_param)
             self.unresolved.append({"line": line, "how": how, "raw": (raw or "")[:120],
-                                    "params": sorted(p for p in params if p)})
+                                    "params": sorted(p for p in params if p),
+                                    "enclosing": owner, "plumbing": plumbing})
             return
         self.calls.append({"op": op, "line": line, "how": how,
                            "params": sorted(p for p in params if p)})
@@ -498,7 +508,10 @@ def main() -> int:
         f"- 非 CANDIDATE 中：通用 `timeout` 字段 {len(generic_gaps)} 条（由 "
         f"`test/offline/unit/test_param_timeout_contract.py` 的 79/79 op 合同承担）；"
         f"其余 {len(open_gaps)} 条为逐 op 缺口。",
-        f"- 无法静态解析的调用点 {len(unresolved_all)} 个（不计覆盖，需人工复核）",
+        f"- 无法静态解析的调用点 {len(unresolved_all)} 个 = 管道行 "
+        f"{sum(1 for u in unresolved_all if u.get('plumbing'))}（op 载体内部把形参转发，"
+        f"真值在调用点已解析）+ **待人工复核 {sum(1 for u in unresolved_all if not u.get('plumbing'))}**"
+        "（不计覆盖）",
         "- CANDIDATE = 参数名在目标 op 的调用点出现；是否断言语义仍要逐条看 TB 判据。",
         "- op 调用点清单见 `op-coverage.json`；未解析明细见本文件末尾。",
         "",
@@ -518,12 +531,25 @@ def main() -> int:
             )
         lines.append("")
     if unresolved_all:
-        lines.append("## 未解析调用点（机器，不计覆盖）")
+        plumbing = [u for u in unresolved_all if u.get("plumbing")]
+        review = [u for u in unresolved_all if not u.get("plumbing")]
+        lines.append(f"## 未解析调用点（机器，不计覆盖）")
         lines.append("")
-        for item in unresolved_all[:400]:
+        lines.append(f"### A. 待人工复核（{len(review)}）——非管道行，需逐条确认是真实调用点还是辅助函数")
+        lines.append("")
+        for item in review[:400]:
             lines.append(
                 f"- {item['file']}:{item['line']} `{item['raw']}` "
-                f"(how={item['how']}, params={','.join(item['params'][:6])})"
+                f"(how={item['how']}, enclosing={item.get('enclosing')}, "
+                f"params={','.join(item['params'][:6])})"
+            )
+        lines.append("")
+        lines.append(f"### B. 管道行（{len(plumbing)}）——op 载体内部转发形参，真值在调用点已解析，不构成漏测")
+        lines.append("")
+        for item in plumbing[:400]:
+            lines.append(
+                f"- {item['file']}:{item['line']} `{item['raw']}` "
+                f"(enclosing={item.get('enclosing')}, params={','.join(item['params'][:6])})"
             )
         lines.append("")
     (OUT / "op-param-matrix.md").write_text("\n".join(lines) + "\n", encoding="utf-8")

@@ -1,11 +1,11 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
 # 作者: 测试/root
-# 最后改动: 2026-09-28 21:35
-# 依赖: 真机 vblog token（maestro_tb/rc_probe 有可用 history）
+# 最后改动: 2026-09-28 23:52
+# 依赖: 真机 vblog token（rc_probe 无 Interactive.* 时本探针自行造一条）
 # =======================================================================
 # 六步流程（test/docs/写TB规范.md §1）：
-# ① 环境检查：业务面可达 + rc_probe 有 Interactive.* history；
-# ②③ 取基线 history；④ 只做被测动作（open_waveform_gui 传正确/错误 result 名各一次）；
+# ① 环境检查：业务面可达；②③ 取一条 Interactive.*（没有就裸 run 造一条）作为基线；
+# ④ 只做被测动作（open_waveform_gui 传正确/错误 result 名各一次）；
 # ⑤ 读回比对：若错误 result 名与正确名**行为一致**（都成功）⇒ 参数被忽略 ⇒ RED；
 # ⑥ 收尾：关闭波形窗口（不删现场）。
 """P-089 红灯钉：`maestro.open_waveform_gui.result` 声明但**从未被实现读取**。
@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import json
 import sys
+import time
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -49,10 +50,28 @@ def call(operation: str, **fields):
 
 
 def main() -> int:
-    ok, err, value = call("virtuoso.maestro.read_history",
-                          library="maestro_tb", cell="rc_probe")
-    histories = [h["name"] for h in (value.get("histories") or [])
-                 if str(h.get("name", "")).startswith("Interactive.")]
+    def interactive_names() -> list[str]:
+        _ok, _err, value = call("virtuoso.maestro.read_history",
+                                library="maestro_tb", cell="rc_probe",
+                                view="maestro")
+        return [str(h.get("name")) for h in (value.get("histories") or [])
+                if str(h.get("name", "")).startswith("Interactive.")]
+
+    histories = interactive_names()
+    if not histories:
+        # 自造夹具：不带 history= 的 run 会新建 Interactive.<n>（否则本探针只能 rc=2，
+        # 那是环境前置而不是产品结论——`rc_probe` 的 history 会被别的工作流换掉）。
+        print("FIXTURE: no Interactive.* in rc_probe -> creating one via bare run")
+        ok, err, _v = call("virtuoso.maestro.run", library="maestro_tb",
+                           cell="rc_probe", view="maestro", blocking=False,
+                           timeout=180)
+        if not ok:
+            print(f"ENV: bare run failed: {err[:200]}")
+            return 2
+        deadline = time.time() + 240
+        while time.time() < deadline and not histories:
+            time.sleep(3)
+            histories = interactive_names()
     if not histories:
         print("ENV: no Interactive.* history")
         return 2

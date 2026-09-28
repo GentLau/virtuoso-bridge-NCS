@@ -26,8 +26,11 @@
 
 | 层 | 内容 | 证据路径 | 状态 |
 |---|---|---|---|
-| 离线（Win py3.12） | unit+integration+scenario 全量 | `evidence/round8/offline-win-r8.xml` | ✅ **1793 例 / 0 红 / 19 skip** |
-| 离线（Linux py3.9） | 同上一份树，跑在 wsl-gent 仓库副本 | `evidence/round8/offline-linux-py39-r8.xml` | ✅ **1793 例 / 0 红 / 29 skip**（与 Windows 用例数一致） |
+| 离线（Win py3.12） | unit+integration+scenario 全量 | `evidence/round8/offline-win-final.xml` | ✅ **1800 例 / 0 红 / 21 skip**（13 条 xfail 钉住） |
+| 离线（Linux py3.9） | 同一份树，跑在 wsl-gent 仓库副本 | `evidence/round8/offline-linux-py39-final.xml` | ✅ **1800 例 / 0 红 / 31 skip**（与 Windows **collect 数一致**） |
+
+> 计数口径：**不要引 pytest 写出的 JUnit `tests=` 属性**（本环境 pytest 9.1.1 会虚高：全量树写 2456，
+> 实际 `<testcase>` 只有 1800）。以 `<testcase>` 元素数 / `--collect-only` 汇总为准（两者与进度点数三处一致）。
 | 半真机 | `run_semi_probes.py --group all`（含新增探针） | `evidence/round8/semi-*.json` | 待环境独占窗口 |
 | 真机 | 11 套包 HTTP + cov_remote_real 多 token + 业务场景（SerDes/ADC/design_iterate/多用户/注册/py27/role-split/real-ciw/hostkey） | `evidence/round8/package-e2e-r8.log`、各 live JSON | **11/11 套通过**（gate 10/11，唯一红为 root 的 WRITE-06 旧判据；修正后 maestro 单跑 **22/22**，含 `save=False` 步骤表判据） |
 | 覆盖率 | `run_main_coverage.ps1` 复算（combine 口径） | `evidence/cov-main/`（round8 快照另存） | 全部 TB 稳定后 |
@@ -83,7 +86,7 @@
 | 2026-09-28 | root（gate 收口） | gate 结果：**10/11 套 PASS，唯一 FAIL=maestro**（root 的 WRITE-06 旧判据把"会话内存可见"误当"落盘"）；子代理改用步骤表判据（save=True 必有 `save_setup` 步骤、save=False 必无）后 **maestro 22/22 PASS** | 11 套包按"gate 10 绿 + maestro 修正后复跑绿"记为 **11/11**；磁盘级隔离语义由 P-087 红灯探针单独钉住 |
 | 2026-09-28 | root（新缺陷 2 条） | **P-086** 多用户同视图后 ~30–90s 内 `Empty response from daemon`（自愈，观察）；**P-087** `save=False` 改动被后续 save 静默带走（跨请求污染）；root 另立 **P-088**（`delete_var scope=all` 确定性 handle 0，与 P-087 同源但独立钉住） | 均已落卡/台账；P-087/P-088 红灯探针已留证 |
 | 2026-09-28 | root（本线收口） | **root 负责的 op×参数全部清零**：spectre 参数 TB `5/5`；maestro 套件 **23/23**（含 `include_parameters/include_raw`、`write.save`、`notation/precision/width/output_path`、`result=`、`export.output_path`、`open_gui(history=)`）；layout 失败分类 TB `4/4`（layout#179）；P3 注册 **29/29**（+`deploy-paths-contain-no-token`，注册#011）；另立 **P-089**（`open_waveform_gui.result` 死参数，红灯探针） | 剩余非-CANDIDATE 缺口全部落在 calibre（24）/screenshot（14）/verilog（12）三路子代理车道 + `layout.read.depth`（P-085 已红钉） |
-| （待填） | | | |
+| 2026-09-28 22:4x | root（合并稿机器红队，第一轮） | ① 6 组合并稿的 `evidence` 存在 34 处"路径+括号注解"混写；② g4-edit 的 2 条证据被误存成"单字符数组"（schematic#017/layout#139）；③ 全量 def 扫描发现 1 处**引用不存在的测试**（veriloga#068 → `test_veriloga_contracts.py::test_check_and_save_sequence`） | ① `merge_round8_spec_matrix.py` 增加 evidence 规范化（纯路径 + `evidence_notes`）；② 修复 2 条单字符数组；③ 删除伪引用（保留 `test_veriloga_lazy_editor_contract.py` 的两条真实用例）。复核：**102 条仓库证据路径 0 缺失；91 条 `::用例` 引用 0 失效** | 
 
 ## 7. 交付物清单（送审判据）
 

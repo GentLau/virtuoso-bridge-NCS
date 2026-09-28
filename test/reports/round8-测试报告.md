@@ -7,13 +7,15 @@
 ## 0. 一句话结论
 
 - 三轴里 **B（原子，60 个）gap=0/weak=0**；**A（条款）297 条已逐条裁定，direct 219 / indirect 16 / partial 9 / na 53，gap=0**；
-  **C（op×参数 628 条）** 最新快照 **CANDIDATE 529 / GAP 70 / NO-OP-TB 29**（root + screenshot 两车道已清零，
-  calibre 参数面本轮补到只剩"kind 不适用"与红钉项；余量主要是 verilog.import 车道，见 §3/§7）。
-- 三层回归：Windows 离线 **1793 例 / 0 红 / 19 skip**（最新树，另加本轮新增的 3 条离线契约用例）；
+  **C（op×参数 628 条）本轮从 GAP 98 压到 46，CANDIDATE 553**：root / screenshot / verilog.import 三条车道清零，
+  calibre 参数面只剩「kind 不适用 + 死参数红钉 + `drc.runset` 一条真缺口」（见 §3/§7）。
+- 三层回归：离线 **1800 例 / 0 红**（Windows 21 skip / Linux py3.9 31 skip，**两平台逐文件计数一致**）；
   半真机 **36 探针（32 绿 + 4 个预期红钉）**；真机 base 五接口 + 文件族 + Linux 客户侧全栈全绿，
-  **11 套包 = 9 稳定绿 + 2 被缺陷阻塞**（maestro 卡 P-086/P-095、calibre 卡 `cds_lib` 口径，见 §4.4）；
+  **11 套包 = 10 稳定绿 + 1 被缺陷阻塞**（maestro 卡 P-086/P-095；calibre 初跑红已定性为同一根因的连带，
+  恢复实例后复跑 **8/8**，见 §4.4）；
   注册/流程/压测场景全绿（明细见 §4）。
-- 本轮新发现并立案 **18 条缺陷**（P-078…P-095，其中 **P-095 是 P-086 的 P1 根因**：悬空 Overwrite History → ASSEMBLER-3018 模态框卡死 CIW），
+- 本轮新发现并立案 **24 条缺陷**（P-078…P-101 区间：root 侧 P-092/093/094/099/100，子代理侧 P-095/096/098，
+  其余为前序根/其它车道），其中 **P-095 + P-096 是 P-086 的两类 P1 根因**（悬空 Overwrite History / 陈旧 OA 写锁 → 模态框卡死 CIW），
   全部有红灯钉住或显式口径声明；**不声称已排干净**。
 
 ## 1. 覆盖轴 A：spec 条款
@@ -42,7 +44,7 @@
 ## 3. 覆盖轴 C：op × 参数（79 个操作 / 628 条）
 
 - 工具：`build_op_param_matrix.py`（AST v2，能解析 `OP + "suffix"` 拼接与跨函数转发）；
-- 最新快照：**CANDIDATE 515 / GAP 84 / NO-OP-TB 29**；`NO-OP-TB` 的业务 op 只剩 `calibre.export`、`calibre.pex`（calibre 车道收尾中）；
+- 最新快照：**CANDIDATE 553 / GAP 46 / NO-OP-TB 29**（本轮起点是 GAP 98）；`NO-OP-TB` 的业务 op 只剩 `calibre.export`、`calibre.pex`（两个 op 仍无任何 TB 调用）；
 - root 车道（spectre/maestro/layout 失败分类/注册 token-path）已清零：
   - `spectre_params_e2e_tests.py` **5/5**；`maestro_e2e_tests.py` **23/23**；`layout_geometry_classification_e2e_tests.py` **4/4**；
   - 期间抓出 4 条同源缺陷：P-083（precision 语义未定义）、P-084（include_results 死参数）、**P-088**（delete_var scope=all）、**P-089**（open_waveform_gui.result 死参数）。
@@ -51,8 +53,14 @@
   schematic **5/5**、symbol **5/5**（均绿）、layout **5 绿 + SC-06 红钉**（bogus `view_type` 不校验 → P-080 同族）；
   期间抓出 **P-091**（symbol/layout 下载后删远端暂存，与 spec「远端存 screenshots/」口径不一致）与
   **P-082 的完整形态**（layout/symbol 要两点、schematic 要四元组，spec 只写了两点）。
-- 剩余 GAP：calibre 车道 25（含 `calibre.export`/`pex` 两个零调用 op）、verilog 车道 12（`verilog.import` 9 参数为主）、
-  `layout.read.depth`（P-085 红钉）、`verilog.read/write.view_type`（P-080 红钉）——**如实计为未覆盖，不并入 direct**。
+- **verilog 车道本轮清零**（root 新增 TB）：`verilog_import_params_e2e_tests.py` 跑完 **10 绿 + 2 红钉**
+  （`file_is_local` True/False、`ref_libs` 正/负、`structural_views` 4 与 5 的**产物差异**、三个视图名参数、
+  `import_lib_cells`、`overwrite`、语法错负向、`export(recursive=False/True)` 模块数对照；
+  红钉 = IMP-08（P-099 `views` 恒空）与 IMP-10（P-100 `cell` 参数不落地））。
+- 剩余 GAP（最新矩阵 **CANDIDATE 553 / GAP 46**，generic GAP 只剩 12 条）：`calibre.drc` 7 + `calibre.lvs` 4 + `layout.read.depth` 1；
+  其中 **9 条属「kind 不适用」**（spice_file/hcell_file/xcell_file/fmt/lvs_run_dir 只在 lvs/pex 分支消费，见 `calibre.py:987-1013`）、
+  **2 条是死参数**（power/ground，P-092）、**1 条真缺口 = `drc.runset`（set 模式真跑）**；
+  `layout.read.depth`（P-085）与 `verilog.read/write.view_type`（P-080）仍是红钉。**未覆盖项如实列出，不并入 direct**。
 - **calibre 参数面本轮大补齐**（root 新增 TB）：`calibre_params_e2e_tests.py` **5/5 绿**，
   覆盖 `check_env(calibre_bin/deck 正负)`、`drc(calibre_bin/hier/turbo/poll_interval/job_id/params/run_dir)`、
   `read_results(log_lines=0/5 双向)`、`lvs(spice_file/hcell_file/xcell_file/hier/turbo/poll_interval)`；
@@ -67,12 +75,16 @@
 
 ### 4.1 离线（Windows，最新树）
 
-- `pytest test/offline -q` → **1793 例 / 0 红 / 19 skip**（`evidence/round8/offline-win-r8.xml`、`offline-win-5.xml` 同口径复核一致）。
+- `pytest test/offline -q` → **1800 例 / 0 红 / 21 skip**（`evidence/round8/offline-win-r8b.xml`，2026-09-28 23:31 复跑；
+  用 `--collect-only` 逐文件核对：**108 个文件、每文件计数与 Linux 完全一致**）。
+  口径提醒：该 XML 的 `tests` 属性由 pytest 写成了 2456，但其中 `<testcase>` 元素实测 **1800 条、无重复**
+  （`collection` 与 `testcase` 双口径以 1800 为准）。
 
 ### 4.2 离线（Linux py3.9）
 
-- 同一份树在 wsl-gent 仓库副本上跑 → **1793 例 / 0 红 / 29 skip**（`evidence/round8/offline-linux-py39-r8.xml`）；
-- **两平台用例数完全一致（1793）**，且都 0 红 → Linux/Windows 客户端离线一致性本轮成立；
+- 同一份树（tar 同步后）在 wsl-gent 仓库副本上跑 → **1800 例 / 0 红 / 31 skip**（`evidence/round8/offline-linux-py39-r8b.xml`）；
+- **两平台逐文件计数完全一致（108 文件 / 1800 例）**，0 红；skip 差 10 条均为平台门控（Windows 侧多跑 10 条路径类用例），
+  ⇒ Linux/Windows 客户端离线一致性本轮成立；
 - 上一份旧树里的 3 红（P-079 两条 XPASS(strict) 平台门控 + P-078 断言）已由对应子代理处理。
 
 ### 4.3 半真机（36 探针）
@@ -94,8 +106,11 @@
      - `maestro_e2e_tests.py` FAIL：`virtuoso.maestro.run` → `RuntimeError: Empty response from daemon`（P-086，同一实例上第 3 次独立复现；
        复跑仍在 `read_config` 处再报同错，**不是** TB 判据问题）；
      - `calibre_e2e_tests.py` FAIL：EXPORT-01 `calibre.export_cdl failed: cds.lib not resolved (CIW cwd unavailable; pass cds_lib explicitly)`
-       （TB 未显式传 `cds_lib`，`_ciw_cds_lib()` 的 `getWorkingDir()` 没拿到 cwd；**已交 calibre 车道判定 TB 侧还是产品侧**，见 §7 G12）。
-  ⇒ **本轮可复现结论 = 9 套稳定绿**；另外 2 套分别被 P-086 与 calibre `cds_lib` 口径阻塞，**不声称 11/11**。
+       —— **已定性为 P-086/P-095 的连带**：当时 maestro 刚把 CIW 卡进 ASSEMBLER-3018 模态框，
+       `getWorkingDir()` 拿不到 cwd。22:56 在恢复后的实例上**单独复跑 calibre 套件 = 8/8 全绿**
+       （`evidence/round8/calibre-rerun.out.log`；LVS 结论 `not_compared` 属 P-069 的既定口径，套件已显式 WARN 不假装跑通）。
+  ⇒ **本轮可复现结论 = 10 套稳定绿**（含 calibre 复跑 8/8）；**只有 maestro 被 P-086/P-095 阻塞**，
+    但"空响应窗口"本身仍是缺陷，**不声称 11/11**。
 
 ### 4.5 真机 · Linux 客户端（客户侧全栈）
 
@@ -154,6 +169,12 @@
 | P-093 | 上层 calibre | 待设计修 | `hier=False` 仍追加 `-turbo` → Calibre 判非法、打 usage、作业秒退 | 半真机探针红 + drc.log 原文 |
 | P-094 | 上层 calibre | 待设计修 | 工具秒退不被检测：`status=unknown`/`failure_kind=null`，`blocking=True` 等满 timeout | 同上探针（`tool_failed=true` vs `error_surfaced=false`） |
 | P-095 | 上层 maestro | 待设计修 | **P-086 的 P1 根因**：悬空 Overwrite History → `ASSEMBLER-3018` 模态框阻塞 CIW，watchdog 不处理 | 子代理现场（CDS.log 22:48 + 8×15s 空响应） |
+| P-096 | 上层 maestro | 待设计修 | 陈旧 OA 写锁（属主进程已死）触发 `axlOpenInRead0` 模态框 → CIW/daemon 再挂死；应结构化失败或自动强制 | 子代理探针（P-086 第二类根因） |
+| P-097 | 上层 verilog | 观察 | 覆盖式再导入后紧跟的 `_read_views` 偶发 `*Error* cell not found`（1 次；随后 2/2 复跑成功） | verilog 导入 TB 的 `failure` 字段原文 |
+| P-098 | 上层 calibre | 待设计修 | `blocking=true` 超时未按 spec 返回 `status=timeout`，而是回最后一次 `running/unknown` | 子代理卡片（与 P-094 互补：一个错在检测、一个错在枚举口径） |
+| P-099 | 上层 verilog | 待设计修 | `virtuoso.verilog.import` 返回值 `views` 恒为空（真机已有 functional/symbol/netlist）| IMP-08 红钉 + 同 SKILL 离线解析可用的对照 |
+| P-100 | 上层 verilog | 待设计修 | `import` 的 `cell` 参数不参与落地（ihdl 按源码顶层模块名建 cell）；不同名即整体报 `cell not found` 且**写已发生** | IMP-10 红钉 + mtime 23:12:45→23:13:22 实测 |
+| P-101 | 上层 verilog | 待确认 | `overwrite=False` 对已存在 cell 仍返回成功；TB 用 mtime 判定是否静默覆盖（红钉） | IMP-07 的 mtime 对照（复跑中） |
 
 ## 7. 明缺口 / 不覆盖声明（防"虚高"）
 
@@ -172,7 +193,7 @@
 | G11 | **`layout.read(depth>0)`** | **确定性不可用**（P-085） | 已红钉；在修复前该参数组合记"未覆盖（被缺陷阻塞）" |
 | G12 | **calibre.export / calibre.pex** | 收尾中（calibre 车道） | 当前 `NO-OP-TB` 两个业务 op；若本轮来不及，按"下轮首项"记录而非假装覆盖 |
 | G13 | **calibre 参数面剩余 11 条** | 部分覆盖（见 §3） | 已覆盖：calibre_bin/hier/turbo/poll_interval/job_id/params/run_dir/cdl? 与 lvs 的 spice/hcell/xcell、read_results.log_lines（`calibre_params_e2e_tests.py` 5/5）。**仍未覆盖**：`drc.runset`（set 模式真跑）；**kind 不适用（不构成缺口）**：`drc.spice_file/hcell_file/xcell_file/fmt/lvs_run_dir`、`lvs.fmt/lvs_run_dir`（argv 只在 lvs/pex 分支消费）；**死参数红钉**：`drc/lvs.power/ground`（P-092） |
-| G14 | **verilog.import 参数面（9 条）** | 未覆盖（GAP） | file_is_local / functional_view / ground_net / import_lib_cells / overwrite / power_net / ref_libs / schematic_view / symbol_view + `verilog.export.recursive` —— 该 op 是"文本视图装码"族，需真机库配合，留给 verilog 车道收尾 |
+| G14 | **verilog.import 参数面** | **已清零**（本轮补） | `verilog_import_params_e2e_tests.py` 10 绿 + 2 红钉（P-099/P-100）；`import_lib_cells` 只做到"被接受"——「库内 cell 导入」需另写引用 basic 库的源文件才可观察，**该语义仍未覆盖，如实声明** |
 | G15 | **screenshot 远端产物留证** | P-091 待决策 | 实测只有 schematic 留远端；symbol/layout 清理 → 审计无法从远端复核三包截图（本地 PNG 均有） |
 
 ## 8. 环境与过程（本轮踩坑记录）

@@ -52,3 +52,35 @@
   逐一 `assertNotIn` 生成文本；`test_write_ops_do_not_touch_view_info`；`test_cold_context_uses_full_path_load_context`）。
   `veriloga#068/#096` 证据已回填该文件，verdict 维持 direct（有真实断言）。
   全仓 `rg "ahdlCheckModule|ahdlSaveFile|ahdlEdit" test/` 现在命中该专测。
+
+## 6. 第二轮人工抽查（2026-09-28 23:5x，语义级）
+
+上一节的机器检查只能保证"引用存在"，**不能保证"引用的用例真的断言了该条款"**。
+本轮抽 5 条（覆盖 g1–g6 各簇）人工读断言，**发现 2 条判据强度不足**：
+
+| 条款 | 原引用 | 抽查结论 | 处置 |
+|---|---|---|---|
+| 日志#035（读精确区间 / 轮转后从头读） | `test_daemon_log_contract.py::test_reads_exact_interval`、`::test_rotated_file_reads_from_zero` | ✅ 直接断言 `_read_range` 返回值与 warning 语义 | 无需动作 |
+| 注册#071（凭据复用需任一 holder token） | `test_registration_server_edges.py::test_credential_reuse_requires_enhanced_token` | ✅ 用例自带 registry + server，走真实注册流程 | 无需动作 |
+| calibre#128（pex 内部固定顺序三段） | `test_calibre_argv_contracts.py::test_pex_runs_two_stages` | ✅ 逐段 argv 精确比对 | 无需动作 |
+| **symbol#053**（新建原子 layer/purpose 必填、不设默认层） | `test_symbol_contracts.py`（理由写的是"缺 layer 即 ValueError"） | ❌ **原文件里只有"生成文本带 layer/purpose"与通用 `_require_text` 用例，没有"缺 layer 即报错"的直接判据** | ✅ 已补 `TestSymbolAtomicMatrix::test_new_shape_atoms_require_layer_and_purpose`（缺 layer/purpose → ValueError 且点名字段；并加 `delete_shape`/`set_shape_properties` 反向对照）；已回填 `g4-edit.json` |
+| **spectre#041**（不生成随机路径，同 job 定位同 run_dir） | `test_spectre_contracts.py` | ❌ **原文件没有 run_dir 确定性判据** | ✅ 已补 `TestRunOrchestration::test_run_dir_is_deterministic_per_job`（两次调用同 run_dir、形如 `<role root>/spectre/<job>`、无随机/时间戳分量）；已回填 `g5-sim.json` |
+
+**两条补钉均已实跑转绿**（`pytest test/offline/unit/test_symbol_contracts.py
+test/offline/unit/test_spectre_contracts.py -q` → 97 passed）。
+
+**结论**：5 条抽查里 **2 条（40%）判据强度不足**——说明"文件存在"不等于"断言存在"，
+该风险只能靠逐条读断言发现。**这正是红队必查清单 §1/§2 要覆盖的范围**，
+红队请按同一口径对 g1–g6 各簇再抽 ≥4 条/簇（共 ≥24 条）。
+
+### 6.1 追加抽查（g1/g2 簇，2026-09-29 00:0x）
+
+| 条款 | 引用 | 抽查结论 | 处置 |
+|---|---|---|---|
+| 总览#196（临时落盘 → SHA 校验 → 原子替换 / 失败回滚 / 覆盖） | `test_transfer.py`、`test_tunnel_transfer.py` | ✅ `test_fresh_file_install` / `test_replace_existing_file_removes_backup` / `test_failure_rolls_back_previous_target` / `test_directory_install_rolls_back_when_new_tree_fails` / `test_install_staged_path_wrapper` / `test_discard_stage` 逐条对应 | 无需动作 |
+| 注册#006（启动导入一次、运行期不自动读文件、显式 reload 生效） | `test_registry_decoupling.py`、`test_supervisor_process.py` | ✅ `test_explicit_reload_refreshes_registry_snapshot` + supervisor 端到端 | 无需动作 |
+| **总览#215**（role `root` 是默认目录约定、**不是沙箱**） | `test_local_path_expansion.py`（原只有 `~` 展开两条）、`test_transfer.py` | ⚠️ **原引用没有"绝对路径不被拦截"的正面判据**（`test_transfer.py::test_invalid_remote_path_raises` 只覆盖非法入参） | ✅ 已补 `TestLocalTildeExpansion::test_root_is_default_dir_not_a_sandbox`（相对→落 root；绝对且在 root 之外→允许；`..` 按 OS 语义）；已回填 `g1-core.json` |
+
+追加 3 条里 1 条不足 → **累计抽查 8 条，3 条（37.5%）判据强度不足，均已补钉并转绿**。
+该比例说明：**"引用存在"与"断言到位"是两件事**，矩阵的 `direct` 标签必须靠逐条读断言复核，
+不能靠机器核账代替。红队请把这条当作本报告最需要证伪的结论之一。

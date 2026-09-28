@@ -116,7 +116,8 @@ def run_suite(transport) -> list[tuple[str, str]]:
             value = func()
         except Exception as exc:  # noqa: BLE001
             results.append((name, f"FAIL: {type(exc).__name__}: {exc}"))
-            raise
+            print(f"FAIL    {name}: {type(exc).__name__}: {exc}", flush=True)
+            return None   # 单例失败不阻断后续用例：保证一次运行拿全 10 条的判定
         results.append((name, "PASS"))
         return value
 
@@ -168,15 +169,37 @@ def run_suite(transport) -> list[tuple[str, str]]:
         return value
 
     def case_custom_views() -> None:
+        # P-100 事实：ihdl 用**源码里的顶层模块名**决定落地 cell，所以这里让模块名与请求 cell 同名。
+        top = f"{CELL}_views"
+        source = SCRATCH / "vimp_views.v"
+        source.write_text(GOOD_SOURCE.format(child=f"{top}_child", top=top),
+                          encoding="utf-8", newline="\n")
         value = _value(transport, "virtuoso.verilog.import",
-                       library=LIB, cell=f"{CELL}_views", file_path=str(local_good),
+                       library=LIB, cell=top, file_path=str(source),
                        file_is_local=True, ref_libs=["basic"], overwrite=True,
                        schematic_view="sch_v", functional_view="func_v", symbol_view="sym_v",
                        power_net="VDDX", ground_net="VSSX", timeout=600)
         _check(value.get("reason") == "completed", f"自定义视图名 import 失败: {value.get('reason')}")
-        truth = _ground_truth_views(transport, LIB, f"{CELL}_views")
-        missing = [name for name in ("sch_v", "func_v", "sym_v") if name not in truth]
-        _check(not missing, f"自定义视图名未出现在产物里（{missing}）: {truth}")
+        truth = _ground_truth_views(transport, LIB, top)
+        # structural_views 默认 4 = functional + symbol（不含 schematic，见 verilog.py:576-577）
+        missing = [name for name in ("func_v", "sym_v") if name not in truth]
+        _check(not missing, f"自定义 functional/symbol 视图名未出现（{missing}）: {truth}")
+        print(f"NOTE  structural_views=4 产出 views={truth}（无 sch_v 属预期）", flush=True)
+
+    def case_structural_views_schematic() -> None:
+        """`structural_views=5` 必须多出 schematic 档（与 4 档对照，证明该参数真被消费）。"""
+        top = f"{CELL}_sv5"
+        source = SCRATCH / "vimp_sv5.v"
+        source.write_text(GOOD_SOURCE.format(child=f"{top}_child", top=top),
+                          encoding="utf-8", newline="\n")
+        value = _value(transport, "virtuoso.verilog.import",
+                       library=LIB, cell=top, file_path=str(source),
+                       file_is_local=True, ref_libs=["basic"], overwrite=True,
+                       structural_views=5, schematic_view="sch_v",
+                       functional_view="func_v", symbol_view="sym_v", timeout=600)
+        _check(value.get("reason") == "completed", f"structural_views=5 失败: {value.get('reason')}")
+        truth = _ground_truth_views(transport, LIB, top)
+        _check("sch_v" in truth, f"structural_views=5 应产出 sch_v，实际 views={truth}")
 
     def case_result_views_red_pin() -> None:
         """P-099 红钉：`import` 返回值里的 `views` 必须与真机视图一致（今天为 []）。"""
@@ -188,13 +211,33 @@ def run_suite(transport) -> list[tuple[str, str]]:
         returned = [str(entry.get("view")) for entry in (value.get("views") or [])]
         _check(returned, f"P-099：import 返回 views 为空，但真机有 {truth}")
 
-    def case_structural_and_lib_cells() -> None:
+    def case_cell_param_red_pin() -> None:
+        """P-100 红钉：spec 8-verilog.md:80 说 `cell` 是显式目标 cell；
+        实测 ihdl 只按**源码顶层模块名**落地，`cell` 取值不同时整体报 `*Error* cell not found`（写已发生）。"""
+        top = f"{CELL}_src"
+        source = SCRATCH / "vimp_cellparam.v"
+        source.write_text(GOOD_SOURCE.format(child=f"{top}_child", top=top),
+                          encoding="utf-8", newline="\n")
         value = _value(transport, "virtuoso.verilog.import",
-                       library=LIB, cell=f"{CELL}_libcells", file_path=str(local_good),
+                       library=LIB, cell=f"{CELL}_asked", file_path=str(source),
+                       file_is_local=True, ref_libs=["basic"], overwrite=True, timeout=600)
+        _check(value.get("reason") == "completed",
+               f"P-100：按 spec 显式指定 cell 名应成功: {value.get('reason')}")
+        truth = _ground_truth_views(transport, LIB, f"{CELL}_asked")
+        _check(truth, "P-100：按 spec 应在请求的 cell 名下产出视图")
+
+    def case_structural_and_lib_cells() -> None:
+        top = f"{CELL}_libcells"
+        source = SCRATCH / "vimp_libcells.v"
+        source.write_text(GOOD_SOURCE.format(child=f"{top}_child", top=top),
+                          encoding="utf-8", newline="\n")
+        value = _value(transport, "virtuoso.verilog.import",
+                       library=LIB, cell=top, file_path=str(source),
                        file_is_local=True, ref_libs=["basic"], overwrite=True,
-                       import_lib_cells=1, structural_views=6, timeout=600)
+                       import_lib_cells=1, structural_views=4, timeout=600)
         _check(value.get("reason") == "completed", f"import_lib_cells/structural_views 组合失败: {value.get('reason')}")
-        print(f"NOTE  import_lib_cells=1/structural_views=6 → views={value.get('views')}", flush=True)
+        print("NOTE  import_lib_cells=1 被接受；本文件只实例化自带子模块，"
+              "「库内 cell 导入」需要另写引用 basic 库的源文件才能观察（不假装覆盖）", flush=True)
 
     def case_missing_ref_lib() -> None:
         response = _op(transport, "virtuoso.verilog.import",
@@ -215,20 +258,32 @@ def run_suite(transport) -> list[tuple[str, str]]:
         print(f"NOTE  parse_failed diagnostics={str(diagnostics)[:160]}", flush=True)
 
     def case_overwrite_false() -> None:
+        marker = f"{LIB}/vimp_top/functional"
+        mtime_before = _command(transport,
+                                f"stat -c %Y /home/Gent/project/vblog/{marker} 2>/dev/null || echo 0")
+        before = str(mtime_before[1]).strip() if len(mtime_before) > 1 else "0"
         response = _op(transport, "virtuoso.verilog.import",
                        library=LIB, cell=CELL, file_path=str(local_good),
                        file_is_local=True, ref_libs=["basic"], overwrite=False, timeout=600)
+        mtime_after = _command(transport,
+                               f"stat -c %Y /home/Gent/project/vblog/{marker} 2>/dev/null || echo 0")
+        after = str(mtime_after[1]).strip() if len(mtime_after) > 1 else "0"
         if response.get("ok"):
-            print("WARN  overwrite=False 对已存在 cell 返回成功（是否真覆盖需人工确认）", flush=True)
+            print(f"NOTE  overwrite=False 返回成功；{marker} mtime {before} → {after}"
+                  f"（变化={'是' if before != after else '否'}）", flush=True)
+            _check(before == after,
+                   f"P-101：overwrite=False 却改写了已存在 cell（mtime {before} → {after}）")
         else:
             print(f"NOTE  overwrite=False 结构化失败：{str(response.get('error'))[:120]}", flush=True)
 
     def case_export_recursive() -> None:
-        plain = _value(transport, "virtuoso.verilog.export", library=LIB, cell=CELL,
-                       view="schematic", output_path=str(SCRATCH / "vimp_top_plain.v"),
+        # 用 IMP-09 的 cell：它有 schematic 档（structural_views=5）且顶层实例化了子模块 → 层级可观察
+        target_cell = f"{CELL}_sv5"
+        plain = _value(transport, "virtuoso.verilog.export", library=LIB, cell=target_cell,
+                       view="sch_v", output_path=str(SCRATCH / "vimp_sv5_plain.v"),
                        recursive=False, timeout=600)
-        deep = _value(transport, "virtuoso.verilog.export", library=LIB, cell=CELL,
-                      view="schematic", output_path=str(SCRATCH / "vimp_top_recursive.v"),
+        deep = _value(transport, "virtuoso.verilog.export", library=LIB, cell=target_cell,
+                      view="sch_v", output_path=str(SCRATCH / "vimp_sv5_recursive.v"),
                       recursive=True, timeout=600)
         plain_count = int(plain.get("module_count") or 0)
         deep_count = int(deep.get("module_count") or 0)
@@ -242,6 +297,7 @@ def run_suite(transport) -> list[tuple[str, str]]:
     run("IMP-02 file_is_local=False 远端就地导入（与上传路径同产物）",
         lambda: case_import_remote(base))
     run("IMP-03 schematic_view/functional_view/symbol_view 自定义名 + power/ground_net", case_custom_views)
+    run("IMP-09 structural_views=5 必须多出 schematic 档（与 4 档对照）", case_structural_views_schematic)
     run("IMP-04 import_lib_cells=1 + structural_views=6", case_structural_and_lib_cells)
     run("IMP-05 ref_libs 含不存在库 → target_lib_missing", case_missing_ref_lib)
     run("IMP-06 语法错源文件 → parse_failed + diagnostics", case_parse_error)
@@ -249,6 +305,7 @@ def run_suite(transport) -> list[tuple[str, str]]:
     run("EXP-01 export(recursive=False/True) 模块数对照", case_export_recursive)
     # 红钉放最后：它今天必红，但不许挡住上面的覆盖率
     run("IMP-08 result.views 与真机视图一致（P-099 红钉）", case_result_views_red_pin)
+    run("IMP-10 显式 cell 名必须落地（P-100 红钉）", case_cell_param_red_pin)
     return results
 
 

@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
-# 作者: 设计/上层开发
-# 最后改动: 2026-09-28 21:10
+# 作者: 测试/root
+# 最后改动: 2026-09-28 23:15
 # 依赖: 无
 # =======================================================================
 # 六步流程（test/docs/写TB规范.md §1）：
@@ -146,7 +146,7 @@ def _case_text_view(transport) -> None:
     _delete_cell(transport, CELL_TEXT)
     _value(
         transport, "virtuoso.verilog.write",
-        library=LIB, cell=CELL_TEXT, view=VIEW,
+        library=LIB, cell=CELL_TEXT, view=VIEW, view_type="text.v", timeout=120,
         commands=[
             {"op": "ensure_view", "create_if_missing": True},
             {"op": "set_source", "text": TEXT_CODE},
@@ -154,7 +154,8 @@ def _case_text_view(transport) -> None:
     )
     source = _value(
         transport, "virtuoso.verilog.read",
-        library=LIB, cell=CELL_TEXT, view=VIEW, focus=["source"],
+        library=LIB, cell=CELL_TEXT, view=VIEW, view_type="text.v",
+        focus=["source"], timeout=120,
     )
     _check("assign y = a & b" in source["source"]["text"], "text view content missing")
     local = _stage_file(transport, "local_read.v", TEXT_CODE)

@@ -28,6 +28,60 @@ BUGS_DIR = ROOT / "test" / "reports" / "bugs"
 OPEN = [
 
     {
+        "id": "P-101",
+        "layer": "上层（verilog 包）",
+        "slug": "verilog-import-overwrite-false-silent-noop",
+        "title": "`import(overwrite=False)` 对已存在 cell 返回成功但**不写任何内容**，且无 skipped/已存在 标记（用户无法区分「导入成功」与「没做事」）",
+        "level": "P3（静默 no-op：调用方会误以为设计已导入）",
+        "owner": "待决策（spec 口径：overwrite=False 语义是 skip 还是拒绝）",
+        "status": "待决策",
+        "where": "`src/pyapi/packages/verilog.py:490`（`import_if_exists := 1 if request.overwrite else 0`）→ ihdl 跳过已存在 cell 并正常结束；"
+                 "`import_verilog:562-571` 仍按 `reason=completed` 返回 `cells/views`，未标注「未覆盖/跳过」。",
+        "symptom": "真机（vblog）实测：同一 cell（`schemtest/vimp_top`）第二次 `import(overwrite=False)`：\n"
+                   "- 返回值 `ok=true, reason=completed`；\n"
+                   "- `schemtest/vimp_top/functional` 的 mtime **不变**（1790609122 → 1790609122）⇒ 内容没被改写；\n"
+                   "- 结果里没有 `skipped` / `existing` / `warnings` 之类的标记 ⇒ 与真正导入成功无法区分。\n"
+                   "（同一用例另一次运行返回 `RuntimeError: sha256 mismatch`，属 P-090 家族的上传校验抖动，已在 P-090 记录。）",
+        "repro": "`PYTHONPATH=src python test/live/packages/verilog_import_params_e2e_tests.py --transport http`（IMP-07 + mtime 对照）",
+        "evidence": "`test/artifacts/evidence/round8/verilog-import-params/verilog-import-params.json`；"
+                    "mtime 对照见该次运行 stdout（`overwrite=False 返回成功；… mtime … → …（变化=否）`）",
+        "accept": "① spec 明确 `overwrite=False` 对已存在 cell 的语义，并在返回里体现（如 `skipped=true` / 结构化错误 `cell_exists`）；"
+                  "② TB IMP-07 按结论改成强断言（现在是 NOTE + mtime 检查）。",
+        "next": "spec owner 定口径；测试侧把 IMP-07 改成对应断言。",
+        "reported": "2026-09-28（第八轮 verilog.import 参数面实测，root 直接发现）",
+        "updated": "2026-09-28（新立）",
+    },
+
+    {
+        "id": "P-100",
+        "layer": "上层（verilog 包）· 与 spec 口径",
+        "slug": "verilog-import-cell-param-not-honored",
+        "title": "`virtuoso.verilog.import` 的 `cell` 参数不参与落地：ihdl 只按**源码顶层模块名**建 cell，取值不同即整体报 `*Error* cell not found`（且写已发生）",
+        "level": "P2（spec 说 cell 是显式目标；实际非同名就失败，还会留下已写入的副作用 = 报错但库已改）",
+        "owner": "设计侧（verilog 包 `import_verilog` 的 ihdl 调用/参数拼装）",
+        "status": "待设计修",
+        "where": "`src/pyapi/packages/verilog.py:487-522`（`ihdl_param` 只有 `dest_sch_lib`，**没有任何 dest cell 项**，`ihdl` 因此按源码模块名落地）；"
+                 "随后 `_verify_import:575-604` 却用 `request.cell` 去 `ddGetObj` → 不同名必然 `*Error* cell not found`。"
+                 "spec：`spec/design-concepts/上层/8-verilog.md:80`「`library` / `cell`：目标库与顶层 cell（**显式给**，不用文件名推导）」。",
+        "symptom": "真机（vblog，源文件顶层模块 `vimp_m1`）：\n"
+                   "- `import(cell=\"vimp_m1\", …)` → `ok=true, reason=completed`，`schemtest/vimp_m1` 目录存在；\n"
+                   "- `import(cell=\"vimp_m2\", 同一个源文件)` → `ok=false, error=RuntimeError: (\"error\" 0 t nil (\"*Error* cell not found\"))`，"
+                   "`schemtest/vimp_m2` **不存在**，但 `schemtest/vimp_m1/functional` 的 mtime 已被刷新"
+                   "（另一轮实测：23:12:45 → 23:13:22）⇒ **写已发生而调用方收到失败**。\n"
+                   "- 结论：`cell` 只在「校验」里被用，落地时被忽略；非同名场景既拿不到产物也拿不到真实原因。",
+        "repro": "`PYTHONPATH=src python test/live/packages/verilog_import_params_e2e_tests.py --transport http`"
+                 "（IMP-10 是红钉；IMP-01/02/03/09 都按「模块名=请求 cell」跑，故仍能验证其它参数）",
+        "evidence": "`test/artifacts/evidence/round8/verilog-import-params/verilog-import-params.json`；"
+                    "现场 cell `schemtest/vimp_m1`、`schemtest/vimp_top`（保留不清理）",
+        "accept": "① 让 ihdl 按 `request.cell` 落地（在 `ihdl_param`/命令行里给 dest cell，或对源码顶层模块名做显式映射并报错清晰）；"
+                  "② 若产品坚持「cell 必须等于顶层模块名」，spec 改口径 + 前置校验（读到模块名不一致时**在写之前**结构化拒绝）；"
+                  "③ 两条任一，IMP-10 转绿。",
+        "next": "设计侧先定口径（ihdl 能否指定 dest cell 名）；测试侧复跑 IMP-10 与 IMP-01/02 确认无回归。",
+        "reported": "2026-09-28（第八轮 verilog.import 参数面实测，root 直接发现）",
+        "updated": "2026-09-28（新立）",
+    },
+
+    {
         "id": "P-099",
         "layer": "上层（verilog 包）",
         "slug": "verilog-import-returns-empty-views",
@@ -545,6 +599,9 @@ OPEN = [
                    "`ASSEMBLER-8001 … supplied argument \"0\"`（22:09:06 起同一 session 生命周期）。"
                    "⇒ **同一实例上只有 maestro 套件稳定触发**，其它 9 套包与 base 五接口全绿，"
                    "支持「maestro 调用序列把句柄 0 传给 ADE API → daemon 侧空响应」这一解释（待设计侧确认）。\n"
+                   "**同层第二形态（2026-09-28 23:19 verilog 导入 TB）**：`virtuoso.verilog.import` 在"
+                   "`overwrite=False` 场景返回 `RuntimeError: sha256 mismatch`（上传 stage 的摘要与本地文件不符，"
+                   "同一调用前一次却返回 ok=true）—— 与 P-090 同属「上传 staging/校验」路径，一并观察。\n"
                    "**持久形态根因（22:48 定位，见 P-095）**：`maestro.run` 的悬空 Overwrite-History 目标触发 "
                    "`ASSEMBLER-3018` 模态框（CDS.log：`# Displaying modal dbox \"adexlMessageDialog\"`）→ CIW 阻塞；"
                    "该形态 **8×15s 轮询不自愈**，需按 Runbook §10.3 重启实例。",

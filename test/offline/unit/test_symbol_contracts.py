@@ -649,6 +649,25 @@ class TestSymbolAtomicMatrix(unittest.TestCase):
                 self.assertTrue(expr.strip(), op)
                 self.assertTrue(balanced(expr), f"{op}: {expr[:120]}")
 
+    def test_new_shape_atoms_require_layer_and_purpose(self):
+        """symbol#053：新建几何原子 `layer`/`purpose` 必填、**不设默认层**（不猜 PDK）。
+
+        缺任一项必须在生成 SKILL 之前抛 `ValueError`，且错误文本点名缺的字段；
+        这条补的是"逐字段必填"的直接判据（此前只钉了"生成文本里带上 layer/purpose"）。
+        """
+        for op in ("place_line", "place_polygon", "place_rect", "place_ellipse"):
+            for drop in ("layer", "purpose"):
+                with self.subTest(op=op, drop=drop):
+                    command = {"op": op,
+                               **{k: v for k, v in ATOM_COMMANDS[op].items()
+                                  if k != drop}}
+                    with self.assertRaises(ValueError) as ctx:
+                        S.Package(FakeMiddle())._atomic_expr(command)
+                    self.assertIn(f"command.{drop}", str(ctx.exception))
+        # 反向对照：`delete_*` / 属性类原子**不需要** layer（不能顺手把它们也要求上）
+        self.assertTrue(self._expr("delete_shape"))
+        self.assertTrue(self._expr("set_shape_properties"))
+
     def test_expected_cadence_calls(self):
         for op, needle in (
             ("place_line", "dbCreateLine"),

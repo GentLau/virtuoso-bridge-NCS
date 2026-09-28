@@ -1,7 +1,7 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
 # 作者: 测试/root
-# 最后改动: 2026-09-28 20:05
-# 依赖: 真机 vblog token（maestro_tb/rc_probe 有可用 history）
+# 最后改动: 2026-09-28 23:52
+# 依赖: 真机 vblog token（rc_probe 无 Interactive.* 时本探针自行造一条）
 # =======================================================================
 # 六步流程（test/docs/写TB规范.md §1）：
 # ① 环境检查：业务面可达 + rc_probe 有 history；②③ 取一条已存在 Interactive.* 作为基线；
@@ -23,6 +23,7 @@ import datetime as dt
 import hashlib
 import json
 import sys
+import time
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -62,16 +63,45 @@ def sha(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()[:16]
 
 
+def _ensure_interactive_history() -> str | None:
+    """取一条 `Interactive.*`；**没有就自己造一条**（不带 `history=` 的 run 会新建
+    `Interactive.<n>`，ADE 交互式 history 的命名规则）。
+
+    为什么要自造：`rc_probe` 的 history 列表会被别的工作流换成 `MonteCarlo.*`，
+    此时探针此前只能 rc=2 退出——那是**环境前置**，不是产品结论，等于漏跑一轮。
+    """
+    def names() -> list[str]:
+        histories = value("virtuoso.maestro.read_history",
+                          library="maestro_tb", cell="rc_probe",
+                          view="maestro").get("histories") or []
+        return [str(h.get("name")) for h in histories
+                if str(h.get("name", "")).startswith("Interactive.")]
+
+    found = names()
+    if found:
+        return found[-1]
+    print("FIXTURE: no Interactive.* in rc_probe -> creating one via bare run")
+    time_limit = time.time() + 240
+    try:
+        value("virtuoso.maestro.run", library="maestro_tb", cell="rc_probe",
+              view="maestro", blocking=False, timeout=180)
+    except SystemExit as exc:              # run 本身就失败 → 交回环境前置
+        print(f"FIXTURE: bare run failed: {exc}")
+        return None
+    while time.time() < time_limit:
+        found = names()
+        if found:
+            return found[-1]
+        time.sleep(3)
+    return None
+
+
 def main() -> int:
     OUT.mkdir(parents=True, exist_ok=True)
-    histories = value("virtuoso.maestro.read_history",
-                      library="maestro_tb", cell="rc_probe").get("histories") or []
-    interactive = [h["name"] for h in histories
-                   if str(h.get("name", "")).startswith("Interactive.")]
-    if not interactive:
+    history = _ensure_interactive_history()
+    if not history:
         print("ENV: no Interactive.* history in maestro_tb/rc_probe")
         return 2
-    history = interactive[-1]
 
     stamp = dt.datetime.now().strftime("%H%M%S")
     results = {}

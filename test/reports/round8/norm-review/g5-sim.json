@@ -201,9 +201,10 @@
   "verdict": "direct",
   "evidence": [
    "test/offline/unit/test_spectre_contracts.py",
-   "test/artifacts/tmp/repro_p076_rounds.py"
+   "test/artifacts/tmp/repro_p076_rounds.py",
+   "test/offline/unit/test_spectre_contracts.py::TestRunOrchestration::test_run_dir_is_deterministic_per_job"
   ],
-  "reason": "job → 确定性 run 目录（无随机路径）：契约断言 + 复现脚本按 job 定位运行目录",
+  "reason": "job → 确定性 run 目录（无随机路径）：契约断言 + 复现脚本按 job 定位运行目录；2026-09-28 复核补钉：新增 TestRunOrchestration::test_run_dir_is_deterministic_per_job（两次调用同 run_dir、形如 <root>/spectre/<job>、无随机分量）",
   "gap_test": ""
  },
  {
@@ -728,9 +729,11 @@
   "verdict": "direct",
   "evidence": [
    "test/offline/unit/test_verilog_contracts.py::test_parse_failure_and_incomplete_log",
-   "test/offline/unit/test_verilog_contracts.py::test_ihdl_nonzero_exit_and_validation"
+   "test/offline/unit/test_verilog_contracts.py::test_ihdl_nonzero_exit_and_validation",
+   "test/live/packages/verilog_e2e_tests.py",
+   "test/live/packages/verilog_import_params_e2e_tests.py"
   ],
-  "reason": "rc 不可信：rc=0+缺 End of Logfile → incomplete_log；语法错误日志 → parse_failure；rc≠0 原样回显，均有断言",
+  "reason": "rc 不可信：rc=0+缺 End of Logfile → incomplete_log；语法错误日志 → parse_failure；rc≠0 原样回显，均有断言；行为面承接：verilog_e2e_tests.py; verilog_import_params_e2e_tests.py",
   "gap_test": ""
  },
  {
@@ -859,9 +862,10 @@
   "premap_status": "WEAK",
   "verdict": "direct",
   "evidence": [
-   "test/offline/unit/test_verilog_contracts.py (VERILOGIN-127 警告解析 64-90)"
+   "test/offline/unit/test_verilog_contracts.py (VERILOGIN-127 警告解析 64-90)",
+   "test/live/packages/verilog_e2e_tests.py"
   ],
-  "reason": "VERILOGIN-127（及 19）警告提取、降级 functional 的判定有断言",
+  "reason": "VERILOGIN-127（及 19）警告提取、降级 functional 的判定有断言；行为面承接：verilog_e2e_tests.py",
   "gap_test": ""
  },
  {
@@ -931,9 +935,10 @@
   "premap_status": "WEAK",
   "verdict": "direct",
   "evidence": [
-   "test/offline/unit/test_veriloga_contracts.py (写临时文件→校验读回→原子替换)"
+   "test/offline/unit/test_veriloga_contracts.py (写临时文件→校验读回→原子替换)",
+   "test/live/packages/veriloga_e2e_tests.py"
   ],
-  "reason": "文件写路径（临时文件→读回校验→原子替换）有断言",
+  "reason": "文件写路径（临时文件→读回校验→原子替换）有断言；行为面承接：veriloga_e2e_tests.py",
   "gap_test": ""
  },
  {
@@ -954,9 +959,10 @@
   "premap_status": "WEAK",
   "verdict": "direct",
   "evidence": [
-   "test/offline/unit/test_veriloga_contracts.py (master.tag 上传断言 321)"
+   "test/offline/unit/test_veriloga_contracts.py (master.tag 上传断言 321)",
+   "test/live/packages/veriloga_e2e_tests.py"
   ],
-  "reason": "master.tag 内容与模块名=cell 名约束有断言",
+  "reason": "master.tag 内容与模块名=cell 名约束有断言；行为面承接：veriloga_e2e_tests.py",
   "gap_test": ""
  },
  {
@@ -1050,9 +1056,10 @@
   "premap_status": "NO-TOKEN",
   "verdict": "direct",
   "evidence": [
-   "test/offline/unit/test_veriloga_contracts.py"
+   "test/offline/unit/test_veriloga_contracts.py",
+   "test/live/packages/veriloga_e2e_tests.py"
   ],
-  "reason": "dbOpenCellViewByType(veriloga w) 恒 nil → 必须走文件路径：生成式断言",
+  "reason": "dbOpenCellViewByType(veriloga w) 恒 nil → 必须走文件路径：生成式断言；行为面承接：veriloga_e2e_tests.py",
   "gap_test": ""
  },
  {
@@ -1116,9 +1123,10 @@
   "premap_status": "NONE",
   "verdict": "direct",
   "evidence": [
-   "test/offline/unit/test_veriloga_contracts.py (loadContext 断言 247/457)"
+   "test/offline/unit/test_veriloga_contracts.py (loadContext 断言 247/457)",
+   "test/live/packages/veriloga_e2e_tests.py"
   ],
-  "reason": "cold start 需 loadContext(ahdlSck.cxt) 有断言",
+  "reason": "cold start 需 loadContext(ahdlSck.cxt) 有断言；行为面承接：veriloga_e2e_tests.py",
   "gap_test": ""
  },
  {

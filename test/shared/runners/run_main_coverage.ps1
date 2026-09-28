@@ -71,6 +71,14 @@ foreach ($suite in 'infra','cellview','schematic','symbol','layout','verilog','v
     Step "packages/$suite (direct)" { python -m coverage run --branch --append --source=src "test/live/packages/${suite}_e2e_tests.py" --transport direct | Out-Null }
 }
 
+# 第八轮新增参数面套件里的 **direct 传输** 成员（在进程内 dispatch，计入覆盖率）。
+# 说明：`calibre_params` / `screenshot_params` / `verilog_import_params` 只支持
+# `--transport http`（打 8127 业务面），覆盖的是**已经在跑的常驻服务进程**，
+# 对本进程覆盖数据没有贡献，因此**不登记**在本 runner 里；
+# 它们的产物按证据引用（见 test/reports/round8/README.md §3、evidence-strength.md）。
+Step 'packages/maestro view-param (direct)' { python -m coverage run --branch --append --source=src test/live/packages/maestro_view_param_e2e_tests.py --transport direct | Out-Null }
+
+
 Step 'transport cov_remote_real' { python -m coverage run --branch --append --source=src test/live/transport/cov_remote_real.py --work-dir test/artifacts/env/log-vblog --token vb-vblog | Out-Null }
 Step 'transport one_shot_burst' { python -m coverage run --branch --append --source=src test/semi/transport/one_shot_burst_tb.py --work-dir test/artifacts/env/one-shot-burst --token vb-vblog --out test/artifacts/evidence/one-shot-burst-green.json | Out-Null }
 Step 'registration six-step (local)' { python -m coverage run --branch --append --source=src test/live/registration/registration_http_six_step_tb.py --work-dir test/artifacts/env/reg-six-local --user vbsixlocal --local-mode --token vb-six-local --out test/artifacts/env/reg-six-local/evidence.json | Out-Null }

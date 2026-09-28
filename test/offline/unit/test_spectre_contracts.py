@@ -335,6 +335,27 @@ class TestRunOrchestration(unittest.TestCase):
         self.assertTrue(executed_netlist, middle.executed)
         self.assertIn("+escchars", executed_netlist[0])
 
+    def test_run_dir_is_deterministic_per_job(self):
+        """spectre#041：包不生成 API 事后不可重建的随机路径。
+
+        两次独立调用（不同 middle、两个 netlist 副本）必须给出**同一个** run_dir，
+        且形如 `<output_root>/spectre/<job>`——不含随机/时间戳分量。
+        """
+        import re as _re
+        import tempfile
+        with tempfile.TemporaryDirectory(prefix="vb-") as tmp:
+            root = Path(tmp)
+            first = self._run(RunMiddle(), self._netlist(root))
+            second = self._run(RunMiddle(), self._netlist(root))
+        for result in (first, second):
+            self.assertTrue(result.ok, result.error)
+        run_dir = first.value["runs"][0]["value"]["run_dir"]
+        self.assertEqual(run_dir, second.value["runs"][0]["value"]["run_dir"])
+        # run_dir = <role.spectre.root>/spectre/<job>（stub 里 root="/role/spectre"）
+        self.assertEqual(run_dir, "/role/spectre/spectre/job1")
+        self.assertIsNone(_re.search(r"[0-9a-f]{8,}|[0-9]{10,}", run_dir),
+                          f"run_dir 含随机/时间戳分量: {run_dir}")
+
     def test_keep_run_dir_skips_cleanup(self):
         import tempfile
         with tempfile.TemporaryDirectory(prefix="vb-") as tmp:

@@ -561,9 +561,10 @@
   "verdict": "direct",
   "evidence": [
    "test/offline/unit/test_local_path_expansion.py",
-   "test/offline/unit/test_transfer.py"
+   "test/offline/unit/test_transfer.py",
+   "test/offline/unit/test_local_path_expansion.py::TestLocalTildeExpansion::test_root_is_default_dir_not_a_sandbox"
   ],
-  "reason": "绝对路径/`..` 不被拦截、root 仅作默认目录，均有断言",
+  "reason": "绝对路径/`..` 不被拦截、root 仅作默认目录，均有断言；2026-09-28 复核补钉：新增 TestLocalTildeExpansion::test_root_is_default_dir_not_a_sandbox（相对路径落 root、绝对路径且在 root 之外不被拦截、.. 按 OS 语义；条款里『不承诺跨目录隔离』属不承诺语义，不伪造判据）",
   "gap_test": ""
  },
  {

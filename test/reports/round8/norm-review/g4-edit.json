@@ -527,9 +527,10 @@
   "premap_status": "WEAK",
   "verdict": "direct",
   "evidence": [
-   "test/offline/unit/test_symbol_contracts.py"
+   "test/offline/unit/test_symbol_contracts.py",
+   "test/live/packages/symbol_e2e_tests.py"
   ],
-  "reason": "read 默认 view=symbol/view_type=schematicSymbol 且返回通用 shapes，有断言",
+  "reason": "read 默认 view=symbol/view_type=schematicSymbol 且返回通用 shapes，有断言；行为面承接：symbol_e2e_tests.py",
   "gap_test": ""
  },
  {
@@ -614,9 +615,10 @@
   "premap_status": "NO-TOKEN",
   "verdict": "direct",
   "evidence": [
-   "test/offline/unit/test_symbol_contracts.py"
+   "test/offline/unit/test_symbol_contracts.py",
+   "test/offline/unit/test_symbol_contracts.py::TestSymbolAtomicMatrix::test_new_shape_atoms_require_layer_and_purpose"
   ],
-  "reason": "新建几何原子 layer/purpose 必填、不设默认层：生成式断言（缺 layer 即 ValueError）",
+  "reason": "新建几何原子 layer/purpose 必填、不设默认层：生成式断言（缺 layer 即 ValueError）；2026-09-28 复核补钉：新增 TestSymbolAtomicMatrix::test_new_shape_atoms_require_layer_and_purpose（缺 layer/purpose 即 ValueError，且 delete/set 类原子不受牵连）",
   "gap_test": ""
  },
  {
@@ -735,9 +737,10 @@
   "premap_status": "WEAK",
   "verdict": "direct",
   "evidence": [
-   "test/offline/unit/test_symbol_generate.py"
+   "test/offline/unit/test_symbol_generate.py",
+   "test/live/packages/symbol_e2e_tests.py"
   ],
-  "reason": "sort_pins 保留但只接受枚举、不承诺排序效果：参数矩阵用例（含 bogus 拒绝）",
+  "reason": "sort_pins 保留但只接受枚举、不承诺排序效果：参数矩阵用例（含 bogus 拒绝）；行为面承接：symbol_e2e_tests.py",
   "gap_test": ""
  },
  {
@@ -1272,9 +1275,10 @@
   "premap_status": "NONE",
   "verdict": "direct",
   "evidence": [
-   "test/offline/unit/test_norm_gap_batch2.py::TestLayoutZoomNeverBboxless"
+   "test/offline/unit/test_norm_gap_batch2.py::TestLayoutZoomNeverBboxless",
+   "test/live/packages/layout_e2e_tests.py"
   ],
-  "reason": "禁止无 bbox 的 hiZoomIn/hiZoomOut：fit_view 走 hiZoomIn(win bBox)、zoom 走 hiZoomAbsoluteScale，且不出现裸 hiZoomIn/hiZoomOut，已断言。",
+  "reason": "禁止无 bbox 的 hiZoomIn/hiZoomOut：fit_view 走 hiZoomIn(win bBox)、zoom 走 hiZoomAbsoluteScale，且不出现裸 hiZoomIn/hiZoomOut，已断言。；行为面承接：layout_e2e_tests.py",
   "gap_test": ""
  },
  {
@@ -1411,9 +1415,10 @@
   "premap_status": "NO-TOKEN",
   "verdict": "indirect",
   "evidence": [
-   "test/offline/unit/test_layout_contracts.py"
+   "test/offline/unit/test_layout_contracts.py",
+   "test/live/packages/layout_geometry_classification_e2e_tests.py"
   ],
-  "reason": "via 生成图形默认不含在查询结果为真机事实；由 via 原子用例间接体现，无专门断言",
+  "reason": "via 生成图形默认不含在查询结果为真机事实；由 via 原子用例间接体现，无专门断言；行为面承接：layout_geometry_classification_e2e_tests.py",
   "gap_test": ""
  },
  {
@@ -1427,9 +1432,10 @@
   "premap_status": "NO-TOKEN",
   "verdict": "direct",
   "evidence": [
-   "test/offline/unit/test_layout_contracts.py"
+   "test/offline/unit/test_layout_contracts.py",
+   "test/live/packages/layout_geometry_classification_e2e_tests.py"
   ],
-  "reason": "via 按 pos+orient 索引（viaDef/name 不可读）由 via 原子生成式断言钉住",
+  "reason": "via 按 pos+orient 索引（viaDef/name 不可读）由 via 原子生成式断言钉住；行为面承接：layout_geometry_classification_e2e_tests.py",
   "gap_test": ""
  },
  {

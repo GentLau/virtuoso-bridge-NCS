@@ -26,6 +26,10 @@ OUT = ROOT / "test" / "reports" / "round8"
 GROUPS = ["g1-core", "g2-mid", "g3-reg", "g4-edit", "g5-sim", "g6-calibre"]
 VALID = {"direct", "indirect", "partial", "gap", "na"}
 
+#: 人工维护的「处置记录」分隔标记：本脚本会重写 `round8-gap-actions.md`，
+#: 但标记之后的原文（车道的处置结论、复跑决定等）原样保留，避免被覆盖丢失。
+MARKER = "<!-- 处置记录（人工维护，重跑本脚本不会覆盖） -->"
+
 
 def check_evidence_path(token: str) -> str | None:
     """返回缺失路径（None = OK）。允许 `path::test`、`path (说明)` 形态。"""
@@ -73,6 +77,24 @@ def evidence_items(raw) -> list[str]:
     return [str(item) for item in raw]
 
 
+def evidence_level(paths: list[str]) -> str:
+    """证据强度（**事实列**，不改变 verdict）：
+
+    * ``live``/``semi``：至少一条真机/半真机证据；
+    * ``offline``：只有离线证据（契约/桩件/纯 Python 逻辑）；
+    * ``src``/``artifact``：只锚到源码行或运行产物。
+    """
+    if any(p.startswith("test/live/") for p in paths):
+        return "live"
+    if any(p.startswith("test/semi/") for p in paths):
+        return "semi"
+    if any(p.startswith("test/offline/") for p in paths):
+        return "offline"
+    if paths:
+        return "src/artifact"
+    return "none"
+
+
 def main() -> int:
     rows: list[dict] = []
     group_rows: dict[str, list[dict]] = {}
@@ -108,11 +130,14 @@ def main() -> int:
             if note:
                 notes.append(note)
         row["evidence"] = paths
+        row["evidence_level"] = evidence_level(paths)
         if notes:
             row["evidence_notes"] = notes
         normalized_rows.append(row)
 
     counts = Counter(r.get("verdict") for r in normalized_rows)
+    levels = Counter(r["evidence_level"] for r in normalized_rows
+                     if r.get("verdict") in ("direct", "indirect"))
     by_doc: dict[str, Counter] = defaultdict(Counter)
     for r in normalized_rows:
         by_doc[r["doc"]][r["verdict"]] += 1
@@ -126,6 +151,11 @@ def main() -> int:
         f"> 生成：`test/shared/runners/merge_round8_spec_matrix.py` ｜ 基线：HEAD=64c803c（工作区被测）",
         f"> 统计：direct {counts['direct']} / indirect {counts['indirect']} / partial {counts['partial']} / "
         f"gap {counts['gap']} / na {counts['na']}（共 {len(rows)}）",
+        "",
+        f"> 证据强度（direct+indirect {sum(levels.values())} 条）："
+        f"**live {levels['live']} / semi {levels['semi']} / 仅离线 {levels['offline']} / "
+        f"仅源码或产物 {levels['src/artifact']}**。强度列是**事实**，不改变 verdict："
+        "离线证据用于 Python 侧接口/校验/解析/预算类条款；行为类条款应有 live/semi 证据。",
         "",
         "判定口径：",
         "- **direct**：有直接判据（读回/数值/字节/结构化断言）；**indirect**：由下游消费间接体现；",
@@ -146,8 +176,8 @@ def main() -> int:
         "",
         "## 逐条矩阵",
         "",
-        "| 编号 | 文档 | verdict | 说明 | 证据 |",
-        "|---|---|---|---|---|",
+        "| 编号 | 文档 | verdict | 证据强度 | 说明 | 证据 |",
+        "|---|---|---|---|---|---|",
     ]
     for r in rows:
         text = (r.get("reason") or "").replace("|", "\\|")[:150]
@@ -155,18 +185,37 @@ def main() -> int:
         gap = r.get("gap_test") or ""
         if gap:
             text += " ｜ **缺口**: " + gap.replace("|", "\\|")[:150]
-        lines.append(f"| {r['id']} | {r['doc']} | **{r['verdict']}** | {text} | {ev} |")
+        level = r.get("evidence_level", "")
+        lines.append(
+            f"| {r['id']} | {r['doc']} | **{r['verdict']}** | {level} | {text} | {ev} |")
     (OUT / "round8-spec覆盖矩阵.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
     # gap actions
     acts = [r for r in normalized_rows if r.get("gap_test")]
+    todo = [r for r in acts if r.get("verdict") == "partial"]
+    carried = [r for r in acts if r.get("verdict") != "partial"]
     act_lines = ["# 第八轮条款缺口动作（partial → 待补测试）", "",
-                 f"> 共 {len(acts)} 条；完成后把对应行的 verdict 提升并回填证据。", ""]
-    for r in acts:
-        act_lines += [f"## {r['id']}（{r['doc']}）", "",
+                 f"> 共 {len(acts)} 条：**待补测试 {len(todo)} 条（verdict=partial）** + "
+                 f"{len(carried)} 条已声明由其它 TB/环境限制承担（verdict=indirect）。",
+                 "> 待补项完成后把对应行的 verdict 提升并回填证据。", "",
+                 "", "## A. 待补测试（partial）", ""]
+    for r in todo:
+        act_lines += [f"### {r['id']}（{r['doc']}）", "",
                       f"- 条款：{r['text'][:160]}",
                       f"- 现状：{r.get('reason')}",
                       f"- 待补：{r.get('gap_test')}", ""]
+    act_lines += ["", "## B. 已声明承担方式（indirect / 环境限制，不单独立项）", ""]
+    for r in carried:
+        act_lines += [f"### {r['id']}（{r['doc']}）", "",
+                      f"- 条款：{r['text'][:160]}",
+                      f"- 现状：{r.get('reason')}",
+                      f"- 承担方式：{r.get('gap_test')}", ""]
+    # 人工维护的「处置记录」：本脚本重跑会覆盖生成内容，故保留标记之后的原文。
+    existing = OUT / "round8-gap-actions.md"
+    if existing.exists():
+        old = existing.read_text(encoding="utf-8")
+        if MARKER in old:
+            act_lines += ["", MARKER, old.split(MARKER, 1)[1].rstrip(), ""]
     (OUT / "round8-gap-actions.md").write_text("\n".join(act_lines) + "\n", encoding="utf-8")
 
     print(f"merged {len(normalized_rows)} rows: {dict(counts)}")
