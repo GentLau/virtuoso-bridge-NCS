@@ -417,9 +417,10 @@ def _read_stream(
     stream: Any,
     chunks: list[bytes],
     failures: "queue.Queue[BaseException]",
+    stop_event: threading.Event | None = None,
 ) -> None:
     try:
-        while True:
+        while stop_event is None or not stop_event.is_set():
             chunk = stream.read(65536)
             if not chunk:
                 return
@@ -432,9 +433,10 @@ def _send_stream_to_channel(
     stream: Any,
     channel: Any,
     failures: "queue.Queue[BaseException]",
+    stop_event: threading.Event | None = None,
 ) -> None:
     try:
-        while True:
+        while stop_event is None or not stop_event.is_set():
             chunk = stream.read(65536)
             if not chunk:
                 break
@@ -444,24 +446,50 @@ def _send_stream_to_channel(
         failures.put(exc)
 
 
-def _copy_stream(
-    source: Any,
-    destination: Any,
+def _pump_channel(
+    channel: Any,
+    on_data,
     failures: "queue.Queue[BaseException]",
+    stop_event: threading.Event,
+    *,
+    stderr: bool = False,
+    close_target: Any | None = None,
 ) -> None:
+    """Drain one Paramiko channel direction without an unbounded read.
+
+    ``ChannelFile.read()`` can stay blocked after the channel is logically
+    finished; this loop only calls ``recv*`` when the channel reports data and
+    checks ``stop_event`` between polls, so a blocked pump cannot outlive the
+    transfer cleanup.
+    """
     try:
-        while True:
-            chunk = source.read(65536)
-            if not chunk:
+        while not stop_event.is_set():
+            if stderr:
+                ready = channel.recv_stderr_ready()
+                chunk = channel.recv_stderr(65536) if ready else b""
+            else:
+                ready = channel.recv_ready()
+                chunk = channel.recv(65536) if ready else b""
+            if ready:
+                if not chunk:
+                    break
+                on_data(chunk)
+                continue
+            # A channel exit-status normally follows all stdout bytes; this
+            # also covers transports that do not surface EOF to ChannelFile.
+            if channel.exit_status_ready() and not (
+                channel.recv_ready() or channel.recv_stderr_ready()
+            ):
                 break
-            destination.write(chunk)
+            stop_event.wait(0.01)
     except BaseException as exc:  # noqa: BLE001
         failures.put(exc)
     finally:
-        try:
-            destination.close()
-        except OSError:
-            pass
+        if close_target is not None:
+            try:
+                close_target.close()
+            except OSError:
+                pass
 
 
 def _is_channel_open_failure(exc: BaseException) -> bool:
@@ -1414,7 +1442,10 @@ class ParamikoSessionBackend:
         process: subprocess.Popen[Any] | None,
         streams: list[Any],
         workers: list[threading.Thread],
+        stop_event: threading.Event | None = None,
     ) -> None:
+        if stop_event is not None:
+            stop_event.set()
         if channel is not None:
             channel.close()
         if process is not None and process.poll() is None:
@@ -1466,6 +1497,7 @@ class ParamikoSessionBackend:
         streams: list[Any] = []
         workers: list[threading.Thread] = []
         failures: "queue.Queue[BaseException]" = queue.Queue()
+        stop_event = threading.Event()
         try:
             with self._session_lease(deadline, plan.remote_command) as transport:
                 channel = self._open_session_channel(
@@ -1483,38 +1515,30 @@ class ParamikoSessionBackend:
                     if tar_process.stdout is None or tar_process.stderr is None:
                         raise OSError("Failed to allocate local tar pipes")
 
-                    remote_stdout_file = channel.makefile("rb")
-                    remote_stderr_file = channel.makefile_stderr("rb")
-                    streams.extend(
-                        [
-                            tar_process.stdout,
-                            tar_process.stderr,
-                            remote_stdout_file,
-                            remote_stderr_file,
-                        ]
-                    )
+                    streams.extend([tar_process.stdout, tar_process.stderr])
                     remote_stdout: list[bytes] = []
                     remote_stderr: list[bytes] = []
                     local_stderr: list[bytes] = []
                     workers = [
                         threading.Thread(
                             target=_send_stream_to_channel,
-                            args=(tar_process.stdout, channel, failures),
+                            args=(tar_process.stdout, channel, failures, stop_event),
                             daemon=True,
                         ),
                         threading.Thread(
                             target=_read_stream,
-                            args=(tar_process.stderr, local_stderr, failures),
+                            args=(tar_process.stderr, local_stderr, failures, stop_event),
                             daemon=True,
                         ),
                         threading.Thread(
-                            target=_read_stream,
-                            args=(remote_stdout_file, remote_stdout, failures),
+                            target=_pump_channel,
+                            args=(channel, remote_stdout.append, failures, stop_event),
                             daemon=True,
                         ),
                         threading.Thread(
-                            target=_read_stream,
-                            args=(remote_stderr_file, remote_stderr, failures),
+                            target=_pump_channel,
+                            args=(channel, remote_stderr.append, failures, stop_event),
+                            kwargs={"stderr": True},
                             daemon=True,
                         ),
                     ]
@@ -1534,6 +1558,7 @@ class ParamikoSessionBackend:
                         tar_process,
                         streams,
                         workers,
+                        stop_event,
                     )
             return self._tar_result(
                 remote_rc,
@@ -1566,6 +1591,7 @@ class ParamikoSessionBackend:
         streams: list[Any] = []
         workers: list[threading.Thread] = []
         failures: "queue.Queue[BaseException]" = queue.Queue()
+        stop_event = threading.Event()
         plan.local_path.parent.mkdir(parents=True, exist_ok=True)
         plan.stage_path.mkdir(parents=True)
         try:
@@ -1587,32 +1613,25 @@ class ParamikoSessionBackend:
                     if tar_process.stdin is None or tar_process.stderr is None:
                         raise OSError("Failed to allocate local tar pipes")
 
-                    remote_stdout_file = channel.makefile("rb")
-                    remote_stderr_file = channel.makefile_stderr("rb")
-                    streams.extend(
-                        [
-                            tar_process.stdin,
-                            tar_process.stderr,
-                            remote_stdout_file,
-                            remote_stderr_file,
-                        ]
-                    )
+                    streams.extend([tar_process.stdin, tar_process.stderr])
                     remote_stderr: list[bytes] = []
                     local_stderr: list[bytes] = []
                     workers = [
                         threading.Thread(
-                            target=_copy_stream,
-                            args=(remote_stdout_file, tar_process.stdin, failures),
+                            target=_pump_channel,
+                            args=(channel, tar_process.stdin.write, failures, stop_event),
+                            kwargs={"close_target": tar_process.stdin},
+                            daemon=True,
+                        ),
+                        threading.Thread(
+                            target=_pump_channel,
+                            args=(channel, remote_stderr.append, failures, stop_event),
+                            kwargs={"stderr": True},
                             daemon=True,
                         ),
                         threading.Thread(
                             target=_read_stream,
-                            args=(remote_stderr_file, remote_stderr, failures),
-                            daemon=True,
-                        ),
-                        threading.Thread(
-                            target=_read_stream,
-                            args=(tar_process.stderr, local_stderr, failures),
+                            args=(tar_process.stderr, local_stderr, failures, stop_event),
                             daemon=True,
                         ),
                     ]
@@ -1632,6 +1651,7 @@ class ParamikoSessionBackend:
                         tar_process,
                         streams,
                         workers,
+                        stop_event,
                     )
             result = self._tar_result(
                 remote_rc,
