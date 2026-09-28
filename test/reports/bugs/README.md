@@ -13,10 +13,11 @@
 3. **刷新方式**：改 `test/shared/runners/make_bug_cards.py` 的 `OPEN` / `CLOSED_RECENT` 段，
    然后 `python test/shared/runners/make_bug_cards.py`（幂等；`--check` 只校验不写盘）。
 
-## 1. 未关闭（7 条）
+## 1. 未关闭（8 条）
 
 | ID | 级别 | 归属 | 状态 | 一句话 | 卡片 |
 |---|---|---|---|---|---|
+| **P-077** | P3（口径不一致：注册探测 vs 运行时；会绊住手写配置的用户） | 设计侧（定口径：探测接受 PATH 名 or spec 写明必须绝对路径） | 待归属 | 显式 `role.daemon.python` 传裸命令名（如 `python3`）时注册第 3 步失败；运行时可解析 PATH | [P-077-explicit-daemon-python-bare-name-rejected.md](P-077-explicit-daemon-python-bare-name-rejected.md) |
 | **P-076** | P2（间歇性挂起；占住 in_flight 线程，客户端只能杀进程） | 设计侧（上层 spectre 包的 run 路径：等待完成/递归下载） | 观察（1 次复现，待设计侧定位） | 间歇：`spectre.run` 请求永不返回（spectre 已 0 error 跑完；服务端线程不释放，需重启业务面） | [P-076-spectre-run-request-never-returns.md](P-076-spectre-run-request-never-returns.md) |
 | **P-075** | P1（会话被挂死；多用户/GDS 后继续操作的流程直接卡住） | 设计侧（上层 layout.gds / strmout 调用路径） | 待设计修 | `virtuoso.layout.gds` 导出后会话残留模态对话框（"Stream out translation complete"）→ 同会话 SKILL 通道挂死，必须重启实例 | [P-075-gds-export-modal-blocks-session.md](P-075-gds-export-modal-blocks-session.md) |
 | **C0** | P2（测试规范缺陷；导致覆盖系统性缺口 + 缺陷漏检） | 测试侧（规范制定 + 覆盖补齐） | 规范已落地（2026-09-28）；覆盖补齐进行中（B1–B4） | 测试规范缺失：无显式 TB 流程约定（环境检查→构建→完备校验→执行→比对），delete/rename/set 类原子在 semi/live 层系统性无覆盖 | [C0-测试规范-AAA与状态还原缺失.md](C0-测试规范-AAA与状态还原缺失.md) |

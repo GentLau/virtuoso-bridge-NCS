@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=====================
 # 作者: 设计/Codex
-# 最后改动: 2026-09-28 15:45
+# 最后改动: 2026-09-28 15:52
 # 依赖: 无
 # =====================================================================
 # 六步流程（按 test/docs/写TB规范.md §1–§6）：
@@ -274,7 +274,10 @@ def main(argv: list[str] | None = None) -> int:
                         "root": f"{ws_root}/gui", "display": args.ws_display},
                 "daemon": {"host": args.ws_host, "user": args.ws_user,
                            "key_dir": args.ws_key_dir, "key": args.ws_key,
-                           "root": f"{ws_root}/daemon", "python": "python3",
+                           "root": f"{ws_root}/daemon",
+                           # 注册探测用 `test -x <显式值>` 校验，裸命令名会被拒（P-077）；
+                           # 这里给绝对路径（= 目标机 `command -v python3`）。
+                           "python": "/usr/local/bin/python3",
                            "daemon_port": daemon_port, "local_port": local_port},
                 "command": {"host": args.lab_host, "user": args.lab_user,
                             "key_dir": args.lab_key_dir, "key": args.lab_key,
