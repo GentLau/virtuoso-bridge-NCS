@@ -6,6 +6,7 @@
 - `_daemon_harness.py`：CIW/daemon wire 协议脚本化夹具。
 - `fake_daemon_host.py`：协议级 fake daemon 群。
 - `fake_daemon_py27.py`：Python 2.7 可执行的协议级 fake daemon（py27 注册 TB 用）。
+- `registration_tb_support.py`：注册 live TB 共用客户端助手（HTTP/SSH/脱敏/端口）。
 - `probe.py`：单次 operation 探针。
 
 使用者：`test/offline/core/*_tb.py`（daemon 夹具）、`test/live/stress/*`、`test/live/flows/*`、

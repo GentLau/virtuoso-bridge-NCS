@@ -5,6 +5,11 @@
 - `registration_py27_tb.py`：X4-① 的 Python 2.7 端到端注册；第 3 步校验 py27、
   第 4 步确认 setup 引用 `ramic_bridge_daemon_27.py`，第 5 步用 py27 协议兼容 fake
   daemon 跑双冒烟后 commit。环境不满足 py27/SSH 时第 1 步写 `environment_failed` 并退出。
+- `registration_role_split_tb.py`：P3 五 role 跨主机注册；gui/daemon/spectre→wsl，
+  command/file→w1，commit 后再用真实中层验证 command/skill/file 的落点。
+- `registration_real_ciw_tb.py`：P4 真 CIW 第 5 步注册；用测试侧
+  `start_disposable_ciw.sh` + `ciw_load_setup.py` 把第 4 步 setup 注入 CIW，
+  第 5 步连接真实 daemon 后 commit。
 - `cov_registration_real.py`：注册 1–4 步 coverage TB。
 - `test/semi/registration/registration_failure_matrix_tb.py`：X4-③ 的六步失败/重试矩阵
   （自包含本地 fake，无外部环境；覆盖每步失败零落盘、原样重试、cancel 后重 apply、
