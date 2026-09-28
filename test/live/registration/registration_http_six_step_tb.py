@@ -1,3 +1,15 @@
+# === TB 注释头（规范见 test/docs/写TB规范.md §0）=====================
+# 作者: 设计/Codex
+# 最后改动: 2026-09-28 12:04
+# 依赖: 无
+# =====================================================================
+# 六步流程（按 test/docs/写TB规范.md §1–§6）：
+# §1 环境检查：无预置 token；启动/复用注册 HTTP 服务并检查 /health。
+# §2 构建：临时 work-dir、registry、候选 user/token/端口。
+# §3 最终检查：确认 stage=created、registry 初始状态和端口分配。
+# §4 执行：apply → validate → probe → deploy → verify → commit。
+# §5 比对：每步 stage、返回体、redacted entry、registry 字节与期望一致。
+# §6 重复/收尾：update/delete/乱序/重放重复；保留最终注册表与 JSON 证据。
 """Six-step registration over the real HTTP API (artifact-producing TB).
 
 Drives ``register.server`` exactly as the registration page does:
@@ -16,6 +28,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shlex
 import shutil
 import socket
 import subprocess
@@ -37,7 +50,7 @@ if str(_SUPPORT) not in sys.path:
 
 from register.server import RegistrationServer  # noqa: E402
 from common.registry import load_registry  # noqa: E402
-from common.paths import registry_path, override_work_dir_for_tests  # noqa: E402
+from common.paths import registry_path, init_work_dir  # noqa: E402
 
 try:
     from _win import no_window  # type: ignore
@@ -48,6 +61,23 @@ except ImportError:  # pragma: no cover
 
 class ProbeFailure(AssertionError):
     pass
+
+
+class Results:
+    """Small check ledger so aux assertions land in the evidence JSON."""
+
+    def __init__(self) -> None:
+        self.items: list[dict] = []
+
+    def add(self, name: str, ok: bool, **detail) -> bool:
+        self.items.append({"name": name, "ok": bool(ok), **detail})
+        print(f"[{'PASS' if ok else 'FAIL'}] {name}"
+              + (f"  {detail}" if detail else ""))
+        return bool(ok)
+
+    @property
+    def passed(self) -> int:
+        return sum(1 for item in self.items if item["ok"])
 
 
 class _StopAfterDeploy(Exception):
@@ -84,6 +114,18 @@ ADMIN_TOKEN = _load_admin_token()
 ADMIN_HEADERS = {"Authorization": "Bearer " + ADMIN_TOKEN}
 
 
+def _redact(value):
+    """Remove credentials from the evidence trail (never persist real tokens)."""
+    if isinstance(value, dict):
+        return {
+            key: ("***" if key in ("token", "enhanced_token") else _redact(item))
+            for key, item in value.items()
+        }
+    if isinstance(value, list):
+        return [_redact(item) for item in value]
+    return value
+
+
 class Http:
     """Minimal JSON client plus the raw evidence trail for the report."""
 
@@ -111,7 +153,7 @@ class Http:
             except ValueError:
                 body = {"raw": raw}
         self.trail.append({"method": method, "path": path, "status": status,
-                           "request": payload, "response": body})
+                           "request": _redact(payload), "response": _redact(body)})
         return status, body
 
 
@@ -315,7 +357,7 @@ def main() -> int:
     work_dir.mkdir(parents=True, exist_ok=True)
     if not args.out:
         args.out = str(work_dir / "evidence.json")
-    override_work_dir_for_tests(work_dir)
+    init_work_dir(work_dir)
     registry = load_registry(registry_path())
 
     prefix = f"vbsix{uuid.uuid4().hex[:6]}"
@@ -357,6 +399,7 @@ def main() -> int:
     http = Http(f"http://127.0.0.1:{http_port}")
 
     steps: list[dict] = []
+    results = Results()
     started = time.monotonic()
     # keep the TB re-runnable: remove a user left behind by a previous run
     if registry.get(args.user) is not None:
@@ -434,6 +477,24 @@ def main() -> int:
             raise ProbeFailure(f"step 3 failed: {body}")
         if not body.get("entry"):
             raise ProbeFailure("step 3 did not return the candidate entry")
+        entry = body["entry"]
+        roles = entry.get("roles") or {}
+        missing_roles = [name for name in ("gui", "daemon", "command", "file", "spectre")
+                         if name not in roles]
+        if not results.add("step3-five-role-entries", not missing_roles,
+                           missing=missing_roles):
+            raise ProbeFailure(f"step 3 entry is missing roles: {missing_roles}")
+        for role_name in ("gui", "daemon", "command", "file"):
+            role_root = (roles.get(role_name) or {}).get("root")
+            absolute = bool(role_root) and (
+                Path(role_root).is_absolute() if args.local_mode
+                else str(role_root).startswith("/")
+            )
+            if not results.add(f"step3-{role_name}-root-absolute",
+                               absolute, root=role_root):
+                raise ProbeFailure(
+                    f"step 3 {role_name} root is not absolute: {role_root!r}"
+                )
         assert_no_registry_write("step 3")
 
         # -- step 4: deploy -------------------------------------------------
@@ -447,19 +508,45 @@ def main() -> int:
         setup_path = body.get("setup_path") or ""
         if not setup_path.endswith("virtuoso_setup.il"):
             raise ProbeFailure(f"step 4 returned no setup path: {setup_path!r}")
-        # deploy must have put real files on the target, not just a path string
+        daemon_entry = roles.get("daemon") or {}
+        daemon_root = str(daemon_entry.get("root") or "").rstrip("/")
+        daemon_python = str(daemon_entry.get("python") or "")
+        expected_variant = (
+            "ramic_bridge_daemon_27.py"
+            if "python2" in daemon_python.lower() else "ramic_bridge_daemon_3.py"
+        )
+        # deploy must have put the daemon tree on the target and the generated
+        # setup must select the variant matching the probed interpreter.
         if args.local_mode:
-            if not Path(setup_path).is_file():
-                raise ProbeFailure(f"step 4 did not write the setup file: {setup_path}")
+            setup_file = Path(setup_path)
+            probe_ok = (
+                setup_file.is_file()
+                and bool(daemon_root)
+                and all((Path(daemon_root) / part).is_dir()
+                        for part in ("ramic", "setup", "status"))
+                and expected_variant in setup_file.read_text(
+                    encoding="utf-8", errors="replace")
+            )
+            probe_detail = f"setup={setup_path} daemon_root={daemon_root}"
         else:
             probe = subprocess.run(
-                ["ssh", args.host, f"test -f {setup_path} && echo present"],
+                ["ssh", args.host,
+                 f"test -f {shlex.quote(setup_path)} && "
+                 f"test -d {shlex.quote(daemon_root + '/ramic')} && "
+                 f"test -d {shlex.quote(daemon_root + '/setup')} && "
+                 f"test -d {shlex.quote(daemon_root + '/status')} && "
+                 f"grep -F {shlex.quote(expected_variant)} {shlex.quote(setup_path)} "
+                 f">/dev/null && echo present"],
                 capture_output=True, text=True, timeout=60, **no_window(),
             )
-            if probe.returncode != 0 or "present" not in probe.stdout:
-                raise ProbeFailure(
-                    f"step 4 did not create {setup_path} on {args.host}: {probe.stderr.strip()}"
-                )
+            probe_ok = probe.returncode == 0 and "present" in probe.stdout
+            probe_detail = (probe.stdout or probe.stderr).strip()
+        if not results.add("step4-deploy-tree-and-variant", probe_ok,
+                           setup_path=setup_path, daemon_root=daemon_root,
+                           expected_variant=expected_variant, detail=probe_detail):
+            raise ProbeFailure(
+                f"step 4 deploy tree/variant check failed on {args.host}: {probe_detail}"
+            )
         assert_no_registry_write("step 4")
 
         # -- step 5 + 6: connectivity then the single durable write ---------
@@ -619,16 +706,21 @@ def main() -> int:
         server.shutdown()
         server.server_close()
 
+    checks_ok = results.passed == len(results.items)
+    ok = ok and checks_ok
     evidence = {
         "ok": ok,
         "phase": "1-4 (remote)" if args.stop_after_deploy else "1-6",
         "user": args.user,
-        "token": token,
+        "token_present": bool(token),
         "host": args.host,
         "daemon_port": port,
         "http_port": http_port,
         "work_dir": str(work_dir),
         "steps": steps,
+        "checks": results.items,
+        "checks_passed": results.passed,
+        "checks_total": len(results.items),
         "http_trail": http.trail,
         "elapsed_s": time.monotonic() - started,
     }
@@ -636,7 +728,8 @@ def main() -> int:
     if args.out:
         Path(args.out).parent.mkdir(parents=True, exist_ok=True)
         Path(args.out).write_text(text + "\n", encoding="utf-8")
-    print(json.dumps({"ok": ok, "steps": steps}, ensure_ascii=False, indent=2))
+    print(json.dumps({"ok": ok, "checks": results.items, "steps": steps},
+                     ensure_ascii=False, indent=2))
     return 0 if ok else 2
 
 
