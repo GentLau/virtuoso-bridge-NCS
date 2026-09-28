@@ -65,8 +65,8 @@
 ## calibre#069（上层/12-calibre.md）
 
 - 条款：终态或超时即返回；超时返回 `status=timeout` 且**后台作业继续跑**。
-- 现状：终态判定有断言；**超时 → status=timeout 且后台作业继续跑**无直接用例
-- 待补：补离线：blocking 超时返回 status=timeout，launcher/作业进程未被杀
+- 现状：部分覆盖且已定位偏差：后台作业不被杀 ✓；但 deadline 到点返回最后一次 status（running）而非 spec 的 `timeout` —— 已立 P-098 并加 strict-xfail 红灯钉（--runxfail 实锤 'timeout' != 'running'）。修复后本行可升 direct。
+- 待补：设计修 P-098（收尾口径：非终态超时 → status=timeout，可保留 last_status 字段）→ 红钉转绿后复评
 
 ## calibre#123（上层/12-calibre.md）
 
