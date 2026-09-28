@@ -1,9 +1,9 @@
 # 上层业务包：schematic
 
-> 版本：Draft v2
-> 日期：2026-09-17
+> 版本：Draft v3
+> 日期：2026-09-28
 > 状态：Draft（待共同修订，暂未纳入 README 治理）
-> Supersedes：Draft v1（核心收敛为：一个 read + 按对象对称的写原子）
+> Supersedes：Draft v2（坐标索引口径收口：label/note/pin 索引统一 `xy: [x,y]`，禁止拆成 `x`/`y`）
 > 定位：业务包/业务操作一般契约见[1-上层.md](1-上层.md)；五业务接口见[四层整体架构与接口 §4](../总览/1-四层整体架构与接口.md)。
 
 ## 1. 业务操作
@@ -61,6 +61,8 @@
 | delete_note | `xy`（可选加 `text`） | — |
 | rename_note | `xy`（可选加 `old_text`） | `new_text` |
 | set_note_properties | `xy`（可选加 `text`） | `justify?, orient?, font?, height?` |
+
+- 坐标索引口径：label/note/pin 的 delete/rename/set 一律用 `xy: [x, y]`（与 read 同形），**不拆成 `x`/`y`**；`place_*` 新建仍用 `x, y`；缺坐标字段时校验报错必须指明缺失字段名（不得裸 `KeyError`）；
 
 接口简写：S=execute_skill、C=run_command、U=upload_file、D=download_file、G=run_gui_command、Sp=run_spectre_command。
 
