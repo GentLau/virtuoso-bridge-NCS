@@ -25,6 +25,7 @@ import sys
 import time
 import uuid
 from pathlib import Path
+from typing import Any
 
 from common.registry import (
     CdsLog,
@@ -224,6 +225,12 @@ def host_key_refresh_patch(
 
 class RegistrationProbeError(RuntimeError):
     """A required probe failed; registration aborts without persisting."""
+
+    def __init__(self, message: str, *, code: str = "probe_failed") -> None:
+        super().__init__(message)
+        self.code = code
+        #: Partial per-role facts attached by ``_probe`` before it aborts.
+        self.probe_results: list[dict[str, Any]] = []
 
 
 STEP_BUDGET_SECONDS = 30.0  # one independent budget per registration step (spec v17)
@@ -590,6 +597,51 @@ def _probe(
     user = request.user
     targets = resolve_candidate(entry, user)
     warnings: list[str] = []
+    probe_results: dict[str, dict[str, Any]] = {
+        name: {
+            "role": name,
+            "status": "not_run",
+            "blocking": name != "spectre",
+            "code": "not_run",
+            "message": None,
+        }
+        for name in _ALL_ROLES
+    }
+
+    def mark(
+        name: str,
+        status: str,
+        *,
+        blocking: bool,
+        code: str | None,
+        message: str | None,
+    ) -> None:
+        probe_results[name].update(
+            status=status, blocking=blocking, code=code, message=message,
+        )
+
+    def record_blocking_error(name: str, exc: BaseException) -> None:
+        mark(
+            name,
+            "error",
+            blocking=True,
+            code=f"{name}_probe_failed",
+            message=str(exc),
+        )
+
+    def record_spectre_warning(exc: BaseException) -> None:
+        mark(
+            "spectre",
+            "warning",
+            blocking=False,
+            code="spectre_unavailable",
+            message=str(exc),
+        )
+
+    def attach_results(exc: BaseException) -> None:
+        setattr(exc, "probe_results", list(probe_results.values()))
+
+    current_role: str | None = None
     runners: dict[str, SSHRunner] = {}
     role_runners: dict[str, SSHRunner] = {}
     budget = StepBudget("step 3 (probe)")   # same mechanism as step 5
@@ -609,6 +661,7 @@ def _probe(
 
     try:
         for name in _ALL_ROLES:
+            current_role = name
             role = targets.role(name)
             entry_role = getattr(entry.roles, name)
             try:
@@ -616,6 +669,7 @@ def _probe(
                     entry_role.root = _local_role_checks(role)
                     # §2.3: local role 无 endpoint，expected_fingerprint 必须为 null
                     entry_role.expected_fingerprint = None
+                    warning_count = len(warnings)
                     if name == "gui":
                         _probe_gui_display(
                             entry_role,
@@ -624,6 +678,22 @@ def _probe(
                             budget=budget,
                             warnings=warnings,
                             local=True,
+                        )
+                    if name == "gui" and len(warnings) > warning_count:
+                        mark(
+                            "gui",
+                            "warning",
+                            blocking=False,
+                            code="display_not_detected",
+                            message=warnings[-1],
+                        )
+                    else:
+                        mark(
+                            name,
+                            "ok",
+                            blocking=name != "spectre",
+                            code=None,
+                            message=None,
                         )
                     continue
                 if not probes.ssh_port_is_22(role.host):
@@ -662,6 +732,7 @@ def _probe(
                     )
                 entry_role.expected_fingerprint = fp
                 entry_role.root = _remote_role_checks(_BudgetedRunner(runner, budget), role)
+                warning_count = len(warnings)
                 if name == "gui":
                     _probe_gui_display(
                         entry_role,
@@ -671,15 +742,39 @@ def _probe(
                         warnings=warnings,
                         local=False,
                     )
+                if name == "gui" and len(warnings) > warning_count:
+                    mark(
+                        "gui",
+                        "warning",
+                        blocking=False,
+                        code="display_not_detected",
+                        message=warnings[-1],
+                    )
+                else:
+                    mark(
+                        name,
+                        "ok",
+                        blocking=name != "spectre",
+                        code=None,
+                        message=None,
+                    )
             except RegistrationProbeError as exc:
                 if name == "spectre":
+                    record_spectre_warning(exc)
                     entry_role.root = None
                     entry_role.expected_fingerprint = None
                     entry_role.bin = None
                     warnings.append(f"{exc} (non-blocking)")
                     continue
+                record_blocking_error(name, exc)
+                attach_results(exc)
+                raise
+            except Exception as exc:
+                record_blocking_error(name, exc)
+                attach_results(exc)
                 raise
         # daemon-specific environment probes spend the same step budget
+        current_role = "daemon"
         daemon = targets.daemon
         python_major: int | None = None
         if daemon.mode == "local":
@@ -811,14 +906,26 @@ def _probe(
             entry.roles.daemon.local_port = local_port
 
         # spectre bin (warning-only)
+        current_role = "spectre"
         spectre_role = targets.spectre
-        def nullify_spectre(reason: str | None = None) -> None:
+        def nullify_spectre(
+            reason: str | None = None,
+            *,
+            code: str = "spectre_unavailable",
+        ) -> None:
             """§6.2: spectre 探测失败时 root/fingerprint/bin 一并提交为 null。"""
             entry.roles.spectre.root = None
             entry.roles.spectre.expected_fingerprint = None
             entry.roles.spectre.bin = None
             if reason:
                 warnings.append(reason)
+            mark(
+                "spectre",
+                "warning",
+                blocking=False,
+                code=code,
+                message=reason,
+            )
 
         if entry.roles.spectre.root is None:
             pass  # prior spectre probe failure is warning-only; keep binomial null
@@ -826,15 +933,18 @@ def _probe(
             if request.roles.spectre.bin:
                 if probes.local_executable_exists(request.roles.spectre.bin):
                     entry.roles.spectre.bin = request.roles.spectre.bin
+                    mark("spectre", "ok", blocking=False, code=None, message=None)
                 else:
                     nullify_spectre(
                         f"spectre bin not usable locally: {request.roles.spectre.bin} "
-                        f"(non-blocking)"
+                        f"(non-blocking)",
+                        code="spectre_bin_unavailable",
                     )
             else:
                 detected = probes.detect_local_spectre()
                 if detected:
                     entry.roles.spectre.bin = detected
+                    mark("spectre", "ok", blocking=False, code=None, message=None)
                 else:
                     nullify_spectre("no usable spectre found locally (non-blocking)")
         else:
@@ -844,21 +954,25 @@ def _probe(
                 if request.roles.spectre.bin:
                     if probes.remote_executable_exists(runner, request.roles.spectre.bin):
                         entry.roles.spectre.bin = request.roles.spectre.bin
+                        mark("spectre", "ok", blocking=False, code=None, message=None)
                     else:
                         nullify_spectre(
                             f"spectre bin not usable on {spectre_role.host}: "
-                            f"{request.roles.spectre.bin} (non-blocking)"
+                            f"{request.roles.spectre.bin} (non-blocking)",
+                            code="spectre_bin_unavailable",
                         )
                 else:
                     detected = probes.detect_remote_spectre(runner)
                     if detected:
                         entry.roles.spectre.bin = detected
+                        mark("spectre", "ok", blocking=False, code=None, message=None)
                     else:
                         nullify_spectre(
                             f"no usable spectre found on {spectre_role.host} (non-blocking)"
                         )
 
         # endpoint-fingerprint consistency across roles sharing an endpoint
+        current_role = None
         conflicts = fingerprint_conflicts_candidate(entry, user)
         if conflicts:
             raise RegistrationProbeError("; ".join(conflicts))
@@ -867,7 +981,24 @@ def _probe(
         # the application-time fallback is not persisted.
         entry.root.default = None
         assert python_major in (2, 3)
-        return ProbeResult(entry=entry, python_major=python_major, warnings=warnings)
+        return ProbeResult(
+            entry=entry,
+            python_major=python_major,
+            warnings=warnings,
+            probe_results=list(probe_results.values()),
+        )
+    except RegistrationProbeError as exc:
+        if current_role == "spectre":
+            record_spectre_warning(exc)
+        elif current_role in probe_results:
+            record_blocking_error(current_role, exc)
+        attach_results(exc)
+        raise
+    except Exception as exc:
+        if current_role in probe_results:
+            record_blocking_error(current_role, exc)
+        attach_results(exc)
+        raise
     finally:
         close_all()
 
@@ -1300,6 +1431,7 @@ class RegistrationFlow:
         self.state.step = step
         self.state.errors = []
         self.state.warnings = []
+        self.state.probe_results = []
         self.state.report = None
         return self.state
 
@@ -1341,12 +1473,14 @@ class RegistrationFlow:
                 reserved_local_ports=self._reserved_local_ports_all(),
             )
         except (RegistrationProbeError, Exception) as exc:  # noqa: BLE001
+            state.probe_results = list(getattr(exc, "probe_results", []))
             if not isinstance(exc, RegistrationProbeError):
                 logger.warning("probe failed with %s: %s", type(exc).__name__, exc)
             return self._fail(state, [str(exc)])
         state.entry = result.entry
         state.python_major = result.python_major
         state.warnings = list(result.warnings)
+        state.probe_results = list(result.probe_results)
         # step 3 may have allocated the real ports: refresh the reservation so
         # other registrations see the final numbers
         conflicts = self._update_reservation(state)

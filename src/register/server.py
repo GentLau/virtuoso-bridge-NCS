@@ -150,6 +150,8 @@ class RegistrationHandler(BaseHTTPRequestHandler):
         }
         if state.setup_path:
             payload["setup_path"] = state.setup_path
+        if state.probe_results:
+            payload["probe_results"] = state.probe_results
         if state.entry is not None:
             payload["entry"] = self._redacted(state.entry)
         if state.report is not None:
@@ -157,6 +159,7 @@ class RegistrationHandler(BaseHTTPRequestHandler):
                 "command_ok": state.report.command_ok,
                 "skill_ok": state.report.skill_ok,
                 "token_ok": state.report.token_ok,
+                "fingerprint_ok": state.report.fingerprint_ok,
                 "banner_hostname": state.report.banner_hostname,
                 "expected_hostname": state.report.expected_hostname,
                 "detail": state.report.detail,

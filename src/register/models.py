@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import (
     BaseModel,
@@ -225,6 +225,10 @@ class ProbeResult:
     entry: UserEntry
     python_major: int
     warnings: list[str] = field(default_factory=list)
+    #: Per-role probe facts for API consumers.  Each row is
+    #: ``{role, status, blocking, code, message}``; roles after the first
+    #: blocking failure remain ``not_run``.
+    probe_results: list[dict[str, Any]] = field(default_factory=list)
 
 
 @dataclass
@@ -260,6 +264,7 @@ class RegistrationState:
     token: str | None = None
     errors: list[str] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
+    probe_results: list[dict[str, Any]] = field(default_factory=list)
     report: ConnectivityReport | None = None
     #: apply 时提供了有效 enhanced_token（内存态，绝不落盘/回显）。
     enhanced_ok: bool = False
