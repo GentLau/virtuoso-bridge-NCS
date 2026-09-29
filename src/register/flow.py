@@ -1174,6 +1174,10 @@ class RegistrationFlow:
             return port in reserved or not probes.local_port_free(port)
 
         if mode == "local":
+            if (role.daemon_port is not None and role.local_port is not None
+                    and role.daemon_port != role.local_port):
+                return [f"local mode requires daemon_port == local_port: "
+                        f"daemon_port={role.daemon_port}, local_port={role.local_port}"]
             joint = role.local_port or role.daemon_port
             if joint is None:
                 joint = probes.allocate_local_port(reserved=reserved)

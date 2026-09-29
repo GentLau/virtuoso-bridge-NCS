@@ -182,7 +182,10 @@ class SkillClient:
     @staticmethod
     def _parse_response(raw: str, elapsed: float) -> VirtuosoResult:
         if not raw:
-            return VirtuosoResult(status=ExecutionStatus.ERROR, errors=["Empty response from daemon"], execution_time=elapsed)
+            return VirtuosoResult(status=ExecutionStatus.ERROR,
+                                  errors=["SKILL execution timed out"],
+                                  warnings=["daemon returned an empty response"],
+                                  execution_time=elapsed)
         if not (raw.startswith(STX) or raw.startswith(NAK)):
             return VirtuosoResult(
                 status=ExecutionStatus.ERROR,
