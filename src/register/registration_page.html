@@ -1512,9 +1512,7 @@ button,input,select {
                 <div class="field" data-remote-only><label for="ssh_key_dir">SSH 私钥目录 <span class="optional">缺省 ~/.ssh</span></label><input id="ssh_key_dir" name="ssh_key_dir" placeholder="~/.ssh" spellcheck="false"><p class="field-help">客户端侧（本机）目录。</p></div>
                 <div class="field" data-remote-only><label for="ssh_key">SSH 私钥文件名 <span class="required remote-required" aria-hidden="true">*</span></label><input id="ssh_key" name="ssh_key" placeholder="例如 id_ed25519" spellcheck="false"><p class="field-help">只填文件名；同目录下的 &lt;key&gt;.pub 用于凭据指纹查重。</p></div>
               </div>
-              <details class="subdetails" data-remote-only><summary>分离 daemon / 跳板机配置（可选）</summary><div class="details-body"><div class="fields two">
-                <div class="field"><label for="daemon_host">Daemon 主机 <span class="optional">缺省同 SSH 主机</span></label><input id="daemon_host" name="daemon_host" placeholder="例如 compute-host-b" spellcheck="false"></div>
-                <div class="field"><label for="daemon_user">Daemon 用户 <span class="optional">缺省同 SSH 用户</span></label><input id="daemon_user" name="daemon_user" placeholder="例如 designer1" spellcheck="false"></div>
+              <details class="subdetails" data-remote-only><summary>跳板机配置（可选）</summary><div class="details-body"><div class="fields two">
                 <div class="field"><label for="jump_host">跳板主机 <span class="optional">可选</span></label><input id="jump_host" name="jump_host" placeholder="例如 bastion.example.com" spellcheck="false"></div>
                 <div class="field"><label for="jump_user">跳板用户 <span class="optional">可选</span></label><input id="jump_user" name="jump_user" placeholder="例如 designer1" spellcheck="false"></div>
               </div></div></details>
@@ -1522,17 +1520,18 @@ button,input,select {
             <section class="form-section">
               <div class="section-head"><span class="section-number">04</span><div><h2>端口与部署目录</h2><p>保留空值即可让注册流程使用安全默认值或自动分配。</p></div></div>
               <div class="fields two">
-                <div class="field"><label for="daemon_port">Daemon 端口 <span class="optional">自动分配</span></label><input id="daemon_port" name="daemon_port" type="number" min="1" max="65535" inputmode="numeric" placeholder="本机默认 65432"><p class="field-help">远程模式会在目标主机检查端口可用性。</p></div>
+                <div class="field"><label for="daemon_port">Daemon 端口 <span class="optional">自动分配</span></label><input id="daemon_port" name="daemon_port" type="number" min="1" max="65535" inputmode="numeric" placeholder="留空自动分配（本机默认 65432）"><p class="field-help">远程模式会在目标主机检查端口可用性。</p></div>
                 <div class="field" data-remote-only><label for="local_port">本地转发端口 <span class="optional">自动分配</span></label><input id="local_port" name="local_port" type="number" min="1" max="65535" inputmode="numeric" placeholder="留空自动选择"><p class="field-help">仅远程模式使用，需在当前机器可用。</p></div>
-                <div class="field" style="grid-column:1/-1"><label for="scratch_root">部署根目录 <span class="optional">缺省 ~/.virtuoso-bridge</span></label><input id="scratch_root" name="scratch_root" placeholder="~/.virtuoso-bridge" spellcheck="false"><p class="field-help">分离拓扑时，此目录必须同时对部署主机、GUI 主机和 daemon 主机可见。</p></div>
+                <div class="field"><label for="role_daemon_python">Daemon Python <span class="optional">自动探测</span></label><input id="role_daemon_python" name="role_daemon_python" placeholder="留空自动探测，例如 /usr/bin/python3" spellcheck="false"><p class="field-help">显式提供时会在 daemon role 上校验；不可用则注册失败。</p></div>
+                <div class="field" style="grid-column:1/-1"><label for="scratch_root">默认根目录（root.default） <span class="optional">缺省 ~/.virtuoso-bridge/&lt;userid&gt;</span></label><input id="scratch_root" name="scratch_root" placeholder="~/.virtuoso-bridge/&lt;userid&gt;" spellcheck="false"><p class="field-help">各 role 未单独配置 root 时使用 <code>root.default/&lt;role&gt;</code>；各 role 根互相独立，bridge 只把部署文件放到 daemon 根。</p></div>
               </div>
               <details class="advanced" id="roleOverrides">
               <summary>各 role 覆盖（可选，留空 = 继承全局）</summary>
               <div class="advanced-body">
-                <p class="field-help">按 <code>role.&lt;name&gt;.&lt;field&gt;</code> 逐字段覆盖全局默认；<code>mode=local</code> 的 role 不得再填 host/user/jump（本地直连，会报参数错误）。daemon 的端口用上面的「Daemon 端口/本地端口」，spectre 的可执行文件用上面的 spectre bin。</p>
+                <p class="field-help">按 <code>role.&lt;name&gt;.&lt;field&gt;</code> 逐字段覆盖全局默认；<code>mode=local</code> 的 role 不得再填连接字段（本地直连，会报参数错误）。daemon 的端口和 Python 用上面的字段，spectre 的可执行文件用下面的 spectre bin。</p>
                 <div class="table-scroll">
                   <table class="role-table">
-                    <thead><tr><th>role</th><th>mode</th><th>host</th><th>user</th><th>jump_host</th><th>key_dir</th><th>key</th><th>root</th><th>display</th><th>max_sessions</th></tr></thead>
+                    <thead><tr><th>role</th><th>mode</th><th>host</th><th>user</th><th>jump_host</th><th>jump_user</th><th>proxy</th><th>key_dir</th><th>key</th><th>root</th><th>display</th><th>max_sessions</th></tr></thead>
                     <tbody>
                   <tr>
                     <th scope="row">gui</th>
@@ -1542,6 +1541,8 @@ button,input,select {
                     <td><input id="role_gui_host" name="role_gui_host" placeholder="继承" spellcheck="false"></td>
                     <td><input id="role_gui_user" name="role_gui_user" placeholder="继承" spellcheck="false"></td>
                     <td><input id="role_gui_jump_host" name="role_gui_jump_host" placeholder="继承" spellcheck="false"></td>
+                    <td><input id="role_gui_jump_user" name="role_gui_jump_user" placeholder="继承" spellcheck="false"></td>
+                    <td><input id="role_gui_proxy" name="role_gui_proxy" placeholder="继承" spellcheck="false"></td>
                     <td><input id="role_gui_key_dir" name="role_gui_key_dir" placeholder="继承 ~/.ssh" spellcheck="false"></td>
                     <td><input id="role_gui_key" name="role_gui_key" placeholder="继承" spellcheck="false"></td>
                     <td><input id="role_gui_root" name="role_gui_root" placeholder="继承 root.default/&lt;role&gt;" spellcheck="false"></td>
@@ -1556,6 +1557,8 @@ button,input,select {
                     <td><input id="role_daemon_host" name="role_daemon_host" placeholder="继承" spellcheck="false"></td>
                     <td><input id="role_daemon_user" name="role_daemon_user" placeholder="继承" spellcheck="false"></td>
                     <td><input id="role_daemon_jump_host" name="role_daemon_jump_host" placeholder="继承" spellcheck="false"></td>
+                    <td><input id="role_daemon_jump_user" name="role_daemon_jump_user" placeholder="继承" spellcheck="false"></td>
+                    <td><input id="role_daemon_proxy" name="role_daemon_proxy" placeholder="继承" spellcheck="false"></td>
                     <td><input id="role_daemon_key_dir" name="role_daemon_key_dir" placeholder="继承 ~/.ssh" spellcheck="false"></td>
                     <td><input id="role_daemon_key" name="role_daemon_key" placeholder="继承" spellcheck="false"></td>
                     <td><input id="role_daemon_root" name="role_daemon_root" placeholder="继承 root.default/&lt;role&gt;" spellcheck="false"></td>
@@ -1570,6 +1573,8 @@ button,input,select {
                     <td><input id="role_command_host" name="role_command_host" placeholder="继承" spellcheck="false"></td>
                     <td><input id="role_command_user" name="role_command_user" placeholder="继承" spellcheck="false"></td>
                     <td><input id="role_command_jump_host" name="role_command_jump_host" placeholder="继承" spellcheck="false"></td>
+                    <td><input id="role_command_jump_user" name="role_command_jump_user" placeholder="继承" spellcheck="false"></td>
+                    <td><input id="role_command_proxy" name="role_command_proxy" placeholder="继承" spellcheck="false"></td>
                     <td><input id="role_command_key_dir" name="role_command_key_dir" placeholder="继承 ~/.ssh" spellcheck="false"></td>
                     <td><input id="role_command_key" name="role_command_key" placeholder="继承" spellcheck="false"></td>
                     <td><input id="role_command_root" name="role_command_root" placeholder="继承 root.default/&lt;role&gt;" spellcheck="false"></td>
@@ -1584,6 +1589,8 @@ button,input,select {
                     <td><input id="role_file_host" name="role_file_host" placeholder="继承" spellcheck="false"></td>
                     <td><input id="role_file_user" name="role_file_user" placeholder="继承" spellcheck="false"></td>
                     <td><input id="role_file_jump_host" name="role_file_jump_host" placeholder="继承" spellcheck="false"></td>
+                    <td><input id="role_file_jump_user" name="role_file_jump_user" placeholder="继承" spellcheck="false"></td>
+                    <td><input id="role_file_proxy" name="role_file_proxy" placeholder="继承" spellcheck="false"></td>
                     <td><input id="role_file_key_dir" name="role_file_key_dir" placeholder="继承 ~/.ssh" spellcheck="false"></td>
                     <td><input id="role_file_key" name="role_file_key" placeholder="继承" spellcheck="false"></td>
                     <td><input id="role_file_root" name="role_file_root" placeholder="继承 root.default/&lt;role&gt;" spellcheck="false"></td>
@@ -1598,6 +1605,8 @@ button,input,select {
                     <td><input id="role_spectre_host" name="role_spectre_host" placeholder="继承" spellcheck="false"></td>
                     <td><input id="role_spectre_user" name="role_spectre_user" placeholder="继承" spellcheck="false"></td>
                     <td><input id="role_spectre_jump_host" name="role_spectre_jump_host" placeholder="继承" spellcheck="false"></td>
+                    <td><input id="role_spectre_jump_user" name="role_spectre_jump_user" placeholder="继承" spellcheck="false"></td>
+                    <td><input id="role_spectre_proxy" name="role_spectre_proxy" placeholder="继承" spellcheck="false"></td>
                     <td><input id="role_spectre_key_dir" name="role_spectre_key_dir" placeholder="继承 ~/.ssh" spellcheck="false"></td>
                     <td><input id="role_spectre_key" name="role_spectre_key" placeholder="继承" spellcheck="false"></td>
                     <td><input id="role_spectre_root" name="role_spectre_root" placeholder="继承 root.default/&lt;role&gt;" spellcheck="false"></td>
@@ -1622,9 +1631,8 @@ button,input,select {
                   <div class="field"><label for="log_level">CDS.log 返回级别</label><select id="log_level" name="log_level"><option value="">默认 all</option><option value="off">off</option><option value="all">all</option><option value="warn">warn</option><option value="error">error</option></select></div>
                   <div class="field"><label for="log_max_bytes">CDS.log 单次上限（字节）</label><input id="log_max_bytes" name="log_max_bytes" type="number" min="1" inputmode="numeric" placeholder="使用默认值"></div>
                 </div></div>
-                <div class="advanced-group"><h3>Spectre 路由</h3><div class="fields two">
-                  <div class="field"><label for="spectre_host">Spectre 主机</label><input id="spectre_host" name="spectre_host" placeholder="缺省同 command 主机" spellcheck="false"></div>
-                  <div class="field"><label for="spectre_bin">Spectre 可执行文件路径</label><input id="spectre_bin" name="spectre_bin" placeholder="例如 /cad/bin/spectre" spellcheck="false"></div>
+                <div class="advanced-group"><h3>Spectre 环境</h3><div class="fields two">
+                  <div class="field" style="grid-column:1/-1"><label for="spectre_bin">Spectre 可执行文件路径 <span class="optional">缺省自动探测</span></label><input id="spectre_bin" name="spectre_bin" placeholder="例如 /cad/bin/spectre" spellcheck="false"><p class="field-help">spectre role 的 host/user 在 role 表覆盖；未填写时继承 ssh.default，探测失败只警告、不阻断。</p></div>
                 </div></div>
               </div></details>
             </section>
@@ -1872,10 +1880,10 @@ function collectPayload() {
   if (flat.ssh_key_dir) sshDefault.key_dir = flat.ssh_key_dir;
   if (flat.ssh_key) sshDefault.key = flat.ssh_key;
   payload.ssh = {default: sshDefault};
-  const daemon = ep(flat.daemon_host, flat.daemon_user, null, null, null);
+  const daemon = {};
   if (flat.daemon_port !== undefined) daemon.daemon_port = flat.daemon_port;
   if (flat.local_port !== undefined) daemon.local_port = flat.local_port;
-  const spectre = ep(flat.spectre_host, null, null, null, null);
+  const spectre = {};
   if (flat.spectre_bin) spectre.bin = flat.spectre_bin;
   const roles = {gui: {}, daemon: daemon, command: {}, file: {}, spectre: spectre};
   ['gui', 'daemon', 'command', 'file', 'spectre'].forEach(function(name) {
@@ -1884,7 +1892,7 @@ function collectPayload() {
     Object.keys(flat).forEach(function(key) {
       if (key.indexOf(prefix) !== 0) return;
       const field = key.slice(prefix.length);
-      if (['mode', 'host', 'user', 'jump_host', 'jump_user', 'proxy', 'key_dir', 'key', 'root', 'display', 'max_sessions'].indexOf(field) < 0) return;
+      if (['mode', 'host', 'user', 'jump_host', 'jump_user', 'proxy', 'key_dir', 'key', 'root', 'display', 'max_sessions', 'python'].indexOf(field) < 0) return;
       role[field] = field === 'max_sessions' ? Number(flat[key]) : flat[key]
     })
   });
@@ -1921,7 +1929,9 @@ function resolvedValues(data) {
     daemon_user: daemon.expected_user || daemon.user || sshDefault.user,
     daemon_port: daemon.daemon_port,
     local_port: daemon.local_port,
+    daemon_root: daemon.root,
     file_host: file.host || sshDefault.host,
+    file_root: file.root,
     deploy_root: rootCfg.default,
     remote_python: daemon.python,
     daemon_endpoint_hostname: daemon.expected_hostname,
@@ -1957,26 +1967,30 @@ function configurationSnapshot(data) {
     modeChoice = values.mode || mode || '',
     host = values.host || '',
     sshUser = values.ssh_user || '',
-    daemonHost = mode === 'local' ? '127.0.0.1' : (values.daemon_host || host || '未填写'),
-    daemonUser = values.daemon_user || sshUser,
+    commandHost = values.role_command_host || resolved.command_host || host || '未填写',
+    commandUser = values.role_command_user || resolved.command_user || sshUser,
+    daemonHost = mode === 'local' ? '127.0.0.1' : (values.role_daemon_host || resolved.daemon_host || host || '未填写'),
+    daemonUser = values.role_daemon_user || resolved.daemon_user || sshUser,
     daemonPort = values.daemon_port || '自动分配',
     localPort = mode === 'local' ? (values.daemon_port || '同 Daemon 端口') : (values.local_port || '自动分配'),
-    guiDisplay = values.role_gui_display || resolved.gui_display || '';
+    guiDisplay = values.role_gui_display || resolved.gui_display || '',
+    spectreHost = values.role_spectre_host || resolved.spectre_host || '';
   return {
     user: (data && data.user) || values.user || '—',
     token: (data && data.token) || values.token || '服务端生成',
     mode: mode,
     modeLabel: mode === 'local' ? '本机 Virtuoso' :
       (mode === 'remote' ? '远程服务器' : '未选择'),
-    target: mode === 'local' ? '当前机器' : ((sshUser ? sshUser + '@' : '') + (host || '未填写')),
+    target: mode === 'local' ? '当前机器' : ((commandUser ? commandUser + '@' : '') + commandHost),
     daemon: (daemonUser && mode !== 'local' ? daemonUser + '@' : '') + daemonHost + ':' + daemonPort,
     daemonPort: daemonPort,
+    daemonPython: values.role_daemon_python || '由第 3 步自动探测/校验',
     localPort: localPort,
     guiDisplay: guiDisplay,
-    scratch: values.scratch_root || '~/.virtuoso-bridge',
+    scratch: values.scratch_root || '~/.virtuoso-bridge/<userid>',
     jump: values.jump_host ? ((values.jump_user ? values.jump_user + '@' : '') + values.jump_host) : '',
-    spectre: values.spectre_host || values.spectre_bin ?
-      ((values.spectre_host || '同 command 主机') + (values.spectre_bin ? ' · ' + values.spectre_bin : '')) : ''
+    spectre: spectreHost || values.spectre_bin ?
+      ((spectreHost || '继承 ssh.default') + (values.spectre_bin ? ' · ' + values.spectre_bin : '')) : ''
   }
 }
 
@@ -2007,7 +2021,7 @@ function renderConfigSummary(data) {
   appendSummaryRow(list, 'Daemon', snapshot.daemon, {mono: true});
   appendSummaryRow(list, '本地端口', snapshot.localPort);
   if (snapshot.guiDisplay) appendSummaryRow(list, 'GUI display', snapshot.guiDisplay, {mono: true});
-  appendSummaryRow(list, '部署根目录', snapshot.scratch, {mono: true});
+  appendSummaryRow(list, '默认根目录', snapshot.scratch, {mono: true});
   if (snapshot.jump) appendSummaryRow(list, '跳板机', snapshot.jump, {mono: true});
   if (snapshot.spectre) appendSummaryRow(list, 'Spectre', snapshot.spectre, {mono: true});
   appendSummaryRow(list, 'Token', snapshot.token, {mono: true, copy: snapshot.token !== '服务端生成'});
@@ -2048,7 +2062,7 @@ function validateApplication() {
   }
   ['gui', 'daemon', 'command', 'file', 'spectre'].forEach(function(name) {
     if (effectiveRoleMode(name) !== 'local') return;
-    ['host', 'user', 'jump_host', 'key_dir', 'key'].forEach(function(field) {
+    ['host', 'user', 'jump_host', 'jump_user', 'proxy', 'key_dir', 'key'].forEach(function(field) {
       const node = byId('role_' + name + '_' + field);
       if (node && node.value.trim()) node.setCustomValidity('mode=local 的 role 不能填写 ' + field);
     })
@@ -2414,7 +2428,7 @@ function appendComparison(container, data) {
   if (!(data && data.stage === 'failed' && Number(data.step) === 3) && resolved.remote_python) {
     pythonResult = {tone: 'success', text: resolved.remote_python}
   }
-  addComparisonRow(table, '运行时 Python', '由第 3 步自动探测', pythonResult);
+  addComparisonRow(table, '运行时 Python', snapshot.daemonPython, pythonResult);
 
   let fingerprintResult;
   if (snapshot.mode === 'local') fingerprintResult = {tone: 'success', text: '本机模式无需 SSH 指纹'};
@@ -2429,15 +2443,15 @@ function appendComparison(container, data) {
   const probeFailed = Boolean(data && data.stage === 'failed' && Number(data.step) === 3);
   let deployResult = probeFailed ? {tone: 'warning', text: '未生成：环境探测未通过'} :
     checkpointResult(data, 4, data && data.setup_path ? data.setup_path : '部署产物已生成', '部署失败');
-  if (!probeFailed && !(data && data.stage === 'failed' && Number(data.step) === 4) && resolved.file_root) {
-    deployResult = {tone: 'success', text: resolved.file_root}
+  if (!probeFailed && !(data && data.stage === 'failed' && Number(data.step) === 4) && resolved.daemon_root) {
+    deployResult = {tone: 'success', text: resolved.daemon_root}
   } else if (!probeFailed && Number(data && data.step || 0) === 3 && resolved.deploy_root) {
     deployResult = {tone: 'success', text: resolved.deploy_root + ' 可写'}
   }
   addComparisonRow(table, '部署位置', snapshot.scratch, deployResult);
 
   if (!probeFailed && (resolved.file_host || resolved.file_root)) addComparisonRow(table, '文件路由',
-    '跟随 command 主机并按用户隔离', {
+    '按 file role 独立解析', {
       tone: 'success',
       text: (resolved.file_host || '—') + (resolved.file_root ? ' · ' + resolved.file_root : '')
     });
@@ -2461,7 +2475,7 @@ function appendComparison(container, data) {
     text: resolved.log_level + ' · ' + resolved.log_max_bytes + ' bytes'
   });
   if (!probeFailed && (resolved.spectre_host || resolved.spectre_bin)) addComparisonRow(table, 'Spectre',
-    snapshot.spectre || '跟随 command 主机', {
+    snapshot.spectre || '继承 ssh.default', {
       tone: 'success',
       text: (resolved.spectre_host || '—') + (resolved.spectre_bin ? ' · ' + resolved.spectre_bin : '')
     });
@@ -2545,7 +2559,7 @@ function friendlyError(raw) {
   if ((m = raw.match(/^daemon port (\d+) already in use locally$/))) return '本机 Daemon 端口 ' + m[1] + ' 已被占用。';
   if ((m = raw.match(/^daemon port (\d+) already in use on (.+)$/))) return '远程主机 ' + m[2] + ' 的 Daemon 端口 ' +
     m[1] + ' 已被占用。';
-  if (raw.indexOf('deploy root not writable') === 0) return '部署根目录不可写，请检查路径和权限。';
+  if (raw.indexOf('deploy root not writable') === 0) return 'daemon 根目录不可写，请检查路径和权限。';
   if (raw.indexOf('no usable remote python found') === 0) return '远程主机未找到可用的 Python。';
   if (raw.indexOf('connectivity test failed') === 0) return '连通性测试未通过：' + raw.replace(
     /^connectivity test failed:?\s*/, '');
@@ -2586,7 +2600,7 @@ function renderApplied(data) {
 
 function renderValidated(data) {
   const view = newStatus('success', 'Step 2 of 6 · 已完成', '本地校验通过', '用户名和端口与当前注册表无冲突，可以开始探测目标环境。', '✓');
-  appendNotice(view.body, '第 3 步会检查主机连通性、Python、端口与部署根目录，但仍不会写入注册表。');
+  appendNotice(view.body, '第 3 步会检查主机连通性、Python、端口与 daemon 根目录，但仍不会写入注册表。');
   appendComparison(view.body, data);
   const actions = appendActions(view.body);
   actionButton(actions, '继续：探测环境', 'primary', function() {
@@ -2953,7 +2967,7 @@ byId('f').addEventListener('submit', function(event) {
 document.querySelectorAll('input[name="mode"]').forEach(function(radio) {
   radio.addEventListener('change', updateModeUI)
 });
-['host', 'ssh_user', 'daemon_host', 'daemon_user', 'jump_host', 'jump_user'].forEach(function(id) {
+['host', 'ssh_user', 'jump_host', 'jump_user'].forEach(function(id) {
   byId(id).addEventListener('input', updateModeUI)
 });
 ['gui', 'daemon', 'command', 'file', 'spectre'].forEach(function(name) {

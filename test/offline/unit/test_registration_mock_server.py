@@ -340,6 +340,43 @@ class TestRegistrationMockServer(unittest.TestCase):
         self.assertEqual(flow.request["roles"]["command"]["key_dir"], "~/.ssh-ops")
         self.assertEqual(flow.request["roles"]["command"]["key"], "ops_ed25519")
 
+    def test_route_fallbacks_are_independent_and_python_is_explicit(self):
+        """file/spectre 缺省继承 ssh.default；daemon python 显式值不被 mock 丢掉。"""
+        status, data = self.srv.request("POST", "/api/register", {
+            "user": "role-route",
+            "action": "apply",
+            "mode": {"default": "remote"},
+            "ssh": {"default": {
+                "host": "global-host",
+                "user": "global-user",
+                "key_dir": "~/.ssh",
+                "key": "id_ed25519",
+            }},
+            "root": {},
+            "roles": {
+                "gui": {},
+                "daemon": {
+                    "host": "daemon-host",
+                    "user": "daemon-user",
+                    "python": "/usr/bin/python3.9",
+                    "daemon_port": 65432,
+                },
+                "command": {"host": "command-host", "user": "command-user"},
+                "file": {},
+                "spectre": {"bin": "/opt/spectre"},
+            },
+        })
+        self.assertEqual(status, 200)
+        self.step("role-route", "validate")
+        self.step("role-route", "probe")
+        deployed = self.step("role-route", "deploy")
+        roles = deployed["entry"]["roles"]
+        self.assertEqual(roles["daemon"]["host"], "daemon-host")
+        self.assertEqual(roles["daemon"]["python"], "/usr/bin/python3.9")
+        self.assertEqual(roles["command"]["host"], "command-host")
+        self.assertEqual(roles["file"]["host"], "global-host")
+        self.assertEqual(roles["spectre"]["host"], "global-host")
+
 
 if __name__ == "__main__":
     unittest.main()

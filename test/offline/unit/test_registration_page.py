@@ -94,7 +94,7 @@ class TestRegistrationPageContract(unittest.TestCase):
     def test_role_credentials_are_rejected_for_local_roles(self):
         """local role 不得携带 key_dir/key（与后端 role 校验一致）。"""
         self.assertIn(
-            "['host', 'user', 'jump_host', 'key_dir', 'key'].forEach(function(field) {",
+            "['host', 'user', 'jump_host', 'jump_user', 'proxy', 'key_dir', 'key'].forEach(function(field) {",
             self.html,
         )
 
@@ -111,6 +111,49 @@ class TestRegistrationPageContract(unittest.TestCase):
             "document.querySelectorAll('#f [id^=\"role_\"]').forEach(function(node) {",
             self.html,
         )
+
+    def test_root_default_uses_five_role_semantics(self):
+        """root.default 是各 role 根的基准，不是共享的部署根。"""
+        self.assertIn("~/.virtuoso-bridge/&lt;userid&gt;", self.html)
+        self.assertIn("~/.virtuoso-bridge/<userid>", self.html)
+        self.assertNotIn("必须同时对部署主机、GUI 主机和 daemon 主机可见", self.html)
+        self.assertIn("各 role 根互相独立", self.html)
+
+    def test_role_table_exposes_full_common_overrides(self):
+        """5 role 都应能从页面覆盖 jump_user/proxy，而不仅是全局默认。"""
+        for role in ROLES:
+            for field in ("jump_user", "proxy"):
+                self.assertIn(f'id="role_{role}_{field}"', self.html)
+                self.assertIn(f'name="role_{role}_{field}"', self.html)
+
+    def test_daemon_python_can_be_explicitly_submitted(self):
+        """role.daemon.python 是环境项：缺省探测，显式提供时校验。"""
+        self.assertIn('id="role_daemon_python"', self.html)
+        self.assertIn('name="role_daemon_python"', self.html)
+        self.assertIn(
+            "'root', 'display', 'max_sessions', 'python'",
+            self.html,
+        )
+
+    def test_role_hosts_have_a_single_source(self):
+        """daemon/spectre 的快捷字段与 role 表不能同时提交两套主机配置。"""
+        self.assertNotIn('name="daemon_host"', self.html)
+        self.assertNotIn('name="daemon_user"', self.html)
+        self.assertNotIn('name="spectre_host"', self.html)
+
+    def test_deployment_summary_uses_daemon_root(self):
+        """bridge 文件只部署到 daemon.root，展示不能拿 file.root 冒充。"""
+        self.assertIn("resolved.daemon_root", self.html)
+        self.assertNotIn(
+            "deployResult = {tone: 'success', text: resolved.file_root}",
+            self.html,
+        )
+
+    def test_file_and_spectre_routes_use_their_own_role_fallback(self):
+        """file/spectre 独立解析，回退 ssh.default，不再跟随 command。"""
+        self.assertNotIn("跟随 command 主机并按用户隔离", self.html)
+        self.assertNotIn("缺省同 command 主机", self.html)
+        self.assertIn("继承 ssh.default", self.html)
 
 
 if __name__ == "__main__":

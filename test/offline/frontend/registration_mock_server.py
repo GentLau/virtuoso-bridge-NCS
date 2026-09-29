@@ -104,8 +104,8 @@ def _normalize_mock_request(request: dict[str, Any]) -> dict[str, Any]:
 
     ssh_default = nested(nested(request, "ssh"), "default") or {}
     for source, target in (
-        ("host", "host"),
-        ("user", "ssh_user"),
+        ("host", "ssh_default_host"),
+        ("user", "ssh_default_user"),
         ("jump_host", "jump_host"),
         ("jump_user", "jump_user"),
         ("proxy", "ssh_proxy"),
@@ -119,6 +119,7 @@ def _normalize_mock_request(request: dict[str, Any]) -> dict[str, Any]:
         out["scratch_root"] = nested(root, "default")
 
     roles = request.get("roles") or {}
+    gui = nested(roles, "gui") or {}
     daemon = nested(roles, "daemon") or {}
     command = nested(roles, "command") or {}
     file_role = nested(roles, "file") or {}
@@ -136,7 +137,11 @@ def _normalize_mock_request(request: dict[str, Any]) -> dict[str, Any]:
         value = nested(daemon, source)
         if value is not None:
             out[target] = value
-    for source, target in (("host", "host"), ("user", "ssh_user")):
+    for source, target in (("host", "gui_host"), ("user", "gui_user")):
+        value = nested(gui, source)
+        if value is not None:
+            out[target] = value
+    for source, target in (("host", "command_host"), ("user", "command_user")):
         value = nested(command, source)
         if value is not None:
             out[target] = value
@@ -175,26 +180,41 @@ class MockRegistrationState:
     def resolved_payload(self) -> dict[str, Any]:
         request = self.request
         remote = self.mode == "remote"
-        command_host = str(request.get("host") or ("mock-eda-host" if remote else "localhost"))
-        command_user = str(request.get("ssh_user") or ("designer1" if remote else "local-user"))
-        daemon_host = str(request.get("daemon_host") or ("mock-compute-01" if remote else "127.0.0.1"))
-        daemon_user = str(request.get("daemon_user") or command_user)
+        default_host = str(request.get("ssh_default_host") or request.get("host") or
+                           ("mock-eda-host" if remote else "localhost"))
+        default_user = str(request.get("ssh_default_user") or request.get("ssh_user") or
+                           ("designer1" if remote else "local-user"))
+        gui_host = str(request.get("gui_host") or default_host)
+        gui_user = str(request.get("gui_user") or default_user)
+        command_host = str(request.get("command_host") or request.get("host") or default_host)
+        command_user = str(request.get("command_user") or request.get("ssh_user") or default_user)
+        daemon_host = str(request.get("daemon_host") or default_host)
+        daemon_user = str(request.get("daemon_user") or default_user)
+        file_host = str(request.get("file_host") or default_host)
+        spectre_host = request.get("spectre_host") or default_host
         daemon_port = int(request.get("daemon_port") or (65128 if remote else 65432))
         local_port = int(request.get("local_port") or daemon_port)
-        scratch = str(request.get("scratch_root") or ("/home/designer1/.virtuoso-bridge" if remote else "C:/mock/virtuoso-bridge"))
+        scratch = str(request.get("scratch_root") or (
+            f"/home/designer1/.virtuoso-bridge/{self.user}" if remote
+            else f"C:/mock/virtuoso-bridge/{self.user}"
+        ))
         # 5-role route shape (mock-only panel view)
         return {
             "mode": self.mode,
+            "ssh_default_host": default_host,
+            "ssh_default_user": default_user,
+            "gui_host": gui_host,
+            "gui_user": gui_user,
             "command_host": command_host,
             "command_user": command_user,
             "daemon_host": daemon_host,
             "daemon_user": daemon_user,
             "daemon_port": daemon_port,
             "local_port": local_port,
-            "file_host": command_host,
+            "file_host": file_host,
             "deploy_root": scratch,
-            "file_root": f"{scratch.rstrip('/')}/{self.user}",
-            "remote_python": "python3.11" if remote else "python3.12",
+            "file_root": f"{scratch.rstrip('/')}/file",
+            "remote_python": request.get("remote_python") or ("python3.11" if remote else "python3.12"),
             "ssh_host_key_fingerprint": (
                 request.get("ssh_host_key_fingerprint")
                 or ("SHA256:MOCK-FINGERPRINT-7vQp2K" if remote else None)
@@ -205,7 +225,7 @@ class MockRegistrationState:
             ),
             "jump_host": request.get("jump_host"),
             "jump_user": request.get("jump_user"),
-            "spectre_host": request.get("spectre_host") or command_host,
+            "spectre_host": spectre_host,
             "spectre_bin": request.get("spectre_bin"),
             "ssh_backend": request.get("ssh_backend") or "openssh",
             "ssh_max_sessions": int(request.get("ssh_max_sessions") or 10),
@@ -221,8 +241,12 @@ class MockRegistrationState:
         resolved = self.resolved_payload()
         root = str(resolved["deploy_root"]).rstrip("/")
         remote = self.mode == "remote"
-        host = resolved["command_host"] if remote else None
-        user = resolved["command_user"] if remote else None
+        global_host = resolved["ssh_default_host"] if remote else None
+        global_user = resolved["ssh_default_user"] if remote else None
+        gui_host = resolved["gui_host"] if remote else None
+        gui_user = resolved["gui_user"] if remote else None
+        command_host = resolved["command_host"] if remote else None
+        command_user = resolved["command_user"] if remote else None
 
         def role(name: str, *, extra: dict[str, Any] | None = None) -> dict[str, Any]:
             data: dict[str, Any] = {
@@ -236,8 +260,8 @@ class MockRegistrationState:
             "mode": {"default": resolved["mode"]},
             "ssh": {
                 "default": {
-                    "host": host,
-                    "user": user,
+                    "host": global_host,
+                    "user": global_user,
                     "jump_host": resolved["jump_host"],
                     "jump_user": resolved["jump_user"],
                     "proxy": self.request.get("ssh_proxy"),
@@ -248,7 +272,7 @@ class MockRegistrationState:
             },
             "root": {"default": root},
             "roles": {
-                "gui": role("gui", extra={"host": host, "user": user}),
+                "gui": role("gui", extra={"host": gui_host, "user": gui_user}),
                 "daemon": role("daemon", extra={
                     "host": resolved["daemon_host"] if remote else None,
                     "user": resolved["daemon_user"] if remote else None,
@@ -258,7 +282,7 @@ class MockRegistrationState:
                     "expected_hostname": resolved["daemon_endpoint_hostname"],
                     "expected_user": resolved["daemon_user"],
                 }),
-                "command": role("command", extra={"host": host, "user": user}),
+                "command": role("command", extra={"host": command_host, "user": command_user}),
                 "file": role("file", extra={
                     "host": resolved["file_host"] if remote else None,
                     "root": resolved["file_root"],
