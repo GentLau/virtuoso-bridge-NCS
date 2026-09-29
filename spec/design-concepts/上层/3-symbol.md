@@ -40,7 +40,7 @@ symbol 包覆盖 **符号语义读回、手工批写、校验保存、从原理�
 
 `screenshot` 与 schematic 同口径：
 
-- `view_type` 默认 `schematicSymbol`；格式固定 PNG；
+- `view_type` 默认 `schematicSymbol`，只作**非空字符串校验**（兼容字段，不参与寻址，P-080 口径）；格式固定 PNG；
 - 可选 `window_id`、`region=[pos0, pos1]`（截前 `hiZoomIn`）、`toplevel`、`central_widget`、`leave_open`；
 - 远端**暂存**于 daemon/gui role root，下载后清理；留存位置是客户端工作目录 artifact/screenshots/（P-091 三包统一口径）；
 - `hiWindowSaveImage` 失败直接业务失败，不做 X11/display 回退。

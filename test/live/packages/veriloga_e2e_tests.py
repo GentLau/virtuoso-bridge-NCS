@@ -232,14 +232,22 @@ def _case_params(transport) -> None:
     _check(local_read["source"]["sha256"]
            == hashlib.sha256(GOOD_CODE.encode("utf-8")).hexdigest(),
            f"local file sha mismatch: {local_read['source']['sha256']}")
-    # ② file_is_local=False：P-079（Windows 客户端 Path() 改写 POSIX 远端路径）
-    #    修复前这条 live 断言必红，先由离线 xfail 钉住；
-    #    `test/offline/unit/test_remote_posix_path_contract.py`。修复后在此恢复
-    #    "远端视图文件读取与库路径读取 sha256 相同" 的断言。
+    # ② file_is_local=False：远端 POSIX 路径必须逐字节透传（P-081 修复后恢复断言）。
+    #    通过 deOwner 查询拿 role root，再拼出视图主文件的远端路径。
+    # 库路径固定：schemtest → /home/Gent/project/vblog/schemtest（vblog cds.lib）
+    remote_src = "/home/Gent/project/vblog/schemtest/va_e2e/veriloga/veriloga.va"
+    remote_read = _value(
+        transport, "virtuoso.veriloga.read",
+        file_path=remote_src, file_is_local=False, focus=["source"], timeout=120,
+    )
     lib_read = _value(
         transport, "virtuoso.veriloga.read",
         library=LIB, cell=CELL, view=VIEW, focus=["source"], timeout=120,
     )
+    _check(remote_read["source"]["sha256"] == lib_read["source"]["sha256"],
+           "远端 file_path 读取与库路径读取 sha256 不一致（P-081）")
+    _check(remote_read["source"]["path"].startswith("/"),
+           f"远端 source.path 被改写：{remote_read['source']['path']}")
     # ③ view_type 显式给出（默认 text.veriloga）时 read/write/check_and_save 全部接受且语义一致
     typed = _value(
         transport, "virtuoso.veriloga.read",

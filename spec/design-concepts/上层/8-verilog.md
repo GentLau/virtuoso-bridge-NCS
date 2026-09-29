@@ -42,7 +42,8 @@ VerilogA 归独立包 `veriloga`（见[11-veriloga.md](11-veriloga.md)）。
 - 目标二选一：
   - `{library, cell, view}`——文本视图（`view_type="text.v"`，主文件 `verilog.v`）；
   - `{file_path, file_is_local}`——外部 `.v` 文件（显式声明路径域，不做 `Path.exists()` 猜测）；
-- 主文件名由 viewType 决定（`text.v` → `verilog.v`，用 `ddMapGetDataTypeFileName` 查，不在包内写死）；
+- `view_type` 是**兼容/校验字段**（默认 `text.v`）：read / write / check_and_save 只校验"非空字符串"，
+  不参与寻址；主文件名按视图类型固定映射（`text.v` → `verilog.v`，P-080 定稿口径）；
 - focus：
 
 | focus | 返回 |

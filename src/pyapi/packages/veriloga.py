@@ -202,6 +202,10 @@ class Package:
     def read(self, request: ReadRequest) -> Result:
         _require_text(request.token, "token")
         _require_timeout(request.timeout)
+        if request.view_type is not None:
+            # 与 write 同口径（P-080）：view_type 是兼容/校验字段，空串或非字符串
+            # 一律 ValueError，不静默忽略。
+            _require_text(request.view_type, "view_type")
         cell_target = request.library and request.cell
         file_target = bool(request.file_path)
         if bool(cell_target) == bool(file_target):
@@ -216,14 +220,17 @@ class Package:
         steps: list[dict[str, Any]] = []
         try:
             if file_target:
-                path = Path(request.file_path)
                 if request.file_is_local:
+                    path = Path(request.file_path)
                     if not path.is_file():
                         raise RuntimeError(f"file not found: {path}")
                     text = path.read_text(encoding="utf-8", errors="replace")
+                    source_path = str(path)
                 else:
-                    text = self._read_remote(str(path), request)
-                source_path = str(path)
+                    # 远端路径必须逐字节原样透传（Windows 客户端 Path() 会改写
+                    # POSIX 路径，P-081）。
+                    text = self._read_remote(request.file_path, request)
+                    source_path = request.file_path
                 ports: list[dict[str, str]] = []
                 views: list[dict[str, Any]] = []
             else:

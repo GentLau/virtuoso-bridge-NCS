@@ -21,7 +21,6 @@ import sys
 import unittest
 from pathlib import Path
 
-import pytest
 
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "src"))
@@ -49,16 +48,12 @@ class _Recorder:
 
 
 class TestRemotePosixPath(unittest.TestCase):
-    @pytest.mark.xfail(strict=True, condition=WINDOWS,
-                       reason="P-081: Path() 改写 POSIX 远端路径（Windows 客户端专属）")
     def test_verilog_remote_read_keeps_posix_path(self):
         rec = _Recorder()
         VLOG.Package(rec).read(VLOG.ReadRequest(
             token="t", file_path=REMOTE, file_is_local=False, focus=["source"]))
         self.assertEqual(rec.downloads, [REMOTE])
 
-    @pytest.mark.xfail(strict=True, condition=WINDOWS,
-                       reason="P-081: Path() 改写 POSIX 远端路径（Windows 客户端专属）")
     def test_veriloga_remote_read_keeps_posix_path(self):
         rec = _Recorder()
         VLOGA.Package(rec).read(VLOGA.ReadRequest(

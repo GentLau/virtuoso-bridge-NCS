@@ -18,7 +18,6 @@ import sys
 import unittest
 from pathlib import Path
 
-import pytest
 
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "src"))
@@ -54,13 +53,11 @@ class TestVerilogViewType(unittest.TestCase):
         self.middle = _StubMiddle()
         self.pkg = VLOG.Package(self.middle)
 
-    @pytest.mark.xfail(strict=True, reason="P-080: verilog.read 不校验 view_type")
     def test_read_rejects_blank_view_type(self):
         with self.assertRaises(ValueError):
             self.pkg.read(VLOG.ReadRequest(
                 token="t", library="L", cell="C", view_type=""))
 
-    @pytest.mark.xfail(strict=True, reason="P-080: verilog.read 不校验 view_type")
     def test_read_rejects_non_string_view_type(self):
         with self.assertRaises(ValueError):
             self.pkg.read(VLOG.ReadRequest(
@@ -85,13 +82,11 @@ class TestVerilogAViewType(unittest.TestCase):
         self.middle = _StubMiddle()
         self.pkg = VLOGA.Package(self.middle)
 
-    @pytest.mark.xfail(strict=True, reason="P-080: veriloga.read 不校验 view_type")
     def test_read_rejects_blank_view_type(self):
         with self.assertRaises(ValueError):
             self.pkg.read(VLOGA.ReadRequest(
                 token="t", library="L", cell="C", view_type=""))
 
-    @pytest.mark.xfail(strict=True, reason="P-080: veriloga.read 不校验 view_type")
     def test_read_rejects_non_string_view_type(self):
         with self.assertRaises(ValueError):
             self.pkg.read(VLOGA.ReadRequest(

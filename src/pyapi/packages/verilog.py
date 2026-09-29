@@ -201,6 +201,10 @@ class Package:
     def read(self, request: ReadRequest) -> Result:
         _require_text(request.token, "token")
         _require_timeout(request.timeout)
+        if request.view_type is not None:
+            # 与 write/check_and_save 同口径（P-080）：view_type 是兼容/校验字段，
+            # 空串或非字符串一律 ValueError，不静默忽略。
+            _require_text(request.view_type, "view_type")
         if bool(request.library and request.cell) == bool(request.file_path):
             raise ValueError("provide either library+cell or file_path, not both/none")
         valid_focus = {"source", "views", "diagnostics"}
@@ -213,14 +217,17 @@ class Package:
         steps: list[dict[str, Any]] = []
         try:
             if request.file_path:
-                path = Path(request.file_path)
                 if request.file_is_local:
+                    path = Path(request.file_path)
                     if not path.is_file():
                         raise RuntimeError(f"file not found: {path}")
                     text = path.read_text(encoding="utf-8", errors="replace")
+                    source_path = str(path)
                 else:
-                    text = self._read_remote(str(path), request)
-                source_path = str(path)
+                    # 远端路径必须逐字节原样透传：Windows 客户端上 Path() 会把
+                    # POSIX 路径改写成 `\home\...`（P-081）。
+                    text = self._read_remote(request.file_path, request)
+                    source_path = request.file_path
                 views: list[dict[str, Any]] = []
                 diagnostics: dict[str, Any] = {}
             else:
