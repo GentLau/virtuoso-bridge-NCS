@@ -11,7 +11,7 @@ import functools
 from abc import ABC, abstractmethod
 from enum import Enum
 from pathlib import Path
-from typing import Any, NamedTuple, Protocol
+from typing import Any, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field, field_serializer, model_serializer
 
@@ -130,7 +130,7 @@ class ResultPackage:
             setattr(cls, name, _finalize_step_details(attr))
 
 
-class CommandResult(NamedTuple):
+class CommandResult(BaseModel):
     """Result of a remote command / file transfer.
 
     ``kind`` classifies the failure mode (see the architecture §4.4): only

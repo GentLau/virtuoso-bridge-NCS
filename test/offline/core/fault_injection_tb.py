@@ -105,7 +105,9 @@ class FakePersistentRunner:
 
     def run_command(self, cmd, timeout=None):
         self.calls.append((cmd, timeout))
-        return __import__("pyapi.models", fromlist=["CommandResult"]).CommandResult(0, "", "")
+        return __import__("pyapi.models", fromlist=["CommandResult"]).CommandResult(
+            returncode=0, stdout="", stderr=""
+        )
 
     def close(self):
         pass

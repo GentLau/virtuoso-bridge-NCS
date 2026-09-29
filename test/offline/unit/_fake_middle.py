@@ -57,11 +57,11 @@ def fail_skill(*errors: str, output: str = "") -> VirtuosoResult:
 
 
 def ok_command(stdout: str = "", returncode: int = 0) -> CommandResult:
-    return CommandResult(returncode, stdout, "")
+    return CommandResult(returncode=returncode, stdout=stdout, stderr="")
 
 
 def fail_command(returncode: int = 1, stderr: str = "boom") -> CommandResult:
-    return CommandResult(returncode, "", stderr)
+    return CommandResult(returncode=returncode, stdout="", stderr=stderr)
 
 
 class FakeMiddle:
@@ -102,7 +102,9 @@ class FakeMiddle:
         kind: str = "command",
     ) -> "FakeMiddle":
         """Set the canned failure result for a command-like method."""
-        self.queue(method, CommandResult(returncode, "", stderr, kind))
+        self.queue(method, CommandResult(
+            returncode=returncode, stdout="", stderr=stderr, kind=kind,
+        ))
         return self
 
     def reset(self) -> None:

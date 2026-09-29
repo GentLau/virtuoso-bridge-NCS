@@ -157,7 +157,7 @@ def _error_result(exc: BaseException, budget: float | None = None) -> CommandRes
     only place a real command's exit code is exposed is ``kind="command"``.
     """
     if isinstance(exc, CapacityExceeded):
-        return CommandResult(1, "", exc.message, kind="rejected")
+        return CommandResult(returncode=1, stdout="", stderr=exc.message, kind="rejected")
     if isinstance(exc, (subprocess.TimeoutExpired, TimeoutError)):
         detail = (
             f"command timed out after {float(budget):g}s"
@@ -166,12 +166,22 @@ def _error_result(exc: BaseException, budget: float | None = None) -> CommandRes
         )
         return CommandResult(returncode=124, stdout="", stderr=detail, kind="timeout")
     if isinstance(exc, RemotePathError):
-        return CommandResult(1, "", f"{_VB_PATH}{exc}", kind="path")
+        return CommandResult(returncode=1, stdout="", stderr=f"{_VB_PATH}{exc}", kind="path")
     if isinstance(exc, UnknownEffectError):
-        return CommandResult(255, "", f"{_VB_UNKNOWN_EFFECT}{exc}", kind="unknown-effect")
+        return CommandResult(
+            returncode=255,
+            stdout="",
+            stderr=f"{_VB_UNKNOWN_EFFECT}{exc}",
+            kind="unknown-effect",
+        )
     if isinstance(exc, (FileNotFoundError, IsADirectoryError, NotADirectoryError)):
-        return CommandResult(1, "", f"{_VB_PATH}{exc}", kind="path")
-    return CommandResult(255, "", f"{_VB_TRANSPORT}{exc}", kind="transport")
+        return CommandResult(returncode=1, stdout="", stderr=f"{_VB_PATH}{exc}", kind="path")
+    return CommandResult(
+        returncode=255,
+        stdout="",
+        stderr=f"{_VB_TRANSPORT}{exc}",
+        kind="transport",
+    )
 
 
 class _LocalCommandSession:
@@ -405,8 +415,9 @@ class _LocalCommandSession:
             if spawn_error is not None:
                 self._dead = True
                 return CommandResult(
-                    255, "",
-                    f"VB-TRANSPORT: local shell unavailable: {spawn_error}",
+                    returncode=255,
+                    stdout="",
+                    stderr=f"VB-TRANSPORT: local shell unavailable: {spawn_error}",
                     kind="transport",
                 )
             with self._lock:
@@ -427,7 +438,12 @@ class _LocalCommandSession:
             self._write_line(f"echo {marker}")
         except (OSError, ValueError):
             self._close_locked()
-            return CommandResult(255, "", "VB-TRANSPORT: local shell write failed", kind="transport")
+            return CommandResult(
+                returncode=255,
+                stdout="",
+                stderr="VB-TRANSPORT: local shell write failed",
+                kind="transport",
+            )
 
         deadline = None if timeout is None else time.monotonic() + timeout
         self._wait_current(deadline)
@@ -448,12 +464,21 @@ class _LocalCommandSession:
             pass
         if not done and not eof:
             self._close_locked()
-            return CommandResult(124, out, f"command timed out after {timeout}s", kind="timeout")
+            return CommandResult(
+                returncode=124,
+                stdout=out,
+                stderr=f"command timed out after {timeout}s",
+                kind="timeout",
+            )
         if eof:
             proc_rc = self._proc.poll() if self._proc is not None else None
             self._close_locked()
-            return CommandResult(proc_rc if proc_rc is not None else 255, out, err or "local shell exited")
-        return CommandResult(rc, out, err)
+            return CommandResult(
+                returncode=proc_rc if proc_rc is not None else 255,
+                stdout=out,
+                stderr=err or "local shell exited",
+            )
+        return CommandResult(returncode=rc, stdout=out, stderr=err)
 
     def close(self) -> None:
         with self._lock:
@@ -1020,7 +1045,11 @@ class BusinessServer(Middle):
                 timeout=timeout, cwd=workdir,
                 **_windows_no_window_kwargs(),
             )
-            return CommandResult(proc.returncode, proc.stdout, proc.stderr)
+            return CommandResult(
+                returncode=proc.returncode,
+                stdout=proc.stdout,
+                stderr=proc.stderr,
+            )
         except subprocess.TimeoutExpired:
             return CommandResult(returncode=124, stdout="", stderr=f"command timed out after {timeout}s", kind="timeout")
         except OSError as exc:
@@ -1071,14 +1100,22 @@ class BusinessServer(Middle):
         if not dst.is_absolute() and root:
             dst = Path(root).expanduser() / dst
         if not src.exists() and not src.is_symlink():
-            return CommandResult(1, "", f"VB-PATH-NOT-VISIBLE: {src}", kind="path")
+            return CommandResult(
+                returncode=1,
+                stdout="",
+                stderr=f"VB-PATH-NOT-VISIBLE: {src}",
+                kind="path",
+            )
         deadline = None if budget is None else time.monotonic() + budget
         try:
             dst.parent.mkdir(parents=True, exist_ok=True)
             if recursive:
                 if not src.is_dir():
                     return CommandResult(
-                        1, "", f"recursive upload requires a directory: {src}", kind="path"
+                        returncode=1,
+                        stdout="",
+                        stderr=f"recursive upload requires a directory: {src}",
+                        kind="path",
                     )
                 stage = dst.parent / f".vbtmp-{uuid.uuid4().hex}"
                 try:
@@ -1086,10 +1123,15 @@ class BusinessServer(Middle):
                     BusinessServer._install_staged(stage, dst)
                 finally:
                     BusinessServer._remove_path(stage)
-                return CommandResult(0, str(dst), "", kind="command")
+                return CommandResult(
+                    returncode=0, stdout=str(dst), stderr="", kind="command"
+                )
             if src.is_dir():
                 return CommandResult(
-                    1, "", f"directory upload requires recursive=True: {src}", kind="path"
+                    returncode=1,
+                    stdout="",
+                    stderr=f"directory upload requires recursive=True: {src}",
+                    kind="path",
                 )
             stage = dst.parent / f".vbtmp-{uuid.uuid4().hex}"
             try:
@@ -1097,18 +1139,31 @@ class BusinessServer(Middle):
                 if BusinessServer._sha256_file(src, deadline=deadline) != \
                         BusinessServer._sha256_file(stage, deadline=deadline):
                     return CommandResult(
-                        1, "", "sha256 mismatch", kind="checksum"
+                        returncode=1,
+                        stdout="",
+                        stderr="sha256 mismatch",
+                        kind="checksum",
                     )
                 BusinessServer._install_staged(stage, dst)
             finally:
                 BusinessServer._remove_path(stage)
-            return CommandResult(0, str(dst), "", kind="command")
+            return CommandResult(
+                returncode=0, stdout=str(dst), stderr="", kind="command"
+            )
         except _DeadlineExceeded:
             return CommandResult(
-                124, "", BusinessServer._timeout_detail(budget), kind="timeout"
+                returncode=124,
+                stdout="",
+                stderr=BusinessServer._timeout_detail(budget),
+                kind="timeout",
             )
         except OSError as exc:
-            return CommandResult(1, "", f"VB-PATH-NOT-VISIBLE: {exc}", kind="path")
+            return CommandResult(
+                returncode=1,
+                stdout="",
+                stderr=f"VB-PATH-NOT-VISIBLE: {exc}",
+                kind="path",
+            )
 
     @staticmethod
     def _local_download(
@@ -1123,14 +1178,22 @@ class BusinessServer(Middle):
             src = Path(root).expanduser() / src
         dst = Path(local_path)
         if not src.exists() and not src.is_symlink():
-            return CommandResult(1, "", f"VB-PATH-NOT-VISIBLE: {src}", kind="path")
+            return CommandResult(
+                returncode=1,
+                stdout="",
+                stderr=f"VB-PATH-NOT-VISIBLE: {src}",
+                kind="path",
+            )
         deadline = None if budget is None else time.monotonic() + budget
         try:
             dst.parent.mkdir(parents=True, exist_ok=True)
             if recursive:
                 if not src.is_dir():
                     return CommandResult(
-                        1, "", f"recursive download requires a directory: {src}", kind="path"
+                        returncode=1,
+                        stdout="",
+                        stderr=f"recursive download requires a directory: {src}",
+                        kind="path",
                     )
                 stage = dst.parent / f".vbtmp-{uuid.uuid4().hex}"
                 try:
@@ -1138,10 +1201,15 @@ class BusinessServer(Middle):
                     BusinessServer._install_staged(stage, dst)
                 finally:
                     BusinessServer._remove_path(stage)
-                return CommandResult(0, str(dst), "", kind="command")
+                return CommandResult(
+                    returncode=0, stdout=str(dst), stderr="", kind="command"
+                )
             if src.is_dir():
                 return CommandResult(
-                    1, "", f"directory download requires recursive=True: {src}", kind="path"
+                    returncode=1,
+                    stdout="",
+                    stderr=f"directory download requires recursive=True: {src}",
+                    kind="path",
                 )
             stage = dst.parent / f".vbtmp-{uuid.uuid4().hex}"
             try:
@@ -1149,18 +1217,31 @@ class BusinessServer(Middle):
                 if BusinessServer._sha256_file(src, deadline=deadline) != \
                         BusinessServer._sha256_file(stage, deadline=deadline):
                     return CommandResult(
-                        1, "", "sha256 mismatch", kind="checksum"
+                        returncode=1,
+                        stdout="",
+                        stderr="sha256 mismatch",
+                        kind="checksum",
                     )
                 BusinessServer._install_staged(stage, dst)
             finally:
                 BusinessServer._remove_path(stage)
-            return CommandResult(0, str(dst), "", kind="command")
+            return CommandResult(
+                returncode=0, stdout=str(dst), stderr="", kind="command"
+            )
         except _DeadlineExceeded:
             return CommandResult(
-                124, "", BusinessServer._timeout_detail(budget), kind="timeout"
+                returncode=124,
+                stdout="",
+                stderr=BusinessServer._timeout_detail(budget),
+                kind="timeout",
             )
         except OSError as exc:
-            return CommandResult(1, "", f"VB-PATH-NOT-VISIBLE: {exc}", kind="path")
+            return CommandResult(
+                returncode=1,
+                stdout="",
+                stderr=f"VB-PATH-NOT-VISIBLE: {exc}",
+                kind="path",
+            )
 
     @staticmethod
     def _timeout_detail(budget: float | None) -> str:

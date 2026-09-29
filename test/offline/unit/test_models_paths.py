@@ -65,8 +65,8 @@ class TestResultModels(unittest.TestCase):
         sim = SimulationResult(status=ExecutionStatus.ERROR, errors=["x"])
         self.assertNotIn("metadata", sim.model_dump())
 
-    def test_command_result_namedtuple(self):
-        c = CommandResult(0, "out", "err")
+    def test_command_result_model(self):
+        c = CommandResult(returncode=0, stdout="out", stderr="err")
         self.assertEqual((c.returncode, c.stdout, c.stderr), (0, "out", "err"))
 
 

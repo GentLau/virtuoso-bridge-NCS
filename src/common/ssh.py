@@ -1578,7 +1578,11 @@ class SSHRunner:
         )
         if rc == 0:
             # 成功路径已在 attempt 内完成 staged install
-            return CommandResult(0, _as_text(stdout), _as_text(stderr))
+            return CommandResult(
+                returncode=0,
+                stdout=_as_text(stdout),
+                stderr=_as_text(stderr),
+            )
         return self._result_from_rc(rc, _as_text(stdout), _as_text(stderr))
 
     def _run_openssh_download_attempt(

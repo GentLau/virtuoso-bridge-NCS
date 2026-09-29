@@ -18,7 +18,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src"))
 
-from pyapi.models import ExecutionStatus, VirtuosoResult
+from pydantic import BaseModel
+
+from pyapi.models import CommandResult, ExecutionStatus, VirtuosoResult
 from pyapi.packages import basic, cellview
 
 
@@ -48,6 +50,18 @@ class CellviewMiddle(RecordingMiddle):
             status=ExecutionStatus.SUCCESS,
             output='("ok" ("lib1"))',
             execution_time=0.125,
+        )
+
+
+class CommandMiddle:
+    """Minimal middle for the C4 CommandResult JSON contract."""
+
+    def run_command(self, cmd, timeout=None, *, token, parallel=False):
+        return CommandResult(
+            returncode=0,
+            stdout="GLIS-DESKTOP\n",
+            stderr="",
+            kind="command",
         )
 
 
@@ -102,6 +116,53 @@ class TestResultContract(unittest.TestCase):
             cellview.LibListRequest(token="t", step_details=True)
         )
         self.assertIn("steps", _json(detailed))
+
+    def test_command_result_is_a_named_model(self):
+        """C4: CommandResult 与 VirtuosoResult 同属 Pydantic 模型。"""
+        result = CommandResult(
+            returncode=0,
+            stdout="out",
+            stderr="",
+            kind="command",
+        )
+        self.assertIsInstance(result, BaseModel)
+
+    def test_command_result_json_is_named_object(self):
+        """C4: JSON 出口不得再把 CommandResult 降级成位置数组。"""
+        body = _json(CommandResult(
+            returncode=0,
+            stdout="GLIS-DESKTOP\n",
+            stderr="",
+            kind="command",
+        ))
+        self.assertEqual(body, {
+            "returncode": 0,
+            "stdout": "GLIS-DESKTOP\n",
+            "stderr": "",
+            "kind": "command",
+        })
+
+    def test_plain_tuple_still_serializes_as_array(self):
+        """负控制：普通 tuple 仍是 JSON 数组，不能被模型改造误伤。"""
+        self.assertEqual(_json((1, "out")), [1, "out"])
+
+    def test_basic_command_result_and_step_detail_are_named_objects(self):
+        """basic.command.run 的 result 与 steps[].detail 都必须是具名对象。"""
+        request = basic.CommandRequest(
+            token="t",
+            cmd="hostname",
+            step_details=True,
+        )
+        result = basic.Package(CommandMiddle()).run_command(request)
+        body = _json(result)
+        expected = {
+            "returncode": 0,
+            "stdout": "GLIS-DESKTOP\n",
+            "stderr": "",
+            "kind": "command",
+        }
+        self.assertEqual(body["result"], expected)
+        self.assertEqual(body["steps"][0]["detail"], expected)
 
 
 if __name__ == "__main__":

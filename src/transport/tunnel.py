@@ -341,7 +341,7 @@ class RemoteClient:
             else:
                 lease, persistent = self._acquire_command_channel(role)
         except CapacityExceeded as exc:
-            return CommandResult(1, "", exc.message, kind="rejected")
+            return CommandResult(returncode=1, stdout="", stderr=exc.message, kind="rejected")
         try:
             if parallel:
                 return self._one_shot_runner(role).run_one_shot(
@@ -378,7 +378,7 @@ class RemoteClient:
         try:
             lease = self._acquire_channel(role)
         except CapacityExceeded as exc:
-            return CommandResult(1, "", exc.message, kind="rejected")
+            return CommandResult(returncode=1, stdout="", stderr=exc.message, kind="rejected")
         try:
             return self._one_shot_runner(role).run_one_shot(cmd, timeout=timeout)
         finally:
@@ -462,7 +462,7 @@ class RemoteClient:
         try:
             lease = self._acquire_channel(role)
         except CapacityExceeded as exc:
-            return CommandResult(1, "", exc.message, kind="rejected")
+            return CommandResult(returncode=1, stdout="", stderr=exc.message, kind="rejected")
         deadline = time.monotonic() + float(timeout) if timeout else None
         try:
             local_path = Path(local_path)
@@ -470,7 +470,9 @@ class RemoteClient:
             if recursive:
                 if not local_path.is_dir():
                     return CommandResult(
-                        1, "", f"recursive upload requires a directory: {local_path}",
+                        returncode=1,
+                        stdout="",
+                        stderr=f"recursive upload requires a directory: {local_path}",
                         kind="path",
                     )
                 error, remote_kind = self._remote_path_kind(
@@ -482,9 +484,9 @@ class RemoteClient:
                     return error
                 if remote_kind in ("file", "other"):
                     return CommandResult(
-                        1,
-                        "",
-                        f"recursive upload requires a directory target: {remote_path}",
+                        returncode=1,
+                        stdout="",
+                        stderr=f"recursive upload requires a directory target: {remote_path}",
                         kind="path",
                     )
                 return self.file_runner.upload(
@@ -495,14 +497,18 @@ class RemoteClient:
                 )
             if local_path.is_dir():
                 return CommandResult(
-                    1, "", f"directory upload requires recursive=True: {local_path}",
+                    returncode=1,
+                    stdout="",
+                    stderr=f"directory upload requires recursive=True: {local_path}",
                     kind="path",
                 )
             if not local_path.is_file():
                 # §4.6: recursive=False 只传单个常规文件；FIFO/设备/链接目录
                 # 等对象类型不符要报 kind=path，而不是阻塞在传输里。
                 return CommandResult(
-                    1, "", f"upload requires a regular file: {local_path}",
+                    returncode=1,
+                    stdout="",
+                    stderr=f"upload requires a regular file: {local_path}",
                     kind="path",
                 )
             stage = f"{remote_path}.vbtmp-{uuid.uuid4().hex}"
@@ -542,7 +548,7 @@ class RemoteClient:
             if move.returncode != 0:
                 self._remove_remote_stage(role, stage)
                 return move
-            return CommandResult(0, remote_path, "")
+            return CommandResult(returncode=0, stdout=remote_path, stderr="")
         finally:
             lease.release()
 
@@ -557,7 +563,7 @@ class RemoteClient:
         try:
             lease = self._acquire_channel(role)
         except CapacityExceeded as exc:
-            return CommandResult(1, "", exc.message, kind="rejected")
+            return CommandResult(returncode=1, stdout="", stderr=exc.message, kind="rejected")
         deadline = time.monotonic() + float(timeout) if timeout else None
         try:
             local_path = Path(local_path)
@@ -572,9 +578,9 @@ class RemoteClient:
                     return error
                 if remote_kind != "directory":
                     return CommandResult(
-                        1,
-                        "",
-                        f"recursive download requires a directory source: {remote_path}",
+                        returncode=1,
+                        stdout="",
+                        stderr=f"recursive download requires a directory source: {remote_path}",
                         kind="path",
                     )
                 return self.file_runner.download(
@@ -594,9 +600,9 @@ class RemoteClient:
                 # §4.6: 非 recursive 下载的源必须是常规文件；目录/特殊对象
                 # 一律 kind=path（不能把 sha256sum 的报错当成命令失败）。
                 return CommandResult(
-                    1,
-                    "",
-                    f"download requires a regular file: {remote_path} ({remote_kind})",
+                    returncode=1,
+                    stdout="",
+                    stderr=f"download requires a regular file: {remote_path} ({remote_kind})",
                     kind="path",
                 )
             error, remote_digest = self._remote_sha256(
@@ -640,7 +646,7 @@ class RemoteClient:
                     stderr=f"VB-PATH-NOT-VISIBLE: {exc}",
                     kind="path",
                 )
-            return CommandResult(0, str(local_path), "")
+            return CommandResult(returncode=0, stdout=str(local_path), stderr="")
         finally:
             lease.release()
 
@@ -683,7 +689,7 @@ class RemoteClient:
                 stderr=f"sha256 mismatch: local={local_sha} remote={remote_sha}",
                 kind="checksum",
             )
-        return CommandResult(0, remote_path, "")
+        return CommandResult(returncode=0, stdout=remote_path, stderr="")
 
 
 __all__ = ["RemoteClient", "remote_root_path"]
