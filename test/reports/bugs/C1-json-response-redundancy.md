@@ -46,7 +46,7 @@ POST http://127.0.0.1:8127/api/operation
 - `ok`/`error`/`steps` 定为**保留字段**，业务字段不得占用（合并后与业务字段同一命名空间）；
 - 属**破坏性变更**：需同步消费方（`test/live/flows/*` 大量读 `data.result`，`adc_sar_flow_tb.py` 等 fallback 到 `steps[0].detail`）。
 
-**决策 2（steps 改造）**：任何业务操作支持公共可选参数 `step_details`；**不传时 `steps` 整字段省略**；开启时每步记 `{"name": 名, "ok": 布尔, "detail": 中层结果}`，键名统一 `name`，失败步骤必须保留 `detail`/`error`。
+**决策 2（steps 改造）**：任何业务操作支持公共可选参数 `step_details`；**`steps` 出现条件 = 开启 `step_details` 或操作失败**，两者皆无则整字段省略；出现时每步记 `{"name": 名, "ok": 布尔, "detail": 中层结果}`，键名统一 `name`。
 
 **决策 3（删字段）**：删除 `VirtuosoResult.metadata`（`src/pyapi/models.py:36`）与 `SimulationResult.metadata`（`:111`）——新链路无任何写入点、恒为 `{}`；日志已有 `log` 字段，其余扩展信息应由上层 Result 的业务字段承载，不由公共模型提供万能字典（`spec/research/04-log-return-system-proposal.md:159` 同向）。
 
