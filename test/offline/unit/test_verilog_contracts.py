@@ -168,6 +168,9 @@ class WriteMiddle:
         self.commands.append(cmd)
         if "*.cdslck" in cmd:
             return CommandResult(0, "LOCK\n" if self.lock else "OK\n", "")
+        if "grep -cE" in cmd and "module" in cmd:
+            # P-100：写前校验 cell 是否等于源码模块名（假中间件默认"能找到"）
+            return CommandResult(0, "1\n", "")
         return CommandResult(0, "", "")
 
     def upload_file(self, local_path, remote_path, timeout=None, *, token, recursive=False):
@@ -335,9 +338,10 @@ class CellModeMiddle(WriteMiddle):
     def __init__(self, *, lib_exists: str = "t", source: str = "module CELL; endmodule\n",
                  views: str | None = None, diag_log: str | None = None,
                  batch_log: str | None = None, ihdl_rc: int = 0,
-                 xmvlog: str = "") -> None:
+                 xmvlog: str = "", cell_exists: str = "nil") -> None:
         super().__init__()
         self.lib_exists = lib_exists
+        self.cell_exists = cell_exists
         self.source = source
         self.views = views if views is not None else self.VIEWS
         self.diag_log = diag_log
@@ -356,6 +360,12 @@ class CellModeMiddle(WriteMiddle):
         if "dbOpenCellViewByType(" in code:
             return VirtuosoResult(status=ExecutionStatus.SUCCESS, output=self.CHECKIN)
         if "if(ddGetObj(" in code:
+            # 单参 = 目标库探测（lib_exists）；双参 = cell 探测（P-100/P-101，
+            # 默认"不存在"，否则会被「已存在即跳过」提前截断）
+            inner = code.split("if(ddGetObj(", 1)[1].split(")", 1)[0]
+            if inner.count('"') >= 4:
+                return VirtuosoResult(
+                    status=ExecutionStatus.SUCCESS, output=self.cell_exists)
             return VirtuosoResult(status=ExecutionStatus.SUCCESS, output=self.lib_exists)
         if "ddUpdateLibList" in code:
             return VirtuosoResult(status=ExecutionStatus.SUCCESS, output='"ok"')
@@ -392,6 +402,9 @@ class CellModeMiddle(WriteMiddle):
         self.commands.append(cmd)
         if "*.cdslck" in cmd:
             return CommandResult(0, "OK\n", "")
+        if "grep -cE" in cmd and "module" in cmd:
+            # P-100：写前校验 cell 是否等于源码模块名（假中间件默认"能找到"）
+            return CommandResult(0, "1\n", "")
         if "ihdl" in cmd:
             return CommandResult(self.ihdl_rc, "", "" if self.ihdl_rc == 0 else "ihdl boom")
         return CommandResult(0, "", "")

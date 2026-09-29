@@ -262,7 +262,13 @@ class Package:
             request.token,
             request.timeout,
         )
-        parsed = basic.parse_sexpr(raw.strip())
+        # `sprintf(nil "%L" out)` 的返回会被整体包成 SKILL 字符串
+        # （`"((...))"`，内层引号转义）→ 必须先脱引号再解析，否则 parse 出的是
+        # 字符串而不是 list，遍历恒为空（P-099：views 永远 []）。
+        text = raw.strip()
+        if len(text) >= 2 and text.startswith('"') and text.endswith('"'):
+            text = text[1:-1].replace('\\"', '"')
+        parsed = basic.parse_sexpr(text)
         result: list[dict[str, Any]] = []
         if not isinstance(parsed, list):
             return result
@@ -495,6 +501,25 @@ class Package:
             steps.append(_step("stage", staged.returncode == 0, staged))
             if staged.returncode != 0:
                 return Result(False, steps, staged.stderr or "source staging failed")
+
+            # ihdl 没有 dest-cell 参数（实测 `dest_cell_name` → VERILOGIN-8），
+            # 它一律按源码模块名落地；因此 `cell` 必须等于源码里的模块名，否则
+            # 会在**已写库之后**才报 "cell not found"（P-100）。这里写前先校验。
+            module_probe = self.middle.run_command(
+                "grep -cE "
+                f"'^[[:space:]]*module[[:space:]]+{re.escape(request.cell)}[[:space:](;]' "
+                f"{shlex.quote(remote_source)}",
+                timeout=60, token=request.token,
+            )
+            hits = (module_probe.stdout or "").strip()
+            steps.append(_step("cell_in_source", hits not in ("", "0"), hits))
+            if hits in ("", "0"):
+                return Result(
+                    False, steps,
+                    f"cell_not_in_source: 源码里没有模块 {request.cell!r}"
+                    "（ihdl 按源码模块名落地，无法改名到其它 cell）",
+                    {"reason": "cell_not_in_source", "cell": request.cell},
+                )
 
             ref_libs = request.ref_libs or ["basic"]
             param_content = (

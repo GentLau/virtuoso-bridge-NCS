@@ -182,7 +182,10 @@ def _case_import_failure(transport) -> None:
     source = _stage_file(transport, "vlog_bad.v", BAD_CODE)
     response = transport.call({
         "operation": "virtuoso.verilog.import", "token": TOKEN,
+        # overwrite=True：本用例要打的是"语法错 → parse_failed"，不能撞上
+        # P-101 的「已存在即跳过」（IMPORT-01 刚建过同一 cell）。
         "library": LIB, "cell": CELL_IMP, "file_path": source, "timeout": 180,
+        "overwrite": True,
     })
     _check(not response.get("ok"), "syntax error must fail import")
     _check((response.get("data") or {}).get("value", {}).get("reason") == "parse_failed",
