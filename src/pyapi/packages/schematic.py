@@ -888,17 +888,38 @@ class Package(ResultPackage):
         steps.append(_step("mkdir", mkdir.returncode == 0, mkdir))
         if mkdir.returncode != 0:
             return ScreenshotResult(False, steps, mkdir.stderr or "mkdir failed")
-        captured = self.middle.execute_skill(
-            _screenshot_skill(request, remote_abs), timeout=request.timeout, token=request.token,
-            **skill_log_kwargs(request.log_level, request.log_max_bytes),
-        )
-        steps.append(_step("capture", captured.ok, captured))
-        if not captured.ok:
-            return ScreenshotResult(False, steps, "; ".join(captured.errors) or "capture failed")
-        local_dir = artifact_dir() / "screenshots"
-        local_dir.mkdir(parents=True, exist_ok=True)
-        local_path = local_dir / name
+        opened_here = False
         try:
+            if request.window_id is None:
+                ensured = self.middle.execute_skill(
+                    _ensure_window_skill(request),
+                    timeout=request.timeout,
+                    token=request.token,
+                    **skill_log_kwargs(
+                        request.log_level, request.log_max_bytes),
+                )
+                steps.append(_step("ensure_window", ensured.ok, ensured))
+                if not ensured.ok:
+                    return ScreenshotResult(
+                        False, steps,
+                        "; ".join(ensured.errors) or "window open failed")
+                opened_here = (
+                    (ensured.output or "").strip().strip('"') == "opened")
+                _time.sleep(1)
+            captured = self.middle.execute_skill(
+                _screenshot_skill(request, remote_abs),
+                timeout=request.timeout,
+                token=request.token,
+                **skill_log_kwargs(request.log_level, request.log_max_bytes),
+            )
+            steps.append(_step("capture", captured.ok, captured))
+            if not captured.ok:
+                return ScreenshotResult(
+                    False, steps,
+                    "; ".join(captured.errors) or "capture failed")
+            local_dir = artifact_dir() / "screenshots"
+            local_dir.mkdir(parents=True, exist_ok=True)
+            local_path = local_dir / name
             downloaded = self.middle.download_file(
                 remote_abs, local_path, timeout=request.timeout, token=request.token,
             )
@@ -907,6 +928,18 @@ class Package(ResultPackage):
                 return ScreenshotResult(False, steps, downloaded.stderr or "download failed")
             return ScreenshotResult(True, steps, None, str(local_path))
         finally:
+            if opened_here and not request.leave_open:
+                try:
+                    closed = self.middle.execute_skill(
+                        _close_window_skill(request),
+                        timeout=request.timeout,
+                        token=request.token,
+                        **skill_log_kwargs(
+                            request.log_level, request.log_max_bytes),
+                    )
+                    steps.append(_step("close_window", closed.ok, closed))
+                except Exception:  # noqa: BLE001 - best effort
+                    pass
             # 远端只做暂存，留存位置是客户端 artifact/screenshots/（P-091 口径：
             # 三包统一「下载后清理」）。清理失败不改变业务结果。
             try:
@@ -989,6 +1022,32 @@ class ScreenshotResult(ResultBase):
     steps: list[dict[str, Any]] = field(default_factory=list)
     error: str | None = None
     local_path: str | None = None
+
+
+def _ensure_window_skill(request: ScreenshotRequest) -> str:
+    return (
+        "let((vbW vbOpened) vbOpened = nil "
+        "vbW = car(setof(x hiGetWindowList() x~>cellView && "
+        f"x~>cellView~>libName == {_q(request.library)} && "
+        f"x~>cellView~>cellName == {_q(request.cell)} && "
+        f"x~>cellView~>viewName == {_q(request.view)})) "
+        "unless(vbW progn(vbW = geOpen(?lib "
+        f"{_q(request.library)} ?cell {_q(request.cell)} "
+        f'?view {_q(request.view)} ?viewType "schematic" ?mode "r") '
+        'vbOpened = t)) '
+        'if(vbW if(vbOpened "opened" "existing") '
+        'error("window not found")))'
+    )
+
+
+def _close_window_skill(request: ScreenshotRequest) -> str:
+    return (
+        "let((vbW) vbW = car(setof(x hiGetWindowList() x~>cellView && "
+        f"x~>cellView~>libName == {_q(request.library)} && "
+        f"x~>cellView~>cellName == {_q(request.cell)} && "
+        f"x~>cellView~>viewName == {_q(request.view)})) "
+        "when(vbW hiCloseWindow(vbW)) t)"
+    )
 
 
 def _screenshot_skill(request: ScreenshotRequest, remote_path: str) -> str:

@@ -974,6 +974,7 @@ class Package(ResultPackage):
             region = _bbox(request.region, "region")
         steps: list[dict[str, Any]] = []
         remote_png: str | None = None
+        opened_here = False
         try:
             gui_root = self._role_root(request.token, "daemon")
             remote_png = posixpath.join(
@@ -989,6 +990,21 @@ class Package(ResultPackage):
             steps.append(_step("mkdir", mkdir.returncode == 0, mkdir))
             if mkdir.returncode != 0:
                 return Result(False, steps, mkdir.stderr or "mkdir failed")
+            if request.window_id is None:
+                ensure = self._skill(
+                    _ensure_window_skill(request),
+                    request.token, request.timeout,
+                )
+                steps.append(_step("ensure_window", ensure.ok, ensure))
+                if not ensure.ok:
+                    return Result(
+                        False, steps,
+                        "; ".join(ensure.errors) or "window open failed")
+                opened_here = (
+                    (ensure.output or "").strip().strip('"') == "opened")
+                # 让 geOpen 的窗口在**下一个** SKILL 调用前完成 map/redraw；
+                # 同一表达式内直接 hiWindowSaveImage 会拿到 nil。
+                time.sleep(1)
             run = self._skill(
                 _screenshot_skill(request, region, remote_png),
                 request.token,
@@ -997,6 +1013,9 @@ class Package(ResultPackage):
             steps.append(_step("capture", run.ok, run))
             if not run.ok:
                 return Result(False, steps, "; ".join(run.errors) or "screenshot failed")
+            if (run.output or "").strip().strip('"') != "saved":
+                return Result(
+                    False, steps, "hiWindowSaveImage produced no image")
             local_dir = artifact_dir() / "screenshots"
             local_dir.mkdir(parents=True, exist_ok=True)
             local_path = local_dir / Path(remote_png).name
@@ -1010,6 +1029,15 @@ class Package(ResultPackage):
         except Exception as exc:  # noqa: BLE001
             return Result(False, steps, f"{type(exc).__name__}: {exc}")
         finally:
+            if opened_here and not request.leave_open:
+                try:
+                    closed = self._skill(
+                        _close_window_skill(request),
+                        request.token, request.timeout,
+                    )
+                    steps.append(_step("close_window", closed.ok, closed))
+                except Exception:  # noqa: BLE001 - best effort
+                    pass
             if remote_png:
                 try:
                     self.middle.run_command(
@@ -1108,6 +1136,33 @@ let((vbCv vbResult vbCollected vbShape vbTerm vbPin vbFig vbBBox vbPoints vbXY v
   unless(vbCollected error("symbol read failed"))
   reverse(car(vbCollected)))
 '''.strip()
+
+
+def _ensure_window_skill(request: ScreenshotRequest) -> str:
+    """Open the symbol window in a separate SKILL call (P-105 screenshot parity)."""
+    return (
+        "let((vbW vbOpened) vbOpened = nil "
+        "vbW = car(setof(x hiGetWindowList() x~>cellView && "
+        f"x~>cellView~>libName == {basic.q(request.library)} && "
+        f"x~>cellView~>cellName == {basic.q(request.cell)} && "
+        f"x~>cellView~>viewName == {basic.q(request.view)})) "
+        "unless(vbW progn(vbW = geOpen(?lib "
+        f"{basic.q(request.library)} ?cell {basic.q(request.cell)} "
+        f"?view {basic.q(request.view)} ?viewType {basic.q(request.view_type)} "
+        '?mode "r") vbOpened = t)) '
+        'if(vbW if(vbOpened "opened" "existing") '
+        'error("symbol window not found")))'
+    )
+
+
+def _close_window_skill(request: ScreenshotRequest) -> str:
+    return (
+        "let((vbW) vbW = car(setof(x hiGetWindowList() x~>cellView && "
+        f"x~>cellView~>libName == {basic.q(request.library)} && "
+        f"x~>cellView~>cellName == {basic.q(request.cell)} && "
+        f"x~>cellView~>viewName == {basic.q(request.view)})) "
+        "when(vbW hiCloseWindow(vbW)) t)"
+    )
 
 
 def _screenshot_skill(request: ScreenshotRequest, region: tuple[float, float, float, float] | None, remote_path: str) -> str:

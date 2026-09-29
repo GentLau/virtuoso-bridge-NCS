@@ -964,7 +964,8 @@ class TestLayoutScreenshot(unittest.TestCase):
             self.assertEqual(local.read_bytes(), b"\x89PNG-data")
             self.assertIn("screenshots", str(local))
             self.assertEqual([step["name"] for step in result.steps],
-                             ["mkdir", "capture", "verify", "download"])
+                             ["mkdir", "ensure_window", "capture",
+                              "verify", "download"])
             # finally 里必须清掉远端 png
             self.assertTrue(any(c.startswith("rm -f") for c in middle.commands))
 

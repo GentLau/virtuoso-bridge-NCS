@@ -1472,6 +1472,7 @@ class Package(ResultPackage):
         region = _bbox(request.region, "region") if request.region is not None else None
         steps: list[dict[str, Any]] = []
         remote_png: str | None = None
+        opened_here = False
         try:
             root = self._role_root(request.token, "daemon")
             remote_png = posixpath.join(
@@ -1485,6 +1486,19 @@ class Package(ResultPackage):
             steps.append(_step("mkdir", prepared.returncode == 0, prepared))
             if prepared.returncode != 0:
                 return Result(False, steps, prepared.stderr or "mkdir failed")
+            if request.window_id is None:
+                ensure = self._skill(
+                    _ensure_window_skill(request),
+                    request.token, request.timeout,
+                )
+                steps.append(_step("ensure_window", ensure.ok, ensure))
+                if not ensure.ok:
+                    return Result(
+                        False, steps,
+                        "; ".join(ensure.errors) or "window open failed")
+                opened_here = (
+                    (ensure.output or "").strip().strip('"') == "opened")
+                time.sleep(1)
             run = self._skill(_screenshot_skill(request, region, remote_png), request.token, request.timeout)
             steps.append(_step("capture", run.ok, run))
             if not run.ok:
@@ -1511,6 +1525,15 @@ class Package(ResultPackage):
         except Exception as exc:  # noqa: BLE001
             return Result(False, steps, f"{type(exc).__name__}: {exc}")
         finally:
+            if opened_here and not request.leave_open:
+                try:
+                    closed = self._skill(
+                        _close_window_skill(request),
+                        request.token, request.timeout,
+                    )
+                    steps.append(_step("close_window", closed.ok, closed))
+                except Exception:  # noqa: BLE001 - best effort
+                    pass
             if remote_png:
                 try:
                     self.middle.run_command(
@@ -1628,6 +1651,32 @@ let((vbCv vbOut vbCollected vbShape vbInst vbVia vbItem vbLpp vbBBox vbPoints vb
   unless(vbCollected error("layout read failed"))
   reverse(car(vbCollected)))
 '''.strip()
+
+
+def _ensure_window_skill(request: ScreenshotRequest) -> str:
+    return (
+        "let((vbW vbOpened) vbOpened = nil "
+        "vbW = car(setof(x hiGetWindowList() x~>cellView && "
+        f"x~>cellView~>libName == {basic.q(request.library)} && "
+        f"x~>cellView~>cellName == {basic.q(request.cell)} && "
+        f"x~>cellView~>viewName == {basic.q(request.view)})) "
+        "unless(vbW progn(vbW = geOpen(?lib "
+        f"{basic.q(request.library)} ?cell {basic.q(request.cell)} "
+        f"?view {basic.q(request.view)} ?viewType {basic.q(request.view_type)} "
+        '?mode "r") vbOpened = t)) '
+        'if(vbW if(vbOpened "opened" "existing") '
+        'error("layout window not found")))'
+    )
+
+
+def _close_window_skill(request: ScreenshotRequest) -> str:
+    return (
+        "let((vbW) vbW = car(setof(x hiGetWindowList() x~>cellView && "
+        f"x~>cellView~>libName == {basic.q(request.library)} && "
+        f"x~>cellView~>cellName == {basic.q(request.cell)} && "
+        f"x~>cellView~>viewName == {basic.q(request.view)})) "
+        "when(vbW hiCloseWindow(vbW)) t)"
+    )
 
 
 def _screenshot_skill(request: ScreenshotRequest,

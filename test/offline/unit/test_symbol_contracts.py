@@ -477,10 +477,12 @@ class ScreenshotMiddle:
     """symbol.screenshot 的假 middle（与 layout.screenshot 同形的四步流程）。"""
 
     def __init__(self, *, mkdir_rc: int = 0, capture_ok: bool = True,
+                 capture_output: str = '"saved"',
                  verify_stdout: str = "2048", verify_rc: int = 0,
                  download_rc: int = 0) -> None:
         self.mkdir_rc = mkdir_rc
         self.capture_ok = capture_ok
+        self.capture_output = capture_output
         self.verify_stdout = verify_stdout
         self.verify_rc = verify_rc
         self.download_rc = download_rc
@@ -519,7 +521,8 @@ class ScreenshotMiddle:
     def execute_skill(self, code, timeout=None, *, token):
         if not self.capture_ok:
             return VirtuosoResult(status=ExecutionStatus.FAILURE, errors=["capture boom"])
-        return VirtuosoResult(status=ExecutionStatus.SUCCESS, output='"ok"')
+        return VirtuosoResult(
+            status=ExecutionStatus.SUCCESS, output=self.capture_output)
 
     def download_file(self, remote_path, local_path, timeout=None, *, token, recursive=False):
         from pyapi.models import CommandResult
@@ -551,7 +554,7 @@ class TestSymbolScreenshot(unittest.TestCase):
             self.assertTrue(local.exists())
             # symbol.screenshot 与 layout 不同：**没有** verify 步（mkdir→capture→download）
             self.assertEqual([step["name"] for step in result.steps],
-                             ["mkdir", "capture", "download"])
+                             ["mkdir", "ensure_window", "capture", "download"])
             self.assertTrue(any(c.startswith("rm -f") for c in middle.commands))
 
     def test_invalid_view_type_is_rejected(self):
@@ -567,6 +570,8 @@ class TestSymbolScreenshot(unittest.TestCase):
             cases = (
                 (ScreenshotMiddle(mkdir_rc=1), "mkdir boom"),
                 (ScreenshotMiddle(capture_ok=False), "capture boom"),
+                (ScreenshotMiddle(capture_output='"capture-failed"'),
+                 "hiWindowSaveImage produced no image"),
                 (ScreenshotMiddle(download_rc=1), "download boom"),
             )
             for middle, needle in cases:
