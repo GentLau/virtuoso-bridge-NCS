@@ -446,6 +446,20 @@ class Package:
                 if exists != "t":
                     return Result(False, steps, f"target_lib_missing: {name}")
 
+            if not request.overwrite:
+                # overwrite=false 命中已存在 cell = 跳过（用户确认的语义），但必须给出
+                # 显式标记：否则返回值与"导入成功但产物为空"无法区分（P-101）。
+                target = self._q(
+                    f"if(ddGetObj({basic.q(request.library)} {basic.q(request.cell)}) t nil)",
+                    request.token, timeout,
+                ).strip()
+                steps.append(_step("cell_exists", True, target == "t"))
+                if target == "t":
+                    return Result(True, steps, None, {
+                        "reason": "skipped_existing", "skipped": True,
+                        "log_path": None, "cells": [], "views": [], "warnings": [],
+                    })
+
             work_dir = self._work_dir(request)
             run_dir = posixpath.join(
                 work_dir, ".vb_verilog",

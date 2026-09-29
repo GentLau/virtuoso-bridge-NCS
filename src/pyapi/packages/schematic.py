@@ -843,13 +843,24 @@ class Package:
         local_dir = artifact_dir() / "screenshots"
         local_dir.mkdir(parents=True, exist_ok=True)
         local_path = local_dir / name
-        downloaded = self.middle.download_file(
-            remote_abs, local_path, timeout=request.timeout, token=request.token,
-        )
-        steps.append(_step("download", downloaded.returncode == 0, downloaded))
-        if downloaded.returncode != 0:
-            return ScreenshotResult(False, steps, downloaded.stderr or "download failed")
-        return ScreenshotResult(True, steps, None, str(local_path))
+        try:
+            downloaded = self.middle.download_file(
+                remote_abs, local_path, timeout=request.timeout, token=request.token,
+            )
+            steps.append(_step("download", downloaded.returncode == 0, downloaded))
+            if downloaded.returncode != 0:
+                return ScreenshotResult(False, steps, downloaded.stderr or "download failed")
+            return ScreenshotResult(True, steps, None, str(local_path))
+        finally:
+            # 远端只做暂存，留存位置是客户端 artifact/screenshots/（P-091 口径：
+            # 三包统一「下载后清理」）。清理失败不改变业务结果。
+            try:
+                self.middle.run_command(
+                    f"rm -f '{remote_abs}'",
+                    timeout=10, token=request.token,
+                )
+            except Exception:  # noqa: BLE001 - best effort
+                pass
 
     def check_and_save(self, request: CheckSaveRequest) -> Result:
         _require_text(request.token, "token")

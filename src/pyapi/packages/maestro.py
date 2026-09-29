@@ -399,11 +399,17 @@ class Package:
         view: str,
         token: str,
         timeout: int | float | None,
+        mode: str = "a",
     ) -> tuple[str, bool]:
         """Open/reuse a Maestro session and report whether it was created."""
         before = set(self._session_list(token, timeout))
+        # 官方文档（maeSKILLref → maeOpenSetup）：`?mode` 缺省是 "a"（append），
+        # 且「cellview 不存在时会新建一个同名 cellview」——读路径若沿用默认，
+        # 就会在"目标不存在"时静默建出空 view 并返回空配置（P-104）。读路径一律
+        # 传 "r"：不存在的 view 不会被创建，返回 nil，由下面的守卫结构化报错。
+        mode_kw = ' ?mode "r"' if mode == "r" else ""
         raw = self._q(
-            f"maeOpenSetup({q(library)} {q(cell)} {q(view)})",
+            f"maeOpenSetup({q(library)} {q(cell)} {q(view)}{mode_kw})",
             token,
             timeout,
         )
@@ -687,7 +693,12 @@ class Package:
             token,
             timeout,
         )
-        return _to_int(unquote(raw))
+        flag = _to_int(unquote(raw))
+        # 官方只定义 0..4 / nil；只读会话（P-104 起读路径用 ?mode "r"）会返回
+        # 文档外的 -1，语义是"取不到"。归为未知（None），不冒充 0/1 状态。
+        if flag is not None and flag < 0:
+            return None
+        return flag
 
     def _set_overwrite_history(
         self,
@@ -1358,6 +1369,7 @@ class Package:
             session, created = self._open_session(
                 request.library, request.cell, request.view,
                 request.token, request.timeout,
+                mode="r",
             )
             steps.append(_step(
                 "open_session", True,
@@ -1721,6 +1733,7 @@ class Package:
         session: str | None = None
         created = False
         try:
+            # 与其它读路径不同：read_history 要查运行态（axlGetRunStatus /
             session, created = self._open_session(
                 request.library, request.cell, request.view,
                 request.token, request.timeout,
@@ -1906,6 +1919,7 @@ class Package:
             session, created = self._open_session(
                 request.library, request.cell, request.view,
                 request.token, request.timeout,
+                mode="r",
             )
             steps.append(_step(
                 "open_session", True,
@@ -2109,6 +2123,7 @@ class Package:
             session, created = self._open_session(
                 request.library, request.cell, request.view,
                 request.token, request.timeout,
+                mode="r",
             )
             steps.append(_step(
                 "open_session", True,
@@ -2479,6 +2494,23 @@ class Package:
         session: str | None = None
         created = False
         try:
+            # 与其它读路径不同：read_history 要查运行态（axlGetRunStatus /
+            # maeGetHistoryLockFlag），而这些在 ?mode "r" 的只读会话里会退化成
+            # 0/0、-1。这里改用"先 ddGetObj 判存在（查找语义，不建对象）+ 默认
+            # "a" 开会话"：既不产生 P-104 那类凭空建 view 的副作用，又保住运行态。
+            exists = self._q(
+                f"if(ddGetObj({q(request.library)} {q(request.cell)} "
+                f"{q(request.view)}) t nil)",
+                request.token, request.timeout,
+            ).strip()
+            steps.append(_step("view_exists", True, exists == "t"))
+            if exists != "t":
+                return Result(
+                    False, steps,
+                    f"maestro view not found: {request.library}/"
+                    f"{request.cell}/{request.view}",
+                    {"reason": "view_missing"},
+                )
             session, created = self._open_session(
                 request.library, request.cell, request.view,
                 request.token, request.timeout,
@@ -3032,20 +3064,16 @@ class Package:
                 )
                 steps.append(_step("overwrite_clear", released.ok, released.output))
 
-            try:
-                started, dismissed, start_error, window_checks = (
-                    self._start_simulation_with_watchdog(
-                        session, request.token, request.timeout,
-                    )
+            # 注意：**不能**在 maeRunSimulation 返回后立刻清 Overwrite 标志 ——
+            # 它只是"启动"，覆盖意图在运行/落 history 时才生效（实测提前清会让
+            # 覆盖失效、目标 history 永远不 done）。地雷由「下一次 run 开跑前清理」
+            # 兜住（见上面的 overwrite_clear 分支），这也是 P-095 验收口径允许的
+            # 第二选：每次 run 前校验目标、残留即清。
+            started, dismissed, start_error, window_checks = (
+                self._start_simulation_with_watchdog(
+                    session, request.token, request.timeout,
                 )
-            finally:
-                # 无论成功/失败/超时，都不给下一次 run 留地雷。
-                released = self._set_overwrite_history(
-                    session, False, None, request.token, request.timeout,
-                )
-                steps.append(_step("overwrite_release", released.ok, {
-                    "detail": released.output,
-                }))
+            )
             if dismissed or window_checks:
                 steps.append(_step("dialog_watchdog", True, {
                     "window_checks": window_checks,

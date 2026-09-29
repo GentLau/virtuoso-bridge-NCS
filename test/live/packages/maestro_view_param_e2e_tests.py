@@ -204,8 +204,9 @@ def _case_export(transport, ev: dict) -> None:
 
     error, raw = _expect_fail_text(
         transport, "virtuoso.maestro.export", **base, view=BOGUS_VIEW)
-    bogus_files = {Path(p).name for p in
-                   (raw.get("data") or {}).get("value", {}).get("files") or []}
+    # 结构化失败时 data.value 为 None（P-104 修复后 export 不再返回空产物）
+    bogus_value = ((raw.get("data") or {}).get("value") or {})
+    bogus_files = {Path(p).name for p in (bogus_value.get("files") or [])}
     _check(not bogus_files,
            f"export(snapshot): 不存在的 view 仍导出真实文件 {sorted(bogus_files)}")
     ev["export_bogus"] = {"error": error[:300], "files": sorted(bogus_files)}

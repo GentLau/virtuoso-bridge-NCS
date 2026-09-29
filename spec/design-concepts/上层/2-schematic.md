@@ -24,7 +24,7 @@
   - `instance`：`all`（默认）/ `none` / `{"names":[...]}` / `{"region":[pos0, pos1]}`；
   - `wire` / `label` / `pin` / `note`：`all`（默认）/ `none` / `{"region":[pos0, pos1]}`。
 - object_filter 只对 `positions`、`params`、不填=全部生效；`focus` 含 `connectivity` 时忽略（连接关系必须全量）。
-- `screenshot`：目标默认 `lib/cell/view`，可选 `window_id`；可选 `region=[pos0, pos1]`（user units，截前 `hiZoomIn(window, bBox)` 把区域填满窗口）；`toplevel` / `centralWidget` 暴露；`leave_open` 默认关窗；格式固定 PNG；远端存 daemon role root 的 screenshots/；本地存客户端工作目录 artifact/screenshots/。
+- `screenshot`：目标默认 `lib/cell/view`，可选 `window_id`；可选 `region=[pos0, pos1]`（user units，截前 `hiZoomIn(window, bBox)` 把区域填满窗口）；`toplevel` / `centralWidget` 暴露；`leave_open` 默认关窗；格式固定 PNG；远端**暂存**于 daemon role root 的 screenshots/，下载后清理；留存位置是客户端工作目录 artifact/screenshots/（P-091 三包统一口径）。
 
 ### 1.2 写操作（改变业务服务器状态）
 

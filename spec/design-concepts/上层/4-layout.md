@@ -180,7 +180,7 @@ SKILL 侧只负责 `dbSave` 落盘与库名校验。
 
 - 格式固定 PNG；窗口按 cellView 匹配不到时才 `geOpen` 打开（`?mode "r"`）；
 - **禁止不带 bbox 的 `hiZoomIn`/`hiZoomOut`**（会进交互橡皮筋并卡死 SKILL 通道）；
-- 远端存该 token 的 role root 的 `screenshots/`，本地存客户端工作目录 `artifact/screenshots/`；
+- 远端**暂存**于该 token 的 role root 的 `screenshots/`，下载后清理；留存位置是客户端工作目录 `artifact/screenshots/`（P-091 三包统一口径）；
 - `hiWindowSaveImage` 失败即业务失败；无内容窗口会截出单色黑图（属正常，不是失败）。
 
 ### 1.5 display（展示，不落数据）
@@ -229,7 +229,7 @@ SKILL 侧只负责 `dbSave` 落盘与库名校验。
 | 6 | `strict_lpp` 默认 `false`（轻校验），严格模式可选 |
 | 7 | 旧 `route_multilayer`/`route_bus`/`clear_routing` 降级为调用方组合；`set_visibility` 进 `display`；`select_delete`/`delete_cell` 不进 API（cell 删除归 cellview） |
 | 8 | **GDS 导入与导出都归本包**，收拢为一个 `gds` 操作（`action=export\|import`）；digital-import 只保留 `ihdl` / PG label / 标签后处理 |
-| 9 | 截图口径**参考 schematic + maestro**：cellView 匹配窗口 → `geOpen` 兜底、`window_id` 显式则坏 id 直接失败、`region` 用 `hiZoomIn(bbox)`、`toplevel/central_widget` 透传、PNG 落 role root `screenshots/` 与本地 `artifact/screenshots/`、无 X11 回退 |
+| 9 | 截图口径**参考 schematic + maestro**：cellView 匹配窗口 → `geOpen` 兜底、`window_id` 显式则坏 id 直接失败、`region` 用 `hiZoomIn(bbox)`、`toplevel/central_widget` 透传、PNG **暂存** role root `screenshots/`（下载后清理）与本地 `artifact/screenshots/`、无 X11 回退 |
 | 10 | `gds` 的参数按 vendor 选项拆开：`layer_map`（导出/导入的层映射）与 `ref_lib_file`（仅导入 `-refLibList`）；导入选 cell 用 `-topCell` |
 | 11 | 索引容差由 0.001 收敛为 **0.0005**（半个 dbu）；via 索引改为 `pos + orient`（viaDef/name 不可回读） |
 

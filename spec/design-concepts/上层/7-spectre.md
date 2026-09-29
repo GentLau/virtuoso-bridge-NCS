@@ -285,6 +285,7 @@ Request：`token`、`data: dict | None`、`source_path: str | None`、`metrics: 
 ## 8. `spectre.export`
 
 Request：`token`、`format`（`csv|json`）、`data` 或 `source_path`、`output_path`、`columns?: list[str]`、`precision?: int`、`timeout?`。
+`precision` = 输出**有效数字**位数（等价 printf 的 `%.Ng`，`precision=3` 时 `1.23456 → 1.23`），不是小数位。
 
 - 纯 Python；`output_path` 必填，避免随机不可重建路径。
 - CSV：按 columns（缺省取 data 中 list 值的顺序，`time`/`freq`/`sweep_var` 优先）写出矩形表；复数按 `<signal>.re`/`<signal>.im` 展开；缺失值留空。

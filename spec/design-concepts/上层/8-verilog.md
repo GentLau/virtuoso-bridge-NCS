@@ -79,7 +79,7 @@ VerilogA 归独立包 `veriloga`（见[11-veriloga.md](11-veriloga.md)）。
 | `file_path` + `file_is_local` | 源码文件（本机→上传；远端→直接用） |
 | `library` / `cell` | 目标库与顶层 cell（**显式给**，不用文件名推导） |
 | `schematic_view` / `functional_view` / `symbol_view` | 产出视图名（默认 schematic/functional/symbol） |
-| `overwrite` | 映射 `import_if_exists` / `overwrite_symbol` |
+| `overwrite` | 映射 `import_if_exists` / `overwrite_symbol`；`false` 命中已存在 cell 时**跳过且不改写**，返回 `reason="skipped_existing"` + `skipped=true` + `cells=[]`（P-101 口径） |
 | `timeout` / `poll_interval` | 轮询预算 |
 
 1. 前置：`library`、`ref_libs` 在 cds.lib 可见（`ddGetObj`）；**包自建按次 cds.lib 副本**给 `-cdslib`
