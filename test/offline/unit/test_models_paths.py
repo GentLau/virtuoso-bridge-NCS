@@ -188,6 +188,8 @@ class TestSkillClientSocketPaths(unittest.TestCase):
     def test_parse_empty(self):
         r = SkillClient._parse_response("", 0.1)
         self.assertEqual(r.status, ExecutionStatus.ERROR)
+        self.assertEqual(r.errors, ["SKILL execution timed out"])
+        self.assertTrue(any("empty response" in w for w in r.warnings))
 
 
 class TestSmallEdgeCoverage(unittest.TestCase):

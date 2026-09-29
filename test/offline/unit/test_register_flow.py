@@ -982,6 +982,21 @@ class TestLocalJointPort(unittest.TestCase):
         with self.assertRaises(RegistrationProbeError):
             self._probe_local(daemon_port=65093, local_port=65094)
 
+    def test_flow_rejects_mismatched_explicit_ports_at_step2(self):
+        """P-079: step 2 must reject, not silently coerce, explicit 65091/65092."""
+        request = RegistrationRequest(
+            mode="local", user="joint-mismatch", token="tok-joint-mismatch",
+            roles={"daemon": {"daemon_port": 65091, "local_port": 65092}},
+        )
+        flow = RegistrationFlow(self.reg)
+        flow.start(request)
+        with mock.patch("register.probe.local_port_free", return_value=True):
+            state = flow.validate()
+        self.assertEqual(state.stage, "failed")
+        joined = " ".join(state.errors)
+        self.assertIn("65091", joined)
+        self.assertIn("65092", joined)
+
     def test_default_port_in_use_falls_back_to_a_free_port(self):
         from register import probe_user
         request = RegistrationRequest(mode="local", user="u", token="tok")
