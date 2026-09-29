@@ -264,8 +264,13 @@ class TestAtomicSkill(unittest.TestCase):
             "points": pts, "width": 0.1, "color": "red", "line_style": "dashed"})
         self.assertEqual(1, styled.count('"red"'), styled)
         self.assertEqual(1, styled.count('"dashed"'), styled)
+        # 真机定稿（2026-09-29，P-078）：schCreateWire 的 color/lineStyle **实参**
+        # 不落库（DRF 名字不匹配就静默忽略），必须创建后赋值 ~>color/~>lineStyle
+        # —— 与 set_wire_properties 同机制。这里钉住"单次创建 + 事后赋值"的形状。
         self.assertEqual(
-            'schCreateWire(vbSchemCv "route" "full" list(0:0 1:0) 0 0 0.1 "red" "dashed")',
+            'let((vbW) vbW = schCreateWire(vbSchemCv "route" "full" '
+            'list(0:0 1:0) 0 0 0.1) foreach(__obj vbW '
+            '__obj~>color = "red" __obj~>lineStyle = "dashed") vbW)',
             styled)
 
     def test_label_ops(self):

@@ -399,8 +399,11 @@ def _read_skill(request: ReadRequest) -> str:
             '__obj~>theLabel __obj~>xy __obj~>orient __obj~>justify __obj~>font __obj~>height)))'
         )
         parts.append('vbOut = strcat(vbOut "WIRES\\n")')
+        # 带 width/color/lineStyle 的 wire 在 DB 里是 **path** 对象（width=0 才是 line），
+        # 两态都算 wire，否则 styled wire 在 read 里完全不可见（P-078）。
         parts.append(
-            f'foreach(__obj setof(x cv~>shapes x~>objType == "line" && {wire_flt}) '
+            'foreach(__obj setof(x cv~>shapes '
+            f'(x~>objType == "line" || x~>objType == "path") && {wire_flt}) '
             'vbOut = strcat(vbOut sprintf(nil "WIRE|%L|%L|%L|%L\\n" __obj~>points '
             '__obj~>width __obj~>color __obj~>lineStyle)))'
         )
@@ -582,19 +585,24 @@ let((vbInst vbCcd vbParamVals vbP vbProp)
         return "progn(" + " ".join(exprs) + ' "ok")'
     if op == "place_wire":
         pts = _point_str(_points_of(cmd, "points"))
-        # 官方签名：schCreateWire(cv entry route points xSpacing ySpacing **width** [color] [lineStyle])
-        # width 必填（0 = narrow wire，与底层默认一致）；color/lineStyle 传了才拼。
+        # 官方签名：schCreateWire(cv entry route points xSpacing ySpacing width [color] [lineStyle])
+        # 但实测（真机 2026-09-29）：把 color/lineStyle 当**实参**传不落库
+        # （DRF 名字匹配不上就静默忽略），而事后赋值 `~>color`/`~>lineStyle`
+        # 有效（与 set_wire_properties 同机制，P-078）。所以样式改成创建后赋值。
         body = (
             f'schCreateWire(vbSchemCv {_q(cmd.get("entry", "route"))} '
             f'{_q(cmd.get("route", "full"))} {pts} '
             f'{float(cmd.get("x_spacing", 0)):g} {float(cmd.get("y_spacing", 0)):g} '
-            f'{float(cmd.get("width", 0)):g}'
+            f'{float(cmd.get("width", 0)):g})'
         )
-        if "color" in cmd or "line_style" in cmd:
-            body += f' {_q(cmd["color"]) if "color" in cmd else "nil"}'
-            if "line_style" in cmd:
-                body += f' {_q(cmd["line_style"])}'
-        body += ')'
+        assigns = ""
+        if "color" in cmd:
+            assigns += f' __obj~>color = {_q(cmd["color"])}'
+        if "line_style" in cmd:
+            assigns += f' __obj~>lineStyle = {_q(cmd["line_style"])}'
+        if assigns:
+            return (f'let((vbW) vbW = {body} '
+                    f'foreach(__obj vbW{assigns}) vbW)')
         return body
     if op == "delete_wire":
         pts = _points_of(cmd, "points")
@@ -604,7 +612,8 @@ let((vbInst vbCcd vbParamVals vbP vbProp)
         y2 = max(y for _, y in pts) + 0.001
         return (
             f'let((vbSh vbN) vbN = 0 foreach(__obj setof(x vbSchemCv~>shapes '
-            f'x~>objType == "line" && {_region_shape_expr([[x1, y1], [x2, y2]])}) '
+            "(x~>objType == \"line\" || x~>objType == \"path\") && "
+            f'{_region_shape_expr([[x1, y1], [x2, y2]])}) '
             'when(dbDeleteObject(__obj) vbN = vbN + 1)) vbN)'
         )
     if op == "set_wire_properties":
@@ -623,7 +632,8 @@ let((vbInst vbCcd vbParamVals vbP vbProp)
         body = " ".join(assignments) + ' "ok"' if assignments else '"ok"'
         return (
             f'let((vbN) vbN = 0 foreach(__obj setof(x vbSchemCv~>shapes '
-            f'x~>objType == "line" && {_region_shape_expr([[x1, y1], [x2, y2]])}) '
+            "(x~>objType == \"line\" || x~>objType == \"path\") && "
+            f'{_region_shape_expr([[x1, y1], [x2, y2]])}) '
             f'when(progn({body}) vbN = vbN + 1)) vbN)'
         )
     if op == "place_label":

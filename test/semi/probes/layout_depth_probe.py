@@ -66,6 +66,28 @@ def main(argv: list[str] | None = None) -> int:
         print(f"环境不可用: {exc.error}")
         return 2
 
+    # 前置（P-085）：本用例读的是"层级下钻"，必须有 master 实例可下钻。
+    # 夹具会被别的套件重建，所以这里自建：清 cell → 建 view → 顶层放一个实例。
+    try:
+        tb.op(t, "virtuoso.cellview.cell.delete", library=LIB, cell=CELL, timeout=120)
+    except Exception:  # noqa: BLE001 - 不存在就算了
+        pass
+    tb.op(t, "virtuoso.cellview.view.create", library=LIB, cell=CELL, view=VIEW,
+          view_type="maskLayout", timeout=180)
+    tb.op(t, "virtuoso.layout.write", library=LIB, cell=CELL, view=VIEW, timeout=300,
+          commands=[
+              {"op": "place_rect", "layer": "y0", "purpose": "drawing",
+               "bbox": [[0, 0], [2, 1]]},
+              {"op": "place_rect", "layer": "y1", "purpose": "drawing",
+               "bbox": [[0, 2], [2, 3]]},
+              {"op": "place_rect", "layer": "y2", "purpose": "drawing",
+               "bbox": [[0, 4], [2, 5]]},
+              {"op": "place_instance", "master_lib": LIB, "master_cell": "lay_master",
+               "master_view": VIEW, "name": "P085_I1", "pos": [3.0, 3.0],
+               "orient": "R0"},
+          ])
+    evidence["setup"] = "rebuilt cell with 3 rects + 1 master instance"
+
     flat = call_depth(t, 0)
     deep = call_depth(t, 1)
     evidence["depth0"] = flat
