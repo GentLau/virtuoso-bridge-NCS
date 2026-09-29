@@ -177,6 +177,7 @@ maestro 包覆盖 ADE Assembler / Explorer 的**配置、结果、导出、历�
 |---|---|---|
 | 后台会话 open / save / close | `maeOpenSetup` / `maeSaveSetup` / `maeCloseSession` | write、read_config、read_results、export、write_history |
 | **读路径不得产生写副作用** | 只读操作（read_config / read_results / export / read_history）开会话一律 `?mode "r"`；写操作沿用官方默认 `"a"` | 全部 |
+| **陈旧/他人写锁不弹模态** | 开会话前检查 cellview 目录的 `*.cdslck`：属主进程已死或非本实例 → **结构化失败**（点名锁文件/属主/pid）；本实例自己的锁 → 正常复用会话 | 全部 |
 | 确保 maestro view 存在 | `maeOpenSetup` + `maeSaveSetup` | write、open_gui（对外不暴露） |
 | 窗口状态探测（mode / 已修改） | `hiGetCurrentWindow` + 标题解析 + `davSession` | close_gui |
 | Detail CSV 中间导出 | `maeExportOutputView` | read_results、export(outputs_csv) |

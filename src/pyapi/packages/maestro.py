@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import posixpath
 import re
+import shlex
 import threading
 import time
 import uuid
@@ -403,6 +404,9 @@ class Package:
     ) -> tuple[str, bool]:
         """Open/reuse a Maestro session and report whether it was created."""
         before = set(self._session_list(token, timeout))
+        blocker = self._write_lock_blocker(library, cell, view, token, timeout)
+        if blocker:
+            raise RuntimeError(blocker)
         # 官方文档（maeSKILLref → maeOpenSetup）：`?mode` 缺省是 "a"（append），
         # 且「cellview 不存在时会新建一个同名 cellview」——读路径若沿用默认，
         # 就会在"目标不存在"时静默建出空 view 并返回空配置（P-104）。读路径一律
@@ -434,6 +438,57 @@ class Package:
             token,
             timeout,
         )
+
+    def _write_lock_blocker(
+        self,
+        library: str,
+        cell: str,
+        view: str,
+        token: str,
+        timeout: int | float | None,
+    ) -> str | None:
+        """死属主的 OA 写锁 → 结构化失败文案；无锁/活锁 → None。
+
+        ADE 拿不到写锁时会弹 `axlOpenInRead0` 模态框并把 CIW/daemon 一起挂死
+        （P-096 现场：实例被 kill 后留下陈旧锁）。所以开 maeOpenSetup 之前先读
+        cellview 目录的锁桩文件（`*.cdslck` 里的 ProcessIdentifier/LoginName/…），
+        **只有属主进程已不存在**才拦；属主还活着就照旧交给 ADE（复用会话）。
+        """
+        try:
+            lib_path = unquote(self._q(
+                f"ddGetObj({q(library)})~>readPath", token, timeout,
+            ))
+            if not lib_path or lib_path == "nil":
+                return None
+            view_dir = posixpath.join(lib_path, cell, view)
+            probe = self.middle.run_command(
+                f"d={shlex.quote(view_dir)}; "
+                'f=$(ls -1 "$d"/*.cdslck 2>/dev/null | head -1); '
+                'if [ -n "$f" ]; then cat "$f"; echo __VBLIVE__; '
+                "pid=$(awk '/^ProcessIdentifier/{print $2}' \"$f\"); "
+                'ps -p "$pid" -o pid= >/dev/null 2>&1 && echo alive || echo dead; fi',
+                timeout=timeout or 30, token=token,
+            )
+        except Exception:  # noqa: BLE001 - 探测失败不阻断正常打开
+            return None
+        stdout = probe.stdout or ""
+        if "__VBLIVE__" not in stdout:
+            return None
+        dump, _, liveness = stdout.partition("__VBLIVE__")
+        fields = {}
+        for line in dump.splitlines():
+            parts = line.split(None, 1)
+            if len(parts) == 2:
+                fields[parts[0].strip()] = parts[1].strip()
+        if "alive" in liveness:
+            return None
+        pid = fields.get("ProcessIdentifier", "?")
+        owner = fields.get("LoginName", "?")
+        host = fields.get("HostName", "?")
+        since = fields.get("TimeEditLocked", "")
+        return (f"stale write lock: {view_dir}/*.cdslck 的属主进程 pid={pid} 已不存在"
+                f"（{owner}@{host}{'，since ' + since if since else ''}）；"
+                "清掉该锁或重启实例后重试")
 
     def _close_session(
         self,
@@ -2887,6 +2942,9 @@ class Package:
             #   （继续 / 确定）；不处理就会把整个 CIW 挂死（P-095、P-086 持久形态）。
             known = (
                 "Update and Run",
+                # 写锁争用时的 "open in read-only?" 问答框（P-096 兜底：正常路径已被
+                # 开前的死锁检查拦下，这里只防"活锁+另一会话"这种残余情形挂死 CIW）。
+                "ADE Assembler Open View",
                 "ADE Assembler Message 2406",
                 "ADE Assembler Message 3016",
                 "ADE Assembler Message 3017",
