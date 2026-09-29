@@ -253,12 +253,12 @@ def main() -> int:
 
         status, body = _post(base, {"operation": "basic.command.run", "token": token,
                                     "cmd": f"echo {marker}"})
-        if status != 200 or body.get("ok") is not True or marker not in str(body["data"]):
+        if status != 200 or body.get("ok") is not True or marker not in str(body):
             raise ProbeFailure(f"basic.command.run failed: {status} {json.dumps(body)[:200]}")
 
         status, body = _post(base, {"operation": "basic.skill.execute", "token": token,
                                     "skill_code": f'strcat("{marker}")'})
-        skill_data = body.get("data") or {}
+        skill_data = body.get("result") or body
         if status != 200 or body.get("ok") is not True or marker not in json.dumps(skill_data):
             raise ProbeFailure(f"basic.skill.execute failed: {status} {json.dumps(body)[:200]}")
 
@@ -280,7 +280,7 @@ def main() -> int:
         for operation in ("basic.gui.run", "basic.spectre.run"):
             status, body = _post(base, {"operation": operation, "token": token,
                                         "cmd": f"echo {marker}"})
-            if status != 200 or body.get("ok") is not True or marker not in str(body["data"]):
+            if status != 200 or body.get("ok") is not True or marker not in str(body):
                 raise ProbeFailure(f"{operation} failed: {status} {json.dumps(body)[:200]}")
         results["basic_package"] = "skill/command/upload/download/gui/spectre ok"
 
@@ -292,7 +292,7 @@ def main() -> int:
         })
         if status != 200 or body.get("ok") is not False or not body.get("error"):
             raise ProbeFailure(f"business failure must be 2xx ok=false: {status} {body}")
-        if body["data"] is None or not body["data"].get("steps"):
+        if not body.get("steps"):
             raise ProbeFailure(f"business failure lost its step trace: {body}")
         results["business_failure"] = body["error"][:60]
 
@@ -396,10 +396,10 @@ def main() -> int:
         status, body = _post(base, {"operation": "test.ctor", "token": token})
         if status != 200 or body.get("ok") is not True:
             raise ProbeFailure(f"constructor guard package failed: {status} {body}")
-        if body["data"].get("argc") != 1:
+        if body.get("argc") != 1:
             raise ProbeFailure(
                 f"business package must be constructed with Middle only: argc="
-                f"{body['data'].get('argc')}"
+                f"{body.get('argc')}"
             )
         first_arg = seen_ctor_args[-1][0]
         if not hasattr(first_arg, "execute_skill"):

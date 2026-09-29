@@ -44,9 +44,13 @@ class TestResultModels(unittest.TestCase):
             execution_time=0.32900000002700835,
         )
         self.assertNotIn("metadata", r.model_dump())
+        self.assertIn("log", r.model_dump())
+        self.assertNotIn("CDSlog", r.model_dump())
         python_dump = r.model_dump()
         json_dump = r.model_dump(mode="json")
         self.assertNotIn("metadata", json_dump)
+        self.assertNotIn("log", json_dump)
+        self.assertIn("CDSlog", json_dump)
         self.assertEqual(json_dump["execution_time"], 0.329)
         self.assertEqual(python_dump["execution_time"], 0.32900000002700835)
         self.assertEqual(
@@ -54,9 +58,10 @@ class TestResultModels(unittest.TestCase):
         )
         path = Path(tempfile.mkdtemp(prefix="vb-")) / "r.json"
         r.save_json(path)
-        self.assertEqual(
-            json.loads(path.read_text(encoding="utf-8"))["execution_time"], 0.329
-        )
+        saved = json.loads(path.read_text(encoding="utf-8"))
+        self.assertEqual(saved["execution_time"], 0.329)
+        self.assertIn("CDSlog", saved)
+        self.assertNotIn("log", saved)
         sim = SimulationResult(status=ExecutionStatus.ERROR, errors=["x"])
         self.assertNotIn("metadata", sim.model_dump())
 

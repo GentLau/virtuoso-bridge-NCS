@@ -1,7 +1,7 @@
-"""Top-layer dispatch contract: explicit registry + response shell.
+"""Top-layer dispatch contract: explicit registry + direct business result.
 
-Spec: 顶层 §2/§3 — structural errors 4xx, business failure 2xx with ok=false,
-unexpected exceptions 5xx, token required, unknown operation 404.
+Spec: 顶层 §2/§3 — business result body directly, structural errors 4xx,
+business failure 2xx with ok=false, unexpected exceptions 5xx.
 """
 
 import dataclasses
@@ -33,6 +33,9 @@ class _EchoPackage:
     def reject(self, request):
         raise ValueError("domain rejected")
 
+    def fail(self, request):
+        return {"ok": False, "error": "domain failed", "steps": []}
+
     def boom(self, request):
         raise RuntimeError("kaboom")
 
@@ -56,22 +59,29 @@ class TestDispatchShell(unittest.TestCase):
             "tb.reject", _EchoPackage, "reject", _EchoRequest, replace=True
         )
         dispatch_module.register_operation(
+            "tb.fail", _EchoPackage, "fail", _EchoRequest, replace=True
+        )
+        dispatch_module.register_operation(
             "tb.boom", _EchoPackage, "boom", _EchoRequest, replace=True
         )
 
     def tearDown(self):
-        for name in ("tb.echo", "tb.reject", "tb.boom"):
+        for name in ("tb.echo", "tb.reject", "tb.fail", "tb.boom"):
             dispatch_module.PACKAGES.pop(name, None)
 
-    def test_success_shell(self):
+    def test_success_returns_result_body(self):
         status, body = dispatch(
             None, {"operation": "tb.echo", "token": "tok", "value": 7}
         )
         self.assertEqual(status, 200)
-        self.assertEqual(
-            body,
-            {"ok": True, "data": {"ok": True, "value": 7}, "error": None},
+        self.assertEqual(body, {"ok": True, "value": 7})
+
+    def test_business_failure_returns_result_body(self):
+        status, body = dispatch(
+            None, {"operation": "tb.fail", "token": "tok"}
         )
+        self.assertEqual(status, 200)
+        self.assertEqual(body, {"ok": False, "error": "domain failed", "steps": []})
 
     def test_missing_or_bad_token_is_4xx(self):
         for payload in (
@@ -83,7 +93,7 @@ class TestDispatchShell(unittest.TestCase):
                 status, body = dispatch(None, payload)
                 self.assertEqual(status, 400)
                 self.assertFalse(body["ok"])
-                self.assertIsNone(body["data"])
+                self.assertNotIn("data", body)
 
     def test_unknown_operation_is_404(self):
         status, body = dispatch(None, {"operation": "nope", "token": "t"})
@@ -101,13 +111,13 @@ class TestDispatchShell(unittest.TestCase):
         status, body = dispatch(None, {"operation": "tb.reject", "token": "t"})
         self.assertEqual(status, 400)
         self.assertIn("domain rejected", body["error"])
-        self.assertIsNone(body["data"])
+        self.assertNotIn("data", body)
 
     def test_unexpected_exception_is_5xx_without_traceback(self):
         status, body = dispatch(None, {"operation": "tb.boom", "token": "t"})
         self.assertEqual(status, 500)
         self.assertIn("kaboom", body["error"])
-        self.assertIsNone(body["data"])
+        self.assertNotIn("data", body)
 
     def test_non_object_payload_is_400(self):
         status, body = dispatch(None, ["not", "a", "mapping"])

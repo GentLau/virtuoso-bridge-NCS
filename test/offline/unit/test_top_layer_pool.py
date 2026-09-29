@@ -110,7 +110,7 @@ class TestBusinessFacePool(unittest.TestCase):
         self.assertIn(status, (200, 400), raw)
         payload = json.loads(raw)
         self.assertIn("error", payload)
-        self.assertIn("data", payload)
+        self.assertNotIn("data", payload)
 
         # 200000 层：两个解释器都超出扫描器能力 → 必须 400 invalid JSON body
         status, raw = self._post_raw(_deep(200000))
