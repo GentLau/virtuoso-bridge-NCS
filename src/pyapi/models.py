@@ -39,6 +39,13 @@ class VirtuosoResult(BaseModel):
     def _round_execution_time(self, value: float | None) -> float | None:
         return None if value is None else round(value, 3)
 
+    @model_serializer(mode="wrap")
+    def _json_key_names(self, handler, info):
+        data = handler(self)
+        if info.mode == "json":
+            data["CDSlog"] = data.pop("log", "")
+        return data
+
     @property
     def ok(self) -> bool:
         return self.status == ExecutionStatus.SUCCESS

@@ -1,7 +1,8 @@
 """Top-layer HTTP server (spec 顶层 §1/§2): entry point + dispatch only.
 
-The handler parses JSON, calls :func:`server.dispatch.dispatch`, and renders the
-``{"ok", "data", "error"}`` shell; it never touches transport code.  The
+The handler parses JSON, calls :func:`server.dispatch.dispatch`, returns the
+business result body directly, and renders ``{"ok", "error"}`` only for
+requests that never reach a business package; it never touches transport code.  The
 ``Middle`` implementation is created once at process assembly and injected.
 
 Run::
@@ -20,7 +21,6 @@ import sys
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from pathlib import Path
 from typing import Any
 
 from server import dispatch as dispatch_module
@@ -47,12 +47,6 @@ def pool_size_from_snapshot(
     return value
 
 
-def load_business_thread_pool_size(config_path: Path) -> int:
-    """Compatibility helper for tests/assembly; reads one JSON file."""
-    return pool_size_from_snapshot(
-        config_base.load_config_file(config_path), DEFAULT_MAX_INFLIGHT
-    )
-
 #: Fixed over-limit answer: the request was *not* accepted; the caller may retry.
 BUSY_ERROR = "server thread pool exceeded (max {limit} in-flight), please retry"
 
@@ -68,7 +62,7 @@ class ApiHandler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
 
     # -- helpers ---------------------------------------------------------------
-    def _send(self, status: int, payload: dict[str, Any], *,
+    def _send(self, status: int, payload: Any, *,
               retry_after: int | None = None,
               allow: str | None = None,
               close: bool = False) -> None:
@@ -78,7 +72,6 @@ class ApiHandler(BaseHTTPRequestHandler):
             status = 500
             text = dumps_strict({
                 "ok": False,
-                "data": None,
                 "error": f"invalid response payload: {exc}",
             })
         body = text.encode("utf-8")
@@ -163,7 +156,7 @@ class ApiHandler(BaseHTTPRequestHandler):
             # 已定义路径 + 非支持方法 → 405 + Allow（顶层 §3）
             self._method_not_allowed(allow=allowed)
             return
-        self._send(404, {"ok": False, "data": None, "error": "not found"})
+        self._send(404, {"ok": False, "error": "not found"})
 
     def do_POST(self) -> None:  # noqa: N802
         path = self.path.split("?")[0]
@@ -172,13 +165,13 @@ class ApiHandler(BaseHTTPRequestHandler):
             if allowed is not None:
                 self._method_not_allowed(allow=allowed)
                 return
-            self._send(404, {"ok": False, "data": None, "error": "not found"})
+            self._send(404, {"ok": False, "error": "not found"})
             return
         ok, payload = self._read_json()
         if not ok:
             self._send(
                 400,
-                {"ok": False, "data": None, "error": "invalid JSON body"},
+                {"ok": False, "error": "invalid JSON body"},
                 close=True,
             )
             return
@@ -189,16 +182,14 @@ class ApiHandler(BaseHTTPRequestHandler):
             # 排队中的 restart/停服：监听保持，新请求结构化拒绝（v27 §3）。
             self._send(
                 503,
-                {"ok": False, "data": None,
-                 "error": "server is restarting, please retry"},
+                {"ok": False, "error": "server is restarting, please retry"},
                 retry_after=1,
             )
             return
         if not server.acquire_slot():
             self._send(
                 429,
-                {"ok": False, "data": None,
-                 "error": BUSY_ERROR.format(limit=server.max_inflight)},
+                {"ok": False, "error": BUSY_ERROR.format(limit=server.max_inflight)},
                 retry_after=1,
             )
             return
@@ -215,7 +206,6 @@ class ApiHandler(BaseHTTPRequestHandler):
         if body:
             self._send(405, {
                 "ok": False,
-                "data": None,
                 "error": "method not allowed",
             }, allow=allow, close=True)
             return
@@ -257,7 +247,7 @@ class ApiHandler(BaseHTTPRequestHandler):
             self._method_not_allowed()
             return
         self._send(
-            404, {"ok": False, "data": None, "error": "not found"},
+            404, {"ok": False, "error": "not found"},
             close=True,
         )
 
@@ -333,7 +323,6 @@ class ApiServer(ThreadingHTTPServer):
 #: is the package and the entries are per business operation.
 PACKAGES = (
     ("pyapi.packages.basic", "Package", "OPERATIONS"),
-    ("pyapi.packages.demo", "Package", "OPERATIONS"),
     ("pyapi.packages.gui", "Package", "OPERATIONS"),
     ("pyapi.packages.cellview", "Package", "OPERATIONS"),
     ("pyapi.packages.schematic", "Package", "OPERATIONS"),
@@ -370,15 +359,6 @@ def register_packages() -> dict[str, str]:
 def build_server(host: str, port: int, middle, *,
                  max_inflight: int = DEFAULT_MAX_INFLIGHT) -> ApiServer:
     return ApiServer((host, port), middle, max_inflight=max_inflight)
-
-
-def build_middle(work_dir: str | None = None):
-    """Assembly helper: initialize the shared base once, then build the middle."""
-    from transport.middle import BusinessServer
-
-    init_work_dir(work_dir)
-    config_base.reload_config(config_path())
-    return BusinessServer()
 
 
 # -- supervised mode (顶层补充 v27 §1.1/§3) -----------------------------------
