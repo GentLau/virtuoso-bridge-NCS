@@ -128,8 +128,11 @@ def main() -> int:
             f"test -r {shlex.quote(DRC_DECK)} && echo env-ok",
             timeout=60)
         local_tool.parent.mkdir(parents=True, exist_ok=True)
-        local_tool.write_text("#!/bin/sh\nsleep 30\n", encoding="ascii",
-                              newline="\n")
+        # launcher 会用 `timeout <request.timeout>` 包工具；忽略 TERM 才能
+        # 稳定制造“package 已到 deadline、后台进程仍活着”的 P-098 场景。
+        local_tool.write_text(
+            "#!/bin/sh\ntrap '' TERM\nwhile true; do sleep 1; done\n",
+            encoding="ascii", newline="\n")
         _upload_text(local_tool, remote_tool)
         _command(
             f"chmod +x {shlex.quote(remote_tool)} && "
@@ -184,7 +187,7 @@ def main() -> int:
         kill_pattern = f"[p]098-sleep-{stamp}.sh"
         _call(
             "basic.command.run",
-            cmd=f"pkill -f {shlex.quote(kill_pattern)} 2>/dev/null || true",
+            cmd=f"pkill -9 -f {shlex.quote(kill_pattern)} 2>/dev/null || true",
             timeout=30)
 
     out_path = Path(args.out)

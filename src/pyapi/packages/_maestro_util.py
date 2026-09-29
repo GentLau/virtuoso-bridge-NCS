@@ -552,6 +552,8 @@ def parse_yield_csv(
                 overall["yield"] = float(match.group(1))
                 overall["passed_points"] = int(match.group(2))
                 overall["total_points"] = int(match.group(3))
+                overall["error_points"] = max(
+                    0, int(match.group(3)) - int(match.group(2)))
             confidence = re.search(
                 r"Confidence Level:\s*(.*?)(?:\s+Filter:|$)", first,
             )

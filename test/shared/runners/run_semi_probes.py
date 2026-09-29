@@ -113,7 +113,9 @@ PROBES: dict[str, dict] = {
     "cdl_export_variants_probe.py": entry("calibre", [], "PDK 实例 + 多参数导出"),
     "calibre_package_http_probe.py": entry("calibre", ["--kind", "env"], "业务面 8127（默认 8127/vb-vblog）"),
     "calibre_flat_turbo_probe.py": entry(
-        "calibre", [], "业务面 8127（P-093/P-094 红灯钉：flat DRC 的 -turbo 非法 + 工具秒退不报失败）"),
+        "calibre", [], "业务面 8127（P-093/P-094 回归：flat DRC 无 -turbo + 秒退快速 failed）"),
+    "calibre_timeout_probe.py": entry(
+        "calibre", [], "业务面 8127（P-098 回归：blocking 超时返回 timeout）"),
     "spectre_ac_pipeline_probe.py": entry("spectre", [], "PDK 实例"),
     "skill_syntax_matrix_tb.py": entry("skill", [], "业务面 8127"),
     # `--tree` 需要具体目录；主用法是 `--check`（远端树 → 本地解析）

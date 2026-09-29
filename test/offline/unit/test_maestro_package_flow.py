@@ -45,8 +45,10 @@ class FakeMiddle:
         self.download_body = "1.0 0.5\n2.0 1.5\n"
         self.calls: list[tuple[str, str]] = []
         self.default_skill = ok('"ok"')
-        self.default_command = CommandResult(0, "", "")
-        self.default_gui = CommandResult(0, "", "")
+        self.default_command = CommandResult(
+            returncode=0, stdout="", stderr="")
+        self.default_gui = CommandResult(
+            returncode=0, stdout="", stderr="")
 
     def query(self, *, token: str, role=None, name=None) -> QueryResult:
         self.calls.append(("query", token))
@@ -77,7 +79,9 @@ class FakeMiddle:
     def upload_file(self, local_path, remote_path, timeout=None, *, token,
                     recursive=False):
         self.calls.append(("upload", str(local_path)))
-        return CommandResult(self.upload_rc, "", "upload boom" if self.upload_rc else "")
+        return CommandResult(
+            returncode=self.upload_rc, stdout="",
+            stderr="upload boom" if self.upload_rc else "")
 
     def download_file(self, remote_path, local_path, timeout=None, *, token,
                       recursive=False):
@@ -87,8 +91,8 @@ class FakeMiddle:
         if self.download_rc == 0:
             target.write_text(self.download_body, encoding="utf-8")
         return CommandResult(
-            self.download_rc, "",
-            "download boom" if self.download_rc else "",
+            returncode=self.download_rc, stdout="",
+            stderr="download boom" if self.download_rc else "",
         )
 
     def run_gui_command(self, cmd, timeout=None, *, token):
@@ -164,7 +168,8 @@ class TestReadConfigFlow(unittest.TestCase):
             ("cadr(axlGetVars(", "nil"),
             ("axlGetParameters(", "nil"),
             ("axlGetRunOption",
-             '(("mcmethod" "mismatch") ("mcnumpoints" "8"))'),
+             '(("mcmethod" "mismatch") ("mcnumpoints" "8") '
+             '("dutsummary" "ac%ICTLE%tb_ctle/schematic%#"))'),
         ]
         result = M.Package(middle).read_config(
             M.ReadConfigRequest(**base_fields()))
@@ -172,6 +177,8 @@ class TestReadConfigFlow(unittest.TestCase):
         run_options = result.value["run_options"]["Monte Carlo Sampling"]
         self.assertEqual(run_options["mcmethod"], "mismatch")
         self.assertEqual(run_options["mcnumpoints"], "8")
+        self.assertEqual(
+            run_options["dutsummary"], "ac%ICTLE%tb_ctle/schematic")
         self.assertIsNone(run_options["samplingmode"])
 
 
@@ -373,7 +380,9 @@ class TestReadResultsFlow(unittest.TestCase):
 
     def test_waveform_missing_psf_is_reported(self):
         middle = FakeMiddle()
-        middle.command_script = [CommandResult(0, "", "")]  # find logFile 无结果
+        middle.command_script = [
+            CommandResult(returncode=0, stdout="", stderr="")
+        ]  # find logFile 无结果
         middle.skill_script = [
             ("maeGetSessions", "nil"),
             ("maeOpenSetup", '"fnxSession1"'),
@@ -539,6 +548,14 @@ class TestRunFlow(unittest.TestCase):
         ))
         self.assertTrue(result.ok, result.error)
         self.assertEqual(result.value["history"], "MonteCarlo.0")
+        run_calls = [
+            code for kind, code in middle.calls
+            if kind == "skill" and "maeRunSimulation" in code
+        ]
+        self.assertTrue(
+            any('?runMode "Monte Carlo Sampling"' in code
+                for code in run_calls),
+            f"run 未显式透传当前 MC mode: {run_calls}")
 
 
 class TestGuiFlow(unittest.TestCase):

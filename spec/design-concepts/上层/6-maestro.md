@@ -202,7 +202,7 @@ maestro 包覆盖 ADE Assembler / Explorer 的**配置、结果、导出、历�
 
 支持覆盖式运行参数（`axlSetOverwriteHistory` + `axlSetOverwriteHistoryName`）。
 
-MC 运行：run mode 由最近一次 `set_run_mode` 决定；必须先设 `"Monte Carlo Sampling"`，`run` 本身不接收 `run_mode`（2026-09-28 活体：设 mode 后裸跑得到 `MonteCarlo.N`）。MC 模式下启动前做两项前置检查（§7.3.2）；统计模型是否存在由 Spectre 在仿真中判定。
+MC 运行：run mode 由最近一次 `set_run_mode` 决定；必须先设 `"Monte Carlo Sampling"`。`run` 对外仍不新增 `run_mode` 参数，但包内读取当前 mode 并通过 `?runMode` 显式传给 `maeRunSimulation`，避免 ADE 文档默认值退回 `"Single Run, Sweeps and Corners"`。MC 模式下启动前做两项前置检查（§7.3.2）；统计模型是否存在由 Spectre 在仿真中判定。
 
 `blocking=true` 时，启动与等待共用同一条 deadline。
 
@@ -226,6 +226,8 @@ MC 不是新操作，复用 `set_run_mode` / `set_run_option` / `run` / `read_hi
 - run mode 固定 `"Monte Carlo Sampling"`，不逐项重复传；一条命令可写多项。
 - 包内校验并归一化为 ADE 字符串；底层 `axlPutRunOption(axlGetMainSetupDB(session) "Monte Carlo Sampling" <name>)` + `axlSetRunOptionValue`。
 - 未设置的项读回 `null`（= 用 ADE 默认），`read_config.value.run_options["Monte Carlo Sampling"]` 17 项全列。
+- `dutsummary` 读到 ADE 内部末尾终止符 `%#` 时，包内剥离后再返回，保证回读值与写入值一致。
+- 没有 reference point 时，ADE 不落 `mcreferencepoint` option，读回为 `null`；写入调用本身仍成功（值域与效果由 ADE 决定）。
 - run option 是 **mode 级**概念：`axlGetRunOption(sdb, mode, name)` 的合法 mode 为 `Sampling` / `Global Optimization` / `Local Optimization` / `Monte Carlo Sampling`；`Single Run, Sweeps and Corners` 没有这一组选项，其配置分散在 tests/analyses/outputs/corners/sweeps/job policy。
 
 | 选项 | 含义 | 包内接受值 | 证据 |
@@ -250,7 +252,7 @@ MC 不是新操作，复用 `set_run_mode` / `set_run_option` / `run` / `read_hi
 
 #### 7.3.2 运行
 
-1. 先 `set_run_mode` → `{"op":"set_run_mode","run_mode":"Monte Carlo Sampling"}`，再 `run`；`run` 不带 `run_mode`。
+1. 先 `set_run_mode` → `{"op":"set_run_mode","run_mode":"Monte Carlo Sampling"}`，再 `run`；`run` 不带对外 `run_mode`，包内用当前 mode 拼 `maeRunSimulation(... ?runMode "Monte Carlo Sampling")`。
 2. 本环境实测 `maeRunSimulation` 需要 GUI session；调用前先 `open_gui`（或确保已有编辑窗口）。
 3. MC 模式下启动前检查：
    - 至少一个 output `plot=t`，否则结构化失败 `mc_no_plot_outputs`（对应 ADEXL-1617）；
@@ -283,6 +285,7 @@ MC 不是新操作，复用 `set_run_mode` / `set_run_option` / `run` / `read_hi
 
 - `(summary)` 行归 `summary=true`；corner 后缀按 `read_config` 的 corner 名去除并写入 `corner`。
 - `target_value` 是 `target` 中的数值（如 `> 19` → 19；`maximize 0.05` → 0.05）。
+- `overall.error_points` 优先由 Yield 表的 `total_points - passed_points` 推导；`maeGetOverallYield` 的原始 `ErrorPoints` 只作缺失兜底。
 - 顶层 `overall_yield` 保留 `maeGetOverallYield` 原始键；`value.points` 保留 Detail 的 `mc_iteration` 逐点数据。
 - `axlWriteMonteCarloResultsCSV` 在本版不可用（实测返回 nil），不采用。
 

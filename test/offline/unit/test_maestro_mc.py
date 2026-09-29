@@ -113,6 +113,7 @@ class TestYieldCsvParser(unittest.TestCase):
         self.assertEqual(parsed["overall"]["yield"], 0.0)
         self.assertEqual(parsed["overall"]["passed_points"], 0)
         self.assertEqual(parsed["overall"]["total_points"], 2)
+        self.assertEqual(parsed["overall"]["error_points"], 2)
         self.assertIsNone(parsed["overall"]["confidence_level"])
         self.assertIsNone(parsed["overall"]["filter"])
 
@@ -141,6 +142,19 @@ class TestYieldCsvParser(unittest.TestCase):
         parsed = util.parse_yield_csv("", history="h")
         self.assertEqual(parsed["outputs"], [])
         self.assertEqual(parsed["overall"], {})
+
+    def test_all_pass_overall_derives_zero_error_points(self):
+        text = (
+            "Test,Name,Yield,Min,Target,Max,Mean,Std Dev,Cpk,Errors\n"
+            "Yield Estimate: 100 %(1 passed/1 pts)     "
+            "Confidence Level: <not set>   Filter: <not set>,,,,,,,,,\n"
+            "ac\n"
+            ",out,100% (1/1),0.1,> 0,0.2,0.15,0.01,1.5,0\n"
+        )
+        parsed = util.parse_yield_csv(text, history="h")
+        self.assertEqual(parsed["overall"]["passed_points"], 1)
+        self.assertEqual(parsed["overall"]["total_points"], 1)
+        self.assertEqual(parsed["overall"]["error_points"], 0)
 
     def test_target_numbers_are_extracted_but_raw_target_is_kept(self):
         text = (

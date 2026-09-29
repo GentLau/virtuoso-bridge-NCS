@@ -1,13 +1,14 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
-# 作者: 测试/root
-# 最后改动: 2026-09-29 16:54
+# 作者: 设计/上层开发
+# 最后改动: 2026-09-29 17:56
 # 依赖: 无
 # =======================================================================
 """calibre 包的**参数面**真机覆盖（补齐 calibre_e2e_tests.py 只走默认值的缺口）。
 
 覆盖：check_env(calibre_bin/deck 正负)、drc(calibre_bin/hier/turbo/poll_interval/job_id/params/run_dir)、
 read_results(log_lines=0/5)、lvs(spice_file/hcell_file/xcell_file)。
-P-092 定稿：`power`/`ground` 已从接口删除，本 TB 负向断言旧字段必须被拒。
+P-092 定稿：`power`/`ground` 已从接口删除；本 TB 对 `drc/lvs/pex`
+逐个负向断言旧字段必须被拒。
 
 六步流程（test/docs/写TB规范.md §1）：① 环境检查=CAL-ENV-01；②③ 基线=deck/gds/报告；
 ④ 每个用例一次调用；⑤ 读回比对（job_id/run_dir/报告/日志尾/产物 stat）；⑥ 不清理现场（run_dir 留在 role root）。
@@ -66,15 +67,22 @@ def _value(transport, operation: str, **fields: Any) -> dict[str, Any]:
     response = _op(transport, operation, **fields)
     if not response.get("ok"):
         raise AssertionError(f"{operation} failed: {response.get('error')}")
-    data = _c1_wrapper(response)
+    data = response
     return data.get("value") if data.get("value") is not None else data
 
 
-def _command(transport, cmd: str, timeout: int = 120) -> list[Any]:
+def _command(transport, cmd: str, timeout: int = 120) -> str:
     response = _op(transport, "basic.command.run", cmd=cmd, timeout=timeout)
     if not response.get("ok"):
         raise AssertionError(f"command failed: {response.get('error')}")
-    return ((_c1_wrapper(response)).get("result")) or []
+    result = response.get("result")
+    if isinstance(result, dict):
+        if result.get("returncode") != 0:
+            raise AssertionError(f"command rc != 0: {response}")
+        return str(result.get("stdout") or "")
+    if isinstance(result, list) and result and int(result[0]) == 0:
+        return str(result[1] or "") if len(result) > 1 else ""
+    raise AssertionError(f"bad command response: {response}")
 
 
 def _check(condition: Any, message: str) -> None:
@@ -171,16 +179,24 @@ def run_suite(transport) -> list[tuple[str, str]]:
         _check("spice_ok" in str(out), f"spice_file 未产生产物: {out}")
 
     def case_removed_power_ground() -> None:
-        response = transport.call({
-            "operation": "calibre.drc", "token": TOKEN,
-            "gds": GDS, "top": TOP, "deck": DRC_DECK,
-            "power": "VDD", "ground": "VSS",
-        })
-        _check(response.get("ok") is False,
-               f"已删除的 power/ground 必须被拒: {response}")
-        error = str(response.get("error") or "")
-        _check("power" in error or "ground" in error,
-               f"拒绝文案未点名已删除字段: {error}")
+        """P-092 定稿 A：三个 run 操作都必须拒绝已删除字段。"""
+        for operation, deck in (
+            ("calibre.drc", DRC_DECK),
+            ("calibre.lvs", LVS_DECK),
+            ("calibre.pex", LVS_DECK),
+        ):
+            for field in ("power", "ground"):
+                payload = {
+                    "operation": operation, "token": TOKEN,
+                    "gds": GDS, "top": TOP, "deck": deck,
+                    field: "VDD" if field == "power" else "VSS",
+                }
+                response = transport.call(payload)
+                _check(response.get("ok") is False,
+                       f"{operation} 已删除的 {field} 必须被拒: {response}")
+                error = str(response.get("error") or "")
+                _check(field in error,
+                       f"{operation} 的拒绝文案未点名 {field}: {error}")
 
     def case_drc_official_set() -> None:
         """`drc.runset` 走官方批处理（`calibre -gui -drc -runset … -batch`）——本轮 C 轴最后一个真缺口。"""
@@ -274,19 +290,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
-
-# --- C1 兼容垫片（2026-09-29，C3）------------------------------------------------
-# C1（2f88853）起：业务载荷直返顶层（值型 `value`、命令/skill 型 `result`）、
-# 成功默认省略 `steps`、失败壳去掉 `data`。历史 TB 按 `response["data"]` 解析，
-# 本垫片把新契约响应合成为旧 `data` 壳，让既有解析零改动继续工作。
-def _c1_wrapper(body):
-    if not isinstance(body, dict):
-        return {}
-    if isinstance(body.get("data"), dict):
-        return body["data"]
-    wrapped = {"ok": body.get("ok"), "error": body.get("error")}
-    for key in ("value", "result", "steps"):
-        if key in body:
-            wrapped[key] = body[key]
-    return wrapped

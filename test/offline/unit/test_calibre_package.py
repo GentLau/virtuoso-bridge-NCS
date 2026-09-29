@@ -447,6 +447,34 @@ class PackageTests(unittest.TestCase):
         self.assertTrue(result.ok, result.error)
         self.assertEqual(result.value["status"], "completed")
 
+    def test_drc_blocking_failure_exposes_failure_kind(self):
+        """P-094：blocking 返回 failed 时，业务 value 也要带 failure_kind。"""
+        class FailingAfterLaunch(FakeMiddle):
+            launched = False
+
+            def run_command(self, cmd, timeout=None, *, token,
+                            parallel=False) -> CommandResult:
+                if "chmod +x launch.sh" in cmd:
+                    self.launched = True
+                if "###JOB" in cmd and not self.launched:
+                    return CommandResult(
+                        returncode=0, stdout="", stderr="",
+                        kind="command")
+                return super().run_command(
+                    cmd, timeout=timeout, token=token, parallel=parallel)
+
+        middle = FailingAfterLaunch(completed=False)
+        result = Package(middle).drc(RunRequest(
+            token=TOKEN, gds="/x/lay_e2e.gds", top="lay_e2e", deck=DECK,
+            job_id="drc_failure", run_dir="/x/drc_failure",
+            blocking=True, poll_interval=0.01, timeout=20,
+        ))
+        self.assertFalse(result.ok)
+        self.assertEqual((result.value or {}).get("status"), "failed")
+        self.assertIn(
+            (result.value or {}).get("failure_kind"), ("input", "license"),
+            f"blocking 失败未回带 failure_kind: {result.value}")
+
     def test_drc_blocking_timeout_reports_timeout_status(self):
         """P-098 回归：blocking 超时必须返回 `status=timeout`。
 

@@ -32,17 +32,17 @@ SUITES = [
     "calibre_e2e_tests.py",
     # 第八轮新增参数面 TB（补齐 op×参数车道，C 轴）
     "calibre_params_e2e_tests.py",          # 6/6 绿（含 drc(runset=) 官方批处理）
-    "verilog_import_params_e2e_tests.py",   # 预期红：IMP-07/08/10 = P-099/P-100/P-101 红钉
-    "calibre_export_pex_e2e_tests.py",      # 预期红：PEX-FMT-01 = P-102/P-103 红钉
-    "maestro_view_param_e2e_tests.py",      # 预期红：read 族缺失 view 负例 = P-104 红钉
+    "verilog_import_params_e2e_tests.py",   # P-099/P-100/P-101 回归
+    "calibre_export_pex_e2e_tests.py",      # P-102/P-103 已按“PEX 本版不提供”收口
+    "maestro_view_param_e2e_tests.py",      # P-104 回归
     # maestro 放最后：P-086/P-095 的模态框会把 CIW 卡死，若排在前面会让后面的套件
     # （尤其 calibre 的 getWorkingDir/export_cdl）连带失败——2026-09-29 gate 实测。
     "maestro_e2e_tests.py",
 ]
 
 #: 个别套件需要附加参数（其余一律只加 `--transport http`）。
-#: screenshot_params 的 layout 档带 P-080 红钉（SC-06 bogus view_type），门禁里跑**无红钉的 schematic 档**；
-#: layout/symbol 两档按报告 §3 的独立复跑为准（`--kind layout|symbol` 手动指定）。
+#: screenshot_params 门禁只跑 schematic 档；layout/symbol 两档按报告 §3 独立复跑
+#: （`--kind layout|symbol` 手动指定，P-105 回归后 SC-06 应转绿）。
 SUITE_ARGS = {
     "screenshot_params_e2e_tests.py": [
         "--token", "vb-vbuser2", "--lib", "serdes_rx", "--cell", "rx_top",

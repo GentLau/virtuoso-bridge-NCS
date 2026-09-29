@@ -1637,10 +1637,18 @@ class Package(ResultPackage):
                 if not isinstance(parsed_run_options, list):
                     raise RuntimeError("could not parse run options readback")
                 options_by_name = pairs_to_dict(parsed_run_options)
-                run_options = {
-                    name: options_by_name.get(name)
-                    for name in MC_RUN_OPTIONS
-                }
+                run_options = {}
+                for name in MC_RUN_OPTIONS:
+                    value = options_by_name.get(name)
+                    # ADE 在 dutsummary 末尾追加内部终止符 "%#"；对调用方
+                    # 隐藏它，使 read_config 回读与写入值一致。
+                    if (
+                        name == "dutsummary"
+                        and isinstance(value, str)
+                        and value.endswith("%#")
+                    ):
+                        value = value[:-2]
+                    run_options[name] = value
                 steps.append(_step("run_options", True, run_options))
             except Exception as exc:  # noqa: BLE001 - optional readback
                 run_options = {name: None for name in MC_RUN_OPTIONS}
@@ -2342,7 +2350,6 @@ class Package(ResultPackage):
                     for output_key, raw_key in (
                         ("yield", "Yield"),
                         ("passed_points", "PassedPoints"),
-                        ("error_points", "ErrorPoints"),
                     ):
                         value = (
                             overall_yield.get(raw_key)
@@ -2350,6 +2357,15 @@ class Package(ResultPackage):
                         )
                         if value is not None:
                             overall[output_key] = value
+                    # Yield CSV 的 "passed/total" 是稳定口径；只有 CSV
+                    # 没给计数时才退回 ADE 的原始 ErrorPoints（该字段在
+                    # 全通过样本上也可能给 1，不能优先相信）。
+                    if (
+                        overall.get("error_points") is None
+                        and isinstance(overall_yield, dict)
+                        and overall_yield.get("ErrorPoints") is not None
+                    ):
+                        overall["error_points"] = overall_yield["ErrorPoints"]
                     passed = overall.get("passed_points")
                     errors = overall.get("error_points")
                     if (
@@ -3217,6 +3233,8 @@ class Package(ResultPackage):
                 # 开前的死锁检查拦下，这里只防"活锁+另一会话"这种残余情形挂死 CIW）。
                 "ADE Assembler Open View",
                 "ADE Assembler Message 2406",
+                # 未定义变量问答（ASSEMBLER-1610）：默认按钮为 Yes/继续。
+                "ADE Assembler Message 1610",
                 "ADE Assembler Message 3016",
                 "ADE Assembler Message 3017",
                 "ADE Assembler Message 3018",
@@ -3249,6 +3267,7 @@ class Package(ResultPackage):
         session: str,
         token: str,
         timeout: int | float | None,
+        run_mode: str | None = None,
     ) -> tuple[VirtuosoResult | None, list[dict[str, Any]], str | None, int]:
         """Start ``maeRunSimulation``; only touch X11 if it is actually blocked.
 
@@ -3262,8 +3281,11 @@ class Package(ResultPackage):
 
         def worker() -> None:
             try:
+                mode_kw = (
+                    f" ?runMode {q(run_mode)}" if run_mode else ""
+                )
                 box["result"] = self.middle.execute_skill(
-                    f"maeRunSimulation({_session_kw(session)})",
+                    f"maeRunSimulation({_session_kw(session)}{mode_kw})",
                     timeout=timeout or 180,
                     token=token,
                     **skill_log_kwargs(
@@ -3432,6 +3454,13 @@ class Package(ResultPackage):
             )
             session = window["session"]
             steps.append(_step("ensure_gui_session", True, window))
+            # 先清掉上一次运行残留的已知 ADE 模态框；否则后续
+            # maeSetJobControlMode / preflight 会因 CIW 被模态框阻塞而超时。
+            stale_dialogs = self._dismiss_update_dialogs(
+                request.token, request.timeout,
+            )
+            if stale_dialogs:
+                steps.append(_step("dialog_preflight", True, stale_dialogs))
             mc_info = self._mc_preflight(
                 session, request.token, request.timeout,
             )
@@ -3464,6 +3493,11 @@ class Package(ResultPackage):
                                 "monte_carlo": mc_info,
                             },
                         )
+            run_mode = (
+                mc_info.get("run_mode")
+                if isinstance(mc_info, dict)
+                else None
+            )
             mode = self.middle.execute_skill(
                 f'maeSetJobControlMode("ICRP"{_session_kw(session)})',
                 timeout=request.timeout,
@@ -3473,6 +3507,25 @@ class Package(ResultPackage):
                 ),
             )
             steps.append(_step("job_control_mode", mode.ok, mode))
+            if not mode.ok:
+                dismissed = self._dismiss_update_dialogs(
+                    request.token, request.timeout,
+                )
+                if dismissed:
+                    steps.append(_step(
+                        "dialog_job_control_mode", True, dismissed,
+                    ))
+                    mode = self.middle.execute_skill(
+                        f'maeSetJobControlMode("ICRP"{_session_kw(session)})',
+                        timeout=request.timeout,
+                        token=request.token,
+                        **skill_log_kwargs(
+                            request.log_level, request.log_max_bytes,
+                        ),
+                    )
+                    steps.append(_step(
+                        "job_control_mode_retry", mode.ok, mode,
+                    ))
             if not mode.ok:
                 return Result(False, steps, "; ".join(mode.errors))
             # Overwrite History 是 ADE 里的**持久**开关：残留目标（悬空 →
@@ -3511,6 +3564,7 @@ class Package(ResultPackage):
             started, dismissed, start_error, window_checks = (
                 self._start_simulation_with_watchdog(
                     session, request.token, request.timeout,
+                    run_mode=run_mode,
                 )
             )
             if dismissed or window_checks:
@@ -3541,6 +3595,7 @@ class Package(ResultPackage):
                     retry, retry_dismissed, retry_error, retry_checks = (
                         self._start_simulation_with_watchdog(
                             session, request.token, request.timeout,
+                            run_mode=run_mode,
                         )
                     )
                     if retry_dismissed or retry_checks:

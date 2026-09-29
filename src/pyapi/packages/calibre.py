@@ -595,7 +595,9 @@ class Package(ResultPackage):
             time.sleep(float(request.poll_interval))
         if last.get("status") not in ("completed", "failed"):
             last = {**last, "status": "timeout"}
-        value.update({"status": last.get("status"), "progress": last,
+        value.update({"status": last.get("status"),
+                      "failure_kind": last.get("failure_kind"),
+                      "progress": last,
                       "elapsed_ms": int((time.monotonic() - started) * 1000)})
         ok = last.get("status") == "completed"
         error = None if ok else (f"{kind} did not complete: {last.get('status')} "
