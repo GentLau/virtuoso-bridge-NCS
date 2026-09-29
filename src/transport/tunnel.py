@@ -37,6 +37,27 @@ def _remaining(deadline: float | None, fallback: float | None) -> float | None:
     return max(0.0, deadline - time.monotonic())
 
 
+def _install_stage_command(stage: str, target: str, digest: str) -> str:
+    """Build the remote install command for one staged upload."""
+    stage_q = shlex.quote(stage)
+    target_q = shlex.quote(target)
+    digest_q = shlex.quote(digest)
+    residue_q = shlex.quote(
+        f"upload install failed: staging file vanished; "
+        f"stage={stage}; target={target}"
+    )
+    return (
+        f"if [ -d {target_q} ]; then "
+        "printf '%s\\n' 'target is a directory' >&2; exit 1; "
+        f"fi; if [ -e {stage_q} ] || [ -L {stage_q} ]; then "
+        f"mv -f -- {stage_q} {target_q}; "
+        f"elif [ -f {target_q} ] && "
+        f"[ \"$(sha256sum -- {target_q} | cut -d' ' -f1)\" = {digest_q} ]; then "
+        "exit 0; "
+        f"else printf '%s\\n' {residue_q} >&2; exit 1; fi"
+    )
+
+
 def _norm_host(host: str | None) -> str:
     return (host or "").strip().rstrip(".").lower()
 
@@ -514,11 +535,8 @@ class RemoteClient:
                     stderr="sha256 mismatch",
                     kind="checksum",
                 )
-            target_q = shlex.quote(remote_path)
             move = self._one_shot_runner(role).run_one_shot(
-                f"if [ -d {target_q} ]; then "
-                "printf '%s\\n' 'target is a directory' >&2; exit 1; "
-                f"fi; mv -f -- {shlex.quote(stage)} {target_q}",
+                _install_stage_command(stage, remote_path, local_digest),
                 timeout=_remaining(deadline, timeout),
             )
             if move.returncode != 0:

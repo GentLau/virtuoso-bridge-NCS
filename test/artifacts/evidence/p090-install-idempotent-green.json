@@ -1,0 +1,19 @@
+{
+  "tb": "install_stage_idempotent_tb",
+  "status": "PASS",
+  "host": "wsl-gent",
+  "stage": "/home/Gent/.virtuoso-bridge/.p090-tb-88ff3e56/payload.txt.vbtmp-a16388a6c7684394b91df485eefb19c5",
+  "target": "/home/Gent/.virtuoso-bridge/.p090-tb-88ff3e56/payload.txt",
+  "digest": "68398f963fd378811635c7944b4647cef94afddf98d542f2b62394b37fe0fd06",
+  "command": "if [ -d /home/Gent/.virtuoso-bridge/.p090-tb-88ff3e56/payload.txt ]; then printf '%s\\n' 'target is a directory' >&2; exit 1; fi; if [ -e /home/Gent/.virtuoso-bridge/.p090-tb-88ff3e56/payload.txt.vbtmp-a16388a6c7684394b91df485eefb19c5 ] || [ -L /home/Gent/.virtuoso-bridge/.p090-tb-88ff3e56/payload.txt.vbtmp-a16388a6c7684394b91df485eefb19c5 ]; then mv -f -- /home/Gent/.virtuoso-bridge/.p090-tb-88ff3e56/payload.txt.vbtmp-a16388a6c7684394b91df485eefb19c5 /home/Gent/.virtuoso-bridge/.p090-tb-88ff3e56/payload.txt; elif [ -f /home/Gent/.virtuoso-bridge/.p090-tb-88ff3e56/payload.txt ] && [ \"$(sha256sum -- /home/Gent/.virtuoso-bridge/.p090-tb-88ff3e56/payload.txt | cut -d' ' -f1)\" = 68398f963fd378811635c7944b4647cef94afddf98d542f2b62394b37fe0fd06 ]; then exit 0; else printf '%s\\n' 'upload install failed: staging file vanished; stage=/home/Gent/.virtuoso-bridge/.p090-tb-88ff3e56/payload.txt.vbtmp-a16388a6c7684394b91df485eefb19c5; target=/home/Gent/.virtuoso-bridge/.p090-tb-88ff3e56/payload.txt' >&2; exit 1; fi",
+  "first": {
+    "rc": 0,
+    "stderr": ""
+  },
+  "second": {
+    "rc": 0,
+    "stderr": ""
+  },
+  "first_ok": true,
+  "second_ok": true
+}

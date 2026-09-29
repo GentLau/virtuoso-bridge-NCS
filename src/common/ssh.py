@@ -979,21 +979,6 @@ class SSHRunner:
         if self._verbose:
             print(f"[cmd] {' '.join(cmd)}", flush=True)
 
-    # Transport-level SSH error patterns that indicate a flaky cold
-    # handshake rather than a server-side problem.  Seeing any of these
-    # once is common on shared jump hosts (slow banner, intermittent
-    # TCP reset); a single retry almost always succeeds because the TCP
-    # path and jump-host PAM stack are now warm.  We deliberately
-    # exclude "permission denied" / "host key" / "could not resolve" —
-    # those are real configuration errors and must not be masked.
-    _TRANSIENT_SSH_ERROR_FRAGMENTS = (
-        "connection timed out during banner exchange",
-        "kex_exchange_identification",
-        "connection reset by peer",
-        "connection closed by",
-        "no route to host",
-    )
-
     #: 只有“明确发生在命令投递之前”的传输错误才允许重跑命令：名字解析、
     #: 连接拒绝、banner/kex 握手阶段。``Connection reset by peer`` /
     #: ``Connection closed by ...`` 也可能发生在命令已经执行之后——无法
@@ -1001,7 +986,6 @@ class SSHRunner:
     _PRE_DELIVERY_SSH_ERROR_FRAGMENTS = (
         "connection timed out during banner exchange",
         "kex_exchange_identification",
-        "connection timed out",
         "no route to host",
         "network is unreachable",
         "could not resolve hostname",
@@ -1010,13 +994,6 @@ class SSHRunner:
         "no matching host key type found",
         "permission denied (publickey",
     )
-
-    @classmethod
-    def _is_transient_ssh_error(cls, returncode: int, stderr: str) -> bool:
-        if returncode == 0:
-            return False
-        low = stderr.lower()
-        return any(fragment in low for fragment in cls._TRANSIENT_SSH_ERROR_FRAGMENTS)
 
     @classmethod
     def _is_pre_delivery_ssh_error(cls, stderr: str) -> bool:
@@ -1138,10 +1115,10 @@ class SSHRunner:
                 stderr_first = err_text.strip().splitlines()[0] if err_text.strip() else ""
                 self._disable_cm_for_session(stderr_first)
                 continue
-            if self._is_transient_ssh_error(rc, err_text):
+            if self._is_pre_delivery_ssh_error(err_text):
                 if attempt + 1 < max_attempts:
                     logger.info(
-                        "Transient SSH error on %s (rc=%d); retrying",
+                        "Pre-delivery SSH error on %s (rc=%d); retrying",
                         self._host, rc,
                     )
                 continue
@@ -1924,18 +1901,9 @@ class SSHRunner:
 
     @staticmethod
     def _is_retryable_persistent_shell_error(exc: Exception) -> bool:
-        # 结果未知（命令可能已经执行）永远不重发：见 并发设计 §4 / 架构 §5.8。
-        if isinstance(exc, UnknownEffectError):
-            return False
-        message = str(exc).lower()
-        retryable_fragments = (
-            "invalid base64 payload",
-            "unexpected persistent shell protocol line",
-            "unexpected persistent shell return line",
-            "persistent ssh shell exited unexpectedly",
-            "failed to write to persistent ssh shell",
-        )
-        return any(fragment in message for fragment in retryable_fragments)
+        # 只有“写入常驻 shell 就失败”能证明命令未投递，才允许重发；
+        # 结果未知（命令可能已经执行）永远不重发：并发设计 §4 / 架构 §5.8。
+        return "failed to write to persistent ssh shell" in str(exc).lower()
 
     def _run_via_persistent_shell_with_retry(
         self,
