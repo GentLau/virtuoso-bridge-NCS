@@ -4,7 +4,8 @@
 > 日期：2026-09-22（**2026-09-28 起暂缓开发**）
 > 状态：**暂缓**——方向已收敛为"官方入口 + 结果分析"；恢复开发前先读
 > [`spec/research/calibre/00-下一步开发方向.md`](../../research/calibre/00-下一步开发方向.md)（P0：PEX 重做、官方产物解析、输入预检）。
-> **`calibre.pex` 未按官方三阶段验收，禁止用于交付/签核**；DRC/LVS/`export_cdl`/set 直驱已真机验证。
+> **`calibre.pex` 未按官方三阶段验收，禁止用于交付/签核**；DRC/LVS/set 直驱已真机验证
+> （schematic→CDL 现产链路已真机闭环）。
 > Supersedes：无（新包；可行性见 `spec/research/calibre/02-可行性报告.md`）
 > 定位：业务包/业务操作一般契约见[1-上层.md](1-上层.md)；五业务接口见[四层整体架构与接口 §4](../总览/1-四层整体架构与接口.md)；长任务口径参照 [7-spectre.md](7-spectre.md) 与 maestro 的 `run`/`read_history`。
 
@@ -26,17 +27,16 @@ calibre 包覆盖 **物理验证三件套：DRC / LVS / PEX**，外加环境体�
 |---|---|---|---|
 | `calibre.check_env` | 环境体检：二进制/版本/许可/PDK deck 可见性 | C（`which`/`-version`/最小探测） | C |
 | `calibre.drc` | 启动 DRC | stage deck → 改写占位符 → 后台启动 | C(+U) |
-| `calibre.lvs` | 启动 LVS（版图 vs CDL） | 同上 + 源网表 | C(+U) |
+| `calibre.lvs` | 启动 LVS（版图 vs 源网表；源网表可为已有 CDL 或 schematic 现产） | 同上 + 源网表 | C+S(+U) |
 | `calibre.pex` | 启动 PEX（`-xrc -phdb → -pdb → fmt`） | 三阶段串联，逐阶段校验产物 | C(+U) |
 | `calibre.status` | 只读查询：作业状态与进度 | 读 `job.json` + 进程 + 日志尾 + 产物 | C |
 | `calibre.read_results` | 解析结果（DRC/LVS/PEX） | 读报告 → 结构化摘要 | D + 纯 Python |
 | `calibre.export` | 按名下载产物 | report / 结果库 / 网表 / pdb 目录 / 日志尾 | D |
-| `calibre.export_cdl` | 从 schematic 导出 LVS 源网表（CDL），走 Virtuoso 官方 auCdl 机制 | 解析 cds.lib → 生成 `si.env`/`.simrc` → `si -batch -command netlist` → 校验产物 | S+C(+U) |
 
 接口简写：S=`execute_skill`、C=`run_command`、U=`upload_file`、D=`download_file`、G=`run_gui_command`、Sp=`run_spectre_command`。
-验证类操作（check_env/drc/lvs/pex/status/read_results/export）全部走 **command role**（C/D/U），不使用 S/G/Sp；
-`export_cdl` 额外用一次 S（`getWorkingDir()` 解析 CIW 的 `cds.lib`），si 仍在 command role 执行
-（因此该操作要求 command role 与 CIW 同主机，与 Calibre Interactive 在本机跑 `si` 的形态一致）。
+验证类操作（check_env/drc/lvs/pex/status/read_results/export）主体走 **command role**（C/D/U），不使用 G/Sp；
+`calibre.lvs` 仅在 `source.kind=schematic` 时额外用一次 S（`getWorkingDir()` 解析 CIW 的 `cds.lib`），
+si 仍在 command role 执行（因此该路径要求 command role 与 CIW 同主机，与 Calibre Interactive 在本机跑 `si` 的形态一致）。
 
 ## 3. 公共契约
 
@@ -151,12 +151,21 @@ run 类操作默认 `blocking=false`：写 launcher、后台启动、立刻返�
 > 为什么不做键映射：Calibre 的 specification 语句 first-wins，手工把 runset 键翻译成 SVRF 语句
 > 在不同工艺库会漏（例如 TSMC 65 的电源名在 `VARIABLE POWER_NAME` 且参与 connectivity 规则）。
 > 官方批处理入口不做翻译，直接产出 control file，语义与 GUI 完全一致——实测见调查报告 §11。
-> 占位符一个都不剩时即"自包含 deck"，`gds`/`top`/`cdl` 全部可省（步骤记 `self_contained`）。
+> 占位符一个都不剩时即"自包含 deck"，`gds`/`top`/`source` 全部可省（步骤记 `self_contained`）。
 
 ### 4.3 `calibre.lvs`
 
-在 DRC 参数基础上：`cdl`（**条件必填**，deck 引用 `"lvs_top.cdl"` 时必填；可由 `calibre.export_cdl` 产出）、
-`power`/`ground`（可选覆盖 deck 的电源地名）。
+在 DRC 参数基础上新增：
+
+| 参数 | 必填 | 默认 | 说明 |
+|---|---|---|---|
+| `source` | 条件 | — | LVS 源网表：`{"kind":"cdl","path":"…"}` 直接用已有 CDL；`{"kind":"schematic","library":"…","cell":"…","view":"schematic"}` 由本包在本次 run dir 内用官方 auCdl 链路现产 CDL 后比对 |
+| `emit_cdl` | 否 | false | `source.kind=schematic` 时，额外在返回里给出 `cdl_path`；CDL 本体始终在 run dir，可用 `calibre.export` 的 `netlist` 项取出 |
+| `cds_lib` | 否 | CIW `getWorkingDir()/cds.lib` | 仅 `source.kind=schematic`：显式指定 `cds.lib`，显式优先 |
+| `power` / `ground` | 否 | — | 可选覆盖 deck 的电源/地名 |
+
+`source` 的必填条件是 **deck/runset 没有自带源网表**：deck 引用 `"lvs_top.cdl"` 且未给 `source` → 明确失败；
+runset 已指定源网表时可省略。`source.kind=cdl` 的 `path` 必须是远端可见路径。
 
 > 实测（2026-09-24）：`params={lvsLayoutPaths, lvsLayoutPrimary, lvsSourcePath, lvsSourcePrimary}` 跑
 > `CMP_LIB/inv2` + `inv2.gds` → `summary.status = correct`；同参数走 `.runset` 文件同样 `correct`；
@@ -170,7 +179,7 @@ run 类操作默认 `blocking=false`：写 launcher、后台启动、立刻返�
 calibre -gui -lvs -runset <set> -batch      # 本包实际执行的命令（drc/pex 同理换 -<app>）
 ```
 
-实测（2026-09-24，token `vb-vblog`，65nm deck + `CMP_LIB/inv2` + `export_cdl` 的 CDL）：
+实测（2026-09-24，token `vb-vblog`，65nm deck + `CMP_LIB/inv2` + schematic 源现产的 CDL）：
 `completed`、`summary.status = correct`；run dir 里能看到 **Calibre 自己生成的 `_calibre.lvs_` control file**、
 set 指定名字的报告（`inv2.lvs.report`）、`svdb/`、layout SPICE；`read_results` 按 run dir 里实际产物取报告
 （先默认名，再 `job.json.report_file`，最后在 run dir 内扫描 `*.report/*.rep`），与 set 是否改名无关。
@@ -182,9 +191,25 @@ set 指定名字的报告（`inv2.lvs.report`）、`svdb/`、layout SPICE；`rea
 > GUI 的 `*.calibre.db` 布局库由 viewer 导出，本包不产（我们的版图侧产物是 GDS）。
 > 轮询用 Calibre 自己的日志标记（`LVS completed` 等）；失败同样以日志标记 + 产物为准（§3.4）。
 
+#### 4.3.2 `source.kind=schematic`：官方 auCdl 现产（内部步骤，不是独立操作）
+
+Calibre 自身不产源网表；官方 GUI 的 “Export from source viewer” 也是驱动 Virtuoso 的
+**CDL Out / auCdl**（`si -batch -command netlist`，见 `spec/research/calibre/03-网表导出机制调查报告.md`）。
+本包把这条链路收在 `calibre.lvs` 内部，产物路径直接作为本次 LVS 的源网表输入：
+
+1. 解析 `cds.lib`（显式 `cds_lib` > CIW `getWorkingDir()/cds.lib`），复制进 run dir；
+2. 生成 `si.env`（`simSimulator="auCdl"`、`simViewList='("auCdl" "schematic")`、`simStopList='("auCdl")`、
+   **`checkCAPPERI=nil`**——IC618 auCdl batch 的默认值缺口，缺失即 `OSSHNL-411`）与一致的 `.simrc`；
+3. `CDS_Netlisting_Mode=Analog si . -batch -command netlist -cdslib <run_dir>/cds.lib`，要求 rc=0 且产物非空；
+4. 校验产物含 `.SUBCKT` 与器件行后，作为本次 LVS 的源网表；任一步失败即整体 LVS 失败。
+
+产物默认写到 `<run_dir>/<cell>.cdl`；`emit_cdl=true` 时在返回中给 `cdl_path`。
+不做：GUI 的 runset/control-file/模板机制、Viewer 导出（headless 无意义）；digital（hnl）模式暂不支持，
+需要时再按官方 `hnlCDL*` 属性要求扩展。
+
 ### 4.4 `calibre.pex`
 
-在 LVS 参数基础上：`deck` 为 **rcx** deck；**`lvs_run_dir` 必填**（PEX 需要 LVS 结果里的 `svdb/`，
+在 DRC 参数基础上：`deck` 为 **rcx** deck；**`lvs_run_dir` 必填**（PEX 需要 LVS 结果里的 `svdb/`，
 包会把它复制进 PEX 的 run dir）；`fmt` 可选 `none`/`spice`/`simple`（默认 `none`，即只到 `-pdb`）。
 内部固定顺序：`-xrc -phdb` → `-xrc -pdb -rc <deck>` →（可选）`-xrc -fmt -<fmt>`，
 **每个阶段校验产物存在**才进入下一阶段（phdb 必须是 xRC 类型，见可行性报告 §2）。
@@ -199,32 +224,6 @@ set 指定名字的报告（`inv2.lvs.report`）、`svdb/`、layout SPICE；`rea
 | `status` | `job_id` 或 `run_dir`；`timeout` |
 | `read_results` | `job_id`/`run_dir`；`kind`（可自动探测）；`limit`（默认 20）；`log_lines`（默认 40） |
 | `export` | `job_id`/`run_dir`；`items`（`summary`/`results_db`/`netlist`/`pdb_dir`/`log`/`all_small`）；`local_dir`（默认 `artifact_dir()/calibre/`） |
-
-### 4.6 `calibre.export_cdl`（LVS 源网表，官方 auCdl）
-
-背景：Calibre 自身不产源网表；官方 GUI 的 “Export from source viewer” 也是驱动 Virtuoso 的
-**CDL Out / auCdl**（`si -batch -command netlist`，见 `spec/research/calibre/03-网表导出机制调查报告.md`）。
-本操作实现同一条官方链路的无头版本，产物路径直接喂给 `calibre.lvs` 的 `cdl`。
-
-| 参数 | 必填 | 默认 | 说明 |
-|---|---|---|---|
-| `library` / `cell` | 是 | — | 要导出的 schematic 所在单元 |
-| `view` | 否 | `schematic` | 起始视图 |
-| `netlist_name` | 否 | `<cell>.cdl` | 产物文件名（写入 run dir） |
-| `run_dir` | 否 | `<command root>/calibre/cdl_<cell>` | 导出工作目录 |
-| `cds_lib` | 否 | CIW `getWorkingDir()/cds.lib` | cds.lib 路径；显式给出优先 |
-| `timeout` | 否 | 600 | si 超时 |
-
-行为：
-
-1. 解析 `cds.lib`（显式 > CIW cwd），复制进 run dir；
-2. 生成 `si.env`（`simSimulator="auCdl"`、`simViewList='("auCdl" "schematic")`、`simStopList='("auCdl")`、
-   **`checkCAPPERI=nil`**——IC618 auCdl batch 的默认值缺口，缺失即 `OSSHNL-411`）与一致的 `.simrc`；
-3. `CDS_Netlisting_Mode=Analog si . -batch -command netlist -cdslib <run_dir>/cds.lib`，要求 rc=0 且产物非空；
-4. 返回 `{run_dir, netlist_path, netlist_name, bytes, cds_lib, log_path}`。
-
-不做：GUI 的 runset/control-file/模板机制、Viewer 导出（headless 无意义）；digital（hnl）模式暂不支持，
-需要时再按官方 `hnlCDL*` 属性要求扩展。
 
 ## 5. 不做与本版限制
 
@@ -242,7 +241,7 @@ set 指定名字的报告（`inv2.lvs.report`）、`svdb/`、layout SPICE；`rea
 2. **GDS 来源**：`virtuoso.layout.gds` 已能导出（`src/pyapi/packages/layout.py:924`），本包只接受路径；
 3. **CDL 来源**（两条都要能跑）：
    1. 调用方提供远端路径（现状）；
-   2. `calibre.export_cdl` 从 schematic 用官方 auCdl 链路现产（§4.6）——
+   2. `calibre.lvs` 的 `source={"kind":"schematic",…}` 用官方 auCdl 链路现产（§4.3.2）——
       2026-09-24 真机闭环：`CMP_LIB/inv2` 导出 → `calibre.lvs` 用 `inv2.gds` 比对 → **CORRECT**。
 
 ## 7. 已知限制
@@ -261,14 +260,14 @@ set 指定名字的报告（`inv2.lvs.report`）、`svdb/`、layout SPICE；`rea
 | 组 | 用例 |
 |---|---|
 | env | `check_env` 返回路径/版本；deck 不可见时报 `deck_ok=false` 并给原因 |
-| EXPORT | `export_cdl` 产出**含 `.SUBCKT` + 器件行**的 CDL（只出端口壳即失败）；`netlist_name` 只能是纯文件名 |
+| LVS 源 | `source.kind=cdl` 直接用已有 CDL；`source.kind=schematic` 走官方 auCdl 现产含 `.SUBCKT` + 器件行的 CDL（只出端口壳即失败） |
 | DRC | 小 GDS（`lay_e2e.gds` 顶层 `lay_e2e`）跑通：`status=completed`、`read_results` 给 rules_checked/结果计数；对照可行性报告基线（1737 规则 / 36 结果） |
-| LVS | `ctle.gds`+`ctle.cdl`：`status=completed`、`summary.status ∈ {match, incorrect}`、产物含 `svdb/*.phdb` |
-| LVS 闭环 | `export_cdl` 的 CDL 直接喂 LVS（`CMP_LIB/inv2` + `inv2.gds`）；`VB_CALIBRE_REQUIRE_LVS_VERDICT=1` 时要求 `correct` |
+| LVS | `ctle.gds` + `source.kind=cdl`（`ctle.cdl`）：`status=completed`、`summary.status ∈ {match, incorrect}`、产物含 `svdb/*.phdb` |
+| LVS 闭环 | `source.kind=schematic`（`CMP_LIB/inv2` + `inv2.gds`）；`VB_CALIBRE_REQUIRE_LVS_VERDICT=1` 时要求 `correct`，`emit_cdl=true` 时返回 `cdl_path` |
 | PEX | 同组输入跑到 `-pdb`：`svdb/*.pdb/` 存在、`summary.errors==0`；`fmt=spice` 时产出网表 |
 | 三件套 | `blocking=true` 与 `blocking=false`+`status` 轮询两种用法结果一致 |
 | 失败 | deck 路径不存在 → 明确失败；GDS 顶层名错 → 工具原文回带；不给 token → 400 |
-| 参数面 | deck 无占位符（自包含）时 `gds/top/cdl` 可省；deck 引用 `"lvs_top.cdl"` 而没给 `cdl` → 明确失败 |
+| 参数面 | deck 无占位符（自包含）时 `gds/top/source` 可省；deck 引用 `"lvs_top.cdl"` 而没给 `source` → 明确失败 |
 
 ## 9. 证据索引
 
