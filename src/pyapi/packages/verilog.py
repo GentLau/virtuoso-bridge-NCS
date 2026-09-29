@@ -12,6 +12,7 @@ import hashlib
 import posixpath
 import re
 import shlex
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -256,8 +257,12 @@ class Package:
             return Result(False, steps, f"{type(exc).__name__}: {exc}")
 
     def _read_views(self, request: Any) -> list[dict[str, Any]]:
-        raw = self._q(
+        # 先刷库表：覆盖式再导入后紧跟查询会撞到瞬时窗口
+        # （P-097：`*Error* cell not found`，1 次后 2/2 复跑成功）。仍失败则有界
+        # 重试 2 次（0.5s 间隔），三次都不行才把原错误抛出去。
+        expr = (
             "let((cell views out) "
+            "ddUpdateLibList() "
             f"cell = ddGetObj({basic.q(request.library)} {basic.q(request.cell)}) "
             "unless(cell error(\"cell not found\")) "
             "views = cell~>views "
@@ -265,10 +270,16 @@ class Package:
             "  mapcar(lambda((file) list(view~>name "
             "    ddMapGetFileViewType(file) ddMapGetFileDataType(file) file~>name)) "
             "    ddGetObjFiles(view))) views) "
-            "sprintf(nil \"%L\" out))",
-            request.token,
-            request.timeout,
+            "sprintf(nil \"%L\" out))"
         )
+        for attempt in range(3):
+            try:
+                raw = self._q(expr, request.token, request.timeout)
+                break
+            except RuntimeError:
+                if attempt == 2:
+                    raise
+                time.sleep(0.5)
         # `sprintf(nil "%L" out)` 的返回会被整体包成 SKILL 字符串
         # （`"((...))"`，内层引号转义）→ 必须先脱引号再解析，否则 parse 出的是
         # 字符串而不是 list，遍历恒为空（P-099：views 永远 []）。
