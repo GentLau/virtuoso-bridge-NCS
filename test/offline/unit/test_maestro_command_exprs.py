@@ -339,11 +339,14 @@ class TestWriteOrchestration(unittest.TestCase):
         self.assertFalse(any(call.startswith("maeCloseSession") for call in middle.calls))
         self.assertNotIn("close_session", [step["name"] for step in result.steps])
 
-    def test_save_can_be_skipped(self):
+    def test_save_false_is_rejected(self):
+        """P-087 定稿口径：不落盘写无法与会话隔离 → 结构化拒绝，且不碰真机。"""
         middle = WriteMiddle()
         result = M.Package(middle).write(M.WriteRequest(save=False, **self.REQUEST))
-        self.assertTrue(result.ok, result.error)
-        self.assertNotIn("save_setup", [step["name"] for step in result.steps])
+        self.assertFalse(result.ok)
+        self.assertIn("save=false is not supported", result.error or "")
+        self.assertEqual(result.value, {"reason": "save_false_unsupported"})
+        self.assertEqual(middle.calls, [])
 
     def test_command_failure_is_reported_with_op_name(self):
         middle = WriteMiddle()

@@ -120,7 +120,6 @@ class ExportRequest:
     window_id: int | None = None
     region: list[float] | None = None
     toplevel: bool = True
-    include_results: bool = True
     timeout: int | None = None
 
 
@@ -185,7 +184,6 @@ class OpenWaveformRequest:
     view: str = "maestro"
     test: str | None = None
     analysis: str | None = None
-    result: str | None = None
     timeout: int | None = None
 
 
@@ -691,6 +689,25 @@ class Package:
         )
         return _to_int(unquote(raw))
 
+    def _set_overwrite_history(
+        self,
+        session: str,
+        flag: bool,
+        name: str | None,
+        token: str,
+        timeout: int | float | None,
+    ) -> VirtuosoResult:
+        # 该 API 要求字符串：清目标时用 ""（传 nil 会报 argument #2 should be a string）
+        name_expr = q(name) if name else '""'
+        return self.middle.execute_skill(
+            "let((setup) "
+            f"setup = axlGetActiveSetup({self._main_setup_db_expr(session)}) "
+            f"axlSetOverwriteHistory(setup {'t' if flag else 'nil'}) "
+            f"axlSetOverwriteHistoryName(setup {name_expr}))",
+            timeout=timeout,
+            token=token,
+        )
+
     def _run_status(
         self,
         session: str,
@@ -928,20 +945,28 @@ class Package:
                 corners = [command["corner"]]
 
             if scope == "all" or command.get("all_tests"):
+                # 注意：axlGetCorner(sdb "Nominal") 之类的"非实体"条目会返回 0；
+                # 旧实现把 0 直接喂给 axlGetVar → 报
+                # "Cannot find a setup database entry for handle 0"（P-088）。
+                # 这里逐项判空后再取变量，保证 global/test/corner 三处都被清掉。
                 return [
-                    "let((sdb) "
+                    "let((sdb h) "
                     f"sdb = {sdb} "
                     "foreach(tn cadr(axlGetTests(sdb)) "
-                    "  let((tv) "
-                    f"    tv = axlGetVar(axlGetTest(sdb tn) {q(name)}) "
-                    "    when(tv axlRemoveElement(tv)))) "
+                    "  h = axlGetTest(sdb tn) "
+                    "  when(h && h != 0 "
+                    "    let((tv) "
+                    f"      tv = axlGetVar(h {q(name)}) "
+                    "      when(tv && tv != 0 axlRemoveElement(tv))))) "
                     "foreach(cn cadr(axlGetCorners(sdb)) "
-                    "  let((cv) "
-                    f"    cv = axlGetVar(axlGetCorner(sdb cn) {q(name)}) "
-                    "    when(cv axlRemoveElement(cv)))) "
+                    "  h = axlGetCorner(sdb cn) "
+                    "  when(h && h != 0 "
+                    "    let((cv) "
+                    f"      cv = axlGetVar(h {q(name)}) "
+                    "      when(cv && cv != 0 axlRemoveElement(cv))))) "
                     "let((gv) "
                     f"  gv = axlGetVar(sdb {q(name)}) "
-                    "  when(gv axlRemoveElement(gv))))"
+                    "  when(gv && gv != 0 axlRemoveElement(gv))))"
                 ]
 
             if scope == "corner" or corners:
@@ -958,7 +983,7 @@ class Package:
                     f"foreach(cn '{body} "
                     "  let((cv) "
                     f"    cv = axlGetVar(axlGetCorner(sdb cn) {q(name)}) "
-                    "    when(cv axlRemoveElement(cv)))))"
+                    "    when(cv && cv != 0 axlRemoveElement(cv)))))"
                 ]
 
             if scope == "test" or tests:
@@ -967,7 +992,7 @@ class Package:
                 exprs = [
                     "let((tv) "
                     f"tv = axlGetVar(axlGetTest({sdb} {q(test)}) {q(name)}) "
-                    "when(tv axlRemoveElement(tv)))"
+                    "when(tv && tv != 0 axlRemoveElement(tv)))"
                     for test in (tests if isinstance(tests, (list, tuple)) else [tests])
                 ]
                 return ["progn(" + " ".join(exprs) + ")"]
@@ -975,7 +1000,7 @@ class Package:
             return [
                 "let((gv) "
                 f"gv = axlGetVar({sdb} {q(name)}) "
-                "when(gv axlRemoveElement(gv)))"
+                "when(gv && gv != 0 axlRemoveElement(gv)))"
             ]
 
         if op == "set_parameter":
@@ -1036,12 +1061,12 @@ class Package:
                     f"foreach(cn '{body} "
                     "  let((ph) "
                     f"    ph = axlGetParameter(axlGetCorner(sdb cn) {q(name)}) "
-                    "    when(ph axlRemoveElement(ph)))))"
+                    "    when(ph && ph != 0 axlRemoveElement(ph)))))"
                 ]
             return [
                 "let((ph) "
                 f"ph = axlGetParameter({sdb} {q(name)}) "
-                "when(ph axlRemoveElement(ph)))"
+                "when(ph && ph != 0 axlRemoveElement(ph)))"
             ]
 
         if op in ("set_env_option", "set_sim_option"):
@@ -1243,7 +1268,7 @@ class Package:
                     "let((sp) "
                     f"sp = axlGetSpec({self._main_setup_db_expr(session)} "
                     f"{q(spec_name)}) "
-                    "when(sp axlRemoveElement(sp)))"
+                    "when(sp && sp != 0 axlRemoveElement(sp)))"
                 )
             return exprs
 
@@ -1257,7 +1282,7 @@ class Package:
             return [
                 "let((sp) "
                 f"sp = axlGetSpec({self._main_setup_db_expr(session)} {q(name)}) "
-                "when(sp axlRemoveElement(sp)))"
+                "when(sp && sp != 0 axlRemoveElement(sp)))"
             ]
 
         # -- history atomics ---------------------------------------------------
@@ -1680,6 +1705,16 @@ class Package:
         _require_timeout(request.timeout)
         if not isinstance(request.commands, list) or not request.commands:
             raise ValueError("commands must be a non-empty list")
+        if not request.save:
+            # 不落盘写无法保证隔离：会话若是 GUI 打开的，maeCloseSession 按官方文档
+            # 不能关闭（实测返回 nil），改动必然留在会话里被后续任意一次 save
+            # 静默带走、污染用户 setup（P-087）。宁可明确拒绝，也不给骗人的语义。
+            return Result(
+                False, [],
+                "save=false is not supported: 不落盘写无法与会话隔离"
+                "（复用/GUI 会话关不掉，改动会被后续 save 带走）；请用 save=true",
+                {"reason": "save_false_unsupported"},
+            )
 
         steps: list[dict[str, Any]] = []
         result: Result | None = None
@@ -2793,11 +2828,13 @@ class Package:
         token: str,
         timeout: int | float | None,
     ) -> list[dict[str, Any]]:
-        """Dismiss ADE ``Update and Run`` modals through the GUI channel.
+        """Dismiss ADE's known blocking modals through the GUI channel.
 
         ``maeRunSimulation`` can block on a modal dialog before it returns.
         While the Skill channel is blocked, the GUI interface is still
-        usable; pressing Enter accepts the default "update and run" action.
+        usable; pressing Enter accepts the default button.  Covered:
+        ``Update and Run`` and the Overwrite-History message family
+        ASSEMBLER-2406/3016/3017/3018 (P-095).
         """
         try:
             gui = gui_pkg.Package(self.middle)
@@ -2811,9 +2848,19 @@ class Package:
         dismissed: list[dict[str, Any]] = []
         for window in listed.windows:
             title = str(window.get("title", ""))
-            # Only the known safe "Update and Run" modal is handled here.
-            # Other modal dialogs must not be dismissed with an arbitrary key.
-            if "Update and Run" not in title:
+            # 只处理**已知语义**的模态框；其它模态框一律不按任意键。
+            # - "Update and Run"：默认按钮 = 更新并运行
+            # - ASSEMBLER-2406/3016/3017/3018：Overwrite History 目标（重名 /
+            #   被锁 / run mode 不符 / 不存在）的问答与报错框，Enter = 默认按钮
+            #   （继续 / 确定）；不处理就会把整个 CIW 挂死（P-095、P-086 持久形态）。
+            known = (
+                "Update and Run",
+                "ADE Assembler Message 2406",
+                "ADE Assembler Message 3016",
+                "ADE Assembler Message 3017",
+                "ADE Assembler Message 3018",
+            )
+            if not any(marker in title for marker in known):
                 continue
             try:
                 sent = gui.send_key(gui_pkg.SendKeyRequest(
@@ -2957,25 +3004,48 @@ class Package:
             steps.append(_step("job_control_mode", mode.ok, mode))
             if not mode.ok:
                 return Result(False, steps, "; ".join(mode.errors))
+            # Overwrite History 是 ADE 里的**持久**开关：残留目标（悬空 →
+            # ASSEMBLER-3018，run mode 不符 → 3017）会让下一次 run 弹模态框并挂死
+            # CIW（P-095）。规则只有两条：调用方没点名就清掉残留；run 后必定复位。
             if request.history:
-                overwrite = self.middle.execute_skill(
-                    "let((sdb setup) "
-                    f"sdb = axlGetMainSetupDB({q(session)}) "
-                    "setup = axlGetActiveSetup(sdb) "
-                    "axlSetOverwriteHistory(setup t) "
-                    f"axlSetOverwriteHistoryName(setup {q(request.history)}))",
-                    timeout=request.timeout,
-                    token=request.token,
+                histories = self._history_names(
+                    session, request.library, request.cell, request.view,
+                    request.token, request.timeout,
+                )
+                if request.history not in histories:
+                    return Result(
+                        False, steps,
+                        f"overwrite target not found: {request.history}",
+                        {"reason": "overwrite_target_missing",
+                         "history": request.history},
+                    )
+                overwrite = self._set_overwrite_history(
+                    session, True, request.history,
+                    request.token, request.timeout,
                 )
                 steps.append(_step("overwrite_target", overwrite.ok, overwrite))
                 if not overwrite.ok:
                     return Result(False, steps, "; ".join(overwrite.errors))
-
-            started, dismissed, start_error, window_checks = (
-                self._start_simulation_with_watchdog(
-                    session, request.token, request.timeout,
+            else:
+                released = self._set_overwrite_history(
+                    session, False, None, request.token, request.timeout,
                 )
-            )
+                steps.append(_step("overwrite_clear", released.ok, released.output))
+
+            try:
+                started, dismissed, start_error, window_checks = (
+                    self._start_simulation_with_watchdog(
+                        session, request.token, request.timeout,
+                    )
+                )
+            finally:
+                # 无论成功/失败/超时，都不给下一次 run 留地雷。
+                released = self._set_overwrite_history(
+                    session, False, None, request.token, request.timeout,
+                )
+                steps.append(_step("overwrite_release", released.ok, {
+                    "detail": released.output,
+                }))
             if dismissed or window_checks:
                 steps.append(_step("dialog_watchdog", True, {
                     "window_checks": window_checks,

@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
 # 作者: 测试/root
-# 最后改动: 2026-09-29 02:05
+# 最后改动: 2026-09-29 11:40
 # 依赖: 无
 # =======================================================================
 # 六步流程（test/docs/写TB规范.md §1）：
@@ -689,18 +689,23 @@ def _case_write_save_flag(transport) -> None:
            f"save=True 必须出现 save_setup 步骤：{saved_steps}")
     cfg = _value(transport, "virtuoso.maestro.read_config", **base)
     _check(cfg["variables"].get(name) == "1.0", f"save=True 未落盘: {name}")
-    unsaved_steps, _ = _steps(
-        {"save": False,
-         "commands": [{"op": "set_var", "name": name, "value": "2.0", "scope": "global"}]})
-    _check("save_setup" not in unsaved_steps,
-           f"save=False 不得出现 save_setup 步骤：{unsaved_steps}")
-    _check("command:set_var" in unsaved_steps,
-           f"save=False 仍必须执行命令本身：{unsaved_steps}")
+    # P-087 定稿口径：不落盘写无法与会话隔离（GUI 会话关不掉，改动会被后续 save
+    # 带走）→ save=False 必须**结构化拒绝**，且不得留下任何副作用。
+    rejected = transport.call({
+        "operation": "virtuoso.maestro.write", "token": TOKEN, **base,
+        "save": False,
+        "commands": [{"op": "set_var", "name": name, "value": "2.0",
+                      "scope": "global"}],
+    })
+    _check(rejected.get("ok") is False, f"save=False 必须被拒绝：{rejected}")
+    reason = ((rejected.get("data") or {}).get("value") or {}).get("reason")
+    _check(reason == "save_false_unsupported",
+           f"save=False 拒绝原因不对：{rejected.get('data')}")
     cfg2 = _value(transport, "virtuoso.maestro.read_config", **base)
-    # 读回值**只记录不判定**：session 是否复用由实现/时序决定（实测同一用例既出现过 2.0
-    # 也出现过 1.0），拿它当判据会让 WRITE-06 抖动。隔离性缺陷由磁盘级探针
-    # `test/semi/probes/maestro_save_false_disk_probe.py`（P-087）钉住。
-    after_save_false_readback = cfg2["variables"].get(name)
+    _check(cfg2["variables"].get(name) == "1.0",
+           f"拒绝后变量不得被改：{cfg2['variables'].get(name)}")
+    unsaved_steps = [s.get("name") for s in
+                     ((rejected.get("data") or {}).get("steps") or [])]
     # 清理：删除该变量并保存
     try:
         _value(transport, "virtuoso.maestro.write", **base,
@@ -708,8 +713,8 @@ def _case_write_save_flag(transport) -> None:
     except Exception:  # noqa: BLE001 - 清理尽力而为
         pass
     return {"save_true_steps": saved_steps, "save_false_steps": unsaved_steps,
-            "after_save_false_readback": after_save_false_readback,
-            "in_memory_after_save_false": cfg2["variables"].get(name)}
+            "save_false_error": rejected.get("error"),
+            "after_save_false_readback": cfg2["variables"].get(name)}
 
 
 def _case_read_results_result_name(transport, history: str) -> None:

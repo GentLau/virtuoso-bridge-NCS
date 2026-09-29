@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
 # 作者: 测试/root
-# 最后改动: 2026-09-28 23:27
+# 最后改动: 2026-09-29 11:40
 # 依赖: test/live/packages/maestro_e2e_tests.py（夹具与调用姿势一致）
 # =======================================================================
 # 六步流程（test/docs/写TB规范.md §1）：
@@ -216,13 +216,17 @@ def _case_export(transport, ev: dict) -> None:
 def _case_write(transport, ev: dict) -> None:
     base = dict(library="maestro_tb", cell="rc_probe")
     name = f"view_param_{time.strftime('%H%M%S')}"
-    data = _op(transport, "virtuoso.maestro.write", **base, view=VIEW, save=False,
-               commands=[{"op": "set_var", "name": name, "value": "1.0",
-                          "scope": "global"}])
-    steps = [s.get("name") for s in data.get("steps") or []]
-    _check("command:set_var" in steps, f"write: 变量命令未执行 {steps}")
-    _check("save_setup" not in steps, f"write(save=False): 仍落盘 {steps}")
-    ev["write"] = {"steps": steps}
+    # P-087 定稿口径：save=False 结构化拒绝（不落盘写无法与会话隔离）。
+    raw = transport.call({
+        "operation": "virtuoso.maestro.write", "token": TOKEN, **base,
+        "view": VIEW, "save": False,
+        "commands": [{"op": "set_var", "name": name, "value": "1.0",
+                      "scope": "global"}],
+    })
+    _check(raw.get("ok") is False, f"write(save=False) 必须被拒绝：{raw}")
+    reason = ((raw.get("data") or {}).get("value") or {}).get("reason")
+    _check(reason == "save_false_unsupported", f"拒绝原因不对：{raw.get('data')}")
+    ev["write"] = {"error": raw.get("error"), "reason": reason}
 
 
 def _case_write_history(transport, ev: dict, history: str) -> None:

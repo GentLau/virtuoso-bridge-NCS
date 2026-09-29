@@ -48,6 +48,11 @@ maestro 包覆盖 ADE Assembler / Explorer 的**配置、结果、导出、历�
 
 每个原子 = `op` + **索引**（动哪个）+ 附加参数。整批在一个后台会话内顺序执行，末尾统一保存。
 
+`save` 语义（P-087 定稿）：只支持 `save=true`（整批成功后 `maeSaveSetup` 落盘）。
+`save=false` 被**结构化拒绝**（`reason=save_false_unsupported`）：会话若由 GUI 打开，
+`maeCloseSession` 按官方文档无法关闭（实测返回 nil），改动会留在会话里被后续 save
+静默带走并污染用户 setup，因此本版不提供"不落盘写"。
+
 | 分组 | 原子 | 索引 | 附加参数 | 底层 |
 |---|---|---|---|---|
 | 器件 | set_test | test | lib / cell / view / simulator | `maeCreateTest` |
