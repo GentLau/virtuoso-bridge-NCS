@@ -58,8 +58,12 @@ class TestTransportErrorSummaries(unittest.TestCase):
 
 class TestRetryClassifiers(unittest.TestCase):
     def test_transient(self):
-        self.assertTrue(SSHRunner._is_transient_ssh_error(255, "kex_exchange_identification: failed"))
-        self.assertFalse(SSHRunner._is_transient_ssh_error(0, "kex_exchange_identification"))
+        self.assertTrue(
+            SSHRunner._is_pre_delivery_ssh_error("kex_exchange_identification: failed")
+        )
+        self.assertFalse(
+            SSHRunner._is_pre_delivery_ssh_error("connection reset by peer")
+        )
 
     def test_cm_failure_markers(self):
         for text in ("mux_client_request_session: failed", "ControlPath too long",
@@ -68,8 +72,10 @@ class TestRetryClassifiers(unittest.TestCase):
         self.assertFalse(SSHRunner._is_cm_failure(0, "mux_client_request_session"))
 
     def test_retryable_persistent_shell_errors(self):
-        self.assertTrue(ssh_mod.SSHRunner._is_retryable_persistent_shell_error(
+        self.assertFalse(ssh_mod.SSHRunner._is_retryable_persistent_shell_error(
             RuntimeError("unexpected persistent shell protocol line: 'x'")))
+        self.assertTrue(ssh_mod.SSHRunner._is_retryable_persistent_shell_error(
+            RuntimeError("failed to write to persistent ssh shell")))
         self.assertFalse(ssh_mod.SSHRunner._is_retryable_persistent_shell_error(RuntimeError("boom")))
 
 

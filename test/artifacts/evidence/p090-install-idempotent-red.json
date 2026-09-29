@@ -1,0 +1,19 @@
+{
+  "tb": "install_stage_idempotent_tb",
+  "status": "RED",
+  "host": "wsl-gent",
+  "stage": "/home/Gent/.virtuoso-bridge/.p090-tb-1de75daa/payload.txt.vbtmp-93d85eab3f2347fdbbab77677bd683c3",
+  "target": "/home/Gent/.virtuoso-bridge/.p090-tb-1de75daa/payload.txt",
+  "digest": "68398f963fd378811635c7944b4647cef94afddf98d542f2b62394b37fe0fd06",
+  "command": "if [ -d /home/Gent/.virtuoso-bridge/.p090-tb-1de75daa/payload.txt ]; then printf '%s\\n' 'target is a directory' >&2; exit 1; fi; mv -f -- /home/Gent/.virtuoso-bridge/.p090-tb-1de75daa/payload.txt.vbtmp-93d85eab3f2347fdbbab77677bd683c3 /home/Gent/.virtuoso-bridge/.p090-tb-1de75daa/payload.txt",
+  "first": {
+    "rc": 0,
+    "stderr": ""
+  },
+  "second": {
+    "rc": 1,
+    "stderr": "mv: cannot stat '/home/Gent/.virtuoso-bridge/.p090-tb-1de75daa/payload.txt.vbtmp-93d85eab3f2347fdbbab77677bd683c3': No such file or directory"
+  },
+  "first_ok": true,
+  "second_ok": false
+}

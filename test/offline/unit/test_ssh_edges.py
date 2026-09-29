@@ -703,6 +703,12 @@ class TestSummariesAndRetryPredicates(unittest.TestCase):
         self.assertFalse(SSHRunner._is_retryable_persistent_shell_error(
             RuntimeError("something else")
         ))
+        self.assertFalse(SSHRunner._is_retryable_persistent_shell_error(
+            RuntimeError("unexpected persistent shell protocol line: 'x'")
+        ))
+        self.assertFalse(SSHRunner._is_retryable_persistent_shell_error(
+            RuntimeError("persistent ssh shell exited unexpectedly")
+        ))
 
     def test_shell_fallback_logging_switches_on_shutdown(self):
         runner = _runner()
@@ -738,7 +744,7 @@ class TestPersistentShellRetry(unittest.TestCase):
     def test_retryable_failure_rebuilds_shell_once(self):
         runner = self._runner_with_shell()
         attempts = [
-            RuntimeError("persistent ssh shell exited unexpectedly"),
+            RuntimeError("failed to write to persistent ssh shell"),
             CommandResult(0, "second", ""),
         ]
 
@@ -757,6 +763,30 @@ class TestPersistentShellRetry(unittest.TestCase):
                 ) as closer:
             result = runner._run_via_persistent_shell_with_retry("echo ok")
         self.assertEqual(result.stdout, "second")
+        self.assertEqual(closer.call_count, 1)
+
+    def test_post_delivery_shell_error_is_not_retried(self):
+        runner = self._runner_with_shell()
+        attempts = [
+            RuntimeError("persistent ssh shell exited unexpectedly"),
+            CommandResult(0, "second", ""),
+        ]
+
+        def run(*_args, **_kwargs):
+            outcome = attempts.pop(0)
+            if isinstance(outcome, Exception):
+                raise outcome
+            return outcome
+
+        with mock.patch.object(runner, "ensure_persistent_shell"), \
+                mock.patch.object(
+                    runner, "_run_command_via_persistent_shell_locked",
+                    side_effect=run,
+                ), mock.patch.object(
+                    runner, "_close_persistent_shell_locked"
+                ) as closer:
+            with self.assertRaises(RuntimeError):
+                runner._run_via_persistent_shell_with_retry("echo ok")
         self.assertEqual(closer.call_count, 1)
 
     def test_non_retryable_failure_is_raised_after_one_close(self):

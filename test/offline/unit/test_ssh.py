@@ -175,8 +175,12 @@ class TestSSHOptionConstruction(unittest.TestCase):
             SSHRunner._decode_b64_text("!!!not base64!!!")
 
     def test_error_classifiers(self):
-        self.assertTrue(SSHRunner._is_transient_ssh_error(255, "connection reset by peer"))
-        self.assertFalse(SSHRunner._is_transient_ssh_error(255, "Permission denied"))
+        self.assertFalse(
+            SSHRunner._is_pre_delivery_ssh_error("connection reset by peer")
+        )
+        self.assertTrue(
+            SSHRunner._is_pre_delivery_ssh_error("kex_exchange_identification: failed")
+        )
         self.assertTrue(SSHRunner._is_cm_failure(255, "getsockname failed: Not a socket"))
         self.assertFalse(SSHRunner._is_cm_failure(255, "Permission denied"))
         self.assertFalse(SSHRunner._is_cm_failure(0, ""))
@@ -541,15 +545,21 @@ class TestRetryAndFallback(unittest.TestCase):
         self.assertEqual(len(calls), 2)
         self.assertFalse(r._use_control_master)
 
-    def test_transient_retry_then_success(self):
+    def test_post_delivery_reset_not_retried(self):
         r = SSHRunner("server")
-        calls = iter([
-            (255, b"", b"connection reset by peer"),
-            (0, b"ok", b""),
-        ])
+        calls = []
+
+        def attempt():
+            calls.append(1)
+            return 255, b"", b"connection reset by peer"
+
         budget = _TimeoutBudget.start(10, 10)
-        rc, _, _ = r._attempt_with_cm_fallback(lambda: next(calls), budget=budget, command="cmd")
-        self.assertEqual(rc, 0)
+        rc, _, err = r._attempt_with_cm_fallback(
+            attempt, budget=budget, command="cmd"
+        )
+        self.assertEqual(rc, 255)
+        self.assertEqual(len(calls), 1)
+        self.assertIn(b"connection reset by peer", err)
 
     def test_non_retryable_breaks_immediately(self):
         r = SSHRunner("server")

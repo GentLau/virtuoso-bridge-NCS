@@ -10,7 +10,7 @@
 | `probes/` | 环境、工具链、包、单阶段探针（只读/一次性） | 原 `test/tb/probes` |
 | `fakevirt/` | fake Virtuoso / CIW 测试替身 | 替掉 CIW，daemon 与链路为真 |
 | `registration/` | `cov_registration_real.py`：注册 **1–4 步**（不 commit）；`registration_failure_matrix_tb.py`：六步失败/重试矩阵（自包含本地 fake，无外部环境） | 覆盖前段流程、零落盘与逐步失败重试 |
-| `transport/` | `log_matrix_real_tb.py`（CDS.log 单点矩阵）、`one_shot_burst_tb.py`（通道突发）、`ssh_backend_semi_tb.py`（OpenSSH/Paramiko 传输原语）、`role_credential_isolation_tb.py`（按 role 分离凭据） | 真机单点，不构成完整用户流程 |
+| `transport/` | `log_matrix_real_tb.py`（CDS.log 单点矩阵）、`one_shot_burst_tb.py`（通道突发）、`ssh_backend_semi_tb.py`（OpenSSH/Paramiko 传输原语）、`role_credential_isolation_tb.py`（按 role 分离凭据）、`install_stage_idempotent_tb.py`（P-090 安装幂等） | 真机单点，不构成完整用户流程 |
 
 ## 怎么跑
 
@@ -32,6 +32,9 @@ python test/semi/transport/ssh_backend_semi_tb.py `
 # 按 role 分离凭据：用环境里已整理的双钥（id_ed25519 / vbuser2_ed25519）
 python test/semi/transport/role_credential_isolation_tb.py `
     --out test/artifacts/evidence/role-credential-isolation.json
+# P-090：同一安装命令重复执行必须幂等（同一 stage 已 mv 走也不能报 cannot stat）
+python test/semi/transport/install_stage_idempotent_tb.py `
+    --host wsl-gent --out test/artifacts/evidence/p090-install-idempotent.json
 ```
 
 ## 纪律
