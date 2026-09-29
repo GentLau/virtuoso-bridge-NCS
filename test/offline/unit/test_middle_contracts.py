@@ -39,19 +39,19 @@ class FakeRemote:
     def run_command(self, cmd, timeout=None, parallel=False):
         self.parallel_seen = parallel
         self._raise()
-        return CommandResult(0, "ok", "")
+        return CommandResult(returncode=0, stdout="ok", stderr="")
 
     def run_one_shot(self, role_name, cmd, timeout=None):
         self._raise()
-        return CommandResult(0, role_name, "")
+        return CommandResult(returncode=0, stdout=role_name, stderr="")
 
     def upload_file(self, local, remote, timeout=None, recursive=False):
         self._raise()
-        return CommandResult(0, "", "")
+        return CommandResult(returncode=0, stdout="", stderr="")
 
     def download_file(self, remote, local, timeout=None, recursive=False):
         self._raise()
-        return CommandResult(0, "", "")
+        return CommandResult(returncode=0, stdout="", stderr="")
 
     def close(self):
         return None

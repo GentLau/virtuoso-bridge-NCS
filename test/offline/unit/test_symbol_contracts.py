@@ -503,10 +503,18 @@ class ScreenshotMiddle:
         from pyapi.models import CommandResult
         self.commands.append(cmd)
         if cmd.startswith("mkdir -p"):
-            return CommandResult(self.mkdir_rc, "", "" if self.mkdir_rc == 0 else "mkdir boom")
+            return CommandResult(
+                returncode=self.mkdir_rc,
+                stdout="",
+                stderr="" if self.mkdir_rc == 0 else "mkdir boom",
+            )
         if "wc -c" in cmd:
-            return CommandResult(self.verify_rc, f"{self.verify_stdout}\n", "")
-        return CommandResult(0, "", "")
+            return CommandResult(
+                returncode=self.verify_rc,
+                stdout=f"{self.verify_stdout}\n",
+                stderr="",
+            )
+        return CommandResult(returncode=0, stdout="", stderr="")
 
     def execute_skill(self, code, timeout=None, *, token):
         if not self.capture_ok:
@@ -516,11 +524,13 @@ class ScreenshotMiddle:
     def download_file(self, remote_path, local_path, timeout=None, *, token, recursive=False):
         from pyapi.models import CommandResult
         if self.download_rc != 0:
-            return CommandResult(self.download_rc, "", "download boom")
+            return CommandResult(
+                returncode=self.download_rc, stdout="", stderr="download boom",
+            )
         target = Path(local_path)
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes(b"PNG")
-        return CommandResult(0, str(target), "")
+        return CommandResult(returncode=0, stdout=str(target), stderr="")
 
 
 class TestSymbolScreenshot(unittest.TestCase):

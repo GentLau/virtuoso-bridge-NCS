@@ -18,12 +18,12 @@ from pyapi.packages.basic import (
 class FakeMiddle:
     def __init__(self):
         self.calls = []
-        self.upload_result = CommandResult(0, "up", "")
+        self.upload_result = CommandResult(returncode=0, stdout="up", stderr="")
         self.skill_result = VirtuosoResult(
             status=ExecutionStatus.SUCCESS, output="2"
         )
-        self.command_result = CommandResult(0, "cmd", "")
-        self.download_result = CommandResult(0, "down", "")
+        self.command_result = CommandResult(returncode=0, stdout="cmd", stderr="")
+        self.download_result = CommandResult(returncode=0, stdout="down", stderr="")
 
     def upload_file(
         self, local_path, remote_path, timeout=None, *, token, recursive=False
@@ -53,7 +53,7 @@ class FakeMiddle:
 class TestBasicPackageContracts(unittest.TestCase):
     def test_command_failure_has_error_fallback(self):
         middle = FakeMiddle()
-        middle.command_result = CommandResult(7, "", "")
+        middle.command_result = CommandResult(returncode=7, stdout="", stderr="")
         result = BasicPackage(middle).run_command(
             CommandRequest(token="tok", cmd="exit 7")
         )

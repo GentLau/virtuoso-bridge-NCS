@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
-# 作者: 测试/root
-# 最后改动: 2026-09-29 15:35
+# 作者: 设计/上层开发
+# 最后改动: 2026-09-29 18:01
 # 依赖: 无
 # =======================================================================
 """screenshot 参数面真机覆盖：`window_id` / `region` / `toplevel` / `central_widget` / `view_type`。
@@ -15,8 +15,8 @@
    （P-091 三包统一口径：远端暂存、下载后清理，留存位置是客户端 `artifact/screenshots/`）；
 ⑥ 不清理现场：*例外*——`leave_open=True` 会留下窗口，本 TB 在 `finally` 里把**自己开的**窗口关掉（共享实例不背锅）。
 
-已知缺陷（本 TB 不假装覆盖）：`screenshot` 的 `view_type` **坏值未被校验**（layout 实测 ok=true，
-symbol 同族）→ SC-06 红钉（P-105）。
+P-105 回归：`symbol` / `layout` 的 `view_type` 都必须只接受各自的固定值，
+坏值在 SC-06 里断言结构化失败并点名字段。
 用法：
   PYTHONPATH=src python test/live/packages/screenshot_params_e2e_tests.py \
     --transport http --token vb-vbuser2 --lib serdes_rx --cell rx_top --view schematic --kind schematic
@@ -81,22 +81,27 @@ def _value(transport, operation: str, **fields: Any) -> dict[str, Any]:
     response = _op(transport, operation, **fields)
     if not response.get("ok"):
         raise AssertionError(f"{operation} failed: {response.get('error')}")
-    return _c1_wrapper(response).get("value") or _c1_wrapper(response)
+    return response.get("value") or response
 
 
 def _skill(transport, code: str, timeout: int = 120) -> str:
     response = _op(transport, "basic.skill.execute", skill_code=code, timeout=timeout)
-    data = _c1_wrapper(response)
+    data = response
     if not response.get("ok") or not data.get("ok"):
         raise AssertionError(f"skill failed: {response.get('error') or data.get('error')}")
     return ((data.get("result") or {}).get("output") or "").strip()
 
 
-def _command(transport, cmd: str, timeout: int = 60) -> list[Any]:
+def _command(transport, cmd: str, timeout: int = 60) -> str:
     response = _op(transport, "basic.command.run", cmd=cmd, timeout=timeout)
     if not response.get("ok"):
         raise AssertionError(f"command failed: {response.get('error')}")
-    return ((_c1_wrapper(response)).get("result")) or []
+    result = response.get("result")
+    if isinstance(result, dict):
+        if result.get("returncode") != 0:
+            raise AssertionError(f"command rc != 0: {response}")
+        return str(result.get("stdout") or "")
+    raise AssertionError(f"bad command response: {response}")
 
 
 def _png_ok(path: str) -> tuple[bool, str]:
@@ -259,6 +264,8 @@ def _suite_symbol(transport, lib: str, cell: str, view: str, run) -> None:
         bogus = _raw(transport, "virtuoso.symbol.screenshot", library=lib, cell=cell, view=view,
                      view_type="bogus_type_xyz")
         assert not bogus.get("ok"), "坏 view_type 应被校验（P-080 同族）"
+        assert "view_type" in json.dumps(bogus, ensure_ascii=False), \
+            "symbol 坏 view_type 的错误文案未点名 view_type"
 
     run("SC-01 default 截图（本地 PNG + 远端暂存已清理）", case_default)
     run("SC-02 leave_open + 显式 window_id", case_window)
@@ -269,7 +276,7 @@ def _suite_symbol(transport, lib: str, cell: str, view: str, run) -> None:
 
 
 def _suite_layout(transport, lib: str, cell: str, view: str, run) -> None:
-    """layout：region 用**对角两点**；额外覆盖 `view_type`（bogus 当前不校验 → P-105 红钉）。"""
+    """layout：region 用**对角两点**；额外覆盖 `view_type` 正负例（P-105）。"""
     def case_default() -> None:
         value = _value(transport, "virtuoso.layout.screenshot", library=lib, cell=cell, view=view)
         _check_png(value, "default")
@@ -315,6 +322,8 @@ def _suite_layout(transport, lib: str, cell: str, view: str, run) -> None:
         bogus = _raw(transport, "virtuoso.layout.screenshot", library=lib, cell=cell, view=view,
                               view_type="bogus_type_xyz")
         assert not bogus.get("ok"), "坏 view_type 应被校验（P-080 同族）"
+        assert "view_type" in json.dumps(bogus, ensure_ascii=False), \
+            "layout 坏 view_type 的错误文案未点名 view_type"
 
     run("SC-01 default 截图（本地 PNG + 远端暂存已清理）", case_default)
     run("SC-02 leave_open + 显式 window_id", case_window)
@@ -386,19 +395,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
-
-# --- C1 兼容垫片（2026-09-29，C3）------------------------------------------------
-# C1（2f88853）起：业务载荷直返顶层（值型 `value`、命令/skill 型 `result`）、
-# 成功默认省略 `steps`、失败壳去掉 `data`。历史 TB 按 `response["data"]` 解析，
-# 本垫片把新契约响应合成为旧 `data` 壳，让既有解析零改动继续工作。
-def _c1_wrapper(body):
-    if not isinstance(body, dict):
-        return {}
-    if isinstance(body.get("data"), dict):
-        return body["data"]
-    wrapped = {"ok": body.get("ok"), "error": body.get("error")}
-    for key in ("value", "result", "steps"):
-        if key in body:
-            wrapped[key] = body[key]
-    return wrapped

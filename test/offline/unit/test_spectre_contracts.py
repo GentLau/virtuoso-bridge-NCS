@@ -277,14 +277,23 @@ class RunMiddle(FakeMiddle):
         self.executed.append(cmd)
         if cmd.startswith("mkdir -p") or "EXISTS" in cmd:
             out = "READY\n" if self.prepare_rc == 0 else "EXISTS\n"
-            return CommandResult(self.prepare_rc, out, "", "command")
+            return CommandResult(
+                returncode=self.prepare_rc, stdout=out, stderr="", kind="command",
+            )
         if cmd.startswith("rm -rf"):
-            return CommandResult(0, "", "", "command")
-        return CommandResult(self.execute_rc, self.execute_out, self.execute_err, self.kind)
+            return CommandResult(returncode=0, stdout="", stderr="", kind="command")
+        return CommandResult(
+            returncode=self.execute_rc,
+            stdout=self.execute_out,
+            stderr=self.execute_err,
+            kind=self.kind,
+        )
 
     def upload_file(self, local_path, remote_path, timeout=None, *, token, recursive=False):
         self.include_uploads.append(str(remote_path))
-        return CommandResult(0, str(remote_path), "", "command")
+        return CommandResult(
+            returncode=0, stdout=str(remote_path), stderr="", kind="command",
+        )
 
     def download_file(self, remote_path, local_path, timeout=None, *, token, recursive=False):
         local = Path(local_path)
@@ -292,14 +301,20 @@ class RunMiddle(FakeMiddle):
             if self.make_raw:
                 local.mkdir(parents=True, exist_ok=True)
                 (local / "tran1.tran.tran").write_text(TRAN_PSF, encoding="utf-8")
-            return CommandResult(0, "", "", "command")
+            return CommandResult(returncode=0, stdout="", stderr="", kind="command")
         if str(remote_path).endswith("spectre.out"):
             local.parent.mkdir(parents=True, exist_ok=True)
             local.write_text("spectre completes with 0 errors, 0 warnings\n",
                              encoding="utf-8")
-            return CommandResult(0, str(local), "", "command")
-        return CommandResult(1, "", f"download requires a regular file: {remote_path} (missing)",
-                             "path")
+            return CommandResult(
+                returncode=0, stdout=str(local), stderr="", kind="command",
+            )
+        return CommandResult(
+            returncode=1,
+            stdout="",
+            stderr=f"download requires a regular file: {remote_path} (missing)",
+            kind="path",
+        )
 
 
 class TestRunOrchestration(unittest.TestCase):
@@ -324,7 +339,7 @@ class TestRunOrchestration(unittest.TestCase):
         self.assertEqual(value["status"], "success")
         self.assertEqual(value["result_kind"], "raw")
         self.assertEqual(value["analyses"], ["tran"])
-        self.assertEqual(_c1_wrapper(value)["vout"], [0.0, 1.0])
+        self.assertEqual(value["data"]["vout"], [0.0, 1.0])
         self.assertEqual(value["transport_kind"], "command")
         self.assertTrue(any(str(item).endswith("tran1.tran.tran")
                             for item in value["output_files"]), value["output_files"])
@@ -464,15 +479,21 @@ class ResultsMiddle(FakeMiddle):
         local = Path(local_path)
         if recursive:
             if not self.dir_ok:
-                return CommandResult(1, "", "no such remote dir", "path")
+                return CommandResult(
+                    returncode=1, stdout="", stderr="no such remote dir", kind="path",
+                )
             local.mkdir(parents=True, exist_ok=True)
             (local / "tran1.tran.tran").write_text(TRAN_PSF, encoding="utf-8")
-            return CommandResult(0, "", "", "command")
+            return CommandResult(returncode=0, stdout="", stderr="", kind="command")
         if not self.file_ok:
-            return CommandResult(1, "", "no such remote file", "path")
+            return CommandResult(
+                returncode=1, stdout="", stderr="no such remote file", kind="path",
+            )
         local.parent.mkdir(parents=True, exist_ok=True)
         local.write_text(TRAN_PSF, encoding="utf-8")
-        return CommandResult(0, str(local), "", "command")
+        return CommandResult(
+            returncode=0, stdout=str(local), stderr="", kind="command",
+        )
 
 
 class TestReadResults(unittest.TestCase):
@@ -486,7 +507,7 @@ class TestReadResults(unittest.TestCase):
         self.assertEqual(value["kind"], "raw")
         self.assertEqual(value["analyses"], ["tran"])
         self.assertEqual(value["signals"], ["time", "vout"])
-        self.assertEqual(_c1_wrapper(value)["vout"], [0.0, 1.0])
+        self.assertEqual(value["data"]["vout"], [0.0, 1.0])
         self.assertEqual(value["point_count"], 0)
         self.assertTrue(value["files"] and value["files"][0].endswith("tran1.tran.tran"))
 
@@ -550,7 +571,7 @@ class TestExport(unittest.TestCase):
         self.assertEqual(result.value["columns"], ["time", "vout"])
         self.assertEqual(payload["format"], "json")
         self.assertEqual(payload["metadata"], {"columns": ["time", "vout"], "rows": 3})
-        self.assertEqual(_c1_wrapper(payload)["vout"], [0.0, 1.0, 2.0])
+        self.assertEqual(payload["data"]["vout"], [0.0, 1.0, 2.0])
 
     def test_precision_and_validation_errors(self):
         with tempfile.TemporaryDirectory(prefix="vb-") as tmp:
@@ -653,15 +674,28 @@ class LicenseMiddle:
         from pyapi.models import CommandResult
         self.spectre_commands.append(cmd)
         if cmd.endswith("-V"):
-            return CommandResult(self.version_rc, self.version_stdout, "", "command")
-        return CommandResult(self.lmstat_spectre_rc, self.lmstat_spectre_stdout,
-                             self.lmstat_spectre_stderr, "command")
+            return CommandResult(
+                returncode=self.version_rc,
+                stdout=self.version_stdout,
+                stderr="",
+                kind="command",
+            )
+        return CommandResult(
+            returncode=self.lmstat_spectre_rc,
+            stdout=self.lmstat_spectre_stdout,
+            stderr=self.lmstat_spectre_stderr,
+            kind="command",
+        )
 
     def run_command(self, cmd, timeout=None, *, token, parallel=False):
         from pyapi.models import CommandResult
         self.commands.append(cmd)
-        return CommandResult(self.lmstat_cmd_rc, self.lmstat_cmd_stdout,
-                             self.lmstat_cmd_stderr, "command")
+        return CommandResult(
+            returncode=self.lmstat_cmd_rc,
+            stdout=self.lmstat_cmd_stdout,
+            stderr=self.lmstat_cmd_stderr,
+            kind="command",
+        )
 
 
 class TestCheckLicense(unittest.TestCase):
@@ -812,19 +846,3 @@ class TestMeasureExport(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
-
-# --- C1 兼容垫片（2026-09-29，C3）------------------------------------------------
-# C1（2f88853）起：业务载荷直返顶层（值型 `value`、命令/skill 型 `result`）、
-# 成功默认省略 `steps`、失败壳去掉 `data`。历史 TB 按 `response["data"]` 解析，
-# 本垫片把新契约响应合成为旧 `data` 壳，让既有解析零改动继续工作。
-def _c1_wrapper(body):
-    if not isinstance(body, dict):
-        return {}
-    if isinstance(body.get("data"), dict):
-        return body["data"]
-    wrapped = {"ok": body.get("ok"), "error": body.get("error")}
-    for key in ("value", "result", "steps"):
-        if key in body:
-            wrapped[key] = body[key]
-    return wrapped

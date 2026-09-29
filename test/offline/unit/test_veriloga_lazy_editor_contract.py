@@ -85,18 +85,18 @@ class RecordingMiddle:
     def run_command(self, cmd, timeout=None, *, token, parallel=False):
         self.commands.append(cmd)
         if "*.cdslck" in cmd:
-            return CommandResult(0, "OK\n", "")
-        return CommandResult(0, "", "")
+            return CommandResult(returncode=0, stdout="OK\n", stderr="")
+        return CommandResult(returncode=0, stdout="", stderr="")
 
     def upload_file(self, local_path, remote_path, timeout=None, *, token, recursive=False):
         self.uploads[str(remote_path)] = Path(local_path).read_text(encoding="utf-8")
-        return CommandResult(0, str(remote_path), "")
+        return CommandResult(returncode=0, stdout=str(remote_path), stderr="")
 
     def download_file(self, remote_path, local_path, timeout=None, *, token, recursive=False):
         target = Path(local_path)
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text("module old; endmodule\n", encoding="utf-8")
-        return CommandResult(0, str(target), "")
+        return CommandResult(returncode=0, stdout=str(target), stderr="")
 
 
 class TestNoEditorGuiCalls(unittest.TestCase):

@@ -45,8 +45,8 @@ class _FakeProbeRunner:
 
     def run_command(self, cmd: str, timeout=None) -> CommandResult:
         if "vb-ok" in cmd:
-            return CommandResult(0, "vb-ok", "")
-        return CommandResult(0, "/home/alice", "")
+            return CommandResult(returncode=0, stdout="vb-ok", stderr="")
+        return CommandResult(returncode=0, stdout="/home/alice", stderr="")
 
 
 class TestRegistryCommitPolicy(unittest.TestCase):

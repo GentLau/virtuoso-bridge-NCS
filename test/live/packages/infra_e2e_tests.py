@@ -98,7 +98,7 @@ def _op(transport, operation: str, **fields: Any) -> Any:
     response = transport.call({"operation": operation, "token": TOKEN, **fields})
     if not response.get("ok"):
         raise AssertionError(f"{operation} failed: {response.get('error')}")
-    return _c1_wrapper(response)
+    return response
 
 
 def _check(condition: bool, message: str) -> None:
@@ -111,15 +111,17 @@ def _case_basic(transport) -> None:
     _check("2" in (skill.get("result", {}).get("output") or ""), f"skill: {skill}")
 
     command = _op(transport, "basic.command.run", cmd="echo bridge-ok")
-    command_result = command.get("result") or []
-    _check(command_result[0] == 0 and "bridge-ok" in command_result[1],
+    command_result = command.get("result") or {}
+    _check(command_result.get("returncode") == 0
+           and "bridge-ok" in str(command_result.get("stdout") or ""),
            f"command: {command}")
 
     gui = _op(transport, "basic.gui.run", cmd="echo gui-ok")
-    _check((gui.get("result") or [1])[0] == 0, f"gui: {gui}")
+    _check((gui.get("result") or {}).get("returncode") == 0, f"gui: {gui}")
 
     spectre = _op(transport, "basic.spectre.run", cmd="echo spectre-ok", timeout=30)
-    _check((spectre.get("result") or [1])[0] == 0, f"spectre: {spectre}")
+    _check((spectre.get("result") or {}).get("returncode") == 0,
+           f"spectre: {spectre}")
 
 
 def _case_file_roundtrip(transport) -> None:
@@ -130,10 +132,10 @@ def _case_file_roundtrip(transport) -> None:
     local_out = SCRATCH / "roundtrip_out.txt"
     up = _op(transport, "basic.file.upload",
              local_path=str(local_in), remote_path=remote)
-    _check((up.get("result") or [1])[0] == 0, f"upload: {up}")
+    _check((up.get("result") or {}).get("returncode") == 0, f"upload: {up}")
     down = _op(transport, "basic.file.download",
                remote_path=remote, local_path=str(local_out))
-    _check((down.get("result") or [1])[0] == 0, f"download: {down}")
+    _check((down.get("result") or {}).get("returncode") == 0, f"download: {down}")
     _check(local_out.read_text(encoding="utf-8") == local_in.read_text(encoding="utf-8"),
            "file roundtrip mismatch")
     _op(transport, "basic.command.run", cmd=f"rm -rf {run_dir}")
@@ -153,10 +155,11 @@ def _case_recursive_file_tree(transport) -> None:
     run_dir = _remote_run_dir("rt-tree")
     up = _op(transport, "basic.file.upload",
              local_path=str(tree), remote_path=run_dir, recursive=True, timeout=120)
-    _check((up.get("result") or [1])[0] == 0, f"recursive upload: {up}")
+    _check((up.get("result") or {}).get("returncode") == 0,
+           f"recursive upload: {up}")
     listing = _op(transport, "basic.command.run",
                   cmd=f"find {run_dir} -type f | sort", timeout=60)
-    files = (listing.get("result") or ["", ""])[1]
+    files = str((listing.get("result") or {}).get("stdout") or "")
     _check("root.txt" in files and "leaf.txt" in files and "blob.bin" in files,
            f"remote tree incomplete: {files}")
 
@@ -166,7 +169,8 @@ def _case_recursive_file_tree(transport) -> None:
             path.unlink() if path.is_file() else path.rmdir()
     down = _op(transport, "basic.file.download",
                remote_path=run_dir, local_path=str(back), recursive=True, timeout=120)
-    _check((down.get("result") or [1])[0] == 0, f"recursive download: {down}")
+    _check((down.get("result") or {}).get("returncode") == 0,
+           f"recursive download: {down}")
     got = sorted(p.relative_to(back).as_posix() for p in back.rglob("*") if p.is_file())
     want = sorted(p.relative_to(tree).as_posix() for p in tree.rglob("*") if p.is_file())
     _check(got == want, f"tree file set mismatch: got={got} want={want}")
@@ -190,7 +194,7 @@ def _case_command_parallel(transport) -> None:
             futures = [pool.submit(one) for _ in range(2)]
             for future in futures:
                 result = future.result()
-                _check((result.get("result") or [1])[0] == 0,
+                _check((result.get("result") or {}).get("returncode") == 0,
                        f"sleep command failed: {result}")
         return time.monotonic() - started
 
@@ -206,10 +210,10 @@ def _case_command_timeout(transport) -> None:
         "operation": "basic.command.run", "token": TOKEN,
         "cmd": "sleep 5", "timeout": 1})
     _check(not response.get("ok"), "sleep 5 with timeout=1 must fail")
-    result = (_c1_wrapper(response)).get("result") or []
-    _check(result and result[0] == 124,
+    result = (response).get("result") or {}
+    _check(result.get("returncode") == 124,
            f"timeout rc must be 124: {result}")
-    detail = (_c1_wrapper(response)).get("steps") or [{}]
+    detail = (response).get("steps") or [{}]
     kind = ((detail[0].get("detail") or {}).get("kind")
             if isinstance(detail[0].get("detail"), dict) else None)
     if kind is not None:
@@ -307,19 +311,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
-
-# --- C1 兼容垫片（2026-09-29，C3）------------------------------------------------
-# C1（2f88853）起：业务载荷直返顶层（值型 `value`、命令/skill 型 `result`）、
-# 成功默认省略 `steps`、失败壳去掉 `data`。历史 TB 按 `response["data"]` 解析，
-# 本垫片把新契约响应合成为旧 `data` 壳，让既有解析零改动继续工作。
-def _c1_wrapper(body):
-    if not isinstance(body, dict):
-        return {}
-    if isinstance(body.get("data"), dict):
-        return body["data"]
-    wrapped = {"ok": body.get("ok"), "error": body.get("error")}
-    for key in ("value", "result", "steps"):
-        if key in body:
-            wrapped[key] = body[key]
-    return wrapped

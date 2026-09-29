@@ -463,8 +463,8 @@ class OrchestrationMiddle:
         from pyapi.models import CommandResult
         self.calls.append(cmd)
         if "*.cdslck" in cmd:
-            return CommandResult(0, self.lock_files, "")
-        return CommandResult(0, "", "")
+            return CommandResult(returncode=0, stdout=self.lock_files, stderr="")
+        return CommandResult(returncode=0, stdout="", stderr="")
 
 
 class TestLayoutReadOrchestration(unittest.TestCase):
@@ -675,21 +675,36 @@ class GdsMiddle:
         from pyapi.models import CommandResult
         self.commands.append(cmd)
         if cmd.startswith("mkdir -p"):
-            return CommandResult(self.prepare_rc, "", "" if self.prepare_rc == 0 else "prepare boom")
+            return CommandResult(
+                returncode=self.prepare_rc,
+                stdout="",
+                stderr="" if self.prepare_rc == 0 else "prepare boom",
+            )
         if cmd.startswith("cp "):
-            return CommandResult(self.stage_rc, "", "" if self.stage_rc == 0 else "stage boom")
+            return CommandResult(
+                returncode=self.stage_rc,
+                stdout="",
+                stderr="" if self.stage_rc == 0 else "stage boom",
+            )
         if cmd.startswith("test -f ") and cmd.endswith("/cds.lib"):
-            return CommandResult(self.cds_lib_rc, "",
-                                 "" if self.cds_lib_rc == 0 else "no cds.lib")
+            return CommandResult(
+                returncode=self.cds_lib_rc,
+                stdout="",
+                stderr="" if self.cds_lib_rc == 0 else "no cds.lib",
+            )
         if "nohup strmout" in cmd:
-            return CommandResult(0, self.launch_output, "")
+            return CommandResult(returncode=0, stdout=self.launch_output, stderr="")
         if "*.cdslck" in cmd:
-            return CommandResult(0, self.lock_files, "")
+            return CommandResult(returncode=0, stdout=self.lock_files, stderr="")
         if "---VBSIZE---" in cmd:
             if self.poll_rc != 0:
-                return CommandResult(self.poll_rc, "", "tail failed")
-            return CommandResult(0, f"{self.log_text}---VBSIZE---\n{self.gds_size}\n", "")
-        return CommandResult(0, "", "")
+                return CommandResult(returncode=self.poll_rc, stdout="", stderr="tail failed")
+            return CommandResult(
+                returncode=0,
+                stdout=f"{self.log_text}---VBSIZE---\n{self.gds_size}\n",
+                stderr="",
+            )
+        return CommandResult(returncode=0, stdout="", stderr="")
 
     def execute_skill(self, code, timeout=None, *, token):
         from pyapi.models import ExecutionStatus, VirtuosoResult
@@ -707,7 +722,7 @@ class GdsMiddle:
     def upload_file(self, local_path, remote_path, timeout=None, *, token, recursive=False):
         from pyapi.models import CommandResult
         self.uploads.append(str(remote_path))
-        return CommandResult(0, str(remote_path), "")
+        return CommandResult(returncode=0, stdout=str(remote_path), stderr="")
 
     def download_file(self, remote_path, local_path, timeout=None, *, token, recursive=False):
         from pyapi.models import CommandResult
@@ -716,7 +731,7 @@ class GdsMiddle:
         target = _Path(local_path)
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes(b"GDS" + b"0" * 64)
-        return CommandResult(0, str(target), "")
+        return CommandResult(returncode=0, stdout=str(target), stderr="")
 
 
 class TestLayoutGdsOrchestration(unittest.TestCase):
@@ -899,10 +914,18 @@ class ScreenshotMiddle:
         from pyapi.models import CommandResult
         self.commands.append(cmd)
         if cmd.startswith("mkdir -p"):
-            return CommandResult(self.mkdir_rc, "", "" if self.mkdir_rc == 0 else "mkdir boom")
+            return CommandResult(
+                returncode=self.mkdir_rc,
+                stdout="",
+                stderr="" if self.mkdir_rc == 0 else "mkdir boom",
+            )
         if "wc -c" in cmd:
-            return CommandResult(self.verify_rc, f"{self.verify_stdout}\n", "")
-        return CommandResult(0, "", "")
+            return CommandResult(
+                returncode=self.verify_rc,
+                stdout=f"{self.verify_stdout}\n",
+                stderr="",
+            )
+        return CommandResult(returncode=0, stdout="", stderr="")
 
     def execute_skill(self, code, timeout=None, *, token):
         from pyapi.models import ExecutionStatus, VirtuosoResult
@@ -916,8 +939,10 @@ class ScreenshotMiddle:
             target = Path(local_path)
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(self.download_bytes)
-            return CommandResult(0, str(target), "")
-        return CommandResult(self.download_rc, "", "download boom")
+            return CommandResult(returncode=0, stdout=str(target), stderr="")
+        return CommandResult(
+            returncode=self.download_rc, stdout="", stderr="download boom",
+        )
 
 
 class TestLayoutScreenshot(unittest.TestCase):
@@ -1021,26 +1046,31 @@ class GdsImportMiddle(GdsMiddle):
         from pyapi.models import CommandResult
         self.commands.append(cmd)
         if cmd.startswith("command -v strmin"):
-            return CommandResult(self.strmin_rc, "/usr/bin/strmin\n" if self.strmin_rc == 0 else "",
-                                 "" if self.strmin_rc == 0 else "not found")
+            return CommandResult(
+                returncode=self.strmin_rc,
+                stdout="/usr/bin/strmin\n" if self.strmin_rc == 0 else "",
+                stderr="" if self.strmin_rc == 0 else "not found",
+            )
         if "nohup strmin " in cmd:
-            return CommandResult(0, "launched\n", "")
+            return CommandResult(returncode=0, stdout="launched\n", stderr="")
         if cmd.startswith("tail -n 400"):
             if self.poll_rc != 0:
-                return CommandResult(self.poll_rc, "", "tail failed")
+                return CommandResult(returncode=self.poll_rc, stdout="", stderr="tail failed")
             if self.import_logs:
                 payload = self.import_logs.pop(0) if len(self.import_logs) > 1 else self.import_logs[0]
             else:
                 payload = self.import_log
-            return CommandResult(0, payload, "")
+            return CommandResult(returncode=0, stdout=payload, stderr="")
         return super().run_command(cmd, timeout, token=token, parallel=parallel)
 
     def upload_file(self, local_path, remote_path, timeout=None, *, token, recursive=False):
         from pyapi.models import CommandResult
         self.uploads.append(str(remote_path))
         if self.upload_rc != 0:
-            return CommandResult(self.upload_rc, "", "upload boom")
-        return CommandResult(0, str(remote_path), "")
+            return CommandResult(
+                returncode=self.upload_rc, stdout="", stderr="upload boom",
+            )
+        return CommandResult(returncode=0, stdout=str(remote_path), stderr="")
 
     def execute_skill(self, code, timeout=None, *, token):
         from pyapi.models import ExecutionStatus, VirtuosoResult

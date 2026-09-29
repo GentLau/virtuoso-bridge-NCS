@@ -58,27 +58,35 @@ class FakeMiddle:
             rc = self.list_rc
         else:
             rc = self.gui_rc
-        return CommandResult(rc, self.tree if "root -tree" in cmd else "", "err" if rc else "")
+        return CommandResult(
+            returncode=rc,
+            stdout=self.tree if "root -tree" in cmd else "",
+            stderr="err" if rc else "",
+        )
 
     def download_file(self, remote_path, local_path, timeout=None, *, token, recursive=False):
         self.calls.append(("download", remote_path, str(local_path), token))
-        return CommandResult(self.download_rc, "", "down err" if self.download_rc else "")
+        return CommandResult(
+            returncode=self.download_rc,
+            stdout="",
+            stderr="down err" if self.download_rc else "",
+        )
 
     def query(self, token):
         self.calls.append(("query", token))
         return self.query_result
 
     def execute_skill(self, skill_code, timeout=None, *, token):
-        return CommandResult(0, "", "")
+        return CommandResult(returncode=0, stdout="", stderr="")
 
     def run_command(self, cmd, timeout=None, *, token, parallel=False):
-        return CommandResult(0, "", "")
+        return CommandResult(returncode=0, stdout="", stderr="")
 
     def upload_file(self, local_path, remote_path, timeout=None, *, token, recursive=False):
-        return CommandResult(0, "", "")
+        return CommandResult(returncode=0, stdout="", stderr="")
 
     def run_spectre_command(self, cmd, timeout=None, *, token):
-        return CommandResult(0, "", "")
+        return CommandResult(returncode=0, stdout="", stderr="")
 
 
 class TestParse(unittest.TestCase):

@@ -42,12 +42,17 @@ class RecordingMiddle:
 
     def run_command(self, cmd, timeout=None, *, token, parallel=False):
         self.commands.append(cmd)
-        return CommandResult(self.returncode, "", self.stderr, "command")
+        return CommandResult(
+            returncode=self.returncode,
+            stdout="",
+            stderr=self.stderr,
+            kind="command",
+        )
 
     def download_file(self, remote, local, timeout=None, *, token, recursive=False):
         Path(local).parent.mkdir(parents=True, exist_ok=True)
         Path(local).write_text("gds", encoding="utf-8")
-        return CommandResult(0, "", "", "command")
+        return CommandResult(returncode=0, stdout="", stderr="", kind="command")
 
 
 def request(**overrides) -> L.GdsRequest:

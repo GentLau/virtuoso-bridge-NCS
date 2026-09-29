@@ -44,13 +44,17 @@ class TestTransportErrorSummaries(unittest.TestCase):
         self.assertIn("SSH connection to server-a failed", self.runner._summarize_ssh_transport_error(None))
 
     def test_describe_failure_prefers_known_translation(self):
-        r = CommandResult(255, "", "kex_exchange_identification: Connection closed")
+        r = CommandResult(
+            returncode=255,
+            stdout="",
+            stderr="kex_exchange_identification: Connection closed",
+        )
         text = self.runner.describe_ssh_command_failure("upload file", r)
         self.assertIn("Failed to upload file", text)
         self.assertIn("closed before login", text)
 
     def test_describe_failure_without_details(self):
-        r = CommandResult(1, "", "")
+        r = CommandResult(returncode=1, stdout="", stderr="")
         text = self.runner.describe_ssh_command_failure("run command", r)
         self.assertIn("Failed to run command", text)
         self.assertIn("SSH connection to server-a failed", text)

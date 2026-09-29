@@ -167,17 +167,19 @@ class WriteMiddle:
         from pyapi.models import CommandResult
         self.commands.append(cmd)
         if "*.cdslck" in cmd:
-            return CommandResult(0, "LOCK\n" if self.lock else "OK\n", "")
+            return CommandResult(
+                returncode=0, stdout="LOCK\n" if self.lock else "OK\n", stderr="",
+            )
         if "grep -cE" in cmd and "module" in cmd:
             # P-100：写前校验 cell 是否等于源码模块名（假中间件默认"能找到"）
-            return CommandResult(0, "1\n", "")
-        return CommandResult(0, "", "")
+            return CommandResult(returncode=0, stdout="1\n", stderr="")
+        return CommandResult(returncode=0, stdout="", stderr="")
 
     def upload_file(self, local_path, remote_path, timeout=None, *, token, recursive=False):
         from pathlib import Path as _Path
         from pyapi.models import CommandResult
         self.uploads[str(remote_path)] = _Path(local_path).read_text(encoding="utf-8")
-        return CommandResult(0, str(remote_path), "")
+        return CommandResult(returncode=0, stdout=str(remote_path), stderr="")
 
     def download_file(self, remote_path, local_path, timeout=None, *, token, recursive=False):
         from pathlib import Path as _Path
@@ -185,7 +187,7 @@ class WriteMiddle:
         target = _Path(local_path)
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(self.current_source, encoding="utf-8")
-        return CommandResult(0, str(target), "")
+        return CommandResult(returncode=0, stdout=str(target), stderr="")
 
 
 class TestVerilogWriteOrchestration(unittest.TestCase):
@@ -379,35 +381,41 @@ class CellModeMiddle(WriteMiddle):
         if remote.endswith("verilogIn.batch.log"):
             payload = self.batch_log if self.batch_log is not None else self.diag_log
             if payload is None:
-                return CommandResult(1, "", "missing", "path")
+                return CommandResult(
+                    returncode=1, stdout="", stderr="missing", kind="path",
+                )
             target.write_text(payload, encoding="utf-8")
-            return CommandResult(0, str(target), "")
+            return CommandResult(returncode=0, stdout=str(target), stderr="")
         if remote.endswith(".vb_verilog/verilogIn.batch.log"):
-            return CommandResult(1, "", "missing", "path")
+            return CommandResult(returncode=1, stdout="", stderr="missing", kind="path")
         if remote.endswith("xmvlog.log"):
             if not self.xmvlog:
-                return CommandResult(1, "", "missing", "path")
+                return CommandResult(returncode=1, stdout="", stderr="missing", kind="path")
             target.write_text(self.xmvlog, encoding="utf-8")
-            return CommandResult(0, str(target), "")
+            return CommandResult(returncode=0, stdout=str(target), stderr="")
         if "verilogIn.batch.log" in remote:
             if self.diag_log is None:
-                return CommandResult(1, "", "missing", "path")
+                return CommandResult(returncode=1, stdout="", stderr="missing", kind="path")
             target.write_text(self.diag_log, encoding="utf-8")
-            return CommandResult(0, str(target), "")
+            return CommandResult(returncode=0, stdout=str(target), stderr="")
         target.write_text(self.source, encoding="utf-8")
-        return CommandResult(0, str(target), "")
+        return CommandResult(returncode=0, stdout=str(target), stderr="")
 
     def run_command(self, cmd, timeout=None, *, token, parallel=False):
         from pyapi.models import CommandResult
         self.commands.append(cmd)
         if "*.cdslck" in cmd:
-            return CommandResult(0, "OK\n", "")
+            return CommandResult(returncode=0, stdout="OK\n", stderr="")
         if "grep -cE" in cmd and "module" in cmd:
             # P-100：写前校验 cell 是否等于源码模块名（假中间件默认"能找到"）
-            return CommandResult(0, "1\n", "")
+            return CommandResult(returncode=0, stdout="1\n", stderr="")
         if "ihdl" in cmd:
-            return CommandResult(self.ihdl_rc, "", "" if self.ihdl_rc == 0 else "ihdl boom")
-        return CommandResult(0, "", "")
+            return CommandResult(
+                returncode=self.ihdl_rc,
+                stdout="",
+                stderr="" if self.ihdl_rc == 0 else "ihdl boom",
+            )
+        return CommandResult(returncode=0, stdout="", stderr="")
 
 
 class TestVerilogReadCellMode(unittest.TestCase):

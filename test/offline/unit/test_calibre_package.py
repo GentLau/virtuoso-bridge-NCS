@@ -158,14 +158,24 @@ class FakeMiddle:
         if "###PATH" in text:  # check_env
             stdout = "###PATH\n/opt/eda/mentor/CALIBRE2025/bin/calibre\n###VERSION\nCalibre v2025.1_16.10\n###DECK\ndeck_file_ok\ndfm_ok\n"
         elif "si . -batch -command netlist" in text:  # auCdl 导出
-            return CommandResult(self.si_rc, "", "si boom" if self.si_rc else "", "command")
+            return CommandResult(
+                returncode=self.si_rc,
+                stdout="",
+                stderr="si boom" if self.si_rc else "",
+                kind="command",
+            )
         elif "wc -c <" in text:
             stdout = f"{self.netlist_bytes}\n" if self.netlist_bytes else ""
         elif "test -f" in text:
             stdout = "yes\n" if self.cds_lib_exists else "no\n"
         elif "cd" in text and "job.json" in text and "###JOB" in text:  # status snapshot
             if self.snapshot_rc != 0:
-                return CommandResult(self.snapshot_rc, "", "snapshot boom", "command")
+                return CommandResult(
+                    returncode=self.snapshot_rc,
+                    stdout="",
+                    stderr="snapshot boom",
+                    kind="command",
+                )
             marker = "CALIBRE::DRC-H COMPLETED" if self.completed else "FATAL ERROR: license"
             stdout = (
                 "###JOB\n{\"kind\": \"drc\", \"job_id\": \"drc_inv2\"}\n"
@@ -193,12 +203,17 @@ class FakeMiddle:
                       recursive=False) -> CommandResult:
         self.downloads.append(str(remote_path))
         if self.download_rc != 0:
-            return CommandResult(self.download_rc, "", "download boom", "command")
+            return CommandResult(
+                returncode=self.download_rc,
+                stdout="",
+                stderr="download boom",
+                kind="command",
+            )
         target = Path(local_path)
         if recursive and target.suffix == "":
             target.mkdir(parents=True, exist_ok=True)
             (target / "probe.txt").write_text("dir", encoding="utf-8")
-            return CommandResult(0, "", "", "command")
+            return CommandResult(returncode=0, stdout="", stderr="", kind="command")
         target.parent.mkdir(parents=True, exist_ok=True)
         if remote_path.endswith(".drc") or "calibre.lvs" in remote_path:
             content = self.deck_text
@@ -211,14 +226,18 @@ class FakeMiddle:
         else:
             content = "x\n"
         target.write_text(content, encoding="utf-8")
-        return CommandResult(0, "", "", "command")
+        return CommandResult(returncode=0, stdout="", stderr="", kind="command")
 
     def upload_file(self, local_path, remote_path, timeout=None, *, token,
                     recursive=False) -> CommandResult:
         self.uploads.append((str(local_path), str(remote_path)))
         assert Path(local_path).is_file(), f"upload source missing: {local_path}"
-        return CommandResult(self.upload_rc, "",
-                             "upload boom" if self.upload_rc else "", "command")
+        return CommandResult(
+            returncode=self.upload_rc,
+            stdout="",
+            stderr="upload boom" if self.upload_rc else "",
+            kind="command",
+        )
 
     def execute_skill(self, skill_code, timeout=None, *, token,
                       log_level=None, log_max_bytes=None) -> VirtuosoResult:
@@ -448,14 +467,15 @@ class PackageTests(unittest.TestCase):
                     self.commands.append(cmd)
                     if not self.launched:
                         # 预检查阶段：假装 run_dir 里还没有作业 → status_snapshot=None
-                        return CommandResult(0, "", "", "command")
+                        return CommandResult(returncode=0, stdout="", stderr="", kind="command")
                     return CommandResult(
-                        0,
-                        '###JOB\n{"kind": "drc", "job_id": "drc_inv2"}\n'
-                        '###PID\n4242\n###ALIVE\n4242\n'
-                        '###LOGS\n== drc.log\nstill running\n'
-                        '###FILES\njob.json\n',
-                        "", "command",
+                        returncode=0,
+                        stdout='###JOB\n{"kind": "drc", "job_id": "drc_inv2"}\n'
+                               '###PID\n4242\n###ALIVE\n4242\n'
+                               '###LOGS\n== drc.log\nstill running\n'
+                               '###FILES\njob.json\n',
+                        stderr="",
+                        kind="command",
                     )
                 return super().run_command(cmd, timeout=timeout, token=token,
                                            parallel=parallel)
@@ -529,7 +549,7 @@ class PackageTests(unittest.TestCase):
                 target.write_text("*lvsRulesFile: /pdk/calibre.lvs\n"
                                   "*lvsRunDir: /simulation/SUSER/extract/lvs\n"
                                   "*lvsLayoutPrimary: inv2\n", encoding="utf-8")
-                return CommandResult(0, "", "", "command")
+                return CommandResult(returncode=0, stdout="", stderr="", kind="command")
             return original(remote_path, local_path, timeout, token=token, recursive=recursive)
 
         middle.download_file = with_runset
@@ -691,10 +711,10 @@ class PackageTests(unittest.TestCase):
                 if "test -f" in cmd:
                     self.commands.append(cmd)
                     if "DRC.rep" in cmd:
-                        return CommandResult(0, "no\n", "", "command")
+                        return CommandResult(returncode=0, stdout="no\n", stderr="", kind="command")
                     if "job.json" in cmd or "renamed.report" in cmd:
-                        return CommandResult(0, "yes\n", "", "command")
-                    return CommandResult(0, "no\n", "", "command")
+                        return CommandResult(returncode=0, stdout="yes\n", stderr="", kind="command")
+                    return CommandResult(returncode=0, stdout="no\n", stderr="", kind="command")
                 return super().run_command(cmd, timeout=timeout, token=token,
                                            parallel=parallel)
 
@@ -707,10 +727,10 @@ class PackageTests(unittest.TestCase):
                     target.write_text(
                         '{"kind": "drc", "job_id": "drc_lay_e2e", '
                         '"report_file": "renamed.report"}', encoding="utf-8")
-                    return CommandResult(0, "", "", "command")
+                    return CommandResult(returncode=0, stdout="", stderr="", kind="command")
                 if s.endswith("renamed.report"):
                     target.write_text(DRC_REPORT, encoding="utf-8")
-                    return CommandResult(0, "", "", "command")
+                    return CommandResult(returncode=0, stdout="", stderr="", kind="command")
                 return super().download_file(remote_path, local_path, timeout=timeout,
                                              token=token, recursive=recursive)
 
@@ -727,14 +747,19 @@ class PackageTests(unittest.TestCase):
             def run_command(self, cmd, timeout=None, *, token, parallel=False):
                 if "ls -1t" in cmd:
                     self.commands.append(cmd)
-                    return CommandResult(0, "scan_found.report\n", "", "command")
+                    return CommandResult(
+                        returncode=0,
+                        stdout="scan_found.report\n",
+                        stderr="",
+                        kind="command",
+                    )
                 if "test -f" in cmd:
                     self.commands.append(cmd)
                     if "DRC.rep" in cmd:
-                        return CommandResult(0, "no\n", "", "command")
+                        return CommandResult(returncode=0, stdout="no\n", stderr="", kind="command")
                     if "job.json" in cmd or "scan_found.report" in cmd:
-                        return CommandResult(0, "yes\n", "", "command")
-                    return CommandResult(0, "no\n", "", "command")
+                        return CommandResult(returncode=0, stdout="yes\n", stderr="", kind="command")
+                    return CommandResult(returncode=0, stdout="no\n", stderr="", kind="command")
                 return super().run_command(cmd, timeout=timeout, token=token,
                                            parallel=parallel)
 
@@ -747,10 +772,10 @@ class PackageTests(unittest.TestCase):
                     # 没有 report_file 键 → 必须走 glob 扫描回退
                     target.write_text('{"kind": "drc", "job_id": "drc_lay_e2e"}',
                                       encoding="utf-8")
-                    return CommandResult(0, "", "", "command")
+                    return CommandResult(returncode=0, stdout="", stderr="", kind="command")
                 if s.endswith("scan_found.report"):
                     target.write_text(DRC_REPORT, encoding="utf-8")
-                    return CommandResult(0, "", "", "command")
+                    return CommandResult(returncode=0, stdout="", stderr="", kind="command")
                 return super().download_file(remote_path, local_path, timeout=timeout,
                                              token=token, recursive=recursive)
 

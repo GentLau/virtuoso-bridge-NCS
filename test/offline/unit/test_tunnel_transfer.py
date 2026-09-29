@@ -25,8 +25,8 @@ class FakeRunner:
         self.kwargs = kwargs
         self.calls = []
         self.command_results = {}
-        self.upload_result = CommandResult(0, "", "")
-        self.download_result = CommandResult(0, "", "")
+        self.upload_result = CommandResult(returncode=0, stdout="", stderr="")
+        self.download_result = CommandResult(returncode=0, stdout="", stderr="")
         self.sha256_value = None
         self.download_payload = None
         self.remote_kind = "missing"
@@ -54,18 +54,20 @@ class FakeRunner:
         if cmd in self.command_results:
             return self.command_results[cmd]
         if "$HOME" in cmd:
-            return CommandResult(0, "/home/alice", "")
+            return CommandResult(returncode=0, stdout="/home/alice", stderr="")
         if cmd.startswith("sha256sum"):
             path = cmd.split()[-1].strip("'")
             digest = self.sha256_value or hashlib.sha256(path.encode()).hexdigest()
-            return CommandResult(0, f"{digest}  {path}", "")
+            return CommandResult(returncode=0, stdout=f"{digest}  {path}", stderr="")
         if cmd.startswith("if [ -d"):
-            return CommandResult(0, self.remote_kind, "")
-        return self.command_results.get(cmd, CommandResult(0, "", ""))
+            return CommandResult(returncode=0, stdout=self.remote_kind, stderr="")
+        return self.command_results.get(
+            cmd, CommandResult(returncode=0, stdout="", stderr=""),
+        )
 
     def upload_text(self, *a, **k):
         self.calls.append(("upload_text", a, k))
-        return CommandResult(0, "", "")
+        return CommandResult(returncode=0, stdout="", stderr="")
 
     def upload(self, *a, **k):
         self.calls.append(("upload", a, k))
@@ -153,7 +155,9 @@ class TestRemoteClientTransport(unittest.TestCase):
             client = RemoteClient(entry, resolve(entry), "alice")
             # one-shot channels (digest check) reuse the role runner here
             client._one_shot_runner = client._runner
-            client.file_runner.upload_result = CommandResult(1, "", "upload boom")
+            client.file_runner.upload_result = CommandResult(
+                returncode=1, stdout="", stderr="upload boom",
+            )
             res = client.upload_file(local, "/remote/p.bin")
         self.assertEqual(res.returncode, 1)
         self.assertIn("boom", res.stderr)
@@ -261,7 +265,9 @@ class TestRemoteClientEdges(unittest.TestCase):
             # one-shot channels (digest check) reuse the role runner here
             client._one_shot_runner = client._runner
             client.skill_runner.command_results = {}
-            client.skill_runner.run_command = lambda *a, **k: CommandResult(1, "", "mkdir boom")
+            client.skill_runner.run_command = lambda *a, **k: CommandResult(
+                returncode=1, stdout="", stderr="mkdir boom",
+            )
             with self.assertRaises(RuntimeError):
                 client.deploy(python_major=3)
 
@@ -272,7 +278,9 @@ class TestRemoteClientEdges(unittest.TestCase):
             client = RemoteClient(entry, resolve(entry), "alice")
             # one-shot channels (digest check) reuse the role runner here
             client._one_shot_runner = client._runner
-            client.skill_runner.upload_text = lambda *a, **k: CommandResult(1, "", "upload boom")
+            client.skill_runner.upload_text = lambda *a, **k: CommandResult(
+                returncode=1, stdout="", stderr="upload boom",
+            )
             with self.assertRaises(RuntimeError):
                 client.deploy(python_major=3)
 
@@ -312,7 +320,9 @@ class TestRemoteClientEdges(unittest.TestCase):
             # one-shot channels (digest check) reuse the role runner here
             client._one_shot_runner = client._runner
             client.file_runner.remote_kind = "file"  # 源是常规文件（§4.6）
-            client.file_runner.download_result = CommandResult(1, "", "download boom")
+            client.file_runner.download_result = CommandResult(
+                returncode=1, stdout="", stderr="download boom",
+            )
             res = client.download_file("/remote/p.bin", Path(tempfile.mkdtemp(prefix="vb-")) / "p.bin")
         self.assertIn("download boom", res.stderr)
 
@@ -338,7 +348,9 @@ class TestRemoteClientEdges(unittest.TestCase):
             client = RemoteClient(entry, resolve(entry), "alice")
             # one-shot channels (digest check) reuse the role runner here
             client._one_shot_runner = client._runner
-            client.file_runner.run_one_shot = lambda *a, **k: CommandResult(1, "", "sha boom")
+            client.file_runner.run_one_shot = lambda *a, **k: CommandResult(
+                returncode=1, stdout="", stderr="sha boom",
+            )
             res = client._verify("/remote/p.bin", b"abc")
         self.assertIn("sha boom", res.stderr)
 
@@ -349,7 +361,9 @@ class TestRemoteClientEdges(unittest.TestCase):
             client = RemoteClient(entry, resolve(entry), "alice")
             # one-shot channels (digest check) reuse the role runner here
             client._one_shot_runner = client._runner
-            client.file_runner.run_one_shot = lambda *a, **k: CommandResult(0, "deadbeef  /remote/p.bin", "")
+            client.file_runner.run_one_shot = lambda *a, **k: CommandResult(
+                returncode=0, stdout="deadbeef  /remote/p.bin", stderr="",
+            )
             res = client._verify("/remote/p.bin", b"abc")
         self.assertEqual(res.returncode, 1)
         self.assertIn("sha256 mismatch", res.stderr)
@@ -439,7 +453,9 @@ class TestRemoteClientRecursiveUpload(unittest.TestCase):
                 if cmd.startswith("sha256sum"):
                     # real ``sha256sum <dir>`` fails exactly like this
                     return CommandResult(
-                        1, "", "sha256sum: /remote/dir: Is a directory"
+                        returncode=1,
+                        stdout="",
+                        stderr="sha256sum: /remote/dir: Is a directory",
                     )
                 return original(cmd, timeout=timeout)
 
@@ -533,7 +549,9 @@ class TestRemoteClientRecursiveUpload(unittest.TestCase):
             client = RemoteClient(entry, resolve(entry), "alice")
             client._one_shot_runner = client._runner
             runner = client.file_runner
-            runner.run_command = lambda cmd, timeout=None: CommandResult(0, "", "")
+            runner.run_command = lambda cmd, timeout=None: CommandResult(
+                returncode=0, stdout="", stderr="",
+            )
             error, digest = client._remote_sha256(
                 client.targets.file, "/remote/p.bin", 5
             )

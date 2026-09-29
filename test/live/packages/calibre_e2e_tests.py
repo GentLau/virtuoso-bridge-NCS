@@ -106,7 +106,7 @@ def _op(transport, operation: str, **fields: Any) -> Any:
     response = transport.call({"operation": operation, "token": TOKEN, **fields})
     if not response.get("ok"):
         raise AssertionError(f"{operation} failed: {response.get('error')}")
-    return _c1_wrapper(response)
+    return response
 
 
 def _value(transport, operation: str, **fields: Any) -> dict[str, Any]:
@@ -175,8 +175,8 @@ def _cdl_counts(transport, path: str) -> tuple[int, int]:
     """远端 CDL 的 (subckt 数, 器件行数)——只看计数，不整份下载。"""
     cmd = ("awk '/^\\.SUBCKT/{s++} /^[Mm][^ ]+ +/{d++} END{printf \"%d %d\", s, d}' "
            f"{path}")
-    result = _op(transport, "basic.command.run", cmd=cmd).get("result") or ["", ""]
-    stdout = result[1] if len(result) > 1 else ""
+    result = _op(transport, "basic.command.run", cmd=cmd).get("result") or {}
+    stdout = str(result.get("stdout") or "")
     parts = stdout.split()
     if len(parts) != 2 or not all(part.isdigit() for part in parts):
         raise AssertionError(f"cdl 计数不可解析: {stdout!r}")
@@ -291,7 +291,7 @@ def _case_set_file(transport) -> None:
     probe = _op(transport, "basic.command.run",
                 cmd=f"ls {run_dir}/_calibre.lvs_ >/dev/null 2>&1 && echo ctrl_ok; "
                     f"ls {run_dir}/inv2.lvs.report >/dev/null 2>&1 && echo report_ok")
-    probe_out = (probe.get("result") or ["", ""])[1]
+    probe_out = str((probe.get("result") or {}).get("stdout") or "")
     _check("ctrl_ok" in probe_out, f"缺 Calibre 生成的 control file：{probe_out!r}")
     _check("report_ok" in probe_out, f"缺 set 指定名字的报告：{probe_out!r}")
 
@@ -364,19 +364,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
-
-# --- C1 兼容垫片（2026-09-29，C3）------------------------------------------------
-# C1（2f88853）起：业务载荷直返顶层（值型 `value`、命令/skill 型 `result`）、
-# 成功默认省略 `steps`、失败壳去掉 `data`。历史 TB 按 `response["data"]` 解析，
-# 本垫片把新契约响应合成为旧 `data` 壳，让既有解析零改动继续工作。
-def _c1_wrapper(body):
-    if not isinstance(body, dict):
-        return {}
-    if isinstance(body.get("data"), dict):
-        return body["data"]
-    wrapped = {"ok": body.get("ok"), "error": body.get("error")}
-    for key in ("value", "result", "steps"):
-        if key in body:
-            wrapped[key] = body[key]
-    return wrapped

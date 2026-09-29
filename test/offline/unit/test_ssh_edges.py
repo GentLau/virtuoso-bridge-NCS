@@ -248,7 +248,9 @@ class TestRunnerDelegation(unittest.TestCase):
                 ssh_mod, "build_tar_upload_plans", return_value=(plan,)
             ) as builder, mock.patch.object(
                 runner, "_execute_tar_upload_plans",
-                return_value=CommandResult(1, "", "tar failed"),
+                return_value=CommandResult(
+                    returncode=1, stdout="", stderr="tar failed",
+                ),
             ):
                 result = runner.upload(local, "/remote/f.bin")
         self.assertEqual(result.returncode, 1)
@@ -259,9 +261,9 @@ class TestRunnerDelegation(unittest.TestCase):
         good = TarUploadPlan(("tar",), "a", "/r", 1)
         bad = TarUploadPlan(("tar",), "b", "/r", 1)
         results = [
-            CommandResult(0, "", ""),
-            CommandResult(2, "", "boom"),
-            CommandResult(0, "", ""),
+            CommandResult(returncode=0, stdout="", stderr=""),
+            CommandResult(returncode=2, stdout="", stderr="boom"),
+            CommandResult(returncode=0, stdout="", stderr=""),
         ]
         with mock.patch.object(
             runner, "_execute_openssh_upload_plan", side_effect=results
@@ -426,7 +428,9 @@ class TestDownloadEdges(unittest.TestCase):
             with mock.patch.object(
                 runner, "_run_openssh_download_attempt",
                 return_value=CommandResult(
-                    1, "", "tar: /remote/dir: Cannot open: No such file or directory"
+                    returncode=1,
+                    stdout="",
+                    stderr="tar: /remote/dir: Cannot open: No such file or directory",
                 ),
             ):
                 result = runner._execute_openssh_download_plan(
@@ -594,7 +598,9 @@ class TestPersistentShellLifecycle(unittest.TestCase):
         runner._paramiko_backend = backend
         with mock.patch.object(
             runner, "_run_command_via_persistent_shell_locked",
-            return_value=CommandResult(1, "", "probe failed"),
+            return_value=CommandResult(
+                returncode=1, stdout="", stderr="probe failed",
+            ),
         ), mock.patch.object(
             runner, "_close_persistent_shell_locked"
         ) as closer:
@@ -667,7 +673,9 @@ class TestSummariesAndRetryPredicates(unittest.TestCase):
     def test_describe_failure_uses_summary_then_rc(self):
         runner = _runner()
         summarized = runner.describe_ssh_command_failure(
-            "upload", CommandResult(255, "", "Permission denied (publickey)")
+            "upload", CommandResult(
+                returncode=255, stdout="", stderr="Permission denied (publickey)",
+            )
         )
         self.assertIn("Failed to upload", summarized)
         self.assertIn("authentication failed", summarized)
@@ -677,7 +685,7 @@ class TestSummariesAndRetryPredicates(unittest.TestCase):
             runner, "_summarize_ssh_transport_error", return_value=""
         ):
             generic = runner.describe_ssh_command_failure(
-                "upload", CommandResult(17, "", "")
+                "upload", CommandResult(returncode=17, stdout="", stderr="")
             )
         self.assertIn("code 17", generic)
 
@@ -736,7 +744,7 @@ class TestPersistentShellRetry(unittest.TestCase):
         with mock.patch.object(runner, "ensure_persistent_shell"), \
                 mock.patch.object(
                     runner, "_run_command_via_persistent_shell_locked",
-                    return_value=CommandResult(0, "ok", ""),
+                    return_value=CommandResult(returncode=0, stdout="ok", stderr=""),
                 ):
             result = runner._run_via_persistent_shell_with_retry("echo ok")
         self.assertEqual(result.stdout, "ok")
@@ -745,7 +753,7 @@ class TestPersistentShellRetry(unittest.TestCase):
         runner = self._runner_with_shell()
         attempts = [
             RuntimeError("failed to write to persistent ssh shell"),
-            CommandResult(0, "second", ""),
+            CommandResult(returncode=0, stdout="second", stderr=""),
         ]
 
         def run(*_args, **_kwargs):
@@ -769,7 +777,7 @@ class TestPersistentShellRetry(unittest.TestCase):
         runner = self._runner_with_shell()
         attempts = [
             RuntimeError("persistent ssh shell exited unexpectedly"),
-            CommandResult(0, "second", ""),
+            CommandResult(returncode=0, stdout="second", stderr=""),
         ]
 
         def run(*_args, **_kwargs):
@@ -1323,7 +1331,9 @@ class TestRunRemoteTask(unittest.TestCase):
 
     def test_upload_failure_short_circuits(self):
         runner = mock.Mock()
-        runner.upload_batch.return_value = CommandResult(1, "", "upload boom")
+        runner.upload_batch.return_value = CommandResult(
+            returncode=1, stdout="", stderr="upload boom",
+        )
         with tempfile.TemporaryDirectory() as tmp:
             local = Path(tmp) / "f.bin"
             local.write_bytes(b"x")
@@ -1349,7 +1359,9 @@ class TestRunRemoteTask(unittest.TestCase):
             ):
                 with self.subTest(error=type(error).__name__):
                     runner = mock.Mock()
-                    runner.upload_batch.return_value = CommandResult(0, "", "")
+                    runner.upload_batch.return_value = CommandResult(
+                        returncode=0, stdout="", stderr="",
+                    )
                     runner.run_command.side_effect = error
                     result = ssh_mod.run_remote_task(
                         runner,
@@ -1366,8 +1378,12 @@ class TestRunRemoteTask(unittest.TestCase):
             local = Path(tmp) / "f.bin"
             local.write_bytes(b"x")
             runner = mock.Mock()
-            runner.upload_batch.return_value = CommandResult(0, "", "")
-            runner.run_command.return_value = CommandResult(0, "ok", "")
+            runner.upload_batch.return_value = CommandResult(
+                returncode=0, stdout="", stderr="",
+            )
+            runner.run_command.return_value = CommandResult(
+                returncode=0, stdout="ok", stderr="",
+            )
             result = ssh_mod.run_remote_task(
                 runner,
                 work_dir_base="/tmp/work",

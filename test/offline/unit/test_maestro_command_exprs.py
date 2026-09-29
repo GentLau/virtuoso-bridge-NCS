@@ -294,7 +294,9 @@ class WriteMiddle:
     def upload_file(self, local_path, remote_path, timeout=None, *, token, recursive=False):
         self.uploads.append(str(remote_path))
         from pyapi.models import CommandResult
-        return CommandResult(0, str(remote_path), "", "command")
+        return CommandResult(
+            returncode=0, stdout=str(remote_path), stderr="", kind="command",
+        )
 
     def execute_skill(self, code, timeout=None, *, token):
         self.calls.append(code)

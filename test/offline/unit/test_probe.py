@@ -23,7 +23,7 @@ class FakeRunner:
         self.commands.append(cmd)
         if self.responses:
             return self.responses.pop(0)
-        return CommandResult(0, "", "")
+        return CommandResult(returncode=0, stdout="", stderr="")
 
 
 class TestProbeHelpers(unittest.TestCase):
@@ -54,13 +54,19 @@ class TestProbeHelpers(unittest.TestCase):
     def test_remote_python_version_parses_interpreter_output(self) -> None:
         from register import probe as probes
 
-        runner = FakeRunner([CommandResult(0, "Python 3.6.8\n", "")])
+        runner = FakeRunner([CommandResult(
+            returncode=0, stdout="Python 3.6.8\n", stderr="",
+        )])
         self.assertEqual(
             probes.remote_python_version(runner, "python3"), (3, 6, 8)
         )
-        runner = FakeRunner([CommandResult(1, "", "not found")])
+        runner = FakeRunner([CommandResult(
+            returncode=1, stdout="", stderr="not found",
+        )])
         self.assertIsNone(probes.remote_python_version(runner, "nope"))
-        runner = FakeRunner([CommandResult(0, "garbage output", "")])
+        runner = FakeRunner([CommandResult(
+            returncode=0, stdout="garbage output", stderr="",
+        )])
         self.assertIsNone(probes.remote_python_version(runner, "weird"))
 
     def test_local_helpers(self) -> None:
@@ -84,10 +90,10 @@ class TestProbeHelpers(unittest.TestCase):
     def test_remote_probes_with_fake_runner(self) -> None:
         from register import probe as probes
         runner = FakeRunner([
-            CommandResult(0, "host-a.example.com\n", ""),   # hostname -f
-            CommandResult(0, "alice\n", ""),               # whoami
-            CommandResult(0, "uid=1000(alice)\n", ""),     # id alice
-            CommandResult(0, "", ""),                       # mkdir + test -w
+            CommandResult(returncode=0, stdout="host-a.example.com\n", stderr=""),  # hostname -f
+            CommandResult(returncode=0, stdout="alice\n", stderr=""),              # whoami
+            CommandResult(returncode=0, stdout="uid=1000(alice)\n", stderr=""),    # id alice
+            CommandResult(returncode=0, stdout="", stderr=""),                     # mkdir + test -w
         ])
         self.assertEqual(probes.remote_hostname(runner), "host-a.example.com")
         self.assertEqual(probes.remote_user(runner), "alice")
@@ -181,44 +187,52 @@ class TestProbeHelpers(unittest.TestCase):
             self.assertFalse(probes.ssh_port_is_22("alias"))
 
     def test_detect_cadence_python3(self) -> None:
-        runner = FakeRunner([CommandResult(0, "CMD:/opt/x/python3 3.9.5\n", "")])
+        runner = FakeRunner([CommandResult(
+            returncode=0, stdout="CMD:/opt/x/python3 3.9.5\n", stderr="",
+        )])
         self.assertEqual(detect_remote_python(runner), ("/opt/x/python3", 3))
 
     def test_detect_python27(self) -> None:
-        runner = FakeRunner([CommandResult(0, "CMD:/opt/x/python2.7 2.7.18\n", "")])
+        runner = FakeRunner([CommandResult(
+            returncode=0, stdout="CMD:/opt/x/python2.7 2.7.18\n", stderr="",
+        )])
         self.assertEqual(detect_remote_python(runner), ("/opt/x/python2.7", 2))
 
     def test_detect_accepts_oldest_supported_36_8(self) -> None:
-        runner = FakeRunner([CommandResult(0, "CMD:/opt/x/python3.6 3.6.8\n", "")])
+        runner = FakeRunner([CommandResult(
+            returncode=0, stdout="CMD:/opt/x/python3.6 3.6.8\n", stderr="",
+        )])
         self.assertEqual(detect_remote_python(runner), ("/opt/x/python3.6", 3))
 
     def test_detect_unsupported_version_returns_none(self) -> None:
         """r17: 探测到的解释器不在窗口内 → 返回 None，由注册报错让用户显式指定。"""
         runner = FakeRunner([
-            CommandResult(0, "CMD:/opt/old/python 2.6.9\n", ""),
-            CommandResult(1, "", "missing"),   # fallback python3
-            CommandResult(1, "", "missing"),   # fallback python
-            CommandResult(1, "", "missing"),   # fallback python2.7
-            CommandResult(1, "", "missing"),   # fallback python2
+            CommandResult(returncode=0, stdout="CMD:/opt/old/python 2.6.9\n", stderr=""),
+            CommandResult(returncode=1, stdout="", stderr="missing"),  # fallback python3
+            CommandResult(returncode=1, stdout="", stderr="missing"),  # fallback python
+            CommandResult(returncode=1, stdout="", stderr="missing"),  # fallback python2.7
+            CommandResult(returncode=1, stdout="", stderr="missing"),  # fallback python2
         ])
         self.assertIsNone(detect_remote_python(runner))
 
     def test_detect_falls_back_to_path(self) -> None:
         runner = FakeRunner([
-            CommandResult(0, "", ""),                 # one-shot found nothing
-            CommandResult(1, "", "no python3"),       # python3 missing
-            CommandResult(0, "2.7.18", ""),           # python works
+            CommandResult(returncode=0, stdout="", stderr=""),          # one-shot found nothing
+            CommandResult(returncode=1, stdout="", stderr="no python3"),  # python3 missing
+            CommandResult(returncode=0, stdout="2.7.18", stderr=""),      # python works
         ])
         self.assertEqual(detect_remote_python(runner), ("python", 2))
 
     def test_allocate_port_batch(self) -> None:
-        runner = FakeRunner([CommandResult(0, "65083\n", "")])
+        runner = FakeRunner([CommandResult(
+            returncode=0, stdout="65083\n", stderr="",
+        )])
         self.assertEqual(allocate_remote_port(runner, "python3"), 65083)
 
     def test_allocate_port_falls_back_to_single_checks(self) -> None:
         runner = FakeRunner([
-            CommandResult(1, "", "no ports"),   # batch probe failed
-            CommandResult(0, "", ""),           # first single check succeeds
+            CommandResult(returncode=1, stdout="", stderr="no ports"),  # batch probe failed
+            CommandResult(returncode=0, stdout="", stderr=""),          # first single check succeeds
         ])
         self.assertEqual(allocate_remote_port(runner, "python3"), 65081)
 
@@ -229,16 +243,20 @@ class TestProbeHelpers(unittest.TestCase):
         self.assertTrue(65081 <= port < 65131)
 
     def test_allocate_remote_port_respects_reserved(self) -> None:
-        runner = FakeRunner([CommandResult(0, "65082\n", "")])
+        runner = FakeRunner([CommandResult(
+            returncode=0, stdout="65082\n", stderr="",
+        )])
         self.assertEqual(allocate_remote_port(runner, "python3", reserved={65081}), 65082)
         self.assertIn("65081", runner.commands[0])  # reserved set baked into probe
 
 
     def test_detect_remote_spectre(self) -> None:
         from register import probe as probes
-        runner = FakeRunner([CommandResult(0, "/opt/cad/bin/spectre\n", "")])
+        runner = FakeRunner([CommandResult(
+            returncode=0, stdout="/opt/cad/bin/spectre\n", stderr="",
+        )])
         self.assertEqual(probes.detect_remote_spectre(runner), "/opt/cad/bin/spectre")
-        runner2 = FakeRunner([CommandResult(0, "", "")])
+        runner2 = FakeRunner([CommandResult(returncode=0, stdout="", stderr="")])
         self.assertIsNone(probes.detect_remote_spectre(runner2))
 
     def test_detect_local_spectre_returns_path_or_none(self) -> None:

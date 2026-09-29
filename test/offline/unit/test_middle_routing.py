@@ -51,13 +51,13 @@ class FakeRemoteClient:
         self.ensure_tunnel_deadline = deadline
 
     def run_command(self, cmd, timeout=None, parallel=False):
-        return CommandResult(0, f"remote:{cmd}:{parallel}", "")
+        return CommandResult(returncode=0, stdout=f"remote:{cmd}:{parallel}", stderr="")
 
     def upload_file(self, local_path, remote_path, timeout=None, recursive=False):
-        return CommandResult(0, str(local_path), "")
+        return CommandResult(returncode=0, stdout=str(local_path), stderr="")
 
     def download_file(self, remote_path, local_path, timeout=None, recursive=False):
-        return CommandResult(0, str(local_path), "")
+        return CommandResult(returncode=0, stdout=str(local_path), stderr="")
 
 
 class FakeSkillClient:

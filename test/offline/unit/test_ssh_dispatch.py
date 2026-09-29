@@ -52,7 +52,9 @@ class TestRunCommandDispatch(unittest.TestCase):
         r = openssh_runner()
         r._persistent_shell_enabled = True
         with mock.patch.object(SSHRunner, "_run_via_persistent_shell_with_retry",
-                               return_value=CommandResult(0, "shell", "")) as shell:
+                               return_value=CommandResult(
+                                   returncode=0, stdout="shell", stderr="",
+                               )) as shell:
             res = r.run_command("echo hi", timeout=5)
         self.assertEqual(res.stdout, "shell")
         shell.assert_called_once()
@@ -73,7 +75,9 @@ class TestRunCommandDispatch(unittest.TestCase):
         with mock.patch.object(SSHRunner, "_run_via_persistent_shell_with_retry",
                                side_effect=RuntimeError("shell died before delivery")), \
              mock.patch.object(SSHRunner, "_run_command_once",
-                               return_value=CommandResult(0, "one-shot", "")) as once:
+                               return_value=CommandResult(
+                                   returncode=0, stdout="one-shot", stderr="",
+                               )) as once:
             res = r.run_command("echo hi", timeout=5)
         self.assertEqual(res.stdout, "one-shot")
         once.assert_called_once()
@@ -131,7 +135,9 @@ class TestUploadText(unittest.TestCase):
         r = openssh_runner()
         r._persistent_shell_enabled = True
         with mock.patch.object(SSHRunner, "_run_via_persistent_shell_with_retry",
-                               return_value=CommandResult(0, "", "")) as shell:
+                               return_value=CommandResult(
+                                   returncode=0, stdout="", stderr="",
+                               )) as shell:
             res = r.upload_text("payload", "/tmp/x.txt", timeout=5)
         self.assertEqual(res.returncode, 0)
         self.assertIn("base64", shell.call_args.args[0])

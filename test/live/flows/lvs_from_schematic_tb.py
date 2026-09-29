@@ -75,7 +75,7 @@ def op(operation: str, token: str, **fields: Any) -> Any:
     response = call({"operation": operation, "token": token, **fields})
     if not response.get("ok"):
         raise TbError(f"{operation}: {response.get('error')}")
-    return _c1_wrapper(response)
+    return response
 
 
 def sha256_file(path: Path) -> str:
@@ -91,13 +91,11 @@ def sha256_text(text: str) -> str:
 
 
 def cmd_stdout(data: Any) -> str:
-    """``basic.command.run`` 的 data.result 是 CommandResult 序列化后的 list。"""
+    """``basic.command.run`` 的 result 是具名 CommandResult 对象。"""
     if isinstance(data, dict):
         result = data.get("result")
-        if isinstance(result, list) and len(result) >= 2:
-            return str(result[1])
         if isinstance(result, dict):
-            return str(result.get("stdout", ""))
+            return str(result.get("stdout") or "")
     return ""
 
 
@@ -379,19 +377,3 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
-
-# --- C1 兼容垫片（2026-09-29，C3）------------------------------------------------
-# C1（2f88853）起：业务载荷直返顶层（值型 `value`、命令/skill 型 `result`）、
-# 成功默认省略 `steps`、失败壳去掉 `data`。历史 TB 按 `response["data"]` 解析，
-# 本垫片把新契约响应合成为旧 `data` 壳，让既有解析零改动继续工作。
-def _c1_wrapper(body):
-    if not isinstance(body, dict):
-        return {}
-    if isinstance(body.get("data"), dict):
-        return body["data"]
-    wrapped = {"ok": body.get("ok"), "error": body.get("error")}
-    for key in ("value", "result", "steps"):
-        if key in body:
-            wrapped[key] = body[key]
-    return wrapped

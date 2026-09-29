@@ -207,7 +207,9 @@ class TestOneShotRunCommand(unittest.TestCase):
         with mock.patch.object(ssh_mod.subprocess, "run") as run:
             run.return_value = mock.Mock(returncode=0, stdout=b"out\n", stderr=b"")
             res = r.run_command("echo hi")
-        self.assertEqual(res, CommandResult(0, "out\n", "", kind="command"))
+        self.assertEqual(res, CommandResult(
+            returncode=0, stdout="out\n", stderr="", kind="command",
+        ))
         self.assertTrue(run.called)
 
     def test_timeout_raises(self):
@@ -683,9 +685,15 @@ class TestRetryAndFallback(unittest.TestCase):
 
     def test_describe_failure(self):
         r = SSHRunner("server")
-        text = r.describe_ssh_command_failure("upload", CommandResult(255, "", "Permission denied"))
+        text = r.describe_ssh_command_failure(
+            "upload", CommandResult(
+                returncode=255, stdout="", stderr="Permission denied",
+            )
+        )
         self.assertIn("authentication failed", text)
-        text2 = r.describe_ssh_command_failure("upload", CommandResult(1, "", ""))
+        text2 = r.describe_ssh_command_failure(
+            "upload", CommandResult(returncode=1, stdout="", stderr="")
+        )
         self.assertIn("Failed to upload", text2)
 
 
@@ -705,7 +713,9 @@ class TestRunRemoteTask(unittest.TestCase):
 
     def test_upload_failure(self):
         runner = mock.Mock()
-        runner.upload_batch.return_value = CommandResult(1, "", "upload boom")
+        runner.upload_batch.return_value = CommandResult(
+            returncode=1, stdout="", stderr="upload boom",
+        )
         local = Path(self.wd) / "a.txt"
         local.write_text("x", encoding="utf-8")
         res = ssh_mod.run_remote_task(
@@ -716,8 +726,12 @@ class TestRunRemoteTask(unittest.TestCase):
 
     def test_success(self):
         runner = mock.Mock()
-        runner.upload_batch.return_value = CommandResult(0, "", "")
-        runner.run_command.return_value = CommandResult(0, "done", "")
+        runner.upload_batch.return_value = CommandResult(
+            returncode=0, stdout="", stderr="",
+        )
+        runner.run_command.return_value = CommandResult(
+            returncode=0, stdout="done", stderr="",
+        )
         local = Path(self.wd) / "a.txt"
         local.write_text("x", encoding="utf-8")
         res = ssh_mod.run_remote_task(
@@ -729,7 +743,9 @@ class TestRunRemoteTask(unittest.TestCase):
 
     def test_command_timeout(self):
         runner = mock.Mock()
-        runner.upload_batch.return_value = CommandResult(0, "", "")
+        runner.upload_batch.return_value = CommandResult(
+            returncode=0, stdout="", stderr="",
+        )
         runner.run_command.side_effect = subprocess.TimeoutExpired("ssh", 1)
         local = Path(self.wd) / "a.txt"
         local.write_text("x", encoding="utf-8")
@@ -840,7 +856,10 @@ class TestEnsurePersistentShell(unittest.TestCase):
         proc.stdin = mock.Mock()
         proc.stdout = mock.Mock()
         with mock.patch.object(ssh_mod.subprocess, "Popen", return_value=proc), \
-             mock.patch.object(r, "_run_command_via_persistent_shell_locked", return_value=CommandResult(0, "", "")), \
+             mock.patch.object(r, "_run_command_via_persistent_shell_locked",
+                               return_value=CommandResult(
+                                   returncode=0, stdout="", stderr="",
+                               )), \
              mock.patch.object(ssh_mod.threading, "Thread"):
             r.ensure_persistent_shell(timeout=5)
         self.assertIs(r._shell_proc, proc)
@@ -853,7 +872,10 @@ class TestEnsurePersistentShell(unittest.TestCase):
         proc.stdin = mock.Mock()
         proc.stdout = mock.Mock()
         with mock.patch.object(ssh_mod.subprocess, "Popen", return_value=proc), \
-             mock.patch.object(r, "_run_command_via_persistent_shell_locked", return_value=CommandResult(1, "", "bad shell")), \
+             mock.patch.object(r, "_run_command_via_persistent_shell_locked",
+                               return_value=CommandResult(
+                                   returncode=1, stdout="", stderr="bad shell",
+                               )), \
              mock.patch.object(ssh_mod.threading, "Thread"):
             with self.assertRaises(RuntimeError):
                 r.ensure_persistent_shell(timeout=5)

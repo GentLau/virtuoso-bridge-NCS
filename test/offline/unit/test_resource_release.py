@@ -40,7 +40,7 @@ class FakeRunner:
 
     def run_command(self, cmd, timeout=None):
         from pyapi.models import CommandResult
-        return CommandResult(0, "", "")
+        return CommandResult(returncode=0, stdout="", stderr="")
 
 
 class TestRunnerCloseStopsTunnel(unittest.TestCase):

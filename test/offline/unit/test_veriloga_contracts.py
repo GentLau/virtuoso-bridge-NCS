@@ -266,28 +266,32 @@ class VaMiddle:
         from pyapi.models import CommandResult
         self.commands.append(cmd)
         if "*.cdslck" in cmd:
-            return CommandResult(0, "LOCK\n" if self.lock else "OK\n", "")
-        return CommandResult(0, "", "")
+            return CommandResult(
+                returncode=0, stdout="LOCK\n" if self.lock else "OK\n", stderr="",
+            )
+        return CommandResult(returncode=0, stdout="", stderr="")
 
     def upload_file(self, local_path, remote_path, timeout=None, *, token, recursive=False):
         from pathlib import Path as _Path
         from pyapi.models import CommandResult
         self.uploads[str(remote_path)] = _Path(local_path).read_text(encoding="utf-8")
-        return CommandResult(0, str(remote_path), "")
+        return CommandResult(returncode=0, stdout=str(remote_path), stderr="")
 
     def download_file(self, remote_path, local_path, timeout=None, *, token, recursive=False):
         from pyapi.models import CommandResult
         if str(remote_path).endswith(".log") or "veriloga_err" in str(remote_path):
             if not self.err_log:
-                return CommandResult(1, "", "missing err log", "path")
+                return CommandResult(
+                    returncode=1, stdout="", stderr="missing err log", kind="path",
+                )
             target = Path(local_path)
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text(self.err_log, encoding="utf-8")
-            return CommandResult(0, str(target), "")
+            return CommandResult(returncode=0, stdout=str(target), stderr="")
         target = Path(local_path)
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(self.current_source, encoding="utf-8")
-        return CommandResult(0, str(target), "")
+        return CommandResult(returncode=0, stdout=str(target), stderr="")
 
 
 class TestVerilogaWriteOrchestration(unittest.TestCase):

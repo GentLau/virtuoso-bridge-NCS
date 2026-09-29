@@ -33,10 +33,10 @@ _KEY_DIR, _KEY = make_credential()
 def _probe_run(cmd, timeout=None):
     """Smart fake for per-role probes: smoke / $HOME / writable check."""
     if "vb-ok" in cmd:
-        return CommandResult(0, "vb-ok", "")
+        return CommandResult(returncode=0, stdout="vb-ok", stderr="")
     if "$HOME" in cmd:
-        return CommandResult(0, "/home/alice", "")
-    return CommandResult(0, "", "")
+        return CommandResult(returncode=0, stdout="/home/alice", stderr="")
+    return CommandResult(returncode=0, stdout="", stderr="")
 
 
 
@@ -683,7 +683,9 @@ class TestFlowMoreBranches(unittest.TestCase):
         from register.flow import _resolve_remote_scratch
         self.assertEqual(_resolve_remote_scratch(None, "/abs/path"), "/abs/path")
         runner = type("R", (), {})()
-        runner.run_command = lambda *a, **k: CommandResult(1, "", "")
+        runner.run_command = lambda *a, **k: CommandResult(
+            returncode=1, stdout="", stderr="",
+        )
         with self.assertRaises(RegistrationProbeError):
             _resolve_remote_scratch(runner, "~/.vb")
 
@@ -1076,7 +1078,9 @@ class TestConnectivityFingerprint(unittest.TestCase):
         entry.roles.daemon.expected_hostname = "server-a"
         entry.roles.daemon.root = "/home/alice/.virtuoso-bridge"
         fake_cmd = mock.Mock()
-        fake_cmd.run_command.return_value = CommandResult(0, "vb-ok", "")
+        fake_cmd.run_command.return_value = CommandResult(
+            returncode=0, stdout="vb-ok", stderr="",
+        )
         fake_tunnel = mock.Mock()
         with mock.patch("register.flow.probes.host_key_fingerprint", return_value="SHA256:other"), \
              mock.patch("register.flow.SSHRunner", side_effect=[fake_cmd, fake_tunnel]), \

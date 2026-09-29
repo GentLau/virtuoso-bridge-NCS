@@ -44,19 +44,19 @@ class FakeRunner:
 
     def run_command(self, *args, **kwargs) -> CommandResult:
         self.calls.append(("run_command", args, kwargs))
-        return CommandResult(0, "", "")
+        return CommandResult(returncode=0, stdout="", stderr="")
 
     def upload_text(self, *args, **kwargs) -> CommandResult:
         self.calls.append(("upload_text", args, kwargs))
-        return CommandResult(0, "", "")
+        return CommandResult(returncode=0, stdout="", stderr="")
 
     def upload(self, *args, **kwargs) -> CommandResult:
         self.calls.append(("upload", args, kwargs))
-        return CommandResult(0, "", "")
+        return CommandResult(returncode=0, stdout="", stderr="")
 
     def download(self, *args, **kwargs) -> CommandResult:
         self.calls.append(("download", args, kwargs))
-        return CommandResult(0, "", "")
+        return CommandResult(returncode=0, stdout="", stderr="")
 
 
 def make_entry(*, skill_host="daemon-a", command_host="daemon-a", file_host="daemon-a") -> UserEntry:
