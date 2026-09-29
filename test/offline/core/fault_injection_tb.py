@@ -394,9 +394,9 @@ def case_skill_queue_before_delivery():
             first.join(timeout=3)
         if second.status != ExecutionStatus.ERROR or second.errors != ["SKILL execution timed out"]:
             raise ProbeFailure(f"unexpected queued timeout: {second.model_dump()}")
-        if second.metadata:
+        if "metadata" in second.model_dump():
             raise ProbeFailure("queued timeout exposed delivery metadata")
-        return {"errors": second.errors, "metadata": second.metadata}
+        return {"errors": second.errors, "metadata": "absent"}
     finally:
         server.close()
 

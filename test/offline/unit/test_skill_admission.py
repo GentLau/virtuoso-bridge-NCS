@@ -91,7 +91,7 @@ class TestWithdrawnWhileQueued(SkillAdmissionBase):
 
         self.assertEqual(second.status, ExecutionStatus.ERROR)
         self.assertEqual(second.errors, ["SKILL execution timed out"])
-        self.assertEqual(second.metadata, {})
+        self.assertNotIn("metadata", second.model_dump())
         self.assertLess(elapsed, 1.0, "超时应发生在队列等待阶段")
         self.assertEqual(len(client.calls), 1, "被撤回的请求绝不能投递")
         self.assertEqual(client.calls[0][0], "1+1")
@@ -122,7 +122,7 @@ class TestDeliveredTimeout(SkillAdmissionBase):
         with mock.patch.object(BusinessServer, "_skill", lambda self, token: client):
             res = self.server.execute_skill("1+1", timeout=1, token="tok-skill")
         self.assertEqual(res.errors, ["SKILL execution timed out"])
-        self.assertEqual(res.metadata, {})
+        self.assertNotIn("metadata", res.model_dump())
         self.assertEqual(res.warnings, [])
 
     def test_gate_is_released_after_completion(self):

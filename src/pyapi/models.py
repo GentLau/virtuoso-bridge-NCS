@@ -11,7 +11,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, NamedTuple, Protocol
 
-from pydantic import BaseModel, ConfigDict, Field, model_serializer
+from pydantic import BaseModel, ConfigDict, Field, field_serializer, model_serializer
 
 
 class ExecutionStatus(str, Enum):
@@ -33,8 +33,11 @@ class VirtuosoResult(BaseModel):
     errors: list[str] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
     execution_time: float | None = None
-    metadata: dict[str, Any] = Field(default_factory=dict)
     log: str = ""
+
+    @field_serializer("execution_time", when_used="json")
+    def _round_execution_time(self, value: float | None) -> float | None:
+        return None if value is None else round(value, 3)
 
     @property
     def ok(self) -> bool:
@@ -108,7 +111,6 @@ class SimulationResult(BaseModel):
     data: dict[str, Any] = Field(default_factory=dict)
     errors: list[str] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
-    metadata: dict[str, Any] = Field(default_factory=dict)
 
     @property
     def ok(self) -> bool:

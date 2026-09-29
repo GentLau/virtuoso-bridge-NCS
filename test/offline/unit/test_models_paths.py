@@ -36,6 +36,30 @@ class TestResultModels(unittest.TestCase):
         sim.save_json(path)
         self.assertIn("error", path.read_text(encoding="utf-8"))
 
+    def test_result_models_omit_metadata_and_round_execution_time(self):
+        """C1 decision 3/4: no metadata field; JSON time is millisecond precision."""
+        r = VirtuosoResult(
+            status=ExecutionStatus.SUCCESS,
+            output="2",
+            execution_time=0.32900000002700835,
+        )
+        self.assertNotIn("metadata", r.model_dump())
+        python_dump = r.model_dump()
+        json_dump = r.model_dump(mode="json")
+        self.assertNotIn("metadata", json_dump)
+        self.assertEqual(json_dump["execution_time"], 0.329)
+        self.assertEqual(python_dump["execution_time"], 0.32900000002700835)
+        self.assertEqual(
+            json.loads(r.model_dump_json())["execution_time"], 0.329
+        )
+        path = Path(tempfile.mkdtemp(prefix="vb-")) / "r.json"
+        r.save_json(path)
+        self.assertEqual(
+            json.loads(path.read_text(encoding="utf-8"))["execution_time"], 0.329
+        )
+        sim = SimulationResult(status=ExecutionStatus.ERROR, errors=["x"])
+        self.assertNotIn("metadata", sim.model_dump())
+
     def test_command_result_namedtuple(self):
         c = CommandResult(0, "out", "err")
         self.assertEqual((c.returncode, c.stdout, c.stderr), (0, "out", "err"))
