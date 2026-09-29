@@ -5,10 +5,10 @@
 | 级别 | P2（全局响应形态缺陷：所有 basic.skill.execute 命中；两层重复携带完整结果，日志开启时体积翻倍） |
 | 层 | 上层（basic 包 + pyapi.models 序列化）· 响应契约 |
 | 归属 | 设计侧（上层 basic.py 的结果构造 + pyapi.models 的序列化口径；若涉及顶层 jsonable 归顶层） |
-| 状态 | **待决策** |
+| 状态 | **待测试侧** |
 | 位置 | `src/pyapi/packages/basic.py:146-155`（`Result(steps=[... detail=skill], result=skill)` 同一对象放两处）；`src/pyapi/models.py:24-37`（`VirtuosoResult` 7 个字段；空 errors/warnings/metadata/log 也参与 model_dump）；`src/server/dispatch.py:58-77,151`（`jsonable` → `model_dump(mode="json")`，外层再包 `ok/data/error`）。 |
 | 首报 | 2026-09-29（用户直报：`basic.skill.execute` 的 `1+1` 响应过长） |
-| 最近更新 | 2026-09-29（新立，记录现状；未修） |
+| 最近更新 | 2026-09-29（实现已落地；离线 TB 4/4 绿；消费方适配转 C3） |
 
 ## 现象
 
@@ -35,7 +35,7 @@ POST http://127.0.0.1:8127/api/operation
 
 ## 下一步 / 责任人
 
-设计侧先裁决响应 canonical 形态与空字段口径（需同步 `1-上层.md`/顶层响应壳）；测试侧按裁决补响应形态 TB，再改 basic.py/models.py。
+实现已落地（`2f88853` 等）；测试侧剩「消费方适配」——由 **C3** 跟踪（约 50 个文件），C3 收口后关本卡。
 
 ## 讨论决策（2026-09-29）
 
@@ -53,6 +53,15 @@ POST http://127.0.0.1:8127/api/operation
 影响面（已核对）：`src/` 无写入亦无读取；`examples/` 中 7 处 `result.metadata` 读取的是**旧包** `virtuoso_bridge`（旧实现里 metadata 承载 `command`/`spectre_command`/`delivery`/`queue_wait_s` 等），与新模型无关；`SimulationResult` 除定义与导出外无其他使用点。
 
 **决策 4（`execution_time` 精度）**：**保留三位小数**（毫秒级，`round(x, 3)`）。建议在 `VirtuosoResult` 模型层用字段序列化器统一处理——现写入点集中在 `src/common/skill_client.py`（共 10 处），逐点 round 既易漏、新路径也会再漏；模型层处理可让 HTTP 响应与 `save_json` 等所有出口口径一致。
+
+## 上层落地（设计/上层开发，2026-09-29）
+
+- `pyapi.models` 增加公共 `ResultBase` + `ResultPackage`；`ResultBase.model_dump()` 统一控制 `steps` 出现条件。
+- 12 个业务包的 Result/特殊 Result 统一继承 `ResultBase`；Package 统一继承 `ResultPackage`。
+- 77 个 Request 直接增加公共可选字段 `step_details: bool = False`。
+- 成功且未开启 `step_details` → 整个 `steps` 省略；失败始终带 `steps`；开启后成功也带。
+- C1 上层契约 TB `test/offline/unit/test_result_contract.py` **4/4 绿**；全量 offline unit 通过。
+- 顶层/模型侧（本体直返、两字段错误壳、`CDSlog`、删 `metadata`、`execution_time` 三位小数）已由对应提交完成。
 
 ---
 

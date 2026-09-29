@@ -56,13 +56,13 @@ target_cell = f"vp_{stamp}_m2"
 mismatch = call("virtuoso.verilog.import", library=LIB, cell=target_cell,
                 file_path=str(src), file_is_local=True, ref_libs=["basic"],
                 overwrite=True, timeout=600)
-mismatch_value = (mismatch.get("data") or {}).get("value") or {}
+mismatch_value = (_c1_wrapper(mismatch)).get("value") or {}
 record("P-100 cell≠模块名 → 写前结构化拒绝",
        mismatch.get("ok") is False
        and mismatch_value.get("reason") == "cell_not_in_source",
        {"error": str(mismatch.get("error"))[:150], "value": mismatch_value})
 exists = call("virtuoso.cellview.cell.list", library=LIB)
-raw_cells = (exists.get("data") or {}).get("value")
+raw_cells = (_c1_wrapper(exists)).get("value")
 if isinstance(raw_cells, dict):
     raw_cells = raw_cells.get("cells") or raw_cells.get("names") or []
 taken = [c.get("name") if isinstance(c, dict) else str(c)
@@ -75,7 +75,7 @@ module_cell = f"vp_{stamp}_m1"
 body = call("virtuoso.verilog.import", library=LIB, cell=module_cell,
             file_path=str(src), file_is_local=True, ref_libs=["basic"],
             overwrite=True, timeout=600)
-value = (body.get("data") or {}).get("value") or {}
+value = (_c1_wrapper(body)).get("value") or {}
 record("P-100 正例 import ok", body.get("ok") is True,
        {"error": str(body.get("error"))[:160], "cells": value.get("cells")})
 views = value.get("views") or []
@@ -86,3 +86,19 @@ passed = sum(1 for item in RESULTS if item["ok"])
 print(f"[summary] {passed}/{len(RESULTS)} green")
 middle.close()
 raise SystemExit(0 if passed == len(RESULTS) else 1)
+
+
+# --- C1 兼容垫片（2026-09-29，C3）------------------------------------------------
+# C1（2f88853）起：业务载荷直返顶层（值型 `value`、命令/skill 型 `result`）、
+# 成功默认省略 `steps`、失败壳去掉 `data`。历史 TB 按 `response["data"]` 解析，
+# 本垫片把新契约响应合成为旧 `data` 壳，让既有解析零改动继续工作。
+def _c1_wrapper(body):
+    if not isinstance(body, dict):
+        return {}
+    if isinstance(body.get("data"), dict):
+        return body["data"]
+    wrapped = {"ok": body.get("ok"), "error": body.get("error")}
+    for key in ("value", "result", "steps"):
+        if key in body:
+            wrapped[key] = body[key]
+    return wrapped

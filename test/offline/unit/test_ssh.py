@@ -5,6 +5,7 @@ import os
 import io
 import subprocess
 import sys
+import threading
 import time
 import tempfile
 import unittest
@@ -406,26 +407,36 @@ class TestRunnerBackendDispatch(unittest.TestCase):
 class TestPortForwardLifecycle(unittest.TestCase):
     def test_recursive_download_degrades_from_broken_controlmaster(self):
         """并发设计 §4: ControlMaster 故障必须自动降级直连（≤3 次总尝试）。
-        当前只有 upload 走了降级路径，递归下载是单次尝试（评审新发现）。"""
+        下载路径必须走 CM 降级；断言只统计本用例主线程的调用 —— 全量跑时
+        其它用例的残留线程也会经过被 patch 的 Popen（P-065 遗留观察），
+        不能把它算进本用例的 CM 尝试次数。"""
         wd = self.wd
         runner = SSHRunner(
             "server-a", user="u", backend="openssh", control_master="auto",
         )
         plan = ssh_mod.build_tar_download_plan("tar", "/remote/dir", wd / "out")
         calls: list[str] = []
+        main_calls: list[str] = []
 
         def fake_popen(cmd, **kwargs):
             argv = list(cmd) if isinstance(cmd, (list, tuple)) else [str(cmd)]
+            in_main = threading.current_thread() is threading.main_thread()
             if argv and argv[0] == runner._ssh_cmd:
                 if any("ControlPath=" in part for part in argv):
                     calls.append("ssh-cm")
+                    if in_main:
+                        main_calls.append("ssh-cm")
                     return _FakePipelineProc(
                         255,
                         b"mux_client_request_session: session request failed\n",
                     )
                 calls.append("ssh-direct")
+                if in_main:
+                    main_calls.append("ssh-direct")
                 return _FakePipelineProc(0)
             calls.append("tar")
+            if in_main:
+                main_calls.append("tar")
             plan.staged_item.mkdir(parents=True, exist_ok=True)
             return _FakePipelineProc(0)
 
@@ -434,8 +445,8 @@ class TestPortForwardLifecycle(unittest.TestCase):
                 plan, _TimeoutBudget.start(30, 30)
             )
         self.assertEqual(result.returncode, 0, result)
-        self.assertIn("ssh-direct", calls)
-        self.assertEqual(calls.count("ssh-cm"), 1)
+        self.assertIn("ssh-direct", main_calls)
+        self.assertEqual(main_calls.count("ssh-cm"), 1, (main_calls, calls))
         self.assertTrue((wd / "out").is_dir())
 
     def test_proxy_is_never_silently_ignored(self):

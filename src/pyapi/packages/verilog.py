@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Any
 
 from common.paths import artifact_dir
-from pyapi.models import Middle, VirtuosoResult
+from pyapi.models import Middle, VirtuosoResult, skill_log_kwargs, ResultBase, ResultPackage
 from pyapi.packages import basic
 
 
@@ -29,7 +29,7 @@ _STRUCTURAL_VIEWS = (1, 2, 4, 5, 6)
 
 
 @dataclass
-class Result:
+class Result(ResultBase):
     ok: bool
     steps: list[dict[str, Any]] = field(default_factory=list)
     error: str | None = None
@@ -47,6 +47,9 @@ class ReadRequest:
     file_is_local: bool = True
     focus: list[str] | None = None
     timeout: int | None = None
+    log_level: str | None = None
+    log_max_bytes: int | None = None
+    step_details: bool = False
 
 
 @dataclass(frozen=True)
@@ -58,6 +61,9 @@ class WriteRequest:
     view: str = "verilog"
     view_type: str = VIEW_TYPE
     timeout: int | None = None
+    log_level: str | None = None
+    log_max_bytes: int | None = None
+    step_details: bool = False
 
 
 @dataclass(frozen=True)
@@ -77,6 +83,9 @@ class ImportRequest:
     import_lib_cells: int = 0
     overwrite: bool = False
     timeout: float | None = None
+    log_level: str | None = None
+    log_max_bytes: int | None = None
+    step_details: bool = False
 
 
 @dataclass(frozen=True)
@@ -88,6 +97,9 @@ class ExportRequest:
     output_path: str | None = None
     recursive: bool = False
     timeout: float | None = None
+    log_level: str | None = None
+    log_max_bytes: int | None = None
+    step_details: bool = False
 
 
 def _step(name: str, ok: bool, detail: Any) -> dict[str, Any]:
@@ -119,12 +131,17 @@ def _safe_name(value: str, fallback: str = "cell") -> str:
     return cleaned or fallback
 
 
-class Package:
+class Package(ResultPackage):
     def __init__(self, middle: Middle) -> None:
         self.middle = middle
 
     def _skill(self, expr: str, token: str, timeout: int | float | None = None) -> VirtuosoResult:
-        return self.middle.execute_skill(expr, timeout=timeout, token=token)
+        return self.middle.execute_skill(
+            expr, timeout=timeout, token=token,
+            **skill_log_kwargs(
+                getattr(self, "_log_level", None),
+                getattr(self, "_log_max_bytes", None),
+            ))
 
     def _q(self, expr: str, token: str, timeout: int | float | None = None) -> str:
         result = self._skill(expr, token, timeout)
@@ -200,6 +217,8 @@ class Package:
     # -- read -------------------------------------------------------------------
 
     def read(self, request: ReadRequest) -> Result:
+        self._log_level = request.log_level
+        self._log_max_bytes = request.log_max_bytes
         _require_text(request.token, "token")
         _require_timeout(request.timeout)
         if request.view_type is not None:
@@ -324,6 +343,8 @@ class Package:
     # -- write ------------------------------------------------------------------
 
     def write(self, request: WriteRequest) -> Result:
+        self._log_level = request.log_level
+        self._log_max_bytes = request.log_max_bytes
         _require_text(request.token, "token")
         _require_text(request.library, "library")
         _require_text(request.cell, "cell")
@@ -450,6 +471,8 @@ class Package:
     # -- import -----------------------------------------------------------------
 
     def import_verilog(self, request: ImportRequest) -> Result:
+        self._log_level = request.log_level
+        self._log_max_bytes = request.log_max_bytes
         _require_text(request.token, "token")
         _require_text(request.library, "library")
         _require_text(request.cell, "cell")
@@ -662,6 +685,8 @@ class Package:
     # -- export -----------------------------------------------------------------
 
     def export(self, request: ExportRequest) -> Result:
+        self._log_level = request.log_level
+        self._log_max_bytes = request.log_max_bytes
         _require_text(request.token, "token")
         _require_text(request.library, "library")
         _require_text(request.cell, "cell")

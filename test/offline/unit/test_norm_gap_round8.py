@@ -10,7 +10,7 @@
   * 注册#073  未知字段必须被拒绝（`extra=forbid` 在任何模型层都要生效）
   * 注册#018  未知 role 名（如 `banana`）必须与未知字段一样被拒绝
   * 注册#108  显式 `daemon_port != local_port` 必须拒绝或告警，不得静默归一化
-              （P-079：当前实现静默取 local_port —— 本用例修复前是**红灯**）
+              （P-079 已修 `bf5f71a`；本用例由红钉转为**防回归断言**）
   * 客户端#011 注册服务默认只绑 `127.0.0.1`
   * 日志#077  IL 必须把 value / log-meta 两帧合并成**一次** `ipcWriteProcess`
   * 注册#036  步内 deadline 不因 deploy 等待而重置（StepBudget 口径）
@@ -29,7 +29,6 @@ import sys
 import threading
 import unittest
 
-import pytest
 from pathlib import Path
 from unittest import mock
 
@@ -134,10 +133,8 @@ class TestUnknownFieldRejected(_RegisterGapBase):
 
 
 class TestLocalJointPortNotCoerced(unittest.TestCase):
-    """注册#108 / P-079：显式 daemon_port≠local_port 必须拒绝（当前红）。"""
+    """注册#108 / P-079（已修 `bf5f71a`）：显式 daemon_port≠local_port 必须拒绝。"""
 
-    @pytest.mark.xfail(strict=True,
-                       reason="P-079: local 显式双端口不等被静默归一化，待设计定口径")
     def test_explicit_mismatched_ports_are_not_silently_coerced(self):
         request = register_flow.RegistrationRequest(
             mode="local",
@@ -157,7 +154,7 @@ class TestLocalJointPortNotCoerced(unittest.TestCase):
             state.errors or state.stage != "validated",
             "显式 daemon_port=65091 / local_port=65092 不一致：必须拒绝或报错，"
             f"实测 stage={state.stage} errors={state.errors}；"
-            "P-079（flow.py:1180-1185 静默取 local_port 覆写两值）",
+            "P-079 回归：不得再静默取 local_port 覆写两值",
         )
 
 

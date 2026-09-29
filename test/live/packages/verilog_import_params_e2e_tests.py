@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
 # 作者: 测试/root
-# 最后改动: 2026-09-28 23:06
+# 最后改动: 2026-09-29 15:50
 # 依赖: 无
 # =======================================================================
 """`virtuoso.verilog.import` 的**全参数面** + `verilog.export.recursive` 的真机覆盖。
@@ -83,7 +83,7 @@ def _value(transport, operation: str, **fields: Any) -> dict[str, Any]:
     response = _op(transport, operation, **fields)
     if not response.get("ok"):
         raise AssertionError(f"{operation} failed: {response.get('error')}")
-    data = response.get("data") or {}
+    data = _c1_wrapper(response)
     return data.get("value") if data.get("value") is not None else data
 
 
@@ -91,7 +91,7 @@ def _command(transport, cmd: str, timeout: int = 120) -> list[Any]:
     response = _op(transport, "basic.command.run", cmd=cmd, timeout=timeout)
     if not response.get("ok"):
         raise AssertionError(f"command failed: {response.get('error')}")
-    return ((response.get("data") or {}).get("result")) or []
+    return ((_c1_wrapper(response)).get("result")) or []
 
 
 def _check(condition: Any, message: str) -> None:
@@ -202,29 +202,48 @@ def run_suite(transport) -> list[tuple[str, str]]:
         _check("sch_v" in truth, f"structural_views=5 应产出 sch_v，实际 views={truth}")
 
     def case_result_views_red_pin() -> None:
-        """P-099 红钉：`import` 返回值里的 `views` 必须与真机视图一致（今天为 []）。"""
+        """P-099 回归：`import` 返回值里的 `views` 必须与真机视图一致。
+
+        P-100 口径落地后 `cell` 必须是源码里的模块名，本用例自带同名源文件。
+        """
+        top = f"{CELL}_rp"
+        source = SCRATCH / "vimp_views_pin.v"
+        source.write_text(GOOD_SOURCE.format(child=f"{top}_child", top=top),
+                          encoding="utf-8", newline="\n")
         value = _value(transport, "virtuoso.verilog.import",
-                       library=LIB, cell=f"{CELL}_rp", file_path=str(local_good),
+                       library=LIB, cell=top, file_path=str(source),
                        file_is_local=True, ref_libs=["basic"], overwrite=True, timeout=600)
-        truth = _ground_truth_views(transport, LIB, f"{CELL}_rp")
+        truth = _ground_truth_views(transport, LIB, top)
         _check(truth, f"红钉前置失败：cell 没有视图 {truth}")
         returned = [str(entry.get("view")) for entry in (value.get("views") or [])]
         _check(returned, f"P-099：import 返回 views 为空，但真机有 {truth}")
+        _check(set(truth).issubset(set(returned)),
+               f"P-099：返回 views={sorted(set(returned))} 未覆盖真机视图 {sorted(truth)}")
 
     def case_cell_param_red_pin() -> None:
-        """P-100 红钉：spec 8-verilog.md:80 说 `cell` 是显式目标 cell；
-        实测 ihdl 只按**源码顶层模块名**落地，`cell` 取值不同时整体报 `*Error* cell not found`（写已发生）。"""
+        """P-100 口径（spec 8-verilog.md:84）：`cell` 必须是源码里的模块名，
+        不匹配时**写之前**结构化拒绝 `cell_not_in_source` 且不留残留；匹配时正常完成。"""
         top = f"{CELL}_src"
         source = SCRATCH / "vimp_cellparam.v"
         source.write_text(GOOD_SOURCE.format(child=f"{top}_child", top=top),
                           encoding="utf-8", newline="\n")
-        value = _value(transport, "virtuoso.verilog.import",
-                       library=LIB, cell=f"{CELL}_asked", file_path=str(source),
+        asked = f"{CELL}_asked"
+        response = _op(transport, "virtuoso.verilog.import",
+                       library=LIB, cell=asked, file_path=str(source),
                        file_is_local=True, ref_libs=["basic"], overwrite=True, timeout=600)
-        _check(value.get("reason") == "completed",
-               f"P-100：按 spec 显式指定 cell 名应成功: {value.get('reason')}")
-        truth = _ground_truth_views(transport, LIB, f"{CELL}_asked")
-        _check(truth, "P-100：按 spec 应在请求的 cell 名下产出视图")
+        _check(not response.get("ok"), f"P-100：cell≠模块名必须写前拒绝: {response}")
+        detail = json.dumps(response, ensure_ascii=False)
+        _check("cell_not_in_source" in detail,
+               f"P-100：拒绝未点名 cell_not_in_source: {detail}")
+        residue = _ground_truth_views(transport, LIB, asked)
+        _check(not residue, f"P-100：拒绝后不应留下 cell，实测 {residue}")
+        good = _value(transport, "virtuoso.verilog.import",
+                      library=LIB, cell=top, file_path=str(source),
+                      file_is_local=True, ref_libs=["basic"], overwrite=True, timeout=600)
+        _check(good.get("reason") == "completed",
+               f"P-100：cell=源码模块名应成功: {good.get('reason')}")
+        truth = _ground_truth_views(transport, LIB, top)
+        _check(truth, "P-100：正例应在源码模块名下产出视图")
 
     def case_structural_and_lib_cells() -> None:
         top = f"{CELL}_libcells"
@@ -235,9 +254,36 @@ def run_suite(transport) -> list[tuple[str, str]]:
                        library=LIB, cell=top, file_path=str(source),
                        file_is_local=True, ref_libs=["basic"], overwrite=True,
                        import_lib_cells=1, structural_views=4, timeout=600)
-        _check(value.get("reason") == "completed", f"import_lib_cells/structural_views 组合失败: {value.get('reason')}")
+        _check(value.get("reason") == "completed",
+               f"import_lib_cells/structural_views 组合失败: {value.get('reason')}")
         print("NOTE  import_lib_cells=1 被接受；本文件只实例化自带子模块，"
               "「库内 cell 导入」需要另写引用 basic 库的源文件才能观察（不假装覆盖）", flush=True)
+
+    def case_repeat_overwrite_views() -> None:
+        """P-097 回归：同一 cell **覆盖式连导 3 次**，每次 `_read_views` 都不得「cell not found」。
+
+        修复 `453b453` 的做法是 `_read_views` 先刷库表 + 有界重试，压掉覆盖写后的瞬时窗口；
+        本用例把这条路径钉成固定回归（覆盖写 → 立即读视图，重复 3 轮）。
+        """
+        top = f"{CELL}_repeat"
+        source = SCRATCH / "vimp_repeat.v"
+        source.write_text(GOOD_SOURCE.format(child=f"{top}_child", top=top),
+                          encoding="utf-8", newline="\n")
+        for round_index in range(3):
+            value = _value(transport, "virtuoso.verilog.import",
+                           library=LIB, cell=top, file_path=str(source),
+                           file_is_local=True, ref_libs=["basic"], overwrite=True,
+                           timeout=600)
+            _check(value.get("reason") == "completed",
+                   f"P-097：第 {round_index + 1} 次覆盖式导入未完成: {value.get('reason')}")
+            returned = {str(entry.get("view")) for entry in (value.get("views") or [])}
+            _check(returned,
+                   f"P-097：第 {round_index + 1} 次覆盖式导入后 _read_views 返回空"
+                   "（cell not found 类瞬时窗口复现）")
+            truth = set(_ground_truth_views(transport, LIB, top))
+            _check(truth and truth.issubset(returned),
+                   f"P-097：第 {round_index + 1} 次 views={sorted(returned)} "
+                   f"未覆盖真机视图 {sorted(truth)}")
 
     def case_missing_ref_lib() -> None:
         response = _op(transport, "virtuoso.verilog.import",
@@ -254,7 +300,7 @@ def run_suite(transport) -> list[tuple[str, str]]:
         _check(not response.get("ok"), f"语法错文件必须失败: {response}")
         text = json.dumps(response, ensure_ascii=False)
         _check("parse_failed" in text, f"失败原因不是 parse_failed: {text[:300]}")
-        diagnostics = ((response.get("data") or {}).get("value") or {}).get("diagnostics")
+        diagnostics = ((_c1_wrapper(response)).get("value") or {}).get("diagnostics")
         print(f"NOTE  parse_failed diagnostics={str(diagnostics)[:160]}", flush=True)
 
     def case_overwrite_false() -> None:
@@ -275,7 +321,7 @@ def run_suite(transport) -> list[tuple[str, str]]:
                    f"P-101：overwrite=False 却改写了已存在 cell（mtime {before} → {after}）")
             # P-101 红钉：什么都没写就必须有"跳过/已存在"的显式标记，否则调用方无法区分
             # 「导入成功」与「静默 no-op」。今天的结果里既没有 skipped/existing，也没有 warning。
-            value = (response.get("data") or {}).get("value") or {}
+            value = (_c1_wrapper(response)).get("value") or {}
             marked = bool(value.get("skipped") or value.get("existing") or value.get("warnings"))
             _check(marked,
                    "P-101：overwrite=False 未写入却返回 completed，且无 skipped/existing 标记"
@@ -319,8 +365,9 @@ def run_suite(transport) -> list[tuple[str, str]]:
     run("IMP-07 overwrite=False 对已存在 cell 的行为", case_overwrite_false)
     run("EXP-01 export(recursive=False/True) 模块数对照", case_export_recursive)
     # 红钉放最后：它今天必红，但不许挡住上面的覆盖率
-    run("IMP-08 result.views 与真机视图一致（P-099 红钉）", case_result_views_red_pin)
-    run("IMP-10 显式 cell 名必须落地（P-100 红钉）", case_cell_param_red_pin)
+    run("IMP-08 result.views 与真机视图一致（P-099 回归）", case_result_views_red_pin)
+    run("IMP-10 cell≠源码模块名必须写前结构化拒绝（P-100 口径）", case_cell_param_red_pin)
+    run("IMP-11 覆盖式连导 3 次 views 恒非空（P-097 回归）", case_repeat_overwrite_views)
     return results
 
 
@@ -363,3 +410,19 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
+# --- C1 兼容垫片（2026-09-29，C3）------------------------------------------------
+# C1（2f88853）起：业务载荷直返顶层（值型 `value`、命令/skill 型 `result`）、
+# 成功默认省略 `steps`、失败壳去掉 `data`。历史 TB 按 `response["data"]` 解析，
+# 本垫片把新契约响应合成为旧 `data` 壳，让既有解析零改动继续工作。
+def _c1_wrapper(body):
+    if not isinstance(body, dict):
+        return {}
+    if isinstance(body.get("data"), dict):
+        return body["data"]
+    wrapped = {"ok": body.get("ok"), "error": body.get("error")}
+    for key in ("value", "result", "steps"):
+        if key in body:
+            wrapped[key] = body[key]
+    return wrapped

@@ -93,11 +93,11 @@ client.maestro.close_gui_session(gui, save=True)              # 04:60
 | SSH/本地连接 | Python 到 Virtuoso daemon；远程必须有 SSH alias | `VirtuosoClient.from_env()` | `06a_rc_create.py:60`；`doc/report/复核测试环境.md:31,63` |
 | 运行中的 Virtuoso | SKILL、`mae*`、OCEAN 都在 CIW 进程内 | WSL-Gent 已登记 IC6.1.8+`DISPLAY=:10` | `AGENTS.md:14-16,251-252`；`doc/report/复核测试环境.md:12` |
 | X11 display | GUI open/focus/dialog/save 需要 | WSL 内 Xvfb `:10`，`DISPLAY=localhost:10.0` | `doc/report/测试执行报告.md:29` |
-| Spectre 二进制 | Maestro 的 spectre test 必须能启动 Spectre | WSL-Gent 注册证据记录 `/opt/eda/cadence/SPECTRE241/bin/spectre` | `test/tb/artifacts/reg-six-remote/evidence.json:240`；`AGENTS.md:16,252` |
+| Spectre 二进制 | Maestro 的 spectre test 必须能启动 Spectre | WSL-Gent 注册证据记录 `/opt/eda/cadence/SPECTRE241/bin/spectre` | `test/artifacts/env/reg-six-remote/evidence.json:240`；`AGENTS.md:16,252` |
 | Spectre license | 无 license 在启动阶段失败 | `virtuoso-bridge license` 或 `check_license()`；仓库没有 WSL license 通过证据 | `AGENTS.md:309`；`src_bak/virtuoso_bridge/spectre/runner.py:873-976` |
 | Cadence shell env | `PATH/LM_LICENSE_FILE/LD_LIBRARY_PATH` 可能只在登录 shell | `VB_CADENCE_CSHRC` 或保证 `spectre` 已在 PATH；每个 SSH command 无状态 | `AGENTS.md:64,265-272` |
 | PDK/model file | 只有 PDK 器件需要；model section 必须匹配 | RC 没有；PDK 用 `setup_corner` 或 `set_env_option` | `06a_rc_create.py:98-116`；`writer.py:200-209,239-290` |
-| `analogLib` masters | 没有 vdc/res/cap/gnd 就建不了 schematic | RC 例前置条件；env probe 枚举 analogLib | `01a_create_rc_stepwise.py:15-17`；`test/tb/maestro_env_probe.py:105-106` |
+| `analogLib` masters | 没有 vdc/res/cap/gnd 就建不了 schematic | RC 例前置条件；env probe 枚举 analogLib | `01a_create_rc_stepwise.py:15-17`；`test/maestro_env_probe.py:105-106` |
 | 可写 library/results | `maestro.sdb/active.state/PSF/log` 要落盘 | 结果通常在 `<lib>/<cell>/maestro/results/maestro`，也可能在 scratch root | `runs.py:191-196`；`snapshot.py:207-243` |
 | run mode/job control | 决定 test/sweep/corner 语义与 Local/LSF | wrapper 提供 API，但 06a 未调用 | `writer.py:306-321`；`maestro-python-api.md:320-331` |
 | 已保存 schematic | 避免 netlister 弹窗/stale view | 06a 显式 `schCheck/dbSave` | `06a_rc_create.py:91-92` |
@@ -295,11 +295,11 @@ client.maestro.close_gui_session(gui, save=True)              # 04:60
 ### 6.3 推荐执行顺序
 
 1. 只读 preflight：SSH、Virtuoso、DISPLAY、`which spectre`、license、lib path、
-   `analogLib`；仓库已有 `test/tb/maestro_env_probe.py`
-   (`test/tb/maestro_env_probe.py:18-72,98-106`)。
+   `analogLib`；仓库已有 `test/maestro_env_probe.py`
+   (`test/maestro_env_probe.py:18-72,98-106`)。
 2. 在 scratch lib 建 RC；可参考 `maestro_e2e_probe.py` 的
    `maestro_tb/rc_probe`，注意它会创建/覆盖远端对象
-   (`test/tb/maestro_e2e_probe.py:21-35,38-58`)。
+   (`test/maestro_e2e_probe.py:21-35,38-58`)。
 3. ensure maestro view：`maeOpenSetup`+`maeSaveSetup`
    (`07_ensure_maestro_view.py:44-70`)。
 4. GUI open→配置→save (`04_gui_open_snapshot_close.py:43-60`；
@@ -319,10 +319,10 @@ client.maestro.close_gui_session(gui, save=True)              # 04:60
 | 条件 | 现有证据 | 判断/动作 |
 |---|---|---|
 | Virtuoso | IC6.1.8，Xvfb DISPLAY=:10 | 已有；TB 前仍 `pgrep -f virtuoso` (`doc/report/复核测试环境.md:12,63`) |
-| Spectre binary | `/opt/eda/cadence/SPECTRE241/bin/spectre` | 二进制存在；检查版本/PATH (`test/tb/artifacts/reg-six-remote/evidence.json:240`) |
+| Spectre binary | `/opt/eda/cadence/SPECTRE241/bin/spectre` | 二进制存在；检查版本/PATH (`test/artifacts/env/reg-six-remote/evidence.json:240`) |
 | Spectre license | 仓库只有检测方法，无 WSL 通过证据 | **未知**；跑 `virtuoso-bridge license`/`lmstat -a` (`AGENTS.md:309`；`runner.py:873-976`) |
 | GUI/display | Xvfb `:10`，DISPLAY=localhost:10.0 | 若 Xvfb 重启后未起，`open_gui_session` 会失败 (`doc/report/测试执行报告.md:29`) |
-| `analogLib` | probe 会枚举，但仓库无固化结果 | **待确认**；运行 env probe (`test/tb/maestro_env_probe.py:105-106`) |
+| `analogLib` | probe 会枚举，但仓库无固化结果 | **待确认**；运行 env probe (`test/maestro_env_probe.py:105-106`) |
 | PDK/model | probe 查 `/home/Gent/models`、`/opt/eda/models`，无结果；RC 不需要 | 第一版不需要；第二版先找绝对 `.scs`+section (`maestro_env_probe.py:65-69`) |
 | license env | 支持 `VB_CADENCE_CSHRC`，WSL 是否配置未知 | **未知**；Maestro 内部 Spectre 失败时先查 CIW env (`AGENTS.md:64,265-272`) |
 | 磁盘/可写 lib | 有机器容量与项目路径登记，无本 TB 写入证据 | 先查 `df -h`、lib readPath、`/tmp` (`doc/report/复核测试环境.md:12`) |
@@ -360,6 +360,6 @@ client.maestro.close_gui_session(gui, save=True)              # 04:60
    (`09_export_sweep_subpoints.py:18-25,51-76`)。
 6. WSL blocker 顺序：legacy package → Virtuoso/Xvfb → Spectre/license →
    analogLib → 可写 lib → PDK model/corner
-   (`test/tb/maestro_env_probe.py:98-106`；
-   `test/tb/artifacts/reg-six-remote/evidence.json:240`；
+   (`test/maestro_env_probe.py:98-106`；
+   `test/artifacts/env/reg-six-remote/evidence.json:240`；
    `doc/report/测试执行报告.md:29`)。

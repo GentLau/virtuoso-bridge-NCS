@@ -7,7 +7,7 @@
 ## 1. 判定规则
 
 1. 每条代码改动都必须先由 TB 复现（红），且红灯是**行为**而非静态警告；
-2. 修复后同一 TB 必须转绿，红灯/绿灯证据都落盘到 `test/tb/artifacts/`；
+2. 修复后同一 TB 必须转绿，红灯/绿灯证据都落盘到 `test/artifacts/`；
 3. 不能稳定复现的现象不得当作缺陷修复，只能记录为待观察项；
 4. 覆盖率数字只作辅助，最终以“接口正确、内部运作符合预期”为准。
 
@@ -60,7 +60,7 @@
 | 10 | 注册第 5 步失败后不可重试（与 spec “可重试第五步”冲突） | 六步 TB 新增“第 5 步失败→修复环境→再 verify” | `RegistrationFlow.verify` 允许 stage=failed 且候选 entry 仍在时重跑连通性测试 | `reg-six-local/evidence.json` |
 | 11 | 第 5 步缺少 daemon user 与 `expected_user` 的比对（spec 要求 WARNING） | — | IL 解析/写入 `user=`，两个 daemon 的 banner 带上执行账号；`flow.identity_warnings()` 比对 host/user | 单元 + 真机：重新部署并重启 `vblog` 后 identity 为 `host=GLIS-DESKTOP … user=Gent`（`user=` 已落盘），比对逻辑有单元覆盖 |
 | 12 | `user update` 放行了白名单外的 `mode` | — | 白名单去掉 `mode`；六步 TB 增加“提交 mode 必须 400”负例 | `reg-six-local/evidence.json` |
-| 13 | daemon watchdog 文案不是冻结文案 | 集成测试（原断言 `TimeoutError`） | watchdog 帧改为 `SKILL execution timed out`，并剥掉帧尾 RS，客户端拿到的就是冻结文案 | `test/integration/test_daemon_handler.py` |
+| 13 | daemon watchdog 文案不是冻结文案 | 集成测试（原断言 `TimeoutError`） | watchdog 帧改为 `SKILL execution timed out`，并剥掉帧尾 RS，客户端拿到的就是冻结文案 | `test/offline/integration/test_daemon_handler.py` |
 | 14 | registry 载入不校验 user key（手写 `../evil` 可进内存并参与落盘路径拼接） | — | `load()` 对每个 key 调用 `validate_user_name` | 单元回归 |
 | 15 | 压力 TB 会重试**所有**失败（包括 transport/未知影响/真实命令失败），可能掩盖非幂等缺陷 | — | 只对容量拒绝（线程/通道/max_sessions、含 Skill 容量拒绝与回读校验被拒）重试；其它失败立即记录 | `http-stress-sat/evidence.json`（144/144 最终应答，失败立即暴露） |
 
@@ -70,13 +70,13 @@
 |---|---|---|
 | 本地一次性命令超时只杀 shell、子进程继续（Windows/POSIX 皆然） | `subprocess.run(shell=True, timeout=…)` | 需要进程组/Job Object 级别的实现与跨平台测试矩阵，属于独立改造；本轮已在报告中标注为已知风险，调用方超时后不得盲目重试 |
 | 远端常驻 shell “协议错误重试”可能重放已执行的命令 | `ssh.py` 5 类错误统一重试 | 需要重新设计“是否已投递”的判定与协议层错误分类；本轮先记录，避免引入未经验证的重试语义 |
-| 注册 HTTP 层未按用户串行（并发 verify / verify 中 delete 竞态） | `registration_server.py` 只在 dict 上加锁 | 注册是低并发流程（spec 明确不设跨进程租约）；本轮记录为已知竞态，修法（per-user 锁 + 第 6 步前复核 stage）留待后续 |
+| 注册 HTTP 层未按用户串行（并发 verify / verify 中 delete 竞态） | `registration_server.py` 只在 dict 上加锁 | 注册是低并发流程（spec 明确不设跨进程租约）；本轮记录为已知竞态，修法（per-user 锁 + 第 6 步前复核 stage）留待后续。**2026-09-24 用户判定：注册不用考虑并发 → 不再作为缺口、不要求修**（本条仅作历史记录） |
 | IL→daemon 帧未转义（返回值含 RS 会截断） | `ramic_bridge.il` `%L` 原样进帧 | 属协议格式变更，需要 daemon/IL 同步升级与真机矩阵；本轮记录 |
 | Skill 超时后残留帧可能计入下一条请求 | daemon 一次性 drain | 需要更强的请求关联机制（spec 本版不做 request_id）；本轮记录 |
 | OpenSSH 后端 `rc=255` 判成 transport | `ssh.py` | 需区分“ssh 自身失败”与“远端命令返回 255”，需要真实 OpenSSH 真机矩阵 |
 | 本地 shell banner 卡死会阻塞整个中层（构造时持 `_lock`） | `middle.py` | 需要把 shell 启动移出全局锁并加超时；属并发重构，本轮记录 |
 | 目录目标安装仍是备份式替换（崩溃窗口） | `transfer.py` 目录分支 | 文件已改为单次 `os.replace`；目录在 Windows 上无法原地原子替换，需要恢复策略设计 |
-| `test/计划/*` 中部分用例没有门禁 TB（拓扑/等价性/运维等） | — | 见 `test/tb/README.md` §准出集合：本轮明确哪些计划项未纳入准出，避免“文档里的 TB”与门禁不一致 |
+| `test/plans/*` 中部分用例没有门禁 TB（拓扑/等价性/运维等） | — | 见 `test/README.md` §准出集合：本轮明确哪些计划项未纳入准出，避免“文档里的 TB”与门禁不一致 |
 
 ## 3. 本轮新增 TB
 
@@ -109,31 +109,31 @@
 ```powershell
 # 离线 TB（红/绿判定都在这里）
 $env:PYTHONPATH='src'
-python test/tb/semantics_tb.py            --out test/tb/artifacts/semantics-green.json
-python test/tb/daemon_log_protocol_tb.py  --out test/tb/artifacts/log-protocol.json
-python test/tb/fault_injection_tb.py      --out test/tb/artifacts/fault-injection-green.json
+python test/semantics_tb.py            --out test/artifacts/evidence/semantics-green.json
+python test/daemon_log_protocol_tb.py  --out test/artifacts/evidence/log-protocol.json
+python test/fault_injection_tb.py      --out test/artifacts/evidence/fault-injection-green.json
 
 # 真机 TB（需要 ssh 别名 wsl-gent 与已注册的 vb-vblog / vb-vb11）
-python test/tb/log_matrix_real_tb.py --work-dir test/tb/artifacts/log-vblog --token vb-vblog `
-  --out test/tb/artifacts/log-matrix-real-green.json
-python test/tb/one_shot_burst_tb.py --work-dir test/tb/artifacts/one-shot-burst --token vb-vblog `
-  --out test/tb/artifacts/one-shot-burst-green.json
+python test/log_matrix_real_tb.py --work-dir test/artifacts/env/log-vblog --token vb-vblog `
+  --out test/artifacts/evidence/log-matrix-real-green.json
+python test/one_shot_burst_tb.py --work-dir test/artifacts/env/one-shot-burst --token vb-vblog `
+  --out test/artifacts/evidence/one-shot-burst-green.json
 
 # 注册六步（本地全流程 / 远端 1–4 步）
-python test/tb/registration_http_six_step_tb.py --work-dir test/tb/artifacts/reg-six-local `
-  --user vbsixlocal --local-mode --token vb-six-local --out test/tb/artifacts/reg-six-local/evidence.json
-python test/tb/registration_http_six_step_tb.py --work-dir test/tb/artifacts/reg-six-remote-14 `
+python test/live/registration_http_six_step_tb.py --work-dir test/artifacts/env/reg-six-local `
+  --user vbsixlocal --local-mode --token vb-six-local --out test/artifacts/env/reg-six-local/evidence.json
+python test/live/registration_http_six_step_tb.py --work-dir test/artifacts/env/reg-six-remote-14 `
   --user vbsixremote --daemon-port 65133 --root /home/Gent/.virtuoso-bridge/vbsixremote `
-  --stop-after-deploy --out test/tb/artifacts/reg-six-remote-14/evidence.json
+  --stop-after-deploy --out test/artifacts/env/reg-six-remote-14/evidence.json
 
 # HTTP 混合压力（Windows 客户端）
-python test/tb/http_mixed_stress_tb.py --work-dir test/tb/artifacts/http-stress2 `
+python test/http_mixed_stress_tb.py --work-dir test/artifacts/env/http-stress2 `
   --remote-token vb-vblog --remote-daemon-port 65121 `
   --remote-root /home/Gent/.virtuoso-bridge/vblog --workers 6 --rounds 6 `
-  --out test/tb/artifacts/http-stress2/evidence.json
+  --out test/artifacts/env/http-stress2/evidence.json
 
 # 合并覆盖率
-powershell -NoProfile -File test/tb/run_coverage.ps1
+powershell -NoProfile -File test/shared/runners/run_coverage.ps1
 ```
 
 ## 5.1 证据性质说明（评审须知）
@@ -154,5 +154,5 @@ powershell -NoProfile -File test/tb/run_coverage.ps1
    真解释器运行列为 PENDING。
 2. **真机日志分级/降级**：Cadence 侧日志落盘异步，真机只稳定断言字节一致与 off；
    分级/降级/轮转/读不到/第二帧超时由协议 TB 在 daemon 真实代码路径上确定性覆盖。
-3. **重复注册**：注册是低并发流程（spec 明确不做跨进程租约），当前以注册服务进程内
-   协调 + 锁内读改写的 registry 兜底。
+3. **重复注册 / 注册并发**：注册是低并发流程（spec 明确不做跨进程租约），当前以注册服务进程内
+   协调 + 锁内读改写的 registry 兜底。**2026-09-24 用户判定：注册不用考虑并发 → 不列为缺口、不要求修**。

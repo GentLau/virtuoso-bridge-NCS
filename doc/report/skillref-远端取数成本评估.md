@@ -95,8 +95,8 @@ cd /opt/eda/cadence/IC618/doc && grep -r -F -I -i -l -m1 \
     -- 'ground bounce' .                                     => ./cpf_ref/reference.html（0.10–0.15 s）
 
 # 本地对照
-python test/tb/docs_search_probe.py --root C:\Users\user\Desktop\doc --query "ground bounce"
-    => 189.17 s（详见 test/tb/artifacts/skill-tooling-tb/docs-search-probe-20260921.log）
+python test/docs_search_probe.py --root C:\Users\user\Desktop\doc --query "ground bounce"
+    => 189.17 s（详见 test/artifacts/evidence/skill-tooling-tb/docs-search-probe-20260921.log）
 ```
 
 ## 6. 附：如果**建索引**，成本与回报（旧实现 schema v3 实测）

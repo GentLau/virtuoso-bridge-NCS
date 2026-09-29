@@ -13,6 +13,7 @@
 | `e2e/` | 真机 pytest（原 `test/e2e`） | middle+bottom 真链路 |
 | `stress/` | 混合并发、饱和、多用户路由、100 用户规模 | 真实客户端压测 |
 | `flows/` | S2 role 分主机、S4 规模、S11 工程链（原理图→LVS→前后仿） | 跨包工程流程 |
+| `manual/` | 真机手工体验工具（业务操作体验台） | 人直接输入业务操作并查看返回 |
 
 ## 怎么跑
 
@@ -27,6 +28,10 @@ python test/live/stress/production_face_stress_tb.py --workers 6 --rounds 6   # 
 python test/live/flows/role_split_tb.py                               # S2
 python test/live/flows/scale_100_tb.py --count 100 --rounds 2         # S4
 python test/live/flows/s11_full_flow.py                               # S11（需已加载 PDK 的 CIW）
+
+# 真机手工体验：先启动/确认 8127 业务面，再启动同源代理
+python test/live/manual/business_console/serve.py `
+  --business-base http://127.0.0.1:8127 --port 8130
 
 # 准出（离线+半真机+真机合并集合与覆盖率，fail-fast）
 powershell -NoProfile -File test/shared/runners/run_coverage.ps1 -IncludeExtended

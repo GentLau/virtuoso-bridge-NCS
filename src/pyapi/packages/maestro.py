@@ -34,17 +34,21 @@ from pathlib import Path
 from typing import Any
 
 from common.paths import artifact_dir
-from pyapi.models import Middle, VirtuosoResult
+from pyapi.models import Middle, VirtuosoResult, skill_log_kwargs, ResultBase, ResultPackage
 from pyapi.packages import gui as gui_pkg
 from pyapi.packages.basic import parse_sexpr, q
 from pyapi.packages._maestro_util import (
+    MC_RUN_MODE,
+    MC_RUN_OPTIONS,
     decode_skill_text,
     natural_sort_histories,
+    normalize_run_option,
     pairs_to_dict,
     parse_bool,
     parse_detail_csv,
     parse_ocn_text,
     parse_overall_yield,
+    parse_yield_csv,
     parse_skill_str_leaves,
     skill_alist,
     skill_string_list,
@@ -58,7 +62,7 @@ from pyapi.packages._maestro_util import (
 # ---------------------------------------------------------------------------
 
 @dataclass
-class Result:
+class Result(ResultBase):
     """Uniform operation result with a step trace and a payload."""
 
     ok: bool
@@ -76,6 +80,9 @@ class ReadConfigRequest:
     include_parameters: bool = True
     include_raw: bool = False
     timeout: int | None = None
+    log_level: str | None = None
+    log_max_bytes: int | None = None
+    step_details: bool = False
 
 
 @dataclass(frozen=True)
@@ -87,6 +94,9 @@ class WriteRequest:
     view: str = "maestro"
     save: bool = True
     timeout: int | None = None
+    log_level: str | None = None
+    log_max_bytes: int | None = None
+    step_details: bool = False
 
 
 @dataclass(frozen=True)
@@ -105,6 +115,9 @@ class ReadResultsRequest:
     width: int | None = None
     output_path: str | None = None
     timeout: int | None = None
+    log_level: str | None = None
+    log_max_bytes: int | None = None
+    step_details: bool = False
 
 
 @dataclass(frozen=True)
@@ -122,6 +135,9 @@ class ExportRequest:
     region: list[float] | None = None
     toplevel: bool = True
     timeout: int | None = None
+    log_level: str | None = None
+    log_max_bytes: int | None = None
+    step_details: bool = False
 
 
 @dataclass(frozen=True)
@@ -132,6 +148,9 @@ class ReadHistoryRequest:
     history: str | None = None
     view: str = "maestro"
     timeout: int | None = None
+    log_level: str | None = None
+    log_max_bytes: int | None = None
+    step_details: bool = False
 
 
 @dataclass(frozen=True)
@@ -142,6 +161,9 @@ class WriteHistoryRequest:
     commands: list[dict[str, Any]]
     view: str = "maestro"
     timeout: int | None = None
+    log_level: str | None = None
+    log_max_bytes: int | None = None
+    step_details: bool = False
 
 
 @dataclass(frozen=True)
@@ -152,6 +174,9 @@ class OpenGuiRequest:
     view: str = "maestro"
     history: str | None = None
     timeout: int | None = None
+    log_level: str | None = None
+    log_max_bytes: int | None = None
+    step_details: bool = False
 
 
 @dataclass(frozen=True)
@@ -161,6 +186,9 @@ class CloseGuiRequest:
     cell: str
     view: str = "maestro"
     timeout: int | None = None
+    log_level: str | None = None
+    log_max_bytes: int | None = None
+    step_details: bool = False
 
 
 @dataclass(frozen=True)
@@ -173,6 +201,9 @@ class RunRequest:
     blocking: bool = False
     poll_interval: float = 2.0
     timeout: int | None = None
+    log_level: str | None = None
+    log_max_bytes: int | None = None
+    step_details: bool = False
 
 
 @dataclass(frozen=True)
@@ -186,6 +217,9 @@ class OpenWaveformRequest:
     test: str | None = None
     analysis: str | None = None
     timeout: int | None = None
+    log_level: str | None = None
+    log_max_bytes: int | None = None
+    step_details: bool = False
 
 
 @dataclass(frozen=True)
@@ -194,6 +228,9 @@ class CloseWaveformRequest:
     session: str | None = None
     window: str | None = None
     timeout: int | None = None
+    log_level: str | None = None
+    log_max_bytes: int | None = None
+    step_details: bool = False
 
 
 # ---------------------------------------------------------------------------
@@ -347,7 +384,7 @@ def _skill_name_list_body(value: Any, name: str) -> str:
 # Package
 # ---------------------------------------------------------------------------
 
-class Package:
+class Package(ResultPackage):
     """Maestro domain package.
 
     The package is stateless: every operation resolves its own session and
@@ -365,7 +402,12 @@ class Package:
         token: str,
         timeout: int | float | None = None,
     ) -> VirtuosoResult:
-        return self.middle.execute_skill(expr, timeout=timeout, token=token)
+        return self.middle.execute_skill(
+            expr, timeout=timeout, token=token,
+            **skill_log_kwargs(
+                getattr(self, "_log_level", None),
+                getattr(self, "_log_max_bytes", None),
+            ))
 
     def _q(
         self,
@@ -596,6 +638,10 @@ class Package:
             f"maeMakeEditable(?session {q(session)})",
             timeout=timeout,
             token=token,
+            **skill_log_kwargs(
+                getattr(self, "_log_level", None),
+                getattr(self, "_log_max_bytes", None),
+            ),
         )
         if steps is not None:
             steps.append(_step("make_editable", made.ok, made))
@@ -772,6 +818,10 @@ class Package:
             f"axlSetOverwriteHistoryName(setup {name_expr}))",
             timeout=timeout,
             token=token,
+            **skill_log_kwargs(
+                getattr(self, "_log_level", None),
+                getattr(self, "_log_max_bytes", None),
+            ),
         )
 
     def _run_status(
@@ -818,6 +868,22 @@ class Package:
         )
         text = unquote(raw)
         return text if text and text != "nil" else None
+
+    def _corner_names(
+        self,
+        session: str,
+        token: str,
+        timeout: int | float | None,
+    ) -> list[str]:
+        try:
+            raw = self._q(
+                f'maeGetSetup(?typeName "corners"{_session_kw(session)})',
+                token,
+                timeout,
+            )
+            return parse_skill_str_leaves(raw)
+        except Exception:  # noqa: BLE001 - corner names only refine parsing
+            return []
 
     def _results_location(
         self,
@@ -1207,6 +1273,27 @@ class Package:
             mode = _require_text(command.get("run_mode"), "command.run_mode")
             return [f"maeSetCurrentRunMode(?runMode {q(mode)}{sess})"]
 
+        if op == "set_run_option":
+            options = command.get("options")
+            if not isinstance(options, dict) or not options:
+                raise ValueError(
+                    "command.options must be a non-empty mapping"
+                )
+            calls = []
+            for name, value in options.items():
+                option_name = str(name)
+                normalized = normalize_run_option(option_name, value)
+                calls.append(
+                    "axlSetRunOptionValue("
+                    f"axlPutRunOption(sdb {q(MC_RUN_MODE)} {q(option_name)}) "
+                    f"{q(normalized)})"
+                )
+            return [
+                "let((sdb) "
+                f"sdb = {self._main_setup_db_expr(session)} "
+                f"progn({' '.join(calls)}))"
+            ]
+
         if op == "set_job_control_mode":
             mode = _require_text(command.get("mode"), "command.mode")
             return [f"maeSetJobControlMode({q(mode)}{sess})"]
@@ -1410,6 +1497,8 @@ class Package:
     # -- read_config -----------------------------------------------------------
 
     def read_config(self, request: ReadConfigRequest) -> Result:
+        self._log_level = request.log_level
+        self._log_max_bytes = request.log_max_bytes
         _require_text(request.token, "token")
         _require_text(request.library, "library")
         _require_text(request.cell, "cell")
@@ -1528,6 +1617,34 @@ class Package:
                 "env": env_options,
                 "sim": sim_options,
             }))
+
+            run_options: dict[str, Any] = {}
+            try:
+                run_options_expr = (
+                    "let((sdb out opt val) "
+                    f"sdb = {self._main_setup_db_expr(session)} "
+                    "out = nil "
+                    f"foreach(n '{skill_string_list(list(MC_RUN_OPTIONS))} "
+                    f"  opt = axlGetRunOption(sdb {q(MC_RUN_MODE)} n) "
+                    "  val = if(opt && opt != 0 axlGetRunOptionValue(opt) nil) "
+                    "  out = cons(list(n val) out)) "
+                    "reverse(out))"
+                )
+                run_options_raw = self._q(
+                    run_options_expr, request.token, request.timeout,
+                )
+                parsed_run_options = parse_sexpr(run_options_raw.strip())
+                if not isinstance(parsed_run_options, list):
+                    raise RuntimeError("could not parse run options readback")
+                options_by_name = pairs_to_dict(parsed_run_options)
+                run_options = {
+                    name: options_by_name.get(name)
+                    for name in MC_RUN_OPTIONS
+                }
+                steps.append(_step("run_options", True, run_options))
+            except Exception as exc:  # noqa: BLE001 - optional readback
+                run_options = {name: None for name in MC_RUN_OPTIONS}
+                steps.append(_step("run_options", False, str(exc)))
 
             outputs: dict[str, list[dict[str, Any]]] = {}
             if tests:
@@ -1727,22 +1844,32 @@ class Package:
             current_history = self._current_history(
                 session, request.token, request.timeout,
             )
+            tests_config = {
+                test_name: {
+                    "variables": test_variables.get(test_name, {}),
+                    "analyses": analyses.get(test_name, {}),
+                    "outputs": outputs.get(test_name, []),
+                    "env_options": env_options.get(test_name, {}),
+                    "sim_options": sim_options.get(test_name, {}),
+                }
+                for test_name in tests
+            }
+            corners_config = {
+                corner: {
+                    "variables": corner_variables.get(corner, {}),
+                    "parameters": corner_parameters.get(corner, {}),
+                }
+                for corner in corners
+            }
             config = {
                 "library": request.library,
                 "cell": request.cell,
                 "view": request.view,
-                "tests": tests,
-                "corners": corners,
-                "corner_variables": corner_variables,
-                "test_variables": test_variables,
+                "tests": tests_config,
                 "variables": variables,
                 "parameters": parameters,
-                "corner_parameters": corner_parameters,
-                "analyses": analyses,
-                "env_options": env_options,
-                "sim_options": sim_options,
-                "outputs": outputs,
-                "specs": specs,
+                "corners": corners_config,
+                "run_options": {MC_RUN_MODE: run_options},
                 "run_mode": run_mode,
                 "job_control_mode": job_control_mode,
                 "current_history": current_history,
@@ -1765,6 +1892,8 @@ class Package:
     # -- write -----------------------------------------------------------------
 
     def write(self, request: WriteRequest) -> Result:
+        self._log_level = request.log_level
+        self._log_max_bytes = request.log_max_bytes
         _require_text(request.token, "token")
         _require_text(request.library, "library")
         _require_text(request.cell, "cell")
@@ -1847,6 +1976,9 @@ class Package:
                 for expr in exprs:
                     run = self.middle.execute_skill(
                         expr, timeout=request.timeout, token=request.token,
+                        **skill_log_kwargs(
+                            request.log_level, request.log_max_bytes,
+                        ),
                     )
                     steps.append(_step(f"command:{op}", run.ok, run))
                     if not run.ok:
@@ -1948,6 +2080,8 @@ class Package:
         return directories[0]
 
     def read_results(self, request: ReadResultsRequest) -> Result:
+        self._log_level = request.log_level
+        self._log_max_bytes = request.log_max_bytes
         _require_text(request.token, "token")
         _require_text(request.library, "library")
         _require_text(request.cell, "cell")
@@ -2033,6 +2167,9 @@ class Package:
                 )
                 run = self.middle.execute_skill(
                     skill, timeout=request.timeout, token=request.token,
+                    **skill_log_kwargs(
+                        request.log_level, request.log_max_bytes,
+                    ),
                 )
                 steps.append(_step("waveform", run.ok, run))
                 if not run.ok:
@@ -2080,6 +2217,9 @@ class Package:
                     f"?fileName {q(remote_csv)})",
                     timeout=request.timeout,
                     token=request.token,
+                    **skill_log_kwargs(
+                        request.log_level, request.log_max_bytes,
+                    ),
                 )
                 steps.append(_step("export_detail", export.ok, export))
                 if not export.ok:
@@ -2131,10 +2271,101 @@ class Package:
                     overall_yield = parse_overall_yield(yield_raw)
                 except Exception:
                     overall_yield = {}
+
+                mc_result: dict[str, Any] | None = None
+                remote_yield_csv: str | None = None
+                if history.startswith("MonteCarlo."):
+                    remote_yield_csv = posixpath.join(
+                        daemon_root,
+                        f".maestro-yield-{_safe_token(history)}-"
+                        f"{uuid.uuid4().hex}.csv",
+                    )
+                    yield_export = self.middle.execute_skill(
+                        f"maeExportOutputView(?session {q(session)} "
+                        f"?historyName {q(history)} ?view \"Yield\" "
+                        f"?fileName {q(remote_yield_csv)})",
+                        timeout=request.timeout,
+                        token=request.token,
+                        **skill_log_kwargs(
+                            request.log_level, request.log_max_bytes,
+                        ),
+                    )
+                    steps.append(_step(
+                        "export_yield", yield_export.ok, yield_export,
+                    ))
+                    if not yield_export.ok:
+                        raise RuntimeError(
+                            "; ".join(yield_export.errors)
+                            or "maeExportOutputView Yield failed"
+                        )
+                    if request.output_path:
+                        base = Path(request.output_path)
+                        local_yield = base.with_name(
+                            f"{base.stem}-yield{base.suffix or '.csv'}"
+                        )
+                    else:
+                        local_yield = (
+                            _local_artifact_dir("results")
+                            / f"{_safe_token(history)}-yield-"
+                            f"{uuid.uuid4().hex}.csv"
+                        )
+                    downloaded_yield = self.middle.download_file(
+                        remote_yield_csv, local_yield,
+                        timeout=request.timeout, token=request.token,
+                    )
+                    steps.append(_step(
+                        "download_yield",
+                        downloaded_yield.returncode == 0,
+                        downloaded_yield,
+                    ))
+                    if downloaded_yield.returncode != 0:
+                        raise RuntimeError(
+                            downloaded_yield.stderr
+                            or "Yield CSV download failed"
+                        )
+                    try:
+                        yield_text = local_yield.read_text(
+                            encoding="utf-8", errors="replace",
+                        )
+                    except OSError as exc:
+                        raise RuntimeError(
+                            f"cannot read downloaded Yield CSV: {exc}"
+                        )
+                    mc_result = parse_yield_csv(
+                        yield_text,
+                        history=history,
+                        corners=self._corner_names(
+                            session, request.token, request.timeout,
+                        ),
+                    )
+                    overall = mc_result.setdefault("overall", {})
+                    for output_key, raw_key in (
+                        ("yield", "Yield"),
+                        ("passed_points", "PassedPoints"),
+                        ("error_points", "ErrorPoints"),
+                    ):
+                        value = (
+                            overall_yield.get(raw_key)
+                            if isinstance(overall_yield, dict) else None
+                        )
+                        if value is not None:
+                            overall[output_key] = value
+                    passed = overall.get("passed_points")
+                    errors = overall.get("error_points")
+                    if (
+                        overall.get("total_points") is None
+                        and isinstance(passed, (int, float))
+                        and isinstance(errors, (int, float))
+                    ):
+                        overall["total_points"] = int(passed + errors)
+
+                cleanup = f"rm -f {remote_csv}"
+                if remote_yield_csv:
+                    cleanup += f" {remote_yield_csv}"
                 self.middle.run_command(
-                    f"rm -f {remote_csv}", timeout=10, token=request.token,
+                    cleanup, timeout=10, token=request.token,
                 )
-                result = Result(True, steps, None, {
+                payload = {
                     "history": history,
                     "tests": parsed["tests"],
                     "points": parsed["points"],
@@ -2142,7 +2373,10 @@ class Package:
                     "overall_spec": overall_spec,
                     "overall_yield": overall_yield,
                     "local_path": str(local_path),
-                })
+                }
+                if mc_result is not None:
+                    payload["monte_carlo"] = mc_result
+                result = Result(True, steps, None, payload)
         except Exception as exc:  # noqa: BLE001
             result = Result(False, steps, f"{type(exc).__name__}: {exc}")
         finally:
@@ -2154,6 +2388,8 @@ class Package:
     # -- export ----------------------------------------------------------------
 
     def export(self, request: ExportRequest) -> Result:
+        self._log_level = request.log_level
+        self._log_max_bytes = request.log_max_bytes
         _require_text(request.token, "token")
         _require_text(request.library, "library")
         _require_text(request.cell, "cell")
@@ -2203,6 +2439,9 @@ class Package:
                     f"?fileName {q(remote_csv)})",
                     timeout=request.timeout,
                     token=request.token,
+                    **skill_log_kwargs(
+                        request.log_level, request.log_max_bytes,
+                    ),
                 )
                 steps.append(_step("outputs_csv", run.ok, run))
                 if not run.ok:
@@ -2243,6 +2482,9 @@ class Package:
                     f"{q(request.corner)} {q(remote_dir)} {_session_kw(session)})",
                     timeout=request.timeout,
                     token=request.token,
+                    **skill_log_kwargs(
+                        request.log_level, request.log_max_bytes,
+                    ),
                 )
                 steps.append(_step("netlist", run.ok, run))
                 if not run.ok:
@@ -2276,6 +2518,9 @@ class Package:
                     f"maeWriteScript({q(remote_file)})",
                     timeout=request.timeout,
                     token=request.token,
+                    **skill_log_kwargs(
+                        request.log_level, request.log_max_bytes,
+                    ),
                 )
                 steps.append(_step("script", run.ok, run))
                 if not run.ok:
@@ -2483,6 +2728,9 @@ class Package:
             )
             capture = self.middle.execute_skill(
                 skill, timeout=request.timeout, token=request.token,
+                **skill_log_kwargs(
+                    request.log_level, request.log_max_bytes,
+                ),
             )
             steps.append(_step("hiWindowSaveImage", capture.ok, capture))
             if not capture.ok:
@@ -2536,6 +2784,8 @@ class Package:
     # -- read_history ----------------------------------------------------------
 
     def read_history(self, request: ReadHistoryRequest) -> Result:
+        self._log_level = request.log_level
+        self._log_max_bytes = request.log_max_bytes
         _require_text(request.token, "token")
         _require_text(request.library, "library")
         _require_text(request.cell, "cell")
@@ -2663,6 +2913,8 @@ class Package:
     # -- write_history ---------------------------------------------------------
 
     def write_history(self, request: WriteHistoryRequest) -> Result:
+        self._log_level = request.log_level
+        self._log_max_bytes = request.log_max_bytes
         _require_text(request.token, "token")
         _require_text(request.library, "library")
         _require_text(request.cell, "cell")
@@ -2717,6 +2969,9 @@ class Package:
                 for expr in exprs:
                     run = self.middle.execute_skill(
                         expr, timeout=request.timeout, token=request.token,
+                        **skill_log_kwargs(
+                            request.log_level, request.log_max_bytes,
+                        ),
                     )
                     steps.append(_step(f"history:{op}", run.ok, run))
                     if not run.ok:
@@ -2746,6 +3001,9 @@ class Package:
                                 explorer_expr,
                                 timeout=request.timeout,
                                 token=request.token,
+                                **skill_log_kwargs(
+                                    request.log_level, request.log_max_bytes,
+                                ),
                             )
                             steps.append(_step("delete_explorer", explorer.ok, explorer))
                             saved = self._save_setup(
@@ -2811,6 +3069,8 @@ class Package:
     # -- GUI open / close ------------------------------------------------------
 
     def open_gui(self, request: OpenGuiRequest) -> Result:
+        self._log_level = request.log_level
+        self._log_max_bytes = request.log_max_bytes
         _require_text(request.token, "token")
         _require_text(request.library, "library")
         _require_text(request.cell, "cell")
@@ -2832,6 +3092,9 @@ class Package:
                     f"{_session_kw(window['session'])})",
                     timeout=request.timeout,
                     token=request.token,
+                    **skill_log_kwargs(
+                        request.log_level, request.log_max_bytes,
+                    ),
                 )
                 steps.append(_step("restore_history", run.ok, run))
                 if not run.ok:
@@ -2850,6 +3113,8 @@ class Package:
             return Result(False, steps, f"{type(exc).__name__}: {exc}")
 
     def close_gui(self, request: CloseGuiRequest) -> Result:
+        self._log_level = request.log_level
+        self._log_max_bytes = request.log_max_bytes
         _require_text(request.token, "token")
         _require_text(request.library, "library")
         _require_text(request.cell, "cell")
@@ -2881,12 +3146,18 @@ class Package:
             )
             closed = self.middle.execute_skill(
                 close_expr, timeout=request.timeout, token=request.token,
+                **skill_log_kwargs(
+                    request.log_level, request.log_max_bytes,
+                ),
             )
             steps.append(_step("close_window", closed.ok, closed))
             session_closed = self.middle.execute_skill(
                 f"maeCloseSession(?session {q(window['session'])} ?forceClose t)",
                 timeout=request.timeout,
                 token=request.token,
+                **skill_log_kwargs(
+                    request.log_level, request.log_max_bytes,
+                ),
             )
             steps.append(_step("close_session", session_closed.ok, session_closed))
             purge = self._purge_cellview(
@@ -2995,6 +3266,10 @@ class Package:
                     f"maeRunSimulation({_session_kw(session)})",
                     timeout=timeout or 180,
                     token=token,
+                    **skill_log_kwargs(
+                        getattr(self, "_log_level", None),
+                        getattr(self, "_log_max_bytes", None),
+                    ),
                 )
             except Exception as exc:  # noqa: BLE001
                 box["error"] = exc
@@ -3067,7 +3342,78 @@ class Package:
             info["sessions"] = []
         return info
 
+    def _mc_preflight(
+        self,
+        session: str,
+        token: str,
+        timeout: int | float | None,
+    ) -> dict[str, Any] | None:
+        """Best-effort checks before a Monte Carlo run.
+
+        The run itself is unchanged (live evidence: set the mode first, then
+        call the bare ``maeRunSimulation``).  These checks only turn the two
+        documented, deterministic failure modes into a structured error
+        before the GUI is tied up:
+
+        * no plotted output -> ``ADEXL-1617`` / no MC measurements;
+        * sweeps enabled without ``mcreferencepoint=1`` -> ``ADEXL-1742``.
+
+        Statistics-model presence is still enforced by Spectre
+        (``SPECTRE-16012``) because there is no reliable per-session
+        pre-simulation readback for it in this version.
+        """
+        try:
+            mode = unquote(self._q(
+                f"maeGetCurrentRunMode{_session_kw(session)}",
+                token,
+                timeout,
+            ))
+        except Exception:  # noqa: BLE001 - preflight must not invent state
+            return None
+        if mode != MC_RUN_MODE:
+            return {"applicable": False, "run_mode": mode}
+
+        info: dict[str, Any] = {
+            "applicable": True,
+            "run_mode": mode,
+            "plotted_outputs": None,
+            "sweeps_enabled": None,
+            "reference_point": None,
+        }
+        plotted_expr = (
+            "let((found) "
+            "found = nil "
+            f"foreach(t maeGetSetup({_session_kw(session)}) "
+            f"  foreach(o maeGetTestOutputs(t ?session {q(session)}) "
+            "    when(o~>plot found = t))) "
+            "found)"
+        )
+        try:
+            info["plotted_outputs"] = parse_bool(
+                self._q(plotted_expr, token, timeout)
+            )
+        except Exception as exc:  # noqa: BLE001 - check is best-effort
+            info["plotted_error"] = str(exc)
+
+        sweep_expr = (
+            "let((sdb opt val) "
+            f"sdb = {self._main_setup_db_expr(session)} "
+            f"opt = axlGetRunOption(sdb {q(MC_RUN_MODE)} \"mcreferencepoint\") "
+            "val = if(opt && opt != 0 axlGetRunOptionValue(opt) nil) "
+            "list(axlGetAllSweepsEnabled(sdb) val))"
+        )
+        try:
+            parsed = parse_sexpr(self._q(sweep_expr, token, timeout).strip())
+            if isinstance(parsed, list) and len(parsed) >= 2:
+                info["sweeps_enabled"] = parse_bool(parsed[0])
+                info["reference_point"] = parsed[1]
+        except Exception as exc:  # noqa: BLE001 - check is best-effort
+            info["sweep_check_error"] = str(exc)
+        return info
+
     def run(self, request: RunRequest) -> Result:
+        self._log_level = request.log_level
+        self._log_max_bytes = request.log_max_bytes
         _require_text(request.token, "token")
         _require_text(request.library, "library")
         _require_text(request.cell, "cell")
@@ -3086,10 +3432,45 @@ class Package:
             )
             session = window["session"]
             steps.append(_step("ensure_gui_session", True, window))
+            mc_info = self._mc_preflight(
+                session, request.token, request.timeout,
+            )
+            if mc_info is not None:
+                steps.append(_step("mc_preflight", True, mc_info))
+                if mc_info.get("applicable"):
+                    if mc_info.get("plotted_outputs") is False:
+                        return Result(
+                            False, steps,
+                            "Monte Carlo requires at least one plotted output "
+                            "(ADEXL-1617)",
+                            {
+                                "reason": "mc_no_plot_outputs",
+                                "monte_carlo": mc_info,
+                            },
+                        )
+                    reference = str(
+                        mc_info.get("reference_point") or ""
+                    ).strip().lower()
+                    if (
+                        mc_info.get("sweeps_enabled") is True
+                        and reference not in ("1", "t", "true", "yes")
+                    ):
+                        return Result(
+                            False, steps,
+                            "Monte Carlo with sweeps requires "
+                            "mcreferencepoint=1 (ADEXL-1742)",
+                            {
+                                "reason": "mc_sweeps_conflict",
+                                "monte_carlo": mc_info,
+                            },
+                        )
             mode = self.middle.execute_skill(
                 f'maeSetJobControlMode("ICRP"{_session_kw(session)})',
                 timeout=request.timeout,
                 token=request.token,
+                **skill_log_kwargs(
+                    request.log_level, request.log_max_bytes,
+                ),
             )
             steps.append(_step("job_control_mode", mode.ok, mode))
             if not mode.ok:
@@ -3153,6 +3534,9 @@ class Package:
                         "when(f hiFormDone(f)))",
                         timeout=request.timeout,
                         token=request.token,
+                        **skill_log_kwargs(
+                            request.log_level, request.log_max_bytes,
+                        ),
                     )
                     retry, retry_dismissed, retry_error, retry_checks = (
                         self._start_simulation_with_watchdog(
@@ -3231,6 +3615,8 @@ class Package:
     # -- waveform GUI ----------------------------------------------------------
 
     def open_waveform_gui(self, request: OpenWaveformRequest) -> Result:
+        self._log_level = request.log_level
+        self._log_max_bytes = request.log_max_bytes
         _require_text(request.token, "token")
         _require_text(request.library, "library")
         _require_text(request.cell, "cell")
@@ -3326,6 +3712,8 @@ class Package:
             return Result(False, steps, f"{type(exc).__name__}: {exc}")
 
     def close_waveform_gui(self, request: CloseWaveformRequest) -> Result:
+        self._log_level = request.log_level
+        self._log_max_bytes = request.log_max_bytes
         _require_text(request.token, "token")
         _require_timeout(request.timeout)
         if not request.session and not request.window:

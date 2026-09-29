@@ -544,6 +544,13 @@ class TestSymbolScreenshot(unittest.TestCase):
                              ["mkdir", "capture", "download"])
             self.assertTrue(any(c.startswith("rm -f") for c in middle.commands))
 
+    def test_invalid_view_type_is_rejected(self):
+        """P-105：screenshot 的 view_type 必须与 read/write 同口径校验。"""
+        import tempfile
+        with tempfile.TemporaryDirectory(prefix="vb-") as tmp:
+            with self.assertRaises(ValueError):
+                self._shot(ScreenshotMiddle(), tmp, view_type="bogus_type_xyz")
+
     def test_failure_paths(self):
         import tempfile
         with tempfile.TemporaryDirectory(prefix="vb-") as tmp:

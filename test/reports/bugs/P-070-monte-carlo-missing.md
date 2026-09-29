@@ -5,7 +5,7 @@
 | 级别 | P2（能力缺失） |
 | 层 | 上层（maestro/spectre 包） |
 | 归属 | 待决策（产品口径：支持驱动 MC or 明确不做）→ 设计侧实现/写 spec |
-| 状态 | **待决策** |
+| 状态 | **待测试侧/待确认** |
 | 位置 | `src/pyapi/packages/_maestro_util.py:141`（唯一 MC 相关代码）、`:291-313`（`parse_overall_yield`）；spec：`6-maestro.md:130`（唯一 MC 提及，锁语义）、`7-spectre.md`（分析枚举无 montecarlo） |
 | 首报 | 第五轮（2026-09-23）／见台账 |
 | 最近更新 | 2026-09-24（测试侧整理 bug 卡） |
@@ -37,6 +37,11 @@
 - 选项矩阵：`maeSetRunOption` 只认 `mcmethod`/`mcnumpoints`；其余 15 项走 `axlPutRunOption`+`axlSetRunOptionValue` 可写可回读（`dutsummary` 读回空串）。
 - 副作用提醒：MC 实验会把共享库 `maestro_tb/rc_probe` 的 run_mode 改成 Monte Carlo Sampling，**跑完务必还原**（本轮已由测试侧恢复过一次）。
 - 待办：产品拍板「支持驱动」后，在 maestro 包补正式入口 + spec；测试侧据此补真机 MC 验证与 yield/sigma 对数。
+## 测试侧真机验收（2026-09-29，P-070 复验）
+- 驱动链已通：`set_run_mode('Monte Carlo Sampling')` + `set_run_option(mcnumpoints=2)` 回读生效；裸 `run` 产出 `MonteCarlo.1`，`read_history` = `done`、**2/2 点**；`read_results` 返回 `points=2`。
+- 结果面缺口：同一响应的 `value.monte_carlo.overall.total_points=0`、`outputs=[]`（Yield 表为空，文本 `Yield Estimate: 0 %(0 passed/0 pts)`）。
+- 待确认：`maestro_tb/rc_probe` 的 output 是否定义了 spec/target（无 spec 时 Yield 表本就为空 ⇒ 属夹具，需造带 spec 夹具再验收）；若夹具本应有 spec ⇒ 属 Yield 聚合出口缺陷。
+- 新增 TB：`test/live/packages/maestro_mc_e2e_tests.py`（MC-01..04 + 状态还原）。
 
 ---
 

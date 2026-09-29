@@ -1,8 +1,8 @@
 {
   "tb": "p076_tar_completion_tb",
   "status": "PASS",
-  "passed": 2,
-  "total": 2,
+  "passed": 4,
+  "total": 4,
   "cases": [
     {
       "name": "wait_completion_ignores_stuck_pump",
@@ -16,9 +16,23 @@
       "ok": true,
       "rc": 0,
       "stderr": "",
-      "target": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-p076-vib3v28h\\out",
+      "target": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-p076-1cxazaa3\\out",
       "installed": true,
-      "elapsed_s": 1.031
+      "elapsed_s": 0.015
+    },
+    {
+      "name": "no_residual_pump_after_download",
+      "ok": true,
+      "rc": 0,
+      "leaked_threads": [],
+      "created_threads": 3,
+      "elapsed_s": 0.016
+    },
+    {
+      "name": "no_residual_local_pipe_worker",
+      "ok": true,
+      "read_stream_alive_after_stop": false,
+      "send_stream_alive_after_stop": false
     }
   ]
 }

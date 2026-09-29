@@ -121,9 +121,9 @@ let(((__vb_r progn(<code>
 
 验证：
 
-- 真机矩阵 `test/tb/skill_syntax_matrix_tb.py`：修复前 **8/10**，
+- 真机矩阵 `test/skill_syntax_matrix_tb.py`：修复前 **8/10**，
   失败项正是单行多表达式和单行行尾注释；修复后 **10/10**。
-- `test/integration/test_daemon_handler.py` 增加 py3/py27 双跑用例，
+- `test/offline/integration/test_daemon_handler.py` 增加 py3/py27 双跑用例，
   固定检查 `progn(<code>\n)` 包装。
 - 该修复不会让原本非法的 `errset(progn` 形式变合法；它只保证合法 SKILL
   不再因为 daemon 的内部包装方式而失败。

@@ -24,7 +24,7 @@
 | 平台 | 命令 | 结果 | 证据 |
 |---|---|---|---|
 | Windows py3.12 | `python -m pytest test/offline/unit test/offline/integration test/offline/scenario` | **1805 用例 / 0 失败 / 0 错误 / 21 skip（含 13 xfail）** | `evidence/round8/offline-win-final3.xml` |
-| Linux py3.9（wsl-gent 仓库副本） | `test/shared/runners/sync_linux_client.ps1 -Run` | **1805 用例 / 0 失败 / 0 错误 / 31 skip（含 11 xfail）/ 123.1 s** | `evidence/round8/offline-linux-py39-final3.xml` |
+| Linux py3.9（wsl-gent 仓库副本） | `test/shared/runners/sync_linux_client.ps1 -Run` | **1805 用例 / 0 失败 / 0 错误 / 27 skip（含 11 xfail）**（2026-09-29 补 `admin-token.txt` 后 4 条 admin 用例转跑） | `evidence/round8/offline-linux-py39-final4.xml` |
 
 > `xfail` = 已立卡未修缺陷的钉住用例（P-078/P-079/P-080/P-081/P-082 家族），带 `reason="P-08x: …"`；
 > 修复后自动 XPASS，**不改判据**。离线层不得落盘/起服务的纪律由 `test/conftest.py` 强制。
@@ -120,14 +120,14 @@
 |---|---|---|
 | P-086 窗口期的错误文案误导 | 22:00 `calibre.export_cdl` 报 `cds.lib not resolved (CIW cwd unavailable)`；22:04 `getWorkingDir()` 正常；22:06 calibre 8/8 PASS | 空响应与"cwd 不可用"必须分开报 |
 | 顶层未知字段处理不统一 | dataclass 模型 → 400 `unexpected keyword argument`；pydantic 模型 → 静默忽略 | 建议统一口径（见 `test_norm_gap_batch2.py::TestRequestIdNotIntroduced` 注释） |
-| 离线层 skip 的构成 | 19–31 条 skip，逐条带 reason（平台守卫/条件跳过） | 非"沉默跳过"；`test/offline/README.md` 有纪律 |
+| 离线层 skip 的构成 | **Win 21 / Linux 27**，逐条带 reason：平台门控（8 vs 16）、缺陷钉住（13 vs 11）、环境缺件（Linux 原 4 条 admin 已补 token 转跑） | 非"沉默跳过"；`test/offline/README.md` 有纪律 |
 
 ## 7. 数字与证据一览（送审判据）
 
 | 项 | 数字 | 证据文件 |
 |---|---|---|
 | 离线 Win py3.12 | 1805 / 0 红 / 21 skip（13 xfail） | `evidence/round8/offline-win-final3.xml` |
-| 离线 Linux py3.9 | 1805 / 0 红 / 31 skip（11 xfail） | `evidence/round8/offline-linux-py39-final3.xml` |
+| 离线 Linux py3.9 | 1805 / 0 红 / **27 skip**（11 xfail） | `evidence/round8/offline-linux-py39-final4.xml` |
 | 半真机 | 39 探针 / 32 ok / 7 红（全部已立卡） | `evidence/round8/semi-probes-final.json` |
 | 真机包 E2E | 10 套稳定绿 + 1 被阻塞（maestro P-086/P-095/P-096） | `evidence/http-e2e/*.log` |
 | 真机五接口 | 5/5 | `evidence/round8/cov-remote-real-r8.json` |

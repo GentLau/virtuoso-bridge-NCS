@@ -9,7 +9,7 @@
 
 | 项 | 结果 |
 |---|---|
-| 离线 | Win py3.12 **1805/0红/21skip**；Linux py3.9 **1805/0红/31skip**（两平台计数一致；1807−去重5+新补3） |
+| 离线 | Win py3.12 **1805/0红/21skip**；Linux py3.9 **1805/0红/27skip**（补 admin-token 后；两平台计数一致） |
 | 半真机 | **39 探针 / 32 ok / 7 红**（7 条红灯全部对应已立卡缺陷） |
 | 真机 | 10 套稳定绿 + 1 被阻塞（maestro P-086/P-095/P-096）；五接口 5/5；e2e 10 用例 0 红 + local 4/4；压测 108 步 0 失败；业务场景 10 条链全绿；注册 4 条 TB 全绿 |
 | 覆盖率 | 语句 **90.33%** / 分支 **82.26%** / 合并 **88.23%**（2026-09-29 01:55 全量重算；**下界**——maestro 2 步 rc=1；全绿快照 91.54/83.62/89.48 见 `coverage-main-strict-2333.json`） |
@@ -37,7 +37,7 @@
 | 层 | 内容 | 证据路径 | 状态 |
 |---|---|---|---|
 | 离线（Win py3.12） | unit+integration+scenario 全量 | `evidence/round8/offline-win-final3.xml` | ✅ **1805 例 / 0 红 / 21 skip**（13 条 xfail 钉住） |
-| 离线（Linux py3.9） | 同一份树，跑在 wsl-gent 仓库副本 | `evidence/round8/offline-linux-py39-final3.xml` | ✅ **1805 例 / 0 红 / 31 skip**（与 Windows **collect 数一致**） |
+| 离线（Linux py3.9） | 同一份树，跑在 wsl-gent 仓库副本 | `evidence/round8/offline-linux-py39-final4.xml` | ✅ **1805 例 / 0 红 / 27 skip**（补 `admin-token.txt` 后 4 条 admin 用例转跑；与 Windows collect 数一致） |
 
 > 计数口径：**不要引 pytest 写出的 JUnit `tests=` 属性**（本环境 pytest 9.1.1 会虚高：全量树写 2456，
 > 实际 `<testcase>` 只有 1800）。以 `<testcase>` 元素数 / `--collect-only` 汇总为准（两者与进度点数三处一致）。
@@ -99,7 +99,10 @@
 | 2026-09-28 22:4x | root（合并稿机器红队，第一轮） | ① 6 组合并稿的 `evidence` 存在 34 处"路径+括号注解"混写；② g4-edit 的 2 条证据被误存成"单字符数组"（schematic#017/layout#139）；③ 全量 def 扫描发现 1 处**引用不存在的测试**（veriloga#068 → `test_veriloga_contracts.py::test_check_and_save_sequence`） | ① `merge_round8_spec_matrix.py` 增加 evidence 规范化（纯路径 + `evidence_notes`）；② 修复 2 条单字符数组；③ 删除伪引用（保留 `test_veriloga_lazy_editor_contract.py` 的两条真实用例）。复核：**102 条仓库证据路径 0 缺失；91 条 `::用例` 引用 0 失效** | 
 | 2026-09-29 00:4x | root（红队 N11 复跑） | `registration-role-split` 的 29/29 一度缺证据（REVIEW-C N11）；复跑 3 次：① 00:35 干净 work-dir **29/29 PASS**；② 00:37 一次复跑在 post-commit 撞 `ssh w1-gent` 30s 超时（`TimeoutExpired`，仅后置校验，注册链本身全过）；③ 两次同 work-dir 复跑被 `credential reuse requires enhanced_token` 401 拒绝（**反凭据复用保护按设计生效**） | ① 用**全新 work-dir** 再跑一次 → `registration-role-split.json` 落成 **29/29**（含 `deploy-paths-contain-no-token`）；② 报告/自查表改指该证据；③ 复跑须知（同 key 换 work-dir）记入本行 |
 | 2026-09-29 02:0x | root（TB 自毁前置修复 + 覆盖率补跑受阻） | 全量覆盖率重算后补跑 `packages/maestro (direct)` 与 `maestro view-param (direct)`：先是 TB 夹具自毁——套件自己的 HISTORY-01 会 rename/delete 选中的 history，跑过一次后共享库只剩 `MonteCarlo.*`，`_interactive_history` 直接 `AssertionError: no Interactive.*`；改为**保持“必须挑已存在 history”语义、无 Interactive.* 时退回现有 history（打印 NOTE）**后，夹具步全过（NOTE 显示退回 `MonteCarlo.2`），但 `maestro.run` 仍在 `Empty response from daemon`（P-086/P-095）失败 | ① 夹具修复已落 `test/live/packages/maestro_e2e_tests.py`（作者/最后改动=测试/root，02:05）；② 覆盖率两步仍记 rc=1，报告 §5 继续标注“下界”；③ 另观测到一次 `read_config` 报 `asiGet … list(symbol)`，standalone 复跑同一调用 ok=true ⇒ 归入 P-086 瞬时族（不单独立卡） | 
+| 2026-09-29 03:2x | root（skip 纪律硬规矩） | 新增 	est/shared/runners/check_skip_reasons.py（静态扫 skip 装饰器 + 解析 JUnit skipped@message）+ 写TB规范.md §10：任何 skip 必须写明原因，缺陷钉住必须挂卡号；实跑 **静态 0 违规 / 动态 183 条 skip 无原因 0** | 提交前必跑；报告 skip 数字与三分类（平台门控/缺陷钉住/环境缺件）以此为准 |
+| 2026-09-29 02:2x | root（读回断言实跑验证） | 审计器两条 `needs-triage` 补读回后实跑：`calibre_params_e2e_tests.py` **6/6 绿**（set 上传 → 远端 sha256sum 比对）；`calibre_export_pex_e2e_tests.py` **6 绿 + 1 红钉**（DRC → read_results 解出 rules_checked；红钉=PEX-FMT-01/P-102+P-103） | 原子审计终检 `待分诊=0`，两条读回不再是“纸面断言” |
 | 2026-09-29 00:5x | review-D（独立，第二位红队） | brief #1 全量补做：**42 条 direct 语义核验**（g1–g6 每簇 7 条，seed=4092，排除 A 已核 15 条）→ **36 ok / 6 需处置**（无整行假覆盖）：总览#175 RS、总览#206 跨 token、并发#022 隧道记账、日志#045 64KB 默认、控制面#011 引用形式、layout#180 point 口径 | 逐条处置：① `test_daemon_handler.py` 补 3 处 `endswith(RS)`；② 总览#206 证据补 `test_multi_user_isolation.py::test_two_users_route_to_their_own_daemons`；③ `test_endpoint_budgets.py` +2 例（隧道占用/失败归还，7/7 绿）；④ `test_registry_more.py` +`test_cdslog_defaults_and_bounds`；⑤ `src/` 锚点属检查器范围外，记录不改判据；⑥ point 为类型记号、`list(x y)` 即 SKILL point 值，登记为口径说明。brief #1 由 A15+D42=**57 条**满足 |
+| 2026-09-29 12:4x | root（P-104 同类只读审计，亲自做·无子代理） | 全量枚举 `src/` 内"标识符含 open"的调用族（13 族）× 8123 逐函数查证 + 逐调用点实参核对 → **疑似问题 0 条**：`ddGetObj` 53 处**全未传 mode**（文档 Default=`r`，只有 w/wd/a/ad 才创建）、`dbOpenCellViewByType` 23 个打开点读全 `"r"`、`maeOpenSetup` 读路径 4 处**已传 `?mode "r"`**（P-104 修复在工作区代码里）、`ddCatOpen(Ex)` 17 处/`geOpen` 4 处读全 `"r"`；2 条相邻观察（`close_gui` 的 `dbPurge` 进程级丢弃未保存改动；`run` 路径 `deOpenCellView "a"` 的跨用户编辑锁）**不立案**，只进"待真机验证" | 交付 `round8/readonly-open-audit.md`（任务书 `round8/readonly-open-audit-brief.md`）；结论：未发现新的 P-104 同类问题 |
 
 ## 7. 交付物清单（送审判据）
 
@@ -107,5 +110,6 @@
 - `round8-op-param-结果.md`（628 条 → GAP 归零或显式豁免）
 - `原子覆盖`机器核账刷新（GAP=0 证据）
 - `round8-测试报告.md`（三层结果 + 覆盖率 + 明缺口）
+- `readonly-open-audit.md`（P-104 同类只读审计：**0 疑似** + 4 条待真机验证项）
 - `bugs/` 卡片与已关闭记录同步；新 bug 全部落卡
 - 子代理评审记录（§6）

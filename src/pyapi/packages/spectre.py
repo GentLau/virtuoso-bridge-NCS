@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import Any
 
 from common.paths import artifact_dir
-from pyapi.models import Middle
+from pyapi.models import Middle, ResultBase, ResultPackage
 from pyapi.packages._spectre_util import (
     compute_metric,
     detect_layout,
@@ -47,7 +47,7 @@ _ANALYSES = ("all", "tran", "dc", "ac", "info")
 
 
 @dataclass
-class Result:
+class Result(ResultBase):
     ok: bool
     steps: list[dict[str, Any]] = field(default_factory=list)
     error: str | None = None
@@ -59,6 +59,7 @@ class CheckLicenseRequest:
     token: str
     spectre_bin: str | None = None
     timeout: int | None = None
+    step_details: bool = False
 
 
 @dataclass(frozen=True)
@@ -74,6 +75,7 @@ class RunRequest:
     output_root: str | None = None
     keep_run_dir: bool = False
     timeout: int | None = None
+    step_details: bool = False
 
 
 @dataclass(frozen=True)
@@ -83,6 +85,7 @@ class ReadResultsRequest:
     analysis: str = "all"
     output_dir: str | None = None
     timeout: int | None = None
+    step_details: bool = False
 
 
 @dataclass(frozen=True)
@@ -92,6 +95,7 @@ class MeasureRequest:
     data: dict[str, Any] | None = None
     source_path: str | None = None
     timeout: int | None = None
+    step_details: bool = False
 
 
 @dataclass(frozen=True)
@@ -104,6 +108,7 @@ class ExportRequest:
     columns: list[str] | None = None
     precision: int | None = None
     timeout: int | None = None
+    step_details: bool = False
 
 
 def _step(name: str, ok: bool, detail: Any) -> dict[str, Any]:
@@ -358,7 +363,7 @@ def _load_data(data: dict[str, Any] | None, source_path: str | None) -> dict[str
     return loaded
 
 
-class Package:
+class Package(ResultPackage):
     """Spectre domain package."""
 
     def __init__(self, middle: Middle) -> None:

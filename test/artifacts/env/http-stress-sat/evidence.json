@@ -10,125 +10,124 @@
   "requests": 144,
   "planned_requests": 144,
   "failed": 0,
-  "elapsed_s": 25.172,
+  "elapsed_s": 35.453,
   "per_kind": {
     "skill": {
       "total": 20,
       "ok": 20,
-      "retries": 29,
-      "rejections": 29,
-      "max_s": 7.906
-    },
-    "gui": {
-      "total": 24,
-      "ok": 24,
-      "retries": 98,
-      "rejections": 98,
-      "max_s": 9.218
-    },
-    "download": {
-      "total": 22,
-      "ok": 22,
-      "retries": 53,
-      "rejections": 53,
-      "max_s": 8.5
+      "retries": 28,
+      "rejections": 28,
+      "max_s": 9.515
     },
     "spectre": {
       "total": 20,
       "ok": 20,
-      "retries": 43,
-      "rejections": 43,
-      "max_s": 7.703
+      "retries": 40,
+      "rejections": 40,
+      "max_s": 4.282
+    },
+    "gui": {
+      "total": 24,
+      "ok": 24,
+      "retries": 37,
+      "rejections": 37,
+      "max_s": 6.984
     },
     "command": {
       "total": 20,
       "ok": 20,
-      "retries": 27,
-      "rejections": 27,
-      "max_s": 5.469
+      "retries": 55,
+      "rejections": 55,
+      "max_s": 10.172
     },
     "composite": {
       "total": 20,
       "ok": 20,
-      "retries": 71,
-      "rejections": 71,
-      "max_s": 16.281
+      "retries": 57,
+      "rejections": 57,
+      "max_s": 24.828
     },
     "upload": {
       "total": 18,
       "ok": 18,
-      "retries": 77,
-      "rejections": 77,
-      "max_s": 8.843
+      "retries": 45,
+      "rejections": 45,
+      "max_s": 13.562
+    },
+    "download": {
+      "total": 22,
+      "ok": 22,
+      "retries": 28,
+      "rejections": 28,
+      "max_s": 12.172
     }
   },
   "failures": [],
-  "ssh_processes_before": 2,
-  "ssh_processes_after": 2,
+  "ssh_processes_before": 8,
+  "ssh_processes_after": 8,
   "staging_root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\http-stress-sat\\stress-tmp",
   "staging_leftovers": [],
-  "new_system_temp_dirs": [],
   "first_errors": {},
   "samples": [
     {
       "token": "vb-http-local",
+      "worker": 17,
+      "kind": "skill",
+      "marker": "VB-ski-d08ee13364",
+      "attempts": 1,
+      "rejections": 0,
+      "ok": true,
+      "detail": "",
+      "first_error": "",
+      "elapsed_s": 0.359
+    },
+    {
+      "token": "vb-http-local",
       "worker": 22,
       "kind": "skill",
-      "marker": "VB-ski-0a4740e43b",
+      "marker": "VB-ski-c8f3a3c470",
       "attempts": 1,
       "rejections": 0,
       "ok": true,
       "detail": "",
       "first_error": "",
-      "elapsed_s": 0.234
+      "elapsed_s": 0.906
     },
     {
       "token": "vb-http-local",
-      "worker": 11,
+      "worker": 7,
+      "kind": "spectre",
+      "marker": "VB-spe-a623dda54b",
+      "attempts": 1,
+      "rejections": 0,
+      "ok": true,
+      "detail": "",
+      "first_error": "",
+      "elapsed_s": 0.813
+    },
+    {
+      "token": "vb-http-local",
+      "worker": 3,
       "kind": "gui",
-      "marker": "VB-gui-2793225dae",
+      "marker": "VB-gui-f9f1b05293",
       "attempts": 1,
       "rejections": 0,
       "ok": true,
       "detail": "",
       "first_error": "",
-      "elapsed_s": 0.343
+      "elapsed_s": 0.75
     },
     {
       "token": "vb-http-local",
-      "worker": 14,
-      "kind": "gui",
-      "marker": "VB-gui-c98d805803",
+      "worker": 23,
+      "kind": "spectre",
+      "marker": "VB-spe-6171878698",
       "attempts": 1,
       "rejections": 0,
       "ok": true,
       "detail": "",
       "first_error": "",
-      "elapsed_s": 0.281
-    },
-    {
-      "token": "vb-http-local",
-      "worker": 5,
-      "kind": "skill",
-      "marker": "VB-ski-47a8ce88d4",
-      "attempts": 1,
-      "rejections": 0,
-      "ok": true,
-      "detail": "",
-      "first_error": "",
-      "elapsed_s": 0.453
-    },
-    {
-      "token": "vb-http-local",
-      "worker": 4,
-      "kind": "gui",
-      "marker": "VB-gui-918a7d019a",
-      "attempts": 1,
-      "rejections": 0,
-      "ok": true,
-      "detail": "",
-      "first_error": "",
-      "elapsed_s": 0.313
+      "elapsed_s": 0.75
     }
   ]
 }

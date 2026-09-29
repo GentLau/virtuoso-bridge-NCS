@@ -7,7 +7,7 @@
 > 依据：`src/server/api_server.py`、`src/server/dispatch.py`、`src/pyapi/packages/*`、
 > `spec/design-concepts/总览/1-四层整体架构与接口.md`、`spec/design-concepts/顶层/add-控制面与业务面.md` §4、
 > `spec/research/three-interface-report.md`
-> 实测环境：本机业务端口 `8127`（token `vb-vblog`，work-dir `test/tb/artifacts/log-vblog`）
+> 实测环境：本机业务端口 `8127`（token `vb-vblog`，work-dir `test/artifacts/env/log-vblog`）
 
 ---
 
@@ -310,7 +310,7 @@ prompts 可内置几条高频流程：「建 RC 并跑 AC 看增益」「导入 
 - catalog 操作集合 == `/help` 操作集合（防漂移）；
 - 每个工具 `inputSchema` 是合法 JSON Schema，且能被对应 Request 成功构造一次；
 - MCP e2e：`initialize` → `tools/list` → `tools/call`，加错误路径（未知操作 / 无效 token / 429）；
-- 真机回归复用现有 `test/tb` 脚本，不另起一套。
+- 真机回归复用现有 `test/live` 脚本（原 `test/tb`，2026-09-23 按三级重组），不另起一套。
 
 ---
 

@@ -2,7 +2,7 @@
   "ok": true,
   "token": "cov-token",
   "user": "covreg",
-  "work_dir": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\evidence\\cov-registration",
+  "work_dir": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\cov-registration",
   "stage": "deployed",
   "step": 4,
   "errors": [],

@@ -3,6 +3,13 @@
 读法：**只有"必备"列出的键必须给**；`token`（每个请求必带）和 `timeout`（秒；不给 = 默认 30 秒）在表里省略。
 返回值怎么看、失败怎么判，见 `SKILL.md` §1。
 
+所有会执行 SKILL 的 operation 还接受可选 `log_level`（`off`/`all`/`warn`/`error`）
+和 `log_max_bytes`（正整数）：给了就原样透传中层，不给就用该用户注册表的 `cdslog.*` 默认。
+只对 SKILL 生效；`command` / 文件 / GUI / Spectre 命令不接受这两个字段。
+
+所有 operation 都接受可选 `step_details`（布尔，默认 `false`）：
+成功时默认省略 `steps`；失败时始终带 `steps`；`step_details=true` 时成功也带 `steps`。
+
 路径约定：库路径、GDS 路径这类"远端路径"用 Linux 绝对路径（`/home/...`）；
 `*.screenshot` 的 `output_path`、`basic.file.*` 的 `local_path` 是本机路径（`C:/...`）。
 
@@ -107,8 +114,8 @@
 | `delete_shape` / `set_shape_properties` | `kind`（`line`/`rect`/`polygon`/`ellipse`）+ `points`（line/polygon）或 `bbox`（rect/ellipse） | `layer`, `purpose`, `new_points`, `new_bbox` |
 | `place_label` | `label_kind`, `text`（`instance`/`logical` 可省） | `x`/`y` 或 `xy`、`justify`, `orient`, `font`, `height`, `layer`, `purpose` |
 | `delete_label` / `rename_label` / `set_label_properties` | `label_kind`, `x`/`y`（或 `xy`）（`rename_label` 还要 `new_text`） | `justify`, `orient`, `font`, `height` |
-| `place_pin` | `name`, `x`, `y` | `direction`（默认 `inputOutput`）、`half_size`, `label`, `label_x`, `label_y`, `label_justify`, `label_orient`, `label_font`, `label_height` |
-| `delete_pin` / `rename_pin` / `set_pin_properties` | `name`（rename 还要 `new_name`） | `direction`（改引脚类型） |
+| `place_pin` | `name`, `pos`（`[x,y]`，**不接受 `x`/`y`/`xy`**） | `direction`（默认 `inputOutput`）、`half_size`, `label`, `label_pos`, `label_justify`, `label_orient`, `label_font`, `label_height` |
+| `delete_pin` / `rename_pin` / `set_pin_properties` | `name`（rename 还要 `new_name`） | `direction`（改引脚类型）、`label*` 样式 |
 | `set_selection_box` | `bbox` | — |
 | `set_pin_order` | `term_names`（`["VDD","IN","OUT"]`） | — |
 
@@ -158,7 +165,7 @@
 
 | operation | 必备 | 可选 | 说明 |
 |---|---|---|---|
-| `virtuoso.maestro.read_config` | `library`, `cell` | `view`（默认 `maestro`）、`include_parameters`, `include_raw` | 读配置（变量/分析/输出/corner） |
+| `virtuoso.maestro.read_config` | `library`, `cell` | `view`（默认 `maestro`）、`include_parameters`, `include_raw` | 读配置；返回 `tests.<test>.{variables,analyses,outputs,env_options,sim_options}` 与 `corners.<corner>.{variables,parameters}` |
 | `virtuoso.maestro.write` | `library`, `cell`, `commands` | `view`, `save` | 改配置，原子见下表 |
 | `virtuoso.maestro.read_results` | `library`, `cell` | `history`, `test`, `analysis`, `waveform`, `result`, `output_path`, `notation`, `precision` | 读仿真结果；不给 `history` 取最新 |
 | `virtuoso.maestro.export` | `library`, `cell`, `kind` | `history`, `test`, `corner`, `output_path` | `kind` = `netlist`/`script`/`outputs_csv`/`snapshot`/`screenshot` |
@@ -177,6 +184,7 @@
 | `set_design` | `test`, `lib`（或 `library`）, `cell` | `view` |
 | `delete_test` | `test` | — |
 | `set_analysis` | `test`, `analysis` | `enable`（默认 `true`）、`options`（`{"stop":"10n"}`） |
+| `set_env_option` / `set_sim_option` | `test`, `options`（dict，必填） | — |
 | `set_var` | `name`, `value` | `scope`（`global`/`test`/`corner`）、`test`/`tests`、`corner`/`corners` |
 | `delete_var` | `name` | `scope`（`all` 清所有）、`test`/`tests`、`corner`/`corners`, `all_tests` |
 | `set_parameter` | `name`（`Lib/Cell/View/Instance/Property` 五段）, `value` | `scope`（`corner` 时给 `corner`/`corners`） |
@@ -223,15 +231,15 @@
 ## Calibre（DRC / LVS / PEX）
 
 > **状态：暂缓（2026-09-28）**。DRC/LVS/`export_cdl` 与"set 直驱"已真机验证可用；
-> **`calibre.pex` 未按官方三阶段验收（修饰符决定结果），禁止用于交付/签核**。
+> **`calibre.pex` 本版不提供**——调用返回 `pex_unsupported`，不执行远程动作。
 > 恢复开发方向见 `spec/research/calibre/00-下一步开发方向.md`。
 
 | operation | 必备 | 可选 | 说明 |
 |---|---|---|---|
 | `calibre.check_env` | — | `calibre_bin`, `deck` | 查环境/许可 |
 | `calibre.drc` | `deck` | `gds`, `top`（deck 有占位符时才必需）, `params`/`runset`, `job_id`, `run_dir`, `turbo`（默认 4）、`hier`, `blocking`（默认 `false`）, `poll_interval` | 跑 DRC；默认后台，先用返回的 `job_id` |
-| `calibre.lvs` | `deck` | 同上 + `cdl`（deck 引用 `lvs_top.cdl` 时必需）, `lvs_run_dir`, `power`, `ground` | 跑 LVS；`cdl` 可用 `calibre.export_cdl` 现产 |
-| `calibre.pex` | `gds`, `top`, `deck` | 同上 + `cdl`, `lvs_run_dir`, `fmt` | 跑 PEX |
+| `calibre.lvs` | `deck` | 同上 + `cdl`（deck 引用 `lvs_top.cdl` 时必需）, `lvs_run_dir` | 跑 LVS；`cdl` 可用 `calibre.export_cdl` 现产 |
+| `calibre.pex` | `deck` 或 `runset` | — | **本版不提供**；合法请求返回 `ok=false` + `value.reason=pex_unsupported`，不建 run dir |
 | `calibre.status` | `job_id` 或 `run_dir` | `kind`（默认 `drc`） | 查进度 |
 | `calibre.read_results` | `job_id` 或 `run_dir` | `kind`, `limit`, `log_lines` | 读结构化结论 |
 | `calibre.export` | `job_id` 或 `run_dir` | `kind`, `items`（默认 `["summary"]`）、`local_dir` | 导出报告到本机 |

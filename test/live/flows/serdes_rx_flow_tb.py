@@ -95,8 +95,8 @@ def op(transport, operation: str, **fields: Any) -> Any:
     payload = {"operation": operation, "token": transport.token, **fields}
     response = transport.call(payload)
     if not response.get("ok"):
-        raise FlowError(operation, response.get("error"), response.get("data"))
-    return response.get("data")
+        raise FlowError(operation, response.get("error"), _c1_wrapper(response))
+    return _c1_wrapper(response)
 
 
 def raw_call(transport, operation: str, **fields: Any) -> dict:
@@ -620,7 +620,7 @@ def stage_cdl(t: HttpTransport, cfg) -> Stage:
     export = raw_call(t, "calibre.export_cdl", library=LIB, cell=target,
                       view="schematic", netlist_name=target,
                       run_dir=run_dir, cds_lib=cds_lib, timeout=900)
-    value = ((export.get("data") or {}).get("value")) or {}
+    value = ((_c1_wrapper(export)).get("value")) or {}
     st.value["export_cdl"] = value
     if export.get("ok") and value.get("bytes"):
         st.ok("export-cdl", {"bytes": value.get("bytes"),
@@ -650,7 +650,7 @@ def stage_calibre(t: HttpTransport, cfg) -> Stage:
     lvs_deck = f"{PDK_ROOT}/Calibre/lvs/calibre.lvs"
     drc = raw_call(t, "calibre.drc", gds=gds, top=CTLE, deck=drc_deck,
                    blocking=True, timeout=1800)
-    drc_value = ((drc.get("data") or {}).get("value")) or {}
+    drc_value = ((_c1_wrapper(drc)).get("value")) or {}
     st.value["drc"] = {"ok": drc.get("ok"), "error": drc.get("error"),
                        "job_id": drc_value.get("job_id"), "run_dir": drc_value.get("run_dir")}
     (st.ok if drc.get("ok") else st.bad)("drc", drc.get("error"))
@@ -662,7 +662,7 @@ def stage_calibre(t: HttpTransport, cfg) -> Stage:
         elif drc_value.get("run_dir"):
             req["run_dir"] = drc_value["run_dir"]
         res = raw_call(t, "calibre.read_results", **req)
-        summary = (((res.get("data") or {}).get("value")) or {}).get("summary") or {}
+        summary = (((_c1_wrapper(res)).get("value")) or {}).get("summary") or {}
         rules, total = summary.get("rules_checked"), summary.get("total_results")
         st.value["drc_read_results"] = summary
         (st.ok if isinstance(rules, int) and rules > 0 and isinstance(total, int)
@@ -670,7 +670,7 @@ def stage_calibre(t: HttpTransport, cfg) -> Stage:
     if cfg.cdl_remote:
         lvs = raw_call(t, "calibre.lvs", gds=gds, top=CTLE, deck=lvs_deck,
                        cdl=cfg.cdl_remote, blocking=True, timeout=1800)
-        lvs_value = ((lvs.get("data") or {}).get("value")) or {}
+        lvs_value = ((_c1_wrapper(lvs)).get("value")) or {}
         st.value["lvs"] = {"ok": lvs.get("ok"), "error": lvs.get("error"),
                            "job_id": lvs_value.get("job_id"), "run_dir": lvs_value.get("run_dir")}
         (st.ok if lvs.get("ok") else st.bad)("lvs", lvs.get("error"))
@@ -683,7 +683,7 @@ def stage_calibre(t: HttpTransport, cfg) -> Stage:
             elif lvs_value.get("run_dir"):
                 req["run_dir"] = lvs_value["run_dir"]
             res = raw_call(t, "calibre.read_results", **req)
-            summary = (((res.get("data") or {}).get("value")) or {}).get("summary") or {}
+            summary = (((_c1_wrapper(res)).get("value")) or {}).get("summary") or {}
             verdict = str(summary.get("status") or "").lower()
             counts = summary.get("counts") or {}
             st.value["lvs_read_results"] = {"status": verdict, "counts": counts}
@@ -776,7 +776,7 @@ def stage_sim(t: HttpTransport, cfg) -> Stage:
         tasks=[{"job": f"{CTLE}_ac", "netlist": str(ac_file), "parse": "auto"},
                {"job": f"{CTLE}_tran", "netlist": str(tran_file), "parse": "auto"}],
         max_workers=2, parse="auto", download=True, keep_run_dir=True, timeout=1200)
-    data = response.get("data") or {}
+    data = _c1_wrapper(response)
     runs = (data.get("value") or {}).get("runs") or []
     st.value["run_ok"] = response.get("ok")
     st.value["run_error"] = response.get("error")
@@ -915,3 +915,19 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
+# --- C1 兼容垫片（2026-09-29，C3）------------------------------------------------
+# C1（2f88853）起：业务载荷直返顶层（值型 `value`、命令/skill 型 `result`）、
+# 成功默认省略 `steps`、失败壳去掉 `data`。历史 TB 按 `response["data"]` 解析，
+# 本垫片把新契约响应合成为旧 `data` 壳，让既有解析零改动继续工作。
+def _c1_wrapper(body):
+    if not isinstance(body, dict):
+        return {}
+    if isinstance(body.get("data"), dict):
+        return body["data"]
+    wrapped = {"ok": body.get("ok"), "error": body.get("error")}
+    for key in ("value", "result", "steps"):
+        if key in body:
+            wrapped[key] = body[key]
+    return wrapped

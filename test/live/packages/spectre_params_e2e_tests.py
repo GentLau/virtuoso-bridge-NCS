@@ -103,7 +103,7 @@ class DirectTransport:
 
 def op(transport, operation: str, **fields: Any) -> dict[str, Any]:
     response = transport.call({"operation": operation, "token": transport.token, **fields})
-    data = response.get("data") or {}
+    data = _c1_wrapper(response)
     if response.get("ok") is False or data.get("ok") is False:
         raise AssertionError(f"{operation} failed: {response.get('error') or data.get('error')}")
     return data
@@ -111,7 +111,7 @@ def op(transport, operation: str, **fields: Any) -> dict[str, Any]:
 
 def expect_fail(transport, operation: str, **fields: Any) -> str:
     response = transport.call({"operation": operation, "token": transport.token, **fields})
-    data = response.get("data") or {}
+    data = _c1_wrapper(response)
     if response.get("ok") is not False and data.get("ok") is not False:
         raise AssertionError(f"{operation} expected structured failure, got ok")
     return str(response.get("error") or data.get("error") or "")
@@ -219,7 +219,7 @@ def main() -> int:
         value_json = op(transport, "spectre.export", format="json", source_path=str(data_path),
                         output_path=str(json_path), timeout=60)["value"]
         payload = json.loads(json_path.read_text(encoding="utf-8"))
-        assert payload.get("format") == "json" and payload.get("data"), payload
+        assert payload.get("format") == "json" and _c1_wrapper(payload), payload
         assert value_json.get("bytes", 0) > 0, value_json
 
         error = expect_fail(transport, "spectre.export", format="csv",
@@ -262,3 +262,19 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
+# --- C1 兼容垫片（2026-09-29，C3）------------------------------------------------
+# C1（2f88853）起：业务载荷直返顶层（值型 `value`、命令/skill 型 `result`）、
+# 成功默认省略 `steps`、失败壳去掉 `data`。历史 TB 按 `response["data"]` 解析，
+# 本垫片把新契约响应合成为旧 `data` 壳，让既有解析零改动继续工作。
+def _c1_wrapper(body):
+    if not isinstance(body, dict):
+        return {}
+    if isinstance(body.get("data"), dict):
+        return body["data"]
+    wrapped = {"ok": body.get("ok"), "error": body.get("error")}
+    for key in ("value", "result", "steps"):
+        if key in body:
+            wrapped[key] = body[key]
+    return wrapped

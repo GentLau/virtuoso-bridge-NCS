@@ -344,9 +344,9 @@ class TestDirectoryHelpers(unittest.TestCase):
             self._write(root / "ac.ac.ac", NON_SWEPT_PSF)
             self._write(root / "op.info", NON_SWEPT_PSF)
             parsed = util.parse_psf_directory(root, "all")
-        self.assertIn("dc_vout", parsed["data"])
-        self.assertIn("ac_vout", parsed["data"])
-        self.assertIn("op_vout", parsed["data"])
+        self.assertIn("dc_vout", _c1_wrapper(parsed))
+        self.assertIn("ac_vout", _c1_wrapper(parsed))
+        self.assertIn("op_vout", _c1_wrapper(parsed))
         self.assertEqual(sorted(parsed["analyses"]), ["ac", "dc", "info"])
         self.assertEqual(parsed["files"], sorted(set(parsed["files"])))
 
@@ -365,8 +365,8 @@ class TestDirectoryHelpers(unittest.TestCase):
             self._write(root / "op.info", NON_SWEPT_PSF)
             parsed = util.parse_psf_directory(root, "dc")
         self.assertEqual(parsed["analyses"], ["dc"])
-        self.assertIn("dc_vout", parsed["data"])
-        self.assertNotIn("op_vout", parsed["data"])
+        self.assertIn("dc_vout", _c1_wrapper(parsed))
+        self.assertNotIn("op_vout", _c1_wrapper(parsed))
 
     def test_candidate_falls_back_to_the_sorted_glob(self):
         # No exact candidate name is present, so _candidate() must take the
@@ -377,7 +377,7 @@ class TestDirectoryHelpers(unittest.TestCase):
             self._write(root / "a_op.dc", NON_SWEPT_PSF)
             parsed = util.parse_psf_directory(root, "dc")
         self.assertEqual(parsed["files"], ["a_op.dc"])
-        self.assertIn("dc_vout", parsed["data"])
+        self.assertIn("dc_vout", _c1_wrapper(parsed))
 
     def test_detect_layout_single_raw_and_missing(self):
         with tempfile.TemporaryDirectory(prefix="vb-") as tmp:
@@ -486,8 +486,8 @@ class TestAcPipelineContract(unittest.TestCase):
             self._write(root / "ac1.ac", self.AC_PSF)
             parsed = util.parse_psf_directory(root, analysis="ac")
         self.assertEqual(parsed["analyses"], ["ac"])
-        self.assertIn("ac_freq", parsed["data"])
-        self.assertIn("ac_out", parsed["data"])
+        self.assertIn("ac_freq", _c1_wrapper(parsed))
+        self.assertIn("ac_out", _c1_wrapper(parsed))
 
     def test_measure_spec_shape_resolves_ac_prefix(self):
         data = {"ac_freq": [1000.0], "ac_out": [0.9]}
@@ -499,3 +499,19 @@ class TestAcPipelineContract(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# --- C1 兼容垫片（2026-09-29，C3）------------------------------------------------
+# C1（2f88853）起：业务载荷直返顶层（值型 `value`、命令/skill 型 `result`）、
+# 成功默认省略 `steps`、失败壳去掉 `data`。历史 TB 按 `response["data"]` 解析，
+# 本垫片把新契约响应合成为旧 `data` 壳，让既有解析零改动继续工作。
+def _c1_wrapper(body):
+    if not isinstance(body, dict):
+        return {}
+    if isinstance(body.get("data"), dict):
+        return body["data"]
+    wrapped = {"ok": body.get("ok"), "error": body.get("error")}
+    for key in ("value", "result", "steps"):
+        if key in body:
+            wrapped[key] = body[key]
+    return wrapped

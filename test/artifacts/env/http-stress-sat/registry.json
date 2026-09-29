@@ -10,7 +10,9 @@
         "user": null,
         "jump_host": null,
         "jump_user": null,
-        "proxy": null
+        "proxy": null,
+        "key_dir": null,
+        "key": null
       },
       "backend": "paramiko",
       "control_master": "auto",
@@ -27,6 +29,8 @@
         "jump_host": null,
         "jump_user": null,
         "proxy": null,
+        "key_dir": null,
+        "key": null,
         "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\http-stress-sat\\local-root\\gui",
         "expected_fingerprint": null,
         "max_sessions": 10,
@@ -39,11 +43,13 @@
         "jump_host": null,
         "jump_user": null,
         "proxy": null,
+        "key_dir": null,
+        "key": null,
         "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\http-stress-sat\\local-root",
         "expected_fingerprint": null,
         "max_sessions": 10,
-        "daemon_port": 53224,
-        "local_port": 53224,
+        "daemon_port": 49672,
+        "local_port": 49672,
         "python": null,
         "expected_hostname": null,
         "expected_user": null
@@ -55,6 +61,8 @@
         "jump_host": null,
         "jump_user": null,
         "proxy": null,
+        "key_dir": null,
+        "key": null,
         "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\http-stress-sat\\local-root\\command",
         "expected_fingerprint": null,
         "max_sessions": 10
@@ -66,6 +74,8 @@
         "jump_host": null,
         "jump_user": null,
         "proxy": null,
+        "key_dir": null,
+        "key": null,
         "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\http-stress-sat\\local-root\\file",
         "expected_fingerprint": null,
         "max_sessions": 10
@@ -77,6 +87,8 @@
         "jump_host": null,
         "jump_user": null,
         "proxy": null,
+        "key_dir": null,
+        "key": null,
         "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\http-stress-sat\\local-root\\spectre",
         "expected_fingerprint": null,
         "max_sessions": 10,
@@ -92,7 +104,7 @@
       "log_level": "all",
       "log_max_bytes": 65536
     },
-    "registered_at": 1790083585
+    "registered_at": 1790170192
   },
   "vb-vblog": {
     "token": "vb-vblog",
@@ -105,7 +117,9 @@
         "user": "Gent",
         "jump_host": null,
         "jump_user": null,
-        "proxy": null
+        "proxy": null,
+        "key_dir": null,
+        "key": null
       },
       "backend": "paramiko",
       "control_master": "auto",
@@ -122,6 +136,8 @@
         "jump_host": null,
         "jump_user": null,
         "proxy": null,
+        "key_dir": null,
+        "key": null,
         "root": "/home/Gent/.virtuoso-bridge/vblog",
         "expected_fingerprint": null,
         "max_sessions": 10,
@@ -134,6 +150,8 @@
         "jump_host": null,
         "jump_user": null,
         "proxy": null,
+        "key_dir": null,
+        "key": null,
         "root": "/home/Gent/.virtuoso-bridge/vblog",
         "expected_fingerprint": null,
         "max_sessions": 10,
@@ -150,6 +168,8 @@
         "jump_host": null,
         "jump_user": null,
         "proxy": null,
+        "key_dir": null,
+        "key": null,
         "root": "/home/Gent/.virtuoso-bridge/vblog",
         "expected_fingerprint": null,
         "max_sessions": 10
@@ -161,6 +181,8 @@
         "jump_host": null,
         "jump_user": null,
         "proxy": null,
+        "key_dir": null,
+        "key": null,
         "root": "/home/Gent/.virtuoso-bridge/vblog",
         "expected_fingerprint": null,
         "max_sessions": 10
@@ -172,6 +194,8 @@
         "jump_host": null,
         "jump_user": null,
         "proxy": null,
+        "key_dir": null,
+        "key": null,
         "root": "/home/Gent/.virtuoso-bridge/vblog",
         "expected_fingerprint": null,
         "max_sessions": 10,
@@ -200,7 +224,9 @@
         "user": "Gent",
         "jump_host": null,
         "jump_user": null,
-        "proxy": null
+        "proxy": null,
+        "key_dir": null,
+        "key": null
       },
       "backend": "paramiko",
       "control_master": "auto",
@@ -217,6 +243,8 @@
         "jump_host": null,
         "jump_user": null,
         "proxy": null,
+        "key_dir": null,
+        "key": null,
         "root": "/home/Gent/.virtuoso-bridge/calprobe/gui",
         "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
         "max_sessions": 10,
@@ -229,6 +257,8 @@
         "jump_host": null,
         "jump_user": null,
         "proxy": null,
+        "key_dir": null,
+        "key": null,
         "root": "/home/Gent/.virtuoso-bridge/calprobe/daemon",
         "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
         "max_sessions": 10,
@@ -245,6 +275,8 @@
         "jump_host": null,
         "jump_user": null,
         "proxy": null,
+        "key_dir": null,
+        "key": null,
         "root": "/home/Gent/.virtuoso-bridge/calprobe/command",
         "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
         "max_sessions": 10
@@ -256,6 +288,8 @@
         "jump_host": null,
         "jump_user": null,
         "proxy": null,
+        "key_dir": null,
+        "key": null,
         "root": "/home/Gent/.virtuoso-bridge/calprobe/file",
         "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
         "max_sessions": 10
@@ -267,6 +301,8 @@
         "jump_host": null,
         "jump_user": null,
         "proxy": null,
+        "key_dir": null,
+        "key": null,
         "root": "/home/Gent/.virtuoso-bridge/calprobe/spectre",
         "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
         "max_sessions": 10,

@@ -14,7 +14,7 @@ import math
 from pathlib import Path
 from typing import Any
 
-from pyapi.models import Middle
+from pyapi.models import Middle, skill_log_kwargs, ResultBase, ResultPackage
 
 #: spec 上层 §4.2：包级自描述（操作名, 方法名, Request, Result）
 OPERATION_NAMES = (
@@ -28,7 +28,7 @@ OPERATION_NAMES = (
 
 
 @dataclass
-class Result:
+class Result(ResultBase):
     """Uniform result for the six passthrough operations."""
 
     ok: bool
@@ -42,6 +42,9 @@ class SkillRequest:
     token: str
     skill_code: str
     timeout: float | None = None
+    log_level: str | None = None
+    log_max_bytes: int | None = None
+    step_details: bool = False
 
 
 @dataclass(frozen=True)
@@ -50,6 +53,7 @@ class CommandRequest:
     cmd: str
     timeout: int | None = None
     parallel: bool = False
+    step_details: bool = False
 
     def __post_init__(self) -> None:
         _require_bool(self.parallel, "parallel")
@@ -62,6 +66,7 @@ class UploadRequest:
     remote_path: str
     timeout: int | None = None
     recursive: bool = False
+    step_details: bool = False
 
     def __post_init__(self) -> None:
         _require_bool(self.recursive, "recursive")
@@ -74,6 +79,7 @@ class DownloadRequest:
     local_path: str
     timeout: int | None = None
     recursive: bool = False
+    step_details: bool = False
 
     def __post_init__(self) -> None:
         _require_bool(self.recursive, "recursive")
@@ -84,6 +90,7 @@ class GuiRequest:
     token: str
     cmd: str
     timeout: int | None = None
+    step_details: bool = False
 
 
 @dataclass(frozen=True)
@@ -91,6 +98,7 @@ class SpectreRequest:
     token: str
     cmd: str
     timeout: int | None = None
+    step_details: bool = False
 
 
 def _require_token(token: Any) -> str:
@@ -129,7 +137,7 @@ def _command_error(name: str, returncode: int, stderr: str) -> str | None:
     return (stderr or "").strip() or f"{name} failed with rc={returncode}"
 
 
-class Package:
+class Package(ResultPackage):
     """Direct passthrough of the six middle interfaces (no orchestration)."""
 
     def __init__(self, middle: Middle) -> None:
@@ -137,11 +145,14 @@ class Package:
 
     # -- one method per middle interface ---------------------------------------
     def execute_skill(self, request: SkillRequest) -> Result:
+        self._log_level = request.log_level
+        self._log_max_bytes = request.log_max_bytes
         token = _require_token(request.token)
         _require_text(request.skill_code, "skill_code")
         _require_timeout(request.timeout)
         skill = self.middle.execute_skill(
-            request.skill_code, timeout=request.timeout, token=token
+            request.skill_code, timeout=request.timeout, token=token,
+            **skill_log_kwargs(request.log_level, request.log_max_bytes),
         )
         return Result(
             ok=bool(skill.ok),

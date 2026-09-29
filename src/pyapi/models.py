@@ -6,6 +6,8 @@ layers implement them without importing upper business code.
 
 from __future__ import annotations
 
+import dataclasses
+import functools
 from abc import ABC, abstractmethod
 from enum import Enum
 from pathlib import Path
@@ -58,6 +60,74 @@ class VirtuosoResult(BaseModel):
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(self.model_dump_json(indent=indent), encoding=encoding)
+
+
+def skill_log_kwargs(
+    log_level: str | None,
+    log_max_bytes: int | None,
+) -> dict[str, Any]:
+    """Return only the explicitly supplied Skill log options.
+
+    Upper-layer operations call this at the Skill boundary.  ``None`` means
+    "not supplied" and must be omitted so the middle keeps the per-user
+    registry default.
+    """
+    kwargs: dict[str, Any] = {}
+    if log_level is not None:
+        kwargs["log_level"] = log_level
+    if log_max_bytes is not None:
+        kwargs["log_max_bytes"] = log_max_bytes
+    return kwargs
+
+
+class ResultBase:
+    """Common upper-layer Result contract.
+
+    ``ok`` / ``steps`` / ``error`` stay owned by the package Result dataclass;
+    ``step_details`` is a response-only switch (not a dataclass field so it
+    cannot disturb existing positional constructors).
+
+    The JSON serialization rule lives here so every package gets the same
+    behavior: on success, ``steps`` is omitted unless ``step_details=true``;
+    on failure, ``steps`` is always kept.
+    """
+
+    step_details = False
+
+    def model_dump(self, mode: str | None = None, **_: Any) -> dict[str, Any]:
+        data = {
+            field.name: getattr(self, field.name)
+            for field in dataclasses.fields(self)
+            if field.name != "step_details"
+        }
+        if getattr(self, "ok", False) and not getattr(self, "step_details", False):
+            data.pop("steps", None)
+        return data
+
+
+def _finalize_step_details(method):
+    @functools.wraps(method)
+    def wrapper(self, *args: Any, **kwargs: Any) -> Any:
+        result = method(self, *args, **kwargs)
+        if isinstance(result, ResultBase):
+            request = args[0] if args else kwargs.get("request")
+            result.step_details = bool(getattr(request, "step_details", False))
+        return result
+
+    return wrapper
+
+
+class ResultPackage:
+    """Set each operation's Result ``step_details`` from its Request."""
+
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        super().__init_subclass__(**kwargs)
+        for name, attr in list(cls.__dict__.items()):
+            if name.startswith("_") or not callable(attr):
+                continue
+            if isinstance(attr, (staticmethod, classmethod)):
+                continue
+            setattr(cls, name, _finalize_step_details(attr))
 
 
 class CommandResult(NamedTuple):
@@ -203,7 +273,10 @@ class Middle(Protocol):
 __all__ = [
     "CommandResult",
     "QueryResult",
+    "ResultBase",
+    "ResultPackage",
     "RoleQuery",
+    "skill_log_kwargs",
     "ExecutionStatus",
     "Middle",
     "SimulationResult",

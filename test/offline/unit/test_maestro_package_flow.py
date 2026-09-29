@@ -102,6 +102,15 @@ def base_fields() -> dict[str, str]:
     return {"token": "t", "library": "L", "cell": "C", "view": "maestro"}
 
 
+MC_YIELD_CSV = """\
+Test,Name,Yield,Min,Target,Max,Mean,Std Dev,Cpk,Errors
+Yield Estimate: 0 %(0 passed/2 pts)     Confidence Level: <not set>   Filter: <not set>,,,,,,,,,
+opamp_ac,,,,,,,,,
+,gain_db(summary),0% (0/2),0,> 19,0,0,0,,2
+,gain_db_vdd_high,0% (0/2),0,> 19,0,0,0,,2
+"""
+
+
 class TestReadConfigFlow(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -140,10 +149,30 @@ class TestReadConfigFlow(unittest.TestCase):
         ]
         result = M.Package(middle).read_config(M.ReadConfigRequest(**base_fields()))
         self.assertTrue(result.ok, result.error)
-        self.assertEqual(result.value["tests"], [])
-        self.assertEqual(result.value["corners"], [])
+        self.assertEqual(result.value["tests"], {})
+        self.assertEqual(result.value["corners"], {})
         self.assertTrue(any("maeCloseSession" in code
                             for kind, code in middle.calls if kind == "skill"))
+
+    def test_read_config_includes_monte_carlo_run_options(self):
+        middle = FakeMiddle()
+        middle.skill_script = [
+            ("maeGetSessions", "nil"),
+            ("maeOpenSetup", '"fnxSession1"'),
+            ("maeGetSetup",
+             '(nil nil nil nil "Monte Carlo Sampling" "local")'),
+            ("cadr(axlGetVars(", "nil"),
+            ("axlGetParameters(", "nil"),
+            ("axlGetRunOption",
+             '(("mcmethod" "mismatch") ("mcnumpoints" "8"))'),
+        ]
+        result = M.Package(middle).read_config(
+            M.ReadConfigRequest(**base_fields()))
+        self.assertTrue(result.ok, result.error)
+        run_options = result.value["run_options"]["Monte Carlo Sampling"]
+        self.assertEqual(run_options["mcmethod"], "mismatch")
+        self.assertEqual(run_options["mcnumpoints"], "8")
+        self.assertIsNone(run_options["samplingmode"])
 
 
 class TestWriteFlow(unittest.TestCase):
@@ -269,6 +298,8 @@ class TestReadHistoryFlow(unittest.TestCase):
     def test_minimal_history_list(self):
         middle = FakeMiddle()
         middle.skill_script = [
+            # P-104 之后读路径先做 ddGetObj 存在性探测（不建对象）
+            ("ddGetObj", "t"),
             ("maeGetSessions", "nil"),
             ("maeOpenSetup", '"fnxSession1"'),
             ("cadr(axlGetHistory(", "nil"),
@@ -315,6 +346,30 @@ class TestReadResultsFlow(unittest.TestCase):
         ))
         self.assertTrue(result.ok, result.error)
         self.assertIn("tests", result.value)
+
+    def test_monte_carlo_history_adds_yield_view(self):
+        middle = FakeMiddle()
+        middle.download_body = MC_YIELD_CSV
+        middle.skill_script = [
+            ("maeGetSessions", "nil"),
+            ("maeOpenSetup", '"fnxSession1"'),
+            ('?view "Detail"', "t"),
+            ("maeGetOverallYield",
+             "(nil Yield 0 PassedPoints 0 ErrorPoints 2)"),
+            ('?view "Yield"', "t"),
+            ("maeGetSetup", '("_default" "vdd_high")'),
+        ]
+        result = M.Package(middle).read_results(M.ReadResultsRequest(
+            **base_fields(), history="MonteCarlo.0",
+        ))
+        self.assertTrue(result.ok, result.error)
+        mc = result.value["monte_carlo"]
+        self.assertEqual(mc["overall"]["yield"], 0)
+        self.assertEqual(mc["overall"]["error_points"], 2)
+        self.assertEqual(len(mc["outputs"]), 2)
+        self.assertTrue(mc["outputs"][0]["summary"])
+        self.assertEqual(mc["outputs"][1]["corner"], "vdd_high")
+
 
     def test_waveform_missing_psf_is_reported(self):
         middle = FakeMiddle()
@@ -435,6 +490,55 @@ class TestRunFlow(unittest.TestCase):
         ))
         self.assertFalse(result.ok)
         self.assertIn("maeRunSimulation", result.error)
+
+    def test_mc_preflight_blocks_no_plot_outputs(self):
+        middle = FakeMiddle()
+        middle.skill_script = [
+            ("maeGetSessions", "nil"),
+            ("hiGetWindowList", self._editing_window()),
+            ("hiGetWindowList", self._editing_window()),
+            ("maeGetCurrentRunMode", '"Monte Carlo Sampling"'),
+            ("maeGetTestOutputs", "nil"),
+        ]
+        result = M.Package(middle).run(M.RunRequest(
+            **base_fields(), blocking=False, poll_interval=0.01,
+        ))
+        self.assertFalse(result.ok)
+        self.assertEqual(result.value["reason"], "mc_no_plot_outputs")
+
+    def test_mc_preflight_blocks_sweeps_without_reference_point(self):
+        middle = FakeMiddle()
+        middle.skill_script = [
+            ("maeGetSessions", "nil"),
+            ("hiGetWindowList", self._editing_window()),
+            ("hiGetWindowList", self._editing_window()),
+            ("maeGetCurrentRunMode", '"Monte Carlo Sampling"'),
+            ("maeGetTestOutputs", "t"),
+            ("axlGetAllSweepsEnabled", '(t "0")'),
+        ]
+        result = M.Package(middle).run(M.RunRequest(
+            **base_fields(), blocking=False, poll_interval=0.01,
+        ))
+        self.assertFalse(result.ok)
+        self.assertEqual(result.value["reason"], "mc_sweeps_conflict")
+
+    def test_mc_preflight_passes_when_clean(self):
+        middle = FakeMiddle()
+        middle.skill_script = [
+            ("maeGetSessions", "nil"),
+            ("hiGetWindowList", self._editing_window()),
+            ("hiGetWindowList", self._editing_window()),
+            ("maeGetCurrentRunMode", '"Monte Carlo Sampling"'),
+            ("maeGetTestOutputs", "t"),
+            ("axlGetAllSweepsEnabled", "(nil nil)"),
+            ("maeSetJobControlMode", "t"),
+            ("maeRunSimulation", '"MonteCarlo.0"'),
+        ]
+        result = M.Package(middle).run(M.RunRequest(
+            **base_fields(), blocking=False, poll_interval=0.01,
+        ))
+        self.assertTrue(result.ok, result.error)
+        self.assertEqual(result.value["history"], "MonteCarlo.0")
 
 
 class TestGuiFlow(unittest.TestCase):

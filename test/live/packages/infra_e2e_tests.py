@@ -98,7 +98,7 @@ def _op(transport, operation: str, **fields: Any) -> Any:
     response = transport.call({"operation": operation, "token": TOKEN, **fields})
     if not response.get("ok"):
         raise AssertionError(f"{operation} failed: {response.get('error')}")
-    return response["data"]
+    return _c1_wrapper(response)
 
 
 def _check(condition: bool, message: str) -> None:
@@ -206,10 +206,10 @@ def _case_command_timeout(transport) -> None:
         "operation": "basic.command.run", "token": TOKEN,
         "cmd": "sleep 5", "timeout": 1})
     _check(not response.get("ok"), "sleep 5 with timeout=1 must fail")
-    result = (response.get("data") or {}).get("result") or []
+    result = (_c1_wrapper(response)).get("result") or []
     _check(result and result[0] == 124,
            f"timeout rc must be 124: {result}")
-    detail = (response.get("data") or {}).get("steps") or [{}]
+    detail = (_c1_wrapper(response)).get("steps") or [{}]
     kind = ((detail[0].get("detail") or {}).get("kind")
             if isinstance(detail[0].get("detail"), dict) else None)
     if kind is not None:
@@ -307,3 +307,19 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
+# --- C1 兼容垫片（2026-09-29，C3）------------------------------------------------
+# C1（2f88853）起：业务载荷直返顶层（值型 `value`、命令/skill 型 `result`）、
+# 成功默认省略 `steps`、失败壳去掉 `data`。历史 TB 按 `response["data"]` 解析，
+# 本垫片把新契约响应合成为旧 `data` 壳，让既有解析零改动继续工作。
+def _c1_wrapper(body):
+    if not isinstance(body, dict):
+        return {}
+    if isinstance(body.get("data"), dict):
+        return body["data"]
+    wrapped = {"ok": body.get("ok"), "error": body.get("error")}
+    for key in ("value", "result", "steps"):
+        if key in body:
+            wrapped[key] = body[key]
+    return wrapped

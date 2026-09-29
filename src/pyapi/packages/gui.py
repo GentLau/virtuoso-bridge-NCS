@@ -19,7 +19,7 @@ from pathlib import Path
 from dataclasses import dataclass, field
 from typing import Any
 
-from pyapi.models import Middle
+from pyapi.models import Middle, ResultBase, ResultPackage
 
 # 通过 ctypes 调 libX11/libXtst 注入一次按键（enter/escape）。
 _SEND_KEY_SCRIPT = r'''
@@ -229,10 +229,11 @@ def _find_ciw(windows: list[dict[str, Any]]) -> str | None:
 class ListWindowsRequest:
     token: str
     timeout: int | None = None
+    step_details: bool = False
 
 
 @dataclass
-class ListWindowsResult:
+class ListWindowsResult(ResultBase):
     ok: bool
     steps: list[dict[str, Any]] = field(default_factory=list)
     error: str | None = None
@@ -245,10 +246,11 @@ class SendKeyRequest:
     window_id: str
     key: str = "enter"
     timeout: int | None = None
+    step_details: bool = False
 
 
 @dataclass
-class SendKeyResult:
+class SendKeyResult(ResultBase):
     ok: bool
     steps: list[dict[str, Any]] = field(default_factory=list)
     error: str | None = None
@@ -260,10 +262,11 @@ class AutoDismissRequest:
     token: str
     timeout: int | None = None
     max_attempts: int = 2
+    step_details: bool = False
 
 
 @dataclass
-class AutoDismissResult:
+class AutoDismissResult(ResultBase):
     ok: bool
     steps: list[dict[str, Any]] = field(default_factory=list)
     error: str | None = None
@@ -276,10 +279,11 @@ class ScreenshotRequest:
     output_path: str
     target: str = "ciw"
     timeout: int | None = None
+    step_details: bool = False
 
 
 @dataclass
-class ScreenshotResult:
+class ScreenshotResult(ResultBase):
     ok: bool
     steps: list[dict[str, Any]] = field(default_factory=list)
     error: str | None = None
@@ -288,7 +292,7 @@ class ScreenshotResult:
 
 # ---- package ----------------------------------------------------------------
 
-class Package:
+class Package(ResultPackage):
     def __init__(self, middle: Middle) -> None:
         self.middle = middle
 

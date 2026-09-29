@@ -1,139 +1,116 @@
 ---
 name: virtuoso-bridge
-description: "在远程 Virtuoso 上做事（建库/画原理图/符号/版图、导入 Verilog/Verilog-A、Maestro 仿真、Calibre、Spectre、截屏、查 SKILL 文档）。用户要求任何 Virtuoso/EDA 操作时触发：用 POST http://127.0.0.1:8127/api/operation 调业务操作。"
+description: "在 Virtuoso 上干活：建库/建 cell、画原理图/符号/版图、导入 Verilog/Verilog-A、跑 Maestro/Spectre/Calibre、导 GDS、截屏、查 SKILL 文档。用户提出任何 Virtuoso/EDA 操作需求时触发——所有操作都是同一个 HTTP 调用：POST http://127.0.0.1:8127/api/operation（端口以实际为准）。"
 ---
 
 # 怎么用 virtuoso-bridge
 
-本 skill 只讲**怎么把事干成**。所有操作都是同一个 HTTP 调用：
+一句话：**先确认服务在哪 → 带上 token 发一个 POST → 看返回里的 `ok`**。
+
+## 0. 开工前先问清三件事
+
+| 要什么 | 默认 / 常见值 | 说明 |
+|---|---|---|
+| 业务服务地址 | `http://127.0.0.1:8127` | 端口是启动参数，可能不是 8127；`GET /health` 有响应就说明服务在跑 |
+| token | 用户给的字符串（如 `vb-xxxx`） | 每次请求都要带；**照抄，不要自造** |
+| 远端路径 | Linux 绝对路径（`/home/<user>/...`） | 所有操作发生在远端；本机文件要先 upload 上去 |
+
+服务没起、或还没有 token：请用户打开注册页（默认 `http://127.0.0.1:8124/`）走完注册——
+页面第 4 步会打印一行 `load("/.../virtuoso_setup.il")`，让用户粘进 Virtuoso 的 CIW；
+第 5 步自动做连通性测试；第 6 步保存。**token 在注册过程中确定**，注册页可以查看已注册用户。
+
+### 一次调用长什么样
 
 ```bash
 curl -s http://127.0.0.1:8127/api/operation \
   -H "Content-Type: application/json" \
-  -d '{"operation":"<操作名>","token":"<token>",<参数>}'
+  -d '{"operation":"basic.skill.execute","token":"<token>","skill_code":"1+2"}'
 ```
 
-返回统一信封：
+不知道有哪些 operation：`curl -s http://127.0.0.1:8127/help` 会列出这个进程的全部可用操作名。
+带字段的完整清单（按任务分组）在 `references/operations.md`。**不要猜名字。**
+
+> 给人看的配套说明书在 `manual/`：`01-快速开始.md`（最短路径用起来）、`02-参考手册.md`（接口与运维）、
+> `03-业务包说明书/`（每个操作的每个参数）。
+
+## 1. 返回怎么读
 
 ```json
-{"ok": true, "data": {"ok": true, "value": {...}}, "error": null}
+{"ok": true, "error": null, "value": {}, "steps": [{"name": "...", "ok": true, "detail": {}}]}
 ```
 
-- **只看最外层 `ok`**；false 就按 `error` 排查，别继续下一步。
-- 每个请求都要带 `token`（照抄用户/环境给的，不要自造）。
-- 不知道操作名/参数 → 查 `references/operations.md`；还拿不准就查
-  `spec/design-concepts/上层/<N>-<包名>.md`。**不要猜名字。**
+`steps` 默认只在失败时出现；成功要看步骤就显式传 `step_details=true`。
 
-## 1. 万能逃生口：直接跑 SKILL / 命令
+| 看哪里 | 含义 | 你要做什么 |
+|---|---|---|
+| 非 2xx + `{"ok":false,"error":…}` | 请求没走到业务包（JSON/operation/token/Request 错误，或服务拒绝） | 先修请求/服务，不要看业务字段 |
+| HTTP 200 + `ok=false` | 业务失败 | 看 `error`，再看 `steps` 里最后一条 `ok=false` 的 `detail` |
+| HTTP 200 + `ok=true` | 成功 | 取 `value` / `result` 等业务字段 |
 
-任何上面没有的细活，直接用这两个：
+结果主体放在哪，各包略有不同：
 
-```json
-{"operation":"basic.skill.execute","token":"T","skill_code":"1+1"}
-{"operation":"basic.command.run","token":"T","cmd":"command -v strmin"}
-```
+- 多数操作：`value`（read 类的内容、write 类的统计都在这里）
+- `basic.*`：`result`（原样的 SKILL/命令结果：`status`/`output`/`errors`/`CDSlog` 或 `returncode`/`stdout`/`stderr`/`kind`）
+- 截图（文件已落回本机）：`virtuoso.schematic.screenshot` / `virtuoso.gui.screenshot` → `local_path`；
+  `virtuoso.symbol.screenshot` / `virtuoso.layout.screenshot` → `value.local_path`
+- `virtuoso.skillref.*`：`results` / `plain_text`
 
-SKILL 在远端 Virtuoso CIW 执行；命令在远端 command 主机执行。文件用
-`basic.file.upload` / `basic.file.download`（`local_path` + `remote_path`）。
+`steps[]` 是过程证据：每一步 `{"name", "ok", "detail"}`；
+`detail` 里能看到 SKILL 原文、命令 `stderr`、`returncode`、`kind`——**排查失败先看这里**。
 
-## 2. 常见任务照抄（改库名/cell/路径即可）
+命令类结果里的 `kind` 值得记住：
 
-### 建库、建 cell、建视图
+| kind | 含义 | 处置 |
+|---|---|---|
+| `command` | 真实命令退出码，`returncode` 就是命令自己的 | 看 `returncode`/`stderr` |
+| `timeout` | 超时（保留码 124） | 见下面"超时"一条 |
+| `transport` | 连不上/断连（保留码 255） | 先查服务与网络 |
+| `path` | 远端路径不存在/类型不符（`stderr` 含 `VB-PATH-NOT-VISIBLE:`） | 核对远端路径 |
+| `unknown-effect` | 结果未知，**可能已经执行** | 先 read 查现状，别盲目重发 |
+| `rejected` | 服务容量拒绝（线程池/通道/单角色上限） | 可稍后重试 |
+| `checksum` | 文件校验和不对（`sha256 mismatch`） | 重新传一次 |
+| `invalid-token` | token 不认识 | 核对 token |
 
-```json
-{"operation":"virtuoso.cellview.lib.create","token":"T","library":"mylib","path":"/home/user/.virtuoso-bridge/vblog/mylib"}
-{"operation":"virtuoso.cellview.bind","token":"T","library":"mylib","technology_library":"cdsDefTechLib"}
-{"operation":"virtuoso.cellview.view.create","token":"T","library":"mylib","cell":"inv","view":"schematic","view_type":"schematic"}
-```
+## 2. 出错先看这几条
 
-列库/cell/view：`virtuoso.cellview.lib.list`、`cell.list`、`view.list`。
+| 症状 | 多半是 | 怎么办 |
+|---|---|---|
+| `invalid token` | token 抄错，或这个用户没注册 | 找用户核对 token |
+| `unknown operation: xxx` | 操作名不对 | `GET /help` 查 |
+| 写视图失败 / 报 `locked` | 视图在 Virtuoso 里被别的会话打开，或残留锁文件 | 让用户关掉该视图；详见 `references/troubleshooting.md` |
+| 路径类报错 | 给的是本机路径，或远端目录不存在 | 本机文件先 `basic.file.upload`；远端用 Linux 绝对路径 |
+| 超时 | 任务没在预算内跑完 | **超时不等于没执行**：先 `read`/`status` 看现状，再决定要不要重发 |
+| 截图失败 / 黑屏 | 远端 GUI display 没配好 | 见 `references/troubleshooting.md` |
 
-### 写原理图（一次给一组原子命令）
+完整的症状 → 原因 → 处置清单：`references/troubleshooting.md`。
 
-```json
-{"operation":"virtuoso.schematic.write","token":"T","library":"mylib","cell":"inv","view":"schematic",
- "commands":[
-  {"op":"place_instance","master_lib":"mylib","master_cell":"nand2","master_view":"symbol","name":"I0","x":0,"y":0},
-  {"op":"place_wire","points":[[0,0],[1,0]]},
-  {"op":"place_label","text":"net1","x":0.5,"y":0},
-  {"op":"set_instance_params","name":"I0","params":{"w":"1u"}}]}
-```
+## 3. 干活的套路
 
-原子名就这几类：`place_/delete_/rename_/set_` + `instance|wire|label|pin|note`，
-再加 `set_term_nets`（给器件端子放网络）。读回：`virtuoso.schematic.read`，
-`focus` 可给 `positions/connectivity/params` 组合。
+1. **读优先**：动手前先 `read` / `list` 看现状；写完再 `read` 一次验证，不要只信 `ok=true`。
+2. **一个动作一组命令**：`*.write` 支持一次给一串原子命令，比来回多次快。
+3. **文件两头分清**：本机 `C:/...` ↔ 远端 `/home/...`；上传用 `basic.file.upload`，下载用 `basic.file.download`。
+4. **长任务先拿凭据再轮询**：Maestro 默认非阻塞，先拿到 `history`；Calibre 先拿 `job_id`，再 `status` / `read_results`。
+5. **CIW 里看不到返回值**：`basic.skill.execute` 的结果只回到你这里；要让用户也在 CIW 里看到，SKILL 自己 `printf`。
+6. **没有现成操作就直连底层**：`basic.skill.execute`（跑 SKILL）和 `basic.command.run`（跑 shell）是万能逃生口。
 
-### 生成 symbol / 读写符号
+## 4. 任务索引（字段清单见 `references/operations.md` 对应章节）
 
-```json
-{"operation":"virtuoso.symbol.generate","token":"T","library":"mylib","cell":"inv","view":"schematic"}
-{"operation":"virtuoso.symbol.read","token":"T","library":"mylib","cell":"inv","view":"symbol","focus":["terms","pin_order"]}
-```
+| 想干什么 | 看哪节 |
+|---|---|
+| 建库、建 cell / view、分类管理 | 库与 cellview |
+| 画原理图：放器件、连线、引脚、标注、改名、改参数 | 原理图 |
+| 生成或手改 symbol（含 pin 顺序、选择框） | 符号 |
+| 画版图、放 via/mosaic、控制显示、导 GDS | 版图 |
+| Maestro/ADE：改配置、跑仿真、读结果、看 history | Maestro |
+| 独立 Spectre 仿真、读 PSF、量指标、导出 CSV | Spectre |
+| Calibre DRC / LVS / PEX 与结果导出 | Calibre |
+| 导入 Verilog / Verilog-A，或写文本视图 | Verilog / Verilog-A |
+| 截屏、列窗口、发按键、自动关弹窗 | GUI |
+| 查 Cadence SKILL 函数文档 | SKILL 文档查询 |
+| 端到端照抄流程（建反相器、跑仿真、出 GDS…） | `references/recipes.md` |
 
-### 版图 / GDS
+## 5. 三条铁律
 
-```json
-{"operation":"virtuoso.layout.write","token":"T","library":"mylib","cell":"inv","view":"layout",
- "commands":[{"op":"place_rect","layer":"M1","purpose":"drawing","bbox":[0,0,1,1]}]}
-{"operation":"virtuoso.layout.gds","token":"T","action":"export","library":"mylib","cell":"inv","view":"layout","file_path":"C:/work/inv.gds"}
-{"operation":"virtuoso.layout.gds","token":"T","action":"import","library":"mylib","tech_lib":"cdsDefTechLib","file_path":"C:/work/inv.gds","top_cell":"inv"}
-```
-
-### 跑 Maestro 仿真 + 看结果
-
-```json
-{"operation":"virtuoso.maestro.run","token":"T","library":"maestro_tb","cell":"rc_probe","view":"maestro","blocking":false}
-{"operation":"virtuoso.maestro.read_results","token":"T","library":"maestro_tb","cell":"rc_probe","view":"maestro","history":"Interactive.1"}
-```
-
-不填 `history` 会取最新一条；`blocking=false` 立即返回 history，用
-`virtuoso.maestro.read_history` 查进度/状态。
-
-### 导入 Verilog / Verilog-A
-
-```json
-{"operation":"virtuoso.verilog.import","token":"T","library":"mylib","cell":"top","file_path":"C:/work/top.v","file_is_local":true,"timeout":180}
-{"operation":"virtuoso.veriloga.write","token":"T","library":"mylib","cell":"va","view":"veriloga",
- "commands":[{"op":"ensure_view","create_if_missing":true},{"op":"set_source","text":"module va(a,b); endmodule"}]}
-{"operation":"virtuoso.veriloga.check_and_save","token":"T","library":"mylib","cell":"va","view":"veriloga"}
-```
-
-### 独立 Spectre / Calibre
-
-```json
-{"operation":"spectre.run","token":"T","tasks":[{"job":"rc","netlist":"C:/work/tb.scs","parse":"auto"}]}
-{"operation":"spectre.read_results","token":"T","source":"/data/rc/tb.raw","analysis":"all"}
-{"operation":"calibre.drc","token":"T","gds":"/data/inv.gds","top":"inv","deck":"/pdks/calibre.drc","blocking":false}
-{"operation":"calibre.status","token":"T","job_id":"drc_inv","kind":"drc"}
-```
-
-### 截屏 / 弹窗
-
-```json
-{"operation":"virtuoso.gui.screenshot","token":"T","target":"display","output_path":"C:/work/screen.ppm"}
-{"operation":"virtuoso.gui.list_windows","token":"T"}
-{"operation":"virtuoso.gui.send_key","token":"T","window_id":"0x2200008","key":"enter"}
-```
-
-### 查 SKILL 函数/文档
-
-```json
-{"operation":"virtuoso.skillref.search","token":"T","query":"hiWindowSaveImage"}
-{"operation":"virtuoso.skillref.info","token":"T","name":"hiWindowSaveImage"}
-```
-
-## 3. 失败时看什么
-
-1. 外层 `ok=false` → 读 `error`；
-2. `error` 是 SKILL 文本时，`data.steps[].detail` 里有 SKILL/命令原文和 stderr；
-3. 常见原因：库/视图不存在、视图被别人锁着（报 “locked”）、视图名/类型写错、
-   token 不对（报 invalid token）、gui display 未配置。
-
-锁文件判断：`virtuoso.cellview.view.list` 能列到但写失败 = 大概率被锁；
-去远端 `ls <lib路径>/<cell>/<view>/*.cdslck` 确认。
-
-## 4. 别忘了
-
-- 文件远端路径是 Linux 风格（`/home/...`），本机才用 `C:/...`；
-- 上传本机文件用 `basic.file.upload`，别自己 SSH；
-- 干完写操作，不确定就再 `read` 一次验证，别只信 `ok=true`。
+1. **不要猜**：operation 名用 `GET /help` 查，字段用 `references/operations.md` 查。
+2. **写操作先确认目标存在**（库/cell/view），写完再读一次验证。
+3. **超时不等于没发生**：写操作超时后先查现状，再决定是否重发。

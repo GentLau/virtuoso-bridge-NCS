@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Any
 
 from common.paths import artifact_dir
-from pyapi.models import Middle, VirtuosoResult
+from pyapi.models import Middle, VirtuosoResult, skill_log_kwargs, ResultBase, ResultPackage
 from pyapi.packages import basic
 
 
@@ -38,7 +38,7 @@ _DISPLAY_ATOMS = ("set_layers_visible", "show_only_layers", "set_entry_layer", "
 # ---------------------------------------------------------------------------
 
 @dataclass
-class Result:
+class Result(ResultBase):
     ok: bool
     steps: list[dict[str, Any]] = field(default_factory=list)
     error: str | None = None
@@ -58,6 +58,9 @@ class ReadRequest:
     region_mode: str = "intersect"
     depth: int = 0
     timeout: int | None = None
+    log_level: str | None = None
+    log_max_bytes: int | None = None
+    step_details: bool = False
 
 
 @dataclass(frozen=True)
@@ -70,6 +73,9 @@ class WriteRequest:
     view_type: str = LAYOUT_VIEW_TYPE
     strict_lpp: bool = False
     timeout: int | None = None
+    log_level: str | None = None
+    log_max_bytes: int | None = None
+    step_details: bool = False
 
 
 @dataclass(frozen=True)
@@ -92,6 +98,9 @@ class GdsRequest:
     timeout: float | None = None
     poll_interval: float | None = None
     cleanup_policy: str = "success"
+    log_level: str | None = None
+    log_max_bytes: int | None = None
+    step_details: bool = False
 
 
 @dataclass(frozen=True)
@@ -107,6 +116,9 @@ class ScreenshotRequest:
     central_widget: bool = True
     leave_open: bool = False
     timeout: int | None = None
+    log_level: str | None = None
+    log_max_bytes: int | None = None
+    step_details: bool = False
 
 
 @dataclass(frozen=True)
@@ -118,6 +130,9 @@ class DisplayRequest:
     view: str = "layout"
     view_type: str = LAYOUT_VIEW_TYPE
     timeout: int | None = None
+    log_level: str | None = None
+    log_max_bytes: int | None = None
+    step_details: bool = False
 
 
 # ---------------------------------------------------------------------------
@@ -321,13 +336,18 @@ def _safe_name(value: str, fallback: str = "layout") -> str:
 # Package
 # ---------------------------------------------------------------------------
 
-class Package:
+class Package(ResultPackage):
     def __init__(self, middle: Middle) -> None:
         self.middle = middle
 
     # -- low level helpers ------------------------------------------------------
     def _skill(self, expr: str, token: str, timeout: int | float | None = None) -> VirtuosoResult:
-        return self.middle.execute_skill(expr, timeout=timeout, token=token)
+        return self.middle.execute_skill(
+            expr, timeout=timeout, token=token,
+            **skill_log_kwargs(
+                getattr(self, "_log_level", None),
+                getattr(self, "_log_max_bytes", None),
+            ))
 
     def _q(self, expr: str, token: str, timeout: int | float | None = None) -> str:
         result = self._skill(expr, token, timeout)
@@ -466,11 +486,15 @@ class Package:
     # -- read -------------------------------------------------------------------
 
     def read(self, request: ReadRequest) -> Result:
+        self._log_level = request.log_level
+        self._log_max_bytes = request.log_max_bytes
         _require_text(request.token, "token")
         _require_text(request.library, "library")
         _require_text(request.cell, "cell")
         _require_text(request.view, "view")
         _require_text(request.view_type, "view_type")
+        if request.view_type != LAYOUT_VIEW_TYPE:
+            raise ValueError(f"view_type must be {LAYOUT_VIEW_TYPE}")
         _require_timeout(request.timeout)
         valid_focus = {"summary", "shapes", "instances", "vias"}
         if request.focus is not None:
@@ -512,6 +536,8 @@ class Package:
     # -- write ------------------------------------------------------------------
 
     def write(self, request: WriteRequest) -> Result:
+        self._log_level = request.log_level
+        self._log_max_bytes = request.log_max_bytes
         _require_text(request.token, "token")
         _require_text(request.library, "library")
         _require_text(request.cell, "cell")
@@ -925,6 +951,8 @@ class Package:
     # -- display ----------------------------------------------------------------
 
     def display(self, request: DisplayRequest) -> Result:
+        self._log_level = request.log_level
+        self._log_max_bytes = request.log_max_bytes
         _require_text(request.token, "token")
         _require_text(request.library, "library")
         _require_text(request.cell, "cell")
@@ -1019,6 +1047,8 @@ class Package:
     # -- gds --------------------------------------------------------------------
 
     def gds(self, request: GdsRequest) -> Result:
+        self._log_level = request.log_level
+        self._log_max_bytes = request.log_max_bytes
         _require_text(request.token, "token")
         _require_text(request.library, "library")
         _require_text(request.action, "action")
@@ -1426,11 +1456,15 @@ class Package:
     # -- screenshot -------------------------------------------------------------
 
     def screenshot(self, request: ScreenshotRequest) -> Result:
+        self._log_level = request.log_level
+        self._log_max_bytes = request.log_max_bytes
         _require_text(request.token, "token")
         _require_text(request.library, "library")
         _require_text(request.cell, "cell")
         _require_text(request.view, "view")
         _require_text(request.view_type, "view_type")
+        if request.view_type != LAYOUT_VIEW_TYPE:
+            raise ValueError(f"view_type must be {LAYOUT_VIEW_TYPE}")
         _require_timeout(request.timeout)
         _require_bool(request.toplevel, "toplevel")
         _require_bool(request.central_widget, "central_widget")

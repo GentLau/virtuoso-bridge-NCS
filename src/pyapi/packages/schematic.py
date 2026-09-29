@@ -10,12 +10,12 @@ from typing import Any
 
 import posixpath
 from common.paths import artifact_dir
-from pyapi.models import Middle
+from pyapi.models import Middle, skill_log_kwargs, ResultBase, ResultPackage
 from pyapi.packages import basic
 
 
 @dataclass
-class Result:
+class Result(ResultBase):
     ok: bool
     steps: list[dict[str, Any]] = field(default_factory=list)
     error: str | None = None
@@ -32,6 +32,9 @@ class ReadRequest:
     param_filter: list[str] | None = None
     object_filter: dict[str, Any] | None = None
     timeout: int | None = None
+    log_level: str | None = None
+    log_max_bytes: int | None = None
+    step_details: bool = False
 
 
 @dataclass(frozen=True)
@@ -42,6 +45,9 @@ class WriteRequest:
     commands: list[dict[str, Any]]
     view: str = "schematic"
     timeout: int | None = None
+    log_level: str | None = None
+    log_max_bytes: int | None = None
+    step_details: bool = False
 
 
 @dataclass(frozen=True)
@@ -51,6 +57,9 @@ class CheckSaveRequest:
     cell: str
     view: str = "schematic"
     timeout: int | None = None
+    log_level: str | None = None
+    log_max_bytes: int | None = None
+    step_details: bool = False
 
 
 def _step(name: str, ok: bool, detail: Any) -> dict[str, Any]:
@@ -751,18 +760,23 @@ let((vbInst vbCcd vbParamVals vbP vbProp)
 
 # ---- package ------------------------------------------------------------------
 
-class Package:
+class Package(ResultPackage):
     def __init__(self, middle: Middle) -> None:
         self.middle = middle
 
     def read(self, request: ReadRequest) -> Result:
+        self._log_level = request.log_level
+        self._log_max_bytes = request.log_max_bytes
         _require_text(request.token, "token")
         _require_text(request.library, "library")
         _require_text(request.cell, "cell")
         _require_text(request.view, "view")
         _require_timeout(request.timeout)
         skill = _read_skill(request)
-        res = self.middle.execute_skill(skill, timeout=request.timeout, token=request.token)
+        res = self.middle.execute_skill(
+            skill, timeout=request.timeout, token=request.token,
+            **skill_log_kwargs(request.log_level, request.log_max_bytes),
+        )
         steps = [_step("read", res.ok, res)]
         if not res.ok:
             return Result(False, steps, "; ".join(res.errors) or "read failed")
@@ -775,6 +789,8 @@ class Package:
         return Result(True, steps, None, _parse_schematic(raw))
 
     def write(self, request: WriteRequest) -> Result:
+        self._log_level = request.log_level
+        self._log_max_bytes = request.log_max_bytes
         _require_text(request.token, "token")
         _require_text(request.library, "library")
         _require_text(request.cell, "cell")
@@ -795,6 +811,7 @@ class Package:
         opened = self.middle.execute_skill(
             _open_edit_skill(request.library, request.cell, request.view),
             timeout=request.timeout, token=request.token,
+            **skill_log_kwargs(request.log_level, request.log_max_bytes),
         )
         state = (opened.output or "").strip().strip('"')
         steps.append(_step("open", opened.ok and state == "open-ok", opened))
@@ -806,11 +823,17 @@ class Package:
                 _open_failure(state, request.library, request.cell, request.view),
             )
         for index, command, skill in planned:
-            run = self.middle.execute_skill(skill, timeout=request.timeout, token=request.token)
+            run = self.middle.execute_skill(
+                skill, timeout=request.timeout, token=request.token,
+                **skill_log_kwargs(request.log_level, request.log_max_bytes),
+            )
             steps.append(_step(f"command:{command['op']}", run.ok, run))
             if not run.ok:
                 close_run = self.middle.execute_skill(
                     _close_edit_skill(), timeout=request.timeout, token=request.token,
+                    **skill_log_kwargs(
+                        request.log_level, request.log_max_bytes,
+                    ),
                 )
                 detail = "; ".join(run.errors) or f"command {command['op']} failed"
                 if not close_run.ok:
@@ -818,12 +841,18 @@ class Package:
                         "; ".join(close_run.errors) or "unknown")
                 return Result(False, steps, detail)
         save_skill = _save_skill()
-        saved = self.middle.execute_skill(save_skill, timeout=request.timeout, token=request.token)
+        saved = self.middle.execute_skill(
+            save_skill, timeout=request.timeout, token=request.token,
+            **skill_log_kwargs(request.log_level, request.log_max_bytes),
+        )
         steps.append(_step("check_and_save", saved.ok, saved))
         if not saved.ok or "saved" not in (saved.output or ""):
             if not saved.ok:
                 close_run = self.middle.execute_skill(
                     _close_edit_skill(), timeout=request.timeout, token=request.token,
+                    **skill_log_kwargs(
+                        request.log_level, request.log_max_bytes,
+                    ),
                 )
                 if not close_run.ok:
                     steps.append(_step("close_edit", False, close_run))
@@ -835,6 +864,8 @@ class Package:
         return Result(True, steps)
 
     def screenshot(self, request: ScreenshotRequest) -> Result:
+        self._log_level = request.log_level
+        self._log_max_bytes = request.log_max_bytes
         _require_text(request.token, "token")
         _require_text(request.library, "library")
         _require_text(request.cell, "cell")
@@ -859,6 +890,7 @@ class Package:
             return ScreenshotResult(False, steps, mkdir.stderr or "mkdir failed")
         captured = self.middle.execute_skill(
             _screenshot_skill(request, remote_abs), timeout=request.timeout, token=request.token,
+            **skill_log_kwargs(request.log_level, request.log_max_bytes),
         )
         steps.append(_step("capture", captured.ok, captured))
         if not captured.ok:
@@ -886,6 +918,8 @@ class Package:
                 pass
 
     def check_and_save(self, request: CheckSaveRequest) -> Result:
+        self._log_level = request.log_level
+        self._log_max_bytes = request.log_max_bytes
         _require_text(request.token, "token")
         _require_text(request.library, "library")
         _require_text(request.cell, "cell")
@@ -895,6 +929,7 @@ class Package:
         opened = self.middle.execute_skill(
             _open_edit_skill(request.library, request.cell, request.view),
             timeout=request.timeout, token=request.token,
+            **skill_log_kwargs(request.log_level, request.log_max_bytes),
         )
         state = (opened.output or "").strip().strip('"')
         steps.append(_step("open", opened.ok and state == "open-ok", opened))
@@ -906,12 +941,18 @@ class Package:
                 _open_failure(state, request.library, request.cell, request.view),
             )
         save_skill = _save_skill()
-        saved = self.middle.execute_skill(save_skill, timeout=request.timeout, token=request.token)
+        saved = self.middle.execute_skill(
+            save_skill, timeout=request.timeout, token=request.token,
+            **skill_log_kwargs(request.log_level, request.log_max_bytes),
+        )
         steps.append(_step("check_and_save", saved.ok, saved))
         if not saved.ok or "saved" not in (saved.output or ""):
             if not saved.ok:
                 close_run = self.middle.execute_skill(
                     _close_edit_skill(), timeout=request.timeout, token=request.token,
+                    **skill_log_kwargs(
+                        request.log_level, request.log_max_bytes,
+                    ),
                 )
                 if not close_run.ok:
                     steps.append(_step("close_edit", False, close_run))
@@ -937,10 +978,13 @@ class ScreenshotRequest:
     central_widget: bool = True
     leave_open: bool = False
     timeout: int | None = None
+    log_level: str | None = None
+    log_max_bytes: int | None = None
+    step_details: bool = False
 
 
 @dataclass
-class ScreenshotResult:
+class ScreenshotResult(ResultBase):
     ok: bool
     steps: list[dict[str, Any]] = field(default_factory=list)
     error: str | None = None

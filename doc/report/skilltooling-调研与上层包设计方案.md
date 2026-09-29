@@ -167,10 +167,10 @@ du -sh /opt/eda/cadence/IC618/doc             => 6.5G
 ```text
 POST /api/operation basic.file.download
   remote_path=/opt/eda/cadence/IC618/doc/finder/SKILL
-  local_path=test/tb/artifacts/skill-tooling-tb/probe/finder/SKILL  recursive=true  timeout=120
+  local_path=test/artifacts/evidence/skill-tooling-tb/probe/finder/SKILL  recursive=true  timeout=120
 => rc=0, kind=command, 耗时 1.16 s
 
-python test/tb/skill_tooling_probe.py --check --compare-8123
+python test/skill_tooling_probe.py --check --compare-8123
 => fnd_files=37, entries=9503, exact_hits=[dbOpenCellViewByType],
    matches_service=true
 => PASS skill-tooling data path (download -> parse -> search)
@@ -257,14 +257,14 @@ spec 表把 `find_skill`/`skill_info`/`doc_search` 的接口写成 `C+D`；
 
 ## 7. 验收计划（拍板后执行）
 
-- 脚本：`test/tb/skill_tooling_e2e_tests.py --transport direct|http`（沿用 symbol/maestro 的 TB 骨架）。
+- 脚本：`test/skill_tooling_e2e_tests.py --transport direct|http`（沿用 symbol/maestro 的 TB 骨架）。
 - 用例草案：
   - compose：空批报错、单条不包、单条已 `progn(` 保留、多条包 `progn`（4 项，可离线跑）；
   - find：五种模式各 1 + `include_desc` + `limit` 截断 + 本地/远端两种 `source` 各 1；
   - info：现代标记命中（`dbOpenCellViewByType`）、legacy 命中、`NULL` topic 兜底、未知函数 `found=false`；
   - load_il：上传一个自建 `.il`（只写自己的工作目录 + 建自己的 cell）→ 真机 `load` → 断言返回与副作用；
   - doc_search：仅在拍板做的情况下加。
-- 产物：`test/tb/artifacts/skill-tooling-tb/TEST_PLAN.md` + `TEST_REPORT.md`
+- 产物：`test/artifacts/evidence/skill-tooling-tb/TEST_PLAN.md` + `TEST_REPORT.md`
   （含 direct/http 双通道结果、真机返回原文、已知限制）。
 - 真机回归基线：本文 §4 三条命令的输出就是远端探测与传输量的基线数字。
 
@@ -278,7 +278,7 @@ spec 表把 `find_skill`/`skill_info`/`doc_search` 的接口写成 `C+D`；
 | 旧客户端入口与缓存 | `src_bak/virtuoso_bridge/virtuoso/basic/bridge.py:219/859/998/1242/1345` |
 | 旧组合函数 | `src_bak/virtuoso_bridge/virtuoso/basic/composition.py:8` |
 | 独立服务 | `tools/skill_doc_server.py:34/74/100/118/197/485/664/685/705/964` |
-| 设计 PoC 探针 | `test/tb/skill_tooling_probe.py`（`--check --compare-8123`） |
+| 设计 PoC 探针 | `test/skill_tooling_probe.py`（`--check --compare-8123`） |
 | 抽取报告（D） | `doc/report/_explore/D_library_skill_tooling_gui.md:133/300-326/523-580/609-654` |
 | 新架构约束 | `spec/design-concepts/上层/1-上层.md` §3.2/§4/§5；`spec/design-concepts/上层/9-skillref.md` |
 | 新中层接口 | `src/pyapi/models.py:122/140/144/148/163`；`src/transport/middle.py:51/761/846/884/121` |

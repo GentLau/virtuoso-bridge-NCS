@@ -16,9 +16,9 @@
       "ok": true,
       "rc": 0,
       "stderr": "",
-      "target": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-p076-1ffprf0w\\out",
+      "target": "C:\\Users\\user\\AppData\\Local\\Temp\\vb-p076-y7wdqgap\\out",
       "installed": true,
-      "elapsed_s": 0.015
+      "elapsed_s": 0.0
     },
     {
       "name": "no_residual_pump_after_download",
@@ -26,7 +26,7 @@
       "rc": 0,
       "leaked_threads": [],
       "created_threads": 3,
-      "elapsed_s": 0.0
+      "elapsed_s": 0.016
     },
     {
       "name": "no_residual_local_pipe_worker",

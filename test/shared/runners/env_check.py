@@ -82,7 +82,7 @@ class HttpEnv:
     def command(self, cmd: str, timeout: float = 120.0):
         response = _call_http(self.base, self.token, "basic.command.run",
                               timeout=timeout, cmd=cmd)
-        result = (response.get("data") or {}).get("result") or []
+        result = (_c1_wrapper(response)).get("result") or []
         ok = bool(response.get("ok")) and isinstance(result, list) and result and result[0] == 0
         stdout = str(result[1]) if isinstance(result, list) and len(result) > 1 else ""
         return ok, stdout.strip(), response.get("error")
@@ -90,7 +90,7 @@ class HttpEnv:
     def skill(self, code: str, timeout: float = 120.0):
         response = _call_http(self.base, self.token, "basic.skill.execute",
                               timeout=timeout, skill_code=code)
-        result = (response.get("data") or {}).get("result") or {}
+        result = (_c1_wrapper(response)).get("result") or {}
         ok = bool(response.get("ok")) and result.get("status") == "success"
         return ok, str(result.get("output") or "").strip(), response.get("error")
 
@@ -294,3 +294,19 @@ def report_fail(checks: list[dict], args, env) -> None:
 
 if __name__ == "__main__":
     raise SystemExit(main(sys.argv[1:]))
+
+
+# --- C1 兼容垫片（2026-09-29，C3）------------------------------------------------
+# C1（2f88853）起：业务载荷直返顶层（值型 `value`、命令/skill 型 `result`）、
+# 成功默认省略 `steps`、失败壳去掉 `data`。历史 TB 按 `response["data"]` 解析，
+# 本垫片把新契约响应合成为旧 `data` 壳，让既有解析零改动继续工作。
+def _c1_wrapper(body):
+    if not isinstance(body, dict):
+        return {}
+    if isinstance(body.get("data"), dict):
+        return body["data"]
+    wrapped = {"ok": body.get("ok"), "error": body.get("error")}
+    for key in ("value", "result", "steps"):
+        if key in body:
+            wrapped[key] = body[key]
+    return wrapped

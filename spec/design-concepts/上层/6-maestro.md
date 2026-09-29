@@ -1,9 +1,9 @@
 # 上层业务包：maestro
 
-> 版本：Draft v4
-> 日期：2026-09-20
-> 状态：Draft（操作与原子已成形；参数细节待逐项定稿；暂未纳入 README 治理）
-> Supersedes：Draft v3（补全历史类读写与全部操作/原子的实现底层；去掉 history 复制）
+> 版本：Draft v6
+> 日期：2026-09-20（2026-09-29 增补蒙卡）
+> 状态：Draft（操作与原子已成形；read_config 改为 tests/corners 嵌套结构；Monte Carlo 口径见 §7.3，待评审项见 §10）
+> Supersedes：Draft v5（read_config 返回按 test/corner 收拢；MC 配置/运行/结果已增补）
 > 定位：业务包/业务操作一般契约见[1-上层.md](1-上层.md)；五业务接口见[四层整体架构与接口 §4](../总览/1-四层整体架构与接口.md)。
 
 ## 1. 总述
@@ -16,15 +16,15 @@ maestro 包覆盖 ADE Assembler / Explorer 的**配置、结果、导出、历�
 
 | 大类 | 操作 | 一句话说明 | 接口 |
 |---|---|---|---|
-| 配置类 | `read_config` | 读当前配置（变量、参数、tests、corners、specs） | S |
-| 配置类 | `write` | 通用写，`commands[]` 里的配置原子 | S |
+| 配置类 | `read_config` | 按 test/corner 嵌套读当前配置（含 `outputs[].spec`、run options） | S |
+| 配置类 | `write` | 通用写，`commands[]` 里的配置原子（含 MC run option） | S |
 | 结果类 | `write` | 同一个通用写，`commands[]` 里的结果原子（output / spec） | S |
-| 结果类 | `read_results` | 读结果点、spec 状态、yield；读单条波形 | S+D |
+| 结果类 | `read_results` | 读结果点、spec 状态、yield、MC 统计；读单条波形 | S+D |
 | 导出类 | `export` | 按 `kind` 批量导出文件 | S+C+D |
 | 历史类 | `read_history` | 不带 history：列出全部并给完成情况；带 history：给该条进度与详情 | S |
 | 历史类 | `write_history` | 通用写，`commands[]` 里的历史原子（删/改名/锁） | S |
 | 仿真类 | `open_gui` / `close_gui` | GUI 会话开关 | S+G |
-| 仿真类 | `run` | 启动仿真；`blocking` 决定是否等到完成（默认非阻塞） | S+C |
+| 仿真类 | `run` | 启动仿真；MC 先设 mode/run option 再 run；`blocking` 决定是否等到完成（默认非阻塞） | S+C |
 | 展示类 | `open_waveform_gui` / `close_waveform_gui` | 给人看的交互波形窗口 | S+G |
 
 接口简写：S=execute_skill、C=run_command、U=upload_file、D=download_file、G=run_gui_command、Sp=run_spectre_command。
@@ -35,14 +35,51 @@ maestro 包覆盖 ADE Assembler / Explorer 的**配置、结果、导出、历�
 
 读指定 cell 的当前配置，一次返回结构化结果。
 
-| 返回项 | 底层 |
-|---|---|
-| 变量表 | `maeGetVar` / `axlGetVars` |
-| 参数表 | `maeGetParameter` |
-| tests | `axlGetTests` |
-| corners | `axlGetCorners`、`axlGetCornersForATest` |
-| specs | `axlGetSpecs` |
-| analyses / outputs 列表 | **待定**：未找到现成枚举函数，需用 `maeGetTestSession` 逐 test 取 |
+返回结构按领域收拢：test 级数据放 `tests.<name>`，corner 级数据放 `corners.<name>`，全局数据和运行级数据放顶层。
+
+```json
+{
+  "library": "…",
+  "cell": "…",
+  "view": "maestro",
+  "tests": {
+    "<test>": {
+      "variables": {},
+      "analyses": {},
+      "outputs": [],
+      "env_options": {},
+      "sim_options": {}
+    }
+  },
+  "variables": {},
+  "parameters": {},
+  "corners": {
+    "<corner>": {
+      "variables": {},
+      "parameters": {}
+    }
+  },
+  "run_options": {
+    "<run mode>": {"<option>": "… 或 null …"}
+  },
+  "run_mode": "…",
+  "job_control_mode": "…",
+  "current_history": "…"
+}
+```
+
+| 数据 | 返回位置 | 底层 |
+|---|---|---|
+| 全局变量 / 参数 | `variables` / `parameters` | `maeGetVar` / `maeGetParameter` |
+| test 列表与 test 级配置 | `tests.<name>.{variables,analyses,outputs,env_options,sim_options}` | `axlGetTests` / `maeGetTestOutputs` / `maeGetEnvOption` / `maeGetSimOption` |
+| corner 列表与 corner 级配置 | `corners.<name>.{variables,parameters}` | `axlGetCorners` / `axlGetVars` / `axlGetParameters` |
+| run options | `run_options.<mode>.<option>` | `axlGetRunOption` + `axlGetRunOptionValue`（17 项清单由包内固定，`axlGetRunOptions` 用于核对） |
+| 运行状态 | `run_mode` / `job_control_mode` / `current_history` | `maeGetCurrentRunMode` / `maeGetJobControlMode` / `axlGetCurrentHistory` |
+
+- output 的 spec 直接挂在 `tests.<test>.outputs[].spec`，不再单列 `specs` 扁平表。
+- `run_options` 按 run mode 分组；本版只读 `"Monte Carlo Sampling"`（17 项），未设置过返回 `null`。
+  普通 `"Single Run, Sweeps and Corners"` 没有 run-option 集合；`Sampling` / `Global Optimization` /
+  `Local Optimization` 各有自己的选项，本版不实现。
 
 ### 3.2 write（配置原子）
 
@@ -67,9 +104,12 @@ maestro 包覆盖 ADE Assembler / Explorer 的**配置、结果、导出、历�
 | corner | setup_corner | name | model_file / model_section / variables | `maeSetCorner` + `maeSetVar(corner)` + `axlGetCorner`/`axlPutModel`/`axlSetModelFile`/`axlSetModelSection` |
 | corner | load_corners | —（文件导入） | filepath / sections / operation | `maeLoadCorners`（CSV 先经 File 接口上传） |
 | 运行 | set_run_mode | —（会话级） | run_mode | `maeSetCurrentRunMode` |
+| 运行 | set_run_option | —（固定 MC mode） | options（dict） | `axlPutRunOption` + `axlSetRunOptionValue` |
 | 运行 | set_job_control_mode | —（会话级） | mode | `maeSetJobControlMode` |
 | 运行 | set_job_policy | test? | policy / job_type | `maeSetJobPolicy` |
 | 运行 | set_simulator_mode | test | mode | `asiSetHighPerformanceOptionVal`（内部映射 `'uniMode` / `'spectreXPreset`） |
+
+`set_run_option` 只服务 Monte Carlo：`options` 的键必须是 §7.3.1 的 17 项，包内做类型/值域校验并归一化为 ADE 字符串；一条命令可同时写多项。
 
 ## 4. 结果类
 
@@ -85,8 +125,12 @@ maestro 包覆盖 ADE Assembler / Explorer 的**配置、结果、导出、历�
 | 能力 | 底层 |
 |---|---|
 | 读全部点、spec 状态、yield | `maeExportOutputView` 导 Detail CSV → 下载 → 解析 |
+| MC per-output 统计（Yield/Min/Target/Max/Mean/Std Dev/Cpk/Errors） | `maeExportOutputView ?view "Yield"` → 下载 → 解析（§7.3.3） |
 | 读单条波形 | `maeOpenResults` → `openResults` → `selectResults` → `ocnPrint` → 下载文本 |
 | 结果目录/最新 history 定位 | `asiGetResultsDir` + 旧代码的 mtime / 自然排序规则 |
+
+`history` 为 `MonteCarlo.*` 时，返回额外带 `value.monte_carlo`；`value.points`/`value.outputs`
+保持原有 Detail 口径不变。
 
 ## 5. 导出类
 
@@ -158,9 +202,98 @@ maestro 包覆盖 ADE Assembler / Explorer 的**配置、结果、导出、历�
 
 支持覆盖式运行参数（`axlSetOverwriteHistory` + `axlSetOverwriteHistoryName`）。
 
+MC 运行：run mode 由最近一次 `set_run_mode` 决定；必须先设 `"Monte Carlo Sampling"`，`run` 本身不接收 `run_mode`（2026-09-28 活体：设 mode 后裸跑得到 `MonteCarlo.N`）。MC 模式下启动前做两项前置检查（§7.3.2）；统计模型是否存在由 Spectre 在仿真中判定。
+
 `blocking=true` 时，启动与等待共用同一条 deadline。
 
-**不引入服务端等待池**：阻塞由本操作在包内轮询实现，非阻塞由调用方自行查询，理由见[已否决：顶层任务等待池](../../../doc/report/需求-顶层任务等待池.md)。
+**不引入服务端等待池**：阻塞由本操作在包内轮询实现，非阻塞由调用方自行查询，口径见[本版范围与明确不支持](../总览/add-本版范围与明确不支持.md)第 13 项。
+
+### 7.3 Monte Carlo（配置、运行与结果）
+
+MC 不是新操作，复用 `set_run_mode` / `set_run_option` / `run` / `read_history` / `read_results`。
+
+#### 7.3.1 配置
+
+```json
+{"op":"set_run_option","options":{
+  "mcmethod":"mismatch",
+  "mcnumpoints":8,
+  "samplingmode":"lhs",
+  "saveallplots":false
+}}
+```
+
+- run mode 固定 `"Monte Carlo Sampling"`，不逐项重复传；一条命令可写多项。
+- 包内校验并归一化为 ADE 字符串；底层 `axlPutRunOption(axlGetMainSetupDB(session) "Monte Carlo Sampling" <name>)` + `axlSetRunOptionValue`。
+- 未设置的项读回 `null`（= 用 ADE 默认），`read_config.value.run_options["Monte Carlo Sampling"]` 17 项全列。
+- run option 是 **mode 级**概念：`axlGetRunOption(sdb, mode, name)` 的合法 mode 为 `Sampling` / `Global Optimization` / `Local Optimization` / `Monte Carlo Sampling`；`Single Run, Sweeps and Corners` 没有这一组选项，其配置分散在 tests/analyses/outputs/corners/sweeps/job policy。
+
+| 选项 | 含义 | 包内接受值 | 证据 |
+|---|---|---|---|
+| `mcmethod` | process / mismatch / all | `process`/`mismatch`/`all`/`global`（`global` 为 OCEAN 别名） | 活体可写 + 文档 |
+| `mcnumpoints` | 固定采样点数 | 正整数 | 活体 + 文档 |
+| `mcnumbins` | LHS 分箱数 | 非负整数或 `""`（自动） | 文档 |
+| `samplingmode` | 采样算法 | `random`/`standard`/`orthogonal`/`lhs`/`lds` | 文档；`lhs` 活体 |
+| `montecarloseed` | 随机种子 | 非负整数 | 文档 |
+| `mcstartingrunnumber` | 起始迭代号 | 正整数 | 文档 |
+| `dutsummary` | mismatch 实例范围 | 字符串（格式原样透传） | 活体可写；值域未验证 |
+| `ignoreflag` | 排除 `dutsummary` 实例 | 0/1 | 文档 |
+| `mcreferencepoint` | 使用 reference point | 0/1 | 文档 |
+| `donominal` | 先跑 nominal | 0/1 | 文档 |
+| `saveprocess` | 保存 process 数据 | 0/1 | 文档 |
+| `savemismatch` | 保存 mismatch 数据 | 0/1 | 文档 |
+| `saveallplots` | 保存每次迭代 PSF | 0/1 | 文档 |
+| `mcStopEarly` | 启用 auto-stop | `t`/`nil`（0/1 亦可） | 活体可写；类型未完全确认 |
+| `mcStopMethod` | auto-stop 方法 | 字符串（值域未验证，原样透传） | 文档 |
+| `mcYieldTarget` | 目标良率/σ | >0 数值 | 文档；百分比/σ 编码未验证 |
+| `mcYieldAlphaLimit` | 置信度/概率 | (0,100) 数值 | 文档；alpha/概率编码未验证 |
+
+#### 7.3.2 运行
+
+1. 先 `set_run_mode` → `{"op":"set_run_mode","run_mode":"Monte Carlo Sampling"}`，再 `run`；`run` 不带 `run_mode`。
+2. 本环境实测 `maeRunSimulation` 需要 GUI session；调用前先 `open_gui`（或确保已有编辑窗口）。
+3. MC 模式下启动前检查：
+   - 至少一个 output `plot=t`，否则结构化失败 `mc_no_plot_outputs`（对应 ADEXL-1617）；
+   - `axlGetAllSweepsEnabled(sdb)=t` 且 `mcreferencepoint` 未开启 → 结构化失败 `mc_sweeps_conflict`（对应 ADEXL-1742）。
+4. 进度用 `read_history`（`axlGetRunStatus ?optionName "all"`）；history 名形如 `MonteCarlo.N`，用返回值不要猜。
+
+#### 7.3.3 结果
+
+`read_results` 对 `MonteCarlo.*` 在原有 Detail 导出之外再导 `?view "Yield"`，返回 `value.monte_carlo`：
+
+```json
+{
+  "history": "MonteCarlo.0",
+  "corners": ["_default", "vdd_high"],
+  "overall": {
+    "yield": 0.0, "yield_text": "0% (0/2)",
+    "passed_points": 0, "total_points": 2, "error_points": 2,
+    "confidence_level": null, "filter": null
+  },
+  "outputs": [{
+    "test": "opamp_ac", "name": "gain_db", "raw_name": "gain_db(summary)",
+    "summary": true, "corner": null,
+    "yield": 0.0, "yield_text": "0% (0/2)",
+    "passed_points": 0, "total_points": 2,
+    "min": 0, "target": "> 19", "target_value": 19, "max": 0,
+    "mean": 0, "std_dev": 0, "cpk": null, "errors": 2
+  }]
+}
+```
+
+- `(summary)` 行归 `summary=true`；corner 后缀按 `read_config` 的 corner 名去除并写入 `corner`。
+- `target_value` 是 `target` 中的数值（如 `> 19` → 19；`maximize 0.05` → 0.05）。
+- 顶层 `overall_yield` 保留 `maeGetOverallYield` 原始键；`value.points` 保留 Detail 的 `mc_iteration` 逐点数据。
+- `axlWriteMonteCarloResultsCSV` 在本版不可用（实测返回 nil），不采用。
+
+#### 7.3.4 前置条件与限制
+
+1. **统计模型硬前提**：模型必须含 `statistics { process/mismatch }`，且与 `mcmethod` 一致；否则每个点 `SPECTRE-16012`。
+2. **PDK 挂载**：mismatch 需把 `stat_mis_*` 与角 section 同时挂；process 需 `stat` 与 `mc_*` 同时挂。
+3. **模拟器**：Spectre / APS / AMS-Spectre / hspiceD（各版本文档有差异，以当前环境为准）。
+4. **MC × sweep 互斥**：ADEXL-1742；例外是 `mcreferencepoint=1`。
+5. output 必须勾 Plot；`saveallplots=1` 会显著增大产物体积。
+6. `mcYieldTarget` / `mcYieldAlphaLimit` 只参与 auto-stop，不决定单点 pass/fail。
 
 ## 8. 展示类
 
@@ -181,6 +314,8 @@ maestro 包覆盖 ADE Assembler / Explorer 的**配置、结果、导出、历�
 | 确保 maestro view 存在 | `maeOpenSetup` + `maeSaveSetup` | write、open_gui（对外不暴露） |
 | 窗口状态探测（mode / 已修改） | `hiGetCurrentWindow` + 标题解析 + `davSession` | close_gui |
 | Detail CSV 中间导出 | `maeExportOutputView` | read_results、export(outputs_csv) |
+| MC run option 读写 | `axlGetRunOption` / `axlGetRunOptionValue` / `axlPutRunOption` / `axlSetRunOptionValue` | write、read_config |
+| MC Yield CSV 中间导出 | `maeExportOutputView ?view "Yield"` | read_results |
 
 ## 10. 待定与待验证
 
@@ -192,6 +327,11 @@ maestro 包覆盖 ADE Assembler / Explorer 的**配置、结果、导出、历�
 4. 是否补 `delete_output`（底层有 `axlDeleteOutput`，旧包未用）；
 5. `run(blocking=true)` 与 `read_history` 判断"跑完了"的来源：回调 marker（精确，但要求 marker 文件在工作角色间可见）还是 `axlGetRunStatus`（不依赖 marker，但需与期望的点/测试总数对上）；
 6. 各原子的参数与默认值逐项定稿。
+7. MC 选项面：17 项全开还是只开常用 8 项；未设置项读回 `null` 还是省略；`set_run_option` 是否保留单条 `name`/`value` 兼容形态；`mcmethod` 的 `global`/`process` 是否归一化。
+8. MC 结果面：`monte_carlo.outputs` 保持扁平（`summary`/`corner` 字段）还是按 corner/summary 分组；`mcYieldTarget` / `mcYieldAlphaLimit` 的百分比/σ/alpha 编码。
+9. MC 前置检查：`axlGetAllSweepsEnabled` 反映的是 Sweep 复选框而非实际 sweep 变量，是否把 §7.3.2 的 sweep 检查降级为 warning。
+10. MC 统计载具：新建 PDK 统计器件最小 cell + Maestro setup（推荐）/ 给现有 fixture 自写 `.scs` 统计模型 / 在 `CMP_TB_LIB/tb_cmp_top` 上建 setup。
+11. plot 前置检查范围：整个 setup 至少一个 `plot=t`，还是每个 test 都必须有。
 
 待真机验证（写 spec 定稿前必须闭环）：
 

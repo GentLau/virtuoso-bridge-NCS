@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
 # 作者: 测试/root
-# 最后改动: 2026-09-28 22:32
+# 最后改动: 2026-09-29 15:35
 # 依赖: 无
 # =======================================================================
 """screenshot 参数面真机覆盖：`window_id` / `region` / `toplevel` / `central_widget` / `view_type`。
@@ -11,11 +11,12 @@
 六步流程（test/docs/写TB规范.md §1）：
 ① 环境检查：`--token` 对应实例可达 + 目标 cellview 存在（第 1 条用例里先跑 read 校验，属于 ②③ 的一部分）；
 ②③ 造/校验基线：确认 lib/cell/view 可开；④ 只做被测动作（每次一个 screenshot 调用）；
-⑤ 读回比对：本地 PNG 魔数 + 字节数 + 远端 role root `screenshots/` 有同名文件（用 `basic.command.run` 找）；
+⑤ 读回比对：本地 PNG 魔数 + 字节数 + 远端 role root `screenshots/` 的**暂存已清理**
+   （P-091 三包统一口径：远端暂存、下载后清理，留存位置是客户端 `artifact/screenshots/`）；
 ⑥ 不清理现场：*例外*——`leave_open=True` 会留下窗口，本 TB 在 `finally` 里把**自己开的**窗口关掉（共享实例不背锅）。
 
-已知缺陷（本 TB 不假装覆盖）：`region` 两点写法（spec 2-schematic.md:27 写 `region=[pos0,pos1]`）当前被
-拒绝（P-082）；本 TB 只对"四元组"写正向断言，两点写法作为 *monitored* 记录，不当作覆盖。
+已知缺陷（本 TB 不假装覆盖）：`screenshot` 的 `view_type` **坏值未被校验**（layout 实测 ok=true，
+symbol 同族）→ SC-06 红钉（P-105）。
 用法：
   PYTHONPATH=src python test/live/packages/screenshot_params_e2e_tests.py \
     --transport http --token vb-vbuser2 --lib serdes_rx --cell rx_top --view schematic --kind schematic
@@ -80,12 +81,12 @@ def _value(transport, operation: str, **fields: Any) -> dict[str, Any]:
     response = _op(transport, operation, **fields)
     if not response.get("ok"):
         raise AssertionError(f"{operation} failed: {response.get('error')}")
-    return response["data"].get("value") or response["data"]
+    return _c1_wrapper(response).get("value") or _c1_wrapper(response)
 
 
 def _skill(transport, code: str, timeout: int = 120) -> str:
     response = _op(transport, "basic.skill.execute", skill_code=code, timeout=timeout)
-    data = response.get("data") or {}
+    data = _c1_wrapper(response)
     if not response.get("ok") or not data.get("ok"):
         raise AssertionError(f"skill failed: {response.get('error') or data.get('error')}")
     return ((data.get("result") or {}).get("output") or "").strip()
@@ -95,7 +96,7 @@ def _command(transport, cmd: str, timeout: int = 60) -> list[Any]:
     response = _op(transport, "basic.command.run", cmd=cmd, timeout=timeout)
     if not response.get("ok"):
         raise AssertionError(f"command failed: {response.get('error')}")
-    return ((response.get("data") or {}).get("result")) or []
+    return ((_c1_wrapper(response)).get("result")) or []
 
 
 def _png_ok(path: str) -> tuple[bool, str]:
@@ -148,16 +149,15 @@ def _check_png(value: dict[str, Any], label: str) -> None:
 
 def _note_remote(transport, value: dict[str, Any], kind: str) -> None:
     remote = _remote_screenshot_present(transport, Path(value["local_path"]).name)
-    if kind == "schematic":
-        assert remote, f"远端 role root screenshots/ 没有同名产物: {value['local_path']}"
-    else:
-        # P-091 已立案：symbol / layout 在 finally 里 `rm -f` 远端暂存 PNG（schematic 保留），
-        # 与 spec 2-schematic.md:27 / 4-layout.md:183「远端存 role root screenshots/」口径不一致。
-        print(f"NOTE  P-091: {kind} 远端暂存已清理（remote_present={bool(remote)}）", flush=True)
+    # P-091 三包统一口径（spec 2-schematic.md:27 / 3-symbol.md:45 / 4-layout.md:184）：
+    # 远端只做暂存，下载后清理；留存位置是客户端 artifact/screenshots/。
+    assert not remote, (
+        f"{kind}: 远端 role root screenshots/ 仍残留暂存 PNG "
+        f"（应下载后清理；P-091 三包统一口径）: {Path(value['local_path']).name}")
 
 
 def _suite_schematic(transport, lib: str, cell: str, view: str, run) -> None:
-    """schematic：region 用**四元组**（P-082：三者里唯一这样的）。"""
+    """schematic：region 用**对角两点**（与 spec 2-schematic.md:27 一致；四元组/反序必须被拒）。"""
     def case_default() -> None:
         value = _value(transport, "virtuoso.schematic.screenshot", library=lib, cell=cell, view=view)
         _check_png(value, "default")
@@ -202,10 +202,10 @@ def _suite_schematic(transport, lib: str, cell: str, view: str, run) -> None:
                                         view=view, toplevel=False, central_widget=False)
             _check_png(value, str(kwargs))
 
-    run("SC-01 default 截图（本地 PNG + 远端 role root）", case_default)
+    run("SC-01 default 截图（本地 PNG + 远端暂存已清理）", case_default)
     run("SC-02 leave_open + 显式 window_id", case_window)
     run("SC-03 坏 window_id 必须失败", case_bad_window)
-    run("SC-04 region 四元组正向 + 反序负向", case_region)
+    run("SC-04 region 两点正向 + 反序/四元组负向", case_region)
     run("SC-05 toplevel/central_widget 取假值", case_flags)
 
 
@@ -260,7 +260,7 @@ def _suite_symbol(transport, lib: str, cell: str, view: str, run) -> None:
                      view_type="bogus_type_xyz")
         assert not bogus.get("ok"), "坏 view_type 应被校验（P-080 同族）"
 
-    run("SC-01 default 截图（本地 PNG + 远端 clean-up 口径）", case_default)
+    run("SC-01 default 截图（本地 PNG + 远端暂存已清理）", case_default)
     run("SC-02 leave_open + 显式 window_id", case_window)
     run("SC-03 坏 window_id 必须失败", case_bad_window)
     run("SC-04 region 两点正向 + 反序/四元组负向", case_region)
@@ -269,7 +269,7 @@ def _suite_symbol(transport, lib: str, cell: str, view: str, run) -> None:
 
 
 def _suite_layout(transport, lib: str, cell: str, view: str, run) -> None:
-    """layout：region 用**对角两点**；额外覆盖 `view_type`（bogus 当前不校验 → P-080 同族）。"""
+    """layout：region 用**对角两点**；额外覆盖 `view_type`（bogus 当前不校验 → P-105 红钉）。"""
     def case_default() -> None:
         value = _value(transport, "virtuoso.layout.screenshot", library=lib, cell=cell, view=view)
         _check_png(value, "default")
@@ -297,6 +297,8 @@ def _suite_layout(transport, lib: str, cell: str, view: str, run) -> None:
         _check_png(value, "region two point")
         assert not _raw(transport, "virtuoso.layout.screenshot", library=lib, cell=cell, view=view,
                                  region=[[50.0, 50.0], [0.0, 0.0]]).get("ok"), "region 反序应失败"
+        assert not _raw(transport, "virtuoso.layout.screenshot", library=lib, cell=cell, view=view,
+                                 region=[0.0, 0.0, 50.0, 50.0]).get("ok"), "四元组已弃用（P-082）"
 
     def case_flags() -> None:
         value = _value(transport, "virtuoso.layout.screenshot", library=lib, cell=cell,
@@ -314,10 +316,10 @@ def _suite_layout(transport, lib: str, cell: str, view: str, run) -> None:
                               view_type="bogus_type_xyz")
         assert not bogus.get("ok"), "坏 view_type 应被校验（P-080 同族）"
 
-    run("SC-01 default 截图（本地 PNG + 远端 clean-up 口径）", case_default)
+    run("SC-01 default 截图（本地 PNG + 远端暂存已清理）", case_default)
     run("SC-02 leave_open + 显式 window_id", case_window)
     run("SC-03 坏 window_id 必须失败", case_bad_window)
-    run("SC-04 region 两点正向 + 反序负向", case_region)
+    run("SC-04 region 两点正向 + 反序/四元组负向", case_region)
     run("SC-05 toplevel/central_widget 取假值", case_flags)
     run("SC-06 view_type 正向 + 坏值负向", case_view_type)
 
@@ -330,7 +332,8 @@ def run_suite(transport, lib: str, cell: str, view: str, kind: str) -> list[tupl
             value = func()
         except Exception as exc:  # noqa: BLE001
             results.append((name, f"FAIL: {type(exc).__name__}: {exc}"))
-            raise
+            print(f"FAIL    {name}: {type(exc).__name__}: {exc}", flush=True)
+            return None   # 单例失败不阻断后续用例：一次运行拿全判定
         results.append((name, "PASS"))
         return value
 
@@ -383,3 +386,19 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
+# --- C1 兼容垫片（2026-09-29，C3）------------------------------------------------
+# C1（2f88853）起：业务载荷直返顶层（值型 `value`、命令/skill 型 `result`）、
+# 成功默认省略 `steps`、失败壳去掉 `data`。历史 TB 按 `response["data"]` 解析，
+# 本垫片把新契约响应合成为旧 `data` 壳，让既有解析零改动继续工作。
+def _c1_wrapper(body):
+    if not isinstance(body, dict):
+        return {}
+    if isinstance(body.get("data"), dict):
+        return body["data"]
+    wrapped = {"ok": body.get("ok"), "error": body.get("error")}
+    for key in ("value", "result", "steps"):
+        if key in body:
+            wrapped[key] = body[key]
+    return wrapped

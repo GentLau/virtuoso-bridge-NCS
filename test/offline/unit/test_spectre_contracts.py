@@ -324,7 +324,7 @@ class TestRunOrchestration(unittest.TestCase):
         self.assertEqual(value["status"], "success")
         self.assertEqual(value["result_kind"], "raw")
         self.assertEqual(value["analyses"], ["tran"])
-        self.assertEqual(value["data"]["vout"], [0.0, 1.0])
+        self.assertEqual(_c1_wrapper(value)["vout"], [0.0, 1.0])
         self.assertEqual(value["transport_kind"], "command")
         self.assertTrue(any(str(item).endswith("tran1.tran.tran")
                             for item in value["output_files"]), value["output_files"])
@@ -486,7 +486,7 @@ class TestReadResults(unittest.TestCase):
         self.assertEqual(value["kind"], "raw")
         self.assertEqual(value["analyses"], ["tran"])
         self.assertEqual(value["signals"], ["time", "vout"])
-        self.assertEqual(value["data"]["vout"], [0.0, 1.0])
+        self.assertEqual(_c1_wrapper(value)["vout"], [0.0, 1.0])
         self.assertEqual(value["point_count"], 0)
         self.assertTrue(value["files"] and value["files"][0].endswith("tran1.tran.tran"))
 
@@ -550,7 +550,7 @@ class TestExport(unittest.TestCase):
         self.assertEqual(result.value["columns"], ["time", "vout"])
         self.assertEqual(payload["format"], "json")
         self.assertEqual(payload["metadata"], {"columns": ["time", "vout"], "rows": 3})
-        self.assertEqual(payload["data"]["vout"], [0.0, 1.0, 2.0])
+        self.assertEqual(_c1_wrapper(payload)["vout"], [0.0, 1.0, 2.0])
 
     def test_precision_and_validation_errors(self):
         with tempfile.TemporaryDirectory(prefix="vb-") as tmp:
@@ -812,3 +812,19 @@ class TestMeasureExport(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# --- C1 兼容垫片（2026-09-29，C3）------------------------------------------------
+# C1（2f88853）起：业务载荷直返顶层（值型 `value`、命令/skill 型 `result`）、
+# 成功默认省略 `steps`、失败壳去掉 `data`。历史 TB 按 `response["data"]` 解析，
+# 本垫片把新契约响应合成为旧 `data` 壳，让既有解析零改动继续工作。
+def _c1_wrapper(body):
+    if not isinstance(body, dict):
+        return {}
+    if isinstance(body.get("data"), dict):
+        return body["data"]
+    wrapped = {"ok": body.get("ok"), "error": body.get("error")}
+    for key in ("value", "result", "steps"):
+        if key in body:
+            wrapped[key] = body[key]
+    return wrapped

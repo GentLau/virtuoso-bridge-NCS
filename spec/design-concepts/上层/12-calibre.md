@@ -1,23 +1,23 @@
 # 上层业务包：calibre
 
-> 版本：Draft v1
-> 日期：2026-09-22（**2026-09-28 起暂缓开发**）
-> 状态：**暂缓**——方向已收敛为"官方入口 + 结果分析"；恢复开发前先读
+> 版本：Draft v2
+> 日期：2026-09-22（**2026-09-28 起暂缓开发；2026-09-29 PEX 明确不提供**）
+> 状态：**DRC / LVS 可用；PEX 本版不提供**——方向已收敛为"官方入口 + 结果分析"；恢复开发前先读
 > [`spec/research/calibre/00-下一步开发方向.md`](../../research/calibre/00-下一步开发方向.md)（P0：PEX 重做、官方产物解析、输入预检）。
-> **`calibre.pex` 未按官方三阶段验收，禁止用于交付/签核**；DRC/LVS/set 直驱已真机验证
-> （schematic→CDL 现产链路已真机闭环）。
-> Supersedes：无（新包；可行性见 `spec/research/calibre/02-可行性报告.md`）
+> **`calibre.pex` 本版不提供：调用返回 `pex_unsupported`，不执行任何远程动作**；代码保留供后续恢复。
+> DRC/LVS/set 直驱已真机验证（schematic→CDL 现产链路已真机闭环）。
+> Supersedes：Draft v1（PEX 本版不提供：调用返回 `pex_unsupported`；DRC/LVS 口径不变）
 > 定位：业务包/业务操作一般契约见[1-上层.md](1-上层.md)；五业务接口见[四层整体架构与接口 §4](../总览/1-四层整体架构与接口.md)；长任务口径参照 [7-spectre.md](7-spectre.md) 与 maestro 的 `run`/`read_history`。
 
 ## 1. 总述
 
-calibre 包覆盖 **物理验证三件套：DRC / LVS / PEX**，外加环境体检与结果读取。
+calibre 包本版覆盖 **DRC / LVS**，外加环境体检与结果读取；**PEX 启动不提供**（读取既有 PEX 产物的代码保留）。
 
 设计目标按"用户（agent）易用"排序：
 
-1. **一个动作一个操作**：`calibre.drc` / `calibre.lvs` / `calibre.pex`，用户只需给"版图 + 顶层名 + deck"，不必懂 deck 内部的占位符与相对 include；
-2. **默认非阻塞 + 三件套**：run 类操作默认立即返回 `job_id`（Calibre 动辄几十分钟），用 `calibre.status` 看进度、`calibre.read_results` 拿结构化结论；需要阻塞时用 `blocking=true`（包内轮询，形态同 maestro）；
-3. **结果要"能读"**：`read_results` 直接给分类计数（DRC 按规则条数、LVS 对象计数）、LVS match/差异点、PEX warning 清单，而不是让用户去啃 100 KB 报告；DRC 的前 N 条违规（规则名/bbox/cell）从 ASCII 的 `DRC_RES.db` 有界读取解析（layer 不在该文件中）；
+1. **一个动作一个操作**：`calibre.drc` / `calibre.lvs` 可用；`calibre.pex` 保留操作名但调用直接返回 `pex_unsupported`；
+2. **默认非阻塞 + 两件套**：run 类操作默认立即返回 `job_id`（Calibre 动辄几十分钟），用 `calibre.status` 看进度、`calibre.read_results` 拿结构化结论；需要阻塞时用 `blocking=true`（包内轮询，形态同 maestro）；
+3. **结果要"能读"**：`read_results` 直接给分类计数（DRC 按规则条数、LVS 对象计数）、LVS match/差异点、PEX warning 清单（仅读取既有产物），而不是让用户去啃 100 KB 报告；DRC 的前 N 条违规（规则名/bbox/cell）从 ASCII 的 `DRC_RES.db` 有界读取解析（layer 不在该文件中）；
 4. **不碰共享配置**：所有运行期文件落在 run dir（deck 副本 + DFM、日志、报告、svdb/pdb），不改 `cds.lib`/PDK 配置，包是可插拔的插件；
 5. **失败可定位**：错误带 `kind`、工具原文片段、run dir 路径；`unknown-effect` 一律不自动重试。
 
@@ -28,13 +28,14 @@ calibre 包覆盖 **物理验证三件套：DRC / LVS / PEX**，外加环境体�
 | `calibre.check_env` | 环境体检：二进制/版本/许可/PDK deck 可见性 | C（`which`/`-version`/最小探测） | C |
 | `calibre.drc` | 启动 DRC | stage deck → 改写占位符 → 后台启动 | C(+U) |
 | `calibre.lvs` | 启动 LVS（版图 vs 源网表；源网表可为已有 CDL 或 schematic 现产） | 同上 + 源网表 | C+S(+U) |
-| `calibre.pex` | 启动 PEX（`-xrc -phdb → -pdb → fmt`） | 三阶段串联，逐阶段校验产物 | C(+U) |
+| `calibre.pex` | **本版不提供**：调用返回 `pex_unsupported`，不执行远程动作 | 直接结构化失败 | — |
 | `calibre.status` | 只读查询：作业状态与进度 | 读 `job.json` + 进程 + 日志尾 + 产物 | C |
 | `calibre.read_results` | 解析结果（DRC/LVS/PEX） | 读报告 → 结构化摘要 | D + 纯 Python |
 | `calibre.export` | 按名下载产物 | report / 结果库 / 网表 / pdb 目录 / 日志尾 | D |
 
 接口简写：S=`execute_skill`、C=`run_command`、U=`upload_file`、D=`download_file`、G=`run_gui_command`、Sp=`run_spectre_command`。
-验证类操作（check_env/drc/lvs/pex/status/read_results/export）主体走 **command role**（C/D/U），不使用 G/Sp；
+验证类操作（check_env/drc/lvs/status/read_results/export）主体走 **command role**（C/D/U），不使用 G/Sp；
+`calibre.pex` 不发起任何远程动作（调用即返回 `pex_unsupported`）；
 `calibre.lvs` 仅在 `source.kind=schematic` 时额外用一次 S（`getWorkingDir()` 解析 CIW 的 `cds.lib`），
 si 仍在 command role 执行（因此该路径要求 command role 与 CIW 同主机，与 Calibre Interactive 在本机跑 `si` 的形态一致）。
 
@@ -92,7 +93,7 @@ run 类操作默认 `blocking=false`：写 launcher、后台启动、立刻返�
 | 判据 | 含义 |
 |---|---|
 | `job.json` 存在 + `pgrep -f <run_dir>` 命中 | `running` |
-| 日志尾出现完成标记（DRC: `CALIBRE::DRC-H COMPLETED`；LVS: `LVS completed`；PEX: `COMPLETED`） | `completed` |
+| 日志尾出现完成标记（DRC: `CALIBRE::DRC-H COMPLETED`；LVS: `LVS completed`） | `completed` |
 | 进程消失且无完成标记，或日志含 `FATAL ERROR`/`ERROR (OSSHNL-` | `failed`（区分 `license` / `input` / `unknown`） |
 | 进程消失、无产物、无日志尾 | `unknown`（**不自动重试**） |
 
@@ -106,7 +107,7 @@ run 类操作默认 `blocking=false`：写 launcher、后台启动、立刻返�
 | 字段 | 内容 |
 |---|---|
 | `kind` | `drc` / `lvs` / `pex` |
-| `summary` | DRC：`{total_results, rules_checked, by_rule:{规则名:条数}, first_offenders:[…]}`；LVS：`{status: correct/incorrect/not_compared/unknown, counts:{对象:layout 数, *_source:source 数}, differences:[…]}`；PEX：`{errors, warnings, netlist_files, pdb_dirs}` |
+| `summary` | DRC：`{total_results, rules_checked, by_rule:{规则名:条数}, first_offenders:[…]}`；LVS：`{status: correct/incorrect/not_compared/unknown, counts:{对象:layout 数, *_source:source 数}, differences:[…]}`；PEX：`{errors, warnings, netlist_files, pdb_dirs}`（仅读取既有产物；本版不启动） |
 | `first_offenders` | DRC：前 `limit` 条 `{rule, cell, bbox, count}`（来自 `DRC_RES.db`，layer 不含）；LVS 差异点在 `summary.differences` |
 | `log_tail` | 有界日志尾（默认 40 行） |
 | `artifacts` | 已产出的关键文件清单（名 + 字节数 + mtime） |
@@ -132,7 +133,7 @@ run 类操作默认 `blocking=false`：写 launcher、后台启动、立刻返�
 | `gds` | 条件 | — | 版图 GDS 路径（可用 `virtuoso.layout.gds` 产出）；**只有 deck 里出现 `"GDSFILENAME"`/`"lvs_top.gds"` 等占位符时才必填** |
 | `top` | 条件 | — | 顶层 cell 名；同上（`"TOPCELLNAME"`/`"lvs_top"`） |
 | `job_id` / `run_dir` | 否 | `<kind>_<top>` / role 根下 | 见 §3.1 |
-| `turbo` | 否 | 4 | 传给 `-turbo` |
+| `turbo` | 否 | 4 | `hier=true` 时传给 `-turbo`；flat 模式不追加（P-093，Calibre 不接受 flat + `-turbo`） |
 | `hier` | 否 | true | `-hier` |
 | `blocking` / `poll_interval` / `timeout` | 否 | false / 5 / 3600 | 见 §3.4 |
 | `params` | 否 | — | 无 set 时的取数口：键=**SVRF 语句头**（含空格），值=整条语句，原位改写 deck |
@@ -162,7 +163,6 @@ run 类操作默认 `blocking=false`：写 launcher、后台启动、立刻返�
 | `source` | 条件 | — | LVS 源网表：`{"kind":"cdl","path":"…"}` 直接用已有 CDL；`{"kind":"schematic","library":"…","cell":"…","view":"schematic"}` 由本包在本次 run dir 内用官方 auCdl 链路现产 CDL 后比对 |
 | `emit_cdl` | 否 | false | `source.kind=schematic` 时，额外在返回里给出 `cdl_path`；CDL 本体始终在 run dir，可用 `calibre.export` 的 `netlist` 项取出 |
 | `cds_lib` | 否 | CIW `getWorkingDir()/cds.lib` | 仅 `source.kind=schematic`：显式指定 `cds.lib`，显式优先 |
-| `power` / `ground` | 否 | — | 可选覆盖 deck 的电源/地名 |
 
 `source` 的必填条件是 **deck/runset 没有自带源网表**：deck 引用 `"lvs_top.cdl"` 且未给 `source` → 明确失败；
 runset 已指定源网表时可省略。`source.kind=cdl` 的 `path` 必须是远端可见路径。
@@ -209,13 +209,16 @@ Calibre 自身不产源网表；官方 GUI 的 “Export from source viewer” �
 
 ### 4.4 `calibre.pex`
 
-在 DRC 参数基础上：`deck` 为 **rcx** deck；**`lvs_run_dir` 必填**（PEX 需要 LVS 结果里的 `svdb/`，
-包会把它复制进 PEX 的 run dir）；`fmt` 可选 `none`/`spice`/`simple`（默认 `none`，即只到 `-pdb`）。
-内部固定顺序：`-xrc -phdb` → `-xrc -pdb -rc <deck>` →（可选）`-xrc -fmt -<fmt>`，
-**每个阶段校验产物存在**才进入下一阶段（phdb 必须是 xRC 类型，见可行性报告 §2）。
+本版 **不提供 PEX 启动**。`calibre.pex` 调用立即返回结构化失败：
 
-> 实测（2026-09-22）：`calibre.pex` 用 `ctle` 的 LVS run dir 作输入，`status=completed`、
-> `read_results` 给 `errors=0 / warnings=8`，与手工基线一致。
+```json
+{"ok": false, "error": "calibre.pex is not supported in this version",
+ "value": {"reason": "pex_unsupported"}}
+```
+
+请求结构仍按 `RunRequest` 校验（需 `deck` 或 `runset`）；通过后不解析 deck/输入、不建 run dir、不调用 command role。
+现有三阶段/官方批处理实现保留在包内供后续恢复；
+恢复前不得把 `calibre.pex` 当作可用能力。既有 PEX 产物仍可由 `read_results(kind="pex")` / `export` 读取。
 
 ### 4.5 `calibre.status` / `calibre.read_results` / `calibre.export`
 
@@ -232,6 +235,7 @@ Calibre 自身不产源网表；官方 GUI 的 “Export from source viewer” �
 3. 不做分布式（`-remote`/`-hyper`）与多机 license 管理；
 4. 不做 deck 语义检查（只做占位符白名单改写 + 原样哈希）；
 5. 不做并发调度：同一 token 建议串行跑 PDR；许可争用表现为工具报错，由调用方决定重试。
+6. **本版不提供 PEX 启动**：`calibre.pex` 返回 `pex_unsupported`；不产生新的 PEX run dir。
 
 ## 6. 与其它 spec 的关系
 
@@ -249,8 +253,7 @@ Calibre 自身不产源网表；官方 GUI 的 “Export from source viewer” �
 1. 报告解析基于 Calibre 文本报告（`DRC.rep`/`lvs.rep`/`*.log`）的**稳定关键字**；
    不同 PDK/版本措辞变化时解析会降级为"计数 + 原文尾"（不抛异常）；
 2. 大设计的 `svdb`/`*.pdb` 可能很大：`export` 默认只取小文件，目录需显式点名；
-3. `power`/`ground` 未给时沿用 deck 默认（可能触发 ERC 告警，见可行性报告 §2 的 LVS 实测）；
-4. 许可不足、并发争用未做全局串行（§5.5）。
+3. 许可不足、并发争用未做全局串行（§5.5）。
 
 ## 8. 验收
 
@@ -264,7 +267,7 @@ Calibre 自身不产源网表；官方 GUI 的 “Export from source viewer” �
 | DRC | 小 GDS（`lay_e2e.gds` 顶层 `lay_e2e`）跑通：`status=completed`、`read_results` 给 rules_checked/结果计数；对照可行性报告基线（1737 规则 / 36 结果） |
 | LVS | `ctle.gds` + `source.kind=cdl`（`ctle.cdl`）：`status=completed`、`summary.status ∈ {match, incorrect}`、产物含 `svdb/*.phdb` |
 | LVS 闭环 | `source.kind=schematic`（`CMP_LIB/inv2` + `inv2.gds`）；`VB_CALIBRE_REQUIRE_LVS_VERDICT=1` 时要求 `correct`，`emit_cdl=true` 时返回 `cdl_path` |
-| PEX | 同组输入跑到 `-pdb`：`svdb/*.pdb/` 存在、`summary.errors==0`；`fmt=spice` 时产出网表 |
+| PEX | 本版不提供：`calibre.pex` 返回 `ok=false`、`value.reason=pex_unsupported`，且不建 run dir、不调用任何远程接口 |
 | 三件套 | `blocking=true` 与 `blocking=false`+`status` 轮询两种用法结果一致 |
 | 失败 | deck 路径不存在 → 明确失败；GDS 顶层名错 → 工具原文回带；不给 token → 400 |
 | 参数面 | deck 无占位符（自包含）时 `gds/top/source` 可省；deck 引用 `"lvs_top.cdl"` 而没给 `source` → 明确失败 |

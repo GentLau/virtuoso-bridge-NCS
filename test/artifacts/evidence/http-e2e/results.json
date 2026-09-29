@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-09-22T03:27:24.437641+00:00",
-  "all_passed": true,
+  "generated_at": "2026-09-28T19:09:31.434086+00:00",
+  "all_passed": false,
   "suites": [
     {
       "suite": "infra_e2e_tests.py",
@@ -57,9 +57,45 @@
       "log": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\evidence\\http-e2e\\spectre_e2e_tests.py.log"
     },
     {
-      "suite": "maestro_e2e_tests.py",
+      "suite": "screenshot_params_e2e_tests.py",
       "ok": true,
       "returncode": 0,
+      "log": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\evidence\\http-e2e\\screenshot_params_e2e_tests.py.log"
+    },
+    {
+      "suite": "calibre_e2e_tests.py",
+      "ok": true,
+      "returncode": 0,
+      "log": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\evidence\\http-e2e\\calibre_e2e_tests.py.log"
+    },
+    {
+      "suite": "calibre_params_e2e_tests.py",
+      "ok": true,
+      "returncode": 0,
+      "log": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\evidence\\http-e2e\\calibre_params_e2e_tests.py.log"
+    },
+    {
+      "suite": "verilog_import_params_e2e_tests.py",
+      "ok": false,
+      "returncode": 1,
+      "log": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\evidence\\http-e2e\\verilog_import_params_e2e_tests.py.log"
+    },
+    {
+      "suite": "calibre_export_pex_e2e_tests.py",
+      "ok": false,
+      "returncode": 1,
+      "log": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\evidence\\http-e2e\\calibre_export_pex_e2e_tests.py.log"
+    },
+    {
+      "suite": "maestro_view_param_e2e_tests.py",
+      "ok": false,
+      "returncode": 1,
+      "log": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\evidence\\http-e2e\\maestro_view_param_e2e_tests.py.log"
+    },
+    {
+      "suite": "maestro_e2e_tests.py",
+      "ok": false,
+      "returncode": 1,
       "log": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\evidence\\http-e2e\\maestro_e2e_tests.py.log"
     }
   ]

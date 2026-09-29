@@ -90,15 +90,21 @@ def _op(transport, operation: str, **fields: Any) -> Any:
             f"{operation} failed: {response.get('error')}; "
             f"data={response.get('data')}"
         )
-    return response["data"]
+    # C1 契约（2f88853）：值型 op 载荷在顶层 `value`，命令型在 `result`；兼容旧 `data` 壳。
+    payload = response.get("value")
+    if payload is None:
+        payload = response.get("result")
+    if payload is None:
+        payload = _c1_wrapper(response)
+    return payload if isinstance(payload, dict) else {}
 
 
 def _value(transport, operation: str, **fields: Any) -> dict[str, Any]:
     data = _op(transport, operation, **fields)
-    value = data.get("value")
-    if not isinstance(value, dict):
+    if not isinstance(data, dict):
         raise AssertionError(f"{operation} returned no value dict: {data}")
-    return value
+    inner = data.get("value")
+    return inner if isinstance(inner, dict) else data
 
 
 def _check(condition: bool, message: str) -> None:
@@ -139,7 +145,7 @@ def _expect_fail(transport, operation: str, **fields: Any) -> str:
         response = transport.call(payload)
     except urllib.error.HTTPError as error:
         return f"HTTP {error.code}: {error.read().decode('utf-8', 'replace')[:200]}"
-    data = response.get("data") or {}
+    data = _c1_wrapper(response)
     if response.get("ok") is not False and data.get("ok") is not False:
         raise AssertionError(f"{operation} expected structured failure, got ok")
     return str(response.get("error") or data.get("error") or "")
@@ -147,7 +153,8 @@ def _expect_fail(transport, operation: str, **fields: Any) -> str:
 
 def _skill(transport, code: str) -> str:
     data = _op(transport, "basic.skill.execute", skill_code=code)
-    result = data.get("result", {})
+    # C1 契约：skill 结果既可能在顶层 `result`（我们已解包进 data），也可能还有一层嵌套。
+    result = data.get("result") if isinstance(data.get("result"), dict) else data
     if result.get("status") != "success":
         raise AssertionError(f"SKILL failed: {result}")
     return result.get("output", "")
@@ -182,7 +189,7 @@ def _case_read_config_rc(transport) -> None:
     )
     _check("ac" in value["tests"], "rc_probe/maestro must list the ac test")
     _check(
-        "ac" in value["analyses"]["ac"],
+        "ac" in value["tests"]["ac"]["analyses"],
         "rc_probe/maestro must list the ac analysis",
     )
 
@@ -192,10 +199,13 @@ def _case_read_config_logic(transport) -> None:
         transport, "virtuoso.maestro.read_config",
         library="maestro_tb", cell="logic_probe",
     )
-    outputs = value["outputs"].get("logic_tb", [])
+    outputs = value["tests"]["logic_tb"]["outputs"]
     names = {item["name"] for item in outputs}
     _check({"q_high", "q_low", "Q", "CLK"} <= names, f"logic outputs: {names}")
-    specs = {entry["name"]: entry for entry in value["specs"]}
+    specs = {
+        f"logic_tb.{item['name']}": item["spec"]
+        for item in outputs if isinstance(item.get("spec"), dict)
+    }
     _check(specs["logic_tb.q_high"]["type"] == "gt", "q_high spec must be gt")
     _check(specs["logic_tb.q_low"]["type"] == "lt", "q_low spec must be lt")
 
@@ -218,9 +228,13 @@ def _case_write_smoke(transport) -> None:
         library="maestro_tb", cell="rc_probe",
     )
     _check(value["variables"].get("e2e_probe") == "1.25", "variable not saved")
-    names = {item["name"] for item in value["outputs"].get("ac", [])}
+    names = {item["name"] for item in value["tests"]["ac"]["outputs"]}
     _check("e2e_out" in names, "output not saved")
-    spec_names = {entry["name"] for entry in value["specs"]}
+    spec_names = {
+        f"ac.{item['name']}"
+        for item in value["tests"]["ac"]["outputs"]
+        if isinstance(item.get("spec"), dict)
+    }
     _check("ac.e2e_out" in spec_names, "spec not saved")
 
     cleanup = [
@@ -237,15 +251,15 @@ def _case_write_smoke(transport) -> None:
         library="maestro_tb", cell="rc_probe",
     )
     _check("e2e_probe" not in value["variables"], "variable cleanup failed")
-    names = {item["name"] for item in value["outputs"].get("ac", [])}
+    names = {item["name"] for item in value["tests"]["ac"]["outputs"]}
     _check("e2e_out" not in names, "output cleanup failed")
 
 
 def _case_write_atomics(transport) -> None:
     base = {"library": "maestro_tb", "cell": "rc_probe"}
     before = _value(transport, "virtuoso.maestro.read_config", **base)
-    temp_value = before["sim_options"]["ac"].get("temp", "27")
-    control_mode = before["env_options"]["ac"].get("controlMode", "batch")
+    temp_value = before["tests"]["ac"]["sim_options"].get("temp", "27")
+    control_mode = before["tests"]["ac"]["env_options"].get("controlMode", "batch")
     run_mode = before["run_mode"]
 
     commands = [
@@ -268,15 +282,15 @@ def _case_write_atomics(transport) -> None:
         _value(transport, "virtuoso.maestro.write", commands=commands, **base)
         after = _value(transport, "virtuoso.maestro.read_config", **base)
         _check(
-            after["analyses"]["ac"]["ac"].get("dec") == "10",
+            after["tests"]["ac"]["analyses"]["ac"].get("dec") == "10",
             "set_analysis dec=10 not visible",
         )
         _check(
-            after["sim_options"]["ac"].get("temp") == temp_value,
+            after["tests"]["ac"]["sim_options"].get("temp") == temp_value,
             "set_sim_option temp readback mismatch",
         )
         _check(
-            after["env_options"]["ac"].get("controlMode") == control_mode,
+            after["tests"]["ac"]["env_options"].get("controlMode") == control_mode,
             "set_env_option controlMode readback mismatch",
         )
         _check(after["job_control_mode"] == "ICRP", "job control mode not ICRP")
@@ -286,8 +300,9 @@ def _case_write_atomics(transport) -> None:
             f"corners not visible: {after['corners']}",
         )
         corner_value = (
-            after.get("corner_variables", {})
+            after.get("corners", {})
             .get("e2e_setup_corner", {})
+            .get("variables", {})
             .get("VDD")
         )
         _check(
@@ -336,11 +351,11 @@ def _case_write_var_scopes(transport) -> None:
         cfg = _value(transport, "virtuoso.maestro.read_config", **base)
         _check(cfg["variables"].get(name) == "1.0", "global variable is not 1.0")
         _check(
-            cfg["test_variables"]["ac"].get(name) == "2.0",
+            cfg["tests"]["ac"]["variables"].get(name) == "2.0",
             "test variable is not 2.0",
         )
         _check(
-            cfg["corner_variables"]["e2e_scope_corner"].get(name) == "3.0",
+            cfg["corners"]["e2e_scope_corner"]["variables"].get(name) == "3.0",
             "corner variable is not 3.0",
         )
 
@@ -350,12 +365,12 @@ def _case_write_var_scopes(transport) -> None:
         )
         cfg = _value(transport, "virtuoso.maestro.read_config", **base)
         _check(
-            name not in cfg["corner_variables"].get("e2e_scope_corner", {}),
+            name not in cfg["corners"].get("e2e_scope_corner", {}).get("variables", {}),
             "corner variable survived corner deletion",
         )
         _check(cfg["variables"].get(name) == "1.0", "global variable was lost")
         _check(
-            cfg["test_variables"]["ac"].get(name) == "2.0",
+            cfg["tests"]["ac"]["variables"].get(name) == "2.0",
             "test variable was lost",
         )
 
@@ -368,7 +383,7 @@ def _case_write_var_scopes(transport) -> None:
         )
         cfg = _value(transport, "virtuoso.maestro.read_config", **base)
         _check(
-            name not in cfg["test_variables"]["ac"],
+            name not in cfg["tests"]["ac"]["variables"],
             "test variable survived test-scope delete",
         )
         _check(cfg["variables"].get(name) == "1.0", "global variable was lost")
@@ -419,7 +434,7 @@ def _case_write_parameter_scopes(transport) -> None:
         _check(cfg["parameters"].get(path) == "1K",
                "global parameter is not 1K")
         _check(
-            cfg["corner_parameters"]["e2e_param_corner"].get(path) == "1K",
+            cfg["corners"]["e2e_param_corner"]["parameters"].get(path) == "1K",
             "corner parameter is not 1K",
         )
 
@@ -432,7 +447,7 @@ def _case_write_parameter_scopes(transport) -> None:
         )
         cfg = _value(transport, "virtuoso.maestro.read_config", **base)
         _check(
-            path not in cfg["corner_parameters"].get("e2e_param_corner", {}),
+            path not in cfg["corners"].get("e2e_param_corner", {}).get("parameters", {}),
             "corner parameter survived corner delete",
         )
         _check(cfg["parameters"].get(path) == "1K",
@@ -680,8 +695,14 @@ def _case_write_save_flag(transport) -> None:
     base = dict(library="maestro_tb", cell="rc_probe")
     name = f"e2e_save_{time.strftime('%H%M%S')}"
     def _steps(fields: dict) -> tuple[list[str], dict]:
-        data = _op(transport, "virtuoso.maestro.write", **base, **fields)
-        return [s.get("name") for s in data.get("steps") or []], data
+        # C1 契约：`steps` 在响应层（不在 `value` 里）——必须读原始响应，不能用解包后的 payload。
+        response = transport.call({"operation": "virtuoso.maestro.write",
+                                   "token": TOKEN, "step_details": True,
+                                   **base, **fields})
+        if response.get("ok") is not True:
+            raise AssertionError(f"maestro.write failed: {response.get('error')}")
+        payload = response.get("value") if isinstance(response.get("value"), dict) else {}
+        return [s.get("name") for s in response.get("steps") or []], payload
 
     saved_steps, _ = _steps(
         {"commands": [{"op": "set_var", "name": name, "value": "1.0", "scope": "global"}]})
@@ -698,14 +719,16 @@ def _case_write_save_flag(transport) -> None:
                       "scope": "global"}],
     })
     _check(rejected.get("ok") is False, f"save=False 必须被拒绝：{rejected}")
-    reason = ((rejected.get("data") or {}).get("value") or {}).get("reason")
+    # C1 契约：失败壳为 `{ok:false, error}`；兼容旧 `data.value.reason` 形态。
+    shell = _c1_wrapper(rejected) if isinstance(_c1_wrapper(rejected), dict) else rejected
+    reason = (shell.get("value") or {}).get("reason") if isinstance(shell, dict) else None
     _check(reason == "save_false_unsupported",
-           f"save=False 拒绝原因不对：{rejected.get('data')}")
+           f"save=False 拒绝原因不对：{rejected}")
     cfg2 = _value(transport, "virtuoso.maestro.read_config", **base)
     _check(cfg2["variables"].get(name) == "1.0",
            f"拒绝后变量不得被改：{cfg2['variables'].get(name)}")
     unsaved_steps = [s.get("name") for s in
-                     ((rejected.get("data") or {}).get("steps") or [])]
+                     ((shell.get("steps") if isinstance(shell, dict) else None) or [])]
     # 清理：删除该变量并保存
     try:
         _value(transport, "virtuoso.maestro.write", **base,
@@ -1043,3 +1066,19 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
+# --- C1 兼容垫片（2026-09-29，C3）------------------------------------------------
+# C1（2f88853）起：业务载荷直返顶层（值型 `value`、命令/skill 型 `result`）、
+# 成功默认省略 `steps`、失败壳去掉 `data`。历史 TB 按 `response["data"]` 解析，
+# 本垫片把新契约响应合成为旧 `data` 壳，让既有解析零改动继续工作。
+def _c1_wrapper(body):
+    if not isinstance(body, dict):
+        return {}
+    if isinstance(body.get("data"), dict):
+        return body["data"]
+    wrapped = {"ok": body.get("ok"), "error": body.get("error")}
+    for key in ("value", "result", "steps"):
+        if key in body:
+            wrapped[key] = body[key]
+    return wrapped

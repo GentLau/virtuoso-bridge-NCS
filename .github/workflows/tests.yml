@@ -21,7 +21,9 @@ jobs:
         with:
           enable-cache: true
       - name: Run full test suite
-        run: uv run --python ${{ matrix.python-version }} --extra dev pytest
+        run: >-
+          uv run --python ${{ matrix.python-version }} --extra dev
+          python test/shared/runners/run_offline_multi.py
 
   spec:
     name: Spec governance
@@ -40,4 +42,9 @@ jobs:
         with:
           enable-cache: true
       - name: Run SSH transport tests
-        run: uv run --python 3.11 --extra dev pytest test/unit/test_ssh.py test/unit/test_paramiko.py test/unit/test_transfer.py
+        run: >-
+          uv run --python 3.11 --extra dev
+          python test/shared/runners/run_offline_multi.py
+          test/offline/unit/test_ssh.py
+          test/offline/unit/test_paramiko.py
+          test/offline/unit/test_transfer.py

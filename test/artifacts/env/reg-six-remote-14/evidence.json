@@ -2,10 +2,10 @@
   "ok": true,
   "phase": "1-4 (remote)",
   "user": "vbsixremote",
-  "token": "vbsixf6edd5-00",
+  "token": "vbsix430fe1-00",
   "host": "wsl-gent",
   "daemon_port": 65133,
-  "http_port": 61673,
+  "http_port": 59962,
   "work_dir": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-remote-14",
   "steps": [
     {
@@ -56,12 +56,14 @@
       "status": 200,
       "request": {
         "action": "apply",
-        "token": "vbsixf6edd5-00",
+        "token": "vbsix430fe1-00",
         "mode": "remote",
         "ssh": {
           "default": {
             "host": "wsl-gent",
-            "user": "Gent"
+            "user": "Gent",
+            "key_dir": "~/.ssh",
+            "key": "id_ed25519"
           }
         },
         "root": {
@@ -70,7 +72,7 @@
         "roles": {
           "daemon": {
             "daemon_port": 65133,
-            "local_port": 61674,
+            "local_port": 59963,
             "root": "/home/Gent/.virtuoso-bridge/vbsixremote"
           }
         },
@@ -83,7 +85,7 @@
         "user": "vbsixremote",
         "stage": "applied",
         "step": 1,
-        "token": "vbsixf6edd5-00",
+        "token": "vbsix430fe1-00",
         "errors": [],
         "warnings": []
       }
@@ -95,7 +97,7 @@
       "request": {
         "user": "vbsixremote",
         "action": "verify",
-        "token": "vbsixf6edd5-00"
+        "token": "vbsix430fe1-00"
       },
       "response": {
         "error": "step order violation",
@@ -135,13 +137,13 @@
       "request": {
         "user": "vbsixremote",
         "action": "validate",
-        "token": "vbsixf6edd5-00"
+        "token": "vbsix430fe1-00"
       },
       "response": {
         "user": "vbsixremote",
         "stage": "validated",
         "step": 2,
-        "token": "vbsixf6edd5-00",
+        "token": "vbsix430fe1-00",
         "errors": [],
         "warnings": []
       }
@@ -153,13 +155,13 @@
       "request": {
         "user": "vbsixremote",
         "action": "probe",
-        "token": "vbsixf6edd5-00"
+        "token": "vbsix430fe1-00"
       },
       "response": {
         "user": "vbsixremote",
         "stage": "probed",
         "step": 3,
-        "token": "vbsixf6edd5-00",
+        "token": "vbsix430fe1-00",
         "errors": [],
         "warnings": [
           "role.gui.display was not detected (multiple or no Virtuoso processes); GUI commands will fail until it is configured"
@@ -174,7 +176,9 @@
               "user": "Gent",
               "jump_host": null,
               "jump_user": null,
-              "proxy": null
+              "proxy": null,
+              "key_dir": "~/.ssh",
+              "key": "id_ed25519"
             },
             "backend": "paramiko",
             "control_master": "auto",
@@ -191,6 +195,8 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
+              "key_dir": null,
+              "key": null,
               "root": "/home/Gent/.virtuoso-bridge/vbsixremote/gui",
               "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
               "max_sessions": 10,
@@ -203,11 +209,13 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
+              "key_dir": null,
+              "key": null,
               "root": "/home/Gent/.virtuoso-bridge/vbsixremote",
               "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
               "max_sessions": 10,
               "daemon_port": 65133,
-              "local_port": 61674,
+              "local_port": 59963,
               "python": "/opt/eda/cadence/IC618/tools.lnx86/python/64bit/bin/python3",
               "expected_hostname": "GLIS-DESKTOP.localdomain",
               "expected_user": "Gent"
@@ -219,6 +227,8 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
+              "key_dir": null,
+              "key": null,
               "root": "/home/Gent/.virtuoso-bridge/vbsixremote/command",
               "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
               "max_sessions": 10
@@ -230,6 +240,8 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
+              "key_dir": null,
+              "key": null,
               "root": "/home/Gent/.virtuoso-bridge/vbsixremote/file",
               "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
               "max_sessions": 10
@@ -241,6 +253,8 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
+              "key_dir": null,
+              "key": null,
               "root": "/home/Gent/.virtuoso-bridge/vbsixremote/spectre",
               "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
               "max_sessions": 10,
@@ -267,13 +281,13 @@
       "request": {
         "user": "vbsixremote",
         "action": "deploy",
-        "token": "vbsixf6edd5-00"
+        "token": "vbsix430fe1-00"
       },
       "response": {
         "user": "vbsixremote",
         "stage": "deployed",
         "step": 4,
-        "token": "vbsixf6edd5-00",
+        "token": "vbsix430fe1-00",
         "errors": [],
         "warnings": [],
         "setup_path": "/home/Gent/.virtuoso-bridge/vbsixremote/setup/virtuoso_setup.il",
@@ -287,7 +301,9 @@
               "user": "Gent",
               "jump_host": null,
               "jump_user": null,
-              "proxy": null
+              "proxy": null,
+              "key_dir": "~/.ssh",
+              "key": "id_ed25519"
             },
             "backend": "paramiko",
             "control_master": "auto",
@@ -304,6 +320,8 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
+              "key_dir": null,
+              "key": null,
               "root": "/home/Gent/.virtuoso-bridge/vbsixremote/gui",
               "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
               "max_sessions": 10,
@@ -316,11 +334,13 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
+              "key_dir": null,
+              "key": null,
               "root": "/home/Gent/.virtuoso-bridge/vbsixremote",
               "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
               "max_sessions": 10,
               "daemon_port": 65133,
-              "local_port": 61674,
+              "local_port": 59963,
               "python": "/opt/eda/cadence/IC618/tools.lnx86/python/64bit/bin/python3",
               "expected_hostname": "GLIS-DESKTOP.localdomain",
               "expected_user": "Gent"
@@ -332,6 +352,8 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
+              "key_dir": null,
+              "key": null,
               "root": "/home/Gent/.virtuoso-bridge/vbsixremote/command",
               "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
               "max_sessions": 10
@@ -343,6 +365,8 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
+              "key_dir": null,
+              "key": null,
               "root": "/home/Gent/.virtuoso-bridge/vbsixremote/file",
               "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
               "max_sessions": 10
@@ -354,6 +378,8 @@
               "jump_host": null,
               "jump_user": null,
               "proxy": null,
+              "key_dir": null,
+              "key": null,
               "root": "/home/Gent/.virtuoso-bridge/vbsixremote/spectre",
               "expected_fingerprint": "SHA256:6em3R96DJgXtZyGzleVcvT3nd0Ap/1I5kbegSDOaLOk",
               "max_sessions": 10,
@@ -374,5 +400,5 @@
       }
     }
   ],
-  "elapsed_s": 19.015999999974156
+  "elapsed_s": 28.43800000002375
 }

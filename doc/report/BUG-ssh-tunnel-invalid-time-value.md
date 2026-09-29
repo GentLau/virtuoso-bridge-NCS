@@ -18,7 +18,7 @@ errors=["Daemon connection failed: SSH tunnel failed to start on Windows (rc=255
 
 ## 2. 环境
 
-- work-dir：`test/tb/artifacts/log-vblog`
+- work-dir：`test/artifacts/env/log-vblog`
 - token：`vb-vblog`
 - 8127 服务可用（query/mkdir 成功）
 - 失败点：`middle.execute_skill` 建 tunnel（`command-line line 0: invalid time value`）
@@ -28,7 +28,7 @@ errors=["Daemon connection failed: SSH tunnel failed to start on Windows (rc=255
 ```python
 from transport.middle import BusinessServer
 from pyapi.packages.schematic import Package, ScreenshotRequest
-middle = BusinessServer(r"test/tb/artifacts/log-vblog")
+middle = BusinessServer(r"test/artifacts/env/log-vblog")
 Package(middle).screenshot(ScreenshotRequest(
     token="vb-vblog", library="schemtest", cell="t1",
     region=[-1.0, -0.5, 1.0, 0.5], leave_open=False, timeout=180))
@@ -49,9 +49,9 @@ Package(middle).screenshot(ScreenshotRequest(
   先前正常、后续突然失败”。
 - **修复**：`src/common/ssh.py::_common_ssh_options` 把 ConnectTimeout 渲染为整数秒
   （`ceil`，最小 1 秒）；内部（Paramiko/预算）仍保留浮点秒子预算，语义不变。
-- **TB**：`test/unit/test_ssh.py::test_connect_timeout_rendered_as_integer_for_cli`
+- **TB**：`test/offline/unit/test_ssh.py::test_connect_timeout_rendered_as_integer_for_cli`
   （修复前红：`ConnectTimeout=0.5`）。
 - **真机复核**（Windows → `wsl-gent`，token `vb-vblog`）：
-  `test/tb/cov_remote_real.py` 5/5 ok；`one_shot_burst_tb.py` 72/72；
+  `test/cov_remote_real.py` 5/5 ok；`one_shot_burst_tb.py` 72/72；
   递归上传/下载 + 远端 symlink 解引用 PASS；`registration_http_six_step_tb.py --local-mode` rc=0。
 - **提交**：`5e3f848`；代码评审报告见 `doc/report/代码与spec偏差评审.md` §7.3。

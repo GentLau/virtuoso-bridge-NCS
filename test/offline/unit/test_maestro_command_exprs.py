@@ -80,6 +80,13 @@ COMMANDS: dict[str, dict] = {
     "delete_corner": {"name": "c1"},
     "setup_corner": {"name": "c1"},
     "set_run_mode": {"run_mode": "single"},
+    "set_run_option": {
+        "options": {
+            "mcmethod": "mismatch",
+            "mcnumpoints": 8,
+            "samplingmode": "lhs",
+        },
+    },
     "set_job_control_mode": {"mode": "local"},
     # policy 字符串必须是"原始 SKILL 表达式"（以 ( 或 ' 开头），否则被拒（源码 :1140-1145）
     "set_job_policy": {"policy": "(t)", "test": "t1"},
@@ -184,6 +191,30 @@ class TestCommandExprMatrix(unittest.TestCase):
             {"op": "delete", "history": "h1"}, "")[0]
         self.assertIn("s1", with_session)
         self.assertNotIn("s1", without)
+
+    def test_set_run_option_builds_table_driven_writes(self):
+        expr = self._exprs("set_run_option")[0]
+        self.assertIn('axlPutRunOption(sdb "Monte Carlo Sampling" "mcmethod")', expr)
+        self.assertIn('axlPutRunOption(sdb "Monte Carlo Sampling" "mcnumpoints")', expr)
+        self.assertIn('axlPutRunOption(sdb "Monte Carlo Sampling" "samplingmode")', expr)
+        self.assertIn('axlSetRunOptionValue(axlPutRunOption', expr)
+        self.assertIn('"8"', expr)
+
+    def test_set_run_option_rejects_bad_shape_and_values(self):
+        pkg = M.Package(FakeMiddle())
+        cases = [
+            ({"options": None}, "non-empty mapping"),
+            ({"options": {}}, "non-empty mapping"),
+            ({"options": {"mcnumpoints": 0}}, ">= 1"),
+            ({"options": {"samplingmode": "nope"}}, "must be one of"),
+            ({"options": {"unknown": "x"}}, "unsupported Monte Carlo run option"),
+        ]
+        for payload, message in cases:
+            with self.subTest(payload=payload):
+                with self.assertRaises(ValueError) as ctx:
+                    pkg._command_exprs(
+                        {"op": "set_run_option", **payload}, "s1")
+                self.assertIn(message, str(ctx.exception))
 
     def test_unknown_op_and_non_dict_are_rejected(self):
         pkg = M.Package(FakeMiddle())
@@ -474,30 +505,34 @@ class TestReadConfigOrchestration(unittest.TestCase):
         result = self._read(middle)
         self.assertTrue(result.ok, result.error)
         config = result.value
-        self.assertEqual(config["tests"], ["t1"])
-        self.assertEqual(config["corners"], ["c1"])
         # parse_sexpr 产出字符串原子：数值不会被隐式转换
         self.assertEqual(config["variables"], {"v1": "1", "v2": "2"})
         self.assertEqual(config["parameters"], {"p1": "9"})
-        self.assertEqual(config["test_variables"], {"t1": {"tv1": "5"}})
-        self.assertEqual(config["corner_variables"], {"c1": {"cv1": "7"}})
-        self.assertEqual(config["corner_parameters"],
-                         {"c1": {"LIB/CELL/maestro/c1/p2": 3}})   # 标量经 _skill_atom_value 转成 int
-        self.assertEqual(config["analyses"], {"t1": {"tran": {"stop": "10n"}}})
-        self.assertEqual(config["env_options"], {"t1": {"temp": "27"}})
-        self.assertEqual(config["sim_options"], {"t1": {"errpreset": "moderate"}})
-        self.assertEqual(config["outputs"]["t1"][0]["name"], "VOUT")
-        self.assertEqual(config["outputs"]["t1"][0]["eval_type"], "tran")
-        self.assertEqual(config["outputs"]["t1"][0]["yaxis_unit"], "V")
-        self.assertEqual(config["specs"][0]["name"], "t1.VOUT")
-        self.assertEqual(config["specs"][0]["type"], "min")
-        self.assertEqual(config["specs"][0]["value"], "1")
-        self.assertEqual(config["outputs"]["t1"][0]["spec"],
+        test = config["tests"]["t1"]
+        self.assertEqual(test["variables"], {"tv1": "5"})
+        self.assertEqual(test["analyses"], {"tran": {"stop": "10n"}})
+        self.assertEqual(test["env_options"], {"temp": "27"})
+        self.assertEqual(test["sim_options"], {"errpreset": "moderate"})
+        self.assertEqual(test["outputs"][0]["name"], "VOUT")
+        self.assertEqual(test["outputs"][0]["eval_type"], "tran")
+        self.assertEqual(test["outputs"][0]["yaxis_unit"], "V")
+        self.assertEqual(test["outputs"][0]["spec"],
                          {"type": "min", "value": "1"})
+        corner = config["corners"]["c1"]
+        self.assertEqual(corner["variables"], {"cv1": "7"})
+        # 标量经 _skill_atom_value 转成 int
+        self.assertEqual(corner["parameters"],
+                         {"LIB/CELL/maestro/c1/p2": 3})
         self.assertEqual(config["run_mode"], "single")
         self.assertEqual(config["job_control_mode"], "local")
         self.assertEqual(config["current_history"], "h1")
+        self.assertIn("run_options", config)
         self.assertNotIn("raw", config)
+        for removed in (
+            "test_variables", "corner_variables", "corner_parameters",
+            "analyses", "env_options", "sim_options", "outputs", "specs",
+        ):
+            self.assertNotIn(removed, config)
 
     def test_include_raw_adds_raw_section(self):
         middle = ReadConfigMiddle()
@@ -544,10 +579,11 @@ class TestReadConfigOrchestration(unittest.TestCase):
         middle = ReadConfigMiddle(setup='(nil ("c1") "vars" "params" "single" "local")')
         result = self._read(middle)
         self.assertTrue(result.ok, result.error)
-        self.assertEqual(result.value["tests"], [])
-        self.assertEqual(result.value["analyses"], {})
-        self.assertEqual(result.value["outputs"], {})
-        self.assertEqual(result.value["specs"], [])
+        self.assertEqual(result.value["tests"], {})
+        self.assertEqual(result.value["corners"]["c1"]["variables"],
+                         {"cv1": "7"})
+        self.assertEqual(result.value["corners"]["c1"]["parameters"],
+                         {"LIB/CELL/maestro/c1/p2": 3})
         self.assertFalse(any("maeGetEnabledAnalysis" in call for call in middle.calls))
 
     def test_step_names_are_stable(self):

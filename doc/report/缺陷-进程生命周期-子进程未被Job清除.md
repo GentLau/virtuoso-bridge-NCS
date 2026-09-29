@@ -3,23 +3,23 @@
 > 日期：2026-09-21
 > 发现人：上层开发（symbol 业务包回归时跑全量 unit 发现）
 > 归属：**中层/基础设施**（`src/common/process_lifetime.py`、`src/server/supervisor.py`），不属于上层业务包
-> 复现环境：本机 Windows + 当前 agent shell；`pytest test/unit` 全量跑时命中
+> 复现环境：本机 Windows + 当前 agent shell；`pytest test/offline/unit` 全量跑时命中
 
 ## 1. 现象
 
 ```
-.\.venv\Scripts\python.exe -m pytest test/unit/test_process_lifetime.py -q
+.\.venv\Scripts\python.exe -m pytest test/offline/unit/test_process_lifetime.py -q
 ...
 > self.assertFalse(_pid_alive(child_pid), "descendant survived job close")
 E AssertionError: True is not false : descendant survived job close
 ```
 
 - 复现率：**2/2**（单跑该文件同样失败，不是全量跑的干扰）。
-- `pytest test/unit` 全量：仅此 1 项失败，其余全绿。
+- `pytest test/offline/unit` 全量：仅此 1 项失败，其余全绿。
 
 ## 2. 测试做了什么
 
-`test/unit/test_process_lifetime.py::TestProcessJob::test_close_kills_parent_and_descendant`
+`test/offline/unit/test_process_lifetime.py::TestProcessJob::test_close_kills_parent_and_descendant`
 
 1. 用 `subprocess.Popen` 起一个“父进程”（写入 ready 文件后等待 go 文件）；
 2. `job = ProcessJob()`；`job.assign(parent)` 断言成功；
@@ -73,7 +73,7 @@ E AssertionError: True is not false : descendant survived job close
 
 - `src/common/process_lifetime.py`：增加 `ProcessJob.resume()`；
 - `src/server/supervisor.py`：业务子进程改为挂起创建、绑定后恢复；
-- `test/unit/test_process_lifetime.py`：测试改为同样的
+- `test/offline/unit/test_process_lifetime.py`：测试改为同样的
   “挂起创建 → assign → resume”顺序，并断言业务进程在恢复前已绑定。
 
 已用真实 supervisor + SSH 隧道做受控验证：隧道建立后强杀 supervisor，

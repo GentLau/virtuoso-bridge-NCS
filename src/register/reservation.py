@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import threading
 from dataclasses import dataclass
-from pathlib import Path
 
 
 @dataclass
@@ -41,11 +40,9 @@ class Reservation:
 class ReservationTable:
     """Thread-safe, in-memory candidate table owned by one registration server."""
 
-    def __init__(self, path: str | Path | None = None) -> None:  # noqa: ARG002
+    def __init__(self) -> None:
         self._lock = threading.RLock()
         self._records: dict[str, Reservation] = {}
-        # Kept only as a diagnostic compatibility attribute; never written.
-        self.path = Path(path) if path is not None else None
 
     def _conflicts(self, record: Reservation, *, ignore_user: str | None = None) -> list[str]:
         conflicts: list[str] = []

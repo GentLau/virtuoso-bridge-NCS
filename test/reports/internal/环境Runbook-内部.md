@@ -105,13 +105,33 @@ spec《其他/多用户与注册》§1 与《顶层/控制面与业务面》§1.
 
 | 部署形态 | 改 `registry.json` 后怎么生效 |
 |---|---|
-| **标准形态**（`server.supervisor` 控制面 spawn 业务面） | 发 `POST /api/process/reload`（`Authorization: Bearer <admin>`）；**立即生效**，无需重启 |
-| **我们测试台的 standalone 形态**（`python -m server.api_server --port ...`） | **没有控制通道 → 必须重启该业务面**（常驻环境 8127/8128/8131 都是这一形态） |
+| **标准形态**（`server.supervisor` 控制面 spawn 业务面；**常驻客户端 2026-09-29 起已切到此形态**） | 发 `POST /api/process/reload`（`Authorization: Bearer <admin>`）；**立即生效**，无需重启 |
+| **standalone 形态**（`python -m server.api_server --port ...`；无控制通道，仅隔离/临时场景） | 改注册表后**必须重启该业务面**（历史的 8127/8128/8131 都是这一形态） |
 
 > 端到端语义 TB：`test/offline/integration/test_supervisor_process.py::test_http_reload_picks_up_registry_file`
 > （不 reload → 新 token 无效；reload 后立即可用）。
 > **跑测提醒**：改了 `src/` 或注册表之后，**先重启 standalone 业务面再验**，否则测到的是旧进程里的实现
 > （2026-09-24 实测：不重启会让"已修好的功能"看起来完全没生效）。
+>
+> **2026-09-29 变更（常驻客户端切标准形态）**：一条命令拉起 8124（控制面/注册管理页）+ 8127（业务面）——
+> `PYTHONPATH=src python -m server.supervisor --control-port 8124 --business-port 8127 --work-dir test/artifacts/env/log-vblog`。
+> 验收：`/api/process/status` = `ready`（业务子进程独立 pid）、`http://127.0.0.1:8124/` 页面 200、
+> `skill_eval.py --token vb-vblog "1+2"` → `status=success`、`POST /api/process/reload` 后仍 `ready`、
+> 五接口真机冒烟 5/5（证据 `test/artifacts/evidence/resident-standard-form-smoke.json`）。
+> **跑测提醒更新**：改注册表/config → `POST /api/process/reload`（即时、不打断在途）；
+> 改 `src/` 代码 → `POST /api/process/restart`（按原参数重启业务子进程，几秒~几十秒中断；实测 pid 39196→26792 后
+> `/health` ok、`skill_eval` 成功）。两者都**不再需要手工杀进程/起进程**；离线跑测仍按 §8 先释放 8124/8127。
+>
+> **真机测试口径（2026-09-29 起，硬规矩）**：live 结论必须取自**业务拟真环境**——标准形态客户端（8124+8127）、
+> 业务面 HTTP（`--base http://127.0.0.1:8127/api/operation`）、真实 PDK/工具链/多用户；`--transport direct`
+> 只做故障定位，不得计入真机判据。完整规则见 `test/docs/写TB规范.md` §11。
+>
+> **2026-09-29 收尾（恢复日常环境）**：标准形态客户端 8124（控制面/注册页）+ 8127（业务面子进程，supervisor 托管）
+> 已就位；`resident_env_check.py` = **8/8 通**（wsl-gent：vblog/vbs11/calprobe/vbuser1/vbuser2/vbtest；w1：vbfake1/vbfake2）。
+> 本轮两处环境修复：① **vbuser2 实例硬重启**（旧 daemon 端口释放后 `bringup_user.sh vbuser2 65402` 重建，
+> 修复"daemon 在听但 SKILL 超时"）；② registry 里 `vbfake1/vbfake2` 的 `ssh.backend` 由 `paramiko` 改 `openssh`
+> （§2.4 推荐修法：w1-gent ssh config 是 `accept-new`，paramiko 后端不接受）→ `POST /api/process/reload` 后两实例通。
+> 非日常面：**8130 business console 正被使用（未动，有活跃连接）**；8123 SKILL 文档服务保留（测试工具）。
 
 ## 4. 服务端口与账号约定
 

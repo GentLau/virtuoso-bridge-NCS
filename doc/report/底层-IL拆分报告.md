@@ -69,9 +69,9 @@
 | 内容对账 | 新 UI 文件与原文件 302–652 行逐行比对 | 351 行中仅 1 行不同（有意改写的注释：`Reloading ramic_bridge.il` → `Reloading this file`） |
 | 核心对账 | 新核心与 `git HEAD` 逐行比对（跳过文件头） | 298 行零差异；尾部为自动启动注释 + `RBStart()` |
 | 语法护栏 | 括号平衡状态机（跳过字符串与注释） | 两文件 depth=0、无未闭合字符串（`git HEAD` 原文件同为 0） |
-| 现有门禁复跑 | `python -m pytest test/unit/test_log_no_fetch.py test/unit/test_new_middle.py test/unit/test_tunnel.py -q` | 16 passed（三个文件分别校验核心 `.il` 静态内容与部署落盘） |
+| 现有门禁复跑 | `python -m pytest test/offline/unit/test_log_no_fetch.py test/offline/unit/test_new_middle.py test/offline/unit/test_tunnel.py -q` | 16 passed（三个文件分别校验核心 `.il` 静态内容与部署落盘） |
 
-> 接线状态下（引擎侧改动尚未回退时）另跑过：`test/unit` 全量 exit 0，`test/scenario test/integration` 全绿，本地部署冒烟产出"globals → `load(核心)` → `load(UI)`"的 setup.il。这些结论只对 §6 的接线方案有效，不代表当前仓库状态。
+> 接线状态下（引擎侧改动尚未回退时）另跑过：`test/offline/unit` 全量 exit 0，`test/offline/scenario test/offline/integration` 全绿，本地部署冒烟产出"globals → `load(核心)` → `load(UI)`"的 setup.il。这些结论只对 §6 的接线方案有效，不代表当前仓库状态。
 
 ## 5. 当前系统状态（唯一阻塞项）
 
@@ -120,14 +120,14 @@
 | `src/common/setup.py` | `ui_il=` 参数、第二条 `load()`、docstring 补充 |
 | `src/common/deploy.py` | `il_assets` 双文件部署、`ui_il=` 传参 |
 | `src/common/remote_paths.py` | `ui_il_path()` 与 `__all__` 条目 |
-| `test/unit/test_new_middle.py` | import、`ui_il_path` 断言、setup 顺序断言、新用例 |
-| `test/unit/test_tunnel.py` | 本地部署两文件断言 |
+| `test/offline/unit/test_new_middle.py` | import、`ui_il_path` 断言、setup 顺序断言、新用例 |
+| `test/offline/unit/test_tunnel.py` | 本地部署两文件断言 |
 | `README.md` | 架构树一行 |
-| `test/unit/test_bridge_il_split.py` | 整文件删除（本人新建） |
+| `test/offline/unit/test_bridge_il_split.py` | 整文件删除（本人新建） |
 
 回退方式：先记录每个文件的 `git diff --numstat`，逐个复核"改动行数与本人记录完全一致"后才回退；6 个文件全部命中，未触碰他人正在修改的文件（`ramic_bridge_daemon_3.py` / `ramic_bridge_daemon_27.py` / `src/transport/middle.py` 等在途改动保持原样）。
 
-残留：`test/unit/__pycache__/test_bridge_il_split.cpython-312-pytest-9.1.1.pyc`（删除被沙箱策略拦截；已被 gitignore，不影响仓库状态）。
+残留：`test/offline/unit/__pycache__/test_bridge_il_split.cpython-312-pytest-9.1.1.pyc`（删除被沙箱策略拦截；已被 gitignore，不影响仓库状态）。
 
 ## 9. 复算命令
 
@@ -140,7 +140,7 @@
 git diff --stat -- src/bridge/resources/ramic_bridge.il        # +10 / -353
 
 # 3) 现有引擎侧门禁（读 .il 静态内容 / 验证部署落盘）
-python -m pytest test/unit/test_log_no_fetch.py test/unit/test_new_middle.py test/unit/test_tunnel.py -q
+python -m pytest test/offline/unit/test_log_no_fetch.py test/offline/unit/test_new_middle.py test/offline/unit/test_tunnel.py -q
 ```
 
 接线完成后建议追加：`generate_setup_il(..., ui_il=…)` 的两条 `load()` 顺序断言、本地 `deploy()` 的两文件落盘断言，以及 §6 列出的静态护栏。

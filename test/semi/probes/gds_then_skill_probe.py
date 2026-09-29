@@ -64,7 +64,7 @@ def call(token: str, operation: str, timeout: float = 300, **fields) -> dict:
 
 
 def value_of(response: dict) -> dict:
-    return ((response.get("data") or {}).get("value")) or {}
+    return ((_c1_wrapper(response)).get("value")) or {}
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -123,7 +123,7 @@ def main(argv: list[str] | None = None) -> int:
                  skill_code="1+2")
     elapsed = round(time.time() - started, 1)
     ok_skill = bool(skill.get("ok")) and \
-        str(((skill.get("data") or {}).get("result") or {}).get("output", "")).strip('"') == "3"
+        str(((_c1_wrapper(skill)).get("result") or {}).get("output", "")).strip('"') == "3"
     record(f"skill-after-gds(<{args.skill_timeout:g}s)", ok_skill,
            {"elapsed_s": elapsed, "error": skill.get("error")})
     if not ok_skill:
@@ -142,3 +142,19 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main(sys.argv[1:]))
+
+
+# --- C1 兼容垫片（2026-09-29，C3）------------------------------------------------
+# C1（2f88853）起：业务载荷直返顶层（值型 `value`、命令/skill 型 `result`）、
+# 成功默认省略 `steps`、失败壳去掉 `data`。历史 TB 按 `response["data"]` 解析，
+# 本垫片把新契约响应合成为旧 `data` 壳，让既有解析零改动继续工作。
+def _c1_wrapper(body):
+    if not isinstance(body, dict):
+        return {}
+    if isinstance(body.get("data"), dict):
+        return body["data"]
+    wrapped = {"ok": body.get("ok"), "error": body.get("error")}
+    for key in ("value", "result", "steps"):
+        if key in body:
+            wrapped[key] = body[key]
+    return wrapped

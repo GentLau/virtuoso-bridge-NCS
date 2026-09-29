@@ -27,7 +27,7 @@ from pathlib import Path
 from typing import Any
 
 from common.paths import temp_dir
-from pyapi.models import ExecutionStatus, Middle
+from pyapi.models import ExecutionStatus, Middle, ResultBase, ResultPackage
 from pyapi.packages import _skillref_docs as docs
 
 #: spec 上层 §4.2：包级自描述
@@ -56,6 +56,7 @@ class SearchRequest:
     max_files: int = 5000
     snippet: bool = True
     timeout: int | None = None
+    step_details: bool = False
 
     def __post_init__(self) -> None:
         _require_token(self.token)
@@ -80,6 +81,7 @@ class InfoRequest:
     doc_root: str | None = None
     include_raw: bool = False
     timeout: int | None = None
+    step_details: bool = False
 
     def __post_init__(self) -> None:
         _require_token(self.token)
@@ -91,7 +93,7 @@ class InfoRequest:
 
 
 @dataclass
-class SearchResult:
+class SearchResult(ResultBase):
     ok: bool
     steps: list[dict[str, Any]] = field(default_factory=list)
     error: str | None = None
@@ -107,7 +109,7 @@ class SearchResult:
 
 
 @dataclass
-class InfoResult:
+class InfoResult(ResultBase):
     ok: bool
     steps: list[dict[str, Any]] = field(default_factory=list)
     error: str | None = None
@@ -209,7 +211,7 @@ class _Source:
     origin: str
 
 
-class Package:
+class Package(ResultPackage):
     """skillref：只读查询包（构造只接受 ``Middle``）。"""
 
     def __init__(self, middle: Middle) -> None:

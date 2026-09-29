@@ -57,9 +57,26 @@ def call(operation: str, http_timeout: float = 120, **fields):
         return json.loads(error.read().decode("utf-8"))
 
 
+def _payload(body):
+    """C1 契约兼容解包：值型 op → 顶层 `value`；命令/skill 型 → 顶层 `result`；旧壳 → `data.value`/`data`。"""
+    if not isinstance(body, dict):
+        return {}
+    for key in ("value", "result"):
+        value = body.get(key)
+        if isinstance(value, dict):
+            return value
+    data = _c1_wrapper(body)
+    if isinstance(data, dict):
+        inner = data.get("value")
+        return inner if isinstance(inner, dict) else data
+    return {}
+
+
 def skill(code: str, timeout: float = 120):
     body = call("basic.skill.execute", http_timeout=timeout, skill_code=code)
-    return ((body.get("data") or {}).get("result") or {})
+    payload = _payload(body)
+    nested = payload.get("result")
+    return nested if isinstance(nested, dict) else payload
 
 
 def session_name():
@@ -96,7 +113,7 @@ def arm_dangling_target() -> bool:
 def dismiss_dialogs() -> int:
     listing = call("virtuoso.gui.list_windows", http_timeout=60)
     dismissed = 0
-    for window in ((listing.get("data") or {}).get("windows") or []):
+    for window in (_payload(listing).get("windows") or []):
         title = str(window.get("title") or "")
         if not any(marker in title for marker in MODAL_MARKERS):
             continue
@@ -134,8 +151,7 @@ try:
         timeout=60, poll_interval=2,
     )
     elapsed = time.monotonic() - started
-    data = run_body.get("data") or {}
-    steps = [step.get("name") for step in (data.get("steps") or [])]
+    steps = [step.get("name") for step in (run_body.get("steps") or [])]
     checks.append({"name": "run_returned", "ok": run_body.get("ok") is True,
                    "detail": {"elapsed_s": round(elapsed, 1),
                               "error": run_body.get("error"),
@@ -171,3 +187,19 @@ evidence.mkdir(parents=True, exist_ok=True)
     encoding="utf-8")
 print("evidence:", evidence / "p095-overwrite-wedge.json")
 raise SystemExit(0 if verdict == "GREEN" else 1)
+
+
+# --- C1 兼容垫片（2026-09-29，C3）------------------------------------------------
+# C1（2f88853）起：业务载荷直返顶层（值型 `value`、命令/skill 型 `result`）、
+# 成功默认省略 `steps`、失败壳去掉 `data`。历史 TB 按 `response["data"]` 解析，
+# 本垫片把新契约响应合成为旧 `data` 壳，让既有解析零改动继续工作。
+def _c1_wrapper(body):
+    if not isinstance(body, dict):
+        return {}
+    if isinstance(body.get("data"), dict):
+        return body["data"]
+    wrapped = {"ok": body.get("ok"), "error": body.get("error")}
+    for key in ("value", "result", "steps"):
+        if key in body:
+            wrapped[key] = body[key]
+    return wrapped

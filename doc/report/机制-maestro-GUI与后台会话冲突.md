@@ -66,7 +66,7 @@ virtuoso has encountered a fatal internal application error and will now exit.
 
 Virtuoso 重启后按以下顺序重新验证，任何一步异常立即停止：
 
-1. `test/tb/maestro_session_conflict_probe.py` 只读列出 sessions/windows；
+1. `test/maestro_session_conflict_probe.py` 只读列出 sessions/windows；
 2. 正常 `run`（GUI）跑通；
 3. 存在后台 session 时调用 `open_gui`，确认返回 `background_sessions`
    而不是崩溃；
@@ -80,7 +80,7 @@ Virtuoso 重启后按以下顺序重新验证，任何一步异常立即停止�
 - `basic.skill.execute("1+1")` → `2`。
 - `open_gui maestro_tb/rc_probe` → `fnxSession0`，GUI 仿真
   `Interactive.10` 轮询到 `done`（2/2 points）。
-- 只读诊断 `test/tb/maestro_session_conflict_probe.py`：
+- 只读诊断 `test/maestro_session_conflict_probe.py`：
   干净状态下 `sessions=[] / gui_windows=[] / background_sessions=[]`。
 - 破坏性 force-close 冲突场景本轮**未重复执行**；等基础侧修复完成、
   并经确认后再按第 5 节顺序做受控验证。

@@ -172,7 +172,7 @@ def stage_schematic(runner: Runner) -> None:
                  library=LIB, cell=CELL, view="schematic")
     read = call("virtuoso.schematic.read", runner.token,
                 library=LIB, cell=CELL, view="schematic")
-    value = ((read.get("data") or {}).get("value") or {})
+    value = ((_c1_wrapper(read)).get("value") or {})
     instances = value.get("instances") or []
     runner.state["schematic_instances"] = len(instances)
     # 判据必须覆盖 build 返回的 pin 串：任一 pin 建失败时会变成 `missing`
@@ -195,7 +195,7 @@ def stage_symbol(runner: Runner) -> None:
         runner.record("symbol", payload, response, "FAIL", response.get("error") or "generate failed")
         return
     read = call("virtuoso.symbol.read", runner.token, library=LIB, cell=CELL, view="symbol")
-    value = ((read.get("data") or {}).get("value") or {})
+    value = ((_c1_wrapper(read)).get("value") or {})
     pins = value.get("pins") or value.get("terminals") or []
     runner.record("symbol", payload, read,
                   "PASS" if read.get("ok") else "FAIL",
@@ -231,7 +231,7 @@ def stage_layout(runner: Runner) -> None:
     # 后面的 gds/drc/lvs 全被拖住。这里按当前 API 取 instances 索引。
     read = call("virtuoso.layout.read", runner.token, library=LIB, cell=CELL,
                 view="layout", focus=["instances"], detail="index")
-    value = ((read.get("data") or {}).get("value") or {})
+    value = ((_c1_wrapper(read)).get("value") or {})
     instances = value.get("instances") or []
     runner.record("layout", payload, read, "PASS" if read.get("ok") else "FAIL",
                   f"instances={len(instances)} keys={sorted(value)[:8]}")
@@ -255,7 +255,7 @@ def stage_gds(runner: Runner) -> None:
     # 避免"只看 ok"的弱判据；下游 drc/lvs 也才有可信输入。
     verify = call("basic.command.run", runner.token,
                   cmd=f"stat -c '%s' {gds}; sha256sum {gds}", timeout=60)
-    result = (verify.get("data") or {}).get("result")
+    result = (_c1_wrapper(verify)).get("result")
     if isinstance(result, list) and len(result) >= 2:
         out = str(result[1])
     elif isinstance(result, dict):
@@ -276,7 +276,7 @@ def stage_drc(runner: Runner) -> None:
     response = call("calibre.drc", runner.token, gds=gds, top=CELL, deck=deck,
                     blocking=True, timeout=1800)
     ok = bool(response.get("ok"))
-    value = ((response.get("data") or {}).get("value") or {})
+    value = ((_c1_wrapper(response)).get("value") or {})
     runner.record("drc", payload, response, "PASS" if ok else "FAIL",
                   f"value_keys={sorted(value)[:8] if isinstance(value, dict) else value}")
 
@@ -303,7 +303,7 @@ def stage_lvs(runner: Runner) -> None:
                     f"echo 'DEFINE {LIB} {REMOTE_LIB_DIR}' >> {remote_cds_lib}); "
                     f"grep -n 'DEFINE {LIB} ' {remote_cds_lib} | tail -1")
         prep = call("basic.command.run", runner.token, cmd=prep_cmd, timeout=120)
-        prep_out = ((prep.get("data") or {}).get("result") or [None, ""])
+        prep_out = ((_c1_wrapper(prep)).get("result") or [None, ""])
         runner.record("cdl-prep", {"operation": "basic.command.run", "cmd": prep_cmd}, prep,
                       "PASS" if prep.get("ok") else "FAIL",
                       f"stdout={(prep_out[1] if isinstance(prep_out, list) else '')[-160:]}")
@@ -316,7 +316,7 @@ def stage_lvs(runner: Runner) -> None:
         export = call("calibre.export_cdl", runner.token, library=LIB, cell=CELL,
                       view="schematic", netlist_name=CELL, run_dir=export_dir,
                       cds_lib=remote_cds_lib, timeout=900)
-        export_value = ((export.get("data") or {}).get("value") or {})
+        export_value = ((_c1_wrapper(export)).get("value") or {})
         exported = str(export_value.get("netlist_path") or "")
         runner.record("cdl", {"operation": "calibre.export_cdl", "library": LIB,
                               "cell": CELL, "run_dir": export_dir}, export,
@@ -331,13 +331,13 @@ def stage_lvs(runner: Runner) -> None:
     response = call("calibre.lvs", runner.token, gds=gds, top=CELL, deck=deck,
                     cdl=cdl, blocking=True, timeout=1800)
     ok = bool(response.get("ok"))
-    value = ((response.get("data") or {}).get("value") or {})
+    value = ((_c1_wrapper(response)).get("value") or {})
     job_id = value.get("job_id") if isinstance(value, dict) else None
     verdict = None
     if ok and job_id:
         results = call("calibre.read_results", runner.token, kind="lvs", job_id=job_id,
                        timeout=300)
-        summary = ((results.get("data") or {}).get("value") or {}).get("summary") or {}
+        summary = ((_c1_wrapper(results)).get("value") or {}).get("summary") or {}
         verdict = summary.get("status")
         # 判据（2026-09-24 第七轮定口径）：本 TB 的版图是脚本搭出的最小几何（两个器件 +
         # M1 矩形 + 标签），**没有真实布线/端口层**，因此"比较得上"是本阶段的正确期望；
@@ -416,3 +416,19 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
+# --- C1 兼容垫片（2026-09-29，C3）------------------------------------------------
+# C1（2f88853）起：业务载荷直返顶层（值型 `value`、命令/skill 型 `result`）、
+# 成功默认省略 `steps`、失败壳去掉 `data`。历史 TB 按 `response["data"]` 解析，
+# 本垫片把新契约响应合成为旧 `data` 壳，让既有解析零改动继续工作。
+def _c1_wrapper(body):
+    if not isinstance(body, dict):
+        return {}
+    if isinstance(body.get("data"), dict):
+        return body["data"]
+    wrapped = {"ok": body.get("ok"), "error": body.get("error")}
+    for key in ("value", "result", "steps"):
+        if key in body:
+            wrapped[key] = body[key]
+    return wrapped

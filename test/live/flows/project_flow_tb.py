@@ -120,8 +120,8 @@ def op(transport, operation: str, token: str | None = None, **fields: Any) -> An
     payload = {"operation": operation, "token": token or transport.token, **fields}
     response = transport.call(payload)
     if not response.get("ok"):
-        raise FlowError(operation, response.get("error"), response.get("data"))
-    return response.get("data")
+        raise FlowError(operation, response.get("error"), _c1_wrapper(response))
+    return _c1_wrapper(response)
 
 
 def raw_call(transport, operation: str, token: str | None = None, **fields: Any) -> dict:
@@ -503,7 +503,7 @@ def stage_sim(transport, cfg) -> Stage:
         max_workers=1, mode="spectre", parse="auto", download=True,
         keep_run_dir=True, timeout=900,
     )
-    data = response.get("data") or {}
+    data = _c1_wrapper(response)
     value = data.get("value") or {}
     runs = value.get("runs") or []
     st.value["run"] = {k: v for k, v in (runs[0] if runs else {}).items() if k != "steps"}
@@ -520,7 +520,7 @@ def stage_sim(transport, cfg) -> Stage:
         run_value = st.value["run"].get("value") or {}
         measured = op(
             transport, "spectre.measure", token=PDK_TOKEN,
-            data=run_value.get("data") or {},
+            data=_c1_wrapper(run_value),
             metrics=[
                 {"type": "max", "signal": "vout"},
                 {"type": "min", "signal": "vout"},
@@ -601,3 +601,17 @@ if __name__ == "__main__":
     raise SystemExit(main())
 
 
+# --- C1 兼容垫片（2026-09-29，C3）------------------------------------------------
+# C1（2f88853）起：业务载荷直返顶层（值型 `value`、命令/skill 型 `result`）、
+# 成功默认省略 `steps`、失败壳去掉 `data`。历史 TB 按 `response["data"]` 解析，
+# 本垫片把新契约响应合成为旧 `data` 壳，让既有解析零改动继续工作。
+def _c1_wrapper(body):
+    if not isinstance(body, dict):
+        return {}
+    if isinstance(body.get("data"), dict):
+        return body["data"]
+    wrapped = {"ok": body.get("ok"), "error": body.get("error")}
+    for key in ("value", "result", "steps"):
+        if key in body:
+            wrapped[key] = body[key]
+    return wrapped

@@ -172,8 +172,8 @@ class HttpTransport:
 def op(t: HttpTransport, operation: str, **fields: Any) -> Any:
     response = t.call({"operation": operation, "token": t.token, **fields})
     if not response.get("ok"):
-        raise FlowError(operation, response.get("error"), response.get("data"))
-    return response.get("data")
+        raise FlowError(operation, response.get("error"), _c1_wrapper(response))
+    return _c1_wrapper(response)
 
 
 def raw_call(t: HttpTransport, operation: str, **fields: Any) -> dict:
@@ -533,7 +533,7 @@ def _run_sim(t: HttpTransport, cfg, tag: str, st: Stage) -> dict[str, Any]:
         tasks=[{"job": f"{CELL}_{tag}_ac", "netlist": str(netlists["ac"]), "parse": "auto"},
                {"job": f"{CELL}_{tag}_tran", "netlist": str(netlists["tran"]), "parse": "auto"}],
         max_workers=2, parse="auto", download=True, keep_run_dir=True, timeout=1200)
-    runs = ((response.get("data") or {}).get("value") or {}).get("runs") or []
+    runs = ((_c1_wrapper(response)).get("value") or {}).get("runs") or []
     st.value[f"{tag}_runs"] = [
         {"status": ((r.get("value") or {}).get("status")),
          "analyses": ((r.get("value") or {}).get("analyses")),
@@ -763,7 +763,7 @@ def stage_lvs(t: HttpTransport, cfg) -> Stage:
     export_a = raw_call(t, "calibre.export_cdl", library="CMP_LIB", cell="inv2",
                         view="schematic", netlist_name="inv2", run_dir=run_a,
                         cds_lib=cds_lib_a, timeout=900)
-    val_a = ((export_a.get("data") or {}).get("value")) or {}
+    val_a = ((_c1_wrapper(export_a)).get("value")) or {}
     st.value["export_cdl_inv2"] = {k: val_a.get(k) for k in ("bytes", "netlist_path")}
     if not (export_a.get("ok") and val_a.get("bytes")):
         st.bad("export-cdl-inv2", export_a.get("error") or val_a)
@@ -780,7 +780,7 @@ def stage_lvs(t: HttpTransport, cfg) -> Stage:
     (st.ok if call_a.get("ok") else st.bad)("gds-export-inv2", call_a.get("error"))
     lvs_a = raw_call(t, "calibre.lvs", gds=gds_a, top="inv2", deck=LVS_DECK,
                      cdl=str(val_a.get("netlist_path")), blocking=True, timeout=1800)
-    lvs_a_value = ((lvs_a.get("data") or {}).get("value")) or {}
+    lvs_a_value = ((_c1_wrapper(lvs_a)).get("value")) or {}
     st.value["lvs_inv2"] = {"ok": lvs_a.get("ok"), "job_id": lvs_a_value.get("job_id"),
                             "run_dir": lvs_a_value.get("run_dir"),
                             "status": lvs_a_value.get("status"),
@@ -795,7 +795,7 @@ def stage_lvs(t: HttpTransport, cfg) -> Stage:
     elif lvs_a_value.get("run_dir"):
         req_a["run_dir"] = lvs_a_value["run_dir"]
     res_a = raw_call(t, "calibre.read_results", **req_a)
-    value_a = ((res_a.get("data") or {}).get("value")) or {}
+    value_a = ((_c1_wrapper(res_a)).get("value")) or {}
     st.value["results_inv2"] = value_a
     status_a = str((value_a.get("summary") or {}).get("status") or "").lower()
     st.value["verdict"] = {"status": status_a, "correct": status_a == "correct"}
@@ -841,7 +841,7 @@ def stage_lvs(t: HttpTransport, cfg) -> Stage:
     export = raw_call(t, "calibre.export_cdl", library=LIB, cell=INV_CELL,
                       view="schematic", netlist_name=INV_CELL, run_dir=run_dir,
                       cds_lib=cds_lib, timeout=900)
-    exp_value = ((export.get("data") or {}).get("value")) or {}
+    exp_value = ((_c1_wrapper(export)).get("value")) or {}
     st.value["export_cdl"] = {k: exp_value.get(k) for k in ("bytes", "netlist_path",
                                                             "run_dir", "log_path")}
     if not (export.get("ok") and exp_value.get("bytes")):
@@ -880,7 +880,7 @@ def stage_lvs(t: HttpTransport, cfg) -> Stage:
     (st.ok if call.get("ok") else st.bad)("gds-export-lvs", call.get("error"))
     lvs = raw_call(t, "calibre.lvs", gds=gds, top=INV_CELL, deck=LVS_DECK,
                    cdl=remote_cdl, blocking=True, timeout=1800)
-    lvs_value = ((lvs.get("data") or {}).get("value")) or {}
+    lvs_value = ((_c1_wrapper(lvs)).get("value")) or {}
     st.value["lvs"] = {"ok": lvs.get("ok"), "error": lvs.get("error"),
                        "job_id": lvs_value.get("job_id"),
                        "run_dir": lvs_value.get("run_dir"),
@@ -899,7 +899,7 @@ def stage_lvs(t: HttpTransport, cfg) -> Stage:
     st.value["read_results_request"] = target
     if not results.get("ok"):
         st.bad("calibre-read-results", results.get("error"))
-    value = ((results.get("data") or {}).get("value")) or {}
+    value = ((_c1_wrapper(results)).get("value")) or {}
     st.value["results_diy_cell"] = value
     status = str(value.get("status") or "").lower()
     # B 段只记录：手搭版图（只有 M1 矩形 + 标签）LVS 认不出端口是**预期**的
@@ -1008,3 +1008,19 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
+# --- C1 兼容垫片（2026-09-29，C3）------------------------------------------------
+# C1（2f88853）起：业务载荷直返顶层（值型 `value`、命令/skill 型 `result`）、
+# 成功默认省略 `steps`、失败壳去掉 `data`。历史 TB 按 `response["data"]` 解析，
+# 本垫片把新契约响应合成为旧 `data` 壳，让既有解析零改动继续工作。
+def _c1_wrapper(body):
+    if not isinstance(body, dict):
+        return {}
+    if isinstance(body.get("data"), dict):
+        return body["data"]
+    wrapped = {"ok": body.get("ok"), "error": body.get("error")}
+    for key in ("value", "result", "steps"):
+        if key in body:
+            wrapped[key] = body[key]
+    return wrapped

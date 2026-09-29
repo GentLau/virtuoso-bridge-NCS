@@ -3,8 +3,8 @@
 **状态：暂缓开发（2026-09-28）**——方向为"官方入口 + 结果分析"：
 有 set 时走 `calibre -gui -<app> -runset <f> -batch`（本包不翻译参数），
 无 set 时走官方 CLI（deck + 白名单占位符改写）。
-`pex` 的自拼三阶段 argv 与官方不一致（修饰符决定结果），**未验收、禁止使用**；
-恢复开发前先读 ``spec/research/calibre/00-下一步开发方向.md``。
+`pex` 因调试条件受限，**本版不提供**：操作保留，但调用立即返回
+``pex_unsupported``；相关实现保留供后续恢复。
 
 设计口径见 ``spec/design-concepts/上层/12-calibre.md``：
 
@@ -26,7 +26,7 @@ from pathlib import Path
 from typing import Any
 
 from common.paths import artifact_dir
-from pyapi.models import ExecutionStatus, Middle
+from pyapi.models import ExecutionStatus, Middle, skill_log_kwargs, ResultBase, ResultPackage
 from pyapi.packages import _calibre_util as cu
 
 OPERATION_NAMES = (
@@ -43,6 +43,7 @@ OPERATION_NAMES = (
 _KINDS = ("drc", "lvs", "pex")
 _DEFAULT_POLL = 5.0
 _LOG_TAIL_DEFAULT = 40
+_PEX_UNSUPPORTED = "calibre.pex is not supported in this version"
 
 #: 工具事实来自注册表的 per-role 用户组（spec 中层配置文档 §2.3：中层不探测、原样透传）
 _FACT_GROUP = "calibre"
@@ -68,6 +69,7 @@ class CheckEnvRequest:
     calibre_bin: str | None = None
     deck: str | None = None
     timeout: int | None = None
+    step_details: bool = False
 
     def __post_init__(self) -> None:
         _require_token(self.token)
@@ -97,8 +99,6 @@ class RunRequest:
     turbo: int = 4
     hier: bool = True
     fmt: str = "none"
-    power: str | None = None
-    ground: str | None = None
     params: dict[str, str] | None = None
     runset: str | None = None
     spice_file: str | None = None
@@ -107,6 +107,7 @@ class RunRequest:
     blocking: bool = False
     poll_interval: float = _DEFAULT_POLL
     timeout: int | None = None
+    step_details: bool = False
 
     def __post_init__(self) -> None:
         _require_token(self.token)
@@ -120,8 +121,6 @@ class RunRequest:
         _opt_text(self.job_id, "job_id")
         _opt_text(self.run_dir, "run_dir")
         _opt_text(self.calibre_bin, "calibre_bin")
-        _opt_text(self.power, "power")
-        _opt_text(self.ground, "ground")
         _opt_text(self.runset, "runset")
         _opt_text(self.spice_file, "spice_file")
         _opt_text(self.hcell_file, "hcell_file")
@@ -153,6 +152,7 @@ class StatusRequest:
     run_dir: str | None = None
     kind: str = "drc"
     timeout: int | None = None
+    step_details: bool = False
 
     def __post_init__(self) -> None:
         _require_token(self.token)
@@ -174,6 +174,7 @@ class ReadResultsRequest:
     limit: int = 20
     log_lines: int = _LOG_TAIL_DEFAULT
     timeout: int | None = None
+    step_details: bool = False
 
     def __post_init__(self) -> None:
         _require_token(self.token)
@@ -200,6 +201,7 @@ class ExportRequest:
     items: tuple[str, ...] = ("summary",)
     local_dir: str | None = None
     timeout: int | None = None
+    step_details: bool = False
 
     def __post_init__(self) -> None:
         _require_token(self.token)
@@ -230,6 +232,9 @@ class ExportCdlRequest:
     run_dir: str | None = None
     cds_lib: str | None = None
     timeout: int | None = None
+    log_level: str | None = None
+    log_max_bytes: int | None = None
+    step_details: bool = False
 
     def __post_init__(self) -> None:
         _require_token(self.token)
@@ -245,7 +250,7 @@ class ExportCdlRequest:
 
 
 @dataclass
-class Result:
+class Result(ResultBase):
     ok: bool
     steps: list[dict[str, Any]] = field(default_factory=list)
     error: str | None = None
@@ -286,7 +291,7 @@ def _opt_timeout(value: Any) -> None:
         raise ValueError("timeout must be a positive finite number or None")
 
 
-class Package:
+class Package(ResultPackage):
     """Calibre 物理验证包（构造只接受 ``Middle``）。"""
 
     def __init__(self, middle: Middle) -> None:
@@ -335,6 +340,8 @@ class Package:
 
     def export_cdl(self, request: ExportCdlRequest) -> Result:
         """官方 auCdl（CDL Out Analog）链路导出 LVS 源网表。"""
+        self._log_level = request.log_level
+        self._log_max_bytes = request.log_max_bytes
         steps: list[dict[str, Any]] = []
         root = self._command_root(request.token, steps)
         if root is None:
@@ -416,13 +423,14 @@ class Package:
         })
 
     def pex(self, request: RunRequest) -> Result:
-        if request.runset:
-            return self._run("pex", request)          # 官方批处理：参数由 set 全权携带
-        if not request.cdl:
-            return Result(False, [], "pex requires cdl (LVS source netlist)", None)
-        if not request.lvs_run_dir:
-            return Result(False, [], "pex requires lvs_run_dir (LVS results with svdb/)", None)
-        return self._run("pex", request)
+        # PEX 调试受限，本版不提供；保留下方 _run("pex") 相关实现供后续恢复。
+        return Result(
+            False,
+            [{"name": "pex_unsupported", "ok": False,
+              "detail": _PEX_UNSUPPORTED}],
+            _PEX_UNSUPPORTED,
+            {"reason": "pex_unsupported"},
+        )
 
     def _run(self, kind: str, request: RunRequest) -> Result:
         started = time.monotonic()
@@ -585,7 +593,9 @@ class Package:
             if last.get("status") in ("completed", "failed"):
                 break
             time.sleep(float(request.poll_interval))
-        value.update({"status": last.get("status", "timeout"), "progress": last,
+        if last.get("status") not in ("completed", "failed"):
+            last = {**last, "status": "timeout"}
+        value.update({"status": last.get("status"), "progress": last,
                       "elapsed_ms": int((time.monotonic() - started) * 1000)})
         ok = last.get("status") == "completed"
         error = None if ok else (f"{kind} did not complete: {last.get('status')} "
@@ -802,7 +812,11 @@ class Package:
         """CIW 当前工作目录下的 ``cds.lib``：auCdl 需要它解析 library。"""
         try:
             result = self.middle.execute_skill(
-                "getWorkingDir()", timeout=timeout, token=token)
+                "getWorkingDir()", timeout=timeout, token=token,
+                **skill_log_kwargs(
+                    getattr(self, "_log_level", None),
+                    getattr(self, "_log_max_bytes", None),
+                ))
         except Exception as exc:  # noqa: BLE001
             steps.append({"name": "ciw-cds-lib", "ok": False,
                           "detail": f"{type(exc).__name__}: {exc}"})
@@ -906,7 +920,8 @@ class Package:
             "echo '###JOB'; cat job.json 2>/dev/null; "
             "echo '###PID'; cat job.pid 2>/dev/null; "
             "echo '###ALIVE'; pgrep -f " + shlex.quote(run_dir) + " | head -3; "
-            "echo '###LOGS'; for f in *.log; do [ -f \"$f\" ] && { echo \"== $f\"; tail -n 40 \"$f\"; }; done; "
+            "echo '###LOGS'; for f in *.log; do [ -f \"$f\" ] && { echo \"== $f\"; "
+            "tail -n 40 \"$f\"; grep -m1 -E 'FATAL ERROR|ERROR:' \"$f\" 2>/dev/null; }; done; "
             "echo '###FILES'; ls -1 2>/dev/null | head -60; true"
         )
         outcome = self.middle.run_command(cmd, timeout=timeout, token=token)
@@ -991,7 +1006,9 @@ def _argv_for(kind: str, request: RunRequest, binary: str, run_dir: str,
         flags.append("-hier")
     if request.hier and kind == "lvs":
         flags.append("-hier")
-    flags += ["-turbo", str(request.turbo)]
+    # flat DRC/LVS 不接受 -turbo（P-093）；pex 阶段保留原形态（本版不对外提供）。
+    if request.hier or kind == "pex":
+        flags += ["-turbo", str(request.turbo)]
     if kind == "drc":
         return [flags + [deck_path]]
     if kind == "lvs":

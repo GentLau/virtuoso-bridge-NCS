@@ -6,7 +6,8 @@
 因此**轮询到超时**（实测 >9 分钟未返回，包内 timeout=1800s）。
 
 本 TB 直接对 ``job_state`` 下判据：进程已死 + 日志终止性 ERROR ⇒ ``failed`` +
-``failure_kind``；同时保证"跑完但没有完成标记"仍然不是 failed（避免误报）。
+``failure_kind``；进程已死且留下日志/产物但无完成标记 ⇒
+``process_gone_without_report``；两者都没有才保持 ``unknown``。
 六步流程（test/docs/写TB规范.md §1）——离线用例：
 ① 环境检查**不适用**：纯函数 / 假 middle，不连真机；②③ 前置构建/校验**不适用**：无持久对象；
 ④⑤ = Arrange→Act→Assert；⑥ 无现场可留（不落盘、不起服务、不占端口）。
@@ -36,11 +37,12 @@ def test_dead_process_with_terminal_error_is_failed():
     assert state.failure_kind == "input", state.failure_kind
 
 
-def test_dead_process_without_error_marker_stays_unknown():
-    """负控制：没有完成标记也没有错误标记时不能误判成 failed。"""
+def test_dead_process_without_marker_is_process_gone_failure():
+    """P-094：进程已死且无完成标记 → failed（不再长期报 unknown）。"""
     state = job_state("lvs", process_alive=False,
                       log_tail="still writing report...\n", artifacts=["lvs.rep"])
-    assert state.status == "unknown", state.status
+    assert state.status == "failed", state.status
+    assert state.failure_kind == "process_gone_without_report", state.failure_kind
 
 
 def test_running_process_is_running():

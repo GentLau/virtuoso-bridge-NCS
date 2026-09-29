@@ -1,18 +1,18 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
 # 作者: 测试/root
-# 最后改动: 2026-09-28 23:48
-# 依赖: 无（PEX 用例会优先复用本机已有 LVS svdb；没有就自己造一个 LVS set 跑一遍）
+# 最后改动: 2026-09-29 16:26
+# 依赖: 无
 # =======================================================================
-"""补掉 calibre 剩下的两个**零调用 op**：`calibre.export` 与 `calibre.pex`。
+"""补掉 `calibre.export` 的产物面，并钉住 `calibre.pex` 的本版不支持语义。
 
 * `EXP-01`：对一次真实 DRC 的 run_dir 调 `export(items=["all_small"])`，断言 summary/results_db/log
   至少各落一个本地文件、字节数 > 0（`_EXPORT_ITEMS` 的三类各验证一条）。
 * `EXP-02`：`export(items=["summary"])` 对 LVS run_dir 生效，且返回的 `downloaded[].local` 真实存在。
-* `PEX-01`：`calibre.pex(lvs_run_dir=<含 svdb 的 LVS 目录>)`——三阶段 xRC。若目录里没有 `svdb/`，
-  本 TB 会先用 set 形态跑一次 LVS（`*lvsSVDBxcal: 1`）把 svdb 造出来；仍失败则如实记录错误（不假装跑通）。
+* `PEX-01`：`calibre.pex` 本版不提供——调用必须返回 `ok=false` + `value.reason=pex_unsupported`，
+  且不得建 run dir、不得调用远程接口。
 
 六步流程（test/docs/写TB规范.md §1）：① 环境检查=ENV（deck/gds/bin 三件套）；②③ 基线=DRC 跑一次作为 export 输入；
-④ 每个用例一次调用；⑤ 读回=本地文件 stat / downloaded 结构 / pex 三阶段日志；⑥ 不清理现场（run_dir 与导出物都留在 role root / 本机 tmp）。
+④ 每个用例一次调用；⑤ 读回=本地文件 stat / downloaded 结构 / PEX 结构化拒绝；⑥ 不清理现场（run_dir 与导出物都留在 role root / 本机 tmp）。
 
 环境变量与 `calibre_params_e2e_tests.py` 相同：`VB_CALIBRE_API/TOKEN/GDS/TOP/DRC_DECK/LVS_DECK/RUN_DIR/BIN`。
 """
@@ -69,15 +69,27 @@ def _value(transport, operation: str, **fields: Any) -> dict[str, Any]:
     response = _op(transport, operation, **fields)
     if not response.get("ok"):
         raise AssertionError(f"{operation} failed: {response.get('error')}")
-    data = response.get("data") or {}
-    return data.get("value") if data.get("value") is not None else data
+    # C1 契约（2f88853）：值型 op 的业务载荷在顶层 `value`（命令型在 `result`），无 `data` 壳。
+    payload = response.get("value")
+    if payload is None:
+        payload = response.get("result")
+    if payload is None:
+        data = _c1_wrapper(response)
+        payload = data.get("value") if data.get("value") is not None else data
+    return payload if isinstance(payload, dict) else {}
 
 
 def _command(transport, cmd: str, timeout: int = 120) -> str:
     response = _op(transport, "basic.command.run", cmd=cmd, timeout=timeout)
     if not response.get("ok"):
         raise AssertionError(f"command failed: {response.get('error')}")
-    return str((((response.get("data") or {}).get("result")) or ["", ""])[1])
+    result = response.get("result") if isinstance(response.get("result"), list) else None
+    if result is None:
+        result = response.get("value") if isinstance(response.get("value"), list) else None
+    if result is None:
+        result = (_c1_wrapper(response)).get("result")
+    result = result or ["", ""]
+    return str((result if isinstance(result, list) else ["", ""])[1])
 
 
 def _check(condition: Any, message: str) -> None:
@@ -154,44 +166,22 @@ def run_suite(transport) -> list[tuple[str, str]]:
         for entry in downloaded:
             _check(Path(entry["local"]).is_file(), f"导出文件缺失: {entry}")
 
-    def case_pex() -> None:
-        has_svdb = "yes" in _command(transport, f"test -d {lvs_dir}/svdb && echo yes || echo no")
-        if not has_svdb:
-            notes.append("LVS run_dir 里没有 svdb/，PEX 用 set 形态再造一次（*lvsSVDBxcal: 1）")
-            runset = f"{RUN_DIR}/pex-lvs-{stamp}.lvs"
-            lines = [
-                f"*lvsRulesFile: {LVS_DECK}",
-                f"*lvsRunDir: {lvs_dir}",
-                f"*lvsLayoutPrimary: {TOP}",
-                f"*lvsLayoutPaths: {GDS}",
-                "*lvsLayoutGetFromViewer: 1",
-                f"*lvsSourcePath: {CDL}",
-                f"*lvsSourcePrimary: {TOP}",
-                "*lvsSourceView: schematic",
-                "*lvsPowerNames: VDD",
-                "*lvsGroundNames: VSS",
-                "*lvsSVDBxcal: 1",
-                "*lvsReportFile: inv.lvs.report",
-                "*cmnRunMT: 1",
-                "*cmnPromptSaveRunset: 0",
-            ]
-            local = SCRATCH / f"pex-{stamp}.lvs"
-            local.write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
-            _op(transport, "basic.file.upload", local_path=str(local), remote_path=runset, timeout=120)
-            _value(transport, "calibre.lvs", runset=runset, blocking=True, timeout=1800)
-            has_svdb = "yes" in _command(transport, f"test -d {lvs_dir}/svdb && echo yes || echo no")
-        _check(has_svdb, f"没有 svdb/，PEX 前提不成立（{lvs_dir}）")
-        # P-102 红钉：deck 必须是 **rcx deck**（spec 12-calibre.md:187），今天 stage3 的 `-fmt spice` 非法 →
-        # 前两阶段成功、第三阶段打 usage，整体 failed。修好后本条应转绿。
-        result = _op(transport, "calibre.pex", gds=GDS, top=TOP, cdl=CDL, deck=RCX_DECK,
-                     lvs_run_dir=lvs_dir, run_dir=f"{RUN_DIR}/pex-run-{stamp}",
-                     calibre_bin=CALIBRE_BIN, blocking=True, timeout=2400)
-        value = (result.get("data") or {}).get("value") or {}
-        if not result.get("ok"):
-            # 如实判红：PEX 是零调用 op 之一，跑不通就是未覆盖，不许拿 NOTE 换 PASS
-            raise AssertionError(f"PEX 未跑通（如实记录，不假装覆盖）：{str(result.get('error'))[:220]}")
-        value_status = value.get("status")
-        _check(value_status == "completed", f"PEX 未完成: {value_status} {value.get('progress')}")
+    def case_pex_unsupported() -> None:
+        """PEX 本版不提供：合法 RunRequest 也不能触发任何远程动作。"""
+        response = transport.call({
+            "operation": "calibre.pex", "token": TOKEN, "deck": RCX_DECK,
+        })
+        # 兼容顶层统一壳与“业务结果本体直出”两种形态。
+        data = _c1_wrapper(response) or response
+        _check(response.get("ok") is False and data.get("ok") is False,
+               f"PEX 必须结构化失败: {response}")
+        value = data.get("value") or {}
+        _check(value.get("reason") == "pex_unsupported",
+               f"PEX 拒绝原因不对: {data}")
+        error = str(data.get("error") or response.get("error") or "")
+        _check("not supported" in error,
+               f"PEX 错误文案未点名不支持: {error}")
+        _check("run_dir" not in value, f"PEX 不应创建 run_dir: {value}")
 
     def case_export_by_job_id() -> None:
         """`export(job_id=…)`：不带 run_dir，让桥自己按 job_id 定位（C 轴最后一条低成本真缺口）。"""
@@ -212,49 +202,12 @@ def run_suite(transport) -> list[tuple[str, str]]:
         for entry in downloaded:
             _check(Path(entry["local"]).is_file(), f"导出文件缺失: {entry}")
 
-    def case_pex_fmt_red_pin() -> None:
-        """P-102 红钉：`pex(fmt="spice")` 会多跑第三阶段，而 stage3 的 argv 形态非法 → 今天必红。
-
-        说明：不传 `fmt` 时 PEX 只跑 phdb/pdb 两阶段（PEX-01 已绿）；`fmt` 一旦给定，
-        `_argv_for` 会追加 `calibre -xrc -fmt spice <deck>`，Calibre 只接受 `-fmt -<flag>` → usage + stage3_failed。
-        """
-        run_dir = f"{RUN_DIR}/pex-fmt-{stamp}"
-        result = _op(transport, "calibre.pex", gds=GDS, top=TOP, cdl=CDL, deck=RCX_DECK,
-                     lvs_run_dir=lvs_dir, run_dir=run_dir, calibre_bin=CALIBRE_BIN,
-                     fmt="spice", blocking=True, timeout=2400)
-        value = (result.get("data") or {}).get("value") or {}
-        status = value.get("status")
-        # 先判 P-103：桥的完成判定会被 stage1 的 COMPLETED 标记提前触发 → 报 completed 但 stage3_failed。
-        # P-103 让桥在 stage1 的 COMPLETED 标记处就返回，此时 stage2/3 可能还没写完日志 →
-        # 必须限时等一个"终态"再断言，否则会因检查太早而假绿（本轮实测踩到）。
-        import time as _time
-        deadline = _time.monotonic() + 180
-        log_state = ""
-        netlist_state = "0"
-        while _time.monotonic() < deadline:
-            log_state = str(_command(transport,
-                                     f"tail -2 {run_dir}/pex.log 2>/dev/null; "
-                                     f"ls {run_dir}/*.netlist {run_dir}/*.pex.netlist 2>/dev/null | head -2"))
-            netlist_state = str(_command(transport, f"ls -1 {run_dir} | grep -c netlist || true"))
-            if "stage3_failed" in log_state or int((netlist_state.strip("[]', \\n") or "0") or 0) > 0:
-                break
-            _time.sleep(10)
-        _check("stage3_failed" not in log_state,
-               f"P-103：pex.log 记 stage3_failed（无网表，netlist_count={str(netlist_state).strip()[:20]}），"
-               f"但运行期报 status={status} → 完成判定被前一阶段标记提前触发")
-        _check(result.get("ok") and status == "completed",
-               f"P-102：带 fmt=spice 的三阶段 PEX 应完成，实际 ok={result.get('ok')} "
-               f"status={status} err={str(result.get('error'))[:160]}")
-        _check(value.get("fmt") in (None, "none", "spice", "simple"), f"fmt 异常: {value}")
-
     run("ENV-01 deck/gds/bin 三件套", case_env)
     run("EXP-00 跑一次 DRC 作为 export 输入", case_drc_for_export)
     run("EXP-01 export(items=all_small) 三类产物齐 + 字节数>0", case_export_all_small)
     run("EXP-02 export(items=summary) 对 LVS run_dir 生效", case_export_summary_only)
     run("EXP-03 export(job_id=…) 自主定位 run_dir", case_export_by_job_id)
-    run("PEX-01 calibre.pex 三阶段（有 svdb 才跑）", case_pex)
-    # 红钉放最后：PEX + fmt 今天必红（P-102），但不许挡住上面的覆盖率
-    run("PEX-FMT-01 fmt=spice 三阶段（P-102 红钉）", case_pex_fmt_red_pin)
+    run("PEX-01 calibre.pex 本版不支持（结构化失败）", case_pex_unsupported)
     for note in notes:
         print(f"NOTE  {note}", flush=True)
     return results
@@ -286,3 +239,19 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
+# --- C1 兼容垫片（2026-09-29，C3）------------------------------------------------
+# C1（2f88853）起：业务载荷直返顶层（值型 `value`、命令/skill 型 `result`）、
+# 成功默认省略 `steps`、失败壳去掉 `data`。历史 TB 按 `response["data"]` 解析，
+# 本垫片把新契约响应合成为旧 `data` 壳，让既有解析零改动继续工作。
+def _c1_wrapper(body):
+    if not isinstance(body, dict):
+        return {}
+    if isinstance(body.get("data"), dict):
+        return body["data"]
+    wrapped = {"ok": body.get("ok"), "error": body.get("error")}
+    for key in ("value", "result", "steps"):
+        if key in body:
+            wrapped[key] = body[key]
+    return wrapped

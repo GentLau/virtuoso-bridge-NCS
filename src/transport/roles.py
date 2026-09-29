@@ -97,25 +97,6 @@ def _resolve_role(entry: UserEntry, name: str, user: str) -> ResolvedRole:
     )
 
 
-def fingerprint_conflicts(entry: UserEntry, user: str | None = None) -> list[str]:
-    """Compatibility helper for fingerprint consistency across shared endpoints."""
-    targets = resolve(entry, user)
-    by_key: dict[str, list[tuple[str, str]]] = {}
-    for name in ("gui", "daemon", "command", "file", "spectre"):
-        role = targets.role(name)
-        if role.key and role.expected_fingerprint:
-            by_key.setdefault(role.key, []).append((name, role.expected_fingerprint))
-    errors: list[str] = []
-    for key, items in by_key.items():
-        values = {fp for _, fp in items}
-        if len(values) > 1:
-            roles = ", ".join(name for name, _ in items)
-            errors.append(
-                f"endpoint {key} has conflicting expected_fingerprint across roles: {roles}"
-            )
-    return errors
-
-
 def resolve(entry: UserEntry, user: str | None = None) -> ResolvedTargets:
     """Resolve all five roles from an already validated registry entry."""
     user = user or entry.token
@@ -144,4 +125,4 @@ def resolve(entry: UserEntry, user: str | None = None) -> ResolvedTargets:
     )
 
 
-__all__ = ["ResolvedRole", "ResolvedTargets", "fingerprint_conflicts", "resolve"]
+__all__ = ["ResolvedRole", "ResolvedTargets", "resolve"]

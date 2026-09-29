@@ -7,7 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from pyapi.models import Middle
+from pyapi.models import Middle, skill_log_kwargs, ResultBase, ResultPackage
 from pyapi.packages import basic
 
 
@@ -27,7 +27,7 @@ def _require_timeout(timeout: Any) -> None:
 
 
 @dataclass
-class Result:
+class Result(ResultBase):
     ok: bool
     steps: list[dict[str, Any]] = field(default_factory=list)
     error: str | None = None
@@ -38,6 +38,9 @@ class Result:
 class LibListRequest:
     token: str
     timeout: int | None = None
+    log_level: str | None = None
+    log_max_bytes: int | None = None
+    step_details: bool = False
 
 
 @dataclass(frozen=True)
@@ -45,6 +48,9 @@ class LibGetRequest:
     token: str
     library: str
     timeout: int | None = None
+    log_level: str | None = None
+    log_max_bytes: int | None = None
+    step_details: bool = False
 
 
 @dataclass(frozen=True)
@@ -54,6 +60,9 @@ class LibCreateRequest:
     path: str
     technology_library: str | None = None
     timeout: int | None = None
+    log_level: str | None = None
+    log_max_bytes: int | None = None
+    step_details: bool = False
 
 
 @dataclass(frozen=True)
@@ -63,6 +72,9 @@ class LibCopyRequest:
     new_library: str
     new_path: str
     timeout: int | None = None
+    log_level: str | None = None
+    log_max_bytes: int | None = None
+    step_details: bool = False
 
 
 @dataclass(frozen=True)
@@ -70,6 +82,9 @@ class LibDeleteRequest:
     token: str
     library: str
     timeout: int | None = None
+    log_level: str | None = None
+    log_max_bytes: int | None = None
+    step_details: bool = False
 
 
 @dataclass(frozen=True)
@@ -78,6 +93,9 @@ class LibRenameRequest:
     library: str
     new_name: str
     timeout: int | None = None
+    log_level: str | None = None
+    log_max_bytes: int | None = None
+    step_details: bool = False
 
 
 @dataclass(frozen=True)
@@ -86,6 +104,9 @@ class LibBindRequest:
     library: str
     technology_library: str
     timeout: int | None = None
+    log_level: str | None = None
+    log_max_bytes: int | None = None
+    step_details: bool = False
 
 
 @dataclass(frozen=True)
@@ -94,6 +115,9 @@ class CellListRequest:
     library: str
     category: str | None = None
     timeout: int | None = None
+    log_level: str | None = None
+    log_max_bytes: int | None = None
+    step_details: bool = False
 
 
 @dataclass(frozen=True)
@@ -104,6 +128,9 @@ class CellCopyRequest:
     new_library: str
     new_cell: str
     timeout: int | None = None
+    log_level: str | None = None
+    log_max_bytes: int | None = None
+    step_details: bool = False
 
 
 @dataclass(frozen=True)
@@ -112,6 +139,9 @@ class CellDeleteRequest:
     library: str
     cell: str
     timeout: int | None = None
+    log_level: str | None = None
+    log_max_bytes: int | None = None
+    step_details: bool = False
 
 
 @dataclass(frozen=True)
@@ -121,6 +151,9 @@ class CellRenameRequest:
     cell: str
     new_name: str
     timeout: int | None = None
+    log_level: str | None = None
+    log_max_bytes: int | None = None
+    step_details: bool = False
 
 
 @dataclass(frozen=True)
@@ -129,6 +162,9 @@ class ViewListRequest:
     library: str
     cell: str
     timeout: int | None = None
+    log_level: str | None = None
+    log_max_bytes: int | None = None
+    step_details: bool = False
 
 
 @dataclass(frozen=True)
@@ -139,6 +175,9 @@ class ViewCreateRequest:
     view: str
     view_type: str
     timeout: int | None = None
+    log_level: str | None = None
+    log_max_bytes: int | None = None
+    step_details: bool = False
 
 
 @dataclass(frozen=True)
@@ -151,6 +190,9 @@ class ViewCopyRequest:
     new_cell: str
     new_view: str
     timeout: int | None = None
+    log_level: str | None = None
+    log_max_bytes: int | None = None
+    step_details: bool = False
 
 
 @dataclass(frozen=True)
@@ -160,6 +202,9 @@ class ViewDeleteRequest:
     cell: str
     view: str
     timeout: int | None = None
+    log_level: str | None = None
+    log_max_bytes: int | None = None
+    step_details: bool = False
 
 
 @dataclass(frozen=True)
@@ -170,6 +215,9 @@ class ViewRenameRequest:
     view: str
     new_name: str
     timeout: int | None = None
+    log_level: str | None = None
+    log_max_bytes: int | None = None
+    step_details: bool = False
 
 
 @dataclass(frozen=True)
@@ -177,6 +225,9 @@ class CatListRequest:
     token: str
     library: str
     timeout: int | None = None
+    log_level: str | None = None
+    log_max_bytes: int | None = None
+    step_details: bool = False
 
 
 @dataclass(frozen=True)
@@ -185,6 +236,9 @@ class CatCreateRequest:
     library: str
     category: str
     timeout: int | None = None
+    log_level: str | None = None
+    log_max_bytes: int | None = None
+    step_details: bool = False
 
 
 @dataclass(frozen=True)
@@ -193,6 +247,9 @@ class CatDeleteRequest:
     library: str
     category: str
     timeout: int | None = None
+    log_level: str | None = None
+    log_max_bytes: int | None = None
+    step_details: bool = False
 
 
 @dataclass(frozen=True)
@@ -202,6 +259,9 @@ class CatRenameRequest:
     category: str
     new_name: str
     timeout: int | None = None
+    log_level: str | None = None
+    log_max_bytes: int | None = None
+    step_details: bool = False
 
 
 @dataclass(frozen=True)
@@ -211,6 +271,9 @@ class CatAddCellRequest:
     category: str
     cell: str
     timeout: int | None = None
+    log_level: str | None = None
+    log_max_bytes: int | None = None
+    step_details: bool = False
 
 
 @dataclass(frozen=True)
@@ -220,6 +283,9 @@ class CatRemoveCellRequest:
     category: str
     cell: str
     timeout: int | None = None
+    log_level: str | None = None
+    log_max_bytes: int | None = None
+    step_details: bool = False
 
 
 # ---- SKILL builders ----------------------------------------------------------
@@ -645,13 +711,18 @@ let((vbLib vbCell vbCat vbMembers vbPresent vbChanged vbSaved vbClosed vbVerify)
 ))))'''.strip()
 # ---- package ------------------------------------------------------------------
 
-class Package:
+class Package(ResultPackage):
     def __init__(self, middle: Middle) -> None:
         self.middle = middle
 
     def _run_skill(self, token: str, timeout: int | None, skill: str,
                    step_name: str) -> Result:
-        res = self.middle.execute_skill(skill, timeout=timeout, token=token)
+        res = self.middle.execute_skill(
+            skill, timeout=timeout, token=token,
+            **skill_log_kwargs(
+                getattr(self, "_log_level", None),
+                getattr(self, "_log_max_bytes", None),
+            ))
         steps = [_step(step_name, res.ok, res)]
         if not res.ok:
             return Result(False, steps, "; ".join(res.errors) or "skill failed")
@@ -669,11 +740,15 @@ class Package:
 
     # lib ----------------------------------------------------------------------
     def lib_list(self, request: LibListRequest) -> Result:
+        self._log_level = request.log_level
+        self._log_max_bytes = request.log_max_bytes
         _require_text(request.token, "token")
         _require_timeout(request.timeout)
         return self._run_skill(request.token, request.timeout, _lib_list_skill(), "list")
 
     def lib_get(self, request: LibGetRequest) -> Result:
+        self._log_level = request.log_level
+        self._log_max_bytes = request.log_max_bytes
         _require_text(request.token, "token")
         library = _require_text(request.library, "library")
         _require_timeout(request.timeout)
@@ -685,6 +760,8 @@ class Package:
         return result
 
     def lib_create(self, request: LibCreateRequest) -> Result:
+        self._log_level = request.log_level
+        self._log_max_bytes = request.log_max_bytes
         _require_text(request.token, "token")
         library = _require_text(request.library, "library")
         path = _require_text(request.path, "path")
@@ -693,6 +770,8 @@ class Package:
                                _lib_create_skill(library, path, request.technology_library), "create")
 
     def lib_copy(self, request: LibCopyRequest) -> Result:
+        self._log_level = request.log_level
+        self._log_max_bytes = request.log_max_bytes
         _require_text(request.token, "token")
         library = _require_text(request.library, "library")
         new_library = _require_text(request.new_library, "new_library")
@@ -718,6 +797,8 @@ class Package:
         return Result(True, steps)
 
     def lib_delete(self, request: LibDeleteRequest) -> Result:
+        self._log_level = request.log_level
+        self._log_max_bytes = request.log_max_bytes
         _require_text(request.token, "token")
         library = _require_text(request.library, "library")
         _require_timeout(request.timeout)
@@ -725,6 +806,8 @@ class Package:
                                _lib_delete_skill(library), "delete")
 
     def lib_rename(self, request: LibRenameRequest) -> Result:
+        self._log_level = request.log_level
+        self._log_max_bytes = request.log_max_bytes
         _require_text(request.token, "token")
         library = _require_text(request.library, "library")
         new_name = _require_text(request.new_name, "new_name")
@@ -733,6 +816,8 @@ class Package:
                                _lib_rename_skill(library, new_name), "rename")
 
     def lib_bind(self, request: LibBindRequest) -> Result:
+        self._log_level = request.log_level
+        self._log_max_bytes = request.log_max_bytes
         _require_text(request.token, "token")
         library = _require_text(request.library, "library")
         tech = _require_text(request.technology_library, "technology_library")
@@ -742,6 +827,8 @@ class Package:
 
     # cell ---------------------------------------------------------------------
     def cell_list(self, request: CellListRequest) -> Result:
+        self._log_level = request.log_level
+        self._log_max_bytes = request.log_max_bytes
         _require_text(request.token, "token")
         library = _require_text(request.library, "library")
         _require_timeout(request.timeout)
@@ -753,6 +840,8 @@ class Package:
                                _cell_list_skill(library), "list")
 
     def cell_copy(self, request: CellCopyRequest) -> Result:
+        self._log_level = request.log_level
+        self._log_max_bytes = request.log_max_bytes
         _require_text(request.token, "token")
         library = _require_text(request.library, "library")
         cell = _require_text(request.cell, "cell")
@@ -763,6 +852,8 @@ class Package:
                                _cell_copy_skill(library, cell, new_library, new_cell), "copy")
 
     def cell_delete(self, request: CellDeleteRequest) -> Result:
+        self._log_level = request.log_level
+        self._log_max_bytes = request.log_max_bytes
         _require_text(request.token, "token")
         library = _require_text(request.library, "library")
         cell = _require_text(request.cell, "cell")
@@ -771,6 +862,8 @@ class Package:
                                _cell_delete_skill(library, cell), "delete")
 
     def cell_rename(self, request: CellRenameRequest) -> Result:
+        self._log_level = request.log_level
+        self._log_max_bytes = request.log_max_bytes
         _require_text(request.token, "token")
         library = _require_text(request.library, "library")
         cell = _require_text(request.cell, "cell")
@@ -781,6 +874,8 @@ class Package:
 
     # view ---------------------------------------------------------------------
     def view_list(self, request: ViewListRequest) -> Result:
+        self._log_level = request.log_level
+        self._log_max_bytes = request.log_max_bytes
         _require_text(request.token, "token")
         library = _require_text(request.library, "library")
         cell = _require_text(request.cell, "cell")
@@ -789,6 +884,8 @@ class Package:
                                _view_list_skill(library, cell), "list")
 
     def view_create(self, request: ViewCreateRequest) -> Result:
+        self._log_level = request.log_level
+        self._log_max_bytes = request.log_max_bytes
         _require_text(request.token, "token")
         library = _require_text(request.library, "library")
         cell = _require_text(request.cell, "cell")
@@ -799,6 +896,8 @@ class Package:
                                _view_create_skill(library, cell, view, view_type), "create")
 
     def view_copy(self, request: ViewCopyRequest) -> Result:
+        self._log_level = request.log_level
+        self._log_max_bytes = request.log_max_bytes
         _require_text(request.token, "token")
         library = _require_text(request.library, "library")
         cell = _require_text(request.cell, "cell")
@@ -811,6 +910,8 @@ class Package:
                                _view_copy_skill(library, cell, view, new_library, new_cell, new_view), "copy")
 
     def view_delete(self, request: ViewDeleteRequest) -> Result:
+        self._log_level = request.log_level
+        self._log_max_bytes = request.log_max_bytes
         _require_text(request.token, "token")
         library = _require_text(request.library, "library")
         cell = _require_text(request.cell, "cell")
@@ -820,6 +921,8 @@ class Package:
                                _view_delete_skill(library, cell, view), "delete")
 
     def view_rename(self, request: ViewRenameRequest) -> Result:
+        self._log_level = request.log_level
+        self._log_max_bytes = request.log_max_bytes
         _require_text(request.token, "token")
         library = _require_text(request.library, "library")
         cell = _require_text(request.cell, "cell")
@@ -831,6 +934,8 @@ class Package:
 
     # category -----------------------------------------------------------------
     def cat_list(self, request: CatListRequest) -> Result:
+        self._log_level = request.log_level
+        self._log_max_bytes = request.log_max_bytes
         _require_text(request.token, "token")
         library = _require_text(request.library, "library")
         _require_timeout(request.timeout)
@@ -838,6 +943,8 @@ class Package:
                                _cat_list_skill(library), "list")
 
     def cat_create(self, request: CatCreateRequest) -> Result:
+        self._log_level = request.log_level
+        self._log_max_bytes = request.log_max_bytes
         _require_text(request.token, "token")
         library = _require_text(request.library, "library")
         category = _require_text(request.category, "category")
@@ -846,6 +953,8 @@ class Package:
                                _cat_create_skill(library, category), "create")
 
     def cat_delete(self, request: CatDeleteRequest) -> Result:
+        self._log_level = request.log_level
+        self._log_max_bytes = request.log_max_bytes
         _require_text(request.token, "token")
         library = _require_text(request.library, "library")
         category = _require_text(request.category, "category")
@@ -854,6 +963,8 @@ class Package:
                                _cat_delete_skill(library, category), "delete")
 
     def cat_rename(self, request: CatRenameRequest) -> Result:
+        self._log_level = request.log_level
+        self._log_max_bytes = request.log_max_bytes
         _require_text(request.token, "token")
         library = _require_text(request.library, "library")
         category = _require_text(request.category, "category")
@@ -863,6 +974,8 @@ class Package:
                                _cat_rename_skill(library, category, new_name), "rename")
 
     def cat_add_cell(self, request: CatAddCellRequest) -> Result:
+        self._log_level = request.log_level
+        self._log_max_bytes = request.log_max_bytes
         _require_text(request.token, "token")
         library = _require_text(request.library, "library")
         category = _require_text(request.category, "category")
@@ -872,6 +985,8 @@ class Package:
                                _cat_change_cell_skill(library, category, cell, add=True), "add_cell")
 
     def cat_remove_cell(self, request: CatRemoveCellRequest) -> Result:
+        self._log_level = request.log_level
+        self._log_max_bytes = request.log_max_bytes
         _require_text(request.token, "token")
         library = _require_text(request.library, "library")
         category = _require_text(request.category, "category")

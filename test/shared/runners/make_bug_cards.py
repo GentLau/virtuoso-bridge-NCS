@@ -28,171 +28,155 @@ BUGS_DIR = ROOT / "test" / "reports" / "bugs"
 OPEN = [
 
     {
-        "id": "P-103",
-        "layer": "上层（calibre 包）· 完成判定",
-        "slug": "calibre-pex-premature-completion-masks-stage3-failure",
-        "title": "`calibre.pex` 报 `status=completed` 但 stage3 失败：完成判定读到**前一阶段**的 COMPLETED 标记就提前收工（P-102 的真故障被掩盖成绿）",
-        "level": "P2（假绿：调用方按 ok/status 判定会以为 PEX 成功，实际没有网表产物）",
-        "owner": "设计侧（calibre 运行器的 job_state/等待循环按 log 尾部判完成的口径）",
-        "status": "待设计修",
-        "where": "`src/pyapi/packages/_calibre_util.py:317-329`（`job_state` 只按 `log_tail` 里出现 `_DONE_MARKERS` 就判 completed）+ "
-                 "`src/pyapi/packages/calibre.py:574-594`（blocking 循环一见 completed 就 break）；"
-                 "pex 的三阶段日志同名 glob `*.log` 被 `tail -n 40` 合并 → **stage1 的 `CALIBRE xRC::PHDB GENERATOR COMPLETED` 落进 tail**。",
-        "symptom": "真机（vblog，2026-09-29 01:05，`pex(fmt=\"spice\")`）run_dir `/home/Gent/project/vblog/calibre-e2e/pex-fmt-1790615068023/`：\n"
-                   "- `pex.stage1.log` 尾部 `--- CALIBRE xRC::PHDB GENERATOR COMPLETED ---`（stage1 成功）；\n"
-                   "- `pex.stage2.log` 正常结束；\n"
-                   "- **`pex.stage3.log` 为空**、**`pex.log` 末行 `stage3_failed`**、run_dir 里 **没有任何 netlist 产物**；\n"
-                   "- 但 `calibre.pex` 运行期返回 **`ok=true, status=completed`** ⇒ 假绿。\n"
-                   "（同一 run_dir 用 `read_results(kind=pex)` 会因 `stage\\d_failed` 判失败 —— 即**两个入口口径相反**。）",
-        "repro": "`PYTHONPATH=src python test/live/packages/calibre_export_pex_e2e_tests.py --transport http`"
-                 "（PEX-FMT-01 红钉：断言先查 `stage3_failed`/netlist，再查 status，因此今天判红）",
-        "evidence": "run_dir 三份 stage 日志 + `pex.log`（上列实测）；TB 红钉 `PEX-FMT-01`；"
-                    "对照 P-102（stage3 argv 非法的根因）与 `_calibre_util.py:322-324` 的 `classify_log`（只认 `ERROR:` 等标记）。",
-        "accept": "① 完成判定必须**按阶段**取日志（stage3 的完成标记才算 pex completed），或要求产物（netlist/pdb）齐；"
-                  "② `stage\\d_failed` 一旦出现立即判 failed（与 `read_results` 同口径）；③ PEX-FMT-01 转绿。",
-        "next": "设计侧与 P-102 一起改（argv + 完成判定）；测试侧复跑 PEX-01/PEX-FMT-01 确认不再假绿。",
-        "reported": "2026-09-29（第八轮 calibre PEX 参数面实测，root 直接发现）",
+        "id": "C3",
+        "layer": "测试侧（消费方适配）· C1 破坏性契约变更",
+        "slug": "c1-consumer-migration",
+        "title": "C1 落地后测试侧消费方未适配：仍按旧 `data` 壳解析响应（\u7ea6 50 个文件）",
+        "level": "P2（测试资产失效：不修则 live/semi 门禁假红/读不到 steps）",
+        "owner": "测试侧（root）",
+        "status": "待测试侧",
+        "where": "命中面：`rg -l 'get(\"data\")' test/ --glob '!test/artifacts/**'`；已适配 4 个"
+                 "（`calibre_export_pex_e2e_tests.py`、`maestro_e2e_tests.py`、`skill_log_options_e2e_tests.py`、"
+                 "`maestro_p095_overwrite_wedge_probe.py`）。",
+        "symptom": "C1 契约（`2f88853`）把业务载荷移到顶层（值型 `value`、命令/skill 型 `result`）、"
+                   "成功默认省略 `steps`、失败壳去掉 `data`；旧解析 `response.get(\"data\")` 拿到空 dict ⇒ "
+                   "假红（calibre 门禁 ENV-01「环境缺 drc_ok」、maestro TB WRITE-05「SKILL failed: {}」）"
+                   "或读不到响应级 `steps`（WRITE-06「save_setup 步骤 []」）。",
+        "repro": "PYTHONPATH=src python test/live/packages/calibre_export_pex_e2e_tests.py --transport http",
+        "evidence": "C1 契约 TB `test/offline/unit/test_top_layer_dispatch.py::test_success_returns_result_body`"
+                    "（`{\"ok\":True,\"value\":7}`）；本轮实测：`basic.command.run` → 顶层 `result`；"
+                    "`maestro.read_config` → 顶层 `value` + **响应级** `steps`。",
+        "accept": "① 命中文件全部改为形状无关解包（顶层 `value`/`result` 优先，兼容旧 `data`）；"
+                  "② 需要步骤名的用例改读响应级 `steps`；③ 逐套复跑 live/semi 门禁并如实记账；④ 完成后关 C3，C1 随之可关。",
+        "next": "按清单分批适配（优先级 live/packages → semi/probes → live/flows），每批复跑对应门禁。",
+        "reported": "2026-09-29（C1 落地后首轮复跑暴露）",
         "updated": "2026-09-29（新立）",
     },
 
+
     {
-        "id": "P-102",
-        "layer": "上层（calibre 包）· xRC 第三阶段",
-        "slug": "calibre-pex-stage3-invalid-fmt-argv",
-        "title": "`calibre.pex` 第三阶段 argv 非法（`-fmt spice`）：stage1/stage2 成功后 stage3 必被 Calibre 拒绝 → PEX 整体不可用",
-        "level": "P2（PEX 作为交付能力不可用；spec 已把它标成「禁止交付」，本条把「为什么」钉到具体 argv 与日志）",
-        "owner": "设计侧（calibre 包 `_argv_for` 的 pex 分支；roadmap P0-1 要求改官方 batch）",
+        "id": "C4",
+        "layer": "顶层（response serialization）· 上层（pyapi.models）",
+        "slug": "command-result-namedtuple-array",
+        "title": "`CommandResult` NamedTuple 被 JSON 序列化为位置数组，命令 / 文件 / GUI / Spectre 结果丢失字段名",
+        "level": "P2（跨 basic 操作响应契约缺陷：调用方必须按位置猜字段，后续加字段或调整顺序会破坏兼容性）",
+        "owner": "设计侧（`pyapi.models.CommandResult` 的模型形状，或 `server.dispatch.jsonable` 的 NamedTuple 序列化口径）",
         "status": "待设计修",
-        "where": "`src/pyapi/packages/calibre.py:1007-1013`（pex 三阶段 argv：stage3 = `[binary, \"-xrc\", \"-fmt\", request.fmt, deck_path]`）；"
-                 "Calibre 用法块（`pex.stage3.log:188-215`）只接受 `-fmt { -c | -r | -rc | … | -simple | -netmodel }`，"
-                 "`spice`/`simple` **不带前导 `-`** 都不匹配。",
-        "symptom": "真机（vblog）实测 2026-09-29 00:05（**用 PDK 的 rcx deck** + LVS 产出的 svdb，其余参数按 spec 12-calibre.md:187）：\n"
-                   "- stage1 `calibre -xrc -phdb …` → `--- CALIBRE xRC::PHDB GENERATOR COMPLETED`（成功）；\n"
-                   "- stage2 `calibre -xrc -pdb -rc …` → 正常结束；\n"
-                   "- stage3 `calibre -xrc -fmt spice …` → 打 usage（`pex.stage3.log:93` 是命令回显，`:188+` 是用法），"
-                   "`pex.log` 末尾 `stage3_failed`，桥返回 `pex did not complete: failed input`。\n"
-                   "⇒ 三阶段里前两阶段产物（phdb/pdb）都正常，**只有 fmt 阶段的命令形态错**。",
-        "repro": "`PYTHONPATH=src python test/artifacts/tmp/pex_rcx_experiment.py`（一次性实验，参数：deck=`/opt/eda/PDK/CRN65GPNEW/CRN65GPNEW/Calibre/rcx/calibre.rcx`、"
-                 "`lvs_run_dir=<含 svdb 的 LVS run>`、`fmt=spice`）",
-        "evidence": "run_dir `/home/Gent/project/vblog/calibre-e2e/pex-rcx-1790611157804/`：`pex.stage1.log` 尾部 COMPLETED、"
-                    "`pex.stage2.log`、`pex.stage3.log`（命令回显 + usage）、`pex.log` 的 `stage3_failed`；"
-                    "TB 侧红钉：`test/live/packages/calibre_export_pex_e2e_tests.py` 的 PEX-01。",
-        "accept": "① 按 `spec/research/calibre/00-下一步开发方向.md` P0-1 改成官方链路（有 set 走 `-gui -pex -runset … -batch`，"
-                  "与 GUI 基线 `.pex.netlist` 逐字节比对）；或 ② 保留 deck 模式但 stage3 用 Calibre 接受的 flag 形态并断言 `.pex.netlist` 存在；"
-                  "③ PEX-01 转绿（或 spec 明确把 deck 模式从接口里删掉）。",
-        "next": "设计侧选 ①/②；测试侧按结论改 `calibre_export_pex_e2e_tests.py` 的 PEX 断言（现在是精确红钉）。",
-        "reported": "2026-09-29（第八轮 calibre 零调用 op 补测，root 直接定位）",
+        "where": "`src/pyapi/models.py:133-144`（`CommandResult` 为 NamedTuple：returncode/stdout/stderr/kind）；"
+                 "`src/server/dispatch.py:58-77`（`jsonable()` 对 tuple 统一转 list，字段名丢失）；"
+                 "`src/pyapi/packages/basic.py:168-181`（command 的 `result` 与 `steps[].detail` 均直接携带 `CommandResult`）。",
+        "symptom": "实测 `basic.command.run(cmd=\"hostname\")` 返回：\n"
+                   "`{\"ok\":true,\"result\":[0,\"GLIS-DESKTOP\\n\",\"\",\"command\"]}`；\n"
+                   "`[0, stdout, stderr, kind]` 没有字段名，调用方必须记住位置。`steps[0].detail` 又重复同一数组。"
+                   "同一问题覆盖 `basic.file.upload`、`basic.file.download`、`basic.gui.run`、`basic.spectre.run`。",
+        "repro": "curl -sS -X POST http://127.0.0.1:8127/api/operation "
+                 "-H 'Content-Type: application/json' "
+                 "-d '{\"operation\":\"basic.command.run\",\"token\":\"<token>\",\"cmd\":\"hostname\"}'",
+        "evidence": "2026-09-29 实测响应：HTTP 200，`result=[0,\"GLIS-DESKTOP\\n\",\"\",\"command\"]`，"
+                    "与 `steps[0].detail` 完全相同；代码锚点：`pyapi/models.py:133-144`、"
+                    "`server/dispatch.py:58-77`、`pyapi/packages/basic.py:176-182`。",
+        "accept": "① `CommandResult` 在业务响应中稳定序列化为对象："
+                  "`{\"returncode\":0,\"stdout\":\"...\",\"stderr\":\"\",\"kind\":\"command\"}`；"
+                  "② 顶层 `result` 与 `steps[].detail` 不得再使用位置数组表达该结构；"
+                  "③ 新增契约 TB 钉住字段名与值；④ 同步适配依赖位置的消费方。",
+        "next": "设计侧选定单点修复：优先在 `jsonable()` 的 tuple 分支前处理 NamedTuple `_asdict()`，"
+                "或把 `CommandResult` 改为具名模型；测试侧补离线契约 TB 并复跑 basic 五操作 HTTP 冒烟。",
+        "reported": "2026-09-29（用户直报：`basic.command.run` 返回结果难以理解）",
+        "updated": "2026-09-29（新立）",
+        "extra": "## 补充（2026-09-29）\n\n"
+                 "这与 C1 的顶层响应改造叠加：C1 后业务 Result 本体直接返回，因此 `result` 的字段语义必须自描述；"
+                 "继续使用位置数组会让 C1 的“本体直返”契约更难消费。",
+    },
+
+
+    {
+        "id": "P-105",
+        "layer": "上层（symbol / layout 包）· screenshot 参数校验",
+        "slug": "screenshot-view-type-unvalidated",
+        "title": "`symbol/layout.screenshot` 的 `view_type` 坏值**不被校验**（ok=true 静默接受；P-080 同族的第三个位置）",
+        "level": "P3（静默无效参数；与 P-080/P-092/P-084 同类）",
+        "owner": "设计侧（screenshot 入参校验；与 P-080 的 read 侧同口径）",
+        "status": "待测试侧",
+        "where": "`src/pyapi/packages/layout.py`（`ScreenshotRequest` → `_screenshot_skill` 链路，view_type 只透传不校验）；"
+                 "`src/pyapi/packages/symbol.py` 同族（待 symbol 档取证）；对照 `verilog/veriloga` 读侧已按 `dda3775` 校验。",
+        "symptom": "真机（vblog，2026-09-29 15:4x，`virtuoso.layout.screenshot(view_type=\"bogus_type_xyz\")`）返回 **ok=true**；"
+                   "同一 TB 里 `schematic` 档 5/5 绿、`layout` 档仅 SC-06 红。\n"
+                   "（symbol 档本轮因 vb-vbuser2 的 CIW `SKILL execution timed out` 未取到证据，属环境态，不当作已覆盖。）",
+        "repro": "PYTHONPATH=src python test/live/packages/screenshot_params_e2e_tests.py --transport http\n"
+                 "（默认 layout 档；SC-06 断言：坏 view_type 必须 ok=false）",
+        "evidence": "`test/artifacts/evidence/verify-fix-r9/shot-layout.txt`（SC-01..05 PASS / SC-06 FAIL）；"
+                    "对照 `shot-schematic.txt` 5/5 绿。",
+        "accept": "① `virtuoso.symbol.screenshot` 与 `virtuoso.layout.screenshot` 的 `view_type` 与 read/write 同口径校验："
+                  "非字符串/空串 → ValueError；不在该包支持枚举内 → 结构化拒绝（点名取值）；② SC-06 转绿；"
+                  "③ symbol 档在健康 CIW 上取证并判定（本轮环境超时，未覆盖）。",
+        "next": "设计侧定 view_type 的合法集合（layout=maskLayout；symbol=schematicSymbol）并加校验；测试侧复跑三档 screenshot TB。",
+        "reported": "2026-09-29（第九轮修复复验，root 直接发现）",
         "updated": "2026-09-29（新立）",
     },
 
-    {
-        "id": "P-101",
-        "layer": "上层（verilog 包）",
-        "slug": "verilog-import-overwrite-false-silent-noop",
-        "title": "`import(overwrite=False)` 对已存在 cell 返回成功但**不写任何内容**，且无 skipped/已存在 标记（用户无法区分「导入成功」与「没做事」）",
-        "level": "P3（静默 no-op：调用方会误以为设计已导入）",
-        "owner": "待决策（spec 口径：overwrite=False 语义是 skip 还是拒绝）",
-        "status": "待决策",
-        "where": "`src/pyapi/packages/verilog.py:490`（`import_if_exists := 1 if request.overwrite else 0`）→ ihdl 跳过已存在 cell 并正常结束；"
-                 "`import_verilog:562-571` 仍按 `reason=completed` 返回 `cells/views`，未标注「未覆盖/跳过」。",
-        "symptom": "真机（vblog）实测：同一 cell（`schemtest/vimp_top`）第二次 `import(overwrite=False)`：\n"
-                   "- 返回值 `ok=true, reason=completed`；\n"
-                   "- `schemtest/vimp_top/functional` 的 mtime **不变**（1790609122 → 1790609122）⇒ 内容没被改写；\n"
-                   "- 结果里 **`cells=[]`、`views=[]`、`warnings=[]`**，但 `reason` 仍是 `completed` ⇒ 与真正导入成功"
-                   "（`cells=['vimp_top_child','vimp_top']`）**只在 cells 的空/非空上有区别**，没有 `skipped`/`existing` 标记；\n"
-                   "- 2026-09-29 00:15 干净复跑已把这条钉成**红钉**：`test/live/packages/verilog_import_params_e2e_tests.py` IMP-07 断言"
-                   "「未写入却 completed 必须带显式跳过标记」→ 当前红（9 绿 + 3 红钉）。\n"
-                   "（同一用例另一次运行返回 `RuntimeError: sha256 mismatch`，属 P-090 家族的上传校验抖动，已在 P-090 记录。）",
-        "repro": "`PYTHONPATH=src python test/live/packages/verilog_import_params_e2e_tests.py --transport http`（IMP-07 + mtime 对照）",
-        "evidence": "`test/artifacts/evidence/round8/verilog-import-params/verilog-import-params.json`；"
-                    "mtime 对照见该次运行 stdout（`overwrite=False 返回成功；… mtime … → …（变化=否）`）",
-        "accept": "① spec 明确 `overwrite=False` 对已存在 cell 的语义，并在返回里体现（如 `skipped=true` / 结构化错误 `cell_exists`）；"
-                  "② TB IMP-07 按结论改成强断言（现在是 NOTE + mtime 检查）。",
-        "next": "spec owner 定口径；测试侧把 IMP-07 改成对应断言。",
-        "reported": "2026-09-28（第八轮 verilog.import 参数面实测，root 直接发现）",
-        "updated": "2026-09-28（新立）",
-    },
 
     {
-        "id": "P-100",
-        "layer": "上层（verilog 包）· 与 spec 口径",
-        "slug": "verilog-import-cell-param-not-honored",
-        "title": "`virtuoso.verilog.import` 的 `cell` 参数不参与落地：ihdl 只按**源码顶层模块名**建 cell，取值不同即整体报 `*Error* cell not found`（且写已发生）",
-        "level": "P2（spec 说 cell 是显式目标；实际非同名就失败，还会留下已写入的副作用 = 报错但库已改）",
-        "owner": "设计侧（verilog 包 `import_verilog` 的 ihdl 调用/参数拼装）",
-        "status": "待设计修",
-        "where": "`src/pyapi/packages/verilog.py:487-522`（`ihdl_param` 只有 `dest_sch_lib`，**没有任何 dest cell 项**，`ihdl` 因此按源码模块名落地）；"
-                 "随后 `_verify_import:575-604` 却用 `request.cell` 去 `ddGetObj` → 不同名必然 `*Error* cell not found`。"
-                 "spec：`spec/design-concepts/上层/8-verilog.md:80`「`library` / `cell`：目标库与顶层 cell（**显式给**，不用文件名推导）」。",
-        "symptom": "真机（vblog，源文件顶层模块 `vimp_m1`）：\n"
-                   "- `import(cell=\"vimp_m1\", …)` → `ok=true, reason=completed`，`schemtest/vimp_m1` 目录存在；\n"
-                   "- `import(cell=\"vimp_m2\", 同一个源文件)` → `ok=false, error=RuntimeError: (\"error\" 0 t nil (\"*Error* cell not found\"))`，"
-                   "`schemtest/vimp_m2` **不存在**，但 `schemtest/vimp_m1/functional` 的 mtime 已被刷新"
-                   "（另一轮实测：23:12:45 → 23:13:22）⇒ **写已发生而调用方收到失败**。\n"
-                   "- 结论：`cell` 只在「校验」里被用，落地时被忽略；非同名场景既拿不到产物也拿不到真实原因。",
-        "repro": "`PYTHONPATH=src python test/live/packages/verilog_import_params_e2e_tests.py --transport http`"
-                 "（IMP-10 是红钉；IMP-01/02/03/09 都按「模块名=请求 cell」跑，故仍能验证其它参数）",
-        "evidence": "`test/artifacts/evidence/round8/verilog-import-params/verilog-import-params.json`；"
-                    "现场 cell `schemtest/vimp_m1`、`schemtest/vimp_top`（保留不清理）",
-        "accept": "① 让 ihdl 按 `request.cell` 落地（在 `ihdl_param`/命令行里给 dest cell，或对源码顶层模块名做显式映射并报错清晰）；"
-                  "② 若产品坚持「cell 必须等于顶层模块名」，spec 改口径 + 前置校验（读到模块名不一致时**在写之前**结构化拒绝）；"
-                  "③ 两条任一，IMP-10 转绿。",
-        "next": "设计侧先定口径（ihdl 能否指定 dest cell 名）；测试侧复跑 IMP-10 与 IMP-01/02 确认无回归。",
-        "reported": "2026-09-28（第八轮 verilog.import 参数面实测，root 直接发现）",
-        "updated": "2026-09-28（新立）",
+        "id": "C1",
+        "layer": "上层（basic 包 + pyapi.models 序列化）· 响应契约",
+        "slug": "json-response-redundancy",
+        "title": "`basic.skill.execute` 响应 JSON 冗余：同一个 `VirtuosoResult` 在 `data.result` 与 `data.steps[0].detail` 各序列化一次，空可选字段全展开",
+        "level": "P2（全局响应形态缺陷：所有 basic.skill.execute 命中；两层重复携带完整结果，日志开启时体积翻倍）",
+        "owner": "设计侧（上层 basic.py 的结果构造 + pyapi.models 的序列化口径；若涉及顶层 jsonable 归顶层）",
+        "status": "待测试侧",
+        "where": "`src/pyapi/packages/basic.py:146-155`（`Result(steps=[... detail=skill], result=skill)` 同一对象放两处）；"
+                 "`src/pyapi/models.py:24-37`（`VirtuosoResult` 7 个字段；空 errors/warnings/metadata/log 也参与 model_dump）；"
+                 "`src/server/dispatch.py:58-77,151`（`jsonable` → `model_dump(mode=\"json\")`，外层再包 `ok/data/error`）。",
+        "symptom": "实测 `basic.skill.execute(skill_code=\"1+1\")` 的响应：外层 `ok`、`data.ok`、`steps[0].ok`、`detail.status` 四处表达成功；"
+                   "**同一个 `VirtuosoResult` 在 `data.steps[0].detail` 和 `data.result` 各出现一次**；两份都带\n"
+                   "- `errors: []`、`warnings: []`、`metadata: {}`、`log: \"\"`；\n"
+                   "- `execution_time: 0.32900000002700835`（完整浮点 repr）。\n"
+                   "真正结果只有 `output: \"2\"`，响应仍约 700 字节。",
+        "repro": "POST http://127.0.0.1:8127/api/operation\n"
+                 "{\"operation\":\"basic.skill.execute\",\"token\":\"<token>\",\"skill_code\":\"1+1\"}\n"
+                 "对照：同一响应里 `data.result` 与 `data.steps[0].detail` 的 `output/status/errors/warnings/metadata/log` 完全相同。",
+        "evidence": "用户 2026-09-29 实测响应（见卡片原文）；代码锚点三处；"
+                    "上游测试现状：`test/live/flows/*` 大量直接读 `data.result`，`adc_sar_flow_tb.py` 等又 fallback 到 `steps[0].detail`，"
+                    "说明重复形态已成事实接口。",
+        "accept": "① 先定 canonical 位置（建议只保留 `data.result`，`steps` 只留步骤元信息/失败时留原始结果）；"
+                  "② 同一 `VirtuosoResult` 不得在同一响应中出现两次；③ 空 `errors/warnings/metadata/log` 按选定口径省略，"
+                  "`execution_time` 限定精度；④ 新增离线契约 TB 钉住最小响应形态；⑤ 更新所有消费 `data.result`/`steps[0].detail` 的调用方。",
+        "next": "实现已落地（`2f88853` 等）；测试侧剩「消费方适配」——由 **C3** 跟踪（约 50 个文件），C3 收口后关本卡。",
+        "reported": "2026-09-29（用户直报：`basic.skill.execute` 的 `1+1` 响应过长）",
+        "updated": "2026-09-29（实现已落地；离线 TB 4/4 绿；消费方适配转 C3）",
+        "extra": "## 讨论决策（2026-09-29）\n\n"
+                 "**决策 1（统一壳）**：顶层不再把业务结果套进 `ok/data/error` 壳——业务包可达且返回结果时，"
+                 "**直接返回业务包结果本体**；只有走不到业务包（非法 JSON / 缺 `operation`/`token` / 未知 operation / "
+                 "Request 构造失败 / 未预期异常）才返回壳形错误。\n\n"
+                 "配套前提（三条，缺一即不可行）：\n"
+                 "- 业务 Result 必须保证含 `ok`/`error`——建议在 `pyapi.models` 收口 Result 基类（当前 10 个包各自定义 Result，口径已漂移）；\n"
+                 "- `ok`/`error`/`steps` 定为**保留字段**，业务字段不得占用（合并后与业务字段同一命名空间）；\n"
+                 "- 属**破坏性变更**：需同步消费方（`test/live/flows/*` 大量读 `data.result`，`adc_sar_flow_tb.py` 等 fallback 到 `steps[0].detail`）。\n\n"
+                 "**决策 2（steps 改造）**：任何业务操作支持公共可选参数 `step_details`；**`steps` 出现条件 = 开启 `step_details` 或操作失败**，"
+                 "两者皆无则整字段省略；出现时每步记 `{\"name\": 名, \"ok\": 布尔, \"detail\": 中层结果}`，键名统一 `name`。\n\n"
+                 "**决策 3（删字段）**：删除 `VirtuosoResult.metadata`（`src/pyapi/models.py:36`）与 `SimulationResult.metadata`（`:111`）——"
+                 "新链路无任何写入点、恒为 `{}`；日志已有 `log` 字段，其余扩展信息应由上层 Result 的业务字段承载，"
+                 "不由公共模型提供万能字典（`spec/research/04-log-return-system-proposal.md:159` 同向）。\n\n"
+                 "影响面（已核对）：`src/` 无写入亦无读取；`examples/` 中 7 处 `result.metadata` 读取的是**旧包** `virtuoso_bridge`"
+                 "（旧实现里 metadata 承载 `command`/`spectre_command`/`delivery`/`queue_wait_s` 等），与新模型无关；"
+                 "`SimulationResult` 除定义与导出外无其他使用点。\n\n"
+                 "**决策 4（`execution_time` 精度）**：**保留三位小数**（毫秒级，`round(x, 3)`）。"
+                 "建议在 `VirtuosoResult` 模型层用字段序列化器统一处理——现写入点集中在 `src/common/skill_client.py`（共 10 处），"
+                 "逐点 round 既易漏、新路径也会再漏；模型层处理可让 HTTP 响应与 `save_json` 等所有出口口径一致。\n\n"
+                 "## 上层落地（设计/上层开发，2026-09-29）\n\n"
+                 "- `pyapi.models` 增加公共 `ResultBase` + `ResultPackage`；`ResultBase.model_dump()` 统一控制 `steps` 出现条件。\n"
+                 "- 12 个业务包的 Result/特殊 Result 统一继承 `ResultBase`；Package 统一继承 `ResultPackage`。\n"
+                 "- 77 个 Request 直接增加公共可选字段 `step_details: bool = False`。\n"
+                 "- 成功且未开启 `step_details` → 整个 `steps` 省略；失败始终带 `steps`；开启后成功也带。\n"
+                 "- C1 上层契约 TB `test/offline/unit/test_result_contract.py` **4/4 绿**；全量 offline unit 通过。\n"
+                 "- 顶层/模型侧（本体直返、两字段错误壳、`CDSlog`、删 `metadata`、`execution_time` 三位小数）已由对应提交完成。\n",
     },
 
-    {
-        "id": "P-099",
-        "layer": "上层（verilog 包）",
-        "slug": "verilog-import-returns-empty-views",
-        "title": "`virtuoso.verilog.import` 返回值里的 `views` 恒为空，与真机实际视图不符（functional/symbol 明明已生成）",
-        "level": "P2（结构化返回值与事实不符：调用方按 `views` 判断产物会得出「什么都没导入」的结论）",
-        "owner": "设计侧（verilog 包 `_read_views`）",
-        "status": "待设计修",
-        "where": "`src/pyapi/packages/verilog.py:251-281`（`_read_views`：SKILL `sprintf(nil \"%L\" out)` → `basic.parse_sexpr` → 遍历取 view/type/data/file）；"
-                 "调用点 `_verify_import:594` / `import_verilog:566`（结果 `views` 直接取它）。",
-        "symptom": "真机（vblog，`schemtest/vimp_top`）实测：\n"
-                   "① `virtuoso.verilog.import(file_is_local=True, ref_libs=[\"basic\"], overwrite=True)` 返回 "
-                   "`{\"reason\": \"completed\", \"cells\": [\"vimp_top_child\",\"vimp_top\"], \"views\": [], "
-                   "\"instance_count\": 1, \"net_count\": 2, \"term_count\": 2, \"bbox\": [...]}`；\n"
-                   "② 同一 cell 用 SKILL 直接查（`mapcar(lambda((v) v~>name) c~>views)`）得到 `(\"functional\" \"symbol\")`；\n"
-                   "③ 把 `_read_views` 的**同一条 SKILL 文本**离线跑一遍（`basic.parse_sexpr` + 同一遍历），"
-                   "能正常解析出 6 条 view/file 记录 ⇒ 解析逻辑离线可用，问题在真机链路里的实际返回值形态（需设计侧在进程内复现）。",
-        "repro": "`PYTHONPATH=src python test/live/packages/verilog_import_params_e2e_tests.py --transport http`"
-                 "（IMP-08 是红钉；IMP-01/03 打印 `NOTE P-096` 对照真机实际 views）",
-        "evidence": "`test/artifacts/evidence/round8/verilog-import-params/verilog-import-params.json`；"
-                    "cell `schemtest/vimp_top` + `schemtest/vimp_top_views`（现场保留，不清理）",
-        "accept": "① import 返回值 `views` 至少包含真实生成的视图（与 `mapcar ~>views` 一致）；② IMP-08 红钉转绿。",
-        "next": "设计侧在 `_read_views` 里加一行原始返回（`raw`）日志定位真机形态差异；测试侧复跑 IMP-08。",
-        "reported": "2026-09-28（第八轮 verilog.import 参数面实测，root 直接发现）",
-        "updated": "2026-09-28（新立）",
-    },
 
-    {
-        "id": "P-097",
-        "layer": "上层（verilog 包）/ 库视图刷新时序",
-        "slug": "verilog-import-cell-not-found-after-overwrite",
-        "title": "覆盖式再导入后紧跟的视图查询偶发 `*Error* cell not found`（同 cell 连导时出现 1 次，之后 2/2 复跑皆成功）",
-        "level": "P3（观察：未稳定复现，但用户串行导入同一 cell 时会撞到，表现为整体失败）",
-        "owner": "待归属（verilog 包 `_read_views` 与 ihdl 覆盖写后的库视图刷新时序）",
-        "status": "观察",
-        "where": "`src/pyapi/packages/verilog.py:251-256`（`_read_views` 里 `unless(cell error(\"cell not found\"))`）"
-                 "+ `import_verilog:558`（`ddUpdateLibList()` 在 `_verify_import` 之前只刷一次）。",
-        "symptom": "2026-09-28 23:03 实测：IMP-01（`file_is_local=True`，overwrite=True）成功后，IMP-02"
-                   "（同一 cell、`file_is_local=False`、overwrite=True）在 `_read_views` 处抛 "
-                   "`RuntimeError: (\"error\" 0 t nil (\"*Error* cell not found\"))` → 整个 import 返回失败；\n"
-                   "随后手工复跑同参数 2 次（远端就地 + overwrite）**2/2 全成功**（`views` 仍为空见 P-096），"
-                   "且 `ddGetObj(\"schemtest\" \"vimp_top\")` 一直存在 ⇒ 判定为**时序/刷新**类瞬时现象，非稳定缺陷。",
-        "repro": "同参数连跑两次：见 `test/live/packages/verilog_import_params_e2e_tests.py` IMP-01→IMP-02 顺序；"
-                 "复现尝试记录见本卡片证据。",
-        "evidence": "`test/artifacts/evidence/round8/verilog-import-params/verilog-import-params.json`（`failure` 字段原文）",
-        "accept": "① 覆盖式再导入后 `_read_views` 不再出现 cell not found（或在覆盖写后补一次 `ddUpdateLibList()` 再查）；"
-                  "② 若确认是瞬时，给 `_read_views` 有界重试并在结果里标注。",
-        "next": "设计侧评估覆盖写后的视图刷新时序；测试侧在 IMP-02 前插一次 `ddUpdateLibList` 观察是否消失（不改判据，只做定位）。",
-        "reported": "2026-09-28（第八轮 verilog.import 参数面实测，root 直接发现）",
-        "updated": "2026-09-28（新立，含 2/2 未复现说明）",
-    },
+
+
+
+
+
 
     {
         "id": "P-092",
@@ -267,169 +251,10 @@ OPEN = [
         "updated": "2026-09-28（新立）",
     },
 
-    {
-        "id": "P-091",
-        "layer": "上层（symbol / layout 包）· 与 spec 口径",
-        "slug": "screenshot-remote-artifact-cleanup-inconsistent",
-        "title": "截图远端产物保留策略三包不一致：schematic 保留、symbol/layout 下载后 `rm -f` 删掉（spec 写「远端存 role root screenshots/」）",
-        "level": "P3（口径/文档级：不影响本地产物，但使「远端留证」与审计核对失效）",
-        "owner": "待归属（spec 口径 owner 或三包实现统一）",
-        "status": "待决策",
-        "where": "`src/pyapi/packages/symbol.py:979-987`（finally 里 `rm -f <remote_png>`）；"
-                 "`src/pyapi/packages/layout.py:1480-1487`（同款 finally）；"
-                 "`src/pyapi/packages/schematic.py:814-852`（**不删**，远端长期保留）；"
-                 "spec：`spec/design-concepts/上层/2-schematic.md:27`、`3-symbol.md:41-45`、`4-layout.md:183` 均写「远端存 role root 的 screenshots/」。",
-        "symptom": "真机实测（2026-09-28，`screenshot_params_e2e_tests.py`）：\n"
-                   "- `virtuoso.schematic.screenshot` 跑完后远端 `role_root/screenshots/<cell>_<ms>.png` **留存**；\n"
-                   "- `virtuoso.symbol.screenshot` / `virtuoso.layout.screenshot` 跑完后同名远端文件 **找不到**"
-                   "（`find /home/vbuser2 -name 'rx_fe-*'` 与 `find /home/Gent -name 'lay_e2e-*'` 均 0 命中，"
-                   "而本地 `artifact/screenshots/*.png` 正常且为合法 PNG）。\n"
-                   "⇒ 「远端存 screenshots/」这条 spec 只对 schematic 成立；symbol/layout 把远端当临时暂存并清理。",
-        "hypothesis": "两条候选（未直接观测到设计意图）：① spec 想表达的是「远端暂存于 role root/screenshots 再取回」，"
-                      "那么 schematic 属于多做（泄漏暂存物），应统一成清理；② spec 想表达的是「远端留证」，"
-                      "那么 symbol/layout 属于少做，应去掉 finally 里的 rm。两条都要落成文字或统一实现。",
-        "repro": "PYTHONPATH=src python test/live/packages/screenshot_params_e2e_tests.py --transport http \\\n"
-                 "  --token vb-vbuser2 --lib serdes_rx --cell rx_fe --view symbol --kind symbol \\\n"
-                 "  --out test/artifacts/evidence/round8/screenshot-params/symbol.json\n"
-                 "# 同参数换 --kind layout --token vb-vblog --lib schemtest --cell lay_e2e --view layout",
-        "evidence": "`test/artifacts/evidence/round8/screenshot-params/{schematic,symbol,layout}.json`"
-                    "（SC-01 会把 `remote_present=` 打进 NOTE）；对照 `find` 命令输出见卡片正文。",
-        "accept": "① spec 与实现二选一对齐：要么三包统一清理（改 spec 文案为「远端暂存」），"
-                  "要么三包统一保留（去 symbol/layout 的 rm）；② 新 TB 的 SC-01 不再出现三包口径分叉。",
-        "next": "spec owner 定「暂存 vs 留证」；测试侧按结论改 TB 的 NOTE 为断言。",
-        "reported": "2026-09-28（第八轮 screenshot 参数车道实测发现）",
-        "updated": "2026-09-28（新立）",
-    },
 
-    {
-        "id": "P-090",
-        "layer": "中层传输（tunnel.upload_file）/ 底层 SSH 常驻 shell",
-        "slug": "upload-stage-vanished-before-install",
-        "title": "`basic.file.upload` 偶发 `mv: cannot stat <target>.vbtmp-<hex>`：stage 在 sha256 校验通过后消失，安装步骤报错",
-        "level": "P3（观察：单次复现、40 次同目标 hammer + 套件复跑均未复现；但错误形态误导为「文件不存在」，掩盖真实性质）",
-        "owner": "待归属（中层 tunnel 安装步骤幂等性 / 底层常驻 shell 重试口径，二选一或联合）",
-        "status": "观察",
-        "where": "`src/transport/tunnel.py:487-497`（stage = `<target>.vbtmp-<hex>` → scp → `sha256sum` 比对 → "
-                 "`mv -f -- stage target`）；同一路径被 `src/pyapi/packages/veriloga.py:167-172`（`_write_remote`）与 "
-                 "`src/pyapi/packages/basic.py:173-180`（`basic.file.upload`）共用；"
-                 "`src/common/ssh.py:1941-1981`（`_run_via_persistent_shell_with_retry` 会对同一命令字符串重发一次）",
-        "symptom": "2026-09-28 21:5x：`veriloga_e2e_tests.py --transport http` 的 WRITE-02 patch_source 报 "
-                   "`patch_source failed: mv: cannot stat '/home/Gent/project/vblog/schemtest/va_e2e/veriloga/"
-                   "veriloga.va.vbtmp-8a7782b8f3884a4aa6e2058e9e8db36f': No such file or directory (commands applied: 0/1)`。\n"
-                   "关键点：报错来自 **安装（mv）** 而不是上传或校验——即 upload 已 rc=0、`sha256sum` 已取到并比对通过之后，"
-                   "stage 文件在 mv 前消失。\n"
-                   "复现性：同套件随后复跑 **7/7 全绿**；同目录同目标 40 次连续 upload **0 失败**（60.7s）；"
-                   "同目录 `basic.file.upload`（probe_upload.txt）单次也全绿 ⇒ 非路径/权限/磁盘问题。",
-        "hypothesis": "两条候选（均未直接观测到）：①**重试重发**——`_is_retryable_persistent_shell_error` 把 "
-                      "`unexpected persistent shell protocol line` / `failed to write to persistent ssh shell` 等"
-                      "「已投递但协议异常」判为可重试，重发同一命令串后第二次 `mv` 必然找不到 stage；"
-                      "②外部进程在毫秒级窗口删除了 stage（未发现已知的 stage 清理者，`src/` 内无 `*.vbtmp-*` 清理逻辑）。\n"
-                      "判别手段：daemon 日志里若有 `Retrying persistent SSH shell for <host> after recoverable protocol error` "
-                      "同刻记录，即坐实 ①。",
-        "repro": "`PYTHONPATH=src python test/live/packages/veriloga_e2e_tests.py --transport http`（本文件原始失败日志见证据 1）；"
-                 "定性探针：`PYTHONPATH=src python test/artifacts/tmp/probe_upload_mv_fail.py`（单次 upload 到同目录，绿）；"
-                 "hammer：`PYTHONPATH=src python test/artifacts/tmp/hammer_upload_same_target.py`（40 次同目标覆盖写，绿）",
-        "evidence": "① `test/artifacts/tmp/rerun_veriloga.log`（原始 `mv: cannot stat` traceback）；"
-                    "② `test/artifacts/tmp/rerun_veriloga2.log`（复跑 7/7 PASS）；"
-                    "③ `test/artifacts/tmp/hammer_upload_same_target.py` 输出 `done 40 iters ... fails=0`；"
-                    "④ `test/artifacts/env/log-vblog/api-8127-20260928-195332.err.log`（同窗口多次 ConnectionResetError，"
-                    "说明该时段客户端/服务端连接确实在异常抖动）",
-        "accept": "① 安装步骤幂等化：stage 不存在时若目标文件 digest 与本次 payload 一致，视为已安装并返回成功；"
-                  "② 或把重试严格限定在可证明「未投递」的协议错误，并禁止对已投递命令重发；"
-                  "③ 两者任一 + 失败时日志打印 `stage/target` 与实际重试原因，使该错误形态不再出现或不再误导。",
-        "next": "设计侧评估 `ssh.py` 重试口径与 `tunnel.upload_file` 安装幂等性；测试侧保持观察（本轮 40+1 次未复现），"
-                "若再出现请附 `~/.virtuoso-bridge/vblog/run` 日志定位。",
-        "reported": "2026-09-28（第八轮真机 gate 复跑 veriloga 套件时发现）",
-        "updated": "2026-09-28（新立；含复现性判定：单次/未复现）",
-    },
 
-    {
-        "id": "P-089",
-        "layer": "上层（maestro 包）",
-        "slug": "maestro-open-waveform-result-ignored",
-        "reported": "2026-09-28（第八轮 op×param 补测；红灯探针已留证）",
-        "updated": "2026-09-28（新立）",
-        "title": "`maestro.open_waveform_gui.result` 声明但**从不被实现读取**（静默无效）",
-        "level": "P3（静默无效参数，与 P-084 同类）",
-        "owner": "设计侧（实现语义或从模型/spec 删除）",
-        "status": "待设计修",
-        "where": "`src/pyapi/packages/maestro.py:187`（`OpenWaveformRequest.result`）；全文件 `request.result` "
-                 "只出现在 read_results 的波形表达式（`:1909/:1912`），open_waveform_gui 的 SKILL"
-                 "（`:3139-3158`）只做 `v(signal)`，无 `?result` 分支",
-        "symptom": "`open_waveform_gui(result=\"ac\")` 与 `result=\"no_such_result_name\"` **都成功**、"
-                   "都返回正常窗口（window:243 / window:245）⇒ 参数对行为零影响。",
-        "repro": "`PYTHONPATH=src python test/semi/probes/maestro_open_waveform_result_probe.py`（预期红）",
-        "evidence": "`test/artifacts/evidence/round8/p089-open-waveform-result.json`",
-        "accept": "二选一：① 让 result 参与波形表达式（`?result`）并给出错误名失败语义；"
-                  "② 从模型/spec 删除该字段；探针转绿或删除",
-        "next": "设计侧定口径；测试侧复跑探针确认",
-    },
 
-    {
-        "id": "P-088",
-        "layer": "上层（maestro 包）",
-        "slug": "maestro-delete-var-all-scope-broken",
-        "reported": "2026-09-28（第八轮 op×param 补测；红灯探针已留证）",
-        "updated": "2026-09-28（新立）",
-        "title": "`maestro.write(delete_var, scope=..all..)` 确定性失败：Cannot find a setup database entry for handle 0",
-        "level": "P2（用户清理/teardown 常用路径不可用；现有套件用 try/except 掩盖）",
-        "owner": "设计侧（maestro 包 delete_var 的 all 分支 SKILL）",
-        "status": "待设计修",
-        "where": "`src/pyapi/packages/maestro.py:930-941`（all 分支 `foreach(tn cadr(axlGetTests(sdb)) … axlGetTest(sdb tn) …)` / "
-                 "`foreach(cn cadr(axlGetCorners(sdb)) … axlGetCorner(sdb cn) …)` → `axlGetVar(0 …)` 报 handle 0）",
-        "symptom": "scope 矩阵实测：`global` set/delete 均 ✓；`test`（test=ac）✓；**`all` set ✓ / delete ✗** "
-                   "`*Error* error: Cannot find a setup database entry for handle 0`。副产物："
-                   "`maestro_e2e_tests.py` 的 scope=all 清理在 try/except 里，失败被吞 → rc_probe 的 sdb 里"
-                   "残留 `e2e_save_*` 变量（本轮实测 3 个）。",
-        "repro": "`PYTHONPATH=src python test/semi/probes/maestro_delete_var_all_probe.py`（预期红）",
-        "evidence": "`test/artifacts/evidence/round8/p086-delete-var-all.json`；`test/artifacts/tmp/probe_delete_var_scopes.py`",
-        "accept": "delete_var scope=all 成功删除 global/test/corner 三处同名变量（探针转绿）；"
-                  "现有套件的 try/except 清理改为显式断言",
-        "next": "设计侧修 all 分支的迭代写法；测试侧复跑探针 + 清理 rc_probe 残留变量",
-    },
 
-    {
-        "id": "P-083",
-        "layer": "上层（spectre 包）",
-        "slug": "spectre-export-precision-semantics-undefined",
-        "reported": "2026-09-28（第八轮 op×param 补测；未走外部 bug 系统）",
-        "updated": "2026-09-28（新立）",
-        "title": "`spectre.export.precision` 语义未定义：实现按**有效数字**（`%.Ng`），用户直觉是小数位",
-        "level": "P3（口径/文档；会造成「导入的 CSV 精度与预期不符」）",
-        "owner": "设计侧（spec 写明语义，或实现改小数位）",
-        "status": "待归属",
-        "where": "`src/pyapi/packages/spectre.py:1050`（`formatter = f\"{value:.{precision}g}\"`）"
-                 "vs `spec/design-concepts/上层/7-spectre.md:287`（只列字段，未定义语义）",
-        "symptom": "`export(format=csv, precision=3)` 对 1.23456 输出 `1.23`（3 位有效数字），"
-                   "而按「小数位」直觉应为 `1.235`。",
-        "repro": "`PYTHONPATH=src python test/live/packages/spectre_params_e2e_tests.py "
-                 "--transport http --token vb-vblog`（EXPORT-P1 按实效口径钉住）",
-        "evidence": "`test/artifacts/evidence/round8/spectre-params/spectre-params.json`、"
-                    "`.../spectre_params_export.csv`（1.23/2.35/3.46）",
-        "accept": "spec 明确写「有效数字」，或实现改为小数位；两者取其一并同步 TB 断言",
-        "next": "设计侧定口径；测试侧按拍板结果更新 EXPORT-P1 断言",
-    },
-    {
-        "id": "P-084",
-        "layer": "上层（maestro 包）",
-        "slug": "maestro-export-include-results-ignored",
-        "reported": "2026-09-28（第八轮 op×param 补测；红灯探针已留证）",
-        "updated": "2026-09-28（新立）",
-        "title": "`maestro.export.include_results` 是声明参数但实现**从不读取**（静默无效）",
-        "level": "P2（静默无效参数：调用方以为能控制是否携带结果文件）",
-        "owner": "设计侧（实现语义或从模型/spec 删除）",
-        "status": "待设计修",
-        "where": "`src/pyapi/packages/maestro.py:123`（`include_results: bool = True`，全文件仅此一处；"
-                 "`rg -n \"include_results\" src/pyapi/packages/maestro.py` 只命中声明行）；spec 未定义该字段",
-        "symptom": "同一 `kind=outputs_csv` 下 `include_results=True/False` 导出的文件内容 "
-                   "**sha256 完全相同**（本轮实测 3c7e476b…），参数对产物零影响。",
-        "repro": "`PYTHONPATH=src python test/semi/probes/maestro_export_include_results_probe.py`"
-                 "（预期红；verdict=RED(参数被忽略)）",
-        "evidence": "`test/artifacts/evidence/round8/maestro-include-results/include-results.json`",
-        "accept": "二选一：① 实现 `include_results` 的真实语义（并在 spec 定义）；"
-                  "② 从 `ExportRequest`/spec 删除该字段；探针转绿或删除",
-        "next": "设计侧定口径；测试侧复跑探针确认",
-    },
     {
         "id": "P-070",
         "layer": "上层（maestro/spectre 包）",
@@ -437,7 +262,7 @@ OPEN = [
         "title": "蒙特卡洛能力缺失：只能读回 MC 结果，不能驱动 MC 仿真",
         "level": "P2（能力缺失）",
         "owner": "待决策（产品口径：支持驱动 MC or 明确不做）→ 设计侧实现/写 spec",
-        "status": "待决策",
+        "status": "待测试侧/待确认",
         "where": "`src/pyapi/packages/_maestro_util.py:141`（唯一 MC 相关代码）、`:291-313`（`parse_overall_yield`）；"
                  "spec：`6-maestro.md:130`（唯一 MC 提及，锁语义）、`7-spectre.md`（分析枚举无 montecarlo）",
         "symptom": "全 `src/` 搜 `monte|carlo`（忽略大小写）**只命中 1 行**（历史目录正则）；"
@@ -458,179 +283,15 @@ OPEN = [
                  "`axlSetRunOptionValue` 可写可回读（`dutsummary` 读回空串）。\n"
                  "- 副作用提醒：MC 实验会把共享库 `maestro_tb/rc_probe` 的 run_mode 改成 Monte Carlo Sampling，"
                  "**跑完务必还原**（本轮已由测试侧恢复过一次）。\n"
-                 "- 待办：产品拍板「支持驱动」后，在 maestro 包补正式入口 + spec；测试侧据此补真机 MC 验证与 yield/sigma 对数。\n",
-    },
-    {
-        "id": "P-078",
-        "layer": "上层（schematic 包）",
-        "slug": "place-wire-style-args",
-        "title": "`place_wire` 样式参数拼接重复：width 静默建出 path、color/line_style 直接报错",
-        "level": "P2（静默错误结果 + 硬报错）",
-        "owner": "设计侧（schematic 包）",
-        "status": "待设计修",
-        "where": "`src/pyapi/packages/schematic.py:575-583`（两段追加逻辑都保留：575-578 与 579-583 重复拼 width/color/line_style；"
-                 "按官方签名应只保留 `width [color [lineStyle]]` 一次 → 删除第二段）",
-        "symptom": "`place_wire` 只传 `points` 正常；**一旦传样式参数**：\n"
-                   "1. `width=0.1` → 生成 `schCreateWire(... 0 0 0.1 0.1 nil)`，**静默建出 `path` 而不是 `line`(wire)**，"
-                   "`schematic.read` 看不到该线（wire_count=0），下游连通性/网表会当它不存在；write 仍报 ok。\n"
-                   "2. `width+color` → `too many arguments (at most 9 expected, 10 given)` 硬报错。\n"
-                   "3. `width+color+line_style` → `12 given` 硬报错。\n"
-                   "真机 DB 复核：ctrl 用例 shape=`((\"line\" nil nil nil))`，width 用例 shape=`((\"path\" 0.1 nil nil))`。",
-        "repro": "python test/semi/probes/schematic_wire_style_probe.py            # 真机，5 例：ctrl/route OK，width/color/style BUG\n"
-                 "python -m pytest test/offline/unit/test_schematic_contracts.py -q  # 离线钉住用例 test_wire_style_arguments_exact 必红",
-        "evidence": "`test/artifacts/evidence/round8/schematic-wire-style.json`（逐例 write/read/DB 三层 + 离线 SKILL 文本）；"
-                    "离线失败输出见 round8/offline-win-1.log（本条为**有意红钉住**）",
-        "accept": "① 半真机探针 `schematic_wire_style_probe.py` **5/5 OK**（width 读回 width≈0.1 且 read 可见；"
-                  "color/line_style 不再报 too-many-arguments 且读回正确）；"
-                  "② 离线 `test_wire_style_arguments_exact` 转绿；③ 复跑 `schematic_e2e_tests.py`（含 ATOM-wire）不回归。",
-        "next": "设计侧按官方签名收敛为单次拼接（删 579-583 段或 575-578 段，二者只留一）→ 通知测试侧；"
-                "测试侧复跑上述三件套后销案。",
-        "reported": "2026-09-28（测试侧第八轮参数矩阵发现，卡片直报）",
-        "updated": "2026-09-28",
-    },
-    {
-        "id": "P-079",
-        "layer": "其他（注册流程）",
-        "slug": "local-joint-port-silent-coercion",
-        "title": "local 模式显式 `daemon_port`≠`local_port` 被静默归一化（spec 要求双值相等；`_probe` 守卫不可达）",
-        "level": "P3（参数被静默丢弃）",
-        "owner": "设计侧（注册口径二选一，建议显式拒绝）",
-        "status": "待设计修",
-        "where": "`src/register/flow.py:1180-1185`（`_prepare_local_port`：`joint = role.local_port or role.daemon_port` 后**同步覆写两值**）"
-                 "与 `:705-715`（`_probe` 的‘双值必须相等’守卫——正常流程经第 2 步后二者已相等，**不可达**）；spec：`中层/add-中层配置文档.md` §6.4",
-        "symptom": "local 模式显式提交 `daemon_port=65091, local_port=65092`：第 2 步静默把两者都改成 **65092**（local_port 胜出），"
-                   "第 3 步照常 `probed`，无错误无告警 —— 调用方指定的 daemon 端口被丢弃。"
-                   "spec 措辞是「显式双值必须相等」，既未拒绝、也无文档写明优先级。",
-        "repro": "离线最小复现（测试侧实测，2026-09-28）：\n"
-                 "  RegistrationRequest(mode=\"local\", user=\"u\", token=\"tok-local\",\n"
-                 "      roles={\"daemon\": {\"daemon_port\": 65091, \"local_port\": 65092}})\n"
-                 "  → flow.validate() stage=validated、ports=(65092,65092)；flow.probe() stage=probed、errors=[]\n"
-                 "脚本：`test/artifacts/tmp/_r8_joint_port.py`",
-        "evidence": "同上脚本输出；`test/offline/unit/test_register_flow.py::test_validate_preallocates_joint_port_for_local_mode`（只覆盖缺省同步，不含冲突双值）",
-        "accept": "二选一：① **拒绝**（建议）：第 2 步发现显式双值不等 → failed，错误指向两个端口值（并补离线断言）；"
-                  "② **文档化优先级**：spec 写明 local_port 优先/或 daemon_port 优先，行为按文档固定并补断言。",
-        "next": "设计侧定口径 → 测试侧补离线用例（`test_register_flow.py`）并复跑全套。",
-        "reported": "2026-09-28（第八轮条款逐条核账 · g1-core 配置#108 发现）",
-        "updated": "2026-09-28",
-    },
-    {
-        "id": "P-080",
-        "layer": "上层（verilog / veriloga / layout 包）",
-        "slug": "view-type-read-unvalidated",
-        "title": "`view_type` 在 read 路径不校验（空串/整数/bogus 静默接受）；write 校验后取值又被忽略",
-        "level": "P2（参数合同不一致 + 死参数）",
-        "owner": "设计侧（verilog / veriloga 包）；\"view_type 是否参与寻址\"需 spec owner 定口径",
-        "status": "待设计修",
-        "where": "`src/pyapi/packages/verilog.py:201-230`（read 不碰 view_type）、`:307`（只有 write 校验）、`_view_dir:161`（不使用 view_type）；"
-                 "`src/pyapi/packages/veriloga.py:205-235`、`:476`、`_view_dir:145`。主文件名 `MAIN_FILE` 硬编码，"
-                 "与 spec `8-verilog.md:45`『主文件名由 viewType 决定（`ddMapGetDataTypeFileName` 查）』不一致。"
-                 "截图面同族两处：`src/pyapi/packages/symbol.py:84-96`（ScreenshotRequest.view_type，只透传给 geOpen）、"
-                 "`src/pyapi/packages/layout.py:98-109`（同）；两处对 `view_type=\"bogus_type_xyz\"` 都静默成功。",
-        "symptom": "真机（vblog）实测：`read(view_type=\"\")`、`read(view_type=123)`、`read(view_type=\"bogus_type_xyz\")` 全部 `ok=true` 且返回默认视图内容（静默忽略取参）；"
-                   "同一字段 `write(view_type=\"\")` 返回 400 `invalid request: view_type must be a non-empty string`，而 `write(view_type=\"bogus_type_xyz\")` 返回 ok。"
-                   "read/write 校验口径不一致；非默认取值对寻址/主文件名没有任何可观察影响。\n"
-                   "**同族第三处（2026-09-28 新增，layout 包）**：`virtuoso.layout.screenshot(view_type=\"bogus_type_xyz\")` "
-                   "也返回 ok=true 并出图（`view_type=\"maskLayout\"` 与 bogus 之间无可观察差异）；"
-                   "`virtuoso.symbol.screenshot(view_type=\"bogus_type_xyz\")` 同样 ok=true。"
-                   "两条都被新 TB `test/live/packages/screenshot_params_e2e_tests.py`（SC-06）红钉住"
-                   "（跑 `--kind symbol` / `--kind layout` 会在 SC-06 转红——这是**预期红钉**，不是 TB 坏了）。",
-        "repro": "python test/artifacts/tmp/r8_p080_p081_evidence.py（真机；含 read 五态 + write 两态）\n"
-                 "python -m pytest test/offline/unit/test_view_type_param_contract.py -q  # 4 条 strict xfail：read 的空串/整数必须 ValueError",
-        "evidence": "`test/artifacts/evidence/round8/p080-viewtype-p081-remote-path-2026-09-28.json`（live 五态 + write 两态）；"
-                    "`test/offline/unit/test_view_type_param_contract.py`（修复后 xfail→XPASS 转红，强制删标记）",
-        "accept": "① read 对 view_type 与 write 同口径校验（空/非字符串 → ValueError；4 条 xfail 转绿）；"
-                  "② 产品定口径：若 view_type 按 spec 参与主文件名/视图类型决策 → 实现并对非默认值给可观察差异；"
-                  "若仅为兼容字段 → spec 写明『不参与寻址』并统一 read/write 校验。",
-        "next": "设计侧先定 ② 口径、修 read 校验与/或主文件名映射；测试侧按结论删 xfail，复跑 verilog/veriloga 两套 E2E 与离线合同。",
-        "reported": "2026-09-28（第八轮 op×param 参数矩阵攻击发现，卡片直报）",
-        "updated": "2026-09-28",
-    },
-    {
-        "id": "P-081",
-        "layer": "上层（verilog / veriloga 包）· Windows/Linux 一致性",
-        "slug": "remote-posix-path-mangling",
-        "title": "`file_is_local=False` 时 Windows 客户端把 POSIX 远端路径转成反斜杠 → 远端找不到文件",
-        "level": "P2（该模式在 Windows 客户端完全不可用）",
-        "owner": "设计侧（verilog / veriloga 包）",
-        "status": "待设计修",
-        "where": "`src/pyapi/packages/verilog.py:218-225`（`path = Path(request.file_path)` → `str(path)` 交给 download）、"
-                 "`src/pyapi/packages/veriloga.py:218-225`；Linux 客户端为 `PosixPath` 不受影响 → **同一请求两端行为不同**。",
-        "symptom": "Windows 客户端真机实测：`read(file_path=\"/home/Gent/project/vblog/.../veriloga.va\", file_is_local=False)` → "
-                   "`RuntimeError: download requires a regular file: /home/Gent/.virtuoso-bridge/vblog/\\home\\Gent\\... (missing)`；"
-                   "路径被改写成 `\\home\\Gent\\...`（WindowsPath 形态）并按相对路径拼到 role root 下。`source.path` 回显同样是反斜杠形态。",
-        "repro": "python test/artifacts/tmp/r8_p080_p081_evidence.py（真机；看 read_remote_file_is_local_false）\n"
-                 "python -m pytest test/offline/unit/test_remote_posix_path_contract.py -q  # 2 条 strict xfail：传给 download 的路径必须逐字节不变",
-        "evidence": "`test/artifacts/evidence/round8/p080-viewtype-p081-remote-path-2026-09-28.json`；"
-                    "`test/offline/unit/test_remote_posix_path_contract.py`；live 侧已在 `test/live/packages/veriloga_e2e_tests.py` READ-02 留『修复后恢复远端读断言』的注释。",
-        "accept": "① Windows 客户端 read(file_is_local=False, file_path=<POSIX>) 成功且 sha256 与库路径读取一致；"
-                  "② source.path 原样回显；③ 2 条 xfail 转绿；④ 恢复 live READ-02 的远端读断言。",
-        "next": "设计侧不要把远端路径过 `pathlib.Path`（或只在 file_is_local=True 分支使用）；测试侧复跑离线 xfail + veriloga live + 跨平台客户端矩阵。",
-        "reported": "2026-09-28（第八轮 op×param 参数矩阵攻击 file_is_local 分支发现，卡片直报）",
-        "updated": "2026-09-28",
-    },
-    {
-        "id": "P-082",
-        "layer": "上层（schematic + layout 包）",
-        "slug": "region-quad-vs-two-points",
-        "title": "region 口径漂移（P-074 同类）：spec 定版‘对角两点、禁四元组’，实现（读过滤/截图）仍只收四元组",
-        "level": "P2（spec 合规请求直接失败）",
-        "owner": "设计侧（schematic / layout 包对齐 P-074 定版）",
-        "status": "待设计修",
-        "where": "schematic：`src/pyapi/packages/schematic.py:79-126`（region 过滤按 4 个 float 解包）、`:932-935`（screenshot region 强制 len==4）；"
-                 "layout：`src/pyapi/packages/layout.py:1707-1714`（`_filter_region` 强制 len==4）。"
-                 "spec：`上层/2-schematic.md` §1.3「region/bbox 一律对角两点 [pos0,pos1]（read 与 write 同形，**不再用四元组**）」；"
-                 "`上层/4-layout.md:36/71/175`（`{\"region\":[pos0,pos1]}`）。",
-        "symptom": "按 spec 传对角两点 `[[x0,y0],[x1,y1]]`：schematic `object_filter.region` → **裸 TypeError**（float(list)）；"
-                   "schematic `screenshot.region` → `ValueError: region must be [x1, y1, x2, y2]`；layout `object_filter.region` → "
-                   "`ValueError: shape.region must be [x0, y0, x1, y1]`。反之 spec 明令弃用的四元组在三个面全被接受 —— "
-                   "同文件 layout `_bbox`（write 侧）已是两点口径，read 过滤与 schematic 截图没跟上 P-074 定版。\n"
-                   "**加强证据（真机探针，2026-09-28）**：layout `read(depth>0)` **在两种形态下都必然失败** —— "
-                   "扁平四元组过了 `_filter_region` 后被 `_bbox` 拒（`ValueError: bbox must be [ [x, y], [x, y] ]`），"
-                   "嵌套两点又被 `_filter_region` 拒 → **depth 特性 100% 不可用**（`layout-depth.json`：depth0 shapes=3 OK，depth1 直接 BUG）。",
-        "repro": "python test/artifacts/tmp/_r8_region_shapes.py   # 两点/四元组 ×（schematic instance/shape、layout filter）对照\n"
-                 "python test/artifacts/tmp/_r8_public_region.py  # 公共 API：read(object_filter=两点 region) → 裸 TypeError；四元组放行到 middle\n"
-                 "离线钉住（修复前必红）：test/offline/unit/test_schematic_contracts.py::test_region_filter_uses_two_points_per_p074_spec；"
-                 "test/offline/unit/test_layout_contracts.py::test_object_filter_region_uses_two_points_per_p074_spec",
-        "evidence": "`test/artifacts/tmp/_r8_region_shapes.py` 六行输出；现有 TB 用四元组的点位："
-                    "`test_layout_contracts.py:382`、`test_schematic_contracts.py:92/104`（修复后需同步改两点）；"
-                    "真机探针 `test/semi/probes/layout_depth_probe.py` → `test/artifacts/evidence/round8/layout-depth.json`",
-        "accept": "① 三个请求面只接受对角两点、四元组报显式 ValueError（点明 pos0/pos1）；② 两条钉住用例转绿；"
-                  "③ 旧四元组点位 TB 同步改两点并全绿（layout/schematic 包 E2E 无回归）；"
-                  "④ `layout_depth_probe` 转绿：depth=1 读回 shapes 严格大于 depth=0（层级下钻语义成立）。",
-        "next": "设计侧按 P-074 口径统一实现 → 通知测试侧；测试侧改旧点位、复跑离线 + layout/schematic 包 E2E 后销案。",
-        "extra": "## 关联\n\n"
-                 "- **P-085**：`layout.read(depth>0)` 与 region 的组合任何写法都失败（与本条同源但独立，见该卡片）；"
-                 "修本条时两处（`_filter_region` 与 `_bbox`）必须一起对齐。\n",
-        "reported": "2026-09-28（第八轮条款逐条核账 · g4-edit schematic#014-018/049-050、layout#023-024/028 发现）",
-        "updated": "2026-09-28",
-    },
-    {
-        "id": "P-085",
-        "layer": "上层（layout 包）",
-        "slug": "layout-depth-region-unusable",
-        "title": "`layout.read(depth>0)` 与 `region` 组合**任何写法都失败**（扁平→`_bbox` 拒；两点→`_filter_region` 拒）",
-        "level": "P2（spec 声明的参数组合确定性不可用）",
-        "owner": "设计侧（layout 包）；与 P-082 同源但独立",
-        "status": "待设计修",
-        "where": "`src/pyapi/packages/layout.py:1522-1525`（deep 路径 `_bbox(region)` 要求嵌套两点）"
-                 "与 `:1707-1714`（`_filter_region` 要求扁平四元组）；spec `上层/4-layout.md:36,40`（region 定版 `[pos0, pos1]`，depth>0 需 region 或 layers）",
-        "symptom": "`depth>0` 时两条校验互斥，**没有任何一种 region 写法能通过**：\n"
-                   "| 输入 | 结果 |\n"
-                   "|---|---|\n"
-                   "| `depth=0` + `region=[0,0,60,60]` | ✅ 正常（shapes=3） |\n"
-                   "| `depth=1` + `region=[0,0,60,60]`（实现自定的扁平格式） | ❌ `ValueError: bbox must be [ [x, y], [x, y] ]` |\n"
-                   "| `depth=1` + `region=[[0,0],[60,60]]`（spec 定版两点） | ❌ `ValueError: shape.region must be [x0, y0, x1, y1]` |\n"
-                   "depth>0 因此是**确定性不可用**的参数组合（不是偶发）。",
-        "repro": "python test/semi/probes/layout_depth_probe.py            # 期望 RED（现为确定性失败）\n"
-                 "python -m pytest test/offline/unit/test_layout_depth_contract.py -q  # 1 条 strict xfail",
-        "evidence": "`test/artifacts/evidence/round8/layout-depth.json`（depth0=3 shapes OK / depth1=ValueError）；"
-                    "`test/offline/unit/test_layout_depth_contract.py`（stub middle 证明死在参数形态、未触达传输层）",
-        "accept": "二选一定口径后实现：① 按 P-074 定版统一 `region` 为对角两点（改 `_filter_region`，deep 分支不动）；"
-                  "② 或 deep 分支把扁平四元组转成两点后再交给 `_bbox()` 并同步 spec。"
-                  "任一方案都要补回归：`depth=1 + region` 返回跨层结果（shapes>0）且 `layout_depth_probe.py` 转 GREEN。",
-        "next": "设计侧与 P-082 一起定 region 形态（两处必须同时对齐）→ 测试侧复跑探针 + 离线 xfail + layout live。",
-        "reported": "2026-09-28（第八轮半真机探针 layout_depth_probe.py 发现）",
-        "updated": "2026-09-28",
+                 "- 待办：产品拍板「支持驱动」后，在 maestro 包补正式入口 + spec；测试侧据此补真机 MC 验证与 yield/sigma 对数。\n"
+                 "## 测试侧真机验收（2026-09-29，P-070 复验）\n"
+                 "- 驱动链已通：`set_run_mode('Monte Carlo Sampling')` + `set_run_option(mcnumpoints=2)` 回读生效；"
+                 "裸 `run` 产出 `MonteCarlo.1`，`read_history` = `done`、**2/2 点**；`read_results` 返回 `points=2`。\n"
+                 "- 结果面缺口：同一响应的 `value.monte_carlo.overall.total_points=0`、`outputs=[]`（Yield 表为空，"
+                 "文本 `Yield Estimate: 0 %(0 passed/0 pts)`）。\n"
+                 "- 待确认：`maestro_tb/rc_probe` 的 output 是否定义了 spec/target（无 spec 时 Yield 表本就为空 ⇒ 属夹具，"
+                 "需造带 spec 夹具再验收）；若夹具本应有 spec ⇒ 属 Yield 聚合出口缺陷。\n"
+                 "- 新增 TB：`test/live/packages/maestro_mc_e2e_tests.py`（MC-01..04 + 状态还原）。\n",
     },
     {
         "id": "P-086",
@@ -660,6 +321,10 @@ OPEN = [
                    "`ASSEMBLER-8001 … supplied argument \"0\"`（22:09:06 起同一 session 生命周期）。"
                    "⇒ **同一实例上只有 maestro 套件稳定触发**，其它 9 套包与 base 五接口全绿，"
                    "支持「maestro 调用序列把句柄 0 传给 ADE API → daemon 侧空响应」这一解释（待设计侧确认）。\n"
+                   "**同族第四形态（2026-09-29 02:30 gate，skillref 套件）**：本地 staging 安装阶段 "
+                   "`[WinError 5] 拒绝访问: …\\temp\\skillref\\<hash>\\finder\\.vbtmp-<hex>\\SKILL -> …\\finder\\SKILL`；"
+                   "最小复现（同名目录递归下载两次）**2/2 绿** ⇒ 判为 Windows 本地 `install_staged` 的瞬时时失败"
+                   "（可能被实时扫描/句柄占用打断），归入本卡观察族；重跑套件即绿，不作为功能红。\n"
                    "**同层第二形态（2026-09-28 23:19 verilog 导入 TB）**：`virtuoso.verilog.import` 在"
                    "\n**同层第三形态（2026-09-29 02:0x maestro 覆盖补跑）**：`virtuoso.maestro.read_config` 报 "
                    "`(\"asiGet\" 0 t nil (\"*Error* asiGet: no applicable method for the classes\" list(symbol)))`；"
@@ -688,95 +353,6 @@ OPEN = [
         "updated": "2026-09-28",
     },
     {
-        "id": "P-087",
-        "layer": "上层（maestro 包）· 会话复用",
-        "slug": "maestro-write-save-false-still-persists",
-        "title": "`save=False` 的改动不被隔离：后续任意一次 save 会把它静默带走（跨请求污染）；同场景 `delete_var` 清理报 handle 错误",
-        "level": "P2（静默跨请求污染用户 setup + 清理失败）",
-        "owner": "设计侧（maestro 包）；`save` 的对外语义需 spec owner 定稿",
-        "status": "待设计修",
-        "where": "`src/pyapi/packages/maestro.py:1760-1765`（save=False 只跳过显式 `maeSaveSetup`，不丢弃/隔离会话内改动）；"
-                 "`:1303-1317` `_close_if_created`/`_close_session`；`delete_var` 清理路径（本场景报 handle 错误）。"
-                 "spec `6-maestro.md` 未定义 `save` 语义（仅 :173 提到 open/save/close）",
-        "symptom": "磁盘级因果链（真机 maestro_tb/rc_probe，2026-09-28 实测）：\n"
-                   "1. `write(set_var v=1.0)`（save=True）→ 步骤含 save_setup，sdb 中 v=1.0 ✓\n"
-                   "2. `write(save=False, set_var v=2.0)` → 步骤**不含** save_setup，**立即**查 sdb 仍 v=1.0 ✓（未立即落盘）\n"
-                   "3. 随后一次**无关**的 `write(set_var other=ok)`（save=True）→ sdb 中 v 被写成 **2.0** ✗ —— "
-                   "未保存改动留在复用会话里，被下一次保存静默带走（跨请求污染）。\n"
-                   "4. 同场景 `delete_var` 清理两个变量均失败：`*Error* error: Cannot find a setup database entry for handle 0`。",
-        "repro": "PYTHONPATH=src python test/semi/probes/maestro_save_false_disk_probe.py   # 期望 RED（第 5 项 FAIL=2.0）\n"
-                 "# 证据：test/artifacts/evidence/round8/maestro-save-false-disk.json",
-        "evidence": "`test/artifacts/evidence/round8/maestro-save-false-disk.json`（5 项 checks：步骤表/立即磁盘/泄漏判据/清理）；"
-                    "live 侧 `maestro_e2e_tests.py` WRITE-06 现按步骤表判定（可过），**不足以防住本条泄漏**，以磁盘探针为准",
-        "accept": "① spec 明确 `save` 语义（推荐：save=False 的改动必须被隔离 —— 关闭/丢弃或快照-回滚，后续 save 不得带走）；"
-                  "② 实测第 3 步泄漏消失（旧变量仍 1.0），删参数则改为负向「传 save 被拒」；"
-                  "③ `delete_var` 在复用会话/失败恢复路径可正常清理（或明确报可读错误）；④ 探针转 GREEN。",
-        "next": "设计侧定 `save` 隔离口径 + 修 delete_var handle 路径；测试侧把磁盘探针纳入半真机层并复跑 live WRITE-06。",
-        "reported": "2026-09-28（第八轮：live WRITE-06 首红 → 磁盘级探针确认隔离缺失）",
-        "updated": "2026-09-28",
-    },
-    {
-        "id": "P-095",
-        "layer": "上层（maestro 包）· GUI 模态",
-        "slug": "maestro-run-stale-overwrite-history-modal",
-        "title": "`maestro.run` 的 Overwrite History 目标悬空：`ASSEMBLER-3018` 模态框阻塞 CIW → daemon 空响应（watchdog 不处理）",
-        "level": "P1（可把实例 CIW 挂死；P-086 持久形态的直接根因）",
-        "owner": "设计侧（maestro 包 run 流程 + 对话框 watchdog）",
-        "status": "待设计修",
-        "where": "`src/pyapi/packages/maestro.py:2960-2973`（`request.history` 时 `axlSetOverwriteHistory(setup t)` + `axlSetOverwriteHistoryName(...)`，**运行后/无 history 时不清理或复位**）；"
-                 "`_start_simulation_with_watchdog`（未识别/未关闭 `ASSEMBLER-3018` 的 `adexlMessageDialog`）",
-        "symptom": "真机（vblog/maestro_tb rc_probe）实测链：先前 run 把 Overwrite History 设为 `Interactive.8`；该 history 之后不存在（cell 只剩 MonteCarlo.*）；"
-                   "再跑一次**不带 history** 的 `virtuoso.maestro.run` → ADE 弹模态 "
-                   "`ERROR (ASSEMBLER-3018): The history item 'Interactive.8' selected to be overwritten does not exist` + "
-                   "`# Displaying modal dbox \"adexlMessageDialog\", title \"ADE Assembler Message 3018\"` → CIW 阻塞，"
-                   "daemon 进入 **Empty response 窗口且 2 分钟不自愈**（8×15s 轮询全空响应；query 正常）。"
-                   "run 返回 `maeRunSimulation returned nil; diagnosis: {'current_form': None, 'sessions': []}`。",
-        "repro": "1) 复现窗口：`python test/artifacts/tmp/_r8_vblog_wait.py`（8×15s 全 Empty response）\n"
-                 "2) 现场：` ssh wsl-gent 'tail -n 8 ~/.virtuoso-bridge/vblog/run/CDS.log'` → ASSEMBLER-3018 模态行\n"
-                 "3) 恢复：`test/artifacts/tmp/hard_restart_user_instance.sh`（Gent 身份，端口 65121）",
-        "evidence": "CDS.log 22:48:02 现场（ASSEMBLER-3018 + adexlMessageDialog 两行）；"
-                    "`round8/coverage-main-r8.log` 中同族 Empty response 历史；P-086 卡片（本条是其持久形态的根因）",
-        "extra": "## 补充（2026-09-28 22:55，跨重启持久化实证）\n\n"
-                 "- 实例硬重启后，用 `open_gui` 拿到 session 后读 setup 标志：`(t \"Interactive.8\")` —— "
-                 "**悬空目标跨重启持久化在 .sdb 里**；\n"
-                 "- 手动 `axlSetOverwriteHistory(setup nil)` 后复核 `(nil \"Interactive.8\")`，再跑裸 `run` → "
-                 "`status=done, history=Interactive.0`（新 history 正常创建，不再弹框）。\n"
-                 "- 结论：run 流程必须在设置/使用后复位 Overwrite 标志，或运行前校验目标存在。\n",
-        "accept": "① run 结束（成功/失败/超时）后 Overwrite History 状态被复位（或每次 run 前校验目标存在、不存在即清 flag）；"
-                  "② watchdog 能识别并关闭 `adexlMessageDialog`/ASSEMBLER-3018（或在弹框前避免）；"
-                  "③ 复现件：不带 history 的 run 在悬空 overwrite 目标下**不得**挂死 CIW，且返回结构化失败；"
-                  "④ 无窗口期残留（P-086 复跑转绿）。",
-        "next": "设计侧修 run 的 overwrite 生命周期 + watchdog 覆盖 ASSEMBLER 模态；测试侧补红灯探针（悬空目标 → 期望结构化失败而非挂死）。",
-        "reported": "2026-09-28（第八轮：P-084/P-089 fixture 恢复时定位到根因）",
-        "updated": "2026-09-28",
-    },
-    {
-        "id": "P-096",
-        "layer": "上层（maestro 包）· 崩溃恢复 / OA 写锁",
-        "slug": "maestro-stale-write-lock-modal-wedge",
-        "title": "陈旧 OA 写锁（属主进程已死）触发 `axlOpenInRead0` 模态框 → CIW/daemon 再次挂死；应结构化失败或自动强制",
-        "level": "P2（崩溃后该 cell 的 maestro 打不开且会挂死实例，需人工删锁）",
-        "owner": "设计侧（maestro 打开/写路径的锁判定；可参考 schematic 的“locked by another session”结构化失败）",
-        "status": "待设计修",
-        "where": "现场：`/home/Gent/project/vblog/maestro_tb/rc_probe/maestro/maestro.sdb.cdslck`（属主为被 kill 的旧实例）；"
-                 "`src/pyapi/packages/maestro.py` 的 open/ensure-editable 路径（未先把死属主锁转成结构化失败）；"
-                 "CDS.log 弹框：`# Displaying modal dbox \"axlOpenInRead0\", title \"ADE Assembler Open View\"`",
-        "symptom": "实例被 kill 后留下 `maestro.sdb.cdslck`（写锁，属主进程已不存在）。新实例上 `maestro.open_gui` → "
-                   "`deOpenCellView failed ...: Empty response from daemon`，随后**所有 skill 请求空响应**（实例再次挂死）；"
-                   "CDS.log 显示 `Couldn't get a write lock ... currently \"write\" locked by user Gent on machine GLIS-DESKTOP (since …)` + 模态框。"
-                   "手动删除陈旧 `cdslck` 并重启实例后 open_gui 立即恢复成功（session fnxSession0, editing）。",
-        "repro": "1) 手工复现：杀掉带未释放锁的 maestro 实例 → 新实例 `python test/artifacts/tmp/_r8_opengui2.py` → 观察 Empty response + CDS.log 模态行\n"
-                 "2) 恢复：清 `<cellview>/*.cdslck` + 重启实例（见 `round8/../internal/环境Runbook-内部.md` §10.2/§10.3）",
-        "evidence": "CDS.log `Couldn't get a write lock … since Mon Sep 28 22:43:53` + `axlOpenInRead0` 两行；"
-                    "`_r8_opengui2.py` 输出；恢复后 open_gui ok 对照",
-        "accept": "① 打开/编辑前检测写锁属主：属主进程已死（或期望指纹不符）→ 返回结构化失败（或按产品口径自动强制/只读打开），**不得**弹模态；"
-                  "② 回归：`kill -9` 实例 → 新实例 open_gui 要么成功（死锁被正确处理）要么明确失败，CIW/daemon 不挂死；"
-                  "③ 与 P-095 的 watchdog 修复联动（ASSEMBLER/ADE 模态兜底）。",
-        "next": "设计侧定“死属主锁”处置口径并实现；测试侧在 `maestro_pkg_probe`/新探针里补“陈旧锁恢复”回归（先手工造锁再验证行为）。",
-        "reported": "2026-09-28（第八轮：vblog 崩溃恢复时实测）",
-        "updated": "2026-09-28",
-    },
-    {
         "id": "P-098",
         "layer": "上层（calibre 包）· 阻塞轮询口径",
         "slug": "calibre-blocking-timeout-status-not-timeout",
@@ -800,36 +376,56 @@ OPEN = [
         "reported": "2026-09-28（第八轮 calibre#069 缺口核账时按 spec 对表发现并复现）",
         "updated": "2026-09-28",
     },
-    {
-        "id": "P-104",
-        "layer": "上层（maestro 包）· 缺失目标的静默成功",
-        "slug": "read-config-missing-view-silent-empty",
-        "title": "`maestro.read_config` 对**不存在的 view** 静默返回空配置（ok=true）；调用方无法区分「空 setup」与「view 不存在」",
-        "level": "P2（静默假数据：空配置会被当成既有 setup 继续消费）",
-        "owner": "设计侧（maestro 包）；口径二选一需 spec owner 拍板",
-        "status": "待设计修",
-        "where": "`src/pyapi/packages/maestro.py:1321`（`read_config` 入口）→ `:3095-3102`（`maeOpenSetup(...)` 读会话），"
-                 "**不校验 cellview 是否存在**；同包 `read_results` 对缺失结果目录会结构化失败（口径不一致）。",
-        "symptom": "健康真机（vb-s11，2026-09-29 02:2x）实测：`read_config(library=\"maestro_tb\", cell=\"rc_probe\", "
-                   "view=\"no_such_view_p104\")` → **ok=true**，返回空配置（`tests=[]`、`corners=[\"Nominal\"]`、"
-                   "`variables={}`、`run_mode=\"\"`），steps 为 `open_session/setup/options/...`；调用方无法据此判断 view 不存在。"
-                   "同一断言在 `test/live/packages/maestro_view_param_e2e_tests.py` 的只读族（\"不存在的 view 必须结构化失败\"）"
-                   "当前为**红钉**（2026-09-29 01:5x 全量覆盖跑 `packages/maestro view-param (direct)` rc=1，报"
-                   "`read_config expected structured failure, got ok`）。",
-        "repro": "python test/artifacts/tmp/r8_p104_readconfig_probe.py        # vb-vblog 当时被 P-086 卡住，已在 vb-s11 确认\n"
-                 "python test/live/packages/maestro_view_param_e2e_tests.py --transport http  # read 族负例当前红",
-        "evidence": "`test/artifacts/evidence/round8/p104-readconfig-missing-view.json`（vb-s11 原始响应）；"
-                    "`test/artifacts/evidence/round8/coverage-main-r8d.log`（vblog 侧同断言原文）。",
-        "accept": "① `read_config` 对不存在 view 返回结构化失败（点名 library/cell/view）；"
-                  "或 ② spec 明确「不存在即空配置」语义 → TB 按该口径改成断言空配置并加 NOTE，二者取其一并同步报告。",
-        "next": "设计侧定口径；测试侧按结论把 `maestro_view_param_e2e_tests.py` 的 read 族负例改成对应用例后复跑。",
-        "reported": "2026-09-29（第八轮覆盖率重算时由 maestro view-param TB 红钉暴露，root 复核并最小化）",
-        "updated": "2026-09-29（新立）",
-    },
 ]
 
 #: 本轮明确闭环（保留记录，避免「消失了没人知道为什么」）
 CLOSED_RECENT = [
+    ("C2", "所有 Skill 调用缺少 `log_level` / `log_max_bytes` 请求字段",
+     "真机 HTTP 透传复验通过：新增 TB `test/live/packages/skill_log_options_e2e_tests.py` **6/6 绿**（缺省吃注册表默认 ⇒ CDSlog 含标记；`log_level=off` ⇒ 该请求 CDSlog 为空；`all` ⇒ 含标记；`warn`/`log_max_bytes` 被接受；多步领域操作带 off 仍 ok）。离线 `test_skill_log_options.py` 7/7。实现：56 个 Request 字段 + `skill_log_kwargs` 透传。"),
+    ("P-095", "`maestro.run` 的 Overwrite History 目标悬空 → ASSEMBLER-3018 模态卡 CIW",
+     "设计已修；探针 `test/semi/probes/maestro_p095_overwrite_wedge_probe.py` **GREEN**：挂悬空目标后 run 8.9s 内结构化返回、CIW `1+2` 存活、Overwrite 标志复位 `nil`（探针先按 C1 契约适配了解包）。"),
+    ("P-102", "`calibre.pex` 第三阶段 argv 非法（`-xrc -fmt spice`）",
+     "**口径变更（非修复）**：spec `12-calibre.md` 定稿「PEX 本版不提供」——`calibre.pex` 立即返回 `pex_unsupported`、不发起远程动作；TB 改为钉住该语义：`calibre_export_pex_e2e_tests.py` **6/6 绿**。"),
+    ("P-103", "`calibre.pex` 报 `completed` 但 stage3 失败（完成判定提前收工）",
+     "**口径变更（非修复）**：随 P-102 一起——本版不提供 PEX 启动，假绿路径不再存在；`calibre_export_pex_e2e_tests.py` **6/6 绿**（PEX-01 结构化拒绝 + 不建 run_dir）。"),
+    ("P-097", "`verilog.import` 覆盖写后 `_read_views` 瞬时 cell not found",
+     "已修 `453b453`（`_read_views` 先刷库表 + 有界重试）；新增专门回归 TB `verilog_import_params_e2e_tests.py::IMP-11 覆盖式连导 3 次 views 恒非空` —— 套件 **13/13 绿**（`test/artifacts/evidence/verify-fix-r9/gate-verilog-rerun2.txt`）"),
+    ("P-091", "截图远端暂存口径三包不一致（schematic 保留 / symbol·layout 清理）",
+     "spec 三包统一（2-schematic.md:27 / 3-symbol.md:45 / 4-layout.md:184「远端暂存、下载后清理，留存位置 = 客户端 artifact/screenshots/」）+ 实现三包均 `rm -f` 远端暂存（schematic.py:882 / symbol.py:982 / layout.py:1483）+ 真机 TB：schematic 档 5/5 绿（SC-01 断言远端无残留）、layout 档 SC-01 绿"),
+    ("P-080", "`view_type` 在 read 路径不校验（空串/整数/bogus 静默接受）",
+     "已修 `dda3775`：离线 `test_view_type_param_contract.py` **9/9 绿**；真机 `veriloga_e2e_tests.py` `READ-02 file_path/view_type params` 绿（read 与 write 同口径）"),
+    ("P-081", "Windows 客户端把远端 POSIX 路径改写成 `\\` 形式",
+     "已修 `dda3775`：离线 `test_remote_posix_path_contract.py` **2/2 绿**；真机 veriloga `READ-02` 绿（远端路径原样回显、sha256 一致）"),
+    ("P-082", "region 四元组与两点口径冲突（read/depth/screenshot 未跟上 P-074 定版）",
+     "已修 `6bd29e7`：离线 schematic/layout/depth 契约全绿（113 项，含两条两点 region 用例）；真机 `layout_e2e_tests.py` `READ-02 region_mode/depth/view_type` 绿；`layout_depth_probe` 绿"),
+    ("P-083", "`spectre.export.precision` 语义未定义（有效数字 vs 小数位）",
+     "已定稿 `313868d`：spec `7-spectre.md:288` 写明 `precision` = **有效数字**（`%.Ng`）；真机 `spectre_params_e2e_tests.py` **EXPORT-P1 5/5 绿**（TB 断言已同步）"),
+    ("P-090", "上传 stage 在安装前消失（安装非幂等 → sha256 mismatch 假失败）",
+     "半真机 `test/semi/transport/install_stage_idempotent_tb.py` 绿：first/second 两次安装都 rc=0（stage 不在但目标 digest 一致 → 幂等成功）；重试只允许「未投递」错误。修复 `d269ecd`"),
+    ("P-078", "`place_wire` 样式参数拼接重复：width 静默建 path / color|line_style 硬报错",
+     "真机 `schematic_wire_style_probe` **5/5 绿**；离线 `test_wire_style_arguments_exact` 转绿（`test/artifacts/evidence/verify-fix-r9/semi-probes.txt`）。修复 `6bd29e7`+`a4dbf2d`"),
+    ("P-079", "local 模式显式 daemon_port≠local_port 被静默归一化",
+     "修复 `bf5f71a`；红钉 XPASS = 已修，测试侧已删 `xfail` 标记；离线 `test_norm_gap_round8.py` 全绿"),
+    ("P-084", "`maestro.export.include_results` 死参数（声明但从不读取）",
+     "设计按方案②删除该字段（`ExportRequest` 不再接受该 kwarg，实测报 unexpected keyword）；探针改为负向断言「传已删字段必须被拒」"),
+    ("P-085", "`layout.read(depth>0)` + region 不可用（deep 分支没跟上两点定版）",
+     "真机 `layout_depth_probe` 绿；离线 `test_layout_depth_contract.py` 绿。修复 `6bd29e7`+`a4dbf2d`"),
+    ("P-087", "`maestro.write(save=False)` 的改动被后续无关 save 静默带走",
+     "真机 `maestro_save_false_disk_probe` 绿（第 3 步泄漏消失）。修复 `05aee48`"),
+    ("P-088", "`maestro.write(delete_var, scope=all)` 确定性失败（handle 0）",
+     "真机 `maestro_delete_var_all_probe` 绿（三处同名变量全部删除）。修复 `05aee48`"),
+    ("P-089", "`maestro.open_waveform_gui.result` 死参数（忽略传入值）",
+     "真机 `maestro_open_waveform_result_probe` 绿（字段按方案②删除/负向）。修复 `05aee48`"),
+    ("P-096", "陈旧 OA 写锁 → `axlOpenInRead0` 模态挂死 CIW",
+     "真机 `maestro_p096_write_lock_probe` **4/4 绿**：死属主锁结构化失败、活锁不误拦、自家锁放行、实例未被挂死（`1+2`=3）。修复 `37a601b`"),
+    ("P-099", "`verilog.import` 返回值 `views` 恒空（与真机视图不一致）",
+     "真机门禁 `verilog_import_params_e2e_tests.py` **12/12 绿**（IMP-08 校验返回值覆盖真机视图）。修复 `82e7b6c`；TB 旧口径已按新 spec 更新"),
+    ("P-100", "`verilog.import` 的 `cell` 参数不被落地（改名无效果/事后报错）",
+     "设计口径（spec 8-verilog.md:84）：`cell` 必须是源码模块名，不匹配则**写前**结构化拒绝 `cell_not_in_source`；门禁 IMP-10 绿（拒绝 + 无残留 + 正例成功）。修复 `82e7b6c`"),
+    ("P-101", "`import(overwrite=False)` 命中已存在 cell：静默 no-op、无跳过标记",
+     "门禁 IMP-07 绿：mtime 不变 **且** 断言返回里有 `skipped/existing/warnings` 标记。修复 `313868d`"),
+    ("P-104", "读路径 `maeOpenSetup` 默认 `mode=\"a\"` 凭空建 view（读不存在 view 返回空配置）",
+     "真机门禁 `maestro_view_param_e2e_tests.py` **9/9 绿**：读族对缺失 view 结构化失败、库内不再新增 view。修复 `313868d`"),
     ("P-043", "py2.7 daemon 缺 coding cookie", "真 py2.7 探针 5/5（`py27-daemon-probe-green.json`）"),
     ("P-044", "layout 写锁误判 + 句柄不关", "layout 套件 10/10；陈旧锁不再挡写；两用户同视图 GREEN"),
     ("P-045", "「并发压测打挂 CIW」", "**撤回**（归因错误，真因 P-046）"),
@@ -1067,7 +663,7 @@ def render_readme() -> str:
     legacy = "\n".join(f"| {i} | {t} | {s} |" for i, t, s in LEGACY_OPEN)
     return f"""# `test/reports/bugs/` —— 未关闭缺陷的唯一跟踪视图
 
-> 维护者：测试工程师（我）｜最近刷新：2026-09-28
+> 维护者：测试工程师（我）｜最近刷新：2026-09-29
 > **这个目录回答一个问题：现在还有哪些 bug 没关、谁在等谁、修好的判据是什么。**
 
 ## 0. 三条规矩（动这里之前先看）

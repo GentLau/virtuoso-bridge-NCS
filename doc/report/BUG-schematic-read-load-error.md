@@ -21,7 +21,7 @@ errors = [
 ## 2. 环境
 
 - 端口：8127（`server.api_server`）
-- work-dir：`C:\Users\user\Desktop\repos_Github\virtuoso-bridge-NCS\test\tb\artifacts\log-vblog`
+- work-dir：`C:\Users\user\Desktop\repos_Github\virtuoso-bridge-NCS\test\artifacts\env\log-vblog`
 - token：`vb-vblog`
 - Virtuoso：6.1.8-64b（WSL）
 - 上层包：`src/pyapi/packages/schematic.py`（Draft v2 对应实现）
@@ -34,7 +34,7 @@ sys.path.insert(0, "src")
 from transport.middle import BusinessServer
 from pyapi.packages.schematic import Package, ReadRequest
 
-middle = BusinessServer(r"test/tb/artifacts/log-vblog")
+middle = BusinessServer(r"test/artifacts/env/log-vblog")
 pkg = Package(middle)
 r = pkg.read(ReadRequest(
     token="vb-vblog",
@@ -47,7 +47,7 @@ print(r.ok, r.error)    # False, errors 含上述 load 错误
 ```
 
 生成的完整 SKILL 文本已 dump 到：
-`test/tb/artifacts/dump_read.il`
+`test/artifacts/tmp/dump_read.il`
 
 （对 `ReadRequest(library="rfLib", cell="LNA_PB", focus="connectivity")` 的 dump）
 
@@ -73,7 +73,7 @@ print(r.ok, r.error)    # False, errors 含上述 load 错误
 
 ### 7.1 `load` 失败的根因在上层生成的 SKILL 文本
 
-对 `test/tb/artifacts/dump_read.il` 做静态复核后，确认该文件本身不是合法、
+对 `test/artifacts/tmp/dump_read.il` 做静态复核后，确认该文件本身不是合法、
 平衡的 SKILL：
 
 - 括号配对扫描最终多出一个未闭合的 `(`；

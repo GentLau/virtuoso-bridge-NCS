@@ -57,7 +57,7 @@ SSH / Virtuoso、不会部署文件，也不会读写 `registry.json`**：
 
 ```bash
 # 从仓库根目录运行（Mock 实现和控制面板位于 test/）
-.\.venv\Scripts\python.exe test\frontend_tb\registration_mock_server.py --port 8125
+.\.venv\Scripts\python.exe test\offline\frontend\registration_mock_server.py --port 8125
 ```
 
 浏览器打开 `http://127.0.0.1:8125/`。右下角 **Front-end Mock TB**
@@ -74,11 +74,11 @@ SSH / Virtuoso、不会部署文件，也不会读写 `registry.json`**：
 ## 测试
 
 ```bash
-python -m unittest discover -s test/unit -p "test_*.py"
-python -m unittest discover -s test/integration -p "test_*.py"
-python -m unittest discover -s test/scenario -p "test_*.py"
+python -m unittest discover -s test/offline/unit -p "test_*.py"
+python -m unittest discover -s test/offline/integration -p "test_*.py"
+python -m unittest discover -s test/offline/scenario -p "test_*.py"
 # 真实 Virtuoso（可选）：
-$env:VB_E2E='1'; python -m unittest discover -s test/e2e -p "test_*.py"
+$env:VB_E2E='1'; python -m unittest discover -s test/live/e2e -p "test_*.py"
 ```
 
 覆盖报告见 `doc/测试覆盖报告.md`；调用指南见 `doc/接口调用指南.md`。

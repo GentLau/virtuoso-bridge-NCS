@@ -12,7 +12,7 @@
   `drc.runset` 也由真机用例 CAL-DRC-SET-01（官方批处理：`_calibre.drc_` 控制文件 + `drc.summary` + `read_results` 定位）覆盖；
   `export.job_id` 也已由 EXP-03 覆盖；GAP 从 46 回升到 56 是**口径解释**：新扫到的 pex/export 调用点把它们的参数行首次纳入矩阵（此前无任何调用点）。
   PEX 本体被 P-102 阻塞（spec 也标「禁止交付」），这些行**如实计为未覆盖**，不并入 direct。
-- 三层回归：离线 **1805 例 / 0 红**（Windows 21 skip / Linux py3.9 31 skip，**两平台计数一致**；
+- 三层回归：离线 **1805 例 / 0 红**（Windows 21 skip / Linux py3.9 **27 skip**，**两平台计数一致**；
   = 前值 1807 − 去重删 5 + review-D 新补 3 例）；
   半真机 **39 探针（32 绿 + 7 个预期红钉）**；真机 base 五接口 + 文件族 + Linux 客户侧全栈全绿，
   **11 套包 = 10 稳定绿 + 1 被缺陷阻塞**（maestro 卡 P-086/P-095；calibre 初跑红已定性为同一根因的连带，
@@ -74,7 +74,7 @@
 - 剩余 GAP（最新矩阵 **CANDIDATE 572 / GAP 56**，generic GAP 只剩 22 条）：`calibre.pex` 11 + `calibre.drc` 6 + `calibre.lvs` 4 + `layout.read.depth` 1；
   其中 **pex 11 条被 P-102/P-103 阻塞**（带 fmt 的整链；含 2 条死参数 power/ground = P-092）、**drc 6 + lvs 2 属「kind 不适用」**（spice_file/hcell_file/xcell_file/fmt/lvs_run_dir 只在 lvs/pex 分支消费，见 `calibre.py:987-1013`）、
   `layout.read.depth`（P-085 红钉）1；`verilog.read/write.view_type`（P-080）仍是红钉。**未覆盖项如实列出，不并入 direct**。
-- **calibre 参数面本轮大补齐**（root 新增 TB）：`calibre_params_e2e_tests.py` **5/5 绿**，
+- **calibre 参数面本轮大补齐**（root 新增 TB）：`calibre_params_e2e_tests.py` **6/6 绿**（2026-09-29 02:20 复跑，含 set 上传的远端 `sha256sum` 读回），
   覆盖 `check_env(calibre_bin/deck 正负)`、`drc(calibre_bin/hier/turbo/poll_interval/job_id/params/run_dir)`、
   `read_results(log_lines=0/5 双向)`、`lvs(spice_file/hcell_file/xcell_file/hier/turbo/poll_interval)`；
   剩余 GAP 里 **`drc.spice_file/hcell_file/xcell_file/fmt/lvs_run_dir` 与 `lvs.fmt/lvs_run_dir` 属"kind 不适用"**
@@ -95,10 +95,11 @@
 
 ### 4.2 离线（Linux py3.9）
 
-- 同一份树（tar 同步后）在 wsl-gent 仓库副本上跑 → **1805 例 / 0 红 / 31 skip（11 xfail）**（`evidence/round8/offline-linux-py39-final3.xml`）；
-- **两平台计数完全一致（1805 / 0 红）**；skip 差 10 条均为平台门控（Windows 侧多跑 10 条路径类用例），
+- 同一份树（tar 同步后）在 wsl-gent 仓库副本上跑 → **1805 例 / 0 红 / 27 skip（11 xfail）**（`evidence/round8/offline-linux-py39-final4.xml`；2026-09-29 把 gitignored 的 `admin-token.txt` 放进 Linux 沙箱后，4 条 admin 端到端用例从 skip 转跑并全绿）；
+- **两平台计数完全一致（1805 / 0 红）**；skip 差 6 条 = 平台门控互斥（Windows 跳 8 条 POSIX-only、Linux 跳 16 条 Windows-only）+ 缺陷钉住随平台差 2 条（P-081 两条只在 Windows 跳）。
   ⇒ Linux/Windows 客户端离线一致性本轮成立；
 - 上一份旧树里的 3 红（P-079 两条 XPASS(strict) 平台门控 + P-078 断言）已由对应子代理处理。
+- **skip 口径（逐条带 reason，不是沉默跳过）**：三类 —— ① **平台门控**（POSIX-only 在 Windows 跳 8 条、Windows-only 在 Linux 跳 16 条；两平台**合并**后这些路径都跑到了，单平台报告只显示 skip）；② **缺陷钉住**（Windows 13 / Linux 11 条 `skipif`+strict-xfail，钉住 P-078/079/080/081/082/093/097；修好后必须删标记，这批就是红队点名的『修好即 XPASS 转红』机制）；③ **环境缺件**（Linux 侧原 4 条 admin 端到端因缺 `admin-token.txt` 跳过 —— 2026-09-29 已放进 Linux 沙箱，复跑由 skip 转 4/4 绿，Linux skip 31→27）。真机 e2e 另 5 条 skip：4 条 `VB_E2E_LOCAL=1` 门控（专跑 4/4 绿）+ 1 条要求专用引导 CIW（安全门，不抢他人 CIW）。
 
 ### 4.3 半真机（39 探针）
 
@@ -115,6 +116,21 @@
 ### 4.4 真机
 
 - **11 套包（三次 gate 分开记，不合并口径）**：
+
+- **重排后 gate（16 套，2026-09-29 02:52 起，`package-e2e-r8-final4.log`）——送审口径**：
+  前 12 套**连续 PASS**（infra / cellview / schematic / symbol / layout / verilog / veriloga / **skillref** / spectre /
+  **screenshot_params** / **calibre** / **calibre_params**）——三处修复全部生效：`skillref` 的 Windows 瞬时未再复现、
+  `screenshot_params` 按套件附加参数跑 schematic 档、`calibre` 因 maestro 后置不再被连带；
+  最后 4 套为**已立案红钉**：`verilog_import_params`（P-099/100/101）、`calibre_export_pex`（P-102/103）、
+  `maestro_view_param`（P-104）、`maestro`（P-086/P-095，按新顺序放最后，不再连带其它套件）。
+  ⇒ **16 套 = 12 绿 + 4 红钉**（红钉全部有卡、有复现、有验收判据；无环境噪声红）。
+- **终版 gate（16 套，2026-09-29 02:27–03:0x，`package-e2e-r8-final3.log`）**：**9 绿 / 7 红，7 红全部已定性**：
+  * 绿 9 套：infra / cellview / schematic / symbol / layout / verilog / veriloga / spectre / **calibre_params（6/6）**；
+  * **已立案红钉 4 套**：maestro（P-086/P-095）、verilog_import_params（P-099/100/101 三条）、calibre_export_pex（P-102/103）、maestro_view_param（P-104）；
+  * **运行产物/顺序问题 2 套（已修）**：`screenshot_params` rc=2 是本 TB 必填参数所致 → 已给默认值 + gate 按套件附加参数（跑无红钉的 schematic 档，**复跑 5/5 绿**）；
+    `calibre_e2e_tests` rc=1 是**前序 maestro 把 CIW 卡死的连带**（`getWorkingDir` 失败 → export_cdl 报 cdsLib not resolved）→ gate 已把 maestro 挪到**最后**，calibre 单跑在健康实例上 8/8；
+  * **瞬时 1 套（已复跑转绿）**：`skillref` rc=1 = Windows 本地 staging 安装 `[WinError 5]`（`…finder\.vbtmp-<hex>\SKILL -> …finder\SKILL`）；最小复现 2/2 绿 ⇒ 判瞬时，**单独复跑 6/6 绿**，已记入 P-090 观察族第四形态。
+  * 结论口径：**16 套里只有 4 套因产品缺陷红**；其余红项均属 TB 参数/顺序或 Windows 瞬时，已修复或复跑转绿。
   1. 初版 gate（`package-e2e-r8.log`）**10/11**：唯一红是 root 自己的 WRITE-06 旧判据 → 修判据后 `maestro_e2e_tests.py`
      **23/23**（原始日志已从 `tmp/` 归档到 `evidence/round8/maestro-23of23-2128.log`，23 条 PASS，红队 REVIEW-C #8/#6 要求证据入库已完成）；
   2. 中间版 gate（`package-e2e-r8-final.log`）**8/11**：三红 layout/verilog/veriloga 全是 `Empty response from daemon`（P-086 族），
@@ -302,9 +318,10 @@ python test/shared/runners/build_op_param_matrix.py
 | 轴 | 命令 | 结果 | 证据 |
 |---|---|---|---|
 | A spec 条款 | `merge_round8_spec_matrix.py` | **297 行：direct 222 / indirect 16 / partial 6 / na 53；validation OK**（verdict/证据路径/缺口动作齐全），12 条 gap 动作 | `round8/round8-spec覆盖矩阵.{md,json}` |
-| B 原子 | `audit_atom_coverage.py` | **60 原子 / gap=0 / 待分诊=0**；11 条 false-positive 逐条带理由 | `evidence/atom-coverage-2026-09-29.json` |
+| B 原子 | `audit_atom_coverage.py` | **60 原子 / gap=0 / 待分诊=0**；11 条 false-positive 逐条带理由。两条新读回**已实跑验证**：`calibre_params` 复跑 **6/6**、`calibre_export_pex` 复跑 **6 绿 + 1 红钉**（02:20 批） | `evidence/atom-coverage-2026-09-29.json` |
 | C op×参数 | `build_op_param_matrix.py` | **628 条：CANDIDATE 572 / GAP 56 / NO-OP-TB 0**（generic 22：pex 11 阻塞 + kind 不适用 8 + 死参数 2 + depth 1） | `round8/op-param-matrix.{md,json}` |
 | TB 规范 | `check_tb_headers.py` | **101 个候选文件全部合格**（缺字段/顺序/格式错 0，全无注释头 0） | `evidence/tb-headers.json` |
+| skip 原因 | `check_skip_reasons.py`（2026-09-29 新增硬规矩） | **静态 0 违规**（全树 skip 装饰器都带 reason）；**动态 7 份 XML / 12629 用例 / 183 条 skip / 无原因 0 条**；skip 三分类见 §4.2 口径段 | `evidence/skip-reasons.json` |
 | 缺陷台账 | `make_bug_cards.py --check` | **31 张卡 / 缺失 0 / 重复 0 / 应清理的旧卡片 0**（28 张未关闭） | `bugs/README.md` |
 
 > 口径：以上五项都是**可重跑的脚本**，不是手抄数字；任何一项红即当轮不可送审。本表时间戳=最后一次全绿时间。

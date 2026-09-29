@@ -20,3 +20,16 @@ reference/
 .claude/
 spectre.out
 WORK
+
+# TB 运行产物（Maestro/Spectre 导出、临时运行目录）
+# 目录约定：env/ 环境 · evidence/ 产物 · tmp/ 零时产物（可整目录删）
+# 说明：已跟踪的证据文件不受 ignore 影响；需要新提交证据时用 git add -f。
+# 注意：用 `test/artifacts/*` 而非 `test/artifacts/`，否则无法用 ! 规则保留目录内的 README。
+test/artifacts/*
+!test/artifacts/README.md
+
+# coverage.py 数据文件：一次性运行落 test/artifacts/tmp/coverage-db/，
+# 主覆盖率 runner 自带数据文件留在其证据包 test/artifacts/evidence/cov-main/；仓库根不得出现
+.coverage
+.coverage.*
+*.coverage

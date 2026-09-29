@@ -3,8 +3,7 @@
 纪律：
 
 1. **只初始化一次**：入口调用 ``init_work_dir()``；同一路径重复调用幂等，
-   不同路径报错（测试用 ``init_work_dir(..., force=True)`` 或
-   ``override_work_dir_for_tests()``）。
+   不同路径报错。进程内不允许切换路径。
 2. **只读**：对外只有 ``work_root()/temp_dir()/log_dir()/artifact_dir()/...``，
    没有通用 setter。
 3. **中立**：本模块不 import 任何业务层。
@@ -43,19 +42,19 @@ def default_work_dir() -> Path:
     return base / _APP_NAME
 
 
-def init_work_dir(path: str | Path | None = None, *, force: bool = False) -> Path:
+def init_work_dir(path: str | Path | None = None) -> Path:
     """Bind the process-wide work root (the entry point calls this once).
 
     ``path=None`` -> :func:`default_work_dir`.  The same path may be initialized
     again (control face + business face in one process); a *different* path is a
-    programming error unless ``force=True`` (tests/tools).
+    programming error.  Tests that need another path must start a new process.
     """
     global _work_root
     resolved = (
         Path(path).expanduser().resolve() if path is not None else default_work_dir()
     )
     with _lock:
-        if _work_root is not None and not force:
+        if _work_root is not None:
             if _work_root == resolved:
                 return _work_root
             raise RuntimeError(
@@ -64,18 +63,6 @@ def init_work_dir(path: str | Path | None = None, *, force: bool = False) -> Pat
         resolved.mkdir(parents=True, exist_ok=True)
         _work_root = resolved
         return _work_root
-
-
-def override_work_dir_for_tests(path: str | Path) -> Path:
-    """Test/tool only: switch the work root (production never calls this)."""
-    return init_work_dir(path, force=True)
-
-
-def reset_work_dir() -> None:
-    """Test only: forget the current binding so the next ``init`` can set it."""
-    global _work_root
-    with _lock:
-        _work_root = None
 
 
 def work_root() -> Path:
@@ -122,9 +109,7 @@ __all__ = [
     "default_work_dir",
     "init_work_dir",
     "log_dir",
-    "override_work_dir_for_tests",
     "registry_path",
-    "reset_work_dir",
     "config_path",
     "sub_dir",
     "temp_dir",

@@ -324,8 +324,12 @@ def job_state(kind: str, *, process_alive: bool, log_tail: str, artifacts: list[
         return JobState("failed", failure, "failure marker found in log tail")
     if process_alive:
         return JobState("running", None, "process alive")
-    if artifacts:
-        return JobState("unknown", None, "process gone but artifacts exist without completion marker")
+    if artifacts or log_tail:
+        return JobState(
+            "failed",
+            "process_gone_without_report",
+            "process gone without completion marker",
+        )
     return JobState("unknown", None, "process gone, no artifacts")
 
 

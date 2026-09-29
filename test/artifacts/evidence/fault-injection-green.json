@@ -1,7 +1,7 @@
 {
   "ok": true,
   "failed": 0,
-  "temp_dirs_removed": 4,
+  "mode": "per-case-subprocess",
   "results": {
     "daemon-log-protocol": {
       "status": "pass",
@@ -10,14 +10,14 @@
         "invalid_level": true,
         "invalid_max": true
       },
-      "elapsed_s": 0.062000000005355105
+      "elapsed_s": 1.156
     },
     "dead-shell-close": {
       "status": "pass",
       "detail": {
         "dead_shell_closed": true
       },
-      "elapsed_s": 0.125
+      "elapsed_s": 1.109
     },
     "lease-race": {
       "status": "pass",
@@ -26,14 +26,14 @@
         "persistent_leases": 1,
         "threads": 16
       },
-      "elapsed_s": 0.030999999988125637
+      "elapsed_s": 1.063
     },
     "runtime-cache-invalidation": {
       "status": "pass",
       "detail": {
         "recreated": true
       },
-      "elapsed_s": 0.03200000000651926
+      "elapsed_s": 1.094
     },
     "skill-capacity-fields": {
       "status": "pass",
@@ -43,7 +43,7 @@
           "thread pool exceeded"
         ]
       },
-      "elapsed_s": 0.030999999988125637
+      "elapsed_s": 1.078
     },
     "skill-queue-before-delivery": {
       "status": "pass",
@@ -53,7 +53,7 @@
         ],
         "metadata": {}
       },
-      "elapsed_s": 0.07800000000861473
+      "elapsed_s": 1.14
     },
     "transport-kind": {
       "status": "pass",
@@ -61,7 +61,7 @@
         "kind": "transport",
         "returncode": 255
       },
-      "elapsed_s": 1.3280000000086147
+      "elapsed_s": 1.735
     },
     "windows-casefold-overwrite": {
       "status": "pass",
@@ -70,7 +70,7 @@
           "Alice"
         ]
       },
-      "elapsed_s": 0.030999999988125637
+      "elapsed_s": 1.047
     }
   }
 }

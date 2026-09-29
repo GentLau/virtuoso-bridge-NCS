@@ -393,10 +393,7 @@ class SameProcessManager:
         }
 
     def reload(self) -> dict:
-        from server.api_server import (
-            load_business_thread_pool_size,
-            reload_business_state,
-        )
+        from server.api_server import reload_business_state
 
         ok, error = reload_business_state(self.business_server, self.middle)
         if not ok:

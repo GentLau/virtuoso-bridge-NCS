@@ -1,6 +1,6 @@
 # `test/reports/bugs/` —— 未关闭缺陷的唯一跟踪视图
 
-> 维护者：测试工程师（我）｜最近刷新：2026-09-28
+> 维护者：测试工程师（我）｜最近刷新：2026-09-29
 > **这个目录回答一个问题：现在还有哪些 bug 没关、谁在等谁、修好的判据是什么。**
 
 ## 0. 三条规矩（动这里之前先看）
@@ -13,46 +13,51 @@
 3. **刷新方式**：改 `test/shared/runners/make_bug_cards.py` 的 `OPEN` / `CLOSED_RECENT` 段，
    然后 `python test/shared/runners/make_bug_cards.py`（幂等；`--check` 只校验不写盘）。
 
-## 1. 未关闭（28 条）
+## 1. 未关闭（10 条）
 
 | ID | 层 | 级别 | 归属 | 状态 | 一句话 | 卡片 |
 |---|---|---|---|---|---|---|
-| **P-103** | 上层（calibre 包）· 完成判定 | P2（假绿：调用方按 ok/status 判定会以为 PEX 成功，实际没有网表产物） | 设计侧（calibre 运行器的 job_state/等待循环按 log 尾部判完成的口径） | 待设计修 | `calibre.pex` 报 `status=completed` 但 stage3 失败：完成判定读到**前一阶段**的 COMPLETED 标记就提前收工（P-102 的真故障被掩盖成绿） | [P-103-calibre-pex-premature-completion-masks-stage3-failure.md](P-103-calibre-pex-premature-completion-masks-stage3-failure.md) |
-| **P-102** | 上层（calibre 包）· xRC 第三阶段 | P2（PEX 作为交付能力不可用；spec 已把它标成「禁止交付」，本条把「为什么」钉到具体 argv 与日志） | 设计侧（calibre 包 `_argv_for` 的 pex 分支；roadmap P0-1 要求改官方 batch） | 待设计修 | `calibre.pex` 第三阶段 argv 非法（`-fmt spice`）：stage1/stage2 成功后 stage3 必被 Calibre 拒绝 → PEX 整体不可用 | [P-102-calibre-pex-stage3-invalid-fmt-argv.md](P-102-calibre-pex-stage3-invalid-fmt-argv.md) |
-| **P-101** | 上层（verilog 包） | P3（静默 no-op：调用方会误以为设计已导入） | 待决策（spec 口径：overwrite=False 语义是 skip 还是拒绝） | 待决策 | `import(overwrite=False)` 对已存在 cell 返回成功但**不写任何内容**，且无 skipped/已存在 标记（用户无法区分「导入成功」与「没做事」） | [P-101-verilog-import-overwrite-false-silent-noop.md](P-101-verilog-import-overwrite-false-silent-noop.md) |
-| **P-100** | 上层（verilog 包）· 与 spec 口径 | P2（spec 说 cell 是显式目标；实际非同名就失败，还会留下已写入的副作用 = 报错但库已改） | 设计侧（verilog 包 `import_verilog` 的 ihdl 调用/参数拼装） | 待设计修 | `virtuoso.verilog.import` 的 `cell` 参数不参与落地：ihdl 只按**源码顶层模块名**建 cell，取值不同即整体报 `*Error* cell not found`（且写已发生） | [P-100-verilog-import-cell-param-not-honored.md](P-100-verilog-import-cell-param-not-honored.md) |
-| **P-099** | 上层（verilog 包） | P2（结构化返回值与事实不符：调用方按 `views` 判断产物会得出「什么都没导入」的结论） | 设计侧（verilog 包 `_read_views`） | 待设计修 | `virtuoso.verilog.import` 返回值里的 `views` 恒为空，与真机实际视图不符（functional/symbol 明明已生成） | [P-099-verilog-import-returns-empty-views.md](P-099-verilog-import-returns-empty-views.md) |
-| **P-097** | 上层（verilog 包）/ 库视图刷新时序 | P3（观察：未稳定复现，但用户串行导入同一 cell 时会撞到，表现为整体失败） | 待归属（verilog 包 `_read_views` 与 ihdl 覆盖写后的库视图刷新时序） | 观察 | 覆盖式再导入后紧跟的视图查询偶发 `*Error* cell not found`（同 cell 连导时出现 1 次，之后 2/2 复跑皆成功） | [P-097-verilog-import-cell-not-found-after-overwrite.md](P-097-verilog-import-cell-not-found-after-overwrite.md) |
+| **C3** | 测试侧（消费方适配）· C1 破坏性契约变更 | P2（测试资产失效：不修则 live/semi 门禁假红/读不到 steps） | 测试侧（root） | 待测试侧 | C1 落地后测试侧消费方未适配：仍按旧 `data` 壳解析响应（约 50 个文件） | [C3-c1-consumer-migration.md](C3-c1-consumer-migration.md) |
+| **C4** | 顶层（response serialization）· 上层（pyapi.models） | P2（跨 basic 操作响应契约缺陷：调用方必须按位置猜字段，后续加字段或调整顺序会破坏兼容性） | 设计侧（`pyapi.models.CommandResult` 的模型形状，或 `server.dispatch.jsonable` 的 NamedTuple 序列化口径） | 待设计修 | `CommandResult` NamedTuple 被 JSON 序列化为位置数组，命令 / 文件 / GUI / Spectre 结果丢失字段名 | [C4-command-result-namedtuple-array.md](C4-command-result-namedtuple-array.md) |
+| **P-105** | 上层（symbol / layout 包）· screenshot 参数校验 | P3（静默无效参数；与 P-080/P-092/P-084 同类） | 设计侧（screenshot 入参校验；与 P-080 的 read 侧同口径） | 待测试侧 | `symbol/layout.screenshot` 的 `view_type` 坏值**不被校验**（ok=true 静默接受；P-080 同族的第三个位置） | [P-105-screenshot-view-type-unvalidated.md](P-105-screenshot-view-type-unvalidated.md) |
+| **C1** | 上层（basic 包 + pyapi.models 序列化）· 响应契约 | P2（全局响应形态缺陷：所有 basic.skill.execute 命中；两层重复携带完整结果，日志开启时体积翻倍） | 设计侧（上层 basic.py 的结果构造 + pyapi.models 的序列化口径；若涉及顶层 jsonable 归顶层） | 待测试侧 | `basic.skill.execute` 响应 JSON 冗余：同一个 `VirtuosoResult` 在 `data.result` 与 `data.steps[0].detail` 各序列化一次，空可选字段全展开 | [C1-json-response-redundancy.md](C1-json-response-redundancy.md) |
 | **P-092** | 上层（calibre 包） | P3（静默无效参数，与 P-084 同类；误导调用方以为能指定电源/地网名） | 设计侧（实现语义或从模型/spec 删除） | 待设计修 | `calibre.drc/lvs/pex` 的 `power` / `ground` 声明并校验，但实现**从不读取**（静默无效） | [P-092-calibre-power-ground-dead-params.md](P-092-calibre-power-ground-dead-params.md) |
 | **P-093** | 上层（calibre 包） | P2（该参数组合下 DRC 完全跑不了，且呈现为工具 usage dump 而非可读错误） | 设计侧（calibre 包 `_argv_for`） | 待设计修 | `calibre.drc(hier=False)` 命令行非法：`-turbo` 与 flat 模式冲突 → Calibre 打 usage、作业秒退 | [P-093-calibre-flat-drc-turbo-invalid-argv.md](P-093-calibre-flat-drc-turbo-invalid-argv.md) |
 | **P-094** | 上层（calibre 包）· 失败检测 | P2（1 秒失败的作业占满 30 分钟预算，且用户拿不到失败原因） | 设计侧（calibre 运行器轮询/状态判定） | 待设计修 | 工具秒退不被检测：`status` 只报 `unknown`、`blocking=True` 会等满 timeout（日志里的 `ERROR:` 看不见） | [P-094-calibre-tool-death-not-detected.md](P-094-calibre-tool-death-not-detected.md) |
-| **P-091** | 上层（symbol / layout 包）· 与 spec 口径 | P3（口径/文档级：不影响本地产物，但使「远端留证」与审计核对失效） | 待归属（spec 口径 owner 或三包实现统一） | 待决策 | 截图远端产物保留策略三包不一致：schematic 保留、symbol/layout 下载后 `rm -f` 删掉（spec 写「远端存 role root screenshots/」） | [P-091-screenshot-remote-artifact-cleanup-inconsistent.md](P-091-screenshot-remote-artifact-cleanup-inconsistent.md) |
-| **P-090** | 中层传输（tunnel.upload_file）/ 底层 SSH 常驻 shell | P3（观察：单次复现、40 次同目标 hammer + 套件复跑均未复现；但错误形态误导为「文件不存在」，掩盖真实性质） | 待归属（中层 tunnel 安装步骤幂等性 / 底层常驻 shell 重试口径，二选一或联合） | 观察 | `basic.file.upload` 偶发 `mv: cannot stat <target>.vbtmp-<hex>`：stage 在 sha256 校验通过后消失，安装步骤报错 | [P-090-upload-stage-vanished-before-install.md](P-090-upload-stage-vanished-before-install.md) |
-| **P-089** | 上层（maestro 包） | P3（静默无效参数，与 P-084 同类） | 设计侧（实现语义或从模型/spec 删除） | 待设计修 | `maestro.open_waveform_gui.result` 声明但**从不被实现读取**（静默无效） | [P-089-maestro-open-waveform-result-ignored.md](P-089-maestro-open-waveform-result-ignored.md) |
-| **P-088** | 上层（maestro 包） | P2（用户清理/teardown 常用路径不可用；现有套件用 try/except 掩盖） | 设计侧（maestro 包 delete_var 的 all 分支 SKILL） | 待设计修 | `maestro.write(delete_var, scope=..all..)` 确定性失败：Cannot find a setup database entry for handle 0 | [P-088-maestro-delete-var-all-scope-broken.md](P-088-maestro-delete-var-all-scope-broken.md) |
-| **P-083** | 上层（spectre 包） | P3（口径/文档；会造成「导入的 CSV 精度与预期不符」） | 设计侧（spec 写明语义，或实现改小数位） | 待归属 | `spectre.export.precision` 语义未定义：实现按**有效数字**（`%.Ng`），用户直觉是小数位 | [P-083-spectre-export-precision-semantics-undefined.md](P-083-spectre-export-precision-semantics-undefined.md) |
-| **P-084** | 上层（maestro 包） | P2（静默无效参数：调用方以为能控制是否携带结果文件） | 设计侧（实现语义或从模型/spec 删除） | 待设计修 | `maestro.export.include_results` 是声明参数但实现**从不读取**（静默无效） | [P-084-maestro-export-include-results-ignored.md](P-084-maestro-export-include-results-ignored.md) |
-| **P-070** | 上层（maestro/spectre 包） | P2（能力缺失） | 待决策（产品口径：支持驱动 MC or 明确不做）→ 设计侧实现/写 spec | 待决策 | 蒙特卡洛能力缺失：只能读回 MC 结果，不能驱动 MC 仿真 | [P-070-monte-carlo-missing.md](P-070-monte-carlo-missing.md) |
-| **P-078** | 上层（schematic 包） | P2（静默错误结果 + 硬报错） | 设计侧（schematic 包） | 待设计修 | `place_wire` 样式参数拼接重复：width 静默建出 path、color/line_style 直接报错 | [P-078-place-wire-style-args.md](P-078-place-wire-style-args.md) |
-| **P-079** | 其他（注册流程） | P3（参数被静默丢弃） | 设计侧（注册口径二选一，建议显式拒绝） | 待设计修 | local 模式显式 `daemon_port`≠`local_port` 被静默归一化（spec 要求双值相等；`_probe` 守卫不可达） | [P-079-local-joint-port-silent-coercion.md](P-079-local-joint-port-silent-coercion.md) |
-| **P-080** | 上层（verilog / veriloga / layout 包） | P2（参数合同不一致 + 死参数） | 设计侧（verilog / veriloga 包）；"view_type 是否参与寻址"需 spec owner 定口径 | 待设计修 | `view_type` 在 read 路径不校验（空串/整数/bogus 静默接受）；write 校验后取值又被忽略 | [P-080-view-type-read-unvalidated.md](P-080-view-type-read-unvalidated.md) |
-| **P-081** | 上层（verilog / veriloga 包）· Windows/Linux 一致性 | P2（该模式在 Windows 客户端完全不可用） | 设计侧（verilog / veriloga 包） | 待设计修 | `file_is_local=False` 时 Windows 客户端把 POSIX 远端路径转成反斜杠 → 远端找不到文件 | [P-081-remote-posix-path-mangling.md](P-081-remote-posix-path-mangling.md) |
-| **P-082** | 上层（schematic + layout 包） | P2（spec 合规请求直接失败） | 设计侧（schematic / layout 包对齐 P-074 定版） | 待设计修 | region 口径漂移（P-074 同类）：spec 定版‘对角两点、禁四元组’，实现（读过滤/截图）仍只收四元组 | [P-082-region-quad-vs-two-points.md](P-082-region-quad-vs-two-points.md) |
-| **P-085** | 上层（layout 包） | P2（spec 声明的参数组合确定性不可用） | 设计侧（layout 包）；与 P-082 同源但独立 | 待设计修 | `layout.read(depth>0)` 与 `region` 组合**任何写法都失败**（扁平→`_bbox` 拒；两点→`_filter_region` 拒） | [P-085-layout-depth-region-unusable.md](P-085-layout-depth-region-unusable.md) |
+| **P-070** | 上层（maestro/spectre 包） | P2（能力缺失） | 待决策（产品口径：支持驱动 MC or 明确不做）→ 设计侧实现/写 spec | 待测试侧/待确认 | 蒙特卡洛能力缺失：只能读回 MC 结果，不能驱动 MC 仿真 | [P-070-monte-carlo-missing.md](P-070-monte-carlo-missing.md) |
 | **P-086** | 底层 daemon / 中层连接（多用户场景） | P3（观察：可恢复，但窗口期错误不可读、无结构化语义） | 待归属（底层 daemon 请求生命周期 / 中层连接复用，二选一或联合） | 观察 | 多用户同视图场景后 ~30–90s 窗口内同 token 请求得到 `Empty response from daemon`（随后自愈） | [P-086-empty-response-window-after-long-skill.md](P-086-empty-response-window-after-long-skill.md) |
-| **P-087** | 上层（maestro 包）· 会话复用 | P2（静默跨请求污染用户 setup + 清理失败） | 设计侧（maestro 包）；`save` 的对外语义需 spec owner 定稿 | 待设计修 | `save=False` 的改动不被隔离：后续任意一次 save 会把它静默带走（跨请求污染）；同场景 `delete_var` 清理报 handle 错误 | [P-087-maestro-write-save-false-still-persists.md](P-087-maestro-write-save-false-still-persists.md) |
-| **P-095** | 上层（maestro 包）· GUI 模态 | P1（可把实例 CIW 挂死；P-086 持久形态的直接根因） | 设计侧（maestro 包 run 流程 + 对话框 watchdog） | 待设计修 | `maestro.run` 的 Overwrite History 目标悬空：`ASSEMBLER-3018` 模态框阻塞 CIW → daemon 空响应（watchdog 不处理） | [P-095-maestro-run-stale-overwrite-history-modal.md](P-095-maestro-run-stale-overwrite-history-modal.md) |
-| **P-096** | 上层（maestro 包）· 崩溃恢复 / OA 写锁 | P2（崩溃后该 cell 的 maestro 打不开且会挂死实例，需人工删锁） | 设计侧（maestro 打开/写路径的锁判定；可参考 schematic 的“locked by another session”结构化失败） | 待设计修 | 陈旧 OA 写锁（属主进程已死）触发 `axlOpenInRead0` 模态框 → CIW/daemon 再次挂死；应结构化失败或自动强制 | [P-096-maestro-stale-write-lock-modal-wedge.md](P-096-maestro-stale-write-lock-modal-wedge.md) |
 | **P-098** | 上层（calibre 包）· 阻塞轮询口径 | P3（口径偏差：调用方按 spec 判 `status=="timeout"` 会永远不成立；作业本身不杀、行为其余正确） | 设计侧（calibre 包轮询收尾） | 待设计修 | `blocking=true` 超时返回最后一次 `status`（running/unknown），未按 spec 返回 `status=timeout` | [P-098-calibre-blocking-timeout-status-not-timeout.md](P-098-calibre-blocking-timeout-status-not-timeout.md) |
-| **P-104** | 上层（maestro 包）· 缺失目标的静默成功 | P2（静默假数据：空配置会被当成既有 setup 继续消费） | 设计侧（maestro 包）；口径二选一需 spec owner 拍板 | 待设计修 | `maestro.read_config` 对**不存在的 view** 静默返回空配置（ok=true）；调用方无法区分「空 setup」与「view 不存在」 | [P-104-read-config-missing-view-silent-empty.md](P-104-read-config-missing-view-silent-empty.md) |
 
 > 优先级口径：**P1** = Linux 侧资源/安全或核心指标链路断（P-056、P-053）；
 > **P2** = 真实设计流会给出错的/空的结果，且多数**静默**；**P3/观察** = 非阻塞但建议顺手修。
 
-## 2. 本轮/近期已关闭（51 条，保留记录）
+## 2. 本轮/近期已关闭（74 条，保留记录）
 
 | ID | 事项 | 关闭依据（证据） |
 |---|---|---|
+| C2 | 所有 Skill 调用缺少 `log_level` / `log_max_bytes` 请求字段 | 真机 HTTP 透传复验通过：新增 TB `test/live/packages/skill_log_options_e2e_tests.py` **6/6 绿**（缺省吃注册表默认 ⇒ CDSlog 含标记；`log_level=off` ⇒ 该请求 CDSlog 为空；`all` ⇒ 含标记；`warn`/`log_max_bytes` 被接受；多步领域操作带 off 仍 ok）。离线 `test_skill_log_options.py` 7/7。实现：56 个 Request 字段 + `skill_log_kwargs` 透传。 |
+| P-095 | `maestro.run` 的 Overwrite History 目标悬空 → ASSEMBLER-3018 模态卡 CIW | 设计已修；探针 `test/semi/probes/maestro_p095_overwrite_wedge_probe.py` **GREEN**：挂悬空目标后 run 8.9s 内结构化返回、CIW `1+2` 存活、Overwrite 标志复位 `nil`（探针先按 C1 契约适配了解包）。 |
+| P-102 | `calibre.pex` 第三阶段 argv 非法（`-xrc -fmt spice`） | **口径变更（非修复）**：spec `12-calibre.md` 定稿「PEX 本版不提供」——`calibre.pex` 立即返回 `pex_unsupported`、不发起远程动作；TB 改为钉住该语义：`calibre_export_pex_e2e_tests.py` **6/6 绿**。 |
+| P-103 | `calibre.pex` 报 `completed` 但 stage3 失败（完成判定提前收工） | **口径变更（非修复）**：随 P-102 一起——本版不提供 PEX 启动，假绿路径不再存在；`calibre_export_pex_e2e_tests.py` **6/6 绿**（PEX-01 结构化拒绝 + 不建 run_dir）。 |
+| P-097 | `verilog.import` 覆盖写后 `_read_views` 瞬时 cell not found | 已修 `453b453`（`_read_views` 先刷库表 + 有界重试）；新增专门回归 TB `verilog_import_params_e2e_tests.py::IMP-11 覆盖式连导 3 次 views 恒非空` —— 套件 **13/13 绿**（`test/artifacts/evidence/verify-fix-r9/gate-verilog-rerun2.txt`） |
+| P-091 | 截图远端暂存口径三包不一致（schematic 保留 / symbol·layout 清理） | spec 三包统一（2-schematic.md:27 / 3-symbol.md:45 / 4-layout.md:184「远端暂存、下载后清理，留存位置 = 客户端 artifact/screenshots/」）+ 实现三包均 `rm -f` 远端暂存（schematic.py:882 / symbol.py:982 / layout.py:1483）+ 真机 TB：schematic 档 5/5 绿（SC-01 断言远端无残留）、layout 档 SC-01 绿 |
+| P-080 | `view_type` 在 read 路径不校验（空串/整数/bogus 静默接受） | 已修 `dda3775`：离线 `test_view_type_param_contract.py` **9/9 绿**；真机 `veriloga_e2e_tests.py` `READ-02 file_path/view_type params` 绿（read 与 write 同口径） |
+| P-081 | Windows 客户端把远端 POSIX 路径改写成 `\` 形式 | 已修 `dda3775`：离线 `test_remote_posix_path_contract.py` **2/2 绿**；真机 veriloga `READ-02` 绿（远端路径原样回显、sha256 一致） |
+| P-082 | region 四元组与两点口径冲突（read/depth/screenshot 未跟上 P-074 定版） | 已修 `6bd29e7`：离线 schematic/layout/depth 契约全绿（113 项，含两条两点 region 用例）；真机 `layout_e2e_tests.py` `READ-02 region_mode/depth/view_type` 绿；`layout_depth_probe` 绿 |
+| P-083 | `spectre.export.precision` 语义未定义（有效数字 vs 小数位） | 已定稿 `313868d`：spec `7-spectre.md:288` 写明 `precision` = **有效数字**（`%.Ng`）；真机 `spectre_params_e2e_tests.py` **EXPORT-P1 5/5 绿**（TB 断言已同步） |
+| P-090 | 上传 stage 在安装前消失（安装非幂等 → sha256 mismatch 假失败） | 半真机 `test/semi/transport/install_stage_idempotent_tb.py` 绿：first/second 两次安装都 rc=0（stage 不在但目标 digest 一致 → 幂等成功）；重试只允许「未投递」错误。修复 `d269ecd` |
+| P-078 | `place_wire` 样式参数拼接重复：width 静默建 path / color|line_style 硬报错 | 真机 `schematic_wire_style_probe` **5/5 绿**；离线 `test_wire_style_arguments_exact` 转绿（`test/artifacts/evidence/verify-fix-r9/semi-probes.txt`）。修复 `6bd29e7`+`a4dbf2d` |
+| P-079 | local 模式显式 daemon_port≠local_port 被静默归一化 | 修复 `bf5f71a`；红钉 XPASS = 已修，测试侧已删 `xfail` 标记；离线 `test_norm_gap_round8.py` 全绿 |
+| P-084 | `maestro.export.include_results` 死参数（声明但从不读取） | 设计按方案②删除该字段（`ExportRequest` 不再接受该 kwarg，实测报 unexpected keyword）；探针改为负向断言「传已删字段必须被拒」 |
+| P-085 | `layout.read(depth>0)` + region 不可用（deep 分支没跟上两点定版） | 真机 `layout_depth_probe` 绿；离线 `test_layout_depth_contract.py` 绿。修复 `6bd29e7`+`a4dbf2d` |
+| P-087 | `maestro.write(save=False)` 的改动被后续无关 save 静默带走 | 真机 `maestro_save_false_disk_probe` 绿（第 3 步泄漏消失）。修复 `05aee48` |
+| P-088 | `maestro.write(delete_var, scope=all)` 确定性失败（handle 0） | 真机 `maestro_delete_var_all_probe` 绿（三处同名变量全部删除）。修复 `05aee48` |
+| P-089 | `maestro.open_waveform_gui.result` 死参数（忽略传入值） | 真机 `maestro_open_waveform_result_probe` 绿（字段按方案②删除/负向）。修复 `05aee48` |
+| P-096 | 陈旧 OA 写锁 → `axlOpenInRead0` 模态挂死 CIW | 真机 `maestro_p096_write_lock_probe` **4/4 绿**：死属主锁结构化失败、活锁不误拦、自家锁放行、实例未被挂死（`1+2`=3）。修复 `37a601b` |
+| P-099 | `verilog.import` 返回值 `views` 恒空（与真机视图不一致） | 真机门禁 `verilog_import_params_e2e_tests.py` **12/12 绿**（IMP-08 校验返回值覆盖真机视图）。修复 `82e7b6c`；TB 旧口径已按新 spec 更新 |
+| P-100 | `verilog.import` 的 `cell` 参数不被落地（改名无效果/事后报错） | 设计口径（spec 8-verilog.md:84）：`cell` 必须是源码模块名，不匹配则**写前**结构化拒绝 `cell_not_in_source`；门禁 IMP-10 绿（拒绝 + 无残留 + 正例成功）。修复 `82e7b6c` |
+| P-101 | `import(overwrite=False)` 命中已存在 cell：静默 no-op、无跳过标记 | 门禁 IMP-07 绿：mtime 不变 **且** 断言返回里有 `skipped/existing/warnings` 标记。修复 `313868d` |
+| P-104 | 读路径 `maeOpenSetup` 默认 `mode="a"` 凭空建 view（读不存在 view 返回空配置） | 真机门禁 `maestro_view_param_e2e_tests.py` **9/9 绿**：读族对缺失 view 结构化失败、库内不再新增 view。修复 `313868d` |
 | P-043 | py2.7 daemon 缺 coding cookie | 真 py2.7 探针 5/5（`py27-daemon-probe-green.json`） |
 | P-044 | layout 写锁误判 + 句柄不关 | layout 套件 10/10；陈旧锁不再挡写；两用户同视图 GREEN |
 | P-045 | 「并发压测打挂 CIW」 | **撤回**（归因错误，真因 P-046） |

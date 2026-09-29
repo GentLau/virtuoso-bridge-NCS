@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Any
 
 from common.paths import artifact_dir
-from pyapi.models import Middle, VirtuosoResult
+from pyapi.models import Middle, VirtuosoResult, skill_log_kwargs, ResultBase, ResultPackage
 from pyapi.packages import basic
 from pyapi.packages._symbol_generate import generate_skill, parse_generation_output
 
@@ -29,7 +29,7 @@ from pyapi.packages._symbol_generate import generate_skill, parse_generation_out
 # ---------------------------------------------------------------------------
 
 @dataclass
-class Result:
+class Result(ResultBase):
     ok: bool
     steps: list[dict[str, Any]] = field(default_factory=list)
     error: str | None = None
@@ -45,6 +45,9 @@ class ReadRequest:
     view_type: str = "schematicSymbol"
     focus: list[str] | None = None
     timeout: int | None = None
+    log_level: str | None = None
+    log_max_bytes: int | None = None
+    step_details: bool = False
 
 
 @dataclass(frozen=True)
@@ -56,6 +59,9 @@ class WriteRequest:
     view: str = "symbol"
     view_type: str = "schematicSymbol"
     timeout: int | None = None
+    log_level: str | None = None
+    log_max_bytes: int | None = None
+    step_details: bool = False
 
 
 @dataclass(frozen=True)
@@ -66,6 +72,9 @@ class CheckSaveRequest:
     view: str = "symbol"
     view_type: str = "schematicSymbol"
     timeout: int | None = None
+    log_level: str | None = None
+    log_max_bytes: int | None = None
+    step_details: bool = False
 
 
 @dataclass(frozen=True)
@@ -78,6 +87,9 @@ class GenerateRequest:
     sort_pins: str | None = None
     overwrite: bool = False
     timeout: int | None = None
+    log_level: str | None = None
+    log_max_bytes: int | None = None
+    step_details: bool = False
 
 
 @dataclass(frozen=True)
@@ -93,6 +105,9 @@ class ScreenshotRequest:
     central_widget: bool = True
     leave_open: bool = False
     timeout: int | None = None
+    log_level: str | None = None
+    log_max_bytes: int | None = None
+    step_details: bool = False
 
 
 # ---------------------------------------------------------------------------
@@ -310,13 +325,18 @@ def _safe_name(value: str, fallback: str = "cell") -> str:
 # Package
 # ---------------------------------------------------------------------------
 
-class Package:
+class Package(ResultPackage):
     def __init__(self, middle: Middle) -> None:
         self.middle = middle
 
     # -- low-level Skill helpers ------------------------------------------------
     def _skill(self, expr: str, token: str, timeout: int | float | None = None) -> VirtuosoResult:
-        return self.middle.execute_skill(expr, timeout=timeout, token=token)
+        return self.middle.execute_skill(
+            expr, timeout=timeout, token=token,
+            **skill_log_kwargs(
+                getattr(self, "_log_level", None),
+                getattr(self, "_log_max_bytes", None),
+            ))
 
     def _q(self, expr: str, token: str, timeout: int | float | None = None) -> str:
         result = self._skill(expr, token, timeout)
@@ -407,11 +427,15 @@ class Package:
     # -- read -------------------------------------------------------------------
 
     def read(self, request: ReadRequest) -> Result:
+        self._log_level = request.log_level
+        self._log_max_bytes = request.log_max_bytes
         _require_text(request.token, "token")
         _require_text(request.library, "library")
         _require_text(request.cell, "cell")
         _require_text(request.view, "view")
         _require_text(request.view_type, "view_type")
+        if request.view_type != "schematicSymbol":
+            raise ValueError("view_type must be schematicSymbol")
         _require_timeout(request.timeout)
         valid_focus = {"terms", "labels", "shapes", "orders", "selection_boxes"}
         if request.focus is not None:
@@ -461,6 +485,8 @@ class Package:
     # -- write ------------------------------------------------------------------
 
     def write(self, request: WriteRequest) -> Result:
+        self._log_level = request.log_level
+        self._log_max_bytes = request.log_max_bytes
         _require_text(request.token, "token")
         _require_text(request.library, "library")
         _require_text(request.cell, "cell")
@@ -530,6 +556,8 @@ class Package:
         return Result(True, steps, None, {"applied": len(request.commands)})
 
     def check_and_save(self, request: CheckSaveRequest) -> Result:
+        self._log_level = request.log_level
+        self._log_max_bytes = request.log_max_bytes
         _require_text(request.token, "token")
         _require_text(request.library, "library")
         _require_text(request.cell, "cell")
@@ -883,6 +911,8 @@ class Package:
     # -- generate ---------------------------------------------------------------
 
     def generate(self, request: GenerateRequest) -> Result:
+        self._log_level = request.log_level
+        self._log_max_bytes = request.log_max_bytes
         _require_text(request.token, "token")
         _require_text(request.library, "library")
         _require_text(request.cell, "cell")
@@ -926,11 +956,15 @@ class Package:
     # -- screenshot -------------------------------------------------------------
 
     def screenshot(self, request: ScreenshotRequest) -> Result:
+        self._log_level = request.log_level
+        self._log_max_bytes = request.log_max_bytes
         _require_text(request.token, "token")
         _require_text(request.library, "library")
         _require_text(request.cell, "cell")
         _require_text(request.view, "view")
         _require_text(request.view_type, "view_type")
+        if request.view_type != "schematicSymbol":
+            raise ValueError("view_type must be schematicSymbol")
         _require_timeout(request.timeout)
         _require_bool(request.toplevel, "toplevel")
         _require_bool(request.central_widget, "central_widget")

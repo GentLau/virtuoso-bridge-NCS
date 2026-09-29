@@ -143,6 +143,44 @@
 - [ ] 六步齐全；步骤 1 跑过 `env_check.py`（退出码 0）；步骤 2–3 有可复查的"构建 + 还原基线"记录；
 - [ ] 文件顶部的 **TB 注释头**齐全（3 栏：作者 / 最后改动到分钟 / 依赖）；
 - [ ] 每条断言都有期望 / 实际 / 判定，没有"只判 ok"；间接 / 弱判据已显式标注；
+- [ ] **skip 必须写明原因**（见 §10）：没有 reason 的 `skip/skipif/skipUnless/expectedFailure` 一律违规；
+- [ ] 真机（live）用例跑在**业务拟真环境**（见 §11）：标准形态客户端 + 业务面 HTTP + 真实 PDK/工具链/多用户；`direct` 只做故障定位、未计入真机判据；
 - [ ] 证据含环境指纹与后置现场；
 - [ ] 涉及写操作时，报告里给出该操作的原子级覆盖状态（有证据 or 缺口）；
 - [ ] 层与目录符合 §7，文件只落 §6 的三处，无仓库内落盘、无残留临时目录。
+
+## 10. skip 纪律（2026-09-29 起硬规矩）
+
+**任何跳过都必须写明原因**，不允许"沉默跳过"。三条硬要求：
+
+1. `@pytest.mark.skip / skipif`、`@unittest.skip / skipIf / skipUnless`、`@pytest.mark.expectedFailure`
+   **必须**带非空 reason（字符串字面量或模块级字符串常量均可）；reason 要写清**为什么**跳（平台门控 / 缺环境件 / 缺陷钉住），
+   平台门控还要写清"另一个平台会跑到这条路径"。
+2. 缺陷钉住的 skip 必须**同时**在 `test/reports/bugs/` 有卡（卡号写进 reason，如 `P-080: verilog.read 不校验 view_type`），
+   修好后要删标记让 XPASS 转红，防止"修好了还在跳"。
+3. 机器核账：`python test/shared/runners/check_skip_reasons.py`
+   —— 静态扫全树 skip 装饰器 + 解析 JUnit XML 的 `skipped@message`，**任何一条无原因即 rc=1**，
+   证据 `test/artifacts/evidence/skip-reasons.json`。提交前必跑；报告里的 skip 数字与三分类（平台门控 / 缺陷钉住 / 环境缺件）
+   必须与该输出一致。
+
+## 11. 真机测试必须跑在「业务拟真环境」（2026-09-29 起硬规矩）
+
+**真机 = 全真环境 = 最终测试等级：要的就是模拟生产环境。** 环境与操作方式必须与生产**完全一致**——
+同一套客户端形态与入口（8124 控制面 + 8127 业务面 HTTP）、同一套注册/部署/CIW load 流程、同一套远端真实栈。
+**任何与生产实际使用方式不一致的跑法（进程内 BusinessServer、`--transport direct`、fake/协议替身、手搓 daemon、
+跳过注册部署）都不是真机测试：结论无效，不得计入真机覆盖。** 离线/半真机只做前置筛查，不能替代真机结论。
+
+1. **客户端必须是标准形态**（控制面 8124 为父、业务面 8127 为子）：
+   `PYTHONPATH=src python -m server.supervisor --control-port 8124 --business-port 8127 --work-dir test/artifacts/env/log-vblog`。
+   真机 TB 一律走业务面 HTTP：`--base http://127.0.0.1:8127/api/operation`。
+   - `--transport direct`（TB 内起进程内 BusinessServer）**只允许**用于故障定位 / 半真机调试；
+     用了它就必须在报告里显式标注"非拟真口径"，**不得计入"真机通过"**。
+   - 会话必须是**注册流程产生**的（探测 → 部署 → CIW load → 双冒烟 → commit 落注册表），不许临时手搓 daemon 顶替。
+2. **远端必须是真实业务栈**：真 Virtuoso + 真实 PDK（tsmcN65 等）+ 真实设计库
+   （`/project/libs/{serdes_rx,adc_sar}`）+ 真实工具链（Spectre / Calibre DRC·LVS / XStream GDS）；
+   多用户场景用真实 OS 用户（`vbuser1`/`vbuser2`/Gent），要求共享库与跨用户回读。
+
+**跑前自检（缺一不可）**：`resident_env_check.py` 远端实例通 + `/health OK`；控制面
+`GET /api/process/status`（带 admin token）→ `state: ready`；目标 token 的 `env_check.py --require-lib …` 退出码 0。
+
+**证据必含**：命令、token（脱敏）、业务面地址、注册表路径、产物路径、判定。

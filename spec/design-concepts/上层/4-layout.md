@@ -179,7 +179,7 @@ SKILL 侧只负责 `dbSave` 落盘与库名校验。
 规则：
 
 - 格式固定 PNG；窗口按 cellView 匹配不到时才 `geOpen` 打开（`?mode "r"`）；
-- `view_type` 默认 `maskLayout`，只作**非空字符串校验**（兼容字段，不参与寻址，P-080 口径）；
+- `view_type` 默认且只允许 `maskLayout`；非字符串/空串/其他值 → `ValueError`（P-105）；
 - **禁止不带 bbox 的 `hiZoomIn`/`hiZoomOut`**（会进交互橡皮筋并卡死 SKILL 通道）；
 - 远端**暂存**于该 token 的 role root 的 `screenshots/`，下载后清理；留存位置是客户端工作目录 `artifact/screenshots/`（P-091 三包统一口径）；
 - `hiWindowSaveImage` 失败即业务失败；无内容窗口会截出单色黑图（属正常，不是失败）。

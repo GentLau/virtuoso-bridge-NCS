@@ -333,6 +333,15 @@ class UtilTests(unittest.TestCase):
         unknown = cu.job_state("lvs", process_alive=False, log_tail="", artifacts=[])
         self.assertEqual(unknown.status, "unknown")
 
+    def test_job_state_process_gone_with_artifacts_is_failed(self):
+        """P-094：进程已退出且无完成标记时，不得只报 unknown。"""
+        state = cu.job_state(
+            "drc", process_alive=False, log_tail="",
+            artifacts=["job.json", "drc.log"],
+        )
+        self.assertEqual(state.status, "failed")
+        self.assertEqual(state.failure_kind, "process_gone_without_report")
+
     def test_parse_drc_report(self):
         parsed = cu.parse_drc_report(DRC_REPORT)
         self.assertEqual(parsed["rules_checked"], 1737)
@@ -419,16 +428,11 @@ class PackageTests(unittest.TestCase):
         self.assertTrue(result.ok, result.error)
         self.assertEqual(result.value["status"], "completed")
 
-    @pytest.mark.xfail(strict=True,
-                       reason="P-097: blocking 超时应返回 status=timeout（spec 12-calibre §3.4）")
     def test_drc_blocking_timeout_reports_timeout_status(self):
-        """方向明确的口径钉（P-097）。
+        """P-098 回归：blocking 超时必须返回 `status=timeout`。
 
         spec `12-calibre.md` §3.4：终态或超时即返回，**超时返回 `status=timeout`**
         且后台作业继续跑（不杀 launcher）。
-        实现（`calibre.py:574-594`）在 deadline 到点后取的是 `last["status"]`
-        （运行中 → `running`/`unknown`），只有从未 poll 过才会落到 `"timeout"` 默认值。
-        修好后本用例转绿；strict-xfail 会在修好时 XPASS 提醒删标记。
         """
         class RunningForever(FakeMiddle):
             """启动**之前**看不到作业（预检查可过）；启动之后永远 running。"""
@@ -634,13 +638,13 @@ class PackageTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             ExportCdlRequest(token=TOKEN, library="", cell="inv2")
 
-    def test_pex_requires_lvs_run_dir(self):
+    def test_pex_is_unsupported(self):
         result = Package(FakeMiddle()).pex(RunRequest(
-            token=TOKEN, gds="/x/ctle.gds", top="ctle",
-            deck="/x/calibre.rcx", cdl="/x/ctle.cdl",
+            token=TOKEN, deck="/x/calibre.rcx",
         ))
         self.assertFalse(result.ok)
-        self.assertIn("lvs_run_dir", result.error or "")
+        self.assertIn("not supported", result.error or "")
+        self.assertEqual((result.value or {}).get("reason"), "pex_unsupported")
 
     def test_run_requires_command_role_root(self):
         result = Package(FakeMiddle(root=None)).drc(RunRequest(
