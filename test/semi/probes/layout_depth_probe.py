@@ -44,7 +44,8 @@ def call_depth(t: Any, depth: int) -> dict[str, Any]:
         "operation": "virtuoso.layout.read", "token": t.token,
         "library": LIB, "cell": CELL, "view": VIEW, "focus": ["shapes"],
         "detail": "index", "depth": depth,
-        "object_filter": {"shape": {"layers": LAYERS, "region": [0.0, 0.0, 60.0, 60.0]},
+        "object_filter": {"shape": {"layers": LAYERS,
+                                    "region": [[0.0, 0.0], [60.0, 60.0]]},
                           "instance": "none", "via": "none"},
     }
     return t.call(payload)

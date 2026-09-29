@@ -7,7 +7,7 @@
 
 本文件用 stub middle（一旦被触达就抛哨兵）区分「死在参数格式」与「正常走到
 传输层」：
-* depth=1 + layers + region：**不得**出现 bbox 格式错误（xfail strict，修复后转绿）；
+* depth=1 + layers + region：**不得**出现 bbox 格式错误（P-082 修复后转绿）；
 * depth=0 同一 filter：正常走到传输层（对照，证明 stub 姿势成立）；
 * depth=1 无 filter：必须参数错误（现行为，保持）。
 """
@@ -24,7 +24,8 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from pyapi.packages import layout as L  # noqa: E402
 
-FILTER = {"shape": {"layers": [["y0", "drawing"]], "region": [0.0, 0.0, 10.0, 10.0]},
+FILTER = {"shape": {"layers": [["y0", "drawing"]],
+                    "region": [[0.0, 0.0], [10.0, 10.0]]},
           "instance": "none", "via": "none"}
 
 
@@ -51,8 +52,6 @@ class TestLayoutDepth(unittest.TestCase):
             token="t", library="L", cell="C", view="layout", focus=["shapes"],
             detail="index", **extra))
 
-    @pytest.mark.xfail(strict=True,
-                       reason="P-082: depth>0 把扁平 region 交给嵌套 _bbox()")
     def test_depth_positive_must_not_die_on_bbox_format(self):
         result = self._read(depth=1, object_filter=FILTER)
         self.assertNotIn("bbox must be", result.error or "")

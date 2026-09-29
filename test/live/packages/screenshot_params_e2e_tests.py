@@ -181,14 +181,12 @@ def _suite_schematic(transport, lib: str, cell: str, view: str, run) -> None:
 
     def case_region() -> None:
         value = _value(transport, "virtuoso.schematic.screenshot", library=lib, cell=cell, view=view,
-                                region=[0.0, 0.0, 50.0, 50.0])
-        _check_png(value, "region quad")
+                                region=[[0.0, 0.0], [50.0, 50.0]])
+        _check_png(value, "region two point")
         assert not _raw(transport, "virtuoso.schematic.screenshot", library=lib, cell=cell, view=view,
-                                 region=[50.0, 50.0, 0.0, 0.0]).get("ok"), "region 反序应失败"
-        two_point = _raw(transport, "virtuoso.schematic.screenshot", library=lib, cell=cell, view=view,
-                                  region=[[0.0, 0.0], [50.0, 50.0]])
-        print("NOTE  P-082: schematic " + ("已接受两点解法" if two_point.get("ok")
-                                           else "仍拒绝 spec 的两点解法"), flush=True)
+                                 region=[[50.0, 50.0], [0.0, 0.0]]).get("ok"), "region 反序应失败"
+        assert not _raw(transport, "virtuoso.schematic.screenshot", library=lib, cell=cell, view=view,
+                                 region=[0.0, 0.0, 50.0, 50.0]).get("ok"), "四元组已弃用（P-082）"
 
     def case_flags() -> None:
         for kwargs in ({"toplevel": False}, {"central_widget": False},
@@ -355,10 +353,12 @@ def main() -> int:
     parser.add_argument("--transport", choices=("http",), default="http")
     parser.add_argument("--api", default=API)
     parser.add_argument("--token", default=TOKEN)
-    parser.add_argument("--lib", required=True)
-    parser.add_argument("--cell", required=True)
+    # 默认值 = 常驻环境里的 layout 夹具，使本 TB 可以**零参数**进 run_all_http 门禁；
+    # 要跑 symbol/schematic 档时按 §docstring 的例子显式给 --token/--lib/--cell/--kind。
+    parser.add_argument("--lib", default="schemtest")
+    parser.add_argument("--cell", default="lay_e2e")
     parser.add_argument("--view", default="")
-    parser.add_argument("--kind", choices=("schematic", "symbol", "layout"), required=True)
+    parser.add_argument("--kind", choices=("schematic", "symbol", "layout"), default="layout")
     parser.add_argument("--out", default=None)
     args = parser.parse_args()
     API, TOKEN = args.api, args.token

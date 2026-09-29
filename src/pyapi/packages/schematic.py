@@ -76,8 +76,26 @@ def _unquote(value: str) -> str:
     return (value or "").replace('\\"', '"').strip('"')
 
 
+def _region_of(value: Any, name: str = "region") -> tuple[float, float, float, float]:
+    """区域统一为**对角两点** `[pos0, pos1]`（P-074 定版；P-082 统一到读过滤/截图）。"""
+    if not isinstance(value, (list, tuple)) or len(value) != 2:
+        raise ValueError(
+            f"{name} must be [ [x0, y0], [x1, y1] ]（对角两点 pos0/pos1；四元组已弃用）"
+        )
+    try:
+        x1, y1 = float(value[0][0]), float(value[0][1])
+        x2, y2 = float(value[1][0]), float(value[1][1])
+    except (TypeError, ValueError, IndexError) as exc:
+        raise ValueError(
+            f"{name} must be [ [x0, y0], [x1, y1] ]（对角两点 pos0/pos1）"
+        ) from exc
+    if not x1 < x2 or not y1 < y2:
+        raise ValueError(f"{name} requires pos0 < pos1（对角两点，先小后大）")
+    return x1, y1, x2, y2
+
+
 def _region_in_expr(region: Any) -> str:
-    x1, y1, x2, y2 = (float(v) for v in region)
+    x1, y1, x2, y2 = _region_of(region)
     return (
         f'let((bb ll ur) bb = x~>bBox ll = car(bb) ur = cadr(bb) '
         f'!(xCoord(ur) < {x1:g} || xCoord(ll) > {x2:g} '
@@ -98,7 +116,7 @@ def _instance_filter_expr(flt: Any) -> str:
         names = " ".join(_q(n) for n in flt["names"])
         parts.append(f'member(__inst~>name list({names}))')
     if "region" in flt:
-        x1, y1, x2, y2 = (float(v) for v in flt["region"])
+        x1, y1, x2, y2 = _region_of(flt["region"], "instance.region")
         parts.append(
             f'xCoord(__inst~>xy) >= {x1:g} && xCoord(__inst~>xy) <= {x2:g} '
             f'&& yCoord(__inst~>xy) >= {y1:g} && yCoord(__inst~>xy) <= {y2:g}'
@@ -107,7 +125,7 @@ def _instance_filter_expr(flt: Any) -> str:
 
 
 def _region_shape_expr(region: Any) -> str:
-    x1, y1, x2, y2 = (float(v) for v in region)
+    x1, y1, x2, y2 = _region_of(region, "shape.region")
     return (
         f'x~>bBox && !(xCoord(cadr(x~>bBox)) < {x1:g} '
         f'|| xCoord(car(x~>bBox)) > {x2:g} '
@@ -576,11 +594,6 @@ let((vbInst vbCcd vbParamVals vbP vbProp)
             body += f' {_q(cmd["color"]) if "color" in cmd else "nil"}'
             if "line_style" in cmd:
                 body += f' {_q(cmd["line_style"])}'
-        if any(k in cmd for k in ("width", "color", "line_style")):
-            body += f' {float(cmd.get("width", 0)):g}'
-            body += f' {_q(cmd["color"])}' if "color" in cmd else ' nil'
-            if "line_style" in cmd:
-                body += f' {_q(cmd["line_style"])}'
         body += ')'
         return body
     if op == "delete_wire":
@@ -591,7 +604,7 @@ let((vbInst vbCcd vbParamVals vbP vbProp)
         y2 = max(y for _, y in pts) + 0.001
         return (
             f'let((vbSh vbN) vbN = 0 foreach(__obj setof(x vbSchemCv~>shapes '
-            f'x~>objType == "line" && {_region_shape_expr([x1, y1, x2, y2])}) '
+            f'x~>objType == "line" && {_region_shape_expr([[x1, y1], [x2, y2]])}) '
             'when(dbDeleteObject(__obj) vbN = vbN + 1)) vbN)'
         )
     if op == "set_wire_properties":
@@ -610,7 +623,7 @@ let((vbInst vbCcd vbParamVals vbP vbProp)
         body = " ".join(assignments) + ' "ok"' if assignments else '"ok"'
         return (
             f'let((vbN) vbN = 0 foreach(__obj setof(x vbSchemCv~>shapes '
-            f'x~>objType == "line" && {_region_shape_expr([x1, y1, x2, y2])}) '
+            f'x~>objType == "line" && {_region_shape_expr([[x1, y1], [x2, y2]])}) '
             f'when(progn({body}) vbN = vbN + 1)) vbN)'
         )
     if op == "place_label":
@@ -941,11 +954,7 @@ def _screenshot_skill(request: ScreenshotRequest, remote_path: str) -> str:
     leave = "t" if request.leave_open else "nil"
     zoom_step = ""
     if request.region is not None:
-        if len(request.region) != 4:
-            raise ValueError("region must be [x1, y1, x2, y2]")
-        x1, y1, x2, y2 = (float(v) for v in request.region)
-        if x1 >= x2 or y1 >= y2:
-            raise ValueError("region requires x1 < x2 and y1 < y2")
+        x1, y1, x2, y2 = _region_of(request.region, "region")
         zoom_step = f'hiZoomIn(vbW list({x1:g}:{y1:g} {x2:g}:{y2:g})) '
     return (
         f'let((vbW vbRc vbOpened) vbOpened = nil vbW = {target_expr} '

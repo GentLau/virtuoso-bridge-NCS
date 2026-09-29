@@ -295,15 +295,12 @@ class TestWriteRequestGuards(unittest.TestCase):
         with self.assertRaises(ValueError):
             pkg.read(L.ReadRequest(token="t", library="L", cell="C", object_filter="x"))
 
-    @pytest.mark.xfail(strict=True,
-                       reason="P-082: region 两点口径未落地（实现只收四元组）")
     def test_object_filter_region_uses_two_points_per_p074_spec(self):
-        """P-082（钉住，修复前 xfail）：object_filter.region 必须是对角两点。
+        """P-082（已修）：object_filter.region 必须是对角两点。
 
         spec 4-layout §1.1/§1.3：`{"region":[pos0, pos1]}` 且「bbox …（对角两点，
-        与 read 同形）」。实测（2026-09-28）：两点形式被拒（"must be [x0, y0, x1, y1]"），
-        四元组反而被接受；同文件的 `_bbox`（write 侧）已是两点口径 —— 同一份 spec 两种形状。
-        修复后：两点可用、四元组显式拒绝。
+        与 read 同形）」。修复（2026-09-29）：两点可用、四元组显式拒绝；内部把两点
+        归一成扁平 4 数，深层读取分支自己组装成两点交给 `_bbox_expr`。
         """
         two = {"shape": {"region": [[0.0, 0.0], [1.0, 1.0]]}}
         self.assertEqual([0.0, 0.0, 1.0, 1.0], L._filter_region(two))
@@ -396,12 +393,12 @@ class TestReadFilters(unittest.TestCase):
         parsed = L._parse_read(self.READ)
         inside = L.ReadRequest(
             token="t", library="L", cell="C", focus=["shapes"],
-            object_filter={"shape": {"region": [0, 0, 1, 1]}})
+            object_filter={"shape": {"region": [[0, 0], [1, 1]]}})
         self.assertEqual(len(L._apply_read_filters(parsed, inside)["shapes"]), 2)
 
         outside = L.ReadRequest(
             token="t", library="L", cell="C", focus=["shapes"],
-            object_filter={"shape": {"region": [50, 50, 60, 60]}})
+            object_filter={"shape": {"region": [[50, 50], [60, 60]]}})
         self.assertEqual(L._apply_read_filters(parsed, outside)["shapes"], [])
 
         excluded = L.ReadRequest(
@@ -411,7 +408,8 @@ class TestReadFilters(unittest.TestCase):
 
     def test_filter_helpers(self):
         self.assertIsNone(L._filter_region(None))
-        self.assertEqual(L._filter_region({"shape": {"region": [0, 0, 1, 1]}}), [0, 0, 1, 1])
+        self.assertEqual(
+            L._filter_region({"shape": {"region": [[0, 0], [1, 1]]}}), [0, 0, 1, 1])
         self.assertEqual(L._filter_entry(None, "shape"), "all")
         self.assertEqual(L._filter_entry({"shape": "none"}, "shape"), "none")
         self.assertEqual(L._filter_layers({"shape": {"layers": [["M1", "drawing"]]}}),

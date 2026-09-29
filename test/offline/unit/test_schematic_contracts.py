@@ -78,20 +78,22 @@ class TestValidators(unittest.TestCase):
         self.assertEqual(S._unquote('"abc"'), "abc")
 
     def test_region_exprs_scalar_and_shape(self):
-        self.assertIn("0", S._region_in_expr([0, 0, 1, 1]))
-        self.assertIn("0", S._region_shape_expr([0, 0, 1, 1]))
+        self.assertIn("0", S._region_in_expr([[0, 0], [1, 1]]))
+        self.assertIn("0", S._region_shape_expr([[0, 0], [1, 1]]))
 
     def test_region_exprs_reject_wrong_length(self):
         for fn in (S._region_in_expr, S._region_shape_expr):
             with self.assertRaises(ValueError):
                 fn([0, 0, 1])
+            with self.assertRaises(ValueError):
+                fn([0, 0, 1, 1])          # 四元组已弃用（P-082）
 
     def test_instance_filter_all_none_names_region(self):
         self.assertEqual(S._instance_filter_expr("all"), "t")
         self.assertEqual(S._instance_filter_expr("none"), "nil")
         names = S._instance_filter_expr({"names": ["A", "B"]})
         self.assertIn("member(__inst~>name", names)
-        region = S._instance_filter_expr({"region": [0, 0, 1, 1]})
+        region = S._instance_filter_expr({"region": [[0, 0], [1, 1]]})
         self.assertIn("xCoord(__inst~>xy) >= 0", region)
         self.assertIn("yCoord(__inst~>xy) <= 1", region)
 
@@ -103,12 +105,10 @@ class TestValidators(unittest.TestCase):
 
     def test_shape_filter_none_dict_and_invalid(self):
         self.assertEqual(S._shape_filter_expr("none"), "nil")
-        self.assertIn("x~>bBox", S._shape_filter_expr({"region": [0, 0, 1, 1]}))
+        self.assertIn("x~>bBox", S._shape_filter_expr({"region": [[0, 0], [1, 1]]}))
         with self.assertRaises(ValueError):
             S._shape_filter_expr({"names": ["A"]})
 
-    @pytest.mark.xfail(strict=True,
-                       reason="P-082: region 两点口径未落地（实现只收四元组）")
     def test_region_filter_uses_two_points_per_p074_spec(self):
         """P-082（钉住，修复前 xfail）：region 必须是对角两点 [[x,y],[x,y]]。
 
@@ -242,8 +242,6 @@ class TestAtomicSkill(unittest.TestCase):
             "points": [[0, 0], [1, 0]], "width": 0.2})
         self.assertIn("__obj~>width", props)
 
-    @pytest.mark.xfail(strict=True,
-                       reason="P-078: place_wire 样式参数拼接重复，未修复")
     def test_wire_style_arguments_exact(self):
         """P-078（钉住，修复前 xfail）：place_wire 的样式参数只能拼一次。
 

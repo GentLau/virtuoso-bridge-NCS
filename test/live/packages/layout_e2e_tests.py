@@ -206,7 +206,7 @@ def _case_read_filters(transport) -> None:
     region = _value(
         transport, "virtuoso.layout.read", library=LIB, cell=CELL, view=VIEW,
         focus=["shapes"], detail="index",
-        object_filter={"shape": {"region": [-1, -1, 2.5, 3.5]},
+            object_filter={"shape": {"region": [[-1, -1], [2.5, 3.5]]},
                        "instance": "none", "via": "none"},
     )
     # region [-1,-1,2.5,3.5] intersects rect / path / line (polygon starts at x=3,
@@ -516,7 +516,7 @@ def _case_read_params(transport) -> None:
     depth 断言迁回本用例（见 P-082 卡片）。
     """
     # region_mode：同一条 region，intersect 命中跨界 rect，contain 排除
-    straddle = {"shape": {"region": [1, 0, 3, 1.5]},
+    straddle = {"shape": {"region": [[1, 0], [3, 1.5]]},
                 "instance": "none", "via": "none"}
     inter = _value(transport, "virtuoso.layout.read", library=LIB, cell=CELL,
                    view=VIEW, focus=["shapes"], detail="index",

@@ -1522,7 +1522,8 @@ def _read_skill(request: ReadRequest) -> str:
         region = _filter_region(request.object_filter)
         if not layers or not region:
             raise ValueError("depth > 0 requires layers and region filters")
-        bbox = _bbox_expr(_bbox(region))
+        x0, y0, x1, y1 = region
+        bbox = _bbox_expr([x0, y0, x1, y1])
         lpp_list = "list(" + " ".join(_lpp_expr(*item) for item in layers) + ")"
         shape_body = f'''
   foreach(vbLpp {lpp_list}
@@ -1708,10 +1709,16 @@ def _filter_region(object_filter: dict[str, Any] | None) -> list[float] | None:
     for name in ("shape", "instance", "via"):
         entry = _filter_entry(object_filter, name)
         if isinstance(entry, dict) and entry.get("region") is not None:
-            region = entry["region"]
-            if not isinstance(region, (list, tuple)) or len(region) != 4:
-                raise ValueError(f"{name}.region must be [x0, y0, x1, y1]")
-            return [float(item) for item in region]
+            # P-082：region 一律**对角两点**（与 P-074 的 bbox/写侧同形）；
+            # 这里返回扁平 4 数（内部约定），深层分支自己组装成两点交给 _bbox_expr。
+            raw = entry["region"]
+            if not isinstance(raw, (list, tuple)) or len(raw) != 2:
+                raise ValueError(
+                    f"{name}.region must be [ [x0, y0], [x1, y1] ]"
+                    "（对角两点 pos0/pos1；四元组已弃用）"
+                )
+            x0, y0, x1, y1 = _bbox(entry["region"], f"{name}.region")
+            return [x0, y0, x1, y1]
     return None
 
 
