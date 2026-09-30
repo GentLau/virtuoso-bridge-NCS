@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
 # 作者: 测试/root
-# 最后改动: 2026-09-28 23:15
+# 最后改动: 2026-09-29 20:41
 # 依赖: 无
 # =======================================================================
 # 六步流程（test/docs/写TB规范.md §1）：
@@ -105,7 +105,7 @@ def _op(transport, operation: str, **fields: Any) -> Any:
     response = transport.call({"operation": operation, "token": TOKEN, **fields})
     if not response.get("ok"):
         raise AssertionError(f"{operation} failed: {response.get('error')}")
-    return _c1_wrapper(response)
+    return response
 
 
 def _value(transport, operation: str, **fields: Any) -> dict[str, Any]:
@@ -165,6 +165,26 @@ def _case_text_view(transport) -> None:
     )
     _check("module vlog_text" in file_read["source"]["text"], "file read failed")
 
+    # P-115：创建视图只归 ensure_view；非法 view_type 必须请求层拒绝。
+    missing = transport.call({
+        "operation": "virtuoso.verilog.write", "token": TOKEN,
+        "library": LIB, "cell": "vlog_no_such_cell", "view": VIEW,
+        "view_type": "text.v", "timeout": 120,
+        "commands": [{"op": "set_source", "text": TEXT_CODE}],
+    })
+    _check(not missing.get("ok"), f"P-115①：缺 ensure_view 不得隐式创建半成品：{missing}")
+    _check("call ensure_view first" in str(missing.get("error")),
+           f"P-115①：错误应指路 ensure_view（实测 {missing.get('error')!r}）")
+    bad_type = transport.call({
+        "operation": "virtuoso.verilog.write", "token": TOKEN,
+        "library": LIB, "cell": CELL_TEXT, "view": VIEW,
+        "view_type": "bogus.type", "timeout": 120,
+        "commands": [{"op": "set_source", "text": TEXT_CODE}],
+    })
+    _check(not bad_type.get("ok"), f"P-115②：非法 view_type 必须拒绝：{bad_type}")
+    _check("text.v" in str(bad_type.get("error")),
+           f"P-115②：错误应点名 text.v（实测 {bad_type.get('error')!r}）")
+
 
 def _case_import(transport) -> None:
     for cell in (CELL_IMP, "vlog_imp_nand2"):
@@ -188,7 +208,7 @@ def _case_import_failure(transport) -> None:
         "overwrite": True,
     })
     _check(not response.get("ok"), "syntax error must fail import")
-    _check((_c1_wrapper(response)).get("value", {}).get("reason") == "parse_failed",
+    _check((response).get("value", {}).get("reason") == "parse_failed",
            f"import failure reason: {response}")
 
 
@@ -234,7 +254,8 @@ def run_suite(transport) -> list[tuple[str, str]]:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--transport", choices=("direct", "http"), default="direct")
+    parser.add_argument("--transport", choices=("direct", "http"), default="http",
+                        help="direct=故障定位/覆盖率；真机判据必须 http")
     args = parser.parse_args()
     transport = HttpTransport() if args.transport == "http" else DirectTransport()
     try:
@@ -250,19 +271,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
-
-# --- C1 兼容垫片（2026-09-29，C3）------------------------------------------------
-# C1（2f88853）起：业务载荷直返顶层（值型 `value`、命令/skill 型 `result`）、
-# 成功默认省略 `steps`、失败壳去掉 `data`。历史 TB 按 `response["data"]` 解析，
-# 本垫片把新契约响应合成为旧 `data` 壳，让既有解析零改动继续工作。
-def _c1_wrapper(body):
-    if not isinstance(body, dict):
-        return {}
-    if isinstance(body.get("data"), dict):
-        return body["data"]
-    wrapped = {"ok": body.get("ok"), "error": body.get("error")}
-    for key in ("value", "result", "steps"):
-        if key in body:
-            wrapped[key] = body[key]
-    return wrapped

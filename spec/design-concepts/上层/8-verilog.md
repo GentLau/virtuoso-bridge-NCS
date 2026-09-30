@@ -42,8 +42,7 @@ VerilogA 归独立包 `veriloga`（见[11-veriloga.md](11-veriloga.md)）。
 - 目标二选一：
   - `{library, cell, view}`——文本视图（`view_type="text.v"`，主文件 `verilog.v`）；
   - `{file_path, file_is_local}`——外部 `.v` 文件（显式声明路径域，不做 `Path.exists()` 猜测）；
-- `view_type` 是**兼容/校验字段**（默认 `text.v`）：read / write / check_and_save 只校验"非空字符串"，
-  不参与寻址；主文件名按视图类型固定映射（`text.v` → `verilog.v`，P-080 定稿口径）；
+- `view_type` 是**校验字段**：只允许 `text.v`（默认），其他值在 read/write 前结构化拒绝（P-115）；主文件名固定 `verilog.v`；
 - `file_is_local=false` 时 `file_path` 是远端 POSIX 路径，必须原样保留、不得被 Windows 客户端改写成反斜杠；`true` 时才按本机路径处理（P-081）；
 - focus：
 
@@ -70,6 +69,10 @@ VerilogA 归独立包 `veriloga`（见[11-veriloga.md](11-veriloga.md)）。
 | 代码 | `patch_source` | 目标 view 或 file | `edits[]`：`{old_text,new_text}` 或 `{start_line,end_line,new_text}`；匹配不唯一默认失败（可 `all=true`） |
 | 文本视图 | `ensure_view` | `{library, cell, view}` | `view_type`（`text.v`）、可选 `create_if_missing=true`；内部写 `master.tag` + 主文件模板 |
 | 文本视图 | `delete_view` | `{library, cell, view}` | —（`ddDeleteObj`，先确认无编辑器窗口/`*.cdslck`） |
+
+文本视图只能由 `ensure_view` 创建：对不存在的 view 直接 `set_source`/`patch_source` 必须结构化失败，
+不得只落一个缺少 `master.tag` 的 `verilog.v` 半成品（P-115）。需要创建时先执行
+`ensure_view`（或按 spec 的创建路径显式调用）。
 
 `write` 只落文件：Virtuoso 侧没有 Verilog 语法检查器，**没有 check_and_save**；
 结构校验走 `import`（见 §1.3）。有 `*.cdslck`（编辑器开着）时禁止外部写。

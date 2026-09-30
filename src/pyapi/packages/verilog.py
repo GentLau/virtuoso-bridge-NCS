@@ -112,6 +112,13 @@ def _require_text(value: Any, name: str) -> str:
     return value
 
 
+def _require_view_type(value: Any, name: str = "view_type") -> str:
+    text = _require_text(value, name)
+    if text != VIEW_TYPE:
+        raise ValueError(f"{name} must be {VIEW_TYPE!r}")
+    return text
+
+
 def _require_timeout(value: Any) -> None:
     if value is not None and (not isinstance(value, (int, float)) or value <= 0):
         raise ValueError("timeout must be a positive number or None")
@@ -222,9 +229,8 @@ class Package(ResultPackage):
         _require_text(request.token, "token")
         _require_timeout(request.timeout)
         if request.view_type is not None:
-            # 与 write/check_and_save 同口径（P-080）：view_type 是兼容/校验字段，
-            # 空串或非字符串一律 ValueError，不静默忽略。
-            _require_text(request.view_type, "view_type")
+            # P-115：文本视图类型是固定的 text.v，不再接受任意非空字符串。
+            _require_view_type(request.view_type)
         if bool(request.library and request.cell) == bool(request.file_path):
             raise ValueError("provide either library+cell or file_path, not both/none")
         valid_focus = {"source", "views", "diagnostics"}
@@ -349,7 +355,7 @@ class Package(ResultPackage):
         _require_text(request.library, "library")
         _require_text(request.cell, "cell")
         _require_text(request.view, "view")
-        _require_text(request.view_type, "view_type")
+        _require_view_type(request.view_type)
         _require_timeout(request.timeout)
         if not isinstance(request.commands, list) or not request.commands:
             raise ValueError("commands must be a non-empty list")
@@ -365,17 +371,32 @@ class Package(ResultPackage):
             view_dir = self._view_dir(request)
             self._check_lock(view_dir, request)
             remote = self._remote_file(view_dir)
+            view_ready = self._view_exists(request)
             applied = 0
             for _index, command in planned:
                 name = command["op"]
                 try:
                     if name == "ensure_view":
                         self._ensure_view(view_dir, request)
+                        view_ready = True
                     elif name == "delete_view":
                         self._delete_view(request)
+                        view_ready = False
                     elif name == "set_source":
+                        if not view_ready:
+                            raise RuntimeError(
+                                f"view {request.library}/{request.cell}/"
+                                f"{request.view} not found; "
+                                "call ensure_view first (set create_if_missing=true)"
+                            )
                         self._set_source(remote, command, request)
                     else:
+                        if not view_ready:
+                            raise RuntimeError(
+                                f"view {request.library}/{request.cell}/"
+                                f"{request.view} not found; "
+                                "call ensure_view first (set create_if_missing=true)"
+                            )
                         self._patch_source(remote, command, request)
                 except Exception as exc:  # noqa: BLE001
                     steps.append(_step(name, False, f"{type(exc).__name__}: {exc}"))
@@ -416,6 +437,17 @@ class Package(ResultPackage):
         )
         if basic.parse_sexpr(raw.strip()) is not True:
             raise RuntimeError(f"ddDeleteObj returned: {raw.strip()!r}")
+
+    def _view_exists(self, request: Any) -> bool:
+        raw = self._q(
+            "let((view) "
+            f"view = ddGetObj({basic.q(request.library)} "
+            f"{basic.q(request.cell)} {basic.q(request.view)}) "
+            "if(view t nil))",
+            request.token,
+            request.timeout,
+        )
+        return raw.strip().strip('"') in ("t", "1")
 
     def _set_source(self, remote: str, command: dict[str, Any], request: Any) -> None:
         text = command.get("text")

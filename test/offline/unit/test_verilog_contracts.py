@@ -146,10 +146,11 @@ class WriteMiddle:
     """verilog.write 的假 middle：视图目录探测 / 锁检查 / 读写远端文件 / 刷新。"""
 
     def __init__(self, *, lock: bool = False, current_source: str = "module old; endmodule\n",
-                 delete_returns: str = "t") -> None:
+                 delete_returns: str = "t", view_exists: bool = True) -> None:
         self.lock = lock
         self.current_source = current_source
         self.delete_returns = delete_returns
+        self.view_exists = view_exists
         self.uploads: dict[str, str] = {}
         self.commands: list[str] = []
 
@@ -159,6 +160,11 @@ class WriteMiddle:
             return VirtuosoResult(status=ExecutionStatus.SUCCESS, output='"/home/u/LIB"')
         if "ddDeleteObj" in code:
             return VirtuosoResult(status=ExecutionStatus.SUCCESS, output=self.delete_returns)
+        if "view = ddGetObj(" in code:
+            return VirtuosoResult(
+                status=ExecutionStatus.SUCCESS,
+                output='"t"' if self.view_exists else '"nil"',
+            )
         if "ddUpdateLibList" in code:
             return VirtuosoResult(status=ExecutionStatus.SUCCESS, output='"ok"')
         return VirtuosoResult(status=ExecutionStatus.SUCCESS, output="t")
@@ -241,6 +247,35 @@ class TestVerilogWriteOrchestration(unittest.TestCase):
         self.assertTrue(result.ok, result.error)
         self.assertEqual(list(middle.uploads.values()),
                          ["module new; endmodule\n"])
+
+    def test_set_source_missing_view_is_refused(self):
+        import tempfile
+        with tempfile.TemporaryDirectory(prefix="vb-") as tmp:
+            middle = WriteMiddle(view_exists=False)
+            result = self._write(middle, tmp, [
+                {"op": "set_source", "text": "module new; endmodule\n"},
+            ])
+        self.assertFalse(result.ok)
+        self.assertIn("call ensure_view first", result.error)
+        self.assertEqual(middle.uploads, {})
+
+    def test_ensure_view_then_set_source_is_allowed(self):
+        import tempfile
+        with tempfile.TemporaryDirectory(prefix="vb-") as tmp:
+            middle = WriteMiddle(view_exists=False)
+            result = self._write(middle, tmp, [
+                {"op": "ensure_view", "create_if_missing": True},
+                {"op": "set_source", "text": "module new; endmodule\n"},
+            ])
+        self.assertTrue(result.ok, result.error)
+        self.assertIn("master.tag", {k.split("/")[-1] for k in middle.uploads})
+
+    def test_invalid_view_type_is_rejected(self):
+        import tempfile
+        with tempfile.TemporaryDirectory(prefix="vb-") as tmp:
+            with self.assertRaises(ValueError):
+                self._write(WriteMiddle(), tmp,
+                            [{"op": "ensure_view"}], view_type="bogus.type")
 
     def test_set_source_sha_guard_blocks_write(self):
         import hashlib
