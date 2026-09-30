@@ -119,6 +119,7 @@
 | `action` | `export` / `import`，必填 |
 | `lib / cell` | 必填；`view` 默认 `"layout"` |
 | `file_path` | export：本机 GDS 目标路径；import：GDS 源文件（本机→上传，远端→直接用） |
+| `file_is_local` | 默认 `true`：`file_path` 是本机路径。export 时 `false` 表示发布到远端 `file_path`（自动建父目录、POSIX 路径原样保留、不拍平）；import 时 `false` 表示直接使用远端文件，不上传 |
 | `layer_map` | layer map 文件（export 映射 OA LPP→stream 层号；import 用 `-layerMap` 把 stream 层号映射回 OA）。缺省时导出会走自动 mapping（层号不确定），导入在本环境会直接失败（`XSTRM-74`） |
 | `ref_lib_file` | 仅 import：参考库清单（`-refLibList`），可选 |
 | `tech_lib` | import 必填：目标库绑定/对齐的技术库（`-attachTechFileOfLib`） |

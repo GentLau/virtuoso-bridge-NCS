@@ -52,8 +52,8 @@ read_results(source="spectre/tb1/tb.raw", analysis="all")
 ### 3.1 Request / Result
 
 - 每个 Request 必须有 `token: str`，可选 `timeout`；结构校验失败抛 `ValueError`/`TypeError`。
-- 每个操作返回统一 `Result`：`ok: bool`、`steps: list[dict]`、`error: str | None`、`value: Any`。
-- `steps` 每项为 `{"name": str, "ok": bool, "detail": <中层结果或摘要>}`；失败保留已执行步骤。
+- 每个操作内部构造统一 `Result`：`ok: bool`、`error: str | None`、`value: Any`；`steps` 由公共基类维护。
+- `steps` 对外默认省略，仅请求 `step_details=true` 或 `ok=false` 时出现；每项为 `{"name": str, "ok": bool, "detail": <中层结果或摘要>}`。JSON 出口的日志键为 `CDSlog`，不输出 `metadata`；`execution_time` 保留三位小数（对齐 1-上层 §2.4）。
 - 业务失败写 `ok=false` + `error`；只有结构错误或未预期异常才抛出。
 
 ### 3.2 路径与 job
@@ -203,9 +203,9 @@ Task 字段：
 - 整体 `ok=true` 仅当 `failed=0` 且所有 run 的 `status="success"`。
 - 单 run `ok=true` 仅当：命令 rc=0、日志无终止失败标记、raw 下载成功、`parse != "none"` 时解析成功。
 - rc!=0/终止失败但 raw 已存在：`status="partial"`，`ok=false`，保留 raw/log/data 供诊断。
-- rc!=0 且 raw 不存在：`status="failure"`，`ok=false`。
+- rc!=0 且 raw 不存在：`status="failure"`，`ok=false`。**即使 raw 下载步骤先报错，也不得覆盖仿真失败分类**；`errors` 必须回带仿真器原文（如 `ERROR (...)` / `spectre completes with N error`），`log_path` 尽力回填 `spectre.out`。
 - raw 已下载但解析失败：`status="partial"`，`ok=false`，保留解析错误和已下载文件。
-- 传输/上传/下载失败：`status="error"`，`ok=false`。
+- 传输/上传/下载失败：仅当 execute 未证明仿真失败时才是 `status="error"`、`ok=false`；否则按上面的 `failure`/`partial` 分类。
 - 终止失败标记至少包括：`error reading`、`read-in failed`、license error、明确 convergence failure、`spectre terminated prematurely due to fatal error`、`ERROR (`、segmentation/core dump。
 
 ## 6. `spectre.read_results`

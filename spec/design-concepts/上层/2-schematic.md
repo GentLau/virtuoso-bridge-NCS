@@ -53,7 +53,7 @@
 | delete_label | `pos`（可选加 `text` 消歧义） | — |
 | rename_label | `pos`（可选加 `old_text` 消歧义） | `new_text` |
 | set_label_properties | `pos`（可选加 `text`） | `justify?, orient?, font?, height?` |
-| place_pin | —（新建） | `name, pos`；可选 `direction/orient/off_sheet/power_sens/ground_sens/sig_type`（不传用默认/不拼） |
+| place_pin | —（新建） | `name, pos`；`direction`/`orient`；`off_sheet`（`schCreatePin` 第 5 个必选实参）；可选 `power_sens`/`ground_sens`（必须是目标 cellview 内已存在的 terminal 名）、`sig_type` ∈ `analog/clock/ground/power/reset/scan/signal/tieHi/tieLo/tieOff` |
 | delete_pin | `pos` | — |
 | rename_pin | `pos` | `new_name` |
 | set_pin_properties | `pos` | `direction?` |
@@ -67,6 +67,11 @@
 route 生成顶点的吸附，不是两根线之间的固定间距，也不会作为 wire 的 DB
 属性保存或读回。默认 `0` **不保证**原样保留输入浮点坐标；底层仍可能使用
 默认吸附网格（本环境实测步距 `0.00625`）。
+
+`place_pin` 的尾部可选实参按位置拼装：给 `ground_sens`/`sig_type` 而未给前面的
+`power_sens` 时补 `nil`；非法 `sig_type` 在写前结构化拒绝。`off_sheet=true`
+需要环境提供可用的 off-sheet pin master；当前测试环境没有该 master 时底层会报错，
+包不伪造成功（P-113）。
 
 #### 1.3 坐标口径（P-074 定版）
 
@@ -86,14 +91,10 @@ route 生成顶点的吸附，不是两根线之间的固定间距，也不会�
 
 ## 3. 待修订
 
-- **实现与 TB 尚未跟进本版 `pos` 口径**（P-074 剩余项）：`src/pyapi/packages/schematic.py` 目前
-  label/note/wire 收 `xy`、pin 收拆开的 `x`/`y`；`symbol`/`layout` 的标签/实例/via 也仍是 `xy`。
-  跟进时**不做兼容层**（`xy`/拆字段直接判非法），校验错误必须点名缺哪个字段；
+- **`pos` 坐标口径已落地**（P-074）：schematic / symbol / layout 的单点统一 `pos`，`xy`/拆字段直接判非法；
 - 唯一 name 索引只有 instance；wire=line segment 列表（无 name），label/note/pin 均按 `pos` 索引（可加 text/name 消歧义）；
 - wire 的 `points` 匹配需要定义容差；pin 是 purpose=pin 的实例图形，按 `pos` 定位；
 - `region` 的判定用对象 bBox 还是 `pos` 待定。
-- rename_label / rename_pin / rename_note / set_* 在旧代码中没有公开 builder，SKILL 机制需真机验证后再定实现；
-- delete_wire / delete_label 的定位参数（points / bbox / text）待定；
-- `param_whitelist` 用请求内联 `list[str]` 还是沿用 YAML 过滤文件，待定；
-- `write` 内部是逐命令 `execute_skill` 后统一 check/save，还是把所有命令拼成一个 SKILL 脚本一次执行（二者步骤痕迹粒度不同），待定；
+- rename / delete / set 原子均已实现，按 `pos` 索引；label/note/pin 可加文本或名字消歧义；
+- `write` 逐条执行原子，全部成功后统一 check/save；中途失败释放 edit handle 并返回失败步骤；
 - `check_and_save` 供显式补一次校验保存；读写目标都必须带 `view`，默认 `"schematic"`，不假设只有这个视图名。

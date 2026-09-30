@@ -44,6 +44,7 @@ VerilogA 归独立包 `veriloga`（见[11-veriloga.md](11-veriloga.md)）。
   - `{file_path, file_is_local}`——外部 `.v` 文件（显式声明路径域，不做 `Path.exists()` 猜测）；
 - `view_type` 是**兼容/校验字段**（默认 `text.v`）：read / write / check_and_save 只校验"非空字符串"，
   不参与寻址；主文件名按视图类型固定映射（`text.v` → `verilog.v`，P-080 定稿口径）；
+- `file_is_local=false` 时 `file_path` 是远端 POSIX 路径，必须原样保留、不得被 Windows 客户端改写成反斜杠；`true` 时才按本机路径处理（P-081）；
 - focus：
 
 | focus | 返回 |

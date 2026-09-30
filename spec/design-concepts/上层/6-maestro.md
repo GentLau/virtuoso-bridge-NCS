@@ -178,6 +178,10 @@ maestro 包覆盖 ADE Assembler / Explorer 的**配置、结果、导出、历�
 
 写前先读锁状态；被引用锁（reference / MC reuse）的 history 不可直接删。
 
+`write_history` 不复用失效的会话/SDB handle：每次写原子前确认 `maeOpenSetup` 返回的会话仍可用；
+若 `maeGetSessions()` 列出但实际已失效，关闭后重开一次再继续（C09）。rename 链 A→B→A
+必须在同一请求内可连续执行，目标名冲突给点名结构化拒绝。
+
 ## 7. 仿真类
 
 ### 7.1 open_gui / close_gui

@@ -28,6 +28,7 @@
 |---|---|
 | 文本视图 `veriloga` | dfII viewType=`text.veriloga`、dataType=`VERILOGAText`、主文件 `veriloga.va`（+ `master.tag`） |
 | `view_type` 口径 | **兼容/校验字段**（默认 `text.veriloga`）：read/write/check_and_save 只校验"非空字符串"，不参与寻址；主文件名固定 `veriloga.va`（P-080 定稿） |
+| 远端路径口径 | `file_is_local=false` 时 `file_path` 是远端 POSIX 路径，必须原样保留、不得被 Windows 客户端改写成反斜杠；`true` 时才按本机路径处理（P-081） |
 | 持久化产物 | `check_and_save` 后生成 `veriloga/netlist.oa` + `veriloga/data.dm`，并更新 cell CDF 的 `viewInfo` |
 
 边界：

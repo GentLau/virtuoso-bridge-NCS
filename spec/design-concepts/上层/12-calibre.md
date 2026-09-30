@@ -92,10 +92,12 @@ run 类操作默认 `blocking=false`：写 launcher、后台启动、立刻返�
 
 | 判据 | 含义 |
 |---|---|
-| `job.json` 存在 + `pgrep -f <run_dir>` 命中 | `running` |
-| 日志尾出现完成标记（DRC: `CALIBRE::DRC-H COMPLETED`；LVS: `LVS completed`） | `completed` |
-| 进程消失且无完成标记，或日志含 `FATAL ERROR`/`ERROR (OSSHNL-` | `failed`（区分 `license` / `input` / `unknown`） |
+| `job.json` 存在 + `job.pid` 对应进程仍活（`ps -p <pid>`） | `running` |
+| 日志尾出现完成标记（DRC: `CALIBRE::DRC-H COMPLETED` / `TOTAL RESULTS GENERATED`；LVS: `LVS completed` / `CALIBRE::LVS/xRC COMPLETED` / `LVS run finished with exit code 0`） | `completed` |
+| 已确认 `job.pid` 消失且无完成标记，或日志含 `FATAL ERROR`/`ERROR (OSSHNL-` | `failed`（区分 `license` / `input` / `process_gone_without_report` / `unknown`） |
 | 进程消失、无产物、无日志尾 | `unknown`（**不自动重试**） |
+
+official-batch 入口（`runset=…`）的 Calibre 命令行只含 runset 路径、不含 run_dir，因此**不能再用 `pgrep -f <run_dir>` 判活**；判活以 launcher 写入的 `job.pid` 为准。`process_gone_without_report` 只能在确认 pid 消失后成立，避免把仍在跑的成功作业提前误杀（P-106）。
 
 `blocking=true` 时包内循环：`deadline = now + timeout`，按 `poll_interval`（默认 5 s）调 `status`，
 终态或超时即返回；超时返回 `status=timeout` 且**后台作业继续跑**。
@@ -137,14 +139,14 @@ run 类操作默认 `blocking=false`：写 launcher、后台启动、立刻返�
 | `hier` | 否 | true | `-hier` |
 | `blocking` / `poll_interval` / `timeout` | 否 | false / 5 / 3600 | 见 §3.4 |
 | `params` | 否 | — | 无 set 时的取数口：键=**SVRF 语句头**（含空格），值=整条语句，原位改写 deck |
-| `runset` | 否 | — | 远端 Calibre Interactive set（`.lvs`/`.drc`/`.pex`）：**走官方批处理入口**，参数全交给 Calibre |
+| `runset` | 否 | — | 远端 Calibre Interactive set（`.lvs`/`.drc`）：**走官方批处理入口**，参数全交给 Calibre；PEX 本版不提供启动 |
 
 **参数一律用官方机制带**（两条路，互斥）：
 
 1. **有 set → `runset=<文件>`**：本包执行 `calibre -gui -<app> -runset <file> -batch`，
    参数的解析、合并、控制文件生成（run dir 里的 `_<rules>_`）全部由 Calibre 自己做；
    本包**不解析键、不做键→语句映射、不改 deck、不注入命令**，只做三件与结果有关的事：
-   发起（+ 轮询）、定位产物（读 `lvsRunDir`/`drcRunDir`/`pexRunDir` 只为知道去哪儿取报告）、解析报告。
+   发起（+ 轮询）、定位产物（读 `lvsRunDir`/`drcRunDir` 只为知道去哪儿取报告）、解析报告。
 2. **没有 set → `deck=…`**：`calibre -<app> [options] <deck>` 官方 CLI 形态；deck 目录整份 stage 到 run dir
    （相对 `INCLUDE` 照常生效），只按白名单占位符改写 deck 文本（PDK 自己的占位符约定），
    需要额外覆盖时用 `params` 给 **SVRF 语句头**（如 `"LAYOUT PRIMARY"`，值给整条语句），原位替换第一条。
@@ -176,7 +178,7 @@ runset 已指定源网表时可省略。`source.kind=cdl` 的 `path` 必须是�
 只给 `runset=<远端 set 路径>` 即可（deck / run dir / 输入 / 选项 / hcell / SVDB 都在 set 里）：
 
 ```
-calibre -gui -lvs -runset <set> -batch      # 本包实际执行的命令（drc/pex 同理换 -<app>）
+calibre -gui -lvs -runset <set> -batch      # 本包实际执行的命令（drc 同理换 -<app>；pex 不启动）
 ```
 
 实测（2026-09-24，token `vb-vblog`，65nm deck + `CMP_LIB/inv2` + schematic 源现产的 CDL）：
