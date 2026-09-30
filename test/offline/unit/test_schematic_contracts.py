@@ -294,9 +294,15 @@ class TestAtomicSkill(unittest.TestCase):
         self.assertIn('"input"', placed)
         extended = S._atomic_skill("place_pin", {
             "name": "VIN", "direction": "input", "pos": [0, 0],
-            "off_sheet": True, "power_sens": "VDD", "ground_sens": "VSS",
+            "power_sens": "VDD", "ground_sens": "VSS",
             "sig_type": "signal"})
         self.assertIn('"VDD"', extended)
+        self.assertIn('"VSS"', extended)
+        with self.assertRaises(ValueError):
+            S._atomic_skill("place_pin", {
+                "name": "VIN", "direction": "input", "pos": [0, 0],
+                "off_sheet": True,
+            })
         self.assertIn("dbDeleteObject",
                       S._atomic_skill("delete_pin", {"pos": [0, 0]}))
         self.assertIn('"NEW"',

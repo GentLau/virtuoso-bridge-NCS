@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
 # 作者: 测试/root
-# 最后改动: 2026-09-28 20:23
+# 最后改动: 2026-09-30 11:20
 # 依赖: 无
 # =======================================================================
 """``virtuoso.schematic.*`` 真机原子级验收 TB（含 P-074 `pos` 口径）。
@@ -86,7 +86,7 @@ def _op(transport, operation: str, **fields: Any) -> Any:
     response = transport.call({"operation": operation, "token": TOKEN, **fields})
     if not response.get("ok"):
         raise AssertionError(f"{operation} failed: {response.get('error')}")
-    return _c1_wrapper(response)
+    return response
 
 
 def _value(transport, operation: str, **fields: Any) -> dict[str, Any]:
@@ -240,10 +240,13 @@ def _case_wire_atoms(transport, ev: Evidence) -> None:
                   wires)
 
     _write(transport, [{"op": "set_wire_properties", "points": points,
-                        "width": 0.1, "color": "yellow"}])
+                        "width": 0.1, "color": "yellow",
+                        # 2026-09-30：`line_style` 此前只在离线契约里 → 真机传值 + 读回
+                        "line_style": "dashed"}])
     wire = (_read(transport, focus="positions").get("wires") or [{}])[0]
     ev.check(case, "set_wire_properties width", 0.1, round(float(wire.get("width") or 0.0), 3))
     ev.check(case, "set_wire_properties color", "yellow", wire.get("color"))
+    ev.check(case, "set_wire_properties line_style", "dashed", wire.get("line_style"))
 
     _write(transport, [{"op": "delete_wire", "points": points}])
     ev.check(case, "delete_wire", [], _read(transport, focus="positions").get("wires", []))
@@ -254,11 +257,19 @@ def _case_label_atoms(transport, ev: Evidence) -> None:
     case = "ATOM-label"
     _baseline(transport, "ATOM-label", ev)
     pos = [1.0, 1.0]
-    _write(transport, [{"op": "place_label", "text": "n1", "pos": pos}])
+    # 2026-09-30：补 op×参数矩阵里"只在离线契约出现"的参数 ——
+    # `place_label` 的 `font`/`justify`/`alias`/`height` 真机传值 + 值级读回。
+    _write(transport, [{"op": "place_label", "text": "n1", "pos": pos,
+                        "font": "stick", "justify": "upperRight",
+                        "height": 0.25, "alias": True}])
     labels = _read(transport, focus="positions").get("labels", [])
     ev.check_true(case, "place_label visible",
                   any(item.get("text") == "n1" and _near(item.get("pos"), pos)
                       for item in labels), labels)
+    placed = next((item for item in labels if item.get("text") == "n1"), {})
+    ev.check(case, "place_label font", "stick", placed.get("font"))
+    ev.check(case, "place_label justify", "upperRight", placed.get("justify"))
+    ev.check(case, "place_label height", 0.25, round(float(placed.get("height") or 0), 4))
 
     _write(transport, [{"op": "rename_label", "pos": pos, "new_text": "n2"}])
     ev.check(case, "rename_label", ["n2"],
@@ -269,9 +280,96 @@ def _case_label_atoms(transport, ev: Evidence) -> None:
     label = next((item for item in _read(transport, focus="positions").get("labels", [])
                   if item.get("text") == "n2"), {})
     ev.check(case, "set_label_properties height", 0.2, round(float(label.get("height") or 0), 4))
+    # `set_label_properties` 的 `font` 之前也只在离线契约里（同批补）
+    _write(transport, [{"op": "set_label_properties", "pos": pos, "font": "fixed"}])
+    label = next((item for item in _read(transport, focus="positions").get("labels", [])
+                  if item.get("text") == "n2"), {})
+    ev.check(case, "set_label_properties font", "fixed", label.get("font"))
 
     _write(transport, [{"op": "delete_label", "pos": pos, "text": "n2"}])
     ev.check(case, "delete_label", [], _read(transport, focus="positions").get("labels", []))
+
+
+def _case_pin_optional_props(transport, ev: Evidence) -> None:
+    """`place_pin` 的可选属性参数（P-113 + P-114 验收）。
+
+    2026-09-30 真机实测口径（P-113 修复 commit `0e14c8b` 之后）：
+
+    * ✅ `sig_type=\"signal\"` / `power_sens` / `ground_sens` / **四属性组合** → 写入成功；
+    * ✅ `read(focus=\"connectivity\").nets[<pin 名>]` 读回 **`numBits`/`sigType`**（这正是表 C 里
+      之前因 P-113 无法覆盖的两个字段，现在值级断言）；
+    * ✅ 非法 `sig_type`（`\"bus\"`）→ 结构化拒绝（枚举契约）；
+     * `power_sens`/`ground_sens` 引用已存在 terminal → 正常建 pin；
+       引用不存在的 terminal → 结构化失败；
+       `off_sheet=true` 当前无可用 master → 结构化失败（不得 nth / 静默 no-op）。
+    """
+    case = "PIN-OPT"
+    _baseline(transport, case, ev)
+
+    # ① sig_type + 总线名 → 值级读回 numBits/sigType（表 C 缺口关闭）
+    _write(transport, [{"op": "place_pin", "name": "NBA<3:0>", "direction": "input",
+                        "pos": [5.0, 0.0], "sig_type": "signal"}])
+    nets = _read(transport, focus="connectivity").get("nets") or {}
+    bus = nets.get("NBA<3:0>") or {}
+    ev.check(case, "read nets 里出现总线 pin 的 net", True, bool(bus))
+    ev.check(case, "总线 net numBits", "4", str(bus.get("numBits")))
+    ev.check(case, "net sigType", "signal", bus.get("sigType"))
+
+    # ② 对照：不带可选属性的普通 pin 必须真的建出来（值级：两个读面都能看到）
+    _baseline(transport, case, ev)
+    _write(transport, [{"op": "place_pin", "name": "PPLAIN", "direction": "input",
+                        "pos": [6.0, 0.0]}])
+    plain_pins = _read(transport, focus="positions").get("pins") or []
+    plain_nets = _read(transport, focus="connectivity").get("nets") or {}
+    ev.check_true(case, "对照：普通 pin 建出图形", len(plain_pins) == 1, plain_pins)
+    ev.check_true(case, "对照：普通 pin 建出同名 net", "PPLAIN" in plain_nets,
+                  sorted(plain_nets))
+
+    # ③ P-114：引用 terminal 必须先存在；off_sheet 没有可用 master 时结构化拒绝。
+    #    正例：先建 VDD/VSS，再给目标 pin 加 power/ground sensitivity。
+    _baseline(transport, case, ev)
+    _write(transport, [{"op": "place_pin", "name": "VDD", "direction": "input",
+                        "pos": [12.0, 0.0]}])
+    _write(transport, [{"op": "place_pin", "name": "VSS", "direction": "input",
+                        "pos": [13.0, 0.0]}])
+    _write(transport, [{"op": "place_pin", "name": "PSENS", "direction": "input",
+                        "pos": [14.0, 0.0], "power_sens": "VDD",
+                        "ground_sens": "VSS"}])
+    after_nets = _read(transport, focus="connectivity").get("nets") or {}
+    ev.check_true(case, "power/ground sens 正例建出 PSENS",
+                  "PSENS" in after_nets, sorted(after_nets))
+
+    neg_pins = (
+        ("power_sens missing terminal",
+         {"op": "place_pin", "name": "PP1", "direction": "input",
+          "pos": [8.0, 0.0], "power_sens": "NO_SUCH_POWER"},
+         "power_sens terminal not found"),
+        ("ground_sens missing terminal",
+         {"op": "place_pin", "name": "PG1", "direction": "input",
+          "pos": [9.0, 0.0], "ground_sens": "NO_SUCH_GROUND"},
+         "ground_sens terminal not found"),
+        ("off_sheet alone",
+         {"op": "place_pin", "name": "PO1", "direction": "input",
+          "pos": [7.0, 0.0], "off_sheet": True},
+         "off_sheet=true is not supported"),
+        ("all four props",
+         {"op": "place_pin", "name": "PALL", "direction": "input",
+          "pos": [10.0, 0.0], "sig_type": "signal", "off_sheet": True,
+          "power_sens": "VDD", "ground_sens": "VSS"},
+         "off_sheet=true is not supported"),
+    )
+    for label, command, expected in neg_pins:
+        _baseline(transport, case, ev)
+        err = _write_fails(transport, [command])
+        ev.check_true(case, f"{label}: 结构化失败", expected in err, err[:240])
+
+    # ③ 非法 sig_type → 枚举契约（结构化拒绝）
+    error = _write_fails(transport, [{"op": "place_pin", "name": "NBX<1:0>",
+                                      "direction": "input", "pos": [9.0, 0.0],
+                                      "sig_type": "bus"}])
+    ev.check_true(case, "非法 sig_type 结构化拒绝（含取值域）",
+                  "must be one of" in error, error[:200])
+
 
 
 def _case_pin_atoms(transport, ev: Evidence) -> None:
@@ -328,20 +426,29 @@ def _case_note_atoms(transport, ev: Evidence) -> None:
     pos = [3.0, 3.0]
     # type 显式给默认值 normalLabel（参数矩阵缺口；错值由离线契约覆盖）
     _write(transport, [{"op": "place_note", "text": "note1", "pos": pos,
-                        "type": "normalLabel"}])
+                        "type": "normalLabel",
+                        # 2026-09-30：`place_note` 的 `font`/`justify` 此前只在离线契约里
+                        "font": "stick", "justify": "upperRight"}])
     notes = _read(transport).get("notes", [])
     ev.check_true(case, "place_note visible",
                   any(item.get("text") == "note1" and _near(item.get("pos"), pos)
                       for item in notes), notes)
+    placed_note = next((item for item in notes if item.get("text") == "note1"), {})
+    ev.check(case, "place_note font", "stick", placed_note.get("font"))
+    ev.check(case, "place_note justify", "upperRight", placed_note.get("justify"))
 
     _write(transport, [{"op": "rename_note", "pos": pos, "new_text": "note2"}])
     ev.check(case, "rename_note", ["note2"],
              sorted(item.get("text") for item in _read(transport).get("notes", [])))
 
-    _write(transport, [{"op": "set_note_properties", "pos": pos, "height": 0.1}])
+    _write(transport, [{"op": "set_note_properties", "pos": pos, "height": 0.1,
+                        # 同批补：`set_note_properties` 的 `font`/`justify`
+                        "font": "fixed", "justify": "lowerLeft"}])
     note = next((item for item in _read(transport).get("notes", [])
                  if item.get("text") == "note2"), {})
     ev.check(case, "set_note_properties height", 0.1, round(float(note.get("height") or 0), 4))
+    ev.check(case, "set_note_properties font", "fixed", note.get("font"))
+    ev.check(case, "set_note_properties justify", "lowerLeft", note.get("justify"))
 
     _write(transport, [{"op": "delete_note", "pos": pos, "text": "note2"}])
     ev.check(case, "delete_note", [], _read(transport).get("notes", []))
@@ -379,9 +486,35 @@ def _case_read_filters(transport, ev: Evidence) -> None:
 
 def _case_check_and_save(transport, ev: Evidence) -> None:
     case = "CHECK-01"
+    # ②③ 前置：空基线 + 造一个实例，这样"保存后内容还在"才是值级判据（原来只判 ok）
+    _baseline(transport, case, ev)
+    _write(transport, [{"op": "place_instance", "master_lib": PDK_LIB, "master_cell": PDK_NCH,
+                        "master_view": "symbol", "name": "MN_SAVE", "pos": [0.0, 0.0]}])
+    before = _read(transport, focus="positions")
+    names_before = [item.get("name") for item in before.get("instances", [])]
+    ev.check(case, "instance visible before save", ["MN_SAVE"], names_before)
+
     data = _op(transport, "virtuoso.schematic.check_and_save",
                library=LIB, cell=CELL, view=VIEW)
     ev.check_true(case, "check_and_save ok", bool(data.get("ok")), data)
+    ev.check(case, "check_and_save error is None", None, data.get("error"))
+
+    # ⑤ 读回比对：保存不得丢内容/不得凭空造内容（值级）
+    after = _read(transport, focus="positions")
+    names_after = [item.get("name") for item in after.get("instances", [])]
+    ev.check(case, "instance survives save", names_before, names_after)
+    _write(transport, [{"op": "delete_instance", "name": "MN_SAVE"}])   # ⑥ 收尾
+
+    # 2026-09-30 补非法档（该 op 此前只有一条正例）：不存在的 view 必须结构化失败且点名 view。
+    missing = transport.call({
+        "operation": "virtuoso.schematic.check_and_save", "token": TOKEN,
+        "library": LIB, "cell": "sch_no_such_cell", "view": VIEW,
+    })
+    ev.check_true(case, "缺失 view 必须失败", missing.get("ok") is not True,
+                  str(missing.get("error"))[:160])
+    ev.check_true(case, "失败文案点名 view/cell",
+                  "sch_no_such_cell" in json.dumps(missing, ensure_ascii=False),
+                  str(missing.get("error"))[:160])
 
 
 def _case_screenshot(transport, ev: Evidence) -> None:
@@ -407,6 +540,7 @@ CASES: tuple[tuple[str, Callable[[Any, Evidence], None]], ...] = (
     ("ATOM-label", _case_label_atoms),
     ("ATOM-pin", _case_pin_atoms),
     ("ATOM-note", _case_note_atoms),
+    ("PIN-OPT", _case_pin_optional_props),   # P-113/P-114：可选属性正例 + 缺 terminal/master 负例
     ("NEG-pos", _case_negative),
     ("READ-filters", _case_read_filters),
     ("CHECK-01", _case_check_and_save),
@@ -416,7 +550,8 @@ CASES: tuple[tuple[str, Callable[[Any, Evidence], None]], ...] = (
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--transport", choices=("direct", "http"), default="direct")
+    parser.add_argument("--transport", choices=("direct", "http"), default="http",
+                        help="direct=故障定位/覆盖率；真机判据必须 http")
     parser.add_argument("--base", default=API)
     parser.add_argument("--out", default="")
     args = parser.parse_args()
@@ -471,19 +606,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
-
-# --- C1 兼容垫片（2026-09-29，C3）------------------------------------------------
-# C1（2f88853）起：业务载荷直返顶层（值型 `value`、命令/skill 型 `result`）、
-# 成功默认省略 `steps`、失败壳去掉 `data`。历史 TB 按 `response["data"]` 解析，
-# 本垫片把新契约响应合成为旧 `data` 壳，让既有解析零改动继续工作。
-def _c1_wrapper(body):
-    if not isinstance(body, dict):
-        return {}
-    if isinstance(body.get("data"), dict):
-        return body["data"]
-    wrapped = {"ok": body.get("ok"), "error": body.get("error")}
-    for key in ("value", "result", "steps"):
-        if key in body:
-            wrapped[key] = body[key]
-    return wrapped

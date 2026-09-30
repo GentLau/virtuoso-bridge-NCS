@@ -687,32 +687,68 @@ let((vbInst vbCcd vbParamVals vbP vbProp)
         return f'let((vbObj) vbObj = car(setof(x vbSchemCv~>shapes {pred})) unless(vbObj error("label not found")) {body})'
     if op == "place_pin":
         _pos = _pos_of(cmd)
-        off_sheet = "t" if cmd.get("off_sheet") else "nil"
-        body = (
-            f'schCreatePin(vbSchemCv nil {_q(cmd["name"])} '
-            f'{_q(cmd.get("direction", "inputOutput"))} {off_sheet} '
-            f'{_pos[0]:g}:{_pos[1]:g} {_q(cmd.get("orient", "R0"))}'
-        )
+        if cmd.get("off_sheet"):
+            raise ValueError(
+                "command.off_sheet=true is not supported in this environment: "
+                "no usable off-sheet pin master (P-114)"
+            )
+        name = _q(cmd["name"])
+        direction = _q(cmd.get("direction", "inputOutput"))
+        orient = _q(cmd.get("orient", "R0"))
+        point = f"{_pos[0]:g}:{_pos[1]:g}"
         # schCreatePin 的 offSheet 是第 5 个**必选**实参；power/ground/sigType
         # 才是尾部可选实参。可选参数按位置传，缺前面的项时补 nil。
-        if "power_sens" in cmd:
-            body += f' {_q(cmd["power_sens"])}'
-        elif "ground_sens" in cmd or "sig_type" in cmd:
-            body += " nil"
-        if "ground_sens" in cmd:
-            body += f' {_q(cmd["ground_sens"])}'
-        elif "sig_type" in cmd:
-            body += " nil"
-        if "sig_type" in cmd and cmd["sig_type"] is not None:
-            sig_type = _require_text(cmd["sig_type"], "command.sig_type")
+        power_sens = (
+            _require_text(cmd.get("power_sens"), "command.power_sens")
+            if cmd.get("power_sens") is not None else None
+        )
+        ground_sens = (
+            _require_text(cmd.get("ground_sens"), "command.ground_sens")
+            if cmd.get("ground_sens") is not None else None
+        )
+        sig_type = cmd.get("sig_type")
+        if sig_type is not None:
+            sig_type = _require_text(sig_type, "command.sig_type")
             if sig_type not in _PIN_SIG_TYPES:
                 raise ValueError(
                     "command.sig_type must be one of "
                     + ", ".join(sorted(_PIN_SIG_TYPES))
                 )
-            body += f' {_q(sig_type)}'
-        body += ')'
-        return body
+        tail = ""
+        if power_sens is not None:
+            tail += f" {_q(power_sens)}"
+        elif ground_sens is not None or sig_type is not None:
+            tail += " nil"
+        if ground_sens is not None:
+            tail += f" {_q(ground_sens)}"
+        elif sig_type is not None:
+            tail += " nil"
+        if sig_type is not None:
+            tail += f" {_q(sig_type)}"
+        checks: list[str] = []
+        if power_sens is not None:
+            checks.append(
+                "unless(car(setof(tx vbSchemCv~>terminals "
+                f"tx~>name == {_q(power_sens)})) "
+                'error("power_sens terminal not found"))'
+            )
+        if ground_sens is not None:
+            checks.append(
+                "unless(car(setof(tx vbSchemCv~>terminals "
+                f"tx~>name == {_q(ground_sens)})) "
+                'error("ground_sens terminal not found"))'
+            )
+        create = (
+            f"schCreatePin(vbSchemCv nil {name} {direction} nil "
+            f"{point} {orient}{tail})"
+        )
+        guard = " ".join(checks)
+        return (
+            f"let((vbPin) {guard + ' ' if guard else ''}"
+            f"vbPin = {create} "
+            'if(vbPin && vbPin != 0 vbPin '
+            'error("place_pin failed: schCreatePin returned nil")))'
+        )
     if op in ("delete_pin", "rename_pin", "set_pin_properties"):
         x, y = _pos_of(cmd)
         pred = (

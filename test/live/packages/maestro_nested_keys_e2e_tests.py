@@ -205,7 +205,8 @@ def run_suite(transport: HttpTransport) -> tuple[list[tuple[str, str]], dict[str
             f"type_name/type_value 写的变量未落到 corner：{variables}"
 
     def case_set_parameter_name_contract() -> None:
-        """`set_parameter` 的名称契约（负例）：非 Library/Cell/View/Instance/Property 五段 → 结构化拒绝。"""
+        """`set_parameter` 名称契约负例；正例已由 maestro_e2e_tests.py::WRITE-04 覆盖
+        （`maestro_tb/rc_probe/schematic/R0/r`，global/corner 值级读回，P-111）。"""
         response = transport.call({
             "operation": "virtuoso.maestro.write",
             "library": LIB, "cell": CELL, "view": "maestro",

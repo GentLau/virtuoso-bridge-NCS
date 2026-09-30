@@ -69,9 +69,12 @@ route 生成顶点的吸附，不是两根线之间的固定间距，也不会�
 默认吸附网格（本环境实测步距 `0.00625`）。
 
 `place_pin` 的尾部可选实参按位置拼装：给 `ground_sens`/`sig_type` 而未给前面的
-`power_sens` 时补 `nil`；非法 `sig_type` 在写前结构化拒绝。`off_sheet=true`
-需要环境提供可用的 off-sheet pin master；当前测试环境没有该 master 时底层会报错，
-包不伪造成功（P-113）。
+`power_sens` 时补 `nil`；非法 `sig_type` 在写前结构化拒绝。`power_sens`/`ground_sens`
+只能引用目标 cellview 内已存在的 terminal；引用不存在时结构化失败。
+每次 `schCreatePin` 后校验 pin 确实创建，返回 nil/0 不得报 ok。
+`off_sheet=true` 需要可用的 off-sheet pin master；当前环境没有该 master，
+本包直接结构化拒绝（`off_sheet=true is not supported ...`），不猜 master、不静默
+no-op（P-113/P-114）。
 
 #### 1.3 坐标口径（P-074 定版）
 
