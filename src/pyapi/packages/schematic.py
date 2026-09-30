@@ -598,6 +598,9 @@ let((vbInst vbCcd vbParamVals vbP vbProp)
         # 但实测（真机 2026-09-29）：把 color/lineStyle 当**实参**传不落库
         # （DRF 名字匹配不上就静默忽略），而事后赋值 `~>color`/`~>lineStyle`
         # 有效（与 set_wire_properties 同机制，P-078）。所以样式改成创建后赋值。
+        # x_spacing/y_spacing 是 schCreateWire 的**创建期吸附网格**；
+        # 即使传 0，底层仍可能使用默认吸附网格（本环境实测步距 0.00625），
+        # 不会原样保留输入浮点坐标，也不会写入 wire 的 DB 属性。
         body = (
             f'schCreateWire(vbSchemCv {_q(cmd.get("entry", "route"))} '
             f'{_q(cmd.get("route", "full"))} {pts} '
