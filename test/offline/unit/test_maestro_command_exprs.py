@@ -444,6 +444,8 @@ class ReadConfigMiddle(WriteMiddle):
             return _ok(self.sessions_answer)
         if code.startswith("maeOpenSetup"):
             return _ok('"sess1"')
+        if code.startswith("axlGetMainSetupDB("):
+            return _ok("1")
         if "list(maeGetSetup(" in code:
             return _ok(self.setup)
         if code.startswith("cadr(axlGetVars(axlGetTest("):

@@ -454,15 +454,51 @@ class Package(ResultPackage):
         # 就会在"目标不存在"时静默建出空 view 并返回空配置（P-104）。读路径一律
         # 传 "r"：不存在的 view 不会被创建，返回 nil，由下面的守卫结构化报错。
         mode_kw = ' ?mode "r"' if mode == "r" else ""
-        raw = self._q(
-            f"maeOpenSetup({q(library)} {q(cell)} {q(view)}{mode_kw})",
-            token,
-            timeout,
-        )
-        session = unquote(raw)
-        if not session or session in ("nil", "t"):
-            raise RuntimeError(f"maeOpenSetup failed for {library}/{cell}/{view}")
+
+        def open_once() -> str:
+            raw = self._q(
+                f"maeOpenSetup({q(library)} {q(cell)} {q(view)}{mode_kw})",
+                token,
+                timeout,
+            )
+            name = unquote(raw)
+            if not name or name in ("nil", "t"):
+                raise RuntimeError(f"maeOpenSetup failed for {library}/{cell}/{view}")
+            return name
+
+        session = open_once()
+        if not self._session_is_active(session, token, timeout):
+            # C09 现场：maeGetSessions() 会暂时列出已失效的后台 session，
+            # maeOpenSetup 可能原样把它返回；后续 axl/mae 调用就会报
+            # "Cannot find an active session"。关闭后重开一次，拿到真正可用的 session。
+            try:
+                self._close_session(session, token, timeout)
+            except Exception:  # noqa: BLE001 - stale session may already be gone
+                pass
+            session = open_once()
+            if not self._session_is_active(session, token, timeout):
+                raise RuntimeError(
+                    f"maeOpenSetup returned inactive session {session!r} "
+                    f"for {library}/{cell}/{view}"
+                )
         return session, session not in before
+
+    def _session_is_active(
+        self,
+        session: str,
+        token: str,
+        timeout: int | float | None,
+    ) -> bool:
+        """Return whether ``axlGetMainSetupDB`` accepts this session handle."""
+        try:
+            raw = self._q(
+                f"axlGetMainSetupDB({q(session)})",
+                token,
+                timeout,
+            )
+        except Exception:  # noqa: BLE001 - SKILL error means not active
+            return False
+        return unquote(raw) not in ("", "nil", "0")
 
     def _save_setup(
         self,

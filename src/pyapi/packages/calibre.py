@@ -921,7 +921,9 @@ class Package(ResultPackage):
             f"cd {shlex.quote(run_dir)} 2>/dev/null || exit 4; "
             "echo '###JOB'; cat job.json 2>/dev/null; "
             "echo '###PID'; cat job.pid 2>/dev/null; "
-            "echo '###ALIVE'; pgrep -f " + shlex.quote(run_dir) + " | head -3; "
+            "echo '###ALIVE'; p=$(cat job.pid 2>/dev/null); "
+            "case \"$p\" in ''|*[!0-9]*) echo no;; "
+            "*) ps -p \"$p\" -o pid= >/dev/null 2>&1 && echo yes || echo no;; esac; "
             "echo '###LOGS'; for f in *.log; do [ -f \"$f\" ] && { echo \"== $f\"; "
             "tail -n 40 \"$f\"; grep -m1 -E 'FATAL ERROR|ERROR:' \"$f\" 2>/dev/null; }; done; "
             "echo '###FILES'; ls -1 2>/dev/null | head -60; true"
@@ -935,10 +937,11 @@ class Package(ResultPackage):
         pid_lines = (sections.get("PID") or "").strip().splitlines()
         artifacts = [line.strip() for line in (sections.get("FILES") or "").splitlines() if line.strip()]
         logs = sections.get("LOGS") or ""
+        alive = (sections.get("ALIVE") or "").strip().lower()
         return cu.StatusSnapshot(
             job_json=cu.parse_job_json(sections.get("JOB") or ""),
             pid=int(pid_lines[0]) if pid_lines and pid_lines[0].strip().isdigit() else None,
-            process_alive=bool((sections.get("ALIVE") or "").strip()),
+            process_alive=alive not in ("", "no", "0", "false", "nil"),
             log_tail=logs[-4000:],
             artifacts=artifacts,
         )

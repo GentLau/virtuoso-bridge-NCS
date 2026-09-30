@@ -271,7 +271,11 @@ def _shq(value: str) -> str:
 # ------------------------------------------------------------------ 状态/解析 --
 _DONE_MARKERS = {
     "drc": ("CALIBRE::DRC-H COMPLETED", "TOTAL RESULTS GENERATED"),
-    "lvs": ("LVS completed",),
+    "lvs": (
+        "LVS completed",
+        "CALIBRE::LVS/xRC COMPLETED",
+        "LVS run finished with exit code 0",
+    ),
     "pex": ("COMPLETED",),
 }
 _FAIL_MARKERS = (
