@@ -450,6 +450,10 @@ class TestHandleConnectionGuards(unittest.TestCase):
 class TestHandleConnectionProtocol(unittest.TestCase):
     """Happy paths: the wrapper sent to the CIW, the response, counters."""
 
+    def setUp(self):
+        for mod in MODULES.values():
+            mod._dirty = False
+
     def test_single_line_skill_uses_inline_wrapper(self):
         for name in VARIANTS:
             mod = MODULES[name]
@@ -941,6 +945,66 @@ class TestStartServer(unittest.TestCase):
                 self.assertIn("host=unknown", text)
                 self.assertIn("ip=unknown", text)
                 self.assertIn("user=", text)
+
+
+class TestProbeAndDirty(unittest.TestCase):
+    def setUp(self):
+        for mod in MODULES.values():
+            mod._dirty = False
+
+    def tearDown(self):
+        for mod in MODULES.values():
+            mod._dirty = False
+
+    def test_probe_idle_does_not_touch_ciw(self):
+        for name in VARIANTS:
+            mod = MODULES[name]
+            with self.subTest(variant=name):
+                ciw_seen, sent, unread, parsed = run_request(
+                    mod, {"probe": True, "token": "tok"},
+                )
+                self.assertEqual(ciw_seen, b"")
+                self.assertEqual(unread, b"")
+                self.assertEqual(sent[:1], STX)
+                self.assertEqual(parsed["status"], "idle")
+
+    def test_probe_busy_and_business_request_are_rejected(self):
+        for name in VARIANTS:
+            mod = MODULES[name]
+            mod._dirty = True
+            with self.subTest(variant=name):
+                _ciw, sent, _unread, parsed = run_request(
+                    mod, {"probe": True, "token": "tok"},
+                )
+                self.assertEqual(sent[:1], NAK)
+                self.assertEqual(parsed["status"], "busy")
+                self.assertEqual(parsed["code"], "skill_busy")
+
+                with mock.patch.object(
+                    mod, "_read_frame",
+                    side_effect=AssertionError("must not touch CIW"),
+                ):
+                    _ciw, sent, _unread, parsed = run_request(
+                        mod, request(),
+                    )
+                self.assertEqual(sent[:1], NAK)
+                self.assertEqual(parsed["code"], "skill_busy")
+
+    def test_first_frame_timeout_sets_dirty(self):
+        for name in VARIANTS:
+            mod = MODULES[name]
+
+            def timed_out_frame():
+                mod._timeout_flag = True
+                return error_frame("SKILL execution timed out")
+
+            with self.subTest(variant=name), \
+                    mock.patch.object(mod, "_read_frame",
+                                      side_effect=timed_out_frame):
+                _ciw, sent, _unread, parsed = run_request(mod, request())
+            self.assertEqual(sent[:1], NAK)
+            self.assertIn("SKILL execution timed out", parsed["error"])
+            self.assertTrue(mod._dirty)
 
 
 if __name__ == "__main__":  # pragma: no cover - manual run

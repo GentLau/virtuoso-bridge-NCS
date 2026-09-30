@@ -18,6 +18,10 @@ MODULES = [("daemon_3", d3), ("daemon_27", d27)]
 
 
 class TestDaemonParity(unittest.TestCase):
+    def setUp(self):
+        for _name, mod in MODULES:
+            mod._dirty = False
+
     def _classify(self, mod, line):
         return mod.classify_level(line)
 

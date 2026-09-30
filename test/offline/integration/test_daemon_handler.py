@@ -69,6 +69,7 @@ class FakeStdout:
 
 class DaemonHandlerTestBase(unittest.TestCase):
     def _run_handler(self, request: dict, token="tok-1"):
+        daemon._dirty = False
         stdin_buf = FakePipeBuffer()
         stdout_buf = FakePipeBuffer()
         stdin = FakeStdin(stdin_buf)

@@ -67,7 +67,7 @@ class FakeSkillClient:
         self.kwargs = kwargs
         FakeSkillClient.instances[kwargs["token"]] = self
 
-    def execute_skill(
+    def execute_skill_checked(
         self,
         skill_code,
         timeout=None,
@@ -79,7 +79,10 @@ class FakeSkillClient:
             "log_level": log_level,
             "log_max_bytes": log_max_bytes,
         }
-        return VirtuosoResult(status=ExecutionStatus.SUCCESS, output="2")
+        return VirtuosoResult(status=ExecutionStatus.SUCCESS, output="2"), "completed"
+
+    def execute_skill(self, *args, **kwargs):
+        return self.execute_skill_checked(*args, **kwargs)[0]
 
 
 class TestBusinessServerRouting(unittest.TestCase):

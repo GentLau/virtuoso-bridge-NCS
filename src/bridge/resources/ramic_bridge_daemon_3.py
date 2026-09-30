@@ -79,6 +79,7 @@ virtuoso_pid = (
 )
 
 _timeout_flag = False
+_dirty = False
 _watchdog = None
 _watchdog_gen = 0
 _watchdog_lock = threading.Lock()
@@ -341,8 +342,9 @@ def _read_range(path, start_offset, end_offset):
     return _READER.read(path, start_offset, end_offset)
 
 def handle_connection(conn):
-    global _timeout_flag, _watchdog, _watchdog_gen, _RB_CALLS, _RB_ERRORS
+    global _timeout_flag, _dirty, _watchdog, _watchdog_gen, _RB_CALLS, _RB_ERRORS
     tmp_il_path = None
+    sent_to_ciw = False
     try:
         chunks = []
         total = 0
@@ -367,18 +369,43 @@ def handle_connection(conn):
         if not isinstance(req, dict):
             return
 
+        token = req.get("token")
+        if req.get("probe") is True:
+            if not isinstance(token, _STRING_TYPES):
+                return
+            if not DAEMON_TOKEN or token != DAEMON_TOKEN:
+                _safe_sendall(conn, NAK + json.dumps({"error": "invalid token", "log": ""}).encode("utf-8") + RS)
+                return
+            status = "busy" if _dirty else "idle"
+            body = {"status": status, "log": ""}
+            if status == "busy":
+                body.update({"code": "skill_busy", "error": "SKILL channel busy"})
+            _safe_sendall(
+                conn,
+                (NAK if status == "busy" else STX)
+                + json.dumps(body).encode("utf-8") + RS,
+            )
+            return
+
         skill_code = req.get("skill")
         timeout_seconds = _valid_timeout(req.get("timeout", 30.0))
-        token = req.get("token")
-        if (
-            not isinstance(skill_code, _STRING_TYPES)
-            or not isinstance(token, _STRING_TYPES)
-            or timeout_seconds is None
-        ):
+        if not isinstance(skill_code, _STRING_TYPES) or timeout_seconds is None:
             return  # malformed own-protocol packet: drop silently
-
+        if not isinstance(token, _STRING_TYPES):
+            return  # malformed own-protocol packet: drop silently
         if not DAEMON_TOKEN or token != DAEMON_TOKEN:
             _safe_sendall(conn, NAK + json.dumps({"error": "invalid token", "log": ""}).encode("utf-8") + RS)
+            return
+        if _dirty:
+            _safe_sendall(
+                conn,
+                NAK + json.dumps({
+                    "status": "busy",
+                    "code": "skill_busy",
+                    "error": "SKILL channel busy",
+                    "log": "",
+                }).encode("utf-8") + RS,
+            )
             return
 
         log_level = req.get("log_level", "off")
@@ -428,6 +455,7 @@ def handle_connection(conn):
 
         sys.stdout.buffer.write(send_code.encode("utf-8"))
         sys.stdout.buffer.flush()
+        sent_to_ciw = True
 
         _watchdog = threading.Timer(
             timeout_seconds, _watchdog_cb, args=(watchdog_gen,)
@@ -436,6 +464,9 @@ def handle_connection(conn):
         _watchdog.start()
 
         frame1 = _read_frame()
+        with _watchdog_lock:
+            if _timeout_flag:
+                _dirty = True
 
         status_byte = frame1[:1]
         value_payload = frame1[1:].decode("utf-8", errors="replace").rstrip("\x1e")
@@ -472,8 +503,12 @@ def handle_connection(conn):
         _emit_stat()
 
     except (UnicodeDecodeError, ValueError):
+        if sent_to_ciw:
+            _dirty = True
         traceback.print_exc()
     except Exception:  # noqa: BLE001
+        if sent_to_ciw:
+            _dirty = True
         traceback.print_exc()
         _send_error(conn, "internal daemon error")
         _RB_ERRORS += 1

@@ -75,16 +75,35 @@ class SkillClient:
         log_level: str | None = None,
         log_max_bytes: int | None = None,
     ) -> VirtuosoResult:
+        return self.execute_skill_checked(
+            skill_code,
+            timeout,
+            log_level=log_level,
+            log_max_bytes=log_max_bytes,
+        )[0]
+
+    def execute_skill_checked(
+        self,
+        skill_code: str,
+        timeout: float | None = None,
+        *,
+        log_level: str | None = None,
+        log_max_bytes: int | None = None,
+    ) -> tuple[VirtuosoResult, str]:
+        """Return the public result plus an internal delivery classification."""
         effective = timeout if timeout is not None else self.timeout
         deadline = time.monotonic() + effective
         start = time.monotonic()
         attempts = 0
         while True:
             if time.monotonic() >= deadline:
-                return VirtuosoResult(
-                    status=ExecutionStatus.ERROR,
-                    errors=["SKILL execution timed out"],
-                    execution_time=time.monotonic() - start,
+                return (
+                    VirtuosoResult(
+                        status=ExecutionStatus.ERROR,
+                        errors=["SKILL execution timed out"],
+                        execution_time=time.monotonic() - start,
+                    ),
+                    "not_delivered",
                 )
             attempts += 1
             try:
@@ -96,14 +115,21 @@ class SkillClient:
                     log_max_bytes=log_max_bytes,
                 )
                 elapsed = time.monotonic() - start
-                return self._parse_response(raw, elapsed)
+                if not raw or raw[0] not in (STX, NAK):
+                    return self._parse_response(raw, elapsed), "delivered_unknown"
+                if self._response_status(raw) == "busy":
+                    return self._parse_response(raw, elapsed), "delivered_unknown"
+                return self._parse_response(raw, elapsed), "completed"
             except _DeliveredRequestFailure:
                 # the request may already have run: report the frozen
                 # "result unknown" wording and never resend
-                return VirtuosoResult(
-                    status=ExecutionStatus.ERROR,
-                    errors=["SKILL execution timed out"],
-                    execution_time=time.monotonic() - start,
+                return (
+                    VirtuosoResult(
+                        status=ExecutionStatus.ERROR,
+                        errors=["SKILL execution timed out"],
+                        execution_time=time.monotonic() - start,
+                    ),
+                    "delivered_unknown",
                 )
             except (ConnectionRefusedError, ConnectionResetError):
                 # nothing was sent (connect-phase failure): safe to retry, but
@@ -112,55 +138,69 @@ class SkillClient:
                     attempts >= _MAX_ATTEMPTS
                     or time.monotonic() >= start + _CONNECT_GRACE_SECONDS
                 ):
-                    return VirtuosoResult(
-                        status=ExecutionStatus.ERROR,
-                        errors=["Daemon connection failed (refused/reset)"],
-                        execution_time=time.monotonic() - start,
+                    return (
+                        VirtuosoResult(
+                            status=ExecutionStatus.ERROR,
+                            errors=["Daemon connection failed (refused/reset)"],
+                            execution_time=time.monotonic() - start,
+                        ),
+                        "not_delivered",
                     )
                 time.sleep(min(_CONNECT_RETRY_DELAY, deadline - time.monotonic()))
             except socket.timeout:
                 # socket.timeout is an OSError subclass; catch it first
-                return VirtuosoResult(
-                    status=ExecutionStatus.ERROR,
-                    errors=["SKILL execution timed out"],
-                    execution_time=time.monotonic() - start,
+                return (
+                    VirtuosoResult(
+                        status=ExecutionStatus.ERROR,
+                        errors=["SKILL execution timed out"],
+                        execution_time=time.monotonic() - start,
+                    ),
+                    "not_delivered",
                 )
             except OSError as exc:
-                return VirtuosoResult(
-                    status=ExecutionStatus.ERROR,
-                    errors=[f"Daemon connection failed: {exc}"],
-                    execution_time=time.monotonic() - start,
+                return (
+                    VirtuosoResult(
+                        status=ExecutionStatus.ERROR,
+                        errors=[f"Daemon connection failed: {exc}"],
+                        execution_time=time.monotonic() - start,
+                    ),
+                    "not_delivered",
                 )
 
-    def _execute_once(
+    def probe(self, timeout: float | None = None) -> str:
+        """Side-effect-free daemon readiness probe."""
+        effective = timeout if timeout is not None else self.timeout
+        deadline = time.monotonic() + effective
+        try:
+            raw = self._round_trip(
+                {"probe": True, "token": self.token},
+                effective,
+                deadline,
+            )
+        except Exception:  # noqa: BLE001 - timeout/busy maps to unknown
+            return "unknown"
+        if not raw or raw[0] not in (STX, NAK):
+            return "unknown"
+        status = self._response_status(raw)
+        return status if status in ("idle", "busy") else "unknown"
+
+    def _round_trip(
         self,
-        skill_code: str,
+        payload: dict,
         timeout: float,
         deadline: float,
-        *,
-        log_level: str | None = None,
-        log_max_bytes: int | None = None,
     ) -> str:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             connect_budget = _remaining_timeout(deadline)
             if self.connect_timeout is not None:
-                connect_budget = min(connect_budget, max(self.connect_timeout, 0.0)) or 0.0
+                connect_budget = min(
+                    connect_budget, max(self.connect_timeout, 0.0),
+                ) or 0.0
             s.settimeout(connect_budget)
             s.connect((self.host, self.port))
             request_timeout = min(timeout, _remaining_timeout(deadline))
-            payload = {
-                "skill": skill_code,
-                "timeout": request_timeout,
-                "token": self.token,
-                "log_level": (
-                    log_level if log_level is not None else self.log_level
-                ),
-                "log_max_bytes": (
-                    log_max_bytes
-                    if log_max_bytes is not None
-                    else self.log_max_bytes
-                ),
-            }
+            payload = dict(payload)
+            payload["timeout"] = request_timeout
             send_timeout = _remaining_timeout(deadline)
             payload_bytes = json.dumps(payload, ensure_ascii=False).encode("utf-8")
             try:
@@ -178,6 +218,43 @@ class SkillClient:
                 # anything from here on may have reached the daemon
                 raise _DeliveredRequestFailure(exc) from exc
             return b"".join(chunks).decode("utf-8", errors="ignore")
+
+    def _execute_once(
+        self,
+        skill_code: str,
+        timeout: float,
+        deadline: float,
+        *,
+        log_level: str | None = None,
+        log_max_bytes: int | None = None,
+    ) -> str:
+        return self._round_trip(
+            {
+                "skill": skill_code,
+                "token": self.token,
+                "log_level": (
+                    log_level if log_level is not None else self.log_level
+                ),
+                "log_max_bytes": (
+                    log_max_bytes
+                    if log_max_bytes is not None
+                    else self.log_max_bytes
+                ),
+            },
+            timeout,
+            deadline,
+        )
+
+    @staticmethod
+    def _response_status(raw: str) -> str | None:
+        if not raw or raw[0] not in (STX, NAK):
+            return None
+        try:
+            data = json.loads(raw[1:].rstrip(RS))
+        except (json.JSONDecodeError, ValueError):
+            return None
+        status = data.get("status")
+        return status if isinstance(status, str) else None
 
     @staticmethod
     def _parse_response(raw: str, elapsed: float) -> VirtuosoResult:

@@ -501,12 +501,15 @@ class BusinessServer(Middle):
         self._retire_pending: set[str] = set()
         self._local_locks: dict[str, threading.Lock] = {}
         self._skill_gates: dict[str, threading.Lock] = {}
+        self._skill_dirty: set[str] = set()
         self._local_sessions: dict[str, _LocalCommandSession] = {}
         self._lock = threading.RLock()
         # spec 资源盘点：进程退出不得留下隧道/常驻 shell（TB 与业务进程同样适用）
         atexit.register(self.close)
 
-    def invalidate_token(self, token: str) -> None:
+    def invalidate_token(
+        self, token: str, *, preserve_skill_state: bool = False,
+    ) -> None:
         """Close and forget cached runtime resources for one token."""
         with self._lock:
             client = self._clients.pop(token, None)
@@ -517,7 +520,9 @@ class BusinessServer(Middle):
             self._in_flight.pop(token, None)
             self._retire_pending.discard(token)
             self._local_locks.pop(token, None)
-            self._skill_gates.pop(token, None)
+            if not preserve_skill_state:
+                self._skill_gates.pop(token, None)
+                self._skill_dirty.discard(token)
         for resource in (client, session):
             if resource is not None:
                 try:
@@ -537,7 +542,7 @@ class BusinessServer(Middle):
         再关闭。
         """
         fresh = load_registry(registry_path())
-        to_close: list[str] = []
+        to_close: list[tuple[str, bool]] = []
         with self._lock:
             self.registry = fresh
             tokens = (
@@ -551,9 +556,11 @@ class BusinessServer(Middle):
                 if self._in_flight.get(token, 0) > 0:
                     self._retire_pending.add(token)
                 else:
-                    to_close.append(token)
-        for token in to_close:
-            self.invalidate_token(token)
+                    to_close.append((token, fresh.by_token(token) is not None))
+        for token, preserve_skill_state in to_close:
+            self.invalidate_token(
+                token, preserve_skill_state=preserve_skill_state,
+            )
 
     def close(self) -> None:
         """Release every per-token client (tunnels + shells) exactly once."""
@@ -567,6 +574,7 @@ class BusinessServer(Middle):
             self._capacity.clear()
             self._local_locks.clear()
             self._skill_gates.clear()
+            self._skill_dirty.clear()
             self._in_flight.clear()
             self._retire_pending.clear()
         for client in clients:
@@ -766,18 +774,44 @@ class BusinessServer(Middle):
 
             if targets.daemon.mode == "remote":
                 self._remote(token).ensure_tunnel(deadline=deadline)
+            if token in self._skill_dirty:
+                # Previous delivered request timed out: do not send another
+                # business SKILL until the daemon positively reports idle.
+                while True:
+                    remaining = deadline - time.monotonic()
+                    if remaining <= 0:
+                        return VirtuosoResult(
+                            status=ExecutionStatus.ERROR,
+                            errors=["SKILL execution timed out"],
+                        )
+                    status = self._skill(token).probe(
+                        timeout=min(1.0, remaining),
+                    )
+                    if status == "idle":
+                        self._skill_dirty.discard(token)
+                        break
+                    sleep_for = min(
+                        1.0, max(0.0, deadline - time.monotonic()),
+                    )
+                    if sleep_for > 0:
+                        time.sleep(sleep_for)
             remaining = max(0.0, deadline - time.monotonic())
             if remaining <= 0:
                 return VirtuosoResult(
                     status=ExecutionStatus.ERROR,
                     errors=["SKILL execution timed out"],
                 )
-            return self._skill(token).execute_skill(
+            result, delivery = self._skill(token).execute_skill_checked(
                 skill_code,
                 timeout=remaining,
                 log_level=log_level,
                 log_max_bytes=log_max_bytes,
             )
+            if delivery == "delivered_unknown":
+                self._skill_dirty.add(token)
+            else:
+                self._skill_dirty.discard(token)
+            return result
         except LookupError:
             return VirtuosoResult(status=ExecutionStatus.ERROR, errors=["invalid token"])
         except CapacityExceeded as exc:

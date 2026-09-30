@@ -15,6 +15,7 @@ from unittest import mock
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src"))
 
 from pyapi.models import ExecutionStatus, VirtuosoResult
+from common.skill_client import SkillClient
 from transport.middle import BusinessServer
 from common.registry import UserEntry, load_registry
 from common.paths import registry_path, init_work_dir
@@ -23,15 +24,25 @@ from common.paths import registry_path, init_work_dir
 class RecordingSkillClient:
     """记录每次投递，并可让第一次调用阻塞以占住投递闸门。"""
 
-    def __init__(self, delay=0.0, result=None):
+    def __init__(self, delay=0.0, result=None, delivery="completed",
+                 probe_results=None):
         self.delay = delay
         self.result = result
+        self.delivery = delivery
+        self.probe_results = list(probe_results or [])
         self.calls = []
+        self.probe_calls = []
         self.active = 0
         self.max_active = 0
         self.lock = threading.Lock()
 
-    def execute_skill(
+    def probe(self, timeout=None):
+        self.probe_calls.append(timeout)
+        if self.probe_results:
+            return self.probe_results.pop(0)
+        return "unknown"
+
+    def execute_skill_checked(
         self,
         code,
         timeout=None,
@@ -47,11 +58,17 @@ class RecordingSkillClient:
             if self.delay:
                 time.sleep(self.delay)
             if self.result is not None:
-                return self.result
-            return VirtuosoResult(status=ExecutionStatus.SUCCESS, output=code)
+                return self.result, self.delivery
+            return (
+                VirtuosoResult(status=ExecutionStatus.SUCCESS, output=code),
+                self.delivery,
+            )
         finally:
             with self.lock:
                 self.active -= 1
+
+    def execute_skill(self, *args, **kwargs):
+        return self.execute_skill_checked(*args, **kwargs)[0]
 
 
 class SkillAdmissionBase(unittest.TestCase):
@@ -148,6 +165,121 @@ class TestThreadPoolUnchanged(SkillAdmissionBase):
             t.join(timeout=5)
         self.assertEqual(rejected.errors, ["thread pool exceeded"])
         self.assertEqual(len(client.calls), 1)
+
+
+class TestDirtyGate(SkillAdmissionBase):
+    def test_delivered_timeout_marks_dirty_and_next_request_probes(self):
+        timed_out = VirtuosoResult(
+            status=ExecutionStatus.ERROR, errors=["SKILL execution timed out"]
+        )
+        client = RecordingSkillClient(
+            result=timed_out, delivery="delivered_unknown",
+        )
+        with mock.patch.object(BusinessServer, "_skill", lambda self, token: client):
+            self.server.execute_skill("1+1", timeout=1, token="tok-skill")
+            self.assertIn("tok-skill", self.server._skill_dirty)
+
+            client.calls.clear()
+            client.result = VirtuosoResult(
+                status=ExecutionStatus.SUCCESS, output="4",
+            )
+            client.delivery = "completed"
+            client.probe_results = ["busy", "idle"]
+            with mock.patch("transport.middle.time.sleep"):
+                result = self.server.execute_skill(
+                    "2+2", timeout=2, token="tok-skill",
+                )
+        self.assertTrue(result.ok)
+        self.assertEqual(client.probe_calls[:2], [1.0, 1.0])
+        self.assertEqual(client.calls, [("2+2", mock.ANY)])
+        self.assertNotIn("tok-skill", self.server._skill_dirty)
+
+    def test_dirty_probe_timeout_does_not_deliver_business_request(self):
+        self.server._skill_dirty.add("tok-skill")
+        client = RecordingSkillClient(probe_results=["busy"] * 100)
+        with mock.patch.object(BusinessServer, "_skill", lambda self, token: client), \
+             mock.patch("transport.middle.time.sleep"):
+            result = self.server.execute_skill(
+                "2+2", timeout=0.05, token="tok-skill",
+            )
+        self.assertFalse(result.ok)
+        self.assertEqual(client.calls, [])
+        self.assertIn("tok-skill", self.server._skill_dirty)
+
+    def test_pre_delivery_failure_keeps_dirty_false(self):
+        client = RecordingSkillClient(
+            result=VirtuosoResult(
+                status=ExecutionStatus.ERROR,
+                errors=["Daemon connection failed (refused/reset)"],
+            ),
+            delivery="not_delivered",
+        )
+        with mock.patch.object(BusinessServer, "_skill", lambda self, token: client):
+            self.server.execute_skill("1+1", timeout=1, token="tok-skill")
+        self.assertNotIn("tok-skill", self.server._skill_dirty)
+
+    def test_reload_registry_preserves_dirty(self):
+        self.server._skill_dirty.add("tok-skill")
+        self.server.reload_registry()
+        self.assertIn("tok-skill", self.server._skill_dirty)
+
+
+class TestSkillClientOutcome(unittest.TestCase):
+    STX = "\x02"
+    NAK = "\x15"
+    RS = "\x1e"
+
+    def setUp(self):
+        self.client = SkillClient(token="tok-skill")
+
+    def _response(self, mark, body):
+        import json
+        return mark + json.dumps(body) + self.RS
+
+    def test_completed_response_is_clean(self):
+        with mock.patch.object(
+            self.client, "_round_trip",
+            return_value=self._response(self.STX, {"value": "2", "log": ""}),
+        ):
+            result, delivery = self.client.execute_skill_checked("1+1")
+        self.assertTrue(result.ok)
+        self.assertEqual(delivery, "completed")
+
+    def test_empty_response_is_delivered_unknown(self):
+        with mock.patch.object(self.client, "_round_trip", return_value=""):
+            _result, delivery = self.client.execute_skill_checked("1+1")
+        self.assertEqual(delivery, "delivered_unknown")
+
+    def test_busy_response_is_delivered_unknown(self):
+        with mock.patch.object(
+            self.client, "_round_trip",
+            return_value=self._response(
+                self.NAK,
+                {"status": "busy", "code": "skill_busy", "error": "busy", "log": ""},
+            ),
+        ):
+            _result, delivery = self.client.execute_skill_checked("1+1")
+        self.assertEqual(delivery, "delivered_unknown")
+
+    def test_connect_refusal_is_not_delivered(self):
+        with mock.patch.object(
+            self.client, "_round_trip",
+            side_effect=ConnectionRefusedError("refused"),
+        ), mock.patch("common.skill_client.time.sleep"):
+            _result, delivery = self.client.execute_skill_checked("1+1")
+        self.assertEqual(delivery, "not_delivered")
+
+    def test_probe_classification(self):
+        cases = (
+            (self._response(self.STX, {"status": "idle", "log": ""}), "idle"),
+            (self._response(self.NAK, {"status": "busy", "log": ""}), "busy"),
+            ("", "unknown"),
+        )
+        for raw, expected in cases:
+            with self.subTest(expected=expected), mock.patch.object(
+                self.client, "_round_trip", return_value=raw,
+            ):
+                self.assertEqual(self.client.probe(timeout=0.1), expected)
 
 
 if __name__ == "__main__":
