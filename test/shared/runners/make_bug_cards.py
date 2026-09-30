@@ -56,8 +56,8 @@ OPEN = [
         "slug": "maestro-write-history-rename-chain-handle-error",
         "title": "`maestro.write_history` 连续 rename（A→B，再 B→A）第二跳报 `ASSEMBLER-2404 Cannot find a setup database entry for handle`",
         "level": "P3（重命名链不可用：`maestro_e2e_tests.HISTORY-01` 因此稳定红）",
-        "owner": "设计侧（maestro 包 rename 的会话/SDB handle 生命周期）",
-        "status": "待设计修",
+        "owner": "设计侧（已修：maestro 包会话/SDB handle 生命周期）",
+        "status": "待测试侧",
         "where": "`src/pyapi/packages/maestro.py`（`write_history` 的 rename 分支与 SDB handle 复用；`_open_session` 会话内 handle 在重命名后失效）",
         "symptom": "隔离复现（round9，vblog，21:5x）：`rename(Interactive.8 → e2e_renamed)` **ok=True**；紧接着 "
                    "`rename(e2e_renamed → Interactive.8)` → `(\"error\" 0 t nil (\"*Error* error: Cannot find a setup database entry for handle 118109.\" nil))`。"
@@ -68,9 +68,10 @@ OPEN = [
         "evidence": "`test/artifacts/evidence/round9/final3-maestro_e2e_tests.py.log`（HISTORY-01 报错原文）；隔离探针 stdout（rename ok / restore fail, handle 118109）",
         "accept": "① rename 链（含目标名已存在、重命名回原名）必须成功或给出**点名冲突**的结构化拒绝（对照：重名 rename 已有清晰文案）；"
                   "② 不得报 SDB handle 错误；③ `maestro_e2e_tests.py` HISTORY-01 转绿。",
-        "next": "设计侧查 rename 后会话内 handle 的刷新（或改按名字重新解析）；测试侧复跑 HISTORY-01。",
+        "next": "**设计侧已修 `2610668` + `50e6576`（2026-09-30 12:47）**：`_open_session` 校验 `maeOpenSetup` 返回会话可活跃、失效则关闭重开，rename 链按本次创建路径收尾。"
+                "真机证据 `test/artifacts/evidence/verify-fix-r10/c09-maestro-history-green.json`（HISTORY-01 HTTP 全链通过）。待测试侧复跑 `maestro_e2e_tests.py` HISTORY-01 后把本卡移入已关闭。",
         "reported": "2026-09-29（round9 门禁复跑 + root 隔离复现）",
-        "updated": "2026-09-29（新立）",
+        "updated": "2026-09-30 18:20（设计侧已修 + 真机绿证据，转测试侧收口）",
     },
 
     {
@@ -470,8 +471,8 @@ OPEN = [
         "slug": "place-pin-power-ground-sens-silent-noop",
         "title": "`place_pin` 的 `power_sens`/`ground_sens`/四属性组合**报 ok 但零对象**（静默 no-op）；`off_sheet` 单用报 `nth: argument #1 should be an integer`",
         "level": "P2（静默 no-op：调用方以为建好了 pin，实际库里什么都没有；与 C10/P-092 同族但更隐蔽）",
-        "owner": "设计侧（`src/pyapi/packages/schematic.py::place_pin` 可选实参对齐；P-113 修完后暴露的残留）",
-        "status": "待设计修",
+        "owner": "设计侧（已修：`place_pin` 可选实参对齐；P-113 修完后暴露的残留）",
+        "status": "待测试侧",
         "where": "`src/pyapi/packages/schematic.py` 的 `place_pin` 分支（可选实参 `off_sheet`/`power_sens`/`ground_sens`/`sig_type` 的拼装与位置对齐）。",
         "symptom": "真机（vblog，2026-09-30，P-113 修复 commit `0e14c8b` 之后；每个档都在**新建空 cell**上单独跑）：\n"
                    "① `power_sens=\"powerSensitive\"` → `write ok=True`，但 `read(positions).pins=[]`、"
@@ -487,9 +488,11 @@ OPEN = [
                     "TB 证据 `test/artifacts/evidence/round9/schematic-r9l.txt`（11/11 PASS，含 P-114 红钉用例）。",
         "accept": "① 四个可选属性**单独**与**任意组合**都能真正建出 pin（positions 有图形 + connectivity 有 net/term）；"
                   "② 不得出现\"报 ok 但零对象\"；③ `off_sheet` 单用不再 `nth`；④ TB `PIN-OPT` 从红钉升级为值级断言后跑绿。",
-        "next": "设计定位可选实参对齐（对照 P-113 的修法）；测试侧红钉已就位，修好即 UNEXPECTED-GREEN 提醒升级。",
+        "next": "**设计侧已修 `09af55c`（2026-09-30 16:04）**：power/ground sens 先校验目标 terminal 存在（缺失结构化失败）、`schCreatePin` 后校验 pin 真创建（nil/0 不得报 ok）、"
+                "`off_sheet=true` 无可用 master 时结构化拒绝。真机单点复验：`test/artifacts/evidence/verify-fix-r10/p114-pin-opt-green.json`（PIN-OPT 51 行判据全 PASS："
+                "power/ground 正例建出 PSENS、缺 terminal 负例、off_sheet/四属性结构化拒绝、sig_type 值级读回）。待测试侧复跑 schematic 全量后把本卡移入已关闭。",
         "reported": "2026-09-30（P-113 修复后复跑 `place_pin` 四档时发现：三档静默 no-op + 一档硬报错）",
-        "updated": "2026-09-30 17:50（设计侧实现 + 真机值级读回证据，转测试侧收口）",
+        "updated": "2026-09-30 18:20（设计侧已修 + PIN-OPT 真机 51 行绿证据，转测试侧收口）",
     },
 
     {

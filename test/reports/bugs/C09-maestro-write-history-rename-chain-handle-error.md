@@ -4,11 +4,11 @@
 |---|---|
 | 级别 | P3（重命名链不可用：`maestro_e2e_tests.HISTORY-01` 因此稳定红） |
 | 层 | 上层（maestro 包）· write_history rename 链 |
-| 归属 | 设计侧（maestro 包 rename 的会话/SDB handle 生命周期） |
-| 状态 | **待设计修** |
+| 归属 | 设计侧（已修：maestro 包会话/SDB handle 生命周期） |
+| 状态 | **待测试侧** |
 | 位置 | `src/pyapi/packages/maestro.py`（`write_history` 的 rename 分支与 SDB handle 复用；`_open_session` 会话内 handle 在重命名后失效） |
 | 首报 | 2026-09-29（round9 门禁复跑 + root 隔离复现） |
-| 最近更新 | 2026-09-29（新立） |
+| 最近更新 | 2026-09-30 18:20（设计侧已修 + 真机绿证据，转测试侧收口） |
 
 ## 现象
 
@@ -31,7 +31,7 @@ PYTHONPATH=src python test/live/packages/maestro_e2e_tests.py --transport http  
 
 ## 下一步 / 责任人
 
-设计侧查 rename 后会话内 handle 的刷新（或改按名字重新解析）；测试侧复跑 HISTORY-01。
+**设计侧已修 `2610668` + `50e6576`（2026-09-30 12:47）**：`_open_session` 校验 `maeOpenSetup` 返回会话可活跃、失效则关闭重开，rename 链按本次创建路径收尾。真机证据 `test/artifacts/evidence/verify-fix-r10/c09-maestro-history-green.json`（HISTORY-01 HTTP 全链通过）。待测试侧复跑 `maestro_e2e_tests.py` HISTORY-01 后把本卡移入已关闭。
 
 
 ---
