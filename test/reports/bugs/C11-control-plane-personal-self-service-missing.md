@@ -29,7 +29,11 @@
 
 ## 验收判据（修好即转绿）
 
-① spec 补字段级权限矩阵，明确 personal token 只能访问本人、哪些字段普通修改、哪些字段必须 `enhanced_token`；② server 提供 personal-token-only-own-user 的查询/更新语义，并在 update 接入 `enhanced_token`（只校验、不落盘、不回显）；③ 个人页无需管理员 token 即可查询/修改自己的 registry；④ 负例：个人 token 访问他人条目必须拒绝。
+① spec 补字段级权限矩阵，明确 personal token 只能访问本人、哪些字段普通修改、哪些字段必须 `enhanced_token`；② server 提供 personal-token-only-own-user 的查询/更新语义，并在 update 接入 `enhanced_token`（只校验、不落盘、不回显）；③ 个人页用本人 token 可查询自己 entry（剔除保密字段）并改自助权限=编辑字段，含只读/保密字段的修改需 `enhanced_token`（仅管理员 token）；④ 负例：个人 token 访问他人条目必须拒绝。
+
+## 讨论决策（2026-09-30）
+
+字段级授权以[中层配置文档 §2]自助权限列为唯一口径：编辑=本人可改，只读=本人只可读不可改，保密=本人不可读。本人读 `/api/user/<user>` 剔除保密字段；update 含只读/保密字段 → 整请求需 `enhanced_token`（仅管理员 token）。读他人 403；DELETE 保持纯管理员。
 
 ## 下一步 / 责任人
 
