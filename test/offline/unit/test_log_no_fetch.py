@@ -38,6 +38,17 @@ class TestLogOffNoFetch(unittest.TestCase):
             self.assertIn('raw.endswith("\\\\o \\n")', src, name)
             self.assertIn("raw = raw[:-4]", src, name)
 
+    def test_error_frame_is_built_before_the_log_block(self):
+        """errset.errset 是单槽全局值：log 块里的 errset 调用会覆盖/清空它。
+        错误载荷必须在 when(log_on) 之前就复制进 frames，否则 error 提取
+        会拿到 nil 或 flush 自己的错误。"""
+        il = (RES / "ramic_bridge.il").read_text(encoding="utf-8")
+        eval_pos = il.index("errset(result=evalstring(")
+        err_frame_pos = il.index("errset.errset intToChar(30)")
+        log_block_pos = il.index("when(log_on", eval_pos)
+        self.assertLess(eval_pos, err_frame_pos)
+        self.assertLess(err_frame_pos, log_block_pos)
+
     def test_daemons_do_not_add_misleading_hiFlush(self):
         for name in ("ramic_bridge_daemon_3.py", "ramic_bridge_daemon_27.py"):
             src = (RES / name).read_text(encoding="utf-8")

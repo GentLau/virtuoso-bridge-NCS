@@ -152,6 +152,49 @@ def _check_silent_increment(transport: DirectDaemonTransport) -> dict:
     }
 
 
+def _check_error_extraction(transport: DirectDaemonTransport) -> dict:
+    """errset 评估：log 块的 errset 不得污染用户错误的提取。
+
+    用户 SKILL 先 print 再抛错：NAK 载荷必须是原始 SKILL 错误（不是 flush
+    错误），print 落同一请求且不留给下一条；log_level=off 时错误同样完整。
+    """
+    mark = f"C06E_{time.strftime('%H%M%S')}"
+    skill = f'progn(print("{mark}") boom_c06())'
+    with_log = transport.call({"operation": "basic.skill.execute",
+                               "skill_code": skill, "log_level": "all"})
+    after = _cdslog_increment(transport, "1+1")
+    without_log = transport.call({"operation": "basic.skill.execute",
+                                  "skill_code": skill, "log_level": "off"})
+    with_result = with_log.get("result") or {}
+    off_result = without_log.get("result") or {}
+    with_errors = list(with_result.get("errors") or [])
+    off_errors = list(off_result.get("errors") or [])
+    with_text = str(with_result.get("CDSlog") or "")
+    off_text = str(off_result.get("CDSlog") or "")
+
+    def is_original_boom(errors: list[str]) -> bool:
+        return any("undefined function" in e and "boom_c06" in e for e in errors)
+
+    return {
+        "mark": mark,
+        "with_log_ok_false": with_log.get("ok") is False,
+        "with_log_errors": with_errors,
+        "with_log_CDSlog": with_text[:200],
+        "after_log": after[:120],
+        "off_errors": off_errors,
+        "off_CDSlog": off_text,
+        "ok": (
+            with_log.get("ok") is False
+            and is_original_boom(with_errors)
+            and mark in with_text
+            and mark not in after
+            and without_log.get("ok") is False
+            and is_original_boom(off_errors)
+            and off_text == ""
+        ),
+    }
+
+
 def _wait_port(port: int, timeout: float = 15) -> None:
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
@@ -235,6 +278,9 @@ def main(argv: list[str] | None = None) -> int:
         evidence["c06_silent_increment"] = _check_silent_increment(
             DirectDaemonTransport(args.host, local_port, args.token)
         )
+        evidence["c06_error_extraction"] = _check_error_extraction(
+            DirectDaemonTransport(args.host, local_port, args.token)
+        )
 
         work_dir = Path(tempfile.mkdtemp(prefix="vb-p086-"))
         server = _business_server(work_dir, local_port, args.token)
@@ -271,6 +317,7 @@ def main(argv: list[str] | None = None) -> int:
             bool(c06_results)
             and all(status == "PASS" for _, status in c06_results)
             and evidence["c06_silent_increment"]["ok"]
+            and evidence["c06_error_extraction"]["ok"]
         )
         evidence["c06_ok"] = c06_ok
         out = Path(args.out) if args.out else (
