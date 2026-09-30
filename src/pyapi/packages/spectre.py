@@ -328,6 +328,13 @@ def _classify_errors(output: str) -> list[str]:
         for marker in ("failed to converge", "convergence failed", "spcrtrf-15044"):
             if marker in lower:
                 return ["convergence failure"]
+        for line in output.splitlines():
+            stripped = line.strip()
+            if (
+                re.search(r"^\s*ERROR\s*\(", stripped, re.IGNORECASE)
+                or "spectre completes with" in stripped.lower()
+            ):
+                return [stripped]
         return ["spectre reported a fatal error"]
     return []
 
@@ -656,32 +663,50 @@ class Package(ResultPackage):
                           _command_result_detail(downloaded))
                 )
                 if downloaded.returncode != 0:
-                    self._download_aux_files(
+                    log_path = self._download_aux_files(
                         run_dir, output_dir, steps, defaults,
                     )
-                    result["error"] = downloaded.stderr.strip() or "raw download failed"
-                    result["value"] = {
-                        "job": job, "status": "error", "command": command,
-                        "run_dir": run_dir, "netlist_path": remote_netlist,
-                        "output_dir": str(output_dir), "log_path": None,
-                        "returncode": executed.returncode,
-                        "transport_kind": transport_kind,
-                        "result_kind": None, "layout": None, "data": {},
-                        "points": {}, "analyses": [], "output_files": [],
-                        "errors": [downloaded.stderr.strip() or "raw download failed"],
-                        "warnings": warnings, "duration": time.perf_counter() - started,
-                    }
-                    self._cleanup_run_dir(run_dir, steps, defaults)
-                    return result
-                raw_exists = raw_local.exists()
-                log_path = self._download_aux_files(
-                    run_dir, output_dir, steps, defaults,
-                )
-                output_files = sorted(
-                    str(item)
-                    for item in output_dir.rglob("*")
-                    if item.is_file()
-                )
+                    output_files = sorted(
+                        str(item)
+                        for item in output_dir.rglob("*")
+                        if item.is_file()
+                    )
+                    # rc!=0 + raw 缺失是**仿真失败**，不是下载失败：让下面的
+                    # 统一状态机按 spec §5.4 产出 failure + 仿真器诊断。
+                    simulation_failed = (
+                        transport_kind == "command"
+                        and (executed.returncode != 0 or _has_fatal(combined))
+                    )
+                    if not simulation_failed:
+                        result["error"] = (
+                            downloaded.stderr.strip() or "raw download failed"
+                        )
+                        result["value"] = {
+                            "job": job, "status": "error", "command": command,
+                            "run_dir": run_dir, "netlist_path": remote_netlist,
+                            "output_dir": str(output_dir), "log_path": log_path,
+                            "returncode": executed.returncode,
+                            "transport_kind": transport_kind,
+                            "result_kind": None, "layout": None, "data": {},
+                            "points": {}, "analyses": [], "output_files": output_files,
+                            "errors": [
+                                downloaded.stderr.strip() or "raw download failed"
+                            ],
+                            "warnings": warnings,
+                            "duration": time.perf_counter() - started,
+                        }
+                        self._cleanup_run_dir(run_dir, steps, defaults)
+                        return result
+                else:
+                    raw_exists = raw_local.exists()
+                    log_path = self._download_aux_files(
+                        run_dir, output_dir, steps, defaults,
+                    )
+                    output_files = sorted(
+                        str(item)
+                        for item in output_dir.rglob("*")
+                        if item.is_file()
+                    )
 
             if transport_kind != "command":
                 status = "error"
