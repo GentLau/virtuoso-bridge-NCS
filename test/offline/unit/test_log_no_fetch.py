@@ -14,8 +14,9 @@ class TestLogOffNoFetch(unittest.TestCase):
         il = (RES / "ramic_bridge.il").read_text(encoding="utf-8")
         self.assertNotIn('hiPrintToLogFile("VB-BEGIN")', il)
         self.assertNotIn('hiPrintToLogFile("VB-END")', il)
-        # every flush/fileLength/meta-frame send is gated by log_on
-        # (log_on is parsed from the per-request "RBDLogOn=t" directive)
+        # log fetch (hiFlushLogFile/fileLength/meta frame) stays gated by
+        # log_on; the interactive-equivalent line terminator is not (see the
+        # dedicated contract below).
         self.assertIn("when(log_on", il)
         self.assertIn("hiFlushLogFile()", il)
 
@@ -31,6 +32,19 @@ class TestLogOffNoFetch(unittest.TestCase):
         self.assertLess(terminator_pos, flush_info_pos)
         self.assertLess(flush_info_pos, log_end_pos)
         self.assertNotIn("hiFlushCIW()", il)
+
+    def test_il_terminates_line_for_off_too(self):
+        """off 只跳过日志获取；模拟人类按 Enter 的换行终止符每条请求都要补，
+        否则 off 请求的部分行会漏进下一条 log_on 请求的窗口。"""
+        il = (RES / "ramic_bridge.il").read_text(encoding="utf-8")
+        eval_pos = il.index("errset(result=evalstring(")
+        terminator_pos = il.index('errset(printf("\\n"))', eval_pos)
+        log_block_pos = il.index("when(log_on", terminator_pos)
+        fetch_log_pos = il.index("hiFlushLogFile()", log_block_pos)
+        self.assertLess(eval_pos, terminator_pos)
+        # 终止符在 log 块之前 → 不属于 when(log_on)，off 也会执行
+        self.assertLess(terminator_pos, log_block_pos)
+        self.assertLess(log_block_pos, fetch_log_pos)
 
     def test_daemons_drop_the_il_terminator_line(self):
         for name in ("ramic_bridge_daemon_3.py", "ramic_bridge_daemon_27.py"):

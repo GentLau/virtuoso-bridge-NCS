@@ -82,10 +82,10 @@ procedure(RBIpcDataHandler(ipcId data)
   ; single-form input and returns the last form's value for multi-form
   ; input, matching what every Python caller already expects.
   ;
-  ; CDS.log delta: no BEGIN/END markers are ever written.  When RBDLogOn
-  ; is nil, this handler does exactly the old no-log work (no flush, no
-  ; fileLength, no meta frame).  When RBDLogOn is t, it first terminates
-  ; the pending output line (same as the interactive loop), then captures
+  ; CDS.log delta: no BEGIN/END markers are ever written.  RBDLogOn=nil
+  ; skips log fetch only (no hiFlushLogFile/fileLength/meta frame); the
+  ; interactive-equivalent line terminator below still runs so the CIW
+  ; behaves as if a human pressed Enter.  RBDLogOn=t additionally captures
   ; the byte offsets around the SKILL execution and sends one meta frame:
   ; STX + path + US + start + US + end + RS.
     let((result lp lo_start lo_end frames log_on)
@@ -110,16 +110,16 @@ procedure(RBIpcDataHandler(ipcId data)
         ; Error: NAK + payload，不打印 CIW
         frames = sprintf(nil "%c%L%c" intToChar(21) errset.errset intToChar(30))
     )
+    ; evalstring bypasses CIW's interactive loop, which terminates every
+    ; command's output line with a newline.  Emit the same terminator for
+    ; every request -- also log=off: off means "do not fetch/return the
+    ; log", not "leave the CIW half-written".  Without it a partial line
+    ; (e.g. print without "\n") is not displayed and leaks into whatever
+    ; request writes the next newline.  The daemon drops the empty "\o \n"
+    ; line the terminator leaves when nothing was pending.
+    errset(printf("\n"))
+    errset(hiFlushInfo())
     when(log_on
-        ; evalstring bypasses CIW's interactive loop, which terminates every
-        ; command's output line with a newline.  Without that terminator a
-        ; partial line (e.g. print without "\n") stays buffered: it is not
-        ; displayed and only enters CDS.log when a later request writes one.
-        ; Emit the same terminator so this request owns and can return its
-        ; output.  The daemon drops the empty "\o \n" line it creates when
-        ; the request produced no pending output.
-        errset(printf("\n"))
-        errset(hiFlushInfo())
         errset(hiFlushLogFile())
         errset(progn(lp = hiGetLogFileName() lo_end = fileLength(lp)))
         frames = strcat(frames

@@ -134,7 +134,7 @@ def _check_silent_increment(transport: DirectDaemonTransport) -> dict:
     """修复回归：IL 补的行终止符不得漏进返回值。
 
     静默请求（1+1）的增量必须仍是空串；带 print 的请求必须拿到自己的标记
-    且不把它留给下一条请求。
+    且不把它留给下一条请求；off 请求也补终止符（不返回），同样不留给下一条。
     """
     transport.call({"operation": "basic.skill.execute",
                     "skill_code": 'printf("\\n")', "log_level": "all"})
@@ -142,13 +142,27 @@ def _check_silent_increment(transport: DirectDaemonTransport) -> dict:
     mark = f"C06S_{time.strftime('%H%M%S')}"
     printed = _cdslog_increment(transport, f'print("{mark}")')
     after = _cdslog_increment(transport, "1+1")
+    off_mark = f"C06O_{time.strftime('%H%M%S')}"
+    off_resp = transport.call({"operation": "basic.skill.execute",
+                               "skill_code": f'print("{off_mark}")',
+                               "log_level": "off"})
+    off_log = str((off_resp.get("result") or {}).get("CDSlog") or "")
+    off_after = _cdslog_increment(transport, "1+1")
     return {
         "silent_prefix_len": len(silent),
         "silent_prefix": silent[:80],
         "print_log": printed[:200],
         "after_log": after[:200],
         "mark": mark,
-        "ok": (silent == "" and mark in printed and mark not in after and after == ""),
+        "off_mark": off_mark,
+        "off_print_log": off_log,
+        "off_after_log": off_after[:120],
+        "ok": (
+            silent == ""
+            and mark in printed and mark not in after and after == ""
+            and off_resp.get("ok") is True
+            and off_log == "" and off_mark not in off_after and off_after == ""
+        ),
     }
 
 
@@ -191,6 +205,51 @@ def _check_error_extraction(transport: DirectDaemonTransport) -> dict:
             and without_log.get("ok") is False
             and is_original_boom(off_errors)
             and off_text == ""
+        ),
+    }
+
+
+def _check_load_path(transport: DirectDaemonTransport) -> dict:
+    """load 路径（skill 含换行 → daemon 写临时 .il 再 load）同类问题排查。
+
+    覆盖：无换行 print 同请求归属、off 也补终止符（下一条不串场）、
+    load 内 print 后抛错时错误仍被检出且原错误可从 CDSlog 读出。
+    """
+    stamp = time.strftime("%H%M%S")
+    mark_all = f"C06L_A_{stamp}"
+    mark_off = f"C06L_C_{stamp}"
+    mark_err = f"C06L_E_{stamp}"
+    all_resp = transport.call({
+        "operation": "basic.skill.execute",
+        "skill_code": f'progn(\nprint("{mark_all}"))', "log_level": "all"})
+    off_resp = transport.call({
+        "operation": "basic.skill.execute",
+        "skill_code": f'progn(\nprint("{mark_off}"))', "log_level": "off"})
+    after = _cdslog_increment(transport, "1+1")
+    err_resp = transport.call({
+        "operation": "basic.skill.execute",
+        "skill_code": f'progn(\nprint("{mark_err}")\nboom_c06_load())',
+        "log_level": "all"})
+    all_text = str((all_resp.get("result") or {}).get("CDSlog") or "")
+    off_text = str((off_resp.get("result") or {}).get("CDSlog") or "")
+    err_result = err_resp.get("result") or {}
+    err_text = str(err_result.get("CDSlog") or "")
+    return {
+        "mark_all": mark_all,
+        "mark_off": mark_off,
+        "mark_err": mark_err,
+        "all_CDSlog": all_text[:160],
+        "off_CDSlog": off_text,
+        "after_log": after[:120],
+        "error_payload": list(err_result.get("errors") or []),
+        "error_CDSlog": err_text[:240],
+        "ok": (
+            all_resp.get("ok") is True and mark_all in all_text
+            and off_resp.get("ok") is True and off_text == ""
+            and mark_off not in after and after == ""
+            and err_resp.get("ok") is False
+            and mark_err in err_text
+            and "*Error* eval: undefined function - boom_c06_load" in err_text
         ),
     }
 
@@ -281,6 +340,9 @@ def main(argv: list[str] | None = None) -> int:
         evidence["c06_error_extraction"] = _check_error_extraction(
             DirectDaemonTransport(args.host, local_port, args.token)
         )
+        evidence["c06_load_path"] = _check_load_path(
+            DirectDaemonTransport(args.host, local_port, args.token)
+        )
 
         work_dir = Path(tempfile.mkdtemp(prefix="vb-p086-"))
         server = _business_server(work_dir, local_port, args.token)
@@ -318,6 +380,7 @@ def main(argv: list[str] | None = None) -> int:
             and all(status == "PASS" for _, status in c06_results)
             and evidence["c06_silent_increment"]["ok"]
             and evidence["c06_error_extraction"]["ok"]
+            and evidence["c06_load_path"]["ok"]
         )
         evidence["c06_ok"] = c06_ok
         out = Path(args.out) if args.out else (
