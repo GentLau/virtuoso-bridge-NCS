@@ -1,9 +1,10 @@
 # 上层业务包：spectre
 
-> 版本：Draft v3
+> 版本：Draft v4
 > 日期：2026-09-21
 > 状态：Draft（按 schematic/maestro 的领域操作组织）
-> Supersedes：Draft v1–v2（v2 的 PSF 低层操作平铺未被采纳；v3 收敛为 5 个领域操作）
+> Supersedes：Draft v3（删除错误的 `mode="x"`→`+x` 映射；Spectre X 统一用 `cx/ax/mx/lx/vx` preset，P-108）
+> 再上一版：Draft v1–v2（v2 的 PSF 低层操作平铺未被采纳；v3 收敛为 5 个领域操作）
 > 定位：业务包/业务操作一般契约见[1-上层.md](1-上层.md)；五业务接口见[四层整体架构与接口 §4](../总览/1-四层整体架构与接口.md)。
 
 ## 1. 总述
@@ -124,7 +125,7 @@ Task 字段：
 
 - `tasks` 非空；job 唯一且为安全名；`max_workers ≥ 1`。
 - `parse="auto"` 时 `download` 必须为 true；`parse="none"` 时必须 `keep_run_dir=true`，否则后续无法再用 `read_results` 定位 role 侧结果。
-- `mode` 只接受 `spectre/aps/x/cx/ax/mx/lx/vx`；输出格式固定 `psfascii`。
+- `mode` 只接受 `spectre/aps/cx/ax/mx/lx/vx`；输出格式固定 `psfascii`。
 
 `run` 是阻塞操作：返回时所有 task 都已结束，需要解析的已解析完成（或已失败）。单任务等价旧 `run_simulation`；多任务 + `max_workers` 等价旧 `run_parallel`。
 
@@ -160,12 +161,14 @@ Task 字段：
 |---|---|
 | `spectre` | 无 |
 | `aps` | `+aps` |
-| `x` | `+x` |
 | `cx` | `+preset=cx +mt` |
 | `ax` | `+preset=ax +mt` |
 | `mx` | `+preset=mx +mt` |
 | `lx` | `+preset=lx +mt` |
 | `vx` | `+preset=vx +mt` |
+
+> Spectre X 由 `+preset=<cx|ax|mx|lx|vx>` 启用；Spectre 24.1 不接受 `+x`，
+> 因此不提供 `mode="x"`（P-108）。要 Spectre X 默认模式用 `mx`，高精度用 `cx`/`ax`。
 
 ### 5.4 结果与状态
 

@@ -32,11 +32,10 @@ from pyapi.packages._spectre_util import (
 )
 
 
-_MODES = ("spectre", "aps", "x", "cx", "ax", "mx", "lx", "vx")
+_MODES = ("spectre", "aps", "cx", "ax", "mx", "lx", "vx")
 _MODE_ARGS = {
     "spectre": [],
     "aps": ["+aps"],
-    "x": ["+x"],
     "cx": ["+preset=cx", "+mt"],
     "ax": ["+preset=ax", "+mt"],
     "mx": ["+preset=mx", "+mt"],

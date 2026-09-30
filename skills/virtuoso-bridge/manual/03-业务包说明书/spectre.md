@@ -17,7 +17,7 @@
 |---|---|---|---|---|
 | `tasks` | list[dict] | ✅ | — | 任务列表，见下 |
 | `max_workers` | int | — | `4` | 并行任务数 |
-| `mode` | str | — | `spectre` | 仿真模式：`spectre` / `aps` / `x` / `cx` / `ax` / `mx` / `lx` / `vx` |
+| `mode` | str | — | `spectre` | 仿真模式：`spectre` / `aps` / `cx` / `ax` / `mx` / `lx` / `vx`；Spectre X 用 `+preset` 五档，不提供 `x` |
 | `spectre_args` | list[str] | — | 空 | 追加给 spectre 的命令行参数（任务级可覆盖） |
 | `spectre_bin` | str | — | 默认 | 指定可执行文件 |
 | `parse` | str | — | `auto` | `auto`（自动解析结果）或 `none`（只跑不解析） |
