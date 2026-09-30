@@ -58,6 +58,12 @@ MODULES = {name: load_daemon(f"daemon_runtime_{name}", "tok", DAEMON_FILES[name]
            for name in VARIANTS}
 
 
+def _reset_channel_state(name, mod):
+    mod._dirty = False
+    mod._stale_frames = 0
+    mod._stale_bytes = b"" if name == "py3" else ""
+
+
 def _as_stream(name: str, data: bytes):
     """py3 daemon reads bytes; py27 daemon reads text (its stdout stays binary)."""
     return data.decode("utf-8") if name == "py27" else data
@@ -949,12 +955,12 @@ class TestStartServer(unittest.TestCase):
 
 class TestProbeAndDirty(unittest.TestCase):
     def setUp(self):
-        for mod in MODULES.values():
-            mod._dirty = False
+        for name, mod in MODULES.items():
+            _reset_channel_state(name, mod)
 
     def tearDown(self):
-        for mod in MODULES.values():
-            mod._dirty = False
+        for name, mod in MODULES.items():
+            _reset_channel_state(name, mod)
 
     def test_probe_idle_does_not_touch_ciw(self):
         for name in VARIANTS:
@@ -990,6 +996,61 @@ class TestProbeAndDirty(unittest.TestCase):
                 self.assertEqual(sent[:1], NAK)
                 self.assertEqual(parsed["code"], "skill_busy")
 
+    def test_probe_clears_dirty_after_late_frame(self):
+        """已投递超时：迟到回帧到齐后 probe 必须报 idle（自动恢复，无需重启）。"""
+        for name in VARIANTS:
+            mod = MODULES[name]
+            mod._dirty = True
+            mod._stale_frames = 1
+            with self.subTest(variant=name):
+                _ciw, sent, unread, parsed = run_request(
+                    mod, {"probe": True, "token": "tok"},
+                    value_frame("late"), gate_mode="always")
+                self.assertEqual(sent[:1], STX)
+                self.assertEqual(parsed["status"], "idle")
+                self.assertFalse(mod._dirty)
+                self.assertEqual(mod._stale_frames, 0)
+                self.assertEqual(unread, b"")
+
+    def test_probe_waits_for_full_log_on_response(self):
+        """log_on 超时请求欠 2 帧：只到 value 帧仍 busy，meta 到齐才 idle。"""
+        for name in VARIANTS:
+            mod = MODULES[name]
+            mod._dirty = True
+            mod._stale_frames = 2
+            with self.subTest(variant=name):
+                _ciw, sent, _unread, parsed = run_request(
+                    mod, {"probe": True, "token": "tok"},
+                    value_frame("late"), gate_mode="always")
+                self.assertEqual(sent[:1], NAK)
+                self.assertEqual(parsed["status"], "busy")
+                self.assertTrue(mod._dirty)
+                self.assertEqual(mod._stale_frames, 2)
+
+                _ciw, sent, unread, parsed = run_request(
+                    mod, {"probe": True, "token": "tok"},
+                    meta_frame("/tmp/x.log", 0, 1), gate_mode="always")
+                self.assertEqual(sent[:1], STX)
+                self.assertEqual(parsed["status"], "idle")
+                self.assertFalse(mod._dirty)
+                self.assertEqual(mod._stale_frames, 0)
+                self.assertEqual(unread, b"")
+
+    def test_business_request_proceeds_after_auto_recovery(self):
+        """probe 确认空闲后，排队的业务 SKILL 正常投递并返回。"""
+        for name in VARIANTS:
+            mod = MODULES[name]
+            mod._dirty = True
+            mod._stale_frames = 1
+            with self.subTest(variant=name):
+                run_request(mod, {"probe": True, "token": "tok"},
+                            value_frame("late"), gate_mode="always")
+                self.assertFalse(mod._dirty)
+                _ciw, sent, _unread, parsed = run_request(
+                    mod, request(), value_frame("4"))
+                self.assertEqual(sent[:1], STX)
+                self.assertEqual(parsed["value"], "4")
+
     def test_first_frame_timeout_sets_dirty(self):
         for name in VARIANTS:
             mod = MODULES[name]
@@ -1007,6 +1068,18 @@ class TestProbeAndDirty(unittest.TestCase):
             self.assertEqual(parsed["status"], "timeout")
             self.assertEqual(parsed["code"], "skill_timeout")
             self.assertTrue(mod._dirty)
+            # request() 默认 log_level=off → 欠 1 帧
+            self.assertEqual(mod._stale_frames, 1)
+            self.assertEqual(mod._stale_bytes, b"" if name == "py3" else "")
+
+            # log_level=all → 欠 value + meta 两帧
+            _reset_channel_state(name, mod)
+            with mock.patch.object(mod, "_read_frame",
+                                   side_effect=timed_out_frame):
+                _ciw, _sent, _unread, parsed = run_request(
+                    mod, request(log_level="all"))
+            self.assertEqual(parsed["status"], "timeout")
+            self.assertEqual(mod._stale_frames, 2)
 
 
 if __name__ == "__main__":  # pragma: no cover - manual run

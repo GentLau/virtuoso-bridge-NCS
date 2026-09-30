@@ -80,6 +80,11 @@ virtuoso_pid = (
 
 _timeout_flag = False
 _dirty = False
+#: response frames still owed by the CIW for a delivered request that timed
+#: out (value frame + optional log meta frame).  A probe reports idle only
+#: after all of them arrived, proving the old SKILL finished.
+_stale_frames = 0
+_stale_bytes = b""
 _watchdog = None
 _watchdog_gen = 0
 _watchdog_lock = threading.Lock()
@@ -232,6 +237,37 @@ def _read_frame() -> bytes:
     return bytes(out)
 
 
+def _drain_stale_frames() -> bool:
+    """Non-blocking drain of a timed-out request's late response frames.
+
+    The daemon is single-threaded: while ``_dirty`` is set, the only bytes that
+    can appear on stdin are the response frames of the request whose first
+    frame timed out.  A probe consumes whatever has arrived and returns True
+    only once the expected number of frame terminators is complete; partial
+    frames stay buffered for the next probe.  A SKILL that never finishes
+    therefore keeps the channel dirty (restart remains the fallback).
+    """
+    global _stale_frames, _stale_bytes
+    if _stale_frames <= 0:
+        # dirty without an owed frame: cannot prove the channel is idle
+        return False
+    while True:
+        try:
+            chunk = sys.stdin.buffer.read(1)
+        except IOError as exc:
+            if exc.errno in (errno.EAGAIN, errno.EWOULDBLOCK):
+                break
+            raise
+        if not chunk:
+            break
+        _stale_bytes += chunk
+    if _stale_bytes.count(RS) >= _stale_frames:
+        _stale_frames = 0
+        _stale_bytes = b""
+        return True
+    return False
+
+
 def _parse_meta(payload):
     """Meta frame payload: ``<path> US <start-offset> US <end-offset>``."""
     if US not in payload:
@@ -348,7 +384,8 @@ def _read_range(path, start_offset, end_offset):
     return _READER.read(path, start_offset, end_offset)
 
 def handle_connection(conn):
-    global _timeout_flag, _dirty, _watchdog, _watchdog_gen, _RB_CALLS, _RB_ERRORS
+    global _timeout_flag, _dirty, _stale_frames, _stale_bytes
+    global _watchdog, _watchdog_gen, _RB_CALLS, _RB_ERRORS
     tmp_il_path = None
     sent_to_ciw = False
     try:
@@ -382,6 +419,8 @@ def handle_connection(conn):
             if not DAEMON_TOKEN or token != DAEMON_TOKEN:
                 _safe_sendall(conn, NAK + json.dumps({"error": "invalid token", "log": ""}).encode("utf-8") + RS)
                 return
+            if _dirty and _drain_stale_frames():
+                _dirty = False
             status = "busy" if _dirty else "idle"
             body = {"status": status, "log": ""}
             if status == "busy":
@@ -427,6 +466,7 @@ def handle_connection(conn):
             _safe_sendall(conn, NAK + json.dumps({"error": "invalid log_max_bytes", "log": ""}).encode("utf-8") + RS)
             return
         log_on = log_level != "off"
+        frames_owed = 2 if log_on else 1
 
         with _watchdog_lock:
             _timeout_flag = False
@@ -474,6 +514,8 @@ def handle_connection(conn):
             first_timed_out = _timeout_flag
         if first_timed_out:
             _dirty = True
+            _stale_frames = frames_owed
+            _stale_bytes = b""
 
         status_byte = frame1[:1]
         value_payload = frame1[1:].decode("utf-8", errors="replace").rstrip("\x1e")

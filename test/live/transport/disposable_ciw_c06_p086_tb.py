@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=====================
 # 作者: 设计/Codex
-# 最后改动: 2026-09-30
+# 最后改动: 2026-09-30 16:06
 # 依赖: wsl-gent disposable CIW（destb1, port 64600, token vb-destb1）
 # =======================================================================
 """Disposable-CIW real test: C06 log flushing + P-086 dirty gate recovery.
@@ -347,31 +347,45 @@ def main(argv: list[str] | None = None) -> int:
         work_dir = Path(tempfile.mkdtemp(prefix="vb-p086-"))
         server = _business_server(work_dir, local_port, args.token)
         try:
-            timed_out = server.execute_skill("hiSleep(8)", timeout=1, token=args.token)
+            # Phase 1（1A）：自动恢复，不重启。hiSleep(5) 超时后 dirty；
+            # 旧 SKILL 结束（watchdog SIGINT 可能提前中断它）后，middle 的
+            # probe 应确认 idle 并放行下一条，不许“卡到重启”。
+            started = time.monotonic()
+            timed_out = server.execute_skill("hiSleep(5)", timeout=1, token=args.token)
             evidence["dirty_after_timeout"] = args.token in server._skill_dirty
-            blocked = server.execute_skill("1+3", timeout=2, token=args.token)
-            evidence["blocked_while_dirty"] = {
-                "ok": blocked.ok,
-                "errors": list(blocked.errors),
-                "dirty": args.token in server._skill_dirty,
-            }
-
-            _restart_destb1(args.host, args.remote_port, args.token)
-            recovered = server.execute_skill("1+3", timeout=10, token=args.token)
-            evidence["recovered_after_restart"] = {
+            recovered = server.execute_skill("1+3", timeout=20, token=args.token)
+            evidence["recovered_without_restart"] = {
                 "ok": recovered.ok,
                 "output": recovered.output,
                 "dirty": args.token in server._skill_dirty,
+                "elapsed_s": round(time.monotonic() - started, 2),
             }
-            p086_ok = (
+            auto_ok = (
                 bool(timed_out and not timed_out.ok)
                 and evidence["dirty_after_timeout"]
-                and not blocked.ok
-                and evidence["blocked_while_dirty"]["dirty"]
                 and recovered.ok
                 and recovered.output.strip().strip('"') == "4"
+                and not evidence["recovered_without_restart"]["dirty"]
+            )
+
+            # Phase 2：daemon 进程重启 → dirty 清零（兜底路径仍可用）。
+            timed_out2 = server.execute_skill("hiSleep(30)", timeout=1, token=args.token)
+            evidence["dirty_before_restart"] = args.token in server._skill_dirty
+            _restart_destb1(args.host, args.remote_port, args.token)
+            recovered2 = server.execute_skill("1+3", timeout=10, token=args.token)
+            evidence["recovered_after_restart"] = {
+                "ok": recovered2.ok,
+                "output": recovered2.output,
+                "dirty": args.token in server._skill_dirty,
+            }
+            restart_ok = (
+                bool(timed_out2 and not timed_out2.ok)
+                and evidence["dirty_before_restart"]
+                and recovered2.ok
+                and recovered2.output.strip().strip('"') == "4"
                 and not evidence["recovered_after_restart"]["dirty"]
             )
+            p086_ok = auto_ok and restart_ok
         finally:
             server.close()
         evidence["p086_ok"] = p086_ok
