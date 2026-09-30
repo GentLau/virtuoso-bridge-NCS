@@ -166,6 +166,12 @@ def _case_text_view(transport) -> None:
     _check("module vlog_text" in file_read["source"]["text"], "file read failed")
 
     # P-115：创建视图只归 ensure_view；非法 view_type 必须请求层拒绝。
+    # 前置清理：修好之前的历史运行会留下"半成品目录"（只有 verilog.v、没有 master.tag），
+    # 使 ① 的"view 不存在"前提不成立 → 每例自带前置，先删干净（2026-09-30 实测踩到）。
+    transport.call({
+        "operation": "basic.command.run", "token": TOKEN, "timeout": 60,
+        "cmd": f"rm -rf /home/Gent/project/vblog/{LIB}/vlog_no_such_cell",
+    })
     missing = transport.call({
         "operation": "virtuoso.verilog.write", "token": TOKEN,
         "library": LIB, "cell": "vlog_no_such_cell", "view": VIEW,
