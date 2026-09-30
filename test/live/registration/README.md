@@ -10,6 +10,22 @@
 - `registration_real_ciw_tb.py`：P4 真 CIW 第 5 步注册；用测试侧
   `start_disposable_ciw.sh` + `ciw_load_setup.py` 把第 4 步 setup 注入 CIW，
   第 5 步连接真实 daemon 后 commit。
+- `registration_hostkey_rotation_tb.py`：P5 host-key 轮换（w4 独占，需
+- `control_plane_tb.py`：控制面（8124）常规通道 + **bug 报告通道**真机 TB ——
+  只读管理面（status/users/user/config/reload）、无 admin→401、管理页 `/help` 自描述完整性、
+  `HEAD/PATCH→405+Allow`、以及 `POST /api/bug` 正例（200+落盘+**凭据打码**+status/logs 有界）
+  与负例（无/无效 token→400 且**零落盘**）。用法：
+  `PYTHONPATH=src python test/live/registration/control_plane_tb.py --out test/artifacts/evidence/round9/control-plane-tb.json`
+  （需 `test/artifacts/admin-token.txt`；2026-09-30 实测 7/7 绿）。
+- `control_plane_write_tb.py`：控制面**写通道**（在**一次性实例**上做，保护常驻注册表）——
+  `POST /api/user/<u>/update`（runtime/roles 值级读回、显式指纹迁移、未知 endpoint 拒绝且零落盘）、
+  `PUT /api/config`（GET 一致 + 落盘一致）、`DELETE /api/user/<u>`（列表消失 + 详情 404）
+  与 404/400/401 负例。用法：
+  `PYTHONPATH=src python test/live/registration/control_plane_write_tb.py --out test/artifacts/evidence/round9/control-plane-write-tb.json`
+  （需 `test/artifacts/admin-token.txt`；2026-09-30 实测 8/8 绿）。
+  `w4_hostkey_cycle.sh` 的 use-b/restore）：轮换期 verify 必须 ERROR 且零落盘，
+  恢复后原样重试必须转绿；update 改 role host 时按首信任重建指纹，显式
+  `expected_fingerprint` 不被覆盖（§6.5）。
 - `cov_registration_real.py`：注册 1–4 步 coverage TB。
 - `test/semi/registration/registration_failure_matrix_tb.py`：X4-③ 的六步失败/重试矩阵
   （自包含本地 fake，无外部环境；覆盖每步失败零落盘、原样重试、cancel 后重 apply、

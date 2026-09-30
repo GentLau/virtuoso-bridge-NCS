@@ -1,0 +1,1052 @@
+{
+ "cards_total": 83,
+ "status_counts": {
+  "EVIDENCE-NOT-RERUN-TONIGHT": 35,
+  "NO-PATH-IN-EVIDENCE": 28,
+  "R9-OFFLINE-GREEN": 17,
+  "R9-IN-TONIGHT-LOGS": 1,
+  "PATH-NOT-FOUND": 2
+ },
+ "rows": [
+  {
+   "id": "P-105",
+   "subject": "`symbol/layout.screenshot` 的 `view_type` 坏值不被校验",
+   "evidence_text": "已修 `0b9fec3`（截图先开窗再捕获 + `view_type` 同口径校验）；测试侧真机复跑两档 **各 6/6 绿**：layout 档（schemtest/lay_e2e）`SC-06 view_type 正向 + 坏值负向` PASS（`verify-fix-r9/shot-layout-p105.txt`）；symbol 档（schemtest/symprobe_shot，vblog 健康 CIW）**6/6**（`verify-fix-r9/shot-symbol-p105b.txt`）。注：vb-vbuser2 实例的 CIW 当时又卡死（P-086 家族），改在 vblog 上取证后已按 SOP 重启 vbuser2 恢复常驻。",
+   "paths": [
+    {
+     "path": "test/artifacts/evidence/verify-fix-r9/shot-layout-p105.txt",
+     "exists": true,
+     "round9": true
+    },
+    {
+     "path": "test/artifacts/evidence/verify-fix-r9/shot-symbol-p105b.txt",
+     "exists": true,
+     "round9": true
+    }
+   ],
+   "status": "EVIDENCE-NOT-RERUN-TONIGHT"
+  },
+  {
+   "id": "P-070",
+   "subject": "蒙特卡洛能力缺失：只能读回 MC 结果，不能驱动 MC 仿真",
+   "evidence_text": "设计侧已实现并重写验收 TB：`test/live/packages/maestro_mc_e2e_tests.py` 真机 **9/9 PASS**（环境检查 / 17 项 run option 空基线 / 批量写回 / 非法值拒绝不污染 / 独立 run setup / 8 点 process MC 启动并等到 history / read_results Yield 统计 / 无统计 section 负控 SPECTRE-16008-16012 / 收尾关 GUI）。证据 `test/artifacts/evidence/verify-fix-r9/maestro-mc-p070-5.json`。环境前提：vblog `run/cds.lib` 已含 tsmcN65+SERDES_TB_LIB，运行中的 CIW 需 `ddUpdateLibList()`（或重启）后才可见。",
+   "paths": [
+    {
+     "path": "test/artifacts/evidence/verify-fix-r9/maestro-mc-p070-5.json",
+     "exists": true,
+     "round9": true
+    },
+    {
+     "path": "test/live/packages/maestro_mc_e2e_tests.py",
+     "exists": true,
+     "round9": true
+    }
+   ],
+   "status": "EVIDENCE-NOT-RERUN-TONIGHT"
+  },
+  {
+   "id": "P-092",
+   "subject": "`calibre.drc/lvs/pex` 的 `power`/`ground` 死参数（声明并校验但从不读取）",
+   "evidence_text": "按方案②从模型删除：实测 `calibre.drc(..., power=\"VDD\")` → `invalid request: RunRequest.__init__() got an unexpected keyword argument 'power'`（字段已不存在）；离线契约全绿。",
+   "paths": [],
+   "status": "NO-PATH-IN-EVIDENCE"
+  },
+  {
+   "id": "P-093",
+   "subject": "`calibre.drc(hier=False)` 拼非法 `-turbo` → flat 模式被 Calibre usage 拒绝",
+   "evidence_text": "真机 `calibre_flat_turbo_probe` **PASS**（flat DRC 不带 `-turbo` 且完成 DRC.rep）；离线 `test_calibre_argv_contracts.py` 全绿。证据 `test/artifacts/evidence/p093-p094-quickfail-green.json`。",
+   "paths": [
+    {
+     "path": "test/artifacts/evidence/p093-p094-quickfail-green.json",
+     "exists": true,
+     "round9": true
+    },
+    {
+     "path": "test/offline/unit/test_calibre_argv_contracts.py",
+     "exists": true,
+     "round9": false,
+     "in_junit": true,
+     "red": 0
+    }
+   ],
+   "status": "R9-OFFLINE-GREEN"
+  },
+  {
+   "id": "P-094",
+   "subject": "calibre 工具秒退不报失败（`status` 只有 `unknown`，`blocking` 干等到 timeout）",
+   "evidence_text": "同探针 **PASS**：坏 deck 秒退 → `status=failed`；`_calibre_util.job_state` 有 `process_gone_without_report` 兜底；离线 `test_calibre_job_state.py` 全绿。",
+   "paths": [
+    {
+     "path": "test/offline/unit/test_calibre_job_state.py",
+     "exists": true,
+     "round9": false,
+     "in_junit": true,
+     "red": 0
+    }
+   ],
+   "status": "R9-OFFLINE-GREEN"
+  },
+  {
+   "id": "P-098",
+   "subject": "`blocking=true` 超时后对外 `status` 不是 `timeout`",
+   "evidence_text": "真机 `calibre_timeout_probe` **PASS**：`status=timeout` + `progress.status=timeout` + 超过 deadline 不杀后台作业（证据 `test/artifacts/evidence/p098-timeout-green.json`）。注：探针的墙钟守卫按口径改为 <60s——它测的是整条 op 总耗时（含 ≈15–20s 的 deck/launcher 启动），原 20s 容差过紧；核心三条断言未放宽。",
+   "paths": [
+    {
+     "path": "test/artifacts/evidence/p098-timeout-green.json",
+     "exists": true,
+     "round9": true
+    }
+   ],
+   "status": "EVIDENCE-NOT-RERUN-TONIGHT"
+  },
+  {
+   "id": "C4",
+   "subject": "`CommandResult` NamedTuple 被序列化成位置数组，命令/文件/GUI/Spectre 结果丢字段名",
+   "evidence_text": "已改 pydantic 模型（`977a985`）+ 消费方迁移（`e8a0d5b`）；实测 `basic.command.run` 返回 `{\"returncode\":0,\"stdout\":\"…\",\"stderr\":\"\",\"kind\":\"command\"}`（字段名完整）；离线契约全绿。",
+   "paths": [],
+   "status": "NO-PATH-IN-EVIDENCE"
+  },
+  {
+   "id": "C3",
+   "subject": "C1 落地后测试侧消费方未适配：仍按旧 `data` 壳解析响应",
+   "evidence_text": "**已完成**：74 个消费方文件改为直读新契约（顶层 `value`/`result`/`steps`），另修 6 处嵌套调用式解析（adc_sar / multiuser_serdes_rx / s11_full_flow / gds_publish_path_edges / maestro_bugfix_batch / calibre_package_http / maestro_p096）+ spectre 业务字段 `value[\"data\"]` 修正。验证：离线全量 **0 红**（`verify-fix-r9/offline-after-c3-3.txt`）；真机包 E2E 冒烟 infra/cellview/schematic **21/21**（`package-e2e-c3-smoke2`）；半真机复验：`spectre_ac_pipeline` clean、`maestro_screenshot` 绿、`log_matrix_real` 绿；残留红只有 P-086 窗口导致的 `maestro_save_false_disk` 清理步，以及 P-093/094/098 预期红。",
+   "paths": [
+    {
+     "path": "test/artifacts/evidence/verify-fix-r9/offline-after-c3-3.txt",
+     "exists": true,
+     "round9": false
+    }
+   ],
+   "status": "EVIDENCE-NOT-RERUN-TONIGHT"
+  },
+  {
+   "id": "C1",
+   "subject": "`basic.skill.execute` 响应 JSON 冗余（同一结果两处序列化、空字段全展开）",
+   "evidence_text": "**已闭环**：实现落地（`2f88853` 等：本体直返、两字段错误壳、`steps` 按 `step_details` 出现、`CDSlog` JSON 出口、删 `metadata`、`execution_time` 三位小数）；离线契约 TB **4/4 绿**；消费方适配由 C3 完成并全层复跑（离线 0 红 / 真机冒烟 21/21 / 半真机复验）。",
+   "paths": [],
+   "status": "NO-PATH-IN-EVIDENCE"
+  },
+  {
+   "id": "C2",
+   "subject": "所有 Skill 调用缺少 `log_level` / `log_max_bytes` 请求字段",
+   "evidence_text": "真机 HTTP 透传复验通过：新增 TB `test/live/packages/skill_log_options_e2e_tests.py` **6/6 绿**（缺省吃注册表默认 ⇒ CDSlog 含标记；`log_level=off` ⇒ 该请求 CDSlog 为空；`all` ⇒ 含标记；`warn`/`log_max_bytes` 被接受；多步领域操作带 off 仍 ok）。离线 `test_skill_log_options.py` 7/7。实现：56 个 Request 字段 + `skill_log_kwargs` 透传。",
+   "paths": [
+    {
+     "path": "test/live/packages/skill_log_options_e2e_tests.py",
+     "exists": true,
+     "round9": true
+    },
+    {
+     "path": "test/offline/unit/test_skill_log_options.py",
+     "exists": true,
+     "round9": false,
+     "in_junit": true,
+     "red": 0
+    }
+   ],
+   "status": "R9-OFFLINE-GREEN"
+  },
+  {
+   "id": "P-095",
+   "subject": "`maestro.run` 的 Overwrite History 目标悬空 → ASSEMBLER-3018 模态卡 CIW",
+   "evidence_text": "设计已修；探针 `test/semi/probes/maestro_p095_overwrite_wedge_probe.py` **GREEN**：挂悬空目标后 run 8.9s 内结构化返回、CIW `1+2` 存活、Overwrite 标志复位 `nil`（探针先按 C1 契约适配了解包）。",
+   "paths": [
+    {
+     "path": "test/semi/probes/maestro_p095_overwrite_wedge_probe.py",
+     "exists": true,
+     "round9": false
+    }
+   ],
+   "status": "EVIDENCE-NOT-RERUN-TONIGHT"
+  },
+  {
+   "id": "P-102",
+   "subject": "`calibre.pex` 第三阶段 argv 非法（`-xrc -fmt spice`）",
+   "evidence_text": "**口径变更（非修复）**：spec `12-calibre.md` 定稿「PEX 本版不提供」——`calibre.pex` 立即返回 `pex_unsupported`、不发起远程动作；TB 改为钉住该语义：`calibre_export_pex_e2e_tests.py` **6/6 绿**。",
+   "paths": [
+    {
+     "path": "test/live/packages/calibre_export_pex_e2e_tests.py",
+     "exists": true,
+     "round9": false
+    }
+   ],
+   "status": "EVIDENCE-NOT-RERUN-TONIGHT"
+  },
+  {
+   "id": "P-103",
+   "subject": "`calibre.pex` 报 `completed` 但 stage3 失败（完成判定提前收工）",
+   "evidence_text": "**口径变更（非修复）**：随 P-102 一起——本版不提供 PEX 启动，假绿路径不再存在；`calibre_export_pex_e2e_tests.py` **6/6 绿**（PEX-01 结构化拒绝 + 不建 run_dir）。",
+   "paths": [
+    {
+     "path": "test/live/packages/calibre_export_pex_e2e_tests.py",
+     "exists": true,
+     "round9": false
+    }
+   ],
+   "status": "EVIDENCE-NOT-RERUN-TONIGHT"
+  },
+  {
+   "id": "P-097",
+   "subject": "`verilog.import` 覆盖写后 `_read_views` 瞬时 cell not found",
+   "evidence_text": "已修 `453b453`（`_read_views` 先刷库表 + 有界重试）；新增专门回归 TB `verilog_import_params_e2e_tests.py::IMP-11 覆盖式连导 3 次 views 恒非空` —— 套件 **13/13 绿**（`test/artifacts/evidence/verify-fix-r9/gate-verilog-rerun2.txt`）",
+   "paths": [
+    {
+     "path": "test/artifacts/evidence/verify-fix-r9/gate-verilog-rerun2.txt",
+     "exists": true,
+     "round9": false
+    }
+   ],
+   "status": "EVIDENCE-NOT-RERUN-TONIGHT"
+  },
+  {
+   "id": "P-091",
+   "subject": "截图远端暂存口径三包不一致（schematic 保留 / symbol·layout 清理）",
+   "evidence_text": "spec 三包统一（2-schematic.md:27 / 3-symbol.md:45 / 4-layout.md:184「远端暂存、下载后清理，留存位置 = 客户端 artifact/screenshots/」）+ 实现三包均 `rm -f` 远端暂存（schematic.py:882 / symbol.py:982 / layout.py:1483）+ 真机 TB：schematic 档 5/5 绿（SC-01 断言远端无残留）、layout 档 SC-01 绿",
+   "paths": [],
+   "status": "NO-PATH-IN-EVIDENCE"
+  },
+  {
+   "id": "P-080",
+   "subject": "`view_type` 在 read 路径不校验（空串/整数/bogus 静默接受）",
+   "evidence_text": "已修 `dda3775`：离线 `test_view_type_param_contract.py` **9/9 绿**；真机 `veriloga_e2e_tests.py` `READ-02 file_path/view_type params` 绿（read 与 write 同口径）",
+   "paths": [
+    {
+     "path": "test/offline/unit/test_view_type_param_contract.py",
+     "exists": true,
+     "round9": false,
+     "in_junit": true,
+     "red": 0
+    },
+    {
+     "path": "test/live/packages/veriloga_e2e_tests.py",
+     "exists": true,
+     "round9": true
+    }
+   ],
+   "status": "R9-OFFLINE-GREEN"
+  },
+  {
+   "id": "P-081",
+   "subject": "Windows 客户端把远端 POSIX 路径改写成 `\\` 形式",
+   "evidence_text": "已修 `dda3775`：离线 `test_remote_posix_path_contract.py` **2/2 绿**；真机 veriloga `READ-02` 绿（远端路径原样回显、sha256 一致）",
+   "paths": [
+    {
+     "path": "test/offline/unit/test_remote_posix_path_contract.py",
+     "exists": true,
+     "round9": false,
+     "in_junit": true,
+     "red": 0
+    }
+   ],
+   "status": "R9-OFFLINE-GREEN"
+  },
+  {
+   "id": "P-082",
+   "subject": "region 四元组与两点口径冲突（read/depth/screenshot 未跟上 P-074 定版）",
+   "evidence_text": "已修 `6bd29e7`：离线 schematic/layout/depth 契约全绿（113 项，含两条两点 region 用例）；真机 `layout_e2e_tests.py` `READ-02 region_mode/depth/view_type` 绿；`layout_depth_probe` 绿",
+   "paths": [
+    {
+     "path": "test/live/packages/layout_e2e_tests.py",
+     "exists": true,
+     "round9": true
+    }
+   ],
+   "status": "R9-IN-TONIGHT-LOGS"
+  },
+  {
+   "id": "P-083",
+   "subject": "`spectre.export.precision` 语义未定义（有效数字 vs 小数位）",
+   "evidence_text": "已定稿 `313868d`：spec `7-spectre.md:288` 写明 `precision` = **有效数字**（`%.Ng`）；真机 `spectre_params_e2e_tests.py` **EXPORT-P1 5/5 绿**（TB 断言已同步）",
+   "paths": [
+    {
+     "path": "test/live/packages/spectre_params_e2e_tests.py",
+     "exists": true,
+     "round9": false
+    }
+   ],
+   "status": "EVIDENCE-NOT-RERUN-TONIGHT"
+  },
+  {
+   "id": "P-090",
+   "subject": "上传 stage 在安装前消失（安装非幂等 → sha256 mismatch 假失败）",
+   "evidence_text": "半真机 `test/semi/transport/install_stage_idempotent_tb.py` 绿：first/second 两次安装都 rc=0（stage 不在但目标 digest 一致 → 幂等成功）；重试只允许「未投递」错误。修复 `d269ecd`",
+   "paths": [
+    {
+     "path": "test/semi/transport/install_stage_idempotent_tb.py",
+     "exists": true,
+     "round9": false
+    }
+   ],
+   "status": "EVIDENCE-NOT-RERUN-TONIGHT"
+  },
+  {
+   "id": "P-078",
+   "subject": "`place_wire` 样式参数拼接重复：width 静默建 path / color",
+   "evidence_text": "line_style 硬报错",
+   "paths": [],
+   "status": "NO-PATH-IN-EVIDENCE"
+  },
+  {
+   "id": "P-079",
+   "subject": "local 模式显式 daemon_port≠local_port 被静默归一化",
+   "evidence_text": "修复 `bf5f71a`；红钉 XPASS = 已修，测试侧已删 `xfail` 标记；离线 `test_norm_gap_round8.py` 全绿",
+   "paths": [
+    {
+     "path": "test/offline/unit/test_norm_gap_round8.py",
+     "exists": true,
+     "round9": false,
+     "in_junit": true,
+     "red": 0
+    }
+   ],
+   "status": "R9-OFFLINE-GREEN"
+  },
+  {
+   "id": "P-084",
+   "subject": "`maestro.export.include_results` 死参数（声明但从不读取）",
+   "evidence_text": "设计按方案②删除该字段（`ExportRequest` 不再接受该 kwarg，实测报 unexpected keyword）；探针改为负向断言「传已删字段必须被拒」",
+   "paths": [],
+   "status": "NO-PATH-IN-EVIDENCE"
+  },
+  {
+   "id": "P-085",
+   "subject": "`layout.read(depth>0)` + region 不可用（deep 分支没跟上两点定版）",
+   "evidence_text": "真机 `layout_depth_probe` 绿；离线 `test_layout_depth_contract.py` 绿。修复 `6bd29e7`+`a4dbf2d`",
+   "paths": [
+    {
+     "path": "test/offline/unit/test_layout_depth_contract.py",
+     "exists": true,
+     "round9": false,
+     "in_junit": true,
+     "red": 0
+    }
+   ],
+   "status": "R9-OFFLINE-GREEN"
+  },
+  {
+   "id": "P-087",
+   "subject": "`maestro.write(save=False)` 的改动被后续无关 save 静默带走",
+   "evidence_text": "真机 `maestro_save_false_disk_probe` 绿（第 3 步泄漏消失）。修复 `05aee48`",
+   "paths": [],
+   "status": "NO-PATH-IN-EVIDENCE"
+  },
+  {
+   "id": "P-088",
+   "subject": "`maestro.write(delete_var, scope=all)` 确定性失败（handle 0）",
+   "evidence_text": "真机 `maestro_delete_var_all_probe` 绿（三处同名变量全部删除）。修复 `05aee48`",
+   "paths": [],
+   "status": "NO-PATH-IN-EVIDENCE"
+  },
+  {
+   "id": "P-089",
+   "subject": "`maestro.open_waveform_gui.result` 死参数（忽略传入值）",
+   "evidence_text": "真机 `maestro_open_waveform_result_probe` 绿（字段按方案②删除/负向）。修复 `05aee48`",
+   "paths": [],
+   "status": "NO-PATH-IN-EVIDENCE"
+  },
+  {
+   "id": "P-096",
+   "subject": "陈旧 OA 写锁 → `axlOpenInRead0` 模态挂死 CIW",
+   "evidence_text": "真机 `maestro_p096_write_lock_probe` **4/4 绿**：死属主锁结构化失败、活锁不误拦、自家锁放行、实例未被挂死（`1+2`=3）。修复 `37a601b`",
+   "paths": [],
+   "status": "NO-PATH-IN-EVIDENCE"
+  },
+  {
+   "id": "P-099",
+   "subject": "`verilog.import` 返回值 `views` 恒空（与真机视图不一致）",
+   "evidence_text": "真机门禁 `verilog_import_params_e2e_tests.py` **12/12 绿**（IMP-08 校验返回值覆盖真机视图）。修复 `82e7b6c`；TB 旧口径已按新 spec 更新",
+   "paths": [
+    {
+     "path": "test/live/packages/verilog_import_params_e2e_tests.py",
+     "exists": true,
+     "round9": false
+    }
+   ],
+   "status": "EVIDENCE-NOT-RERUN-TONIGHT"
+  },
+  {
+   "id": "P-100",
+   "subject": "`verilog.import` 的 `cell` 参数不被落地（改名无效果/事后报错）",
+   "evidence_text": "设计口径（spec 8-verilog.md:84）：`cell` 必须是源码模块名，不匹配则**写前**结构化拒绝 `cell_not_in_source`；门禁 IMP-10 绿（拒绝 + 无残留 + 正例成功）。修复 `82e7b6c`",
+   "paths": [],
+   "status": "NO-PATH-IN-EVIDENCE"
+  },
+  {
+   "id": "P-101",
+   "subject": "`import(overwrite=False)` 命中已存在 cell：静默 no-op、无跳过标记",
+   "evidence_text": "门禁 IMP-07 绿：mtime 不变 **且** 断言返回里有 `skipped/existing/warnings` 标记。修复 `313868d`",
+   "paths": [],
+   "status": "NO-PATH-IN-EVIDENCE"
+  },
+  {
+   "id": "P-104",
+   "subject": "读路径 `maeOpenSetup` 默认 `mode=\"a\"` 凭空建 view（读不存在 view 返回空配置）",
+   "evidence_text": "真机门禁 `maestro_view_param_e2e_tests.py` **9/9 绿**：读族对缺失 view 结构化失败、库内不再新增 view。修复 `313868d`",
+   "paths": [
+    {
+     "path": "test/live/packages/maestro_view_param_e2e_tests.py",
+     "exists": true,
+     "round9": false
+    }
+   ],
+   "status": "EVIDENCE-NOT-RERUN-TONIGHT"
+  },
+  {
+   "id": "P-043",
+   "subject": "py2.7 daemon 缺 coding cookie",
+   "evidence_text": "真 py2.7 探针 5/5（`py27-daemon-probe-green.json`）",
+   "paths": [
+    {
+     "path": "test/artifacts/evidence/py27-daemon-probe-green.json",
+     "exists": true,
+     "round9": false
+    }
+   ],
+   "status": "EVIDENCE-NOT-RERUN-TONIGHT"
+  },
+  {
+   "id": "P-044",
+   "subject": "layout 写锁误判 + 句柄不关",
+   "evidence_text": "layout 套件 10/10；陈旧锁不再挡写；两用户同视图 GREEN",
+   "paths": [],
+   "status": "NO-PATH-IN-EVIDENCE"
+  },
+  {
+   "id": "P-045",
+   "subject": "「并发压测打挂 CIW」",
+   "evidence_text": "**撤回**（归因错误，真因 P-046）",
+   "paths": [],
+   "status": "NO-PATH-IN-EVIDENCE"
+  },
+  {
+   "id": "P-047",
+   "subject": "`verilog.import` 依赖 cwd 的 `cds.lib`",
+   "evidence_text": "包 E2E verilog rc=0（`run-all-http-results.json`）",
+   "paths": [
+    {
+     "path": "test/artifacts/evidence/round5-main/run-all-http-results.json",
+     "exists": true,
+     "round9": false
+    }
+   ],
+   "status": "EVIDENCE-NOT-RERUN-TONIGHT"
+  },
+  {
+   "id": "P-050",
+   "subject": "daemon 模块在伪 stdin 下不可导入",
+   "evidence_text": "Linux 3.9/3.14 完整三层、0 collection error",
+   "paths": [],
+   "status": "NO-PATH-IN-EVIDENCE"
+  },
+  {
+   "id": "P-051",
+   "subject": "`layout.gds` 远端发布不建目录",
+   "evidence_text": "A/B 复验 + 4 条路径边界攻击；S11 gds PASS",
+   "paths": [],
+   "status": "NO-PATH-IN-EVIDENCE"
+  },
+  {
+   "id": "P-058",
+   "subject": "4 条 Windows-only 用例缺 Linux 守卫",
+   "evidence_text": "加 `skipUnless`；Linux/Windows 双平台复跑绿",
+   "paths": [],
+   "status": "NO-PATH-IN-EVIDENCE"
+  },
+  {
+   "id": "P-063",
+   "subject": "注册类离线用例受机器端口区间影响",
+   "evidence_text": "打桩端口分配 + P-064 修复后：端口压力下整目录 **11 红基线**（`p063-d4-fullunit-pressure.xml`）",
+   "paths": [
+    {
+     "path": "test/artifacts/evidence/round5-main/p063-d4-fullunit-pressure.xml",
+     "exists": true,
+     "round9": false
+    }
+   ],
+   "status": "EVIDENCE-NOT-RERUN-TONIGHT"
+  },
+  {
+   "id": "P-064",
+   "subject": "并发 pytest 会话互删临时目录",
+   "evidence_text": "改每会话私有 temp 根；2 路并发各 11 红（`conc-new-{A,B}.xml`）",
+   "paths": [],
+   "status": "PATH-NOT-FOUND"
+  },
+  {
+   "id": "P-065",
+   "subject": "`subprocess.Popen` 全局打桩跨用例串扰",
+   "evidence_text": "按本地端口过滤；`test_ssh_edges.py` 74/74 绿。**遗留观察**：具体哪条用例留线程未定案（下轮用 `threading.enumerate()` 定位）",
+   "paths": [
+    {
+     "path": "test/offline/unit/test_ssh_edges.py",
+     "exists": true,
+     "round9": true,
+     "in_junit": true,
+     "red": 0
+    }
+   ],
+   "status": "R9-OFFLINE-GREEN"
+  },
+  {
+   "id": "P-057",
+   "subject": "深嵌套 JSON 行为随解释器变化",
+   "evidence_text": "**口径问题（非产品 bug）**：判定为解释器差异下的**测试断言口径**；测试侧 R5 已改（long-int 钉死 `invalid JSON body`、deep 只钉安全不变量、200000 层必须 400）。产品侧「显式深度上限」保留为建议，不立案、不阻塞",
+   "paths": [],
+   "status": "NO-PATH-IN-EVIDENCE"
+  },
+  {
+   "id": "P-068",
+   "subject": "共享 PDK 库里第二个真实 OS 用户画不了版图",
+   "evidence_text": "**环境问题（非 bridge bug）**：B 会话绑的是 `cdsDefTechLib`（54 层）而 A 是 `tsmcN65`（216 层）；在 B 会话 `techBindTechFile(ddGetObj(\"adc_sar\") \"tsmcN65\")` 后，**我独立复跑 S16 接力 TB = 12/12 通过**（`round6-fixcheck/s16-handoff-reverify2.json`）；并把「两用户工艺绑定必须一致」做成 TB 前置自检 + 写进环境文档",
+   "paths": [
+    {
+     "path": "test/artifacts/evidence/round6-fixcheck/s16-handoff-reverify2.json",
+     "exists": true,
+     "round9": false
+    }
+   ],
+   "status": "EVIDENCE-NOT-RERUN-TONIGHT"
+  },
+  {
+   "id": "P-052",
+   "subject": "`set_instance_params` 污染共享库 cell CDF",
+   "evidence_text": "**真机探针 verdict=clean**（`round6-verify/round4-shared-cdf-pollution.json`）：before/after 默认值不变（1K/400n/280n）、新实例继承原默认、peer 会话干净。修复提交 `f5f1813`",
+   "paths": [
+    {
+     "path": "test/artifacts/evidence/round4-probes/round4-shared-cdf-pollution.json",
+     "exists": true,
+     "round9": true
+    }
+   ],
+   "status": "EVIDENCE-NOT-RERUN-TONIGHT"
+  },
+  {
+   "id": "P-053",
+   "subject": "Spectre AC 结果链路两处断",
+   "evidence_text": "**真机探针 verdict=clean**（`round6-verify/round4-spectre-ac-pipeline.json`）：默认分析名 `ac1` → `analyses=[\"ac\"]`、`has_ac_data=true`；spec 形状（缺省 x）可用",
+   "paths": [
+    {
+     "path": "test/artifacts/evidence/round4-probes/round4-spectre-ac-pipeline.json",
+     "exists": true,
+     "round9": true
+    }
+   ],
+   "status": "EVIDENCE-NOT-RERUN-TONIGHT"
+  },
+  {
+   "id": "P-054",
+   "subject": "层次化 `symbol.generate` 残留子单元视图",
+   "evidence_text": "**真机探针 verdict=clean**（`round6-verify/round4-symbol-hierarchy-handle.json`）：leaf 生成后 CLOSED、二次生成 ok、无残留。注：该修复同时把契约改成「目标只读打开不再拒绝」，`symbol_e2e_tests.py` 的旧断言随之更新（见 `round6-修复验证报告.md` §3）",
+   "paths": [
+    {
+     "path": "test/artifacts/evidence/round4-probes/round4-symbol-hierarchy-handle.json",
+     "exists": true,
+     "round9": false
+    },
+    {
+     "path": "test/reports/round6-修复验证报告.md",
+     "exists": true,
+     "round9": false
+    },
+    {
+     "path": "test/live/packages/symbol_e2e_tests.py",
+     "exists": true,
+     "round9": true
+    }
+   ],
+   "status": "EVIDENCE-NOT-RERUN-TONIGHT"
+  },
+  {
+   "id": "P-055",
+   "subject": "业务面 404 而非 405 + Allow",
+   "evidence_text": "**离线 3 条转绿**（`round6-verify/offline-mine.xml`），两条护栏（`PUT /api/operation`→405、未定义路径→404）保持绿",
+   "paths": [
+    {
+     "path": "test/artifacts/evidence/round6-verify/offline-mine.xml",
+     "exists": true,
+     "round9": false
+    }
+   ],
+   "status": "EVIDENCE-NOT-RERUN-TONIGHT"
+  },
+  {
+   "id": "P-056",
+   "subject": "POSIX 强杀进程组失效",
+   "evidence_text": "**Linux 3.9.25 / 3.14.6 转绿**（`round6-verify/py39.log` / `py314.log`）；修复提交 `b45864a`",
+   "paths": [
+    {
+     "path": "test/artifacts/evidence/round5-linux-client/py314.log",
+     "exists": true,
+     "round9": false
+    },
+    {
+     "path": "test/artifacts/evidence/round5-linux-client/py39.log",
+     "exists": true,
+     "round9": false
+    }
+   ],
+   "status": "EVIDENCE-NOT-RERUN-TONIGHT"
+  },
+  {
+   "id": "P-059",
+   "subject": "`read_results` 解不了 Calibre 2025 `DRC.rep`",
+   "evidence_text": "**真机 `read_results` 转绿**（`round6-verify/calibre-drc.json`）：`rules_checked=1737`、`total_results=36`、**27 条真实规则计数**、`first_offenders=[]`",
+   "paths": [
+    {
+     "path": "test/artifacts/evidence/round5-main/calibre-drc.json",
+     "exists": true,
+     "round9": false
+    }
+   ],
+   "status": "EVIDENCE-NOT-RERUN-TONIGHT"
+  },
+  {
+   "id": "P-061",
+   "subject": "calibre 阻塞轮询不快失败",
+   "evidence_text": "**真机转绿**：S11 的 LVS 以 `status=failed, failure_kind=input` **秒级**返回（`round6-verify/s11-with-calibre/s11-lvs.json`），不再轮询到超时",
+   "paths": [
+    {
+     "path": "test/artifacts/env/s11/s11-lvs.json",
+     "exists": true,
+     "round9": false
+    }
+   ],
+   "status": "EVIDENCE-NOT-RERUN-TONIGHT"
+  },
+  {
+   "id": "P-062",
+   "subject": "LVS 结论截成半个词 + counts 恒空",
+   "evidence_text": "**部分修复后关闭**：`counts` 已解出（ports 1/4、nets 5/4、inst 2/1）、结论不再半个词（`round6-verify/calibre-lvs.json`）；**残留的枚举不一致拆到 P-071 继续跟**",
+   "paths": [
+    {
+     "path": "test/artifacts/evidence/round5-main/calibre-lvs.json",
+     "exists": true,
+     "round9": false
+    }
+   ],
+   "status": "EVIDENCE-NOT-RERUN-TONIGHT"
+  },
+  {
+   "id": "P-066",
+   "subject": "`skill_value()` 抛内部 `AttributeError`",
+   "evidence_text": "**离线转绿**：改为显式 `TypeError`（`round6-verify/offline-mine.xml`）",
+   "paths": [
+    {
+     "path": "test/artifacts/evidence/round6-verify/offline-mine.xml",
+     "exists": true,
+     "round9": false
+    }
+   ],
+   "status": "EVIDENCE-NOT-RERUN-TONIGHT"
+  },
+  {
+   "id": "P-067",
+   "subject": "未加引号 `Parameters:` 静默丢参数",
+   "evidence_text": "**离线转绿**：整行拼回解析，两个参数都在（同上）",
+   "paths": [],
+   "status": "NO-PATH-IN-EVIDENCE"
+  },
+  {
+   "id": "P-071",
+   "subject": "LVS 结论归一化两条路径不一致（P-062 残留）",
+   "evidence_text": "**已修复**（提交 `cee02df`）：日志路径与报告路径统一为同一枚举；契约 TB `test/offline/unit/test_calibre_verdict_consistency.py` **3/3 转绿**。另：同一天提交的 `af8e1e0` 让 `first_offenders` 恢复（真机 **20 条**违规明细，`round6-verify/calibre-drc-final2.json`）",
+   "paths": [
+    {
+     "path": "test/artifacts/evidence/round6-verify/calibre-drc-final2.json",
+     "exists": true,
+     "round9": false
+    },
+    {
+     "path": "test/offline/unit/test_calibre_verdict_consistency.py",
+     "exists": true,
+     "round9": false,
+     "in_junit": true,
+     "red": 0
+    }
+   ],
+   "status": "R9-OFFLINE-GREEN"
+  },
+  {
+   "id": "P-048",
+   "subject": "「业务面不热重载 registry」",
+   "evidence_text": "**重判为口径/用法问题（非产品缺陷）**：spec《多用户与注册》§1 与《控制面与业务面》§1.1 明确要求**运行期不自动读文件**、由 `POST /api/process/reload`（管理权限）**显式触发**重导 —— 「热重载要手动发命令」本来就是设计语义。代码/测试对账：process 端点只在控制面；本轮我补了端到端语义 TB `test_supervisor_process.py::test_http_reload_picks_up_registry_file` （4/4 绿：不 reload → 新 token 无效；reload 后立即可用）。**真实差异**：我们的常驻业务面用 `-m server.api_server` **standalone** 启动（spec 标准形态是控制面 spawn 业务面），没有父进程控制通道 → 改注册表后只能重启；属测试台用法口径，已写进环境文档",
+   "paths": [],
+   "status": "NO-PATH-IN-EVIDENCE"
+  },
+  {
+   "id": "P-060",
+   "subject": "calibre 包缺常驻真机入口（覆盖缺口）",
+   "evidence_text": "**已闭环（测试侧，2026-09-24）**：① 常驻注册表补上 `role.command.calibre.bin`（vblog/vbs11/calprobe/vbuser1/vbuser2），S11 的 `drc` 阶段因此转 PASS；② 新增常驻套件 `test/live/packages/calibre_e2e_tests.py`（ENV-01 check_env / DRC-01 run+read_results / DRC-02 坏 deck 结构化失败 / LVS-01 结构契约+枚举一致），并接入 `run_all_http.py` → **11 套包 `all_passed=true`**（`round6b-verify/run-all-http-final.log`）。LVS 那条在 `not_compared` 时只打 WARN 指向 P-069，不假装跑通；P-069 修好后用 `VB_CALIBRE_REQUIRE_LVS_VERDICT=1` 打开强断言",
+   "paths": [
+    {
+     "path": "test/artifacts/evidence/round6b-verify/run-all-http-final.log",
+     "exists": true,
+     "round9": false
+    },
+    {
+     "path": "test/shared/runners/run_all_http.py",
+     "exists": true,
+     "round9": true
+    },
+    {
+     "path": "test/live/packages/calibre_e2e_tests.py",
+     "exists": true,
+     "round9": true
+    }
+   ],
+   "status": "EVIDENCE-NOT-RERUN-TONIGHT"
+  },
+  {
+   "id": "P-072",
+   "subject": "`init_work_dir` 一次性化 + 删除测试钩子 → 518 条离线用例无法运行",
+   "evidence_text": "**已按方案 ② 适配完成**（产品坚持一进程一 work root）：`test/conftest.py` 加 session fixture 绑定唯一一根 +用例级 `registry.json` 重置；28 个用例文件里 38 处 `init_work_dir(...)` 改为 `work_root()`、47 处冗余绑定删除；路径敏感用例改**子进程**（`test_workdir_contract.py`）；跨用例产物残留与 Popen 计数按本用例过滤。**离线三层 1725 项 / 0 红 / 7 skip**（`round6b-verify/offline-sharedroot4.xml`）；官方姿势文档：[test/docs/写TB规范.md](../../docs/写TB规范.md) §3",
+   "paths": [
+    {
+     "path": "test/artifacts/env/env-e1/registry.json",
+     "exists": true,
+     "round9": false
+    },
+    {
+     "path": "test/artifacts/evidence/round6b-verify/offline-sharedroot4.xml",
+     "exists": true,
+     "round9": false
+    },
+    {
+     "path": "test/conftest.py",
+     "exists": true,
+     "round9": false
+    },
+    {
+     "path": "test/offline/unit/test_workdir_contract.py",
+     "exists": true,
+     "round9": false,
+     "in_junit": true,
+     "red": 0
+    }
+   ],
+   "status": "R9-OFFLINE-GREEN"
+  },
+  {
+   "id": "P-049",
+   "subject": "缺样本 trace 的 NaN 被放行到对外出参（spec :307 与 :308 冲突）",
+   "evidence_text": "**已修复并验证**（提交 `d892608` + `a2f9aac`）：spec `7-spectre.md:307-309` 改写为「内部用缺失哨兵（实现取 `None`），**对外一律 `null`/省略**，唯一出口 `psf_external()`，NaN/±Inf 在那里收敛」；代码 `_spectre_util.py:70-71` 加了非有限→None 的收敛。**测试侧复跑：`test/offline/unit/test_output_json_safety.py` 3/3 绿**（2 条原红线转绿 + 业务面负控制）。spec 矩阵 X5 随之关闭",
+   "paths": [
+    {
+     "path": "test/offline/unit/test_output_json_safety.py",
+     "exists": true,
+     "round9": false,
+     "in_junit": true,
+     "red": 0
+    }
+   ],
+   "status": "R9-OFFLINE-GREEN"
+  },
+  {
+   "id": "P-013",
+   "subject": "客户端文件泄露（`err_dir` 兜底 / 隧道 stderr 日志成功路径不回收）",
+   "evidence_text": "**已修**：`err_dir` 兜底改 `temp_dir()`（work root）并在 close 时 `rmtree`；隧道 stderr 日志新增 `_discard_tunnel_stderr()`，成功/失败路径都清理（`transport/middle.py:191-205,450,687`；`common/ssh.py:477-483,633,659,678`）",
+   "paths": [],
+   "status": "NO-PATH-IN-EVIDENCE"
+  },
+  {
+   "id": "P-019",
+   "subject": "孤立代理项（`\"\\ud800\"`）请求 → HTTP 面断连而非 4xx",
+   "evidence_text": "**已修**：HTTP 面序列化改用 `jsonutil.dumps_strict`（`ensure_ascii=True` 兜底）（`server/api_server.py:30,76,79`、`register/server.py:42,78,81`）；`lone_surrogate_probe` 复跑转绿",
+   "paths": [],
+   "status": "NO-PATH-IN-EVIDENCE"
+  },
+  {
+   "id": "P-020",
+   "subject": "`spectre.measure` 零幅度 AC 点输出 `-Infinity`（非法 JSON）",
+   "evidence_text": "**已修**：改抛 `ValueError(\"magnitude must be positive for dB scale\")` → `_metric_error` 结构化失败（commit `d49c892`；`_spectre_util.py:674-681`；`test_spectre_metrics.py` 全绿）",
+   "paths": [
+    {
+     "path": "test/offline/unit/test_spectre_metrics.py",
+     "exists": true,
+     "round9": false,
+     "in_junit": true,
+     "red": 0
+    }
+   ],
+   "status": "R9-OFFLINE-GREEN"
+  },
+  {
+   "id": "P-025",
+   "subject": "Windows 多进程共享 work-dir 时 `log/commands.log` 轮转失败（WinError 32）",
+   "evidence_text": "**已修**：命令日志按进程分片 `log/commands.<pid>.log` 后再轮转，跨进程不再争用句柄（`common/ssh.py:52-80`；`log_rotation_lock_probe` → PASS (process-local rotation)）",
+   "paths": [],
+   "status": "PATH-NOT-FOUND"
+  },
+  {
+   "id": "P-034",
+   "subject": "`calibre.pex` 第三阶段 argv 错误且失败被静默（`-xrc -fmt -spice`）",
+   "evidence_text": "**已修**：argv 改 `-xrc -fmt <fmt>`；`read_results` 对日志 `stage\\d_failed` 返回结构化失败（`calibre.py:700`、`:429-490`）",
+   "paths": [],
+   "status": "NO-PATH-IN-EVIDENCE"
+  },
+  {
+   "id": "P-037",
+   "subject": "paramiko 后端把 `ssh -G` 的 `true/false` 当非法值（StrictHostKeyChecking yes 连不上）",
+   "evidence_text": "**已修**：`true→yes` / `false→no` 归一化，报错回显原始值（`common/paramiko_backend.py:738-751`）",
+   "paths": [],
+   "status": "NO-PATH-IN-EVIDENCE"
+  },
+  {
+   "id": "P-039",
+   "subject": "py2.7 daemon 对 `_read_frame` ValueError 回 NACK（与 py3 分歧）",
+   "evidence_text": "**撤回**：伪红 —— 真 py2.7 建成后复判分歧不存在（`py27_handler_probe` → `silent drop (correct)`，`round2-py27-handler-real.json`）；原 bug 报告应同步撤回",
+   "paths": [
+    {
+     "path": "test/artifacts/evidence/round2-py27-handler-real.json",
+     "exists": true,
+     "round9": false
+    }
+   ],
+   "status": "EVIDENCE-NOT-RERUN-TONIGHT"
+  },
+  {
+   "id": "P-041",
+   "subject": "`verilog._read_views` 守卫长度与取值下标不匹配（`>=3` 却读 `[3]`）",
+   "evidence_text": "**已修**：守卫改 `len(file_entry) >= 4`；离线用例改名 `test_short_view_entry_is_skipped` 并断言 `views == []`（`verilog.py:273`；`test_verilog_contracts.py` 全绿）",
+   "paths": [
+    {
+     "path": "test/offline/unit/test_verilog_contracts.py",
+     "exists": true,
+     "round9": true,
+     "in_junit": true,
+     "red": 0
+    }
+   ],
+   "status": "R9-OFFLINE-GREEN"
+  },
+  {
+   "id": "P-042",
+   "subject": "`layout.gds` 遇版图锁时误报 \"layout view not found\"",
+   "evidence_text": "**已修**：导出先走 `_view_state_expr` 三态（missing/mismatch/locked），锁冲突单独报 \"is locked by another session\"（`layout.py:1008-1030`）",
+   "paths": [],
+   "status": "NO-PATH-IN-EVIDENCE"
+  },
+  {
+   "id": "P-046",
+   "subject": "S10 e2e 引导源未固定 → `RBStop()+load()` 会覆盖别人的 CIW（测试侧缺陷）",
+   "evidence_text": "**已修（测试侧）**：默认不再自动挑实例 —— `test_e2e_live.py` 用 `VB_E2E_BOOTSTRAP_TOKEN/PORT` 固定引导，未固定且未显式 `VB_E2E_ALLOW_AUTO_DISCOVER=1` 时直接拒绝（`test/live/e2e/test_e2e_live.py:56-63`）",
+   "paths": [
+    {
+     "path": "test/live/e2e/test_e2e_live.py",
+     "exists": true,
+     "round9": false
+    }
+   ],
+   "status": "EVIDENCE-NOT-RERUN-TONIGHT"
+  },
+  {
+   "id": "P-069",
+   "subject": "Calibre LVS 全链跑不通：auCdl 对含 PDK 器件的 cell 导出 CDL 失败 → 无源网表",
+   "evidence_text": "**测试侧复验通过（第七轮）**：`round7/design-iterate/iterate-lvs.json` —— `calibre.export_cdl(CMP_LIB/inv2, 680 B)` → `layout.gds` → `calibre.lvs(deck+cdl)` → `read_results`：**`status=correct`**、ports 4/4、nets 4/4、inst 1/1、`differences=[]`；S11 全链也拿到确定结论（`cdl` 693 B、lvs rc=0）。等上层销案；注意 `_calibre.lvs_`（tvf）不是合法 runset，用它当失败证据属用错文件",
+   "paths": [
+    {
+     "path": "test/artifacts/evidence/round7/design-iterate/iterate-lvs.json",
+     "exists": true,
+     "round9": false
+    }
+   ],
+   "status": "EVIDENCE-NOT-RERUN-TONIGHT"
+  },
+  {
+   "id": "P-026",
+   "subject": "maestro 会话匹配用子串（view=maestro 误命中库名 maestro_tb）",
+   "evidence_text": "**已修（`b36bade`）**：GUI 会话按标题 token 精确匹配 —— `_window_target_fields()` 解析 Editing:/Reading: 后的 `lib cell view` 并逐字段比较（`maestro.py:251-260,494`），不再用 `in` 子串。验证：round7 11 套包 `all_passed=true`（含用 `maestro_tb` 库的 maestro 套件，`round7/live-run-all-http.log`）",
+   "paths": [
+    {
+     "path": "test/artifacts/evidence/round7/live-run-all-http.log",
+     "exists": true,
+     "round9": false
+    }
+   ],
+   "status": "EVIDENCE-NOT-RERUN-TONIGHT"
+  },
+  {
+   "id": "P-027",
+   "subject": "`virtuoso.netlist.import` 假成功（对不存在的库也返回 ok=true）",
+   "evidence_text": "**已修（`b36bade`）**：参考桩不再伪造成功；该操作已不在运营面（`netlist_import.py` 从生产源码移除、ops 列表无 netlist）。验证：`test/shared/runners/ops_matrix.py` 无 netlist 条目；infra 包 E2E 通过",
+   "paths": [
+    {
+     "path": "test/artifacts/tmp/upd-red-202ef8ab/src/pyapi/packages/netlist_import.py",
+     "exists": true,
+     "round9": false
+    },
+    {
+     "path": "test/shared/runners/ops_matrix.py",
+     "exists": true,
+     "round9": false
+    }
+   ],
+   "status": "EVIDENCE-NOT-RERUN-TONIGHT"
+  },
+  {
+   "id": "P-029",
+   "subject": "`layout.gds` 导出忽略 `file_is_local=False`（产物下到客户端假路径树）",
+   "evidence_text": "**已修（`b36bade`）**：gds export 支持 `file_is_local=false` 远端落盘且不拍平路径（`layout.py:1043,1175,1192,1244`）。验证（2026-09-28 复跑）：`test_layout_publish_contracts.py` 4/4、`test_layout_contracts.py` 67/67 绿",
+   "paths": [
+    {
+     "path": "test/offline/unit/test_layout_contracts.py",
+     "exists": true,
+     "round9": true,
+     "in_junit": true,
+     "red": 0
+    },
+    {
+     "path": "test/offline/unit/test_layout_publish_contracts.py",
+     "exists": true,
+     "round9": true,
+     "in_junit": true,
+     "red": 0
+    }
+   ],
+   "status": "R9-OFFLINE-GREEN"
+  },
+  {
+   "id": "P-030",
+   "subject": "`set_term_nets` 默认 `stub_length=0.5` 对 65nm 过大 → 端子接错网且静默",
+   "evidence_text": "**已修（`b36bade` + `bd75d3d`）**：默认 stub 由引脚几何推导 `(rbHw + 0.05)`，不再固定 0.5；显式值的 SKILL 括号 bug（`(0.5)` 被当函数调用）同批修掉（`schematic.py:540-556`）。验证：`test_schematic_contracts.py` 37/37 绿",
+   "paths": [
+    {
+     "path": "test/offline/unit/test_schematic_contracts.py",
+     "exists": true,
+     "round9": false,
+     "in_junit": true,
+     "red": 0
+    }
+   ],
+   "status": "R9-OFFLINE-GREEN"
+  },
+  {
+   "id": "P-031",
+   "subject": "schematic `check_and_save`/`write` 忽略 `schCheck` 失败（check-failed 仍 ok）",
+   "evidence_text": "**已修（`b36bade` + `bd75d3d`）**：保存前校验 output 含 saved 标记（`schematic.py:785,862`），并在保存路径补 `dbSetConnCurrent`（避免 si -batch OSSHNL-108/109）。验证：`test_schematic_contracts.py` 37/37 绿（无 xfail 残留）",
+   "paths": [
+    {
+     "path": "test/offline/unit/test_schematic_contracts.py",
+     "exists": true,
+     "round9": false,
+     "in_junit": true,
+     "red": 0
+    }
+   ],
+   "status": "R9-OFFLINE-GREEN"
+  },
+  {
+   "id": "P-032",
+   "subject": "`verilog._imported_cells` 去重顺序错误（未清洗 token 参与比较）",
+   "evidence_text": "**已修（`b36bade`）**：先清洗 `[.,;:]` 尾字符再去重（`verilog.py:659-667`）。验证：`test_verilog_contracts.py` 28/28 绿",
+   "paths": [
+    {
+     "path": "test/offline/unit/test_verilog_contracts.py",
+     "exists": true,
+     "round9": true,
+     "in_junit": true,
+     "red": 0
+    }
+   ],
+   "status": "R9-OFFLINE-GREEN"
+  },
+  {
+   "id": "P-074",
+   "subject": "pin 坐标口径三处不一致（read `xy` / write `x`,`y` / spec `xy`）",
+   "evidence_text": "**已修（`48fc800`）**：实现统一为 `pos: [x, y]`，`xy`/拆开的 `x`/`y` 一律拒绝并点名违规字段（`schematic.py:480-487`）；spec《2-schematic》已改「单点一律 pos、弃用 xy」。验证：`schematic_pin_ops_probe` 以 `pos` 形状跑通写路径（`round7/pin-ops.json`，2026-09-28 复跑）",
+   "paths": [
+    {
+     "path": "test/artifacts/evidence/round7/pin-ops.json",
+     "exists": true,
+     "round9": true
+    }
+   ],
+   "status": "EVIDENCE-NOT-RERUN-TONIGHT"
+  },
+  {
+   "id": "C0",
+   "subject": "测试规范缺失（六步/状态还原）＋ 原子级覆盖系统性缺口",
+   "evidence_text": "**已闭环（2026-09-28）**：① 规范落地 `test/docs/写TB规范.md`（六步＋判据强度＋状态还原＋原子级覆盖义务）；② 机器核账 `audit_atom_coverage.py` → **gap=0 / weak=0 / 待分诊 0**（`atom-coverage-2026-09-28.json`）；③ B3 修弱判据：serdes calibre 补 `read_results`（DRC 1737 规则/28 结果；LVS 显式记录 not_compared 局限）、ADC/多用户 SerDes 补 `symbol.read` 端口比对、S11 gds 补 `stat+sha256`（PASS）；④ B4 抽查报告 `test/reports/TB规范抽查-2026-09-28.md`（5 份，发现 design_iterate 缺 §1 env_check → 已修）",
+   "paths": [
+    {
+     "path": "test/artifacts/evidence/atom-coverage-2026-09-28.json",
+     "exists": true,
+     "round9": false
+    },
+    {
+     "path": "test/shared/runners/audit_atom_coverage.py",
+     "exists": true,
+     "round9": true
+    },
+    {
+     "path": "test/docs/写TB规范.md",
+     "exists": true,
+     "round9": false
+    },
+    {
+     "path": "test/reports/TB规范抽查-2026-09-28.md",
+     "exists": true,
+     "round9": false
+    }
+   ],
+   "status": "EVIDENCE-NOT-RERUN-TONIGHT"
+  },
+  {
+   "id": "P-038",
+   "subject": "py3.9 裸装缺 `eval-type-backport` 声明",
+   "evidence_text": "**已修（`2ab6acf3`）**：`pyproject.toml:14` 运行时依赖含 `eval-type-backport>=0.2; python_version < '3.10'`（wheel METADATA 同）；CI `uv run --python 3.9 --extra dev` 会装运行时依赖 → 3.9 作业不再缺 backport。测试侧复核：依赖行存在；wsl-gent py3.9（pydantic 2.13.5 + backport）import OK",
+   "paths": [],
+   "status": "NO-PATH-IN-EVIDENCE"
+  },
+  {
+   "id": "P-073",
+   "subject": "pin 原子操作与「pin 有效名」不一致（rename 静默无效 / set 改坏 pin 名）",
+   "evidence_text": "**已修（`3e45442`）**：pin 原子改按「有效名(terminal)」而非 pin 实例名操作。`schematic_pin_ops_probe` 复跑 **clean**（rename 生效、set 只改方向保名、delete OK）。注：验证前必须重启 8127 —— 常驻进程只在启动时导入代码，老进程会回旧行为（Runbook §10）",
+   "paths": [],
+   "status": "NO-PATH-IN-EVIDENCE"
+  },
+  {
+   "id": "P-075",
+   "subject": "`layout.gds` 导出后残留模态框 → 同会话 SKILL 挂死（P1）",
+   "evidence_text": "**已修**：`layout.gds` 导出收尾自动关 XStream 窗口（`layout.py::_dismiss_xstream_windows`，completion box→Enter / XStream Out→Esc）。`gds_then_skill_probe` 复跑 **clean**（GDS 后 SKILL **0.3s** 返回，此前 30s 超时）；ADC 全链回到 **24/24**（`round8/adc-sar.json`）",
+   "paths": [
+    {
+     "path": "test/artifacts/evidence/round7/adc-sar.json",
+     "exists": true,
+     "round9": false
+    }
+   ],
+   "status": "EVIDENCE-NOT-RERUN-TONIGHT"
+  },
+  {
+   "id": "P-077",
+   "subject": "注册探测拒绝裸 python 名（`test -x python3`）",
+   "evidence_text": "**已修（`3886cb4`）**：显式 python/bin 接受 PATH 命令名（`command -v` 解析 + 真实文件/可执行校验），与运行时 `/usr/bin/env <value>` 一致；新增离线用例 3/3。端到端回归：P3 跨主机注册（裸 `python3`）**28/28**、P4 真 CIW **12/12**",
+   "paths": [],
+   "status": "NO-PATH-IN-EVIDENCE"
+  },
+  {
+   "id": "P-076",
+   "subject": "`spectre.run` 间歇永不返回（in_flight 不释放，需重启业务面）",
+   "evidence_text": "**已修（`f769750` + `3f2fbcc`；看门狗方案 `cd818e7` 已 revert）**：中层递归 tar 下载的完成判定只依赖 channel+tar、pump 线程可协作取消（修前：数据已在 `.vbtmp-*` 却未安装，pump 线程永久残留）。复验（2026-09-28 晚，8127 重启后）：① `p076_fix_verify_probe.py` direct **3/3**（raw 安装到位 + spectre.out 在 + 无 .vbtmp 残留 + thread_delta=0）；② HTTP 面 `repro_p076_rounds.py` **6/6**（每轮 2 任务 success，~7s）；③ 验收③：`design_iterate_tb --stage all` **连跑 3 次 ok=True failures=[]**（65/64/63s）；④ 影响面回归：11 套包 `run_all_http.py` **all_passed=true**（含 spectre/maestro/calibre）",
+   "paths": [
+    {
+     "path": "test/semi/probes/p076_fix_verify_probe.py",
+     "exists": true,
+     "round9": false
+    },
+    {
+     "path": "test/artifacts/tmp/repro_p076_rounds.py",
+     "exists": true,
+     "round9": false
+    },
+    {
+     "path": "test/shared/runners/run_all_http.py",
+     "exists": true,
+     "round9": true
+    }
+   ],
+   "status": "EVIDENCE-NOT-RERUN-TONIGHT"
+  }
+ ]
+}

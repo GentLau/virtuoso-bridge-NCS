@@ -160,9 +160,13 @@ def main() -> int:
             "status_snapshot": status,
             "alive": bool(alive),
         }
-        if elapsed > 20:
+        # 口径：这里的 `elapsed` 是**整条 op** 的墙钟（deck 暂存 + launcher 上传 + 启动 ≈15–20s
+        # + 到期返回），不是 deadline 溢出量。本守卫的目的是抓"忽略 deadline、等工具自然结束"
+        # ——那个场景 elapsed ≥ 工具运行时长（本探针造的是 300s 睡眠工具）。取 60s 既容忍启动开销，
+        # 又比 300s 低一个数量级；到期语义由下面三条严格断言保证。
+        if elapsed > 60:
             raise AssertionError(
-                f"P-098：blocking 超时用了 {elapsed}s（应远小于 timeout 上限）")
+                f"P-098：blocking 超时用了 {elapsed}s（疑似忽略 deadline 等工具自然结束）")
         if value.get("status") != "timeout":
             raise AssertionError(
                 f"P-098：blocking 到期未返回 status=timeout: {value}")

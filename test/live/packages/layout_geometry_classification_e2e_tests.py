@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
 # 作者: 测试/root
-# 最后改动: 2026-09-28 21:05
+# 最后改动: 2026-09-29 20:46
 # 依赖: 真机 vblog token；schemtest 库（layout 套件同款）；独立 cell 避免互相干扰
 # =======================================================================
 # 六步流程（test/docs/写TB规范.md §1）：
@@ -40,7 +40,8 @@ API = "http://127.0.0.1:8127/api/operation"
 TOKEN = "vb-vblog"
 LIB = "schemtest"
 VIEW = "layout"
-OUT = ROOT / "test" / "artifacts" / "evidence" / "round8"
+#: 证据目录不再挂在 round8（round9 接线时改到中性目录，避免产物跨轮串档）
+OUT = ROOT / "test" / "artifacts" / "evidence" / "layout-geometry-classification"
 
 
 class HttpTransport:
@@ -61,7 +62,7 @@ class HttpTransport:
 
 def _value(transport, operation: str, **fields: Any) -> dict[str, Any]:
     body = transport.call({"operation": operation, **fields})
-    data = _c1_wrapper(body)
+    data = body
     if body.get("ok") is False or data.get("ok") is False:
         raise AssertionError(f"{operation} failed: {body.get('error') or data.get('error')}")
     return data.get("value") or data
@@ -69,7 +70,7 @@ def _value(transport, operation: str, **fields: Any) -> dict[str, Any]:
 
 def _expect_fail(transport, operation: str, **fields: Any) -> str:
     body = transport.call({"operation": operation, **fields})
-    data = _c1_wrapper(body)
+    data = body
     if body.get("ok") is not False and data.get("ok") is not False:
         raise AssertionError(f"{operation} expected failure, got ok")
     return str(body.get("error") or data.get("error") or "")
@@ -77,6 +78,9 @@ def _expect_fail(transport, operation: str, **fields: Any) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
+    #: 本 TB 只走 8127 业务面（自己的 HttpTransport），故传输形态固定 http；
+    #: 参数只为兼容 `run_all_http.py` 统一追加的 `--transport http`（round9 接线）。
+    parser.add_argument("--transport", choices=("http",), default="http")
     parser.add_argument("--base", default=API)
     parser.add_argument("--token", default=TOKEN)
     args = parser.parse_args()
@@ -147,19 +151,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
-
-# --- C1 兼容垫片（2026-09-29，C3）------------------------------------------------
-# C1（2f88853）起：业务载荷直返顶层（值型 `value`、命令/skill 型 `result`）、
-# 成功默认省略 `steps`、失败壳去掉 `data`。历史 TB 按 `response["data"]` 解析，
-# 本垫片把新契约响应合成为旧 `data` 壳，让既有解析零改动继续工作。
-def _c1_wrapper(body):
-    if not isinstance(body, dict):
-        return {}
-    if isinstance(body.get("data"), dict):
-        return body["data"]
-    wrapped = {"ok": body.get("ok"), "error": body.get("error")}
-    for key in ("value", "result", "steps"):
-        if key in body:
-            wrapped[key] = body[key]
-    return wrapped

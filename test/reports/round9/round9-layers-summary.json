@@ -1,0 +1,217 @@
+{
+ "generated": "2026-09-29T21:28:22",
+ "expected_suites": [
+  "infra_e2e_tests.py",
+  "cellview_e2e_tests.py",
+  "schematic_e2e_tests.py",
+  "symbol_e2e_tests.py",
+  "layout_e2e_tests.py",
+  "verilog_e2e_tests.py",
+  "veriloga_e2e_tests.py",
+  "skillref_e2e_tests.py",
+  "spectre_e2e_tests.py",
+  "screenshot_params_e2e_tests.py",
+  "calibre_e2e_tests.py",
+  "calibre_params_e2e_tests.py",
+  "verilog_import_params_e2e_tests.py",
+  "calibre_export_pex_e2e_tests.py",
+  "maestro_view_param_e2e_tests.py",
+  "step_details_e2e_tests.py",
+  "layout_geometry_classification_e2e_tests.py",
+  "gui_e2e_tests.py",
+  "maestro_e2e_tests.py"
+ ],
+ "gate": {
+  "generated_at": "2026-09-29T13:24:16.903376+00:00",
+  "all_passed": false,
+  "file_mtime": "2026-09-29T21:24",
+  "suite_count": 19,
+  "expected_count": 19,
+  "missing_from_results": [],
+  "extra_in_results": [],
+  "suites": [
+   {
+    "suite": "infra_e2e_tests.py",
+    "ok": true,
+    "returncode": 0,
+    "log": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\evidence\\http-e2e\\infra_e2e_tests.py.log",
+    "pass": 6,
+    "fail": 0,
+    "missing": false
+   },
+   {
+    "suite": "cellview_e2e_tests.py",
+    "ok": true,
+    "returncode": 0,
+    "log": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\evidence\\http-e2e\\cellview_e2e_tests.py.log",
+    "pass": 5,
+    "fail": 0,
+    "missing": false
+   },
+   {
+    "suite": "schematic_e2e_tests.py",
+    "ok": true,
+    "returncode": 0,
+    "log": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\evidence\\http-e2e\\schematic_e2e_tests.py.log",
+    "pass": 10,
+    "fail": 0,
+    "missing": false
+   },
+   {
+    "suite": "symbol_e2e_tests.py",
+    "ok": true,
+    "returncode": 0,
+    "log": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\evidence\\http-e2e\\symbol_e2e_tests.py.log",
+    "pass": 9,
+    "fail": 0,
+    "missing": false
+   },
+   {
+    "suite": "layout_e2e_tests.py",
+    "ok": true,
+    "returncode": 0,
+    "log": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\evidence\\http-e2e\\layout_e2e_tests.py.log",
+    "pass": 11,
+    "fail": 0,
+    "missing": false
+   },
+   {
+    "suite": "verilog_e2e_tests.py",
+    "ok": true,
+    "returncode": 0,
+    "log": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\evidence\\http-e2e\\verilog_e2e_tests.py.log",
+    "pass": 4,
+    "fail": 0,
+    "missing": false
+   },
+   {
+    "suite": "veriloga_e2e_tests.py",
+    "ok": true,
+    "returncode": 0,
+    "log": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\evidence\\http-e2e\\veriloga_e2e_tests.py.log",
+    "pass": 7,
+    "fail": 0,
+    "missing": false
+   },
+   {
+    "suite": "skillref_e2e_tests.py",
+    "ok": true,
+    "returncode": 0,
+    "log": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\evidence\\http-e2e\\skillref_e2e_tests.py.log",
+    "pass": 6,
+    "fail": 0,
+    "missing": false
+   },
+   {
+    "suite": "spectre_e2e_tests.py",
+    "ok": true,
+    "returncode": 0,
+    "log": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\evidence\\http-e2e\\spectre_e2e_tests.py.log",
+    "pass": 6,
+    "fail": 0,
+    "missing": false
+   },
+   {
+    "suite": "screenshot_params_e2e_tests.py",
+    "ok": true,
+    "returncode": 0,
+    "log": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\evidence\\http-e2e\\screenshot_params_e2e_tests.py.log",
+    "pass": 5,
+    "fail": 0,
+    "missing": false
+   },
+   {
+    "suite": "calibre_e2e_tests.py",
+    "ok": false,
+    "returncode": 1,
+    "log": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\evidence\\http-e2e\\calibre_e2e_tests.py.log",
+    "pass": 0,
+    "fail": 0,
+    "missing": false
+   },
+   {
+    "suite": "calibre_params_e2e_tests.py",
+    "ok": true,
+    "returncode": 0,
+    "log": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\evidence\\http-e2e\\calibre_params_e2e_tests.py.log",
+    "pass": 6,
+    "fail": 0,
+    "missing": false
+   },
+   {
+    "suite": "verilog_import_params_e2e_tests.py",
+    "ok": false,
+    "returncode": 1,
+    "log": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\evidence\\http-e2e\\verilog_import_params_e2e_tests.py.log",
+    "pass": 12,
+    "fail": 2,
+    "missing": false
+   },
+   {
+    "suite": "calibre_export_pex_e2e_tests.py",
+    "ok": false,
+    "returncode": 1,
+    "log": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\evidence\\http-e2e\\calibre_export_pex_e2e_tests.py.log",
+    "pass": 5,
+    "fail": 2,
+    "missing": false
+   },
+   {
+    "suite": "maestro_view_param_e2e_tests.py",
+    "ok": false,
+    "returncode": 1,
+    "log": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\evidence\\http-e2e\\maestro_view_param_e2e_tests.py.log",
+    "pass": 0,
+    "fail": 0,
+    "missing": false
+   },
+   {
+    "suite": "step_details_e2e_tests.py",
+    "ok": true,
+    "returncode": 0,
+    "log": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\evidence\\http-e2e\\step_details_e2e_tests.py.log",
+    "pass": 6,
+    "fail": 0,
+    "missing": false
+   },
+   {
+    "suite": "layout_geometry_classification_e2e_tests.py",
+    "ok": true,
+    "returncode": 0,
+    "log": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\evidence\\http-e2e\\layout_geometry_classification_e2e_tests.py.log",
+    "pass": 4,
+    "fail": 0,
+    "missing": false
+   },
+   {
+    "suite": "gui_e2e_tests.py",
+    "ok": true,
+    "returncode": 0,
+    "log": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\evidence\\http-e2e\\gui_e2e_tests.py.log",
+    "pass": 4,
+    "fail": 0,
+    "missing": false
+   },
+   {
+    "suite": "maestro_e2e_tests.py",
+    "ok": false,
+    "returncode": 1,
+    "log": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\evidence\\http-e2e\\maestro_e2e_tests.py.log",
+    "pass": 0,
+    "fail": 0,
+    "missing": false
+   }
+  ]
+ },
+ "semi": {
+  "file_mtime": "2026-09-29T21:24",
+  "group": "all",
+  "count": 40,
+  "ok": false,
+  "failed": [
+   "maestro_env_probe.py",
+   "maestro_e2e_probe.py",
+   "one_shot_burst_tb.py"
+  ]
+ }
+}

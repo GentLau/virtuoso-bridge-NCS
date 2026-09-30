@@ -4,6 +4,7 @@ import itertools
 import sys
 import tempfile
 import time
+import uuid
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -211,10 +212,17 @@ class TestStepRetryAfterFailure(unittest.TestCase):
     def setUp(self):
         self.wd = work_root()
         self.reg = load_registry(registry_path())
+        # round9：每用例唯一用户名，消除共享注册表里 alice 残留导致的跨文件耦合
+        # （单会话全集曾观测到 1/3 次 flaky：retried.stage != validated）
+        self.user = f"stepretry-{uuid.uuid4().hex[:8]}"
+
+    def _request(self):
+        return remote_request().model_copy(
+            update={"user": self.user, "token": f"tok-{self.user}"})
 
     def test_validate_can_retry_same_step(self):
         flow = RegistrationFlow(self.reg)
-        flow.start(remote_request())
+        flow.start(self._request())
         with mock.patch(
             "register.flow.validate_local",
             side_effect=[["validation boom"], []],
@@ -222,11 +230,11 @@ class TestStepRetryAfterFailure(unittest.TestCase):
             failed_stage = flow.validate().stage
             retried = flow.validate()
         self.assertEqual(failed_stage, "failed")
-        self.assertEqual(retried.stage, "validated")
+        self.assertEqual(retried.stage, "validated", retried.errors)
 
     def test_probe_can_retry_same_step(self):
         flow = RegistrationFlow(self.reg)
-        flow.start(remote_request())
+        flow.start(self._request())
         flow.validate()
         with mock.patch(
             "register.flow.probe_user",
@@ -238,12 +246,12 @@ class TestStepRetryAfterFailure(unittest.TestCase):
             failed_stage = flow.probe().stage
             retried = flow.probe()
         self.assertEqual(failed_stage, "failed")
-        self.assertEqual(retried.stage, "probed")
+        self.assertEqual(retried.stage, "probed", retried.errors)
 
     def test_validate_preallocates_missing_local_port(self):
         """§6.4: 第二步在内存分配候选——缺省 local_port 必须在本机预分配。"""
         flow = RegistrationFlow(self.reg)
-        flow.start(remote_request())
+        flow.start(self._request())
         state = flow.validate()
         self.assertEqual(state.stage, "validated")
         records = flow.reservations.records()
@@ -357,7 +365,7 @@ class TestFlowVerifyAndCommit(unittest.TestCase):
         self.assertEqual(failed.stage, "failed")
         self.assertEqual(failed.step, 6, "commit failure must stay on step 6")
         retried = flow.commit()
-        self.assertEqual(retried.stage, "committed")
+        self.assertEqual(retried.stage, "committed", retried.errors)
 
     def test_reserved_daemon_ports_are_scoped_by_target_host(self):
         """§6.4: daemon_port 唯一性作用域是 daemon 目标主机。"""

@@ -28,11 +28,13 @@ class _MockServerThread:
         self.server.server_close()
         self.thread.join(timeout=3)
 
-    def request(self, method, path, body=None):
+    def request(self, method, path, body=None, headers=None):
         connection = http.client.HTTPConnection("127.0.0.1", self.port, timeout=5)
         payload = None if body is None else json.dumps(body)
-        headers = {} if payload is None else {"Content-Type": "application/json"}
-        connection.request(method, path, payload, headers)
+        request_headers = dict(headers or {})
+        if payload is not None:
+            request_headers["Content-Type"] = "application/json"
+        connection.request(method, path, payload, request_headers)
         response = connection.getresponse()
         raw = response.read().decode("utf-8")
         connection.close()
@@ -376,6 +378,82 @@ class TestRegistrationMockServer(unittest.TestCase):
         self.assertEqual(roles["command"]["host"], "command-host")
         self.assertEqual(roles["file"]["host"], "global-host")
         self.assertEqual(roles["spectre"]["host"], "global-host")
+
+
+class TestControlConsoleMockEndpoints(unittest.TestCase):
+    def setUp(self):
+        self.srv = _MockServerThread()
+        self.personal_headers = {"Authorization": "Bearer demo-token"}
+        self.admin_headers = {"Authorization": "Bearer mock-admin"}
+
+    def tearDown(self):
+        self.srv.close()
+
+    def test_personal_page_can_query_update_and_delete_own_entry(self):
+        status, body = self.srv.request(
+            "GET", "/api/user/demo", headers=self.personal_headers
+        )
+        self.assertEqual(status, 200)
+        self.assertEqual(body["entry"]["roles"]["command"]["calibre"]["bin"],
+                         "/opt/eda/calibre/bin/calibre")
+
+        status, body = self.srv.request(
+            "POST",
+            "/api/user/demo/update",
+            {"enhanced_token": "mock-enhanced", "runtime": {"thread_pool_size": 16}},
+            self.personal_headers,
+        )
+        self.assertEqual(status, 200)
+        self.assertEqual(body["entry"]["runtime"]["thread_pool_size"], 16)
+        self.assertNotIn("enhanced_token", body["entry"])
+
+        status, body = self.srv.request(
+            "DELETE", "/api/user/demo", headers=self.personal_headers
+        )
+        self.assertEqual(status, 200)
+        self.assertTrue(body["removed"])
+        self.assertEqual(
+            self.srv.request("GET", "/api/user/demo", headers=self.personal_headers)[0],
+            404,
+        )
+
+    def test_system_page_reads_config_and_controls_process(self):
+        status, config = self.srv.request(
+            "GET", "/api/config", headers=self.admin_headers
+        )
+        self.assertEqual(status, 200)
+        self.assertEqual(config["business_thread_pool_size"], 64)
+
+        status, config = self.srv.request(
+            "PUT",
+            "/api/config",
+            {"business_thread_pool_size": 128},
+            self.admin_headers,
+        )
+        self.assertEqual(status, 200)
+        self.assertEqual(config["business_thread_pool_size"], 128)
+
+        status, process = self.srv.request(
+            "GET", "/api/process/status", headers=self.admin_headers
+        )
+        self.assertEqual(status, 200)
+        self.assertEqual(process["status"], "ready")
+
+        status, result = self.srv.request(
+            "POST",
+            "/api/process/reload",
+            {"target": "business"},
+            self.admin_headers,
+        )
+        self.assertEqual(status, 200)
+        self.assertEqual(result["action"], "reload")
+
+    def test_control_console_mock_rejects_unknown_credential(self):
+        status, body = self.srv.request(
+            "GET", "/api/user/demo", headers={"Authorization": "Bearer nope"}
+        )
+        self.assertEqual(status, 401)
+        self.assertEqual(body["error"], "unauthorized")
 
 
 if __name__ == "__main__":

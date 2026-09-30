@@ -82,6 +82,36 @@ PROBES: dict[str, dict] = {
         "两个真实用户 + /project 共享库（serdes_rx；TEST_LIB 只在 calprobe 的 cds.lib 里）"),
     "gui_display_probe.py": entry(
         "gui", ["--work-dir", WORK_VBLOG, "--token", TOKEN_VBLOG], "X11 display + 真实 CIW"),
+    # 2026-09-30 接线：三个此前"无人引用"的探针（`run_semi_probes.py` 漏登记）
+    #  * 日志轮转（日志 spec §8.5 的"文件轮转/清空"行为，本机文件/子进程即可）
+    #  * layout region/depth direct 复验（P-082/P-085 回归）
+    #  * GDS 导出后同会话 SKILL 仍可用（P-075 回归；需 PDK 实例的库 GDSKILL/gds_probe）
+    "log_rotation_lock_probe.py": entry(
+        "transport", [], "本地文件/子进程：per-pid 日志轮转不受他人持锁影响（日志 spec §8.5）"),
+    "layout_depth_region_direct_probe.py": entry(
+        "layout", [], "业务面 8127 + vb-vblog（P-082/P-085 region 两点 + depth 下钻）"),
+    "gds_then_skill_probe.py": entry(
+        "layout", ["--token", TOKEN_PDK], "PDK 实例（calprobe）：GDS 导出后同会话 SKILL 仍可用（P-075）"),
+    # py2.7 专项（本机编排、靶机执行）：真 py2.7 daemon 拒绝分支 + `_read_frame` 静默丢弃。
+    # 我们承诺"远端侧 2.7+ / 3.6+"，此前两个 py27 探针**无人引用**（只跑过 py3 对照）。
+    "py27_remote_runtime_probe.py": entry(
+        "py27", ["--out", "test/artifacts/evidence/round9/py27-remote-runtime.json"],
+        "wsl-gent 真 Python 2.7.6（XCELIUM 自带）+ python3；scp 上传探针/daemon_27 后在靶机执行"),
+    # 路径边界攻击（P-051 回归）：目标目录含空格 / 父级是普通文件 / 相对路径 → 不得挂死或假成功
+    "gds_publish_path_edges_probe.py": entry(
+        "layout", ["--out", "test/artifacts/evidence/round9/gds-publish-path-edges.json"],
+        "业务面 8127 + vb-vblog（layout.gds 远端发布路径边界，P-051 回归）"),
+    # 2026-09-30 接线（本批）：三个"需要自带夹具"的回归探针
+    #  * P-095：悬空 Overwrite History 目标 → run 不得挂死（探针自己 open_gui 造会话，收尾关闭）
+    #  * P-096：死属主/活锁/自家锁 三态 → 结构化语义正确且实例不挂死
+    #  * P-076：2 任务 spectre.run 三轮均正常收尾、无线程泄漏
+    "maestro_p095_overwrite_wedge_probe.py": entry(
+        "maestro", ["--out", "test/artifacts/evidence/round9/p095-overwrite-wedge.json"],
+        "业务面 8127 + vb-vblog（maestro_tb/rc_probe；探针自带 GUI 会话夹具）"),
+    "maestro_p096_write_lock_probe.py": entry(
+        "maestro", [], "业务面 8127 + vb-vblog（自建 p096_lock_scratch 夹具；死锁/活锁/自家锁三态）"),
+    "p076_fix_verify_probe.py": entry(
+        "spectre", [], "业务面 8127 + wsl-gent（2 任务 spectre.run × 3 轮，P-076 回归）"),
     # 位置参数：`<mode> <lib> <cell> [view] [overwrite]`；`--token` 换实例
     # （SRX65/DI65 这些库在 PDK 实例的 cds.lib 里，vblog 实例看不到）
     "symbol_pkg_probe.py": entry(

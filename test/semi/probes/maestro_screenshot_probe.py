@@ -40,7 +40,7 @@ if DIRECT:
         env = api_call(operation, **fields)
         if not env.get("ok"):
             raise RuntimeError(f"{operation} failed: {env.get('error')}")
-        return _c1_wrapper(env)
+        return env
 else:
     from _maestro_tb import call as api_call, data as api_data  # noqa: E402
 
@@ -54,7 +54,7 @@ def one(label: str, **extra) -> dict:
         **extra,
     )
     print(f"--- {label} ok={response.get('ok')}")
-    data_obj = _c1_wrapper(response)
+    data_obj = response
     value = data_obj.get("value") or {}
     if value:
         print(json.dumps(value, ensure_ascii=False, indent=2))
@@ -89,7 +89,7 @@ def main() -> int:
         ("default", default), ("window_id", by_window),
         ("region", region), ("toplevel_false", not_top),
     ):
-        value = (_c1_wrapper(response)).get("value") or {}
+        value = (response).get("value") or {}
         path = value.get("local_path")
         if path:
             p = Path(path)
@@ -102,19 +102,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
-
-# --- C1 兼容垫片（2026-09-29，C3）------------------------------------------------
-# C1（2f88853）起：业务载荷直返顶层（值型 `value`、命令/skill 型 `result`）、
-# 成功默认省略 `steps`、失败壳去掉 `data`。历史 TB 按 `response["data"]` 解析，
-# 本垫片把新契约响应合成为旧 `data` 壳，让既有解析零改动继续工作。
-def _c1_wrapper(body):
-    if not isinstance(body, dict):
-        return {}
-    if isinstance(body.get("data"), dict):
-        return body["data"]
-    wrapped = {"ok": body.get("ok"), "error": body.get("error")}
-    for key in ("value", "result", "steps"):
-        if key in body:
-            wrapped[key] = body[key]
-    return wrapped

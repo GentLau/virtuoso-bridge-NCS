@@ -17,6 +17,7 @@
 - `w4_hostkey_cycle.sh`：**w4-gent host-key 轮换（注册专项 P5）**——`status/use-a/use-b/restore` 四个动作，每次输出 `SET=` + `FINGERPRINT=SHA256:…`；首次调用会备份原始 key，`restore` 恢复。部署到 w4 的 `/usr/local/sbin/`（需 sudo），接口见 [`../../docs/环境与场景.md`](../../docs/环境与场景.md) §7。
 - `hold_ports.py`：占住一段本机端口，用来复现/回归"机器级端口被占"造成的假红（P-063）。
 - `verify_spec_matrix_evidence.py`：拿最新 JUnit 核对 spec 覆盖矩阵每一行的证据文件**这轮到底跑没跑**（产出矩阵 §14）。
+- `run_redpins.py`：**红钉 runner**——跑 `REDPINS` 清单里的真机红钉 TB（当前 C06），判定 `RED-PIN-HOLDS / UNEXPECTED-GREEN / BROKEN`；绿了即提醒删红钉/改判（离线红钉由 xfail 天然覆盖，不需要它）。
 - `make_bug_cards.py`：生成/刷新 `test/reports/bugs/`（**未关闭缺陷的唯一跟踪视图**：逐条卡片 + README 索引 + 已关闭记录）；`--check` 只校验不写盘。
 - `ops_matrix.py`：列出上层包已注册 operation。
 - `ops_used.py`：运行上层套件并统计 operation 覆盖。

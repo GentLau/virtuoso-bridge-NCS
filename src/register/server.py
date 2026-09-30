@@ -62,6 +62,72 @@ _BUG_LOG_TAIL_LINES = 500
 _MAX_REQUEST_BYTES = 16 * 1024 * 1024
 
 
+# ---------------------------------------------------------------------------
+# Personal self-service field matrix (spec: 中层配置文档 §2「自助权限」列)
+# ---------------------------------------------------------------------------
+_SELF_EDIT = "edit"
+_SELF_READONLY = "readonly"
+_SELF_SECRET = "secret"
+
+#: 保密字段：personal token 既不可读（self 视图剔除）也不可写（仅管理员路径）。
+_SSH_SECRET_FIELDS = frozenset({"key_dir", "key"})
+_ROLE_SECRET_FIELDS = frozenset({"key_dir", "key"})
+#: 只读字段：self 可读，写入需 enhanced_token=管理员 token（控制面 v42 §3）。
+_ROLE_READONLY_FIELDS = frozenset({
+    "mode", "max_sessions", "expected_fingerprint",
+    "daemon_port", "local_port", "expected_hostname", "expected_user",
+})
+
+
+def self_access_level(path: tuple[str, ...]) -> str:
+    """One registry field path -> personal self-service level.
+
+    Owner of the classification is ``中层配置文档 §2``.  Unknown paths and
+    whole-object replacement paths fail closed to ``secret`` so a self patch
+    can never clear a container that carries credentials.
+    """
+    if not path:
+        return _SELF_SECRET
+    head = path[0]
+    if head == "ssh":
+        if len(path) == 1:
+            return _SELF_SECRET
+        if path[1] == "default":
+            if len(path) == 2:
+                return _SELF_SECRET
+            return _SELF_SECRET if path[2] in _SSH_SECRET_FIELDS else _SELF_EDIT
+        return _SELF_EDIT  # backend / control_master / tool_override.*
+    if head == "roles":
+        if len(path) < 3:
+            return _SELF_SECRET
+        field = path[2]
+        if field in _ROLE_SECRET_FIELDS:
+            return _SELF_SECRET
+        if field in _ROLE_READONLY_FIELDS:
+            return _SELF_READONLY
+        return _SELF_EDIT  # role edit field or user group
+    if head in ("mode", "runtime"):
+        return _SELF_READONLY
+    if head in ("root", "cdslog"):
+        return _SELF_EDIT
+    return _SELF_SECRET
+
+
+def self_patch_levels(fields: dict) -> set[str]:
+    """Set of self-service levels touched by a (nested) update patch."""
+    levels: set[str] = set()
+
+    def walk(node, path: tuple[str, ...]) -> None:
+        if isinstance(node, dict):
+            for key, value in node.items():
+                walk(value, path + (str(key),))
+            return
+        levels.add(self_access_level(path))
+
+    walk(fields, ())
+    return levels
+
+
 class _InvalidContentLength(ValueError):
     """Request header has no valid non-negative Content-Length."""
 
@@ -176,7 +242,7 @@ class RegistrationHandler(BaseHTTPRequestHandler):
         return True
 
     def _presented_admin_token(self) -> str:
-        """Legacy admin route: ``Authorization: Bearer <admin token>``."""
+        """``Authorization: Bearer <token>`` value (admin or personal)."""
         header = self.headers.get("Authorization", "")
         return header.removeprefix("Bearer ").strip() if header else ''
 
@@ -191,10 +257,59 @@ class RegistrationHandler(BaseHTTPRequestHandler):
             return True
         return self.server.registry.user_of(presented) is not None  # type: ignore[attr-defined]
 
+    def _request_identity(self) -> tuple[str | None, str | None]:
+        """Resolve Authorization to ("admin", None) / ("personal", user) / (None, None)."""
+        presented = self._presented_admin_token()
+        if self._is_admin_token(presented):
+            return "admin", None
+        if presented:
+            user = self.server.registry.user_of(presented)  # type: ignore[attr-defined]
+            if user:
+                return "personal", user
+        return None, None
+
+    def _require_self_or_admin(self, user: str) -> str | None:
+        """Authorize /api/user/<user>; returns the identity kind or None.
+
+        控制面 v42 §3: admin may touch any user; a personal token may only
+        touch its own entry (wrong user -> 403, missing/unknown -> 401).
+        """
+        kind, identity = self._request_identity()
+        if kind == "admin":
+            return kind
+        if kind == "personal" and identity == user:
+            return kind
+        if kind == "personal":
+            self._send_json(403, {
+                "error": "forbidden",
+                "detail": "personal token can only access its own entry",
+            })
+        else:
+            self._send_json(401, {"error": "unauthorized"})
+        return None
+
     @staticmethod
     def _redacted(entry) -> dict:
         data = entry.model_dump()
         data.pop("token", None)
+        return data
+
+    @classmethod
+    def _redacted_self(cls, entry) -> dict:
+        """Self view: admin redaction plus every 自助权限=保密 field removed."""
+        data = cls._redacted(entry)
+        ssh = data.get("ssh")
+        if isinstance(ssh, dict):
+            default = ssh.get("default")
+            if isinstance(default, dict):
+                for key in _SSH_SECRET_FIELDS:
+                    default.pop(key, None)
+        roles = data.get("roles")
+        if isinstance(roles, dict):
+            for role in roles.values():
+                if isinstance(role, dict):
+                    for key in _ROLE_SECRET_FIELDS:
+                        role.pop(key, None)
         return data
 
     # -- routing --------------------------------------------------------------
@@ -240,14 +355,16 @@ class RegistrationHandler(BaseHTTPRequestHandler):
             })
             return
         if path.startswith("/api/user/"):
-            if not self._require_admin():
-                return
             user = unquote(path[len("/api/user/"):].rstrip("/"))
+            kind = self._require_self_or_admin(user)
+            if kind is None:
+                return
             entry = self.server.registry.get(user)
             if entry is None:
                 self._send_json(404, {"error": "unknown user", "user": user})
             else:
-                self._send_json(200, {"user": user, "entry": self._redacted(entry)})
+                render = self._redacted_self if kind == "personal" else self._redacted
+                self._send_json(200, {"user": user, "entry": render(entry)})
             return
         if path.startswith("/api/register/"):
             user = unquote(path[len("/api/register/"):].rstrip("/"))
@@ -279,10 +396,11 @@ class RegistrationHandler(BaseHTTPRequestHandler):
     def do_POST(self) -> None:  # noqa: N802
         path = urlparse(self.path).path
         if path.startswith("/api/user/") and path.endswith("/update"):
-            if not self._require_admin():
-                return
             user = unquote(path[len("/api/user/"):-len("/update")])
-            self._handle_update(user)
+            kind = self._require_self_or_admin(user)
+            if kind is None:
+                return
+            self._handle_update(user, personal=(kind == "personal"))
             return
         if path == "/api/register":
             self._handle_register_command()
@@ -720,7 +838,7 @@ class RegistrationHandler(BaseHTTPRequestHandler):
             "credentials": removed_credentials,
         })
 
-    def _handle_update(self, user: str) -> None:
+    def _handle_update(self, user: str, *, personal: bool = False) -> None:
         entry = self.server.registry.get(user)
         if entry is None:
             self._send_json(404, {"error": "unknown user", "user": user})
@@ -736,13 +854,23 @@ class RegistrationHandler(BaseHTTPRequestHandler):
         if not isinstance(fields, dict):
             self._send_json(400, {"error": "update body must be an object"})
             return
-        # 多用户与注册 v31 / §5: 白名单字段为 ssh.* / root.default / role.* /
-        # runtime.* / cdslog.* / expected_*；token、registered_at、未声明字段
-        # 与扁平别名一律拒绝（扁平别名不属公共协议）。
+        # 控制面 v42 §3: 本人 update 的 enhanced_token 仅管理员 token；出现即
+        # 校验并剥离，绝不落盘/回显/进日志（只有只读字段需要它）。
+        enhanced_present = "enhanced_token" in fields
+        enhanced_token = fields.pop("enhanced_token", None)
+        if enhanced_present and (
+            not isinstance(enhanced_token, str)
+            or not self._is_admin_token(enhanced_token)
+        ):
+            self._send_json(401, {"error": "invalid enhanced_token"})
+            return
+        # 多用户与注册 v42 / §5: 白名单字段为 mode.default / ssh.* /
+        # root.default / role.* / runtime.* / cdslog.* / expected_*；token、
+        # registered_at、未声明字段与扁平别名一律拒绝（扁平别名不属公共协议）。
         if "token" in fields:
             self._send_json(400, {"error": "token must not be provided in update body"})
             return
-        allowed = {"ssh", "root", "roles", "runtime", "cdslog"}
+        allowed = {"mode", "ssh", "root", "roles", "runtime", "cdslog"}
         unknown = set(fields) - allowed
         if unknown:
             self._send_json(
@@ -750,6 +878,19 @@ class RegistrationHandler(BaseHTTPRequestHandler):
                 {"error": "invalid update", "detail": f"unknown fields: {sorted(unknown)}"},
             )
             return
+        if personal:
+            levels = self_patch_levels(fields)
+            if _SELF_SECRET in levels:
+                self._send_json(403, {
+                    "error": "forbidden",
+                    "detail": "secret fields require admin authorization",
+                })
+                return
+            if _SELF_READONLY in levels and not enhanced_present:
+                self._send_json(403, {
+                    "error": "enhanced_token required for read-only fields",
+                })
+                return
 
         # spec §6.5: 连接身份/凭据变化的 role 组先探测 host-key，再把基准与新配置
         # 一起落盘（探测在注册表锁之外进行；失败则整个 update 拒绝、原条目不变）。
@@ -799,7 +940,8 @@ class RegistrationHandler(BaseHTTPRequestHandler):
                 "user": user,
             })
             return
-        self._send_json(200, {"user": user, "entry": self._redacted(candidate)})
+        render = self._redacted_self if personal else self._redacted
+        self._send_json(200, {"user": user, "entry": render(candidate)})
 
     def _reload_business_runtime(self) -> tuple[bool, str | None]:
         """Apply a management write to the business child immediately.

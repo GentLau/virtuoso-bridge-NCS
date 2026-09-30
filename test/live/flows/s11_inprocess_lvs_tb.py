@@ -1,14 +1,16 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
-# 作者: 设计/上层开发
-# 最后改动: 2026-09-28 23:30
+# 作者: 测试/root
+# 最后改动: 2026-09-29 23:20
 # 依赖: 无
 # =======================================================================
 """S11 端到端工程流程 TB：spec → schematic → symbol → layout → LVS → 前仿 → 后仿。
 
 针对真实设计（默认 ``CMP_LIB/cmp_top``：schematic+symbol+layout 齐全），逐段跑通并留证：
 
-    python test/live/flows/s11_full_flow.py --work-dir test/artifacts/env/s11 --token vb-s11 \
-        --lib CMP_LIB --cell cmp_top --out test/artifacts/env/s11/flow.json
+    python test/live/flows/s11_inprocess_lvs_tb.py --work-dir test/artifacts/env/log-vblog \
+        --token vb-s11 --lib CMP_LIB --cell cmp_top \
+        --run-dir /home/Gent/.virtuoso-bridge/vbs11/tmp \
+        --out test/artifacts/evidence/round9/s11-inprocess-lvs-r9.json
 
 每段输出 ``{stage, status, detail}``；``status`` ∈ pass / fail / pending（pending 必须写原因）。
 退出码：有 fail → 1；只有 pass/pending → 0。
@@ -42,7 +44,7 @@ def _op(server: BusinessServer, token: str, operation: str, **fields):
         raise RuntimeError(f"dispatch status {status}: {body}")
     if not body.get("ok"):
         raise RuntimeError(f"{operation} failed: {body.get('error')}")
-    return _c1_wrapper(body)
+    return body
 
 
 def stage_schematic(server, token, lib, cell, out: list) -> None:
@@ -119,7 +121,10 @@ def main() -> int:
     parser.add_argument("--token", required=True)
     parser.add_argument("--lib", default="CMP_LIB")
     parser.add_argument("--cell", default="cmp_top")
-    parser.add_argument("--run-dir", default="")
+    parser.add_argument("--run-dir", default="",
+                        help="**远端绝对路径**（GDS 上传目标 + Calibre 输入所在的远端目录）；"
+                             "默认 /home/Gent/.virtuoso-bridge/vbs11/tmp。传客户端相对路径会落到远端 "
+                             "$HOME 下、Calibre 以 run_dir 为 cwd 找不到文件（2026-09-29 真实踩过）")
     # strmout 的 map 格式：`<layer> <purpose> <streamNum> <dataType>`；PDK 的 CCI/dfii map 不是这个格式
     parser.add_argument("--layer-map", default="/opt/eda/PDK/CRN65GPNEW/CRN65GPNEW/tsmcN65/tsmcN65.layermap")
     parser.add_argument("--cdl", default="/home/Gent/.virtuoso-bridge/vbs11/tmp/cmp_top_full.cdl",
@@ -133,6 +138,12 @@ def main() -> int:
     register_packages()          # 与 HTTP 面一致：先把上层包注册进 dispatch
     server = BusinessServer()
     run_dir = args.run_dir or "/home/Gent/.virtuoso-bridge/vbs11/tmp"
+    # 远端绝对路径校验：客户端相对路径不会报错，但 Calibre 必然读不到（假红来源）。
+    if not run_dir.startswith("/"):
+        raise SystemExit(
+            f"--run-dir 必须是**远端绝对路径**（收到 {run_dir!r}）。客户端相对路径会被解析到远端 "
+            "$HOME 下，而 Calibre 的 cwd 是 RUN_ROOT → 报 "
+            "'Failure to open input file ... for read access'。")
     local_gds = str(ROOT / "test" / "artifacts" / "env" / "s11" / f"{args.cell}.gds")
     results: list[dict] = []
     started = time.time()
@@ -174,19 +185,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
-
-# --- C1 兼容垫片（2026-09-29，C3）------------------------------------------------
-# C1（2f88853）起：业务载荷直返顶层（值型 `value`、命令/skill 型 `result`）、
-# 成功默认省略 `steps`、失败壳去掉 `data`。历史 TB 按 `response["data"]` 解析，
-# 本垫片把新契约响应合成为旧 `data` 壳，让既有解析零改动继续工作。
-def _c1_wrapper(body):
-    if not isinstance(body, dict):
-        return {}
-    if isinstance(body.get("data"), dict):
-        return body["data"]
-    wrapped = {"ok": body.get("ok"), "error": body.get("error")}
-    for key in ("value", "result", "steps"):
-        if key in body:
-            wrapped[key] = body[key]
-    return wrapped

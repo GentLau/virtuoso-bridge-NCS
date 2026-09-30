@@ -65,7 +65,7 @@ def main(argv: list[str] | None = None) -> int:
             return json.loads(error.read().decode("utf-8"))
 
     def skill(token: str, code: str) -> str:
-        data = (call("basic.skill.execute", token, skill_code=code).get("data") or {})
+        data = call("basic.skill.execute", token, skill_code=code)
         output = (data.get("result") or {}).get("output")
         if output is None:
             steps = data.get("steps") or []
@@ -90,7 +90,7 @@ def main(argv: list[str] | None = None) -> int:
                      f'dbSave(cv) dbClose(cv) "created")').strip().strip('"')
 
     def instances_of(response: dict) -> list:
-        value = ((_c1_wrapper(response)).get("value")) or {}
+        value = ((response).get("value")) or {}
         return value.get("instances") or []
 
     # ---- 0) 前置：两个会话都能看到共享库 -------------------------------------
@@ -149,7 +149,7 @@ def main(argv: list[str] | None = None) -> int:
         # B3（C0）：symbol 端口与原理图引脚**直接比对**（不再只判 generate 的 ok）。
         expected = sorted(c["name"] for c in cmds if c.get("op") == "place_pin")
         read = call("virtuoso.symbol.read", token_a, library=lib, cell=cell, view="symbol")
-        value = (_c1_wrapper(read)).get("value") or {}
+        value = (read).get("value") or {}
         terms = sorted(t.get("name") for t in (value.get("terms") or []) if t.get("name"))
         record(f"A-symbol-terms:{cell}", terms == expected,
                {"expected": expected, "terms": terms})
@@ -184,7 +184,7 @@ def main(argv: list[str] | None = None) -> int:
                   view="layout", commands=layout_cmds)
     record("A-write:layout", bool(layout.get("ok")), layout.get("error"))
     read_layout = call("virtuoso.layout.read", token_a, library=lib, cell=top_cell, view="layout")
-    shape_count = (((_c1_wrapper(read_layout)).get("value")) or {}).get("shape_count")
+    shape_count = (((read_layout).get("value")) or {}).get("shape_count")
     record("A-read:layout shapes>=4", bool(read_layout.get("ok")) and (shape_count or 0) >= 4,
            {"ok": read_layout.get("ok"), "shape_count": shape_count,
             "error": read_layout.get("error")})
@@ -198,7 +198,7 @@ def main(argv: list[str] | None = None) -> int:
     record("A-gds-export(new dir)", bool(gds.get("ok")), gds.get("error"))
     listing = call("basic.command.run", token_a, cmd=f"ls -l {gds_path}")
     record("A-gds-on-disk", ".gds" in json.dumps(listing, ensure_ascii=False),
-           json.dumps(_c1_wrapper(listing), ensure_ascii=False)[:200])
+           json.dumps(listing, ensure_ascii=False)[:200])
 
     # ---- 4) B 跨用户回读 schematic + layout ---------------------------------
     b_read = call("virtuoso.schematic.read", token_b, library=lib, cell=top_cell)
@@ -206,7 +206,7 @@ def main(argv: list[str] | None = None) -> int:
            {"names": [item.get("name") for item in instances_of(b_read)],
             "error": b_read.get("error")})
     b_layout = call("virtuoso.layout.read", token_b, library=lib, cell=top_cell, view="layout")
-    b_shapes = (((_c1_wrapper(b_layout)).get("value")) or {}).get("shape_count")
+    b_shapes = (((b_layout).get("value")) or {}).get("shape_count")
     record("B-read:A's layout", bool(b_layout.get("ok")) and (b_shapes or 0) >= 4,
            {"shape_count": b_shapes, "error": b_layout.get("error")})
 
@@ -240,19 +240,3 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main(sys.argv[1:]))
-
-
-# --- C1 兼容垫片（2026-09-29，C3）------------------------------------------------
-# C1（2f88853）起：业务载荷直返顶层（值型 `value`、命令/skill 型 `result`）、
-# 成功默认省略 `steps`、失败壳去掉 `data`。历史 TB 按 `response["data"]` 解析，
-# 本垫片把新契约响应合成为旧 `data` 壳，让既有解析零改动继续工作。
-def _c1_wrapper(body):
-    if not isinstance(body, dict):
-        return {}
-    if isinstance(body.get("data"), dict):
-        return body["data"]
-    wrapped = {"ok": body.get("ok"), "error": body.get("error")}
-    for key in ("value", "result", "steps"):
-        if key in body:
-            wrapped[key] = body[key]
-    return wrapped

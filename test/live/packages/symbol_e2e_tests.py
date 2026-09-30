@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
 # 作者: 测试/root
-# 最后改动: 2026-09-28 20:23
+# 最后改动: 2026-09-30 11:20
 # 依赖: 无
 # =======================================================================
 
@@ -76,7 +76,7 @@ def _op(transport, operation: str, **fields: Any) -> Any:
     response = transport.call({"operation": operation, "token": TOKEN, **fields})
     if not response.get("ok"):
         raise AssertionError(f"{operation} failed: {response.get('error')}")
-    return _c1_wrapper(response)
+    return response
 
 
 def _value(transport, operation: str, **fields: Any) -> dict[str, Any]:
@@ -155,6 +155,16 @@ def _case_read_focus(transport) -> None:
     )
     _check("terms" in value and "labels" not in value, f"focus result: {value.keys()}")
     _check("pin_order" in value, "focus orders missing pin_order")
+    # spec 3-symbol.md:35/138/200：pin_order 权威（schGetPinOrder），port_order/term_order
+    # 是 raw 读回。实测 `schEditPinOrder` 只同步 pin_order/port_order；`cv~>termOrder`
+    # （legacy 属性）不同步（P-116 红钉，见 test/reports/bugs/P-116-*.md）。
+    orders = {key: value.get(key) for key in ("pin_order", "port_order", "term_order")}
+    _check(orders["pin_order"] == ["IN", "OUT", "BI"],
+           f"symfinal pin_order: {orders['pin_order']}")
+    _check(orders["port_order"] == orders["pin_order"],
+           f"port_order 必须与 pin_order 一致（spec 3-symbol.md:200）: {orders}")
+    _check(isinstance(orders["term_order"], list),
+           f"term_order 应是列表（readback 面必须存在）: {orders['term_order']!r}")
 
 
 def _case_write_create(transport) -> str:
@@ -195,6 +205,10 @@ def _case_write_create(transport) -> str:
     _check(names == {"IN", "OUT"}, f"terms after write: {names}")
     _check(value["pin_order"] == ["OUT", "IN"],
            f"pin_order after write: {value['pin_order']}")
+    _check(value["port_order"] == ["OUT", "IN"],
+           f"port_order after write: {value['port_order']}")
+    _check(isinstance(value["term_order"], list),
+           f"term_order 应是列表（P-116：legacy raw 不同步 pin_order）: {value['term_order']!r}")
     _check(len(value["selection_boxes"]) == 1, "selection box missing")
     return view
 
@@ -299,6 +313,15 @@ def _case_check_and_save(transport, view: str) -> None:
         view_type="schematicSymbol", timeout=120,
     )
     _check(value["saved"] is True, "check_and_save did not report saved")
+    # 2026-09-30 补非法档（该 op 此前只有一条正例）：不存在的 view 必须结构化失败且点名 view。
+    response = transport.call({
+        "operation": "virtuoso.symbol.check_and_save", "token": TOKEN,
+        "library": "schemtest", "cell": "sym_e2e", "view": "no_such_view",
+        "view_type": "schematicSymbol", "timeout": 120,
+    })
+    _check(not response.get("ok"), "check_and_save on missing view must fail")
+    error = str(response.get("error") or "")
+    _check("no_such_view" in error, f"错误文案必须点名缺失 view（实测 {error!r}）")
 
 
 def _case_missing_view(transport) -> None:
@@ -312,6 +335,10 @@ def _case_missing_view(transport) -> None:
                       "purpose": "drawing", "points": [[0, 0], [1, 0]]}],
     })
     _check(not response.get("ok"), "write on missing view must fail")
+    # 2026-09-30 加强：断言失败原因点名那个不存在的 view（否则任何失败都能过）
+    error = str(response.get("error") or "")
+    _check("missing_view" in error, f"错误文案必须点名缺失的 view（实测 {error!r}）")
+    _check("not found" in error.lower(), f"错误文案必须说明 not found（实测 {error!r}）")
 
 
 def _case_generate(transport) -> None:
@@ -423,6 +450,28 @@ def _case_screenshot(transport) -> None:
         _close_symbol_window(transport, "sym_e2e")
 
 
+def _case_orders_term_pin116(transport) -> None:
+    """ORDERS-TERM（P-116 红钉）：spec `3-symbol.md:200` 称 `schEditPinOrder` 生效后
+    `pin_order` 与 `port_order`/`term_order` 一致。真机实测（2026-09-30，vblog）：
+
+    * `symfinal`（旧流程建的 fixture）：pin/port=`[IN,OUT,BI]`，term=`[OUT,IN,BI]`（陈旧不一致）；
+    * `sym_e2e`（本包写路径 set_pin_order 之后）：pin/port=`[OUT,IN]`，term=`[]`（根本没写）。
+
+    即 `cv~>termOrder` 是 legacy raw 属性，`schEditPinOrder` 并不同步它 —— 需要 spec/实现二选一
+    （改 spec 文字：term_order 只保证"存在"、可能为空/陈旧；或实现里同步写 termOrder）。
+    """
+    value = _value(
+        transport, "virtuoso.symbol.read",
+        library="schemtest", cell="symfinal", view="symbol",
+        focus=["orders"],
+    )
+    orders = {key: value.get(key) for key in ("pin_order", "port_order", "term_order")}
+    _check(orders["pin_order"] == orders["port_order"],
+           f"前置：pin/port 必须一致: {orders}")
+    _check(orders["term_order"] == orders["pin_order"],
+           f"P-116 红钉：`cv~>termOrder` 未被 schEditPinOrder 同步（spec 3-symbol.md:200 说一致）: {orders}")
+
+
 def run_suite(transport) -> list[tuple[str, str]]:
     results: list[tuple[str, str]] = []
 
@@ -430,9 +479,11 @@ def run_suite(transport) -> list[tuple[str, str]]:
         try:
             value = func()
             results.append((name, "PASS"))
+            print(f"PASS    {name}", flush=True)
             return value
         except Exception as exc:  # noqa: BLE001
             results.append((name, f"FAIL: {type(exc).__name__}: {exc}"))
+            print(f"FAIL    {name}: {type(exc).__name__}: {exc}", flush=True)
             raise
 
     run("READ-01 symfinal structured read",
@@ -453,12 +504,16 @@ def run_suite(transport) -> list[tuple[str, str]]:
         lambda: _case_generate(transport))
     run("SHOT-01 symbol screenshot",
         lambda: _case_screenshot(transport))
+    # 红钉放最后：P-116 今天必红（spec 3-symbol.md:200 与真机不一致），但不许挡住上面的覆盖率。
+    run("ORDERS-TERM term_order 与 pin_order 一致（P-116 红钉）",
+        lambda: _case_orders_term_pin116(transport))
     return results
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--transport", choices=("direct", "http"), default="direct")
+    parser.add_argument("--transport", choices=("direct", "http"), default="http",
+                        help="direct=故障定位/覆盖率；真机判据必须 http")
     args = parser.parse_args()
     transport = HttpTransport() if args.transport == "http" else DirectTransport()
     try:
@@ -474,19 +529,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
-
-# --- C1 兼容垫片（2026-09-29，C3）------------------------------------------------
-# C1（2f88853）起：业务载荷直返顶层（值型 `value`、命令/skill 型 `result`）、
-# 成功默认省略 `steps`、失败壳去掉 `data`。历史 TB 按 `response["data"]` 解析，
-# 本垫片把新契约响应合成为旧 `data` 壳，让既有解析零改动继续工作。
-def _c1_wrapper(body):
-    if not isinstance(body, dict):
-        return {}
-    if isinstance(body.get("data"), dict):
-        return body["data"]
-    wrapped = {"ok": body.get("ok"), "error": body.get("error")}
-    for key in ("value", "result", "steps"):
-        if key in body:
-            wrapped[key] = body[key]
-    return wrapped

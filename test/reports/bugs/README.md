@@ -17,18 +17,19 @@
 
 | ID | 层 | 级别 | 归属 | 状态 | 一句话 | 卡片 |
 |---|---|---|---|---|---|---|
+| **P-117** | spec↔实现一致性（上层 calibre 包）· `export.items` 枚举 | P3（文档与实现不一致：按 spec 调用必失败；既有 PEX 产物的导出路径不可达） | spec 侧（二选一：删/改 §4.5 的 `pdb_dir`；或由实现补上 pdb 目录导出） | 待决策 | spec `12-calibre.md` §4.5 的 `export.items` 列了 `pdb_dir`，实现未提供（`unknown export item: pdb_dir`）；而 §4.4 又写明既有 PEX 产物可由 `export` 读取 | [P-117-calibre-export-pdb-dir-missing.md](P-117-calibre-export-pdb-dir-missing.md) |
 | **P-116** | spec↔真机一致性（上层 symbol 包）· orders 读回口径 | P3（文档与真机不一致：按 spec 断言的测试必红；调用方可能把 term_order 当权威顺序） | spec 侧（已裁决：改 spec 文字，不改实现） | 待测试侧 | spec `3-symbol.md:200` 称 `schEditPinOrder` 后 `pin_order` 与 `port_order`/`term_order` 一致；真机实测 `term_order`（`cv~>termOrder` legacy raw）不同步（空/陈旧） | [P-116-symbol-term-order-not-synced.md](P-116-symbol-term-order-not-synced.md) |
 | **C09** | 上层（maestro 包）· write_history rename 链 | P3（重命名链不可用：`maestro_e2e_tests.HISTORY-01` 因此稳定红） | 设计侧（按**完整套件**复现：maestro 包会话/SDB handle 生命周期；隔离路径已修但整链仍红） | 待设计修 | `maestro.write_history` 连续 rename（A→B，再 B→A）第二跳报 `ASSEMBLER-2404 Cannot find a setup database entry for handle` | [C09-maestro-write-history-rename-chain-handle-error.md](C09-maestro-write-history-rename-chain-handle-error.md) |
 | **C11** | 控制面权限模型（个人自助 registry） | P2（个人管理核心能力不可达：真实控制面对个人 token 稳定 401；前端只能显示缺口或错误地借用管理员权限） | 设计侧（先定个人自助权限矩阵/端点语义，再由 server 实现；不能只改前端） | 待决策 | `/api/user/*` 仍收归管理员且 `enhanced_token` 未接入 update：个人 token + 增强凭据无法自助查询/修改自己的注册表条目 | [C11-control-plane-personal-self-service-missing.md](C11-control-plane-personal-self-service-missing.md) |
-| **C07** | spec↔实现一致性（上层 calibre / LVS 源网表入口） | P3（一致性：spec §8 验收两行在现行实现上不可达；TB 仍跑在 spec 已删除的旧入口上） | 设计侧（已选①：实现 fold；测试侧收口红钉） | 待测试侧 | spec 把 `calibre.export_cdl` 折进 `calibre.lvs` 的 `source` 参数（`source/emit_cdl/cds_lib`）：实现已落地、独立 op 已删除，待测试侧复跑销卡 | [C07-calibre-lvs-source-fold-drift.md](C07-calibre-lvs-source-fold-drift.md) |
 
 > 优先级口径：**P1** = Linux 侧资源/安全或核心指标链路断（P-056、P-053）；
 > **P2** = 真实设计流会给出错的/空的结果，且多数**静默**；**P3/观察** = 非阻塞但建议顺手修。
 
-## 2. 本轮/近期已关闭（97 条，保留记录）
+## 2. 本轮/近期已关闭（98 条，保留记录）
 
 | ID | 事项 | 关闭依据（证据） |
 |---|---|---|
+| C07 | spec 把 `calibre.export_cdl` 折进 `calibre.lvs` 的 `source` 参数（独立 op 已删） | 设计侧实现 `62575c6` 后，**测试侧真机整链复跑**：`calibre_e2e_tests.py` **12/12 绿** —— `LVS-02 source.kind=schematic`（auCdl 在 run dir 内现产，含 `.SUBCKT`+器件行）、`LVS-03 source.kind=cdl` 复用内产 CDL、**新增 `LVS-CTLE`（spec §8 的 `ctle.gds`+`ctle.cdl` 行，强结论 + `svdb/*.phdb`（目录）结构）**、`PARAM-01`/`SET-01` 官方批处理、`LVS-SRC-XOR`（`source` 与旧 `cdl=` 互斥，请求层拒绝）、`EXPORT-01/02`（`local_dir` 值级 + sha256 + 零落盘）；LVS-01 用旧 CDL 仍只到 `not_compared`（P-069 家族残留，TB 如实 WARN 不假装跑通）。证据 `test/artifacts/evidence/round9/calibre-c07-r11c.txt`。 |
 | P-109 | maestro 7 个写键无公开读回面（readback:none） | 设计侧 `d3b0845` 在 `read_config` 暴露 corner `enabled/enabled_tests/disabled_tests/models` 与 test `job_policy.{simulation,netlisting}`。测试侧独立复跑：`maestro_nested_keys_e2e_tests.py` **10/10 绿**，NKM-02/03/05 全部按**值级**读回（enabled=false/true、enabled_tests/disabled_tests、models[].{file,section}、simulation policy maxJobs=2）；证据 `test/artifacts/evidence/round9/maestro-nested-keys-p109-verify.json`。 |
 | P-114 | `place_pin` 的 `power_sens`/`ground_sens`/四属性组合报 ok 但零对象（静默 no-op） | 设计侧 `09af55c`（不静默不猜 + 对象存在性校验）。测试侧独立复跑：`schematic_e2e_tests.py` **11/11 绿**，PIN-OPT 按新口径值级断言 —— power/ground sens 引用已存在 terminal 时建出 PSENS（connectivity 读回）、引用不存在 terminal 结构化失败（`power_sens/ground_sens terminal not found`）、`off_sheet=true` 无可用 master 时结构化拒绝（不再 `nth`/不再静默 no-op）；证据 `test/artifacts/evidence/round9/schematic-p114-verify.json`。 |
 | P-086·D | 投递超时把实例永久置忙（dirty 后不恢复：直连 `SKILL channel busy`，只能重启 CIW） | **已修** `97baf13`：delivered-timeout 后由 probe 收齐迟到帧自动恢复。测试侧回归钉 `test/live/transport/delivered_timeout_recovery_tb.py` **5/5 绿**（独立 disposable destb2/64601）：投递超时快速失败 → 不重启 CIW → 下一条请求在有界时间内成功（自动 probe idle 清 dirty）→ 再等一拍仍可用；证据 `test/artifacts/evidence/round9/delivered-timeout-recovery.json`。 |

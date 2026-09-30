@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
 # 作者: 测试/root
-# 最后改动: 2026-09-28 22:10
+# 最后改动: 2026-09-29 20:41
 # 依赖: 无
 # =======================================================================
 # 六步流程（test/docs/写TB规范.md §1）：
@@ -220,6 +220,44 @@ def _case_command_timeout(transport) -> None:
         _check(kind == "timeout", f"timeout kind must be 'timeout': {kind}")
 
 
+def _case_basic_negative(transport) -> None:
+    """`basic.*` 四接口的非法档 / 返回值语义（2026-09-30 补：这几个 op 此前只有正例）。
+
+    判据（值级）：
+      * `skill.execute("1+")`（语法错）→ **结构化失败**且错误文本非空；
+      * `command.run("exit 7")` → **业务失败**（`ok=false`，与超时/传输失败可区分），
+        错误文本点名 `rc=7`，且具名 `result.returncode == 7` 原样回传；
+      * `command.run("<不存在的命令>")` → 同上，`rc=127`；
+      * `gui.run` / `spectre.run` 同口径（不存在命令 → 业务失败、不崩）。
+    """
+    bad_skill = transport.call({
+        "operation": "basic.skill.execute", "token": TOKEN, "skill_code": "1+"})
+    _check(not bad_skill.get("ok"), "语法错 SKILL 必须结构化失败")
+    _check(bool(str(bad_skill.get("error") or "").strip()),
+           f"失败必须带错误文本：{bad_skill}")
+
+    exit7 = transport.call({"operation": "basic.command.run", "token": TOKEN,
+                            "cmd": "exit 7"})
+    _check(not exit7.get("ok"), f"非零退出应判业务失败：{exit7}")
+    _check("rc=7" in str(exit7.get("error") or ""),
+           f"错误文本应点名 rc=7：{exit7.get('error')!r}")
+    _check((exit7.get("result") or {}).get("returncode") == 7,
+           f"具名 result.returncode 必须原样回传 7：{exit7.get('result')}")
+
+    missing = transport.call({"operation": "basic.command.run", "token": TOKEN,
+                              "cmd": "no_such_cmd_bridge_qq"})
+    _check(not missing.get("ok"), f"不存在的命令应判失败：{missing}")
+    _check((missing.get("result") or {}).get("returncode") == 127,
+           f"不存在的命令 rc 应为 127：{missing.get('result')}")
+
+    for label, operation in (("gui", "basic.gui.run"), ("spectre", "basic.spectre.run")):
+        response = transport.call({"operation": operation, "token": TOKEN,
+                                   "cmd": "no_such_cmd_bridge_qq", "timeout": 30})
+        rc = (response.get("result") or {}).get("returncode")
+        _check(not response.get("ok") and rc not in (0, None),
+               f"{label}.run 不存在命令应业务失败且 rc 非 0：{response}")
+
+
 def _case_gui(transport) -> None:
     listing = _op(transport, "virtuoso.gui.list_windows")
     _check(listing.get("ok") and isinstance(listing.get("windows"), list),
@@ -261,6 +299,12 @@ def run_suite(transport) -> list[tuple[str, str]]:
     run("BASIC-03 recursive file tree", lambda: _case_recursive_file_tree(transport))
     run("BASIC-04 command serial/parallel", lambda: _case_command_parallel(transport))
     run("BASIC-05 command timeout semantics", lambda: _case_command_timeout(transport))
+    run("BASIC-06 basic.* 非法档/返回码语义", lambda: _case_basic_negative(transport))
+    # 注：**故意不**在常驻门禁里做"投递超时 → dirty"用例：该操作会把**共享实例**
+    # 置为 dirty/busy（P-086 语义：需重启 CIW 才恢复），会毒化其他人正在用的实例
+    # （2026-09-30 实测踩到：vblog 直连 daemon 报 `SKILL channel busy`，需按 Runbook §10.10 重启）。
+    # 该语义由**可丢弃 CIW** 的 `test/live/transport/disposable_ciw_c06_p086_tb.py` 覆盖
+    # （它自己重启 destb1，判据见 `evidence/round9/disposable-c06-p086-r9-verify.json`）。
     run("GUI-01 list/auto_dismiss/send_key/screenshot", lambda: _case_gui(transport))
     return results
 
@@ -269,7 +313,8 @@ def main() -> int:
     global API, TOKEN, WORK_DIR, SCRATCH
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--transport", choices=("direct", "http"), default="direct")
+    parser.add_argument("--transport", choices=("direct", "http"), default="http",
+                        help="direct=故障定位/覆盖率；真机判据必须 http")
     parser.add_argument("--api", default=API,
                         help="HTTP business face, e.g. http://127.0.0.1:8127/api/operation")
     parser.add_argument("--token", default=TOKEN)

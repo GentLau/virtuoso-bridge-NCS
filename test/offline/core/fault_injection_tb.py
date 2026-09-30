@@ -1,7 +1,7 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=====================
-# 作者: 设计/Codex
-# 最后改动: 2026-09-28 12:04
-# 依赖: 无
+# 作者: 测试/root
+# 最后改动: 2026-09-30 18:35
+# 依赖: test/shared/fixtures/_daemon_harness.py（daemon 帧协议夹具）
 # =====================================================================
 # 六步流程（按 test/docs/写TB规范.md §1–§6）：
 # §1 环境检查：离线故障注入，无需远端环境 → 跳过。
@@ -24,7 +24,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import socket
 import subprocess
 import sys
 import tempfile
@@ -45,6 +44,17 @@ from common.ssh import SSHRunner  # noqa: E402
 from transport.tunnel import RemoteClient  # noqa: E402
 from transport.middle import BusinessServer  # noqa: E402
 from pyapi.models import ExecutionStatus, VirtuosoResult  # noqa: E402
+
+_FIXTURES = Path(__file__).resolve().parents[2] / "shared" / "fixtures"
+if str(_FIXTURES) not in sys.path:
+    sys.path.insert(0, str(_FIXTURES))
+from _daemon_harness import (  # noqa: E402
+    NAK,
+    STX,
+    load_daemon,
+    run_request,
+    value_frame,
+)
 
 
 class ProbeFailure(AssertionError):
@@ -206,106 +216,40 @@ def case_transport_kind():
     return {"kind": result.kind, "returncode": result.returncode}
 
 
-class BytesBuffer:
-    def __init__(self, data=b""):
-        self.data = bytearray(data)
-        self.written = bytearray()
-
-    def read(self, n=1):
-        if not self.data:
-            return b""
-        out = bytes(self.data[:n])
-        del self.data[:n]
-        return out
-
-    def write(self, data):
-        self.written.extend(data)
-
-    def flush(self):
-        return None
-
-
-class FakeStream:
-    def __init__(self, data=b""):
-        self.buffer = BytesBuffer(data)
-
-
-class FakeConn:
-    def __init__(self, request: bytes):
-        self.request = request
-        self.sent = bytearray()
-        self.closed = False
-        self.timeout: float | None = None
-
-    def settimeout(self, timeout: float | None) -> None:
-        self.timeout = timeout
-
-    def recv(self, _n):
-        data, self.request = self.request, b""
-        return data
-
-    def sendall(self, data):
-        self.sent.extend(data)
-
-    def shutdown(self, _how):
-        return None
-
-    def close(self):
-        self.closed = True
-
-
-def _load_daemon(name: str):
-    import importlib.util
-
-    path = SRC / "bridge" / "resources" / "ramic_bridge_daemon_3.py"
-    spec = importlib.util.spec_from_file_location(name, path)
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    mod.DAEMON_TOKEN = "tok"
-    return mod
-
-
-def _run_daemon_request(daemon, request: dict, first_frame: bytes):
-    req = json.dumps(request, ensure_ascii=False).encode("utf-8")
-    conn = FakeConn(req)
-    fake_in = FakeStream(first_frame)
-    fake_out = FakeStream()
-    old_in, old_out = daemon.sys.stdin, daemon.sys.stdout
-    try:
-        daemon.sys.stdin, daemon.sys.stdout = fake_in, fake_out
-        daemon.handle_connection(conn)
-    finally:
-        daemon.sys.stdin, daemon.sys.stdout = old_in, old_out
-        daemon._timeout_flag = True
-        if daemon._watchdog:
-            daemon._watchdog.cancel()
-    return bytes(fake_out.buffer.written), bytes(conn.sent)
-
-
 def case_daemon_log_protocol():
-    """Missing/invalid log fields must be handled per the log contract."""
-    daemon = _load_daemon("fault_daemon_log")
-    stx, rs = b"\x02", b"\x1e"
-    first = stx + b"2" + rs
-    request = {"skill": "1+1", "timeout": 0.05, "token": "tok"}
-    out, sent = _run_daemon_request(daemon, request, first)
-    if b"RBDLogOn=nil" not in out:
+    """Missing/invalid log fields must be handled per the log contract.
+
+    夹具纪律：只用共享 `_daemon_harness.run_request`——它的假 stdin 带 gate
+    （CIW 只在收到指令后才写应答帧，与真实 ipc 同序）。**不要**自建"预装帧"的
+    假流：daemon 投递前会排空 stdin 残留（`ramic_bridge_daemon_3.py` 的
+    stale-frame drain），预装帧会被吃掉 → 请求超时置 dirty → 后续请求在
+    `skill_busy` 闸门被拒（2026-09-30 定位的 TB 老化原因，旧版本地夹具即死于此）。
+    """
+    daemon = load_daemon("fault_daemon_log")  # token 默认 "tok"
+    request = {"skill": "1+1", "timeout": 5.0, "token": "tok"}
+    ciw_out, sent, unread, parsed = run_request(daemon, request, value_frame("2"))
+    if b"RBDLogOn=nil" not in ciw_out:
         raise ProbeFailure(
-            "missing log_level did not default OFF: " + repr(out[:160])
+            "missing log_level did not default OFF: " + repr(ciw_out[:160])
         )
-    bad_level = {"skill": "1+1", "timeout": 0.05, "token": "tok", "log_level": "bogus"}
-    out2, sent2 = _run_daemon_request(daemon, bad_level, first)
-    if not sent2.startswith(b"\x15") or b"invalid log_level" not in sent2:
+    if not sent.startswith(STX) or parsed != {"value": "2", "log": ""}:
+        raise ProbeFailure(f"off 请求未按值返回结果: {sent!r}")
+    if unread:
+        raise ProbeFailure(f"log=off 不得再读第二帧: unread={unread!r}")
+    bad_level = {"skill": "1+1", "timeout": 5.0, "token": "tok", "log_level": "bogus"}
+    _, sent2, _, _ = run_request(daemon, bad_level, b"")
+    if not sent2.startswith(NAK) or b"invalid log_level" not in sent2:
         raise ProbeFailure(
             "invalid log_level was not NAKed: " + repr(sent2[:160])
         )
-    bad_max = {"skill": "1+1", "timeout": 0.05, "token": "tok", "log_max_bytes": 0}
-    out3, sent3 = _run_daemon_request(daemon, bad_max, first)
-    if not sent3.startswith(b"\x15") or b"invalid log_max_bytes" not in sent3:
+    bad_max = {"skill": "1+1", "timeout": 5.0, "token": "tok", "log_max_bytes": 0}
+    _, sent3, _, _ = run_request(daemon, bad_max, b"")
+    if not sent3.startswith(NAK) or b"invalid log_max_bytes" not in sent3:
         raise ProbeFailure(
             "invalid log_max_bytes was not NAKed: " + repr(sent3[:160])
         )
-    return {"missing_default_off": True, "invalid_level": True, "invalid_max": True}
+    return {"missing_default_off": True, "invalid_level": True, "invalid_max": True,
+            "off_response": parsed}
 
 
 def case_runtime_cache_invalidation():
@@ -336,9 +280,20 @@ class BlockingSkillClient:
         self.release = threading.Event()
 
     def execute_skill(self, code, timeout=None, *, log_level=None, log_max_bytes=None):
+        return self.execute_skill_checked(
+            code, timeout, log_level=log_level, log_max_bytes=log_max_bytes
+        )[0]
+
+    def execute_skill_checked(self, code, timeout=None, *, log_level=None,
+                              log_max_bytes=None):
+        """中层调用的是 checked 形态（返回 ``(result, delivery)``）。
+
+        只实现 ``execute_skill`` 会让 AttributeError 被中层兜底 except 吞成
+        "Daemon connection failed"，容量/排队断言因此假红——2026-09-30 定位。
+        """
         self.started.set()
         self.release.wait(2)
-        return VirtuosoResult(status=ExecutionStatus.SUCCESS, output="2")
+        return VirtuosoResult(status=ExecutionStatus.SUCCESS, output="2"), "completed"
 
 
 def case_skill_capacity_fields():

@@ -27,6 +27,27 @@ BUGS_DIR = ROOT / "test" / "reports" / "bugs"
 #: 未关闭条目。状态只允许：待设计修 / 待测试侧 / 待归属 / 待决策 / 观察
 OPEN = [
     {
+        "id": "P-117",
+        "layer": "spec↔实现一致性（上层 calibre 包）· `export.items` 枚举",
+        "slug": "calibre-export-pdb-dir-missing",
+        "title": "spec `12-calibre.md` §4.5 的 `export.items` 列了 `pdb_dir`，实现未提供（`unknown export item: pdb_dir`）；而 §4.4 又写明既有 PEX 产物可由 `export` 读取",
+        "level": "P3（文档与实现不一致：按 spec 调用必失败；既有 PEX 产物的导出路径不可达）",
+        "owner": "spec 侧（二选一：删/改 §4.5 的 `pdb_dir`；或由实现补上 pdb 目录导出）",
+        "status": "待决策",
+        "where": "spec `spec/design-concepts/上层/12-calibre.md:231`（items 枚举）与 `:223`（“既有 PEX 产物仍可由 read_results / export 读取”）；实现 `src/pyapi/packages/calibre.py:56-61`（`_EXPORT_ITEMS` 只有 summary/results_db/netlist/log）与 `:248`（其它 item 一律 ValueError）",
+        "symptom": "真机（8127，token vb-vblog）：`calibre.export(run_dir=…, items=[\"pdb_dir\"])` → 400 "
+                   "`invalid request for operation: unknown export item: pdb_dir`；对照 `items=[\"all_small\"]` → 200 "
+                   "且展开为 summary/results_db/log（合法枚举可用，说明只有 pdb_dir 缺）。",
+        "repro": "对任一已有 run_dir 调 `calibre.export(items=['pdb_dir'])`；或 `calibre_e2e_tests.py --only EXPORT` 看 EXPORT-04。",
+        "evidence": "`test/artifacts/evidence/round9/calibre-c07-r11c.txt`（套件 12/12，含 EXPORT-03/04）；枚举差异见源码锚点",
+        "accept": "① spec 与实现一致（删/改 pdb_dir，或实现补上）；② TB EXPORT-04 按裁决更新（现状=结构化拒绝并点名 item）；"
+                  "③ 若实现补上：必须值级断言 pdb 目录落地（目录存在且文件非空），并同步 §5 的 PEX 产物口径。",
+        "next": "等 spec owner 拍板；TB 已按“现状 + 指向本卡”记录，不阻塞门禁。",
+        "reported": "2026-09-30（测试/root：补 `calibre.export` 枚举覆盖时发现 spec 列了未实现的 item）",
+        "updated": "2026-09-30 23:30（新立）",
+    },
+
+    {
         "id": "P-116",
         "layer": "spec↔真机一致性（上层 symbol 包）· orders 读回口径",
         "slug": "symbol-term-order-not-synced",
@@ -558,12 +579,20 @@ OPEN = [
 #: 这里做过滤而不是删掉 OPEN 里的条目，是为了保留卡片正文作为归档（谁修的、判据是什么）。
 CLOSED_IDS = {
     "C06", "C10", "P-086", "P-106", "P-107", "P-108", "P-110", "P-111", "P-112", "P-115",
-    "P-109", "P-114",
+    "P-109", "P-114", "C07",
 }
 OPEN = [bug for bug in OPEN if bug["id"] not in CLOSED_IDS]
 
 #: 本轮明确闭环（保留记录，避免「消失了没人知道为什么」）
 CLOSED_RECENT = [
+    ("C07", "spec 把 `calibre.export_cdl` 折进 `calibre.lvs` 的 `source` 参数（独立 op 已删）",
+     "设计侧实现 `62575c6` 后，**测试侧真机整链复跑**：`calibre_e2e_tests.py` **12/12 绿** —— "
+     "`LVS-02 source.kind=schematic`（auCdl 在 run dir 内现产，含 `.SUBCKT`+器件行）、"
+     "`LVS-03 source.kind=cdl` 复用内产 CDL、**新增 `LVS-CTLE`（spec §8 的 `ctle.gds`+`ctle.cdl` 行，"
+     "强结论 + `svdb/*.phdb`（目录）结构）**、`PARAM-01`/`SET-01` 官方批处理、"
+     "`LVS-SRC-XOR`（`source` 与旧 `cdl=` 互斥，请求层拒绝）、`EXPORT-01/02`（`local_dir` 值级 + sha256 + 零落盘）；"
+     "LVS-01 用旧 CDL 仍只到 `not_compared`（P-069 家族残留，TB 如实 WARN 不假装跑通）。"
+     "证据 `test/artifacts/evidence/round9/calibre-c07-r11c.txt`。"),
     ("P-109", "maestro 7 个写键无公开读回面（readback:none）",
      "设计侧 `d3b0845` 在 `read_config` 暴露 corner `enabled/enabled_tests/disabled_tests/models` 与 test "
      "`job_policy.{simulation,netlisting}`。测试侧独立复跑：`maestro_nested_keys_e2e_tests.py` **10/10 绿**，"

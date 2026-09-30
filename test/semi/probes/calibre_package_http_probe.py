@@ -109,7 +109,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.cdl:
             fields["cdl"] = args.cdl
         evidence["run"] = call(args.base, f"calibre.{args.kind}", args.token, **fields)
-        data = evidence["run"].get("data") or {}
+        data = evidence["run"] or {}
         value = data.get("value") or {}
         job_id = value.get("job_id")
         run_dir = value.get("run_dir") or args.run_dir

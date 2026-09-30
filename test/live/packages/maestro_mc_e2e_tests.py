@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
-# 作者: 设计/上层开发
-# 最后改动: 2026-09-29 18:01
+# 作者: 测试/root
+# 最后改动: 2026-09-30 12:05
 # 依赖: 无
 # =======================================================================
 """P-070 真机验收：Monte Carlo 的**全部 17 项 run option**、正负例和结果面。
@@ -554,6 +554,25 @@ def _run_mc(
         raise AssertionError(
             f"{cell}: points_total={detail.get('points_total')} "
             f"!= {expected_points}: {detail}")
+    # 2026-09-30（测试/root 加强，表 C 真缺口）：原来只断言 status/points_total，
+    # `points_done`/`tests_*`/`corners_*`/`overwrite_target`/`lock_flag`/`name` 都是"读了不断言"。
+    # 现在逐项值级断言（read_history.history 的完整 schema 见 test/reports/round9/output-field-triage-r9.md）。
+    checks = {
+        "name": lambda v, val: val == history,
+        "points_done": lambda v, val: val == v.get("points_total"),
+        "tests_done": lambda v, val: val == v.get("tests_total"),
+        "corners_done": lambda v, val: val == v.get("corners_total"),
+        "lock_flag": lambda v, val: val == 0,
+        "overwrite_target": lambda v, val: val == history,
+        "results_dir": lambda v, val: isinstance(val, str) and val.startswith("/"),
+    }
+    for field, predicate in checks.items():
+        if field not in detail:
+            raise AssertionError(f"{cell}: read_history.history 缺字段 `{field}`：{detail}")
+        if not predicate(detail, detail.get(field)):
+            raise AssertionError(
+                f"{cell}: read_history 字段 `{field}` 值级判据不满足"
+                f"（实测 {detail.get(field)!r}）：{detail}")
     evidence[key] = {
         "cell": cell,
         "history": history,
@@ -561,6 +580,12 @@ def _run_mc(
         "status": detail.get("status"),
         "points_done": detail.get("points_done"),
         "points_total": detail.get("points_total"),
+        "tests_done": detail.get("tests_done"),
+        "tests_total": detail.get("tests_total"),
+        "corners_done": detail.get("corners_done"),
+        "corners_total": detail.get("corners_total"),
+        "lock_flag": detail.get("lock_flag"),
+        "overwrite_target": detail.get("overwrite_target"),
         "results_dir": detail.get("results_dir"),
     }
     return history

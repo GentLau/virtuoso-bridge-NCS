@@ -4,8 +4,8 @@
   "user": "vbsixlocal",
   "token_present": true,
   "host": "wsl-gent",
-  "daemon_port": 61630,
-  "http_port": 61631,
+  "daemon_port": 56485,
+  "http_port": 56486,
   "work_dir": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local",
   "steps": [
     {
@@ -42,7 +42,7 @@
       "action": "deploy",
       "status": 200,
       "stage": "deployed",
-      "setup_path": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f056fa63\\daemon/setup/virtuoso_setup.il"
+      "setup_path": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f3d72568\\daemon/setup/virtuoso_setup.il"
     },
     {
       "step": 5,
@@ -54,6 +54,7 @@
         "command_ok": true,
         "skill_ok": true,
         "token_ok": true,
+        "fingerprint_ok": true,
         "banner_hostname": null,
         "expected_hostname": "DESKTOP-F143LSD",
         "detail": "",
@@ -132,37 +133,88 @@
       "missing": []
     },
     {
+      "name": "step3-probe-results-present",
+      "ok": true,
+      "count": 5
+    },
+    {
+      "name": "step3-probe-results-shape",
+      "ok": true,
+      "bad": []
+    },
+    {
+      "name": "step3-probe-results-status",
+      "ok": true,
+      "bad": []
+    },
+    {
+      "name": "step3-probe-results-blocking",
+      "ok": true,
+      "bad": []
+    },
+    {
+      "name": "step3-probe-results-ok-fields",
+      "ok": true,
+      "bad": []
+    },
+    {
+      "name": "step3-probe-results-warnings",
+      "ok": true,
+      "warnings": {
+        "gui": {
+          "code": "display_not_detected",
+          "message": "role.gui.display was not detected (multiple or no Virtuoso processes); GUI commands will fail until it is configured"
+        },
+        "spectre": {
+          "code": "spectre_unavailable",
+          "message": "no usable spectre found locally (non-blocking)"
+        }
+      }
+    },
+    {
       "name": "step3-gui-root-absolute",
       "ok": true,
-      "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f056fa63\\gui"
+      "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f3d72568\\gui"
     },
     {
       "name": "step3-daemon-root-absolute",
       "ok": true,
-      "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f056fa63\\daemon"
+      "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f3d72568\\daemon"
     },
     {
       "name": "step3-command-root-absolute",
       "ok": true,
-      "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f056fa63\\command"
+      "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f3d72568\\command"
     },
     {
       "name": "step3-file-root-absolute",
       "ok": true,
-      "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f056fa63\\file"
+      "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f3d72568\\file"
     },
     {
       "name": "step4-deploy-tree-and-variant",
       "ok": true,
-      "setup_path": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f056fa63\\daemon/setup/virtuoso_setup.il",
-      "daemon_root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f056fa63\\daemon",
+      "setup_path": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f3d72568\\daemon/setup/virtuoso_setup.il",
+      "daemon_root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f3d72568\\daemon",
       "expected_variant": "ramic_bridge_daemon_3.py",
-      "detail": "setup=C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f056fa63\\daemon/setup/virtuoso_setup.il daemon_root=C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f056fa63\\daemon"
+      "detail": "setup=C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f3d72568\\daemon/setup/virtuoso_setup.il daemon_root=C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f3d72568\\daemon"
+    },
+    {
+      "name": "step5-report-fingerprint-ok",
+      "ok": true,
+      "fingerprint_ok": true,
+      "expected_fingerprints": {
+        "gui": false,
+        "daemon": false,
+        "command": false,
+        "file": false,
+        "spectre": false
+      }
     },
     {
       "name": "cleanup-daemon-port-released",
       "ok": true,
-      "port": 61630,
+      "port": 56485,
       "mode": "local"
     },
     {
@@ -171,8 +223,8 @@
       "path": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\registry.reservation"
     }
   ],
-  "checks_passed": 8,
-  "checks_total": 8,
+  "checks_passed": 15,
+  "checks_total": 15,
   "http_trail": [
     {
       "method": "POST",
@@ -184,12 +236,12 @@
         "mode": "local",
         "enhanced_token": "***",
         "root": {
-          "default": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f056fa63"
+          "default": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f3d72568"
         },
         "roles": {
           "daemon": {
-            "daemon_port": 61630,
-            "local_port": 61630
+            "daemon_port": 56485,
+            "local_port": 56485
           }
         },
         "log_level": "off",
@@ -283,6 +335,43 @@
           "role.gui.display was not detected (multiple or no Virtuoso processes); GUI commands will fail until it is configured",
           "no usable spectre found locally (non-blocking)"
         ],
+        "probe_results": [
+          {
+            "role": "gui",
+            "status": "warning",
+            "blocking": false,
+            "code": "display_not_detected",
+            "message": "role.gui.display was not detected (multiple or no Virtuoso processes); GUI commands will fail until it is configured"
+          },
+          {
+            "role": "daemon",
+            "status": "ok",
+            "blocking": true,
+            "code": null,
+            "message": null
+          },
+          {
+            "role": "command",
+            "status": "ok",
+            "blocking": true,
+            "code": null,
+            "message": null
+          },
+          {
+            "role": "file",
+            "status": "ok",
+            "blocking": true,
+            "code": null,
+            "message": null
+          },
+          {
+            "role": "spectre",
+            "status": "warning",
+            "blocking": false,
+            "code": "spectre_unavailable",
+            "message": "no usable spectre found locally (non-blocking)"
+          }
+        ],
         "entry": {
           "mode": {
             "default": "local"
@@ -314,7 +403,7 @@
               "proxy": null,
               "key_dir": null,
               "key": null,
-              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f056fa63\\gui",
+              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f3d72568\\gui",
               "expected_fingerprint": null,
               "max_sessions": 10,
               "display": null
@@ -328,11 +417,11 @@
               "proxy": null,
               "key_dir": null,
               "key": null,
-              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f056fa63\\daemon",
+              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f3d72568\\daemon",
               "expected_fingerprint": null,
               "max_sessions": 10,
-              "daemon_port": 61630,
-              "local_port": 61630,
+              "daemon_port": 56485,
+              "local_port": 56485,
               "python": "C:\\Users\\user\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
               "expected_hostname": "DESKTOP-F143LSD",
               "expected_user": "user"
@@ -346,7 +435,7 @@
               "proxy": null,
               "key_dir": null,
               "key": null,
-              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f056fa63\\command",
+              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f3d72568\\command",
               "expected_fingerprint": null,
               "max_sessions": 10
             },
@@ -359,7 +448,7 @@
               "proxy": null,
               "key_dir": null,
               "key": null,
-              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f056fa63\\file",
+              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f3d72568\\file",
               "expected_fingerprint": null,
               "max_sessions": 10
             },
@@ -407,7 +496,7 @@
         "token": "***",
         "errors": [],
         "warnings": [],
-        "setup_path": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f056fa63\\daemon/setup/virtuoso_setup.il",
+        "setup_path": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f3d72568\\daemon/setup/virtuoso_setup.il",
         "entry": {
           "mode": {
             "default": "local"
@@ -439,7 +528,7 @@
               "proxy": null,
               "key_dir": null,
               "key": null,
-              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f056fa63\\gui",
+              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f3d72568\\gui",
               "expected_fingerprint": null,
               "max_sessions": 10,
               "display": null
@@ -453,11 +542,11 @@
               "proxy": null,
               "key_dir": null,
               "key": null,
-              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f056fa63\\daemon",
+              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f3d72568\\daemon",
               "expected_fingerprint": null,
               "max_sessions": 10,
-              "daemon_port": 61630,
-              "local_port": 61630,
+              "daemon_port": 56485,
+              "local_port": 56485,
               "python": "C:\\Users\\user\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
               "expected_hostname": "DESKTOP-F143LSD",
               "expected_user": "user"
@@ -471,7 +560,7 @@
               "proxy": null,
               "key_dir": null,
               "key": null,
-              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f056fa63\\command",
+              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f3d72568\\command",
               "expected_fingerprint": null,
               "max_sessions": 10
             },
@@ -484,7 +573,7 @@
               "proxy": null,
               "key_dir": null,
               "key": null,
-              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f056fa63\\file",
+              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f3d72568\\file",
               "expected_fingerprint": null,
               "max_sessions": 10
             },
@@ -532,7 +621,7 @@
         "token": "***",
         "errors": [],
         "warnings": [],
-        "setup_path": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f056fa63\\daemon/setup/virtuoso_setup.il",
+        "setup_path": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f3d72568\\daemon/setup/virtuoso_setup.il",
         "entry": {
           "mode": {
             "default": "local"
@@ -564,7 +653,7 @@
               "proxy": null,
               "key_dir": null,
               "key": null,
-              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f056fa63\\gui",
+              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f3d72568\\gui",
               "expected_fingerprint": null,
               "max_sessions": 10,
               "display": null
@@ -578,11 +667,11 @@
               "proxy": null,
               "key_dir": null,
               "key": null,
-              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f056fa63\\daemon",
+              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f3d72568\\daemon",
               "expected_fingerprint": null,
               "max_sessions": 10,
-              "daemon_port": 61630,
-              "local_port": 61630,
+              "daemon_port": 56485,
+              "local_port": 56485,
               "python": "C:\\Users\\user\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
               "expected_hostname": "DESKTOP-F143LSD",
               "expected_user": "user"
@@ -596,7 +685,7 @@
               "proxy": null,
               "key_dir": null,
               "key": null,
-              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f056fa63\\command",
+              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f3d72568\\command",
               "expected_fingerprint": null,
               "max_sessions": 10
             },
@@ -609,7 +698,7 @@
               "proxy": null,
               "key_dir": null,
               "key": null,
-              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f056fa63\\file",
+              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f3d72568\\file",
               "expected_fingerprint": null,
               "max_sessions": 10
             },
@@ -643,6 +732,7 @@
           "command_ok": true,
           "skill_ok": true,
           "token_ok": true,
+          "fingerprint_ok": true,
           "banner_hostname": null,
           "expected_hostname": "DESKTOP-F143LSD",
           "detail": "",
@@ -666,7 +756,7 @@
         "token": "***",
         "errors": [],
         "warnings": [],
-        "setup_path": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f056fa63\\daemon/setup/virtuoso_setup.il",
+        "setup_path": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f3d72568\\daemon/setup/virtuoso_setup.il",
         "entry": {
           "mode": {
             "default": "local"
@@ -698,7 +788,7 @@
               "proxy": null,
               "key_dir": null,
               "key": null,
-              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f056fa63\\gui",
+              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f3d72568\\gui",
               "expected_fingerprint": null,
               "max_sessions": 10,
               "display": null
@@ -712,11 +802,11 @@
               "proxy": null,
               "key_dir": null,
               "key": null,
-              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f056fa63\\daemon",
+              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f3d72568\\daemon",
               "expected_fingerprint": null,
               "max_sessions": 10,
-              "daemon_port": 61630,
-              "local_port": 61630,
+              "daemon_port": 56485,
+              "local_port": 56485,
               "python": "C:\\Users\\user\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
               "expected_hostname": "DESKTOP-F143LSD",
               "expected_user": "user"
@@ -730,7 +820,7 @@
               "proxy": null,
               "key_dir": null,
               "key": null,
-              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f056fa63\\command",
+              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f3d72568\\command",
               "expected_fingerprint": null,
               "max_sessions": 10
             },
@@ -743,7 +833,7 @@
               "proxy": null,
               "key_dir": null,
               "key": null,
-              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f056fa63\\file",
+              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f3d72568\\file",
               "expected_fingerprint": null,
               "max_sessions": 10
             },
@@ -771,12 +861,13 @@
             "log_level": "off",
             "log_max_bytes": 65536
           },
-          "registered_at": 1790618946
+          "registered_at": 1790692191
         },
         "report": {
           "command_ok": true,
           "skill_ok": true,
           "token_ok": true,
+          "fingerprint_ok": true,
           "banner_hostname": null,
           "expected_hostname": "DESKTOP-F143LSD",
           "detail": "",
@@ -831,7 +922,7 @@
               "proxy": null,
               "key_dir": null,
               "key": null,
-              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f056fa63\\gui",
+              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f3d72568\\gui",
               "expected_fingerprint": null,
               "max_sessions": 10,
               "display": null
@@ -845,11 +936,11 @@
               "proxy": null,
               "key_dir": null,
               "key": null,
-              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f056fa63\\daemon",
+              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f3d72568\\daemon",
               "expected_fingerprint": null,
               "max_sessions": 10,
-              "daemon_port": 61630,
-              "local_port": 61630,
+              "daemon_port": 56485,
+              "local_port": 56485,
               "python": "C:\\Users\\user\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
               "expected_hostname": "DESKTOP-F143LSD",
               "expected_user": "user"
@@ -863,7 +954,7 @@
               "proxy": null,
               "key_dir": null,
               "key": null,
-              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f056fa63\\command",
+              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f3d72568\\command",
               "expected_fingerprint": null,
               "max_sessions": 10
             },
@@ -876,7 +967,7 @@
               "proxy": null,
               "key_dir": null,
               "key": null,
-              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f056fa63\\file",
+              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f3d72568\\file",
               "expected_fingerprint": null,
               "max_sessions": 10
             },
@@ -904,7 +995,7 @@
             "log_level": "off",
             "log_max_bytes": 65536
           },
-          "registered_at": 1790618946
+          "registered_at": 1790692191
         }
       }
     },
@@ -948,7 +1039,7 @@
                   "proxy": null,
                   "key_dir": null,
                   "key": null,
-                  "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f056fa63\\gui",
+                  "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f3d72568\\gui",
                   "expected_fingerprint": null,
                   "max_sessions": 10,
                   "display": null
@@ -962,11 +1053,11 @@
                   "proxy": null,
                   "key_dir": null,
                   "key": null,
-                  "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f056fa63\\daemon",
+                  "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f3d72568\\daemon",
                   "expected_fingerprint": null,
                   "max_sessions": 10,
-                  "daemon_port": 61630,
-                  "local_port": 61630,
+                  "daemon_port": 56485,
+                  "local_port": 56485,
                   "python": "C:\\Users\\user\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
                   "expected_hostname": "DESKTOP-F143LSD",
                   "expected_user": "user"
@@ -980,7 +1071,7 @@
                   "proxy": null,
                   "key_dir": null,
                   "key": null,
-                  "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f056fa63\\command",
+                  "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f3d72568\\command",
                   "expected_fingerprint": null,
                   "max_sessions": 10
                 },
@@ -993,7 +1084,7 @@
                   "proxy": null,
                   "key_dir": null,
                   "key": null,
-                  "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f056fa63\\file",
+                  "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f3d72568\\file",
                   "expected_fingerprint": null,
                   "max_sessions": 10
                 },
@@ -1021,7 +1112,7 @@
                 "log_level": "off",
                 "log_max_bytes": 65536
               },
-              "registered_at": 1790618946
+              "registered_at": 1790692191
             }
           }
         ]
@@ -1065,7 +1156,7 @@
               "proxy": null,
               "key_dir": null,
               "key": null,
-              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f056fa63\\gui",
+              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f3d72568\\gui",
               "expected_fingerprint": null,
               "max_sessions": 10,
               "display": null
@@ -1079,11 +1170,11 @@
               "proxy": null,
               "key_dir": null,
               "key": null,
-              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f056fa63\\daemon",
+              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f3d72568\\daemon",
               "expected_fingerprint": null,
               "max_sessions": 10,
-              "daemon_port": 61630,
-              "local_port": 61630,
+              "daemon_port": 56485,
+              "local_port": 56485,
               "python": "C:\\Users\\user\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
               "expected_hostname": "DESKTOP-F143LSD",
               "expected_user": "user"
@@ -1097,7 +1188,7 @@
               "proxy": null,
               "key_dir": null,
               "key": null,
-              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f056fa63\\command",
+              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f3d72568\\command",
               "expected_fingerprint": null,
               "max_sessions": 10
             },
@@ -1110,7 +1201,7 @@
               "proxy": null,
               "key_dir": null,
               "key": null,
-              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f056fa63\\file",
+              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f3d72568\\file",
               "expected_fingerprint": null,
               "max_sessions": 10
             },
@@ -1138,7 +1229,7 @@
             "log_level": "off",
             "log_max_bytes": 65536
           },
-          "registered_at": 1790618946
+          "registered_at": 1790692191
         }
       }
     },
@@ -1184,7 +1275,7 @@
               "proxy": null,
               "key_dir": null,
               "key": null,
-              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f056fa63\\gui",
+              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f3d72568\\gui",
               "expected_fingerprint": null,
               "max_sessions": 10,
               "display": null
@@ -1198,11 +1289,11 @@
               "proxy": null,
               "key_dir": null,
               "key": null,
-              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f056fa63\\daemon",
+              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f3d72568\\daemon",
               "expected_fingerprint": null,
               "max_sessions": 10,
-              "daemon_port": 61630,
-              "local_port": 61630,
+              "daemon_port": 56485,
+              "local_port": 56485,
               "python": "C:\\Users\\user\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
               "expected_hostname": "DESKTOP-F143LSD",
               "expected_user": "user"
@@ -1216,7 +1307,7 @@
               "proxy": null,
               "key_dir": null,
               "key": null,
-              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f056fa63\\command",
+              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f3d72568\\command",
               "expected_fingerprint": null,
               "max_sessions": 10
             },
@@ -1229,7 +1320,7 @@
               "proxy": null,
               "key_dir": null,
               "key": null,
-              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f056fa63\\file",
+              "root": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f3d72568\\file",
               "expected_fingerprint": null,
               "max_sessions": 10
             },
@@ -1257,7 +1348,7 @@
             "log_level": "off",
             "log_max_bytes": 65536
           },
-          "registered_at": 1790618946
+          "registered_at": 1790692191
         }
       }
     },
@@ -1297,12 +1388,12 @@
         "mode": "local",
         "enhanced_token": "***",
         "root": {
-          "default": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f056fa63"
+          "default": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f3d72568"
         },
         "roles": {
           "daemon": {
-            "daemon_port": 53291,
-            "local_port": 53291
+            "daemon_port": 56509,
+            "local_port": 56509
           }
         },
         "log_level": "off",
@@ -1362,12 +1453,12 @@
         "mode": "local",
         "enhanced_token": "***",
         "root": {
-          "default": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f056fa63"
+          "default": "C:\\Users\\user\\Desktop\\repos_Github\\virtuoso-bridge-NCS\\test\\artifacts\\env\\reg-six-local\\local-root-f3d72568"
         },
         "roles": {
           "daemon": {
-            "daemon_port": 53291,
-            "local_port": 53291
+            "daemon_port": 56509,
+            "local_port": 56509
           }
         },
         "log_level": "off",
@@ -1384,5 +1475,5 @@
       }
     }
   ],
-  "elapsed_s": 2.375
+  "elapsed_s": 2.437999999965541
 }

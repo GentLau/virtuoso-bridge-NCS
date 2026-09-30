@@ -79,7 +79,7 @@ def run_ac(token: str, job: str, analysis: str, stage: Path) -> dict:
                     tasks=[{"job": job, "netlist": str(netlist), "parse": "auto"}],
                     parse="auto", download=True, keep_run_dir=True, max_workers=1,
                     timeout=600)
-    run = (((_c1_wrapper(response)).get("value") or {}).get("runs") or [{}])[0]
+    run = (((response).get("value") or {}).get("runs") or [{}])[0]
     return run.get("value") or {}
 
 
@@ -99,7 +99,7 @@ def main(argv: list[str] | None = None) -> int:
         report["A_named_ac1"] = {
             "status": named_ac1.get("status"),
             "analyses": named_ac1.get("analyses"),
-            "has_ac_data": any(str(k).startswith("ac_") for k in (_c1_wrapper(named_ac1))),
+            "has_ac_data": any(str(k).startswith("ac_") for k in (named_ac1["data"])),
         }
         report["A_ok"] = bool(named_ac1.get("analyses"))
 
@@ -107,23 +107,23 @@ def main(argv: list[str] | None = None) -> int:
         report["B_named_ac"] = {
             "status": named_ac.get("status"),
             "analyses": named_ac.get("analyses"),
-            "keys": sorted(_c1_wrapper(named_ac))[:6],
+            "keys": sorted(named_ac["data"])[:6],
         }
         report["B_parse_ok"] = bool(named_ac.get("analyses"))
         if report["B_parse_ok"]:
             spec_shape = call(
-                args.token, "spectre.measure", data=_c1_wrapper(named_ac),
+                args.token, "spectre.measure", data=named_ac["data"],
                 metrics=[{"type": "ac_magnitude", "signal": "out",
                           "frequency": 1e6, "scale": "db"}])
-            value = ((_c1_wrapper(spec_shape)).get("value") or {})
+            value = ((spec_shape).get("value") or {})
             metrics = value.get("metrics") or []
             report["B_spec_shape"] = metrics
             report["B_spec_shape_ok"] = bool(metrics) and bool(metrics[0].get("ok"))
             explicit = call(
-                args.token, "spectre.measure", data=_c1_wrapper(named_ac),
+                args.token, "spectre.measure", data=named_ac["data"],
                 metrics=[{"type": "ac_magnitude", "signal": "ac_out", "x": "ac_freq",
                           "frequency": 1e6, "scale": "db"}])
-            report["B_explicit_x"] = (((_c1_wrapper(explicit)).get("value")
+            report["B_explicit_x"] = (((explicit).get("value")
                                        or {}).get("metrics"))
     except Exception as exc:  # noqa: BLE001
         report["error"] = f"{type(exc).__name__}: {exc}"
@@ -143,19 +143,3 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
-
-# --- C1 兼容垫片（2026-09-29，C3）------------------------------------------------
-# C1（2f88853）起：业务载荷直返顶层（值型 `value`、命令/skill 型 `result`）、
-# 成功默认省略 `steps`、失败壳去掉 `data`。历史 TB 按 `response["data"]` 解析，
-# 本垫片把新契约响应合成为旧 `data` 壳，让既有解析零改动继续工作。
-def _c1_wrapper(body):
-    if not isinstance(body, dict):
-        return {}
-    if isinstance(body.get("data"), dict):
-        return body["data"]
-    wrapped = {"ok": body.get("ok"), "error": body.get("error")}
-    for key in ("value", "result", "steps"):
-        if key in body:
-            wrapped[key] = body[key]
-    return wrapped

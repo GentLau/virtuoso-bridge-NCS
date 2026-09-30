@@ -1,7 +1,7 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
 # 作者: 测试/root
-# 最后改动: 2026-09-30 17:58
-# 依赖: 无
+# 最后改动: 2026-09-30 22:10
+# 依赖: 常驻 vblog（业务面 8127, token vb-vblog）+ wsl-gent 上的 Calibre/PDK 环境
 # =======================================================================
 # 六步流程（test/docs/写TB规范.md §1）：
 # ① 环境检查（真机靶机指纹/业务面）；②③ 造并校验基线；④ 只做被测动作；
@@ -20,6 +20,10 @@
 * `LVS-01`  LVS 跑完 + `read_results`（结论枚举 + 计数表格 + **两条路径同一枚举**）—— P-062/P-071 的验收；
 * `LVS-03`  **闭环**：复用 LVS-02 的内产 CDL，以 `source.kind=cdl` 再跑一次 LVS。
 * `PARAM-01` **带参数**（不改 deck、不走 GUI）：`params` 内联 / `.runset` 文件原位改写 deck；未知键结构化失败。
+* `EXPORT-01` `calibre.export`（spec §4.5）：`items=[summary, netlist]` 值级读回 ——
+  `value.local_dir` 按请求生效、`downloaded[].bytes` 与实际一致、`summary` 本地文件 sha256 == 远端、
+  `netlist`（svdb 目录）确实落地；`EXPORT-02` 负例：未知 item 请求层拒绝且**零落盘**。
+* `LVS-SRC-XOR` 负例：`source` 与 `cdl` 互斥（spec §4.3 只保留 `source` 口径，旧 `cdl=` 仅兼容）。
 
 `LVS-01` 的口径：默认只断言**结构契约**（status 属已知枚举、`log_counters.lvs_status` 与
 `summary.status` 一致、counts 已解出），并在 `status == "not_compared"` 时打印 WARN 指向 **P-069**
@@ -69,8 +73,20 @@ CDL_GDS = os.environ.get("VB_CALIBRE_CDL_GDS", "/home/Gent/project/test/inv2.gds
 REQUIRE_LVS_VERDICT = os.environ.get("VB_CALIBRE_REQUIRE_LVS_VERDICT", "") == "1"
 KNOWN_VERDICTS = {"correct", "incorrect", "not_compared", "unknown", "not_comparable"}
 
-#: `EXPORT-01` 产出的 CDL 路径，供 `LVS-02` 闭环使用（同一进程内传递）。
+#: spec `12-calibre.md` §8 的 LVS 验收行用的是 `{match, incorrect}`；实现口径是
+#: `{correct, incorrect}`（P-071 统一过枚举）—— 这里两者都收，并把实测值写进失败信息。
+STRONG_VERDICTS = {"correct", "incorrect", "match"}
+
+#: spec §8 LVS 行指定的验收输入（ctle 工程）。
+CTLE_GDS = os.environ.get("VB_CALIBRE_CTLE_GDS", "/home/Gent/project/test/ctle.gds")
+CTLE_CDL = os.environ.get("VB_CALIBRE_CTLE_CDL", "/home/Gent/project/test/ctle.cdl")
+CTLE_TOP = os.environ.get("VB_CALIBRE_CTLE_TOP", "ctle")
+
+#: 同一进程内传递：LVS-02 产出的 CDL 路径 / job_id / run_dir，供 LVS-03、PARAM-01、SET-01、EXPORT-01 复用。
 _exported: dict[str, str] = {}
+
+#: EXPORT-01 的客户端落地目录（证据目录下的本轮唯一子目录；测完保留供审计）。
+EXPORT_DIR = ROOT / "test" / "artifacts" / "evidence" / "round9" / f"calibre-export-{STAMP}"
 
 
 class HttpTransport:
@@ -206,6 +222,8 @@ def _case_lvs_source_schematic(transport) -> None:
     _check(subckts >= 1, f"CDL 无 .SUBCKT（只剩端口壳）：{job}")
     _check(devices >= 1, f"CDL 无器件行（auCdl 只出了端口）：{job}")
     _exported["cdl"] = path
+    _exported["job_id"] = str(job.get("job_id") or "")
+    _exported["run_dir"] = str(job.get("run_dir") or "")
     summary = read.get("summary") or {}
     status = summary.get("status")
     _check(status in KNOWN_VERDICTS, f"LVS 结论不在已知枚举: {status!r}")
@@ -298,7 +316,8 @@ def _case_set_file(transport) -> None:
         "*cmnRunMT: 1",
         "*cmnPromptSaveRunset: 0",
     ]
-    tmp = WORK_DIR / "tmp"
+    # TB 自己的临时目录（不写常驻 env 目录；规范 §6「尽可能只使用三处」）。
+    tmp = ROOT / "test" / "artifacts" / "tmp" / f"calibre-e2e-{STAMP}"
     tmp.mkdir(parents=True, exist_ok=True)
     local = tmp / "e2e-lvs.lvs"
     local.write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
@@ -326,9 +345,154 @@ def _case_set_file(transport) -> None:
         print(f"        WARN   SET-01 结论是 {status}", flush=True)
 
 
+def _case_lvs_source_legacy_mutex(transport) -> None:
+    """LVS-SRC-XOR：`source` 与旧 `cdl=` 互斥（请求层拒绝，不发起任何远程动作）。"""
+    response = transport.call({
+        "operation": "calibre.lvs", "token": TOKEN, "deck": LVS_DECK,
+        "gds": CDL_GDS, "top": CDL_CELL,
+        "source": {"kind": "cdl", "path": CDL}, "cdl": CDL,
+        "run_dir": f"{RUN_DIR}/lvs-xor-{STAMP}",
+    })
+    _check(not response.get("ok"), f"source+cdl 必须被拒绝: {str(response)[:240]}")
+    _check("mutually exclusive" in str(response.get("error") or ""),
+           f"拒绝原因应点明互斥: {response}")
+
+
+def _case_lvs_ctle(transport) -> None:
+    """LVS-CTLE：spec `12-calibre.md` §8 的 LVS 验收行 —— `ctle.gds` + `source.kind=cdl`。
+
+    要求：`status=completed`、`summary.status ∈ {match/incorrect}`（实现口径 `correct`）、
+    产物含 `svdb/*.phdb`。与 LVS-01/02/03（inv2 工程）是不同设计、不同源网表。
+    """
+    run_dir = f"{RUN_DIR}/lvs-ctle-{STAMP}"
+    job, read = _run_and_read(
+        transport, "lvs", deck=LVS_DECK, gds=CTLE_GDS, top=CTLE_TOP,
+        source={"kind": "cdl", "path": CTLE_CDL}, run_dir=run_dir,
+    )
+    summary = read.get("summary") or {}
+    status = str(summary.get("status") or "")
+    _check(status in STRONG_VERDICTS,
+           f"spec §8 要求 LVS 给结论（match/incorrect；实现口径 correct/incorrect），"
+           f"实测 {status!r}: {json.dumps(summary, ensure_ascii=False)[:300]}")
+    _check(summary.get("counts"), f"LVS counts 未解出: {json.dumps(summary)[:300]}")
+    effective = str(job.get("run_dir") or run_dir)
+    # 注意：`svdb/<cell>.phdb` 是**目录**（Calibre svdb 结构：内含 db/ 与 hdb*.dat）；
+    # 断言用 `ls -d` 命中条目本身，并进一步要求 phdb 里的 `db` 子目录存在。
+    probe = _op(transport, "basic.command.run",
+                cmd=f"ls -d {effective}/svdb/*.phdb 2>/dev/null | head -3")
+    out = str((probe.get("result") or {}).get("stdout") or "")
+    _check(".phdb" in out, f"spec §8 要求产物 svdb/*.phdb，实测: {out!r}")
+    probe_db = _op(transport, "basic.command.run",
+                   cmd=f"ls -d {effective}/svdb/*.phdb/db 2>/dev/null | head -1")
+    out_db = str((probe_db.get("result") or {}).get("stdout") or "")
+    _check(".phdb/db" in out_db, f"svdb phdb 结构不完整（缺 db/ 子目录）: {out_db!r}")
+
+
+def _remote_sha256(transport, path: str) -> str:
+    result = _op(transport, "basic.command.run",
+                 cmd=f"sha256sum {path}").get("result") or {}
+    out = str(result.get("stdout") or "").split()
+    _check(out and len(out[0]) == 64, f"远端 sha256 不可用: {result}")
+    return out[0]
+
+
+def _local_sha256(path: Path) -> str:
+    import hashlib
+
+    digest = hashlib.sha256()
+    digest.update(path.read_bytes())
+    return digest.hexdigest()
+
+
+def _case_export(transport) -> None:
+    """EXPORT-01：`calibre.export` 的 `local_dir` 与下载结果值级读回（spec §4.5）。"""
+    job_id = _exported.get("job_id")
+    run_dir = _exported.get("run_dir")
+    _check(job_id and run_dir, "EXPORT-01 依赖 LVS-02 的 job_id/run_dir，但 LVS-02 未产出")
+    # 注意：本 TB 的 job 用的是**自带 run_dir**（`.../calibre-e2e/lvs-source-sch-*`），
+    # `job_id` 只有在默认布局 `<role root>/calibre/<job_id>` 下才解析得到 → 这里显式给 run_dir
+    # （spec §4.5：`job_id`/`run_dir` 二者其一）。
+    value = _value(transport, "calibre.export", run_dir=run_dir,
+                   items=["summary", "netlist"], local_dir=str(EXPORT_DIR), timeout=300)
+    _check(value.get("run_dir") == run_dir,
+           f"export 必须落在同一 run_dir（值级）: {value.get('run_dir')!r} != {run_dir!r}")
+    _check(value.get("local_dir") == str(EXPORT_DIR),
+           f"local_dir 未按请求生效（值级）: {value.get('local_dir')!r}")
+    downloaded = value.get("downloaded") or []
+    summaries = [item for item in downloaded if item.get("item") == "summary"]
+    netlists = [item for item in downloaded if item.get("item") == "netlist"]
+    _check(summaries, f"summary（lvs.rep 等）未下载: {json.dumps(downloaded)[:300]}")
+    for entry in summaries:
+        local = Path(str(entry.get("local")))
+        _check(local.is_file() and local.stat().st_size > 0,
+               f"summary 本地文件缺失/为空: {entry}")
+        _check(entry.get("bytes") == local.stat().st_size,
+               f"bytes 字段与实际文件大小不一致: {entry} vs {local.stat().st_size}")
+        remote = f"{run_dir}/{entry.get('remote')}"
+        _check(_local_sha256(local) == _remote_sha256(transport, remote),
+               f"summary 内容与远端不一致（sha256）: {remote}")
+    _check(netlists, f"netlist（svdb 目录）未下载: {json.dumps(downloaded)[:300]}")
+    for entry in netlists:
+        local = Path(str(entry.get("local")))
+        _check(local.is_dir(), f"netlist 本地应是目录: {entry}")
+        files = [p for p in local.rglob("*") if p.is_file()]
+        _check(files, f"netlist 目录里没有文件: {entry}")
+
+
+def _case_export_negative(transport) -> None:
+    """EXPORT-02：未知 item 请求层拒绝，且**零落盘**（连目标目录都不创建）。"""
+    target = EXPORT_DIR / "negative"
+    response = transport.call({
+        "operation": "calibre.export", "token": TOKEN,
+        "job_id": _exported.get("job_id") or "no-such-job",
+        "items": ["not_an_item"], "local_dir": str(target),
+    })
+    _check(not response.get("ok"), f"未知 item 必须被拒绝: {str(response)[:200]}")
+    _check("unknown export item" in str(response.get("error") or ""),
+           f"拒绝原因应点明 item: {response}")
+    _check(not target.exists(), f"被拒绝的 export 不得落盘: {target}")
+
+
+def _case_export_all_small(transport) -> None:
+    """EXPORT-03：`items=["all_small"]` 展开为 summary/results_db/log（spec §4.5 枚举值）。"""
+    run_dir = _exported.get("run_dir")
+    _check(run_dir, "EXPORT-03 依赖 LVS-02 的 run_dir，但 LVS-02 未产出")
+    target = EXPORT_DIR / "all_small"
+    value = _value(transport, "calibre.export", run_dir=run_dir, items=["all_small"],
+                   local_dir=str(target), timeout=300)
+    downloaded = value.get("downloaded") or []
+    _check(downloaded, f"all_small 什么都没下到: {value}")
+    items = {str(entry.get("item")) for entry in downloaded}
+    _check(items <= {"summary", "results_db", "log"},
+           f"all_small 只应展开为 summary/results_db/log，实测 {sorted(items)}")
+    _check("all_small" not in items, f"展开后不得留 all_small 字面量: {sorted(items)}")
+    for entry in downloaded:
+        local = Path(str(entry.get("local")))
+        _check(local.exists(), f"all_small 条目未落地: {entry}")
+
+
+def _case_export_pdb_dir(transport) -> None:
+    """EXPORT-04（P-117 记录）：spec §4.5 的 `items` 列了 `pdb_dir`，实现未提供。
+
+    现状：请求层结构化拒绝 `unknown export item: pdb_dir`。
+    spec 侧二选一（删条目 / 实现补上）后，本用例按裁决更新为值级下载断言。
+    """
+    run_dir = _exported.get("run_dir")
+    _check(run_dir, "EXPORT-04 依赖 LVS-02 的 run_dir，但 LVS-02 未产出")
+    response = transport.call({
+        "operation": "calibre.export", "token": TOKEN, "run_dir": run_dir,
+        "items": ["pdb_dir"], "local_dir": str(EXPORT_DIR / "pdb_dir"),
+    })
+    _check(not response.get("ok"), f"pdb_dir 现状应被拒绝（P-117）: {str(response)[:200]}")
+    _check("unknown export item: pdb_dir" in str(response.get("error") or ""),
+           f"拒绝原因应点名 pdb_dir（P-117）: {response}")
+    _check(not (EXPORT_DIR / "pdb_dir").exists(), "被拒绝的 export 不得落盘")
+
+
 def _case_lvs(transport) -> None:
     _, read = _run_and_read(transport, "lvs", deck=LVS_DECK,
-                            run_dir=f"{RUN_DIR}/lvs-{STAMP}", cdl=CDL)
+                            run_dir=f"{RUN_DIR}/lvs-{STAMP}",
+                            source={"kind": "cdl", "path": CDL})
     summary = read.get("summary") or {}
     counters = read.get("log_counters") or {}
     status = summary.get("status")
@@ -345,25 +509,40 @@ def _case_lvs(transport) -> None:
               "结构契约已通过，未假装跑通", flush=True)
 
 
-def run_suite(transport) -> list[tuple[str, str]]:
+def run_suite(transport, only: str = "") -> list[tuple[str, str]]:
     results: list[tuple[str, str]] = []
 
     def run(name: str, func: Callable[[], Any]) -> None:
         try:
             func()
             results.append((name, "PASS"))
+            print(f"PASS    {name}", flush=True)
         except Exception as exc:  # noqa: BLE001
             results.append((name, f"FAIL: {type(exc).__name__}: {exc}"))
+            print(f"FAIL    {name}: {type(exc).__name__}: {exc}", flush=True)
             raise
 
-    run("ENV-01 check_env", lambda: _case_env(transport))
-    run("DRC-01 run + read_results", lambda: _case_drc(transport))
-    run("DRC-02 bad deck fails", lambda: _case_drc_bad_deck(transport))
-    run("LVS-01 run + read_results", lambda: _case_lvs(transport))
-    run("LVS-02 source.schematic auCdl 内产 + LVS", lambda: _case_lvs_source_schematic(transport))
-    run("LVS-03 source.cdl 复用内产 CDL", lambda: _case_lvs_source_cdl(transport))
-    run("PARAM-01 无 set 取数口（SVRF 语句头）", lambda: _case_params(transport))
-    run("SET-01 只给 .lvs set（官方批处理）", lambda: _case_set_file(transport))
+    cases: list[tuple[str, Callable[[], Any]]] = [
+        ("ENV-01 check_env", lambda: _case_env(transport)),
+        ("DRC-01 run + read_results", lambda: _case_drc(transport)),
+        ("DRC-02 bad deck fails", lambda: _case_drc_bad_deck(transport)),
+        ("LVS-01 run + read_results", lambda: _case_lvs(transport)),
+        ("LVS-02 source.schematic auCdl 内产 + LVS", lambda: _case_lvs_source_schematic(transport)),
+        ("LVS-03 source.cdl 复用内产 CDL", lambda: _case_lvs_source_cdl(transport)),
+        # spec 12-calibre.md §8 的 LVS 验收行（ctle 工程，与上面 inv2 不同设计）
+        ("LVS-CTLE spec §8 ctle.gds + source.cdl", lambda: _case_lvs_ctle(transport)),
+        ("PARAM-01 无 set 取数口（SVRF 语句头）", lambda: _case_params(transport)),
+        ("SET-01 只给 .lvs set（官方批处理）", lambda: _case_set_file(transport)),
+        ("LVS-SRC-XOR source 与 cdl 互斥", lambda: _case_lvs_source_legacy_mutex(transport)),
+        ("EXPORT-01 export local_dir + 下载值级读回", lambda: _case_export(transport)),
+        ("EXPORT-02 未知 item 零落盘", lambda: _case_export_negative(transport)),
+        ("EXPORT-03 all_small 展开值级", lambda: _case_export_all_small(transport)),
+        ("EXPORT-04 pdb_dir 现状（P-117 记录）", lambda: _case_export_pdb_dir(transport)),
+    ]
+    for name, func in cases:
+        if only and only.lower() not in name.lower():
+            continue
+        run(name, func)
     return results
 
 
@@ -371,10 +550,17 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--transport", choices=("direct", "http"), default="http",
                         help="direct=故障定位/覆盖率；真机判据必须 http")
+    parser.add_argument("--only", default="",
+                        help="只跑名字里含该子串的用例（增量复跑用；默认全跑）")
+    parser.add_argument("--run-dir", default="",
+                        help="给 EXPORT-* 用例喂一个已有 run_dir（只跑 EXPORT 时免跑 LVS 前置）")
     args = parser.parse_args()
+    if args.run_dir:
+        _exported.setdefault("run_dir", args.run_dir)
+        _exported.setdefault("job_id", "adhoc")
     transport = HttpTransport() if args.transport == "http" else DirectTransport()
     try:
-        results = run_suite(transport)
+        results = run_suite(transport, only=args.only)
     finally:
         middle = getattr(transport, "middle", None)
         if middle is not None:

@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
 # 作者: 测试/root
-# 最后改动: 2026-09-29 11:40
+# 最后改动: 2026-09-29 21:33
 # 依赖: test/live/packages/maestro_e2e_tests.py（夹具与调用姿势一致）
 # =======================================================================
 # 六步流程（test/docs/写TB规范.md §1）：
@@ -97,7 +97,7 @@ def _op(transport, operation: str, **fields: Any) -> Any:
         raise AssertionError(
             f"{operation} failed: {response.get('error')}; data={response.get('data')}"
         )
-    return _c1_wrapper(response)
+    return response
 
 
 def _value(transport, operation: str, **fields: Any) -> dict[str, Any]:
@@ -116,7 +116,7 @@ def _expect_fail_text(transport, operation: str, **fields: Any) -> tuple[str, di
         response = transport.call({"operation": operation, "token": TOKEN, **fields})
     except urllib.error.HTTPError as error:
         return f"HTTP {error.code}: {error.read().decode('utf-8', 'replace')[:300]}", {}
-    data = _c1_wrapper(response)
+    data = response
     ok = response.get("ok")
     if ok is not False and data.get("ok") is not False:
         raise AssertionError(f"{operation} expected structured failure, got ok: {response}")
@@ -205,7 +205,7 @@ def _case_export(transport, ev: dict) -> None:
     error, raw = _expect_fail_text(
         transport, "virtuoso.maestro.export", **base, view=BOGUS_VIEW)
     # 结构化失败时 data.value 为 None（P-104 修复后 export 不再返回空产物）
-    bogus_value = ((_c1_wrapper(raw)).get("value") or {})
+    bogus_value = ((raw).get("value") or {})
     bogus_files = {Path(p).name for p in (bogus_value.get("files") or [])}
     _check(not bogus_files,
            f"export(snapshot): 不存在的 view 仍导出真实文件 {sorted(bogus_files)}")
@@ -225,7 +225,7 @@ def _case_write(transport, ev: dict) -> None:
                       "scope": "global"}],
     })
     _check(raw.get("ok") is False, f"write(save=False) 必须被拒绝：{raw}")
-    reason = ((_c1_wrapper(raw)).get("value") or {}).get("reason")
+    reason = ((raw).get("value") or {}).get("reason")
     _check(reason == "save_false_unsupported", f"拒绝原因不对：{raw.get('data')}")
     ev["write"] = {"error": raw.get("error"), "reason": reason}
 
@@ -233,6 +233,8 @@ def _case_write(transport, ev: dict) -> None:
 def _case_write_history(transport, ev: dict, history: str) -> None:
     base = dict(library="maestro_tb", cell="logic_probe")
     data = _op(transport, "virtuoso.maestro.write_history", **base, view=VIEW,
+               # C1 契约：成功响应默认省略 `steps`；本用例要读 lock 步骤名 → 显式开启
+               step_details=True,
                commands=[{"op": "lock", "history": history},
                          {"op": "unlock", "history": history}])
     steps = [s.get("name") for s in data.get("steps") or []]
@@ -353,19 +355,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
-
-# --- C1 兼容垫片（2026-09-29，C3）------------------------------------------------
-# C1（2f88853）起：业务载荷直返顶层（值型 `value`、命令/skill 型 `result`）、
-# 成功默认省略 `steps`、失败壳去掉 `data`。历史 TB 按 `response["data"]` 解析，
-# 本垫片把新契约响应合成为旧 `data` 壳，让既有解析零改动继续工作。
-def _c1_wrapper(body):
-    if not isinstance(body, dict):
-        return {}
-    if isinstance(body.get("data"), dict):
-        return body["data"]
-    wrapped = {"ok": body.get("ok"), "error": body.get("error")}
-    for key in ("value", "result", "steps"):
-        if key in body:
-            wrapped[key] = body[key]
-    return wrapped

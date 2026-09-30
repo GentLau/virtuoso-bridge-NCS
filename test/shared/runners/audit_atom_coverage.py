@@ -70,6 +70,12 @@ KNOWN_FALSE_POSITIVES = {
     ("test/semi/probes/symbol_regen_handle_probe.py", "schematic.write"):
         "探针自己造前置用的 write；判据在后续 3 次 `symbol.generate` 的句柄态"
         "（每次必须 ok 且 `dbFindOpenCellViewByName` 为 CLOSED）",
+    ("test/semi/probes/calibre_flat_turbo_probe.py", "basic.file.upload"):
+        "round9 补记：上传的 deck 由下游 `calibre.drc` 消费，判据是 flat 模式不带 -turbo"
+        "（argv/日志）且 DRC.rep 产出（P-093）；上传本身另有 `ok is True` 断言",
+    ("test/semi/probes/calibre_timeout_probe.py", "basic.file.upload"):
+        "round9 补记：上传的坏 deck 由下游 `calibre.drc` 消费，判据是 `status=timeout`"
+        "（P-098）；上传本身另有 `ok is True` 断言",
 }
 
 #: **间接验证**：写操作本身没读回，但它的产物被后一步消费且那一步有断言
@@ -86,7 +92,6 @@ WRITE_VERIFIERS = [
     ("layout.write", ("layout.read",)),
     ("layout.gds", ("layout.read", "stat ", "sha256sum", "ls -l", "round")),
     ("symbol.generate", ("symbol.read",)),
-    ("calibre.export_cdl", ("cdl", "bytes")),
     ("calibre.lvs", ("read_results", "calibre.status", "lvs.rep")),
     ("calibre.drc", ("read_results", "calibre.status", "DRC.rep")),
     ("spectre.run", ("measure", "data", "run_dir")),

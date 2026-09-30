@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
 # 作者: 测试/root
-# 最后改动: 2026-09-28 20:23
+# 最后改动: 2026-09-29 20:41
 # 依赖: 无
 # =======================================================================
 
@@ -80,7 +80,7 @@ def _op(transport, operation: str, **fields: Any) -> Any:
     response = transport.call({"operation": operation, "token": TOKEN, **fields})
     if not response.get("ok"):
         raise AssertionError(f"{operation} failed: {response.get('error')}")
-    return _c1_wrapper(response)
+    return response
 
 
 def _value(transport, operation: str, **fields: Any) -> dict[str, Any]:
@@ -566,7 +566,7 @@ def _case_gds_params(transport) -> None:
     def _run_dir_exists(run_dir: str) -> bool:
         out = transport.call({"operation": "basic.command.run", "token": TOKEN,
                               "cmd": f"test -d {run_dir} && echo YES || echo NO"})
-        return "YES" in str((_c1_wrapper(out)).get("result") or "")
+        return "YES" in str((out).get("result") or "")
 
     # cleanup_policy=never：run dir 保留；自定义 log_path 必须落盘
     gds_a = artifact / "lay_params_never.gds"
@@ -577,9 +577,10 @@ def _case_gds_params(transport) -> None:
         "operation": "virtuoso.layout.gds", "token": TOKEN, "action": "export",
         "library": LIB, "cell": CELL, "view": VIEW, "view_type": "maskLayout",
         "file_path": str(gds_a), "log_path": str(log_a), "layer_map": str(map_file),
-        "cleanup_policy": "never", "timeout": 180})
+        # C1 契约：成功响应默认省略 `steps`，本用例要读步骤名 → 显式开启
+        "cleanup_policy": "never", "step_details": True, "timeout": 180})
     _check(response.get("ok"), f"export failed: {response.get('error')}")
-    data = _c1_wrapper(response)
+    data = response
     exported = data.get("value") or {}
     _check(exported["reason"] == "completed", f"export: {exported}")
     _check(log_a.is_file() and log_a.stat().st_size > 0, f"log_path not written: {log_a}")
@@ -608,10 +609,11 @@ def _case_gds_params(transport) -> None:
             "library": import_lib, "file_path": str(gds_a),
             "tech_lib": "cdsDefTechLib", "layer_map": str(map_file),
             "ref_lib_file": str(refs), "ref_lib_file_is_local": True,
-            "top_cell": CELL, "timeout": 180, "poll_interval": 1})
+            # C1 契约：要读步骤名必须显式开启 step_details
+            "top_cell": CELL, "step_details": True, "timeout": 180, "poll_interval": 1})
         _check(imp.get("ok"), f"import with ref_lib_file failed: {imp.get('error')}")
         imp_steps = {step.get("name"): step.get("ok")
-                     for step in (_c1_wrapper(imp)).get("steps") or []}
+                     for step in (imp).get("steps") or []}
         _check("stage_refs" in imp_steps and imp_steps["stage_refs"] is True,
                f"ref_lib_file not staged on import: {imp_steps}")
     finally:
@@ -672,7 +674,8 @@ def run_suite(transport) -> list[tuple[str, str]]:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--transport", choices=("direct", "http"), default="direct")
+    parser.add_argument("--transport", choices=("direct", "http"), default="http",
+                        help="direct=故障定位/覆盖率；真机判据必须 http")
     args = parser.parse_args()
     transport = HttpTransport() if args.transport == "http" else DirectTransport()
     try:
@@ -688,19 +691,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
-
-# --- C1 兼容垫片（2026-09-29，C3）------------------------------------------------
-# C1（2f88853）起：业务载荷直返顶层（值型 `value`、命令/skill 型 `result`）、
-# 成功默认省略 `steps`、失败壳去掉 `data`。历史 TB 按 `response["data"]` 解析，
-# 本垫片把新契约响应合成为旧 `data` 壳，让既有解析零改动继续工作。
-def _c1_wrapper(body):
-    if not isinstance(body, dict):
-        return {}
-    if isinstance(body.get("data"), dict):
-        return body["data"]
-    wrapped = {"ok": body.get("ok"), "error": body.get("error")}
-    for key in ("value", "result", "steps"):
-        if key in body:
-            wrapped[key] = body[key]
-    return wrapped

@@ -122,11 +122,31 @@ def main() -> int:
         "hop-fake": _entry("vb-hopfake", jump=True, fake_daemon=True),
     }
 
+    # 直连基线：TB 的负控制用 `vb-lab11`（常驻 w1 lab fake，65201）对比"无跳板"路径的
+    # client IP，因此这个 token 必须也在本注册表里——否则基线取不到 IP，TB 会 8/10。
+    # 条目从常驻注册表**原样复制**（并用生产 Registry.load 复验），不手写。
+    resident = ROOT / "test" / "artifacts" / "env" / "log-vblog" / "registry.json"
+    if resident.is_file():
+        try:
+            source = json.loads(resident.read_text(encoding="utf-8"))
+        except ValueError:
+            source = {}
+        for user in ("vbfake1", "vbfake2"):
+            entry = source.get(user)
+            if isinstance(entry, dict):
+                registry[user] = entry
+        if "vbfake1" not in registry:
+            print("  [warn] 常驻注册表里没有 vbfake1/vbfake2：直连基线将取不到 token（TB 会红）")
+    else:
+        print("  [warn] 常驻注册表不存在：跳过直连基线用户的复制")
+
     TARGET_DIR.mkdir(parents=True, exist_ok=True)
     out = TARGET_DIR / "registry.json"
     out.write_text(json.dumps(registry, ensure_ascii=False, indent=1), encoding="utf-8")
     print(f"written: {out}")
-    for name in ("hop-jump", "hop-socks", "hop-fake"):
+    for name in ("hop-jump", "hop-socks", "hop-fake", "vbfake1", "vbfake2"):
+        if name not in registry:
+            continue
         item = registry[name]
         cmd = item["roles"]["command"]
         print(f"  {name:10s} token={item['token']:12s} host={cmd['host']} "

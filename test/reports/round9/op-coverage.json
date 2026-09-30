@@ -1,0 +1,2252 @@
+{
+ "basic.command.run": {
+  "package": "basic.py",
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py",
+   "test/live/flows/multihop_jump_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/s11_postsim_compare.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/packages/calibre_e2e_tests.py",
+   "test/live/packages/calibre_export_pex_e2e_tests.py",
+   "test/live/packages/calibre_params_e2e_tests.py",
+   "test/live/packages/infra_e2e_tests.py",
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/maestro_mc_e2e_tests.py",
+   "test/live/packages/screenshot_params_e2e_tests.py",
+   "test/live/packages/spectre_params_e2e_tests.py",
+   "test/live/packages/verilog_import_params_e2e_tests.py",
+   "test/live/stress/production_face_stress_tb.py",
+   "test/offline/core/api_server_tb.py",
+   "test/offline/integration/test_business_child_supervision.py",
+   "test/offline/integration/test_supervisor_process.py",
+   "test/semi/probes/_maestro_tb.py",
+   "test/semi/probes/calibre_flat_turbo_probe.py",
+   "test/semi/probes/calibre_timeout_probe.py",
+   "test/semi/probes/cdl_export_variants_probe.py",
+   "test/semi/probes/gds_publish_path_edges_probe.py",
+   "test/semi/probes/gds_then_skill_probe.py",
+   "test/semi/probes/spectre_ac_pipeline_probe.py",
+   "test/shared/runners/env_check.py"
+  ],
+  "call_sites": 140
+ },
+ "basic.file.download": {
+  "package": "basic.py",
+  "files": [
+   "test/live/flows/lvs_from_schematic_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/packages/infra_e2e_tests.py",
+   "test/live/stress/production_face_stress_tb.py",
+   "test/offline/core/api_server_tb.py"
+  ],
+  "call_sites": 14
+ },
+ "basic.file.upload": {
+  "package": "basic.py",
+  "files": [
+   "test/live/flows/lvs_from_schematic_tb.py",
+   "test/live/flows/s11_inprocess_lvs_tb.py",
+   "test/live/packages/calibre_e2e_tests.py",
+   "test/live/packages/calibre_params_e2e_tests.py",
+   "test/live/packages/infra_e2e_tests.py",
+   "test/live/stress/production_face_stress_tb.py",
+   "test/offline/core/api_server_tb.py",
+   "test/semi/probes/calibre_flat_turbo_probe.py",
+   "test/semi/probes/calibre_timeout_probe.py",
+   "test/semi/probes/cdl_export_variants_probe.py"
+  ],
+  "call_sites": 32
+ },
+ "basic.gui.run": {
+  "package": "basic.py",
+  "files": [
+   "test/live/packages/infra_e2e_tests.py",
+   "test/live/stress/production_face_stress_tb.py",
+   "test/semi/probes/_maestro_tb.py"
+  ],
+  "call_sites": 7
+ },
+ "basic.skill.execute": {
+  "package": "basic.py",
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/multiuser_layout_handoff_tb.py",
+   "test/live/flows/multiuser_serdes_rx_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/packages/gui_e2e_tests.py",
+   "test/live/packages/infra_e2e_tests.py",
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/maestro_e2e_tests.py",
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/live/packages/screenshot_params_e2e_tests.py",
+   "test/live/packages/skill_log_options_e2e_tests.py",
+   "test/live/packages/skill_log_semantics_e2e_tests.py",
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/live/packages/verilog_e2e_tests.py",
+   "test/live/packages/verilog_import_params_e2e_tests.py",
+   "test/live/stress/production_face_stress_tb.py",
+   "test/offline/core/api_server_tb.py",
+   "test/semi/probes/_maestro_tb.py",
+   "test/semi/probes/gds_then_skill_probe.py",
+   "test/semi/probes/maestro_bugfix_batch_probe.py",
+   "test/semi/probes/maestro_p095_overwrite_wedge_probe.py",
+   "test/semi/probes/maestro_p096_write_lock_probe.py",
+   "test/semi/probes/shared_cdf_pollution_probe.py",
+   "test/semi/probes/skill_syntax_matrix_tb.py",
+   "test/shared/runners/env_check.py",
+   "test/shared/runners/skill_eval.py",
+   "test/shared/runners/skill_query.py"
+  ],
+  "call_sites": 224
+ },
+ "basic.spectre.run": {
+  "package": "basic.py",
+  "files": [
+   "test/live/packages/infra_e2e_tests.py",
+   "test/live/packages/spectre_e2e_tests.py",
+   "test/live/stress/production_face_stress_tb.py"
+  ],
+  "call_sites": 11
+ },
+ "calibre.check_env": {
+  "package": "calibre.py",
+  "files": [
+   "test/live/packages/calibre_e2e_tests.py",
+   "test/live/packages/calibre_params_e2e_tests.py",
+   "test/semi/probes/calibre_package_http_probe.py"
+  ],
+  "call_sites": 10
+ },
+ "calibre.drc": {
+  "package": "calibre.py",
+  "files": [
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/packages/calibre_e2e_tests.py",
+   "test/live/packages/calibre_export_pex_e2e_tests.py",
+   "test/live/packages/calibre_params_e2e_tests.py",
+   "test/semi/probes/calibre_flat_turbo_probe.py",
+   "test/semi/probes/calibre_timeout_probe.py"
+  ],
+  "call_sites": 18
+ },
+ "calibre.export": {
+  "package": "calibre.py",
+  "files": [
+   "test/live/packages/calibre_export_pex_e2e_tests.py"
+  ],
+  "call_sites": 5
+ },
+ "calibre.export_cdl": {
+  "package": "calibre.py",
+  "files": [
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/packages/calibre_e2e_tests.py"
+  ],
+  "call_sites": 11
+ },
+ "calibre.lvs": {
+  "package": "calibre.py",
+  "files": [
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/packages/calibre_e2e_tests.py",
+   "test/live/packages/calibre_export_pex_e2e_tests.py",
+   "test/live/packages/calibre_params_e2e_tests.py"
+  ],
+  "call_sites": 21
+ },
+ "calibre.pex": {
+  "package": "calibre.py",
+  "files": [
+   "test/live/packages/calibre_export_pex_e2e_tests.py"
+  ],
+  "call_sites": 1
+ },
+ "calibre.read_results": {
+  "package": "calibre.py",
+  "files": [
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/packages/calibre_e2e_tests.py",
+   "test/live/packages/calibre_export_pex_e2e_tests.py",
+   "test/live/packages/calibre_params_e2e_tests.py",
+   "test/semi/probes/calibre_package_http_probe.py"
+  ],
+  "call_sites": 32
+ },
+ "calibre.status": {
+  "package": "calibre.py",
+  "files": [
+   "test/live/packages/calibre_params_e2e_tests.py",
+   "test/semi/probes/calibre_flat_turbo_probe.py",
+   "test/semi/probes/calibre_package_http_probe.py",
+   "test/semi/probes/calibre_timeout_probe.py"
+  ],
+  "call_sites": 12
+ },
+ "check_and_save": {
+  "package": "(atomic)",
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/multiuser_serdes_rx_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/live/packages/veriloga_e2e_tests.py",
+   "test/offline/unit/test_schematic_contracts.py",
+   "test/offline/unit/test_symbol_contracts.py",
+   "test/offline/unit/test_veriloga_contracts.py",
+   "test/offline/unit/test_veriloga_lazy_editor_contract.py",
+   "test/offline/unit/test_view_type_param_contract.py",
+   "test/semi/probes/schematic_pin_ops_probe.py",
+   "test/semi/probes/schematic_wire_style_probe.py",
+   "test/semi/probes/symbol_pkg_probe.py",
+   "test/shared/runners/audit_atom_coverage.py",
+   "test/shared/runners/make_bug_cards.py"
+  ],
+  "call_sites": 19
+ },
+ "delete_instance": {
+  "package": "(atomic)",
+  "files": [
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/offline/unit/test_layout_contracts.py",
+   "test/offline/unit/test_schematic_contracts.py"
+  ],
+  "call_sites": 4
+ },
+ "delete_label": {
+  "package": "(atomic)",
+  "files": [
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/offline/unit/test_layout_contracts.py",
+   "test/offline/unit/test_schematic_contracts.py",
+   "test/offline/unit/test_symbol_contracts.py"
+  ],
+  "call_sites": 5
+ },
+ "delete_note": {
+  "package": "(atomic)",
+  "files": [
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/offline/unit/test_schematic_contracts.py"
+  ],
+  "call_sites": 2
+ },
+ "delete_pin": {
+  "package": "(atomic)",
+  "files": [
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/offline/unit/test_schematic_contracts.py",
+   "test/offline/unit/test_symbol_contracts.py",
+   "test/semi/probes/schematic_pin_ops_probe.py"
+  ],
+  "call_sites": 6
+ },
+ "delete_wire": {
+  "package": "(atomic)",
+  "files": [
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/offline/unit/test_schematic_contracts.py"
+  ],
+  "call_sites": 2
+ },
+ "ellipse": {
+  "package": "(atomic)",
+  "files": [
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/offline/unit/test_layout_contracts.py",
+   "test/offline/unit/test_symbol_contracts.py"
+  ],
+  "call_sites": 3
+ },
+ "focus": {
+  "package": "(atomic)",
+  "files": [
+   "test/live/flows/s11_full_flow.py",
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/live/packages/verilog_e2e_tests.py",
+   "test/live/packages/veriloga_e2e_tests.py",
+   "test/offline/unit/test_layout_contracts.py",
+   "test/offline/unit/test_layout_depth_contract.py",
+   "test/offline/unit/test_norm_gap_batch2.py",
+   "test/offline/unit/test_remote_posix_path_contract.py",
+   "test/offline/unit/test_symbol_contracts.py",
+   "test/offline/unit/test_verilog_contracts.py",
+   "test/offline/unit/test_veriloga_contracts.py",
+   "test/offline/unit/test_view_type_param_contract.py",
+   "test/semi/probes/layout_depth_probe.py",
+   "test/semi/probes/layout_depth_region_direct_probe.py",
+   "test/semi/probes/schematic_wire_style_probe.py",
+   "test/semi/probes/shared_cdf_pollution_probe.py",
+   "test/semi/probes/symbol_generate_hierarchy_handle_probe.py",
+   "test/semi/probes/symbol_regen_handle_probe.py",
+   "test/semi/probes/twouser_same_view_probe.py"
+  ],
+  "call_sites": 21
+ },
+ "instance": {
+  "package": "(atomic)",
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py",
+   "test/live/flows/multihop_jump_tb.py",
+   "test/live/flows/multiuser_layout_handoff_tb.py",
+   "test/live/flows/multiuser_serdes_rx_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/s11_inprocess_lvs_tb.py",
+   "test/live/flows/s11_postsim_compare.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/packages/calibre_e2e_tests.py",
+   "test/live/packages/calibre_export_pex_e2e_tests.py",
+   "test/live/packages/calibre_params_e2e_tests.py",
+   "test/live/packages/cellview_e2e_tests.py",
+   "test/live/packages/infra_e2e_tests.py",
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/maestro_e2e_tests.py",
+   "test/live/packages/maestro_mc_e2e_tests.py",
+   "test/live/packages/maestro_view_param_e2e_tests.py",
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/live/packages/screenshot_params_e2e_tests.py",
+   "test/live/packages/skill_log_options_e2e_tests.py",
+   "test/live/packages/skill_log_semantics_e2e_tests.py",
+   "test/live/packages/spectre_e2e_tests.py",
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/live/packages/verilog_e2e_tests.py",
+   "test/live/packages/verilog_import_params_e2e_tests.py",
+   "test/live/packages/veriloga_e2e_tests.py",
+   "test/live/registration/registration_http_six_step_tb.py",
+   "test/live/registration/registration_py27_tb.py",
+   "test/live/stress/production_face_stress_tb.py",
+   "test/offline/core/api_server_tb.py",
+   "test/offline/core/fault_injection_tb.py",
+   "test/offline/frontend/registration_mock_server.py",
+   "test/offline/unit/_daemon_harness.py",
+   "test/offline/unit/_fake_middle.py",
+   "test/offline/unit/test_daemon_runtime_contracts.py",
+   "test/offline/unit/test_endpoint_budgets.py",
+   "test/offline/unit/test_layout_contracts.py",
+   "test/offline/unit/test_layout_depth_contract.py",
+   "test/offline/unit/test_maestro_command_exprs.py",
+   "test/offline/unit/test_maestro_package_flow.py",
+   "test/offline/unit/test_middle_routing.py",
+   "test/offline/unit/test_norm_gap_batch2.py",
+   "test/offline/unit/test_norm_gap_round8.py",
+   "test/offline/unit/test_output_json_safety.py",
+   "test/offline/unit/test_param_timeout_contract.py",
+   "test/offline/unit/test_paramiko_run_command.py",
+   "test/offline/unit/test_paramiko_session_paths.py",
+   "test/offline/unit/test_probe.py",
+   "test/offline/unit/test_pyapi_interface_contract.py",
+   "test/offline/unit/test_resource_release.py",
+   "test/offline/unit/test_runner_single_flight.py",
+   "test/offline/unit/test_schematic_contracts.py",
+   "test/offline/unit/test_spectre_util_psf_contracts.py",
+   "test/offline/unit/test_ssh.py",
+   "test/offline/unit/test_ssh_edges.py",
+   "test/offline/unit/test_ssh_tunnel_lifecycle.py",
+   "test/offline/unit/test_symbol_contracts.py",
+   "test/offline/unit/test_tunnel.py",
+   "test/offline/unit/test_tunnel_transfer.py",
+   "test/offline/unit/test_upper_layer_import_contract.py",
+   "test/semi/fakevirt/skill_ops.py",
+   "test/semi/probes/calibre_flat_turbo_probe.py",
+   "test/semi/probes/calibre_timeout_probe.py",
+   "test/semi/probes/cdl_export_variants_probe.py",
+   "test/semi/probes/gds_publish_path_edges_probe.py",
+   "test/semi/probes/layout_depth_probe.py",
+   "test/semi/probes/layout_depth_region_direct_probe.py",
+   "test/semi/probes/maestro_batch2_verify_probe.py",
+   "test/semi/probes/maestro_p095_overwrite_wedge_probe.py",
+   "test/semi/probes/schematic_pin_ops_probe.py",
+   "test/semi/probes/shared_cdf_pollution_probe.py",
+   "test/semi/probes/symbol_generate_hierarchy_handle_probe.py",
+   "test/semi/probes/twouser_same_view_probe.py",
+   "test/semi/probes/verilog_cell_and_views_direct_probe.py",
+   "test/semi/registration/registration_failure_matrix_tb.py",
+   "test/shared/fixtures/_daemon_harness.py",
+   "test/shared/fixtures/registration_tb_support.py",
+   "test/shared/runners/build_op_param_matrix.py",
+   "test/shared/runners/check_skip_reasons.py",
+   "test/shared/runners/classify_uncovered.py",
+   "test/shared/runners/env_check.py",
+   "test/shared/runners/env_up.py",
+   "test/shared/runners/make_bug_cards.py",
+   "test/shared/runners/merge_round8_spec_matrix.py",
+   "test/shared/runners/ops_matrix.py",
+   "test/shared/runners/ops_used.py",
+   "test/shared/runners/resident_env_check.py",
+   "test/shared/runners/run_core_multi.py",
+   "test/shared/runners/run_semi_probes.py"
+  ],
+  "call_sites": 92
+ },
+ "label": {
+  "package": "(atomic)",
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/multiuser_serdes_rx_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/s11_postsim_compare.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/packages/cellview_e2e_tests.py",
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/live/packages/screenshot_params_e2e_tests.py",
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/live/registration/registration_role_split_tb.py",
+   "test/offline/frontend/registration_mock_server.py",
+   "test/offline/unit/test_api_server_main.py",
+   "test/offline/unit/test_layout_contracts.py",
+   "test/offline/unit/test_registration_server_edges.py",
+   "test/offline/unit/test_schematic_contracts.py",
+   "test/offline/unit/test_spectre_util_psf_contracts.py",
+   "test/offline/unit/test_symbol_contracts.py",
+   "test/semi/fakevirt/e2e_check.py",
+   "test/semi/probes/lone_surrogate_probe.py",
+   "test/semi/probes/maestro_delete_var_all_probe.py",
+   "test/semi/probes/maestro_e2e_probe.py",
+   "test/semi/probes/maestro_open_waveform_result_probe.py",
+   "test/semi/probes/maestro_save_false_disk_probe.py",
+   "test/semi/probes/maestro_screenshot_probe.py",
+   "test/semi/probes/twouser_same_view_probe.py",
+   "test/semi/registration/registration_failure_matrix_tb.py",
+   "test/shared/runners/run_offline_multi.py"
+  ],
+  "call_sites": 29
+ },
+ "label_kind": {
+  "package": "(atomic)",
+  "files": [
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/offline/unit/test_symbol_contracts.py"
+  ],
+  "call_sites": 2
+ },
+ "line": {
+  "package": "(atomic)",
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py",
+   "test/live/flows/multihop_jump_tb.py",
+   "test/live/flows/multiuser_layout_handoff_tb.py",
+   "test/live/flows/role_split_tb.py",
+   "test/live/flows/scale_100_tb.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/packages/calibre_e2e_tests.py",
+   "test/live/packages/calibre_export_pex_e2e_tests.py",
+   "test/live/packages/calibre_params_e2e_tests.py",
+   "test/live/packages/cellview_e2e_tests.py",
+   "test/live/packages/gui_e2e_tests.py",
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/maestro_e2e_tests.py",
+   "test/live/packages/maestro_mc_e2e_tests.py",
+   "test/live/packages/maestro_view_param_e2e_tests.py",
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/live/packages/skill_log_semantics_e2e_tests.py",
+   "test/live/packages/spectre_params_e2e_tests.py",
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/live/packages/verilog_e2e_tests.py",
+   "test/live/packages/verilog_import_params_e2e_tests.py",
+   "test/live/packages/veriloga_e2e_tests.py",
+   "test/live/registration/registration_http_six_step_tb.py",
+   "test/live/registration/registration_py27_tb.py",
+   "test/live/registration/registration_real_ciw_tb.py",
+   "test/live/registration/registration_role_split_tb.py",
+   "test/live/stress/production_face_stress_tb.py",
+   "test/live/stress/scale_local_fake_tb.py",
+   "test/offline/core/api_server_tb.py",
+   "test/offline/core/daemon_log_protocol_tb.py",
+   "test/offline/core/fault_injection_tb.py",
+   "test/offline/core/p076_tar_completion_tb.py",
+   "test/offline/core/semantics_tb.py",
+   "test/offline/frontend/registration_mock_server.py",
+   "test/offline/integration/test_business_child_supervision.py",
+   "test/offline/integration/test_daemon_handler.py",
+   "test/offline/integration/test_integration.py",
+   "test/offline/integration/test_supervisor_process.py",
+   "test/offline/unit/_fake_middle.py",
+   "test/offline/unit/test_all_ops_timeout_field.py",
+   "test/offline/unit/test_api_server_main.py",
+   "test/offline/unit/test_calibre_argv_contracts.py",
+   "test/offline/unit/test_calibre_job_state.py",
+   "test/offline/unit/test_calibre_package.py",
+   "test/offline/unit/test_connect_retry.py",
+   "test/offline/unit/test_daemon_log_contract.py",
+   "test/offline/unit/test_daemon_log_utf8_budget.py",
+   "test/offline/unit/test_daemon_parity.py",
+   "test/offline/unit/test_daemon_runtime_contracts.py",
+   "test/offline/unit/test_layout_contracts.py",
+   "test/offline/unit/test_maestro_mc.py",
+   "test/offline/unit/test_maestro_util.py",
+   "test/offline/unit/test_middle_contracts.py",
+   "test/offline/unit/test_middle_routing.py",
+   "test/offline/unit/test_new_core.py",
+   "test/offline/unit/test_norm_gap_batch2.py",
+   "test/offline/unit/test_norm_gap_round8.py",
+   "test/offline/unit/test_paramiko.py",
+   "test/offline/unit/test_paramiko_run_command.py",
+   "test/offline/unit/test_paramiko_session_paths.py",
+   "test/offline/unit/test_paramiko_transport_fakes.py",
+   "test/offline/unit/test_persistent_shell_protocol.py",
+   "test/offline/unit/test_probe.py",
+   "test/offline/unit/test_process_lifetime.py",
+   "test/offline/unit/test_registration_mock_server.py",
+   "test/offline/unit/test_registration_probe_status.py",
+   "test/offline/unit/test_registration_server.py",
+   "test/offline/unit/test_registration_server_edges.py",
+   "test/offline/unit/test_registry_more.py",
+   "test/offline/unit/test_schematic_contracts.py",
+   "test/offline/unit/test_skillref_docs_contracts.py",
+   "test/offline/unit/test_spectre_contracts.py",
+   "test/offline/unit/test_spectre_metrics.py",
+   "test/offline/unit/test_spectre_util_contracts.py",
+   "test/offline/unit/test_spectre_util_psf_contracts.py",
+   "test/offline/unit/test_ssh.py",
+   "test/offline/unit/test_ssh_edges.py",
+   "test/offline/unit/test_ssh_tunnel_lifecycle.py",
+   "test/offline/unit/test_supervisor_internals.py",
+   "test/offline/unit/test_symbol_contracts.py",
+   "test/offline/unit/test_symbol_generate.py",
+   "test/offline/unit/test_transport_error_paths.py",
+   "test/offline/unit/test_tunnel.py",
+   "test/offline/unit/test_tunnel_transfer.py",
+   "test/offline/unit/test_upper_layer_import_contract.py",
+   "test/offline/unit/test_verilog_contracts.py",
+   "test/offline/unit/test_veriloga_contracts.py",
+   "test/semi/fakevirt/fake_virtuoso.py",
+   "test/semi/probes/calibre_flat_turbo_probe.py",
+   "test/semi/probes/calibre_timeout_probe.py",
+   "test/semi/probes/cdl_export_variants_probe.py",
+   "test/semi/probes/daemon_internal_error_path_probe.py",
+   "test/semi/probes/layout_lock_ownership_probe.py",
+   "test/semi/probes/layout_p044_second_write_probe.py",
+   "test/semi/probes/maestro_batch2_verify_probe.py",
+   "test/semi/probes/maestro_e2e_probe.py",
+   "test/semi/probes/maestro_env_probe.py",
+   "test/semi/probes/maestro_open_waveform_result_probe.py",
+   "test/semi/probes/p076_spectre_run_hang_probe.py",
+   "test/semi/probes/paramiko_ssh_config_true_probe.py",
+   "test/semi/probes/py27_daemon_probe.py",
+   "test/semi/probes/schematic_pin_ops_probe.py",
+   "test/semi/probes/schematic_wire_style_probe.py",
+   "test/semi/probes/skill_syntax_matrix_tb.py",
+   "test/semi/probes/spectre_ac_pipeline_probe.py",
+   "test/semi/probes/symbol_generate_hierarchy_handle_probe.py",
+   "test/semi/probes/symbol_regen_handle_probe.py",
+   "test/semi/probes/symbol_screenshot_probe.py",
+   "test/semi/probes/twouser_same_view_probe.py",
+   "test/semi/probes/verilog_cell_and_views_direct_probe.py",
+   "test/semi/registration/registration_failure_matrix_tb.py",
+   "test/semi/transport/log_matrix_real_tb.py",
+   "test/shared/fixtures/registration_tb_support.py",
+   "test/shared/runners/audit_atom_coverage.py",
+   "test/shared/runners/audit_spec_matrix_evidence.py",
+   "test/shared/runners/build_op_param_matrix.py",
+   "test/shared/runners/check_skip_reasons.py",
+   "test/shared/runners/check_spec_op_drift.py",
+   "test/shared/runners/check_tb_headers.py",
+   "test/shared/runners/ciw_load_setup.py",
+   "test/shared/runners/classify_uncovered.py",
+   "test/shared/runners/coverage_evidence.py",
+   "test/shared/runners/coverage_gaps.py",
+   "test/shared/runners/env_check.py",
+   "test/shared/runners/env_up.py",
+   "test/shared/runners/extract_spec_clauses.py",
+   "test/shared/runners/make_bug_cards.py",
+   "test/shared/runners/make_run_env_complete.py",
+   "test/shared/runners/merge_round8_spec_matrix.py",
+   "test/shared/runners/negative_controls.py",
+   "test/shared/runners/premap_spec_clauses.py",
+   "test/shared/runners/run_core_multi.py",
+   "test/shared/runners/run_offline_multi.py",
+   "test/shared/runners/run_semi_probes.py",
+   "test/shared/runners/scenario.py",
+   "test/shared/runners/skill_op_table.py",
+   "test/shared/runners/triage_spec_clauses.py",
+   "test/shared/runners/verify_spec_matrix_evidence.py"
+  ],
+  "call_sites": 142
+ },
+ "mosaic": {
+  "package": "(atomic)",
+  "files": [
+   "test/live/packages/layout_e2e_tests.py",
+   "test/offline/unit/test_layout_contracts.py"
+  ],
+  "call_sites": 2
+ },
+ "path": {
+  "package": "(atomic)",
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py",
+   "test/live/flows/multihop_jump_tb.py",
+   "test/live/flows/multiuser_layout_handoff_tb.py",
+   "test/live/flows/multiuser_serdes_rx_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/role_split_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/s11_inprocess_lvs_tb.py",
+   "test/live/flows/s11_postsim_compare.py",
+   "test/live/flows/scale_100_tb.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/manual/business_console/serve.py",
+   "test/live/packages/calibre_e2e_tests.py",
+   "test/live/packages/calibre_export_pex_e2e_tests.py",
+   "test/live/packages/calibre_params_e2e_tests.py",
+   "test/live/packages/cellview_e2e_tests.py",
+   "test/live/packages/gui_e2e_tests.py",
+   "test/live/packages/infra_e2e_tests.py",
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/layout_geometry_classification_e2e_tests.py",
+   "test/live/packages/maestro_e2e_tests.py",
+   "test/live/packages/maestro_mc_e2e_tests.py",
+   "test/live/packages/maestro_view_param_e2e_tests.py",
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/live/packages/screenshot_params_e2e_tests.py",
+   "test/live/packages/skill_log_options_e2e_tests.py",
+   "test/live/packages/skill_log_semantics_e2e_tests.py",
+   "test/live/packages/skillref_e2e_tests.py",
+   "test/live/packages/spectre_e2e_tests.py",
+   "test/live/packages/spectre_params_e2e_tests.py",
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/live/packages/verilog_e2e_tests.py",
+   "test/live/packages/verilog_import_params_e2e_tests.py",
+   "test/live/packages/veriloga_e2e_tests.py",
+   "test/live/registration/registration_http_six_step_tb.py",
+   "test/live/registration/registration_py27_tb.py",
+   "test/live/registration/registration_real_ciw_tb.py",
+   "test/live/registration/registration_role_split_tb.py",
+   "test/live/stress/layout_multiuser_lock_tb.py",
+   "test/live/stress/multi_user_routing_tb.py",
+   "test/live/stress/production_face_stress_tb.py",
+   "test/live/stress/scale_local_fake_tb.py",
+   "test/live/transport/cov_remote_real.py",
+   "test/offline/core/api_server_tb.py",
+   "test/offline/core/daemon_log_protocol_tb.py",
+   "test/offline/core/fault_injection_tb.py",
+   "test/offline/core/p076_tar_completion_tb.py",
+   "test/offline/core/semantics_tb.py",
+   "test/offline/core/thread_lifecycle_tb.py",
+   "test/offline/frontend/registration_mock_server.py",
+   "test/offline/integration/test_business_child_supervision.py",
+   "test/offline/integration/test_daemon_handler.py",
+   "test/offline/integration/test_integration.py",
+   "test/offline/integration/test_supervisor_process.py",
+   "test/offline/scenario/test_business_local.py",
+   "test/offline/scenario/test_multi_user_isolation.py",
+   "test/offline/scenario/test_registration_local_full.py",
+   "test/offline/unit/_daemon_harness.py",
+   "test/offline/unit/_fake_middle.py",
+   "test/offline/unit/_ssh_cred.py",
+   "test/offline/unit/test_all_ops_timeout_field.py",
+   "test/offline/unit/test_api_server_main.py",
+   "test/offline/unit/test_api_server_method_not_allowed.py",
+   "test/offline/unit/test_calibre_argv_contracts.py",
+   "test/offline/unit/test_calibre_job_state.py",
+   "test/offline/unit/test_calibre_package.py",
+   "test/offline/unit/test_calibre_parsers.py",
+   "test/offline/unit/test_calibre_verdict_consistency.py",
+   "test/offline/unit/test_cellview_contracts.py",
+   "test/offline/unit/test_commit_shape.py",
+   "test/offline/unit/test_common_config.py",
+   "test/offline/unit/test_config_snapshot_edges.py",
+   "test/offline/unit/test_connect_retry.py",
+   "test/offline/unit/test_credential_routing.py",
+   "test/offline/unit/test_daemon27.py",
+   "test/offline/unit/test_daemon_import_contract.py",
+   "test/offline/unit/test_daemon_log_contract.py",
+   "test/offline/unit/test_daemon_log_utf8_budget.py",
+   "test/offline/unit/test_daemon_parity.py",
+   "test/offline/unit/test_daemon_runtime_contracts.py",
+   "test/offline/unit/test_endpoint_budgets.py",
+   "test/offline/unit/test_gui_package.py",
+   "test/offline/unit/test_http_json_safety.py",
+   "test/offline/unit/test_jsonutil.py",
+   "test/offline/unit/test_layout_contracts.py",
+   "test/offline/unit/test_layout_depth_contract.py",
+   "test/offline/unit/test_layout_publish_contracts.py",
+   "test/offline/unit/test_local_path_expansion.py",
+   "test/offline/unit/test_log_no_fetch.py",
+   "test/offline/unit/test_log_off.py",
+   "test/offline/unit/test_maestro_command_exprs.py",
+   "test/offline/unit/test_maestro_mc.py",
+   "test/offline/unit/test_maestro_package_flow.py",
+   "test/offline/unit/test_maestro_util.py",
+   "test/offline/unit/test_maestro_util_edges.py",
+   "test/offline/unit/test_middle_contracts.py",
+   "test/offline/unit/test_middle_reserved_codes.py",
+   "test/offline/unit/test_middle_routing.py",
+   "test/offline/unit/test_models_paths.py",
+   "test/offline/unit/test_new_core.py",
+   "test/offline/unit/test_new_middle.py",
+   "test/offline/unit/test_norm_gap_batch2.py",
+   "test/offline/unit/test_norm_gap_round8.py",
+   "test/offline/unit/test_output_json_safety.py",
+   "test/offline/unit/test_param_timeout_contract.py",
+   "test/offline/unit/test_paramiko.py",
+   "test/offline/unit/test_paramiko_helpers.py",
+   "test/offline/unit/test_paramiko_run_command.py",
+   "test/offline/unit/test_paramiko_session_paths.py",
+   "test/offline/unit/test_paramiko_transport_fakes.py",
+   "test/offline/unit/test_persistent_shell_protocol.py",
+   "test/offline/unit/test_probe.py",
+   "test/offline/unit/test_process_lifetime.py",
+   "test/offline/unit/test_pyapi_interface_contract.py",
+   "test/offline/unit/test_pyapi_packages.py",
+   "test/offline/unit/test_register_flow.py",
+   "test/offline/unit/test_register_probe_pathname.py",
+   "test/offline/unit/test_registration_mock_server.py",
+   "test/offline/unit/test_registration_page.py",
+   "test/offline/unit/test_registration_probe_status.py",
+   "test/offline/unit/test_registration_server.py",
+   "test/offline/unit/test_registration_server_edges.py",
+   "test/offline/unit/test_registry_decoupling.py",
+   "test/offline/unit/test_registry_keys.py",
+   "test/offline/unit/test_registry_more.py",
+   "test/offline/unit/test_remote_posix_path_contract.py",
+   "test/offline/unit/test_reservation.py",
+   "test/offline/unit/test_resource_release.py",
+   "test/offline/unit/test_result_contract.py",
+   "test/offline/unit/test_runner_single_flight.py",
+   "test/offline/unit/test_runtime_env.py",
+   "test/offline/unit/test_schematic_contracts.py",
+   "test/offline/unit/test_scope_exclusions.py",
+   "test/offline/unit/test_skill_admission.py",
+   "test/offline/unit/test_skill_log_options.py",
+   "test/offline/unit/test_skill_text_utils.py",
+   "test/offline/unit/test_skillref_docs_contracts.py",
+   "test/offline/unit/test_skillref_package.py",
+   "test/offline/unit/test_spec_contracts.py",
+   "test/offline/unit/test_spectre_contracts.py",
+   "test/offline/unit/test_spectre_metrics.py",
+   "test/offline/unit/test_spectre_util_contracts.py",
+   "test/offline/unit/test_spectre_util_psf_contracts.py",
+   "test/offline/unit/test_ssh.py",
+   "test/offline/unit/test_ssh_credentials.py",
+   "test/offline/unit/test_ssh_dispatch.py",
+   "test/offline/unit/test_ssh_edges.py",
+   "test/offline/unit/test_ssh_tunnel_lifecycle.py",
+   "test/offline/unit/test_supervisor_internals.py",
+   "test/offline/unit/test_symbol_contracts.py",
+   "test/offline/unit/test_symbol_generate.py",
+   "test/offline/unit/test_top_layer_dispatch.py",
+   "test/offline/unit/test_top_layer_pool.py",
+   "test/offline/unit/test_transfer.py",
+   "test/offline/unit/test_transport_error_paths.py",
+   "test/offline/unit/test_tunnel.py",
+   "test/offline/unit/test_tunnel_transfer.py",
+   "test/offline/unit/test_update_host_key_probe.py",
+   "test/offline/unit/test_upper_layer_import_contract.py",
+   "test/offline/unit/test_validation_roles.py",
+   "test/offline/unit/test_verilog_contracts.py",
+   "test/offline/unit/test_veriloga_contracts.py",
+   "test/offline/unit/test_veriloga_lazy_editor_contract.py",
+   "test/offline/unit/test_view_type_param_contract.py",
+   "test/offline/unit/test_workdir_contract.py",
+   "test/semi/fakevirt/e2e_check.py",
+   "test/semi/fakevirt/fake_virtuoso.py",
+   "test/semi/fakevirt/skill_ops.py",
+   "test/semi/probes/_maestro_tb.py",
+   "test/semi/probes/calibre_cdl_probe.py",
+   "test/semi/probes/calibre_env_probe.py",
+   "test/semi/probes/calibre_flat_turbo_probe.py",
+   "test/semi/probes/calibre_package_http_probe.py",
+   "test/semi/probes/calibre_timeout_probe.py",
+   "test/semi/probes/cdl_export_variants_probe.py",
+   "test/semi/probes/daemon_internal_error_path_probe.py",
+   "test/semi/probes/docs_search_probe.py",
+   "test/semi/probes/gds_publish_path_edges_probe.py",
+   "test/semi/probes/gds_then_skill_probe.py",
+   "test/semi/probes/gui_display_probe.py",
+   "test/semi/probes/layout_depth_probe.py",
+   "test/semi/probes/layout_depth_region_direct_probe.py",
+   "test/semi/probes/layout_lock_ownership_probe.py",
+   "test/semi/probes/layout_p044_second_write_probe.py",
+   "test/semi/probes/log_rotation_lock_probe.py",
+   "test/semi/probes/lone_surrogate_probe.py",
+   "test/semi/probes/maestro_batch2_verify_probe.py",
+   "test/semi/probes/maestro_bugfix_batch_probe.py",
+   "test/semi/probes/maestro_delete_var_all_probe.py",
+   "test/semi/probes/maestro_e2e_probe.py",
+   "test/semi/probes/maestro_env_probe.py",
+   "test/semi/probes/maestro_export_include_results_probe.py",
+   "test/semi/probes/maestro_leak_probe.py",
+   "test/semi/probes/maestro_open_waveform_result_probe.py",
+   "test/semi/probes/maestro_p095_overwrite_wedge_probe.py",
+   "test/semi/probes/maestro_p096_write_lock_probe.py",
+   "test/semi/probes/maestro_pkg_probe.py",
+   "test/semi/probes/maestro_save_false_disk_probe.py",
+   "test/semi/probes/maestro_screenshot_probe.py",
+   "test/semi/probes/maestro_session_conflict_probe.py",
+   "test/semi/probes/p076_fix_verify_probe.py",
+   "test/semi/probes/p076_spectre_run_hang_probe.py",
+   "test/semi/probes/paramiko_ssh_config_true_probe.py",
+   "test/semi/probes/py27_daemon_probe.py",
+   "test/semi/probes/py27_handler_probe.py",
+   "test/semi/probes/schematic_pin_ops_probe.py",
+   "test/semi/probes/schematic_wire_style_probe.py",
+   "test/semi/probes/shared_cdf_pollution_probe.py",
+   "test/semi/probes/skill_syntax_matrix_tb.py",
+   "test/semi/probes/skill_tooling_probe.py",
+   "test/semi/probes/skillref_probe.py",
+   "test/semi/probes/spectre_ac_pipeline_probe.py",
+   "test/semi/probes/spectre_channel_map_probe.py",
+   "test/semi/probes/symbol_generate_hierarchy_handle_probe.py",
+   "test/semi/probes/symbol_pkg_probe.py",
+   "test/semi/probes/symbol_regen_handle_probe.py",
+   "test/semi/probes/symbol_screenshot_probe.py",
+   "test/semi/probes/twouser_same_view_probe.py",
+   "test/semi/probes/verilog_cell_and_views_direct_probe.py",
+   "test/semi/registration/cov_registration_real.py",
+   "test/semi/registration/registration_failure_matrix_tb.py",
+   "test/semi/transport/install_stage_idempotent_tb.py",
+   "test/semi/transport/log_matrix_real_tb.py",
+   "test/semi/transport/one_shot_burst_tb.py",
+   "test/semi/transport/role_credential_isolation_tb.py",
+   "test/semi/transport/ssh_backend_semi_tb.py",
+   "test/shared/fixtures/_daemon_harness.py",
+   "test/shared/fixtures/fake_daemon_host.py",
+   "test/shared/fixtures/registration_tb_support.py",
+   "test/shared/fixtures/scale100_negative_control.py",
+   "test/shared/runners/audit_atom_coverage.py",
+   "test/shared/runners/audit_spec_matrix_evidence.py",
+   "test/shared/runners/build_op_param_matrix.py",
+   "test/shared/runners/check_skip_reasons.py",
+   "test/shared/runners/check_spec_op_drift.py",
+   "test/shared/runners/check_tb_headers.py",
+   "test/shared/runners/ciw_load_setup.py",
+   "test/shared/runners/classify_uncovered.py",
+   "test/shared/runners/coverage_evidence.py",
+   "test/shared/runners/coverage_gaps.py",
+   "test/shared/runners/env_check.py",
+   "test/shared/runners/env_up.py",
+   "test/shared/runners/extract_spec_clauses.py",
+   "test/shared/runners/make_bug_cards.py",
+   "test/shared/runners/make_multihop_env.py",
+   "test/shared/runners/make_run_env_complete.py",
+   "test/shared/runners/merge_round8_spec_matrix.py",
+   "test/shared/runners/negative_controls.py",
+   "test/shared/runners/op_list.py",
+   "test/shared/runners/ops_matrix.py",
+   "test/shared/runners/ops_used.py",
+   "test/shared/runners/premap_spec_clauses.py",
+   "test/shared/runners/registry_add_user.py",
+   "test/shared/runners/resident_env_check.py",
+   "test/shared/runners/run_all_http.py",
+   "test/shared/runners/run_core_multi.py",
+   "test/shared/runners/run_offline_multi.py",
+   "test/shared/runners/run_semi_probes.py",
+   "test/shared/runners/scenario.py",
+   "test/shared/runners/skill_op_table.py",
+   "test/shared/runners/skill_query.py",
+   "test/shared/runners/split_spec_clusters.py",
+   "test/shared/runners/triage_spec_clauses.py",
+   "test/shared/runners/verify_spec_matrix_evidence.py"
+  ],
+  "call_sites": 269
+ },
+ "place_instance": {
+  "package": "(atomic)",
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/multiuser_serdes_rx_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/offline/unit/test_layout_contracts.py",
+   "test/offline/unit/test_schematic_contracts.py",
+   "test/semi/probes/layout_depth_probe.py",
+   "test/semi/probes/layout_depth_region_direct_probe.py",
+   "test/semi/probes/schematic_pin_ops_probe.py",
+   "test/semi/probes/shared_cdf_pollution_probe.py",
+   "test/semi/probes/symbol_generate_hierarchy_handle_probe.py"
+  ],
+  "call_sites": 15
+ },
+ "place_label": {
+  "package": "(atomic)",
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/offline/unit/test_layout_contracts.py",
+   "test/offline/unit/test_schematic_contracts.py",
+   "test/offline/unit/test_symbol_contracts.py",
+   "test/semi/probes/twouser_same_view_probe.py"
+  ],
+  "call_sites": 11
+ },
+ "place_note": {
+  "package": "(atomic)",
+  "files": [
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/offline/unit/test_schematic_contracts.py"
+  ],
+  "call_sites": 2
+ },
+ "place_pin": {
+  "package": "(atomic)",
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/multiuser_serdes_rx_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/offline/unit/test_schematic_contracts.py",
+   "test/offline/unit/test_symbol_contracts.py",
+   "test/semi/probes/schematic_pin_ops_probe.py",
+   "test/semi/probes/symbol_generate_hierarchy_handle_probe.py",
+   "test/semi/probes/symbol_regen_handle_probe.py"
+  ],
+  "call_sites": 12
+ },
+ "place_wire": {
+  "package": "(atomic)",
+  "files": [
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/offline/unit/test_schematic_contracts.py",
+   "test/semi/probes/schematic_wire_style_probe.py",
+   "test/shared/runners/make_bug_cards.py"
+  ],
+  "call_sites": 4
+ },
+ "polygon": {
+  "package": "(atomic)",
+  "files": [
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/offline/unit/test_calibre_parsers.py",
+   "test/offline/unit/test_layout_contracts.py",
+   "test/offline/unit/test_symbol_contracts.py"
+  ],
+  "call_sites": 5
+ },
+ "read": {
+  "package": "(atomic)",
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py",
+   "test/live/flows/multihop_jump_tb.py",
+   "test/live/flows/multiuser_layout_handoff_tb.py",
+   "test/live/flows/multiuser_serdes_rx_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/role_split_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/s11_inprocess_lvs_tb.py",
+   "test/live/flows/s11_postsim_compare.py",
+   "test/live/flows/scale_100_tb.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/manual/business_console/serve.py",
+   "test/live/packages/calibre_e2e_tests.py",
+   "test/live/packages/calibre_export_pex_e2e_tests.py",
+   "test/live/packages/calibre_params_e2e_tests.py",
+   "test/live/packages/cellview_e2e_tests.py",
+   "test/live/packages/gui_e2e_tests.py",
+   "test/live/packages/infra_e2e_tests.py",
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/layout_geometry_classification_e2e_tests.py",
+   "test/live/packages/maestro_e2e_tests.py",
+   "test/live/packages/maestro_mc_e2e_tests.py",
+   "test/live/packages/maestro_view_param_e2e_tests.py",
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/live/packages/screenshot_params_e2e_tests.py",
+   "test/live/packages/skill_log_options_e2e_tests.py",
+   "test/live/packages/skill_log_semantics_e2e_tests.py",
+   "test/live/packages/skillref_e2e_tests.py",
+   "test/live/packages/spectre_e2e_tests.py",
+   "test/live/packages/spectre_params_e2e_tests.py",
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/live/packages/verilog_e2e_tests.py",
+   "test/live/packages/verilog_import_params_e2e_tests.py",
+   "test/live/packages/veriloga_e2e_tests.py",
+   "test/live/registration/registration_http_six_step_tb.py",
+   "test/live/registration/registration_py27_tb.py",
+   "test/live/registration/registration_real_ciw_tb.py",
+   "test/live/registration/registration_role_split_tb.py",
+   "test/live/stress/layout_multiuser_lock_tb.py",
+   "test/live/stress/multi_user_routing_tb.py",
+   "test/live/stress/production_face_stress_tb.py",
+   "test/live/stress/scale_local_fake_tb.py",
+   "test/live/transport/cov_remote_real.py",
+   "test/offline/core/api_server_tb.py",
+   "test/offline/core/daemon_log_protocol_tb.py",
+   "test/offline/core/fault_injection_tb.py",
+   "test/offline/core/p076_tar_completion_tb.py",
+   "test/offline/core/semantics_tb.py",
+   "test/offline/core/thread_lifecycle_tb.py",
+   "test/offline/frontend/registration_mock_server.py",
+   "test/offline/integration/test_business_child_supervision.py",
+   "test/offline/integration/test_daemon_handler.py",
+   "test/offline/integration/test_integration.py",
+   "test/offline/integration/test_supervisor_process.py",
+   "test/offline/scenario/test_business_local.py",
+   "test/offline/scenario/test_multi_user_isolation.py",
+   "test/offline/scenario/test_registration_local_full.py",
+   "test/offline/unit/_daemon_harness.py",
+   "test/offline/unit/_fake_middle.py",
+   "test/offline/unit/_ssh_cred.py",
+   "test/offline/unit/test_api_server_main.py",
+   "test/offline/unit/test_api_server_method_not_allowed.py",
+   "test/offline/unit/test_calibre_argv_contracts.py",
+   "test/offline/unit/test_calibre_package.py",
+   "test/offline/unit/test_calibre_parsers.py",
+   "test/offline/unit/test_calibre_verdict_consistency.py",
+   "test/offline/unit/test_cellview_contracts.py",
+   "test/offline/unit/test_common_config.py",
+   "test/offline/unit/test_config_snapshot_edges.py",
+   "test/offline/unit/test_connect_retry.py",
+   "test/offline/unit/test_daemon_log_contract.py",
+   "test/offline/unit/test_daemon_parity.py",
+   "test/offline/unit/test_daemon_runtime_contracts.py",
+   "test/offline/unit/test_endpoint_budgets.py",
+   "test/offline/unit/test_gui_package.py",
+   "test/offline/unit/test_layout_contracts.py",
+   "test/offline/unit/test_layout_depth_contract.py",
+   "test/offline/unit/test_local_path_expansion.py",
+   "test/offline/unit/test_log_no_fetch.py",
+   "test/offline/unit/test_maestro_command_exprs.py",
+   "test/offline/unit/test_maestro_package_flow.py",
+   "test/offline/unit/test_maestro_util.py",
+   "test/offline/unit/test_middle_routing.py",
+   "test/offline/unit/test_models_paths.py",
+   "test/offline/unit/test_new_middle.py",
+   "test/offline/unit/test_norm_gap_batch2.py",
+   "test/offline/unit/test_norm_gap_round8.py",
+   "test/offline/unit/test_paramiko.py",
+   "test/offline/unit/test_paramiko_run_command.py",
+   "test/offline/unit/test_paramiko_session_paths.py",
+   "test/offline/unit/test_paramiko_transport_fakes.py",
+   "test/offline/unit/test_persistent_shell_protocol.py",
+   "test/offline/unit/test_process_lifetime.py",
+   "test/offline/unit/test_pyapi_interface_contract.py",
+   "test/offline/unit/test_register_flow.py",
+   "test/offline/unit/test_registration_mock_server.py",
+   "test/offline/unit/test_registration_page.py",
+   "test/offline/unit/test_registration_probe_status.py",
+   "test/offline/unit/test_registration_server.py",
+   "test/offline/unit/test_registration_server_edges.py",
+   "test/offline/unit/test_registry_decoupling.py",
+   "test/offline/unit/test_registry_more.py",
+   "test/offline/unit/test_remote_posix_path_contract.py",
+   "test/offline/unit/test_reservation.py",
+   "test/offline/unit/test_resource_release.py",
+   "test/offline/unit/test_runner_single_flight.py",
+   "test/offline/unit/test_schematic_contracts.py",
+   "test/offline/unit/test_scope_exclusions.py",
+   "test/offline/unit/test_skill_admission.py",
+   "test/offline/unit/test_skillref_docs_contracts.py",
+   "test/offline/unit/test_skillref_package.py",
+   "test/offline/unit/test_spec_contracts.py",
+   "test/offline/unit/test_spectre_contracts.py",
+   "test/offline/unit/test_spectre_util_contracts.py",
+   "test/offline/unit/test_spectre_util_psf_contracts.py",
+   "test/offline/unit/test_ssh.py",
+   "test/offline/unit/test_ssh_credentials.py",
+   "test/offline/unit/test_ssh_edges.py",
+   "test/offline/unit/test_ssh_tunnel_lifecycle.py",
+   "test/offline/unit/test_supervisor_internals.py",
+   "test/offline/unit/test_symbol_contracts.py",
+   "test/offline/unit/test_symbol_generate.py",
+   "test/offline/unit/test_top_layer_pool.py",
+   "test/offline/unit/test_transfer.py",
+   "test/offline/unit/test_transport_error_paths.py",
+   "test/offline/unit/test_tunnel_transfer.py",
+   "test/offline/unit/test_update_host_key_probe.py",
+   "test/offline/unit/test_upper_layer_import_contract.py",
+   "test/offline/unit/test_verilog_contracts.py",
+   "test/offline/unit/test_veriloga_contracts.py",
+   "test/offline/unit/test_veriloga_lazy_editor_contract.py",
+   "test/offline/unit/test_view_type_param_contract.py",
+   "test/offline/unit/test_workdir_contract.py",
+   "test/semi/fakevirt/fake_virtuoso.py",
+   "test/semi/probes/_maestro_tb.py",
+   "test/semi/probes/calibre_flat_turbo_probe.py",
+   "test/semi/probes/calibre_package_http_probe.py",
+   "test/semi/probes/calibre_timeout_probe.py",
+   "test/semi/probes/cdl_export_variants_probe.py",
+   "test/semi/probes/daemon_internal_error_path_probe.py",
+   "test/semi/probes/gds_publish_path_edges_probe.py",
+   "test/semi/probes/gds_then_skill_probe.py",
+   "test/semi/probes/layout_depth_probe.py",
+   "test/semi/probes/layout_depth_region_direct_probe.py",
+   "test/semi/probes/lone_surrogate_probe.py",
+   "test/semi/probes/maestro_bugfix_batch_probe.py",
+   "test/semi/probes/maestro_delete_var_all_probe.py",
+   "test/semi/probes/maestro_e2e_probe.py",
+   "test/semi/probes/maestro_env_probe.py",
+   "test/semi/probes/maestro_export_include_results_probe.py",
+   "test/semi/probes/maestro_open_waveform_result_probe.py",
+   "test/semi/probes/maestro_p095_overwrite_wedge_probe.py",
+   "test/semi/probes/maestro_p096_write_lock_probe.py",
+   "test/semi/probes/maestro_pkg_probe.py",
+   "test/semi/probes/maestro_save_false_disk_probe.py",
+   "test/semi/probes/p076_fix_verify_probe.py",
+   "test/semi/probes/p076_spectre_run_hang_probe.py",
+   "test/semi/probes/py27_daemon_probe.py",
+   "test/semi/probes/py27_handler_probe.py",
+   "test/semi/probes/schematic_pin_ops_probe.py",
+   "test/semi/probes/schematic_wire_style_probe.py",
+   "test/semi/probes/shared_cdf_pollution_probe.py",
+   "test/semi/probes/skill_syntax_matrix_tb.py",
+   "test/semi/probes/skill_tooling_probe.py",
+   "test/semi/probes/spectre_ac_pipeline_probe.py",
+   "test/semi/probes/symbol_generate_hierarchy_handle_probe.py",
+   "test/semi/probes/symbol_http_400_repro.py",
+   "test/semi/probes/symbol_pkg_probe.py",
+   "test/semi/probes/symbol_regen_handle_probe.py",
+   "test/semi/probes/symbol_screenshot_probe.py",
+   "test/semi/probes/twouser_same_view_probe.py",
+   "test/semi/registration/registration_failure_matrix_tb.py",
+   "test/semi/transport/install_stage_idempotent_tb.py",
+   "test/semi/transport/log_matrix_real_tb.py",
+   "test/semi/transport/one_shot_burst_tb.py",
+   "test/semi/transport/ssh_backend_semi_tb.py",
+   "test/shared/fixtures/_daemon_harness.py",
+   "test/shared/fixtures/fake_daemon_host.py",
+   "test/shared/fixtures/probe.py",
+   "test/shared/fixtures/registration_tb_support.py",
+   "test/shared/fixtures/scale100_negative_control.py",
+   "test/shared/runners/audit_atom_coverage.py",
+   "test/shared/runners/audit_spec_matrix_evidence.py",
+   "test/shared/runners/build_op_param_matrix.py",
+   "test/shared/runners/check_skip_reasons.py",
+   "test/shared/runners/check_spec_op_drift.py",
+   "test/shared/runners/check_tb_headers.py",
+   "test/shared/runners/classify_uncovered.py",
+   "test/shared/runners/coverage_evidence.py",
+   "test/shared/runners/coverage_gaps.py",
+   "test/shared/runners/env_check.py",
+   "test/shared/runners/env_up.py",
+   "test/shared/runners/extract_spec_clauses.py",
+   "test/shared/runners/make_bug_cards.py",
+   "test/shared/runners/make_multihop_env.py",
+   "test/shared/runners/make_run_env_complete.py",
+   "test/shared/runners/merge_round8_spec_matrix.py",
+   "test/shared/runners/negative_controls.py",
+   "test/shared/runners/op_list.py",
+   "test/shared/runners/ops_matrix.py",
+   "test/shared/runners/premap_spec_clauses.py",
+   "test/shared/runners/registry_add_user.py",
+   "test/shared/runners/resident_env_check.py",
+   "test/shared/runners/run_all_http.py",
+   "test/shared/runners/run_core_multi.py",
+   "test/shared/runners/run_semi_probes.py",
+   "test/shared/runners/scenario.py",
+   "test/shared/runners/skill_eval.py",
+   "test/shared/runners/skill_op_table.py",
+   "test/shared/runners/skill_query.py",
+   "test/shared/runners/split_spec_clusters.py",
+   "test/shared/runners/triage_spec_clauses.py",
+   "test/shared/runners/verify_spec_matrix_evidence.py"
+  ],
+  "call_sites": 218
+ },
+ "rect": {
+  "package": "(atomic)",
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py",
+   "test/live/flows/multihop_jump_tb.py",
+   "test/live/flows/multiuser_layout_handoff_tb.py",
+   "test/live/flows/multiuser_serdes_rx_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/role_split_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/packages/calibre_e2e_tests.py",
+   "test/live/packages/cellview_e2e_tests.py",
+   "test/live/packages/gui_e2e_tests.py",
+   "test/live/packages/infra_e2e_tests.py",
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/layout_geometry_classification_e2e_tests.py",
+   "test/live/packages/maestro_e2e_tests.py",
+   "test/live/packages/maestro_view_param_e2e_tests.py",
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/live/packages/skillref_e2e_tests.py",
+   "test/live/packages/spectre_e2e_tests.py",
+   "test/live/packages/spectre_params_e2e_tests.py",
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/live/packages/verilog_e2e_tests.py",
+   "test/live/packages/veriloga_e2e_tests.py",
+   "test/live/registration/registration_role_split_tb.py",
+   "test/live/stress/layout_multiuser_lock_tb.py",
+   "test/live/stress/production_face_stress_tb.py",
+   "test/live/transport/cov_remote_real.py",
+   "test/offline/core/api_server_tb.py",
+   "test/offline/core/daemon_log_protocol_tb.py",
+   "test/offline/core/fault_injection_tb.py",
+   "test/offline/core/p076_tar_completion_tb.py",
+   "test/offline/core/semantics_tb.py",
+   "test/offline/unit/_daemon_harness.py",
+   "test/offline/unit/test_calibre_argv_contracts.py",
+   "test/offline/unit/test_calibre_package.py",
+   "test/offline/unit/test_calibre_parsers.py",
+   "test/offline/unit/test_calibre_verdict_consistency.py",
+   "test/offline/unit/test_cellview_contracts.py",
+   "test/offline/unit/test_common_config.py",
+   "test/offline/unit/test_config_snapshot_edges.py",
+   "test/offline/unit/test_daemon_import_contract.py",
+   "test/offline/unit/test_daemon_parity.py",
+   "test/offline/unit/test_daemon_runtime_contracts.py",
+   "test/offline/unit/test_jsonutil.py",
+   "test/offline/unit/test_layout_contracts.py",
+   "test/offline/unit/test_layout_publish_contracts.py",
+   "test/offline/unit/test_log_no_fetch.py",
+   "test/offline/unit/test_maestro_command_exprs.py",
+   "test/offline/unit/test_maestro_package_flow.py",
+   "test/offline/unit/test_maestro_util.py",
+   "test/offline/unit/test_middle_routing.py",
+   "test/offline/unit/test_models_paths.py",
+   "test/offline/unit/test_output_json_safety.py",
+   "test/offline/unit/test_paramiko_transport_fakes.py",
+   "test/offline/unit/test_process_lifetime.py",
+   "test/offline/unit/test_registration_mock_server.py",
+   "test/offline/unit/test_registration_probe_status.py",
+   "test/offline/unit/test_registration_server.py",
+   "test/offline/unit/test_registration_server_edges.py",
+   "test/offline/unit/test_runtime_env.py",
+   "test/offline/unit/test_schematic_contracts.py",
+   "test/offline/unit/test_skillref_docs_contracts.py",
+   "test/offline/unit/test_spectre_contracts.py",
+   "test/offline/unit/test_spectre_util_contracts.py",
+   "test/offline/unit/test_spectre_util_psf_contracts.py",
+   "test/offline/unit/test_ssh.py",
+   "test/offline/unit/test_ssh_credentials.py",
+   "test/offline/unit/test_ssh_edges.py",
+   "test/offline/unit/test_supervisor_internals.py",
+   "test/offline/unit/test_symbol_contracts.py",
+   "test/offline/unit/test_top_layer_dispatch.py",
+   "test/offline/unit/test_transfer.py",
+   "test/offline/unit/test_tunnel_transfer.py",
+   "test/offline/unit/test_verilog_contracts.py",
+   "test/offline/unit/test_veriloga_contracts.py",
+   "test/offline/unit/test_veriloga_lazy_editor_contract.py",
+   "test/offline/unit/test_workdir_contract.py",
+   "test/semi/fakevirt/e2e_check.py",
+   "test/semi/fakevirt/fake_virtuoso.py",
+   "test/semi/fakevirt/skill_ops.py",
+   "test/semi/probes/_maestro_tb.py",
+   "test/semi/probes/calibre_cdl_probe.py",
+   "test/semi/probes/calibre_env_probe.py",
+   "test/semi/probes/calibre_package_http_probe.py",
+   "test/semi/probes/gds_then_skill_probe.py",
+   "test/semi/probes/gui_display_probe.py",
+   "test/semi/probes/layout_depth_probe.py",
+   "test/semi/probes/layout_depth_region_direct_probe.py",
+   "test/semi/probes/layout_lock_ownership_probe.py",
+   "test/semi/probes/layout_p044_second_write_probe.py",
+   "test/semi/probes/log_rotation_lock_probe.py",
+   "test/semi/probes/maestro_batch2_verify_probe.py",
+   "test/semi/probes/maestro_open_waveform_result_probe.py",
+   "test/semi/probes/maestro_p096_write_lock_probe.py",
+   "test/semi/probes/maestro_screenshot_probe.py",
+   "test/semi/probes/p076_fix_verify_probe.py",
+   "test/semi/probes/py27_handler_probe.py",
+   "test/semi/probes/schematic_pin_ops_probe.py",
+   "test/semi/probes/skill_tooling_probe.py",
+   "test/semi/probes/skillref_probe.py",
+   "test/semi/probes/spectre_ac_pipeline_probe.py",
+   "test/semi/probes/symbol_generate_hierarchy_handle_probe.py",
+   "test/semi/probes/symbol_regen_handle_probe.py",
+   "test/semi/probes/verilog_cell_and_views_direct_probe.py",
+   "test/semi/registration/registration_failure_matrix_tb.py",
+   "test/semi/transport/ssh_backend_semi_tb.py",
+   "test/shared/fixtures/_daemon_harness.py",
+   "test/shared/runners/audit_atom_coverage.py",
+   "test/shared/runners/build_op_param_matrix.py",
+   "test/shared/runners/make_bug_cards.py",
+   "test/shared/runners/make_multihop_env.py",
+   "test/shared/runners/merge_round8_spec_matrix.py",
+   "test/shared/runners/ops_used.py",
+   "test/shared/runners/run_core_multi.py"
+  ],
+  "call_sites": 116
+ },
+ "rename_instance": {
+  "package": "(atomic)",
+  "files": [
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/offline/unit/test_layout_contracts.py",
+   "test/offline/unit/test_schematic_contracts.py"
+  ],
+  "call_sites": 4
+ },
+ "rename_label": {
+  "package": "(atomic)",
+  "files": [
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/offline/unit/test_layout_contracts.py",
+   "test/offline/unit/test_schematic_contracts.py",
+   "test/offline/unit/test_symbol_contracts.py"
+  ],
+  "call_sites": 6
+ },
+ "rename_note": {
+  "package": "(atomic)",
+  "files": [
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/offline/unit/test_schematic_contracts.py"
+  ],
+  "call_sites": 2
+ },
+ "rename_pin": {
+  "package": "(atomic)",
+  "files": [
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/offline/unit/test_schematic_contracts.py",
+   "test/offline/unit/test_symbol_contracts.py",
+   "test/semi/probes/schematic_pin_ops_probe.py"
+  ],
+  "call_sites": 6
+ },
+ "screenshot": {
+  "package": "(atomic)",
+  "files": [
+   "test/live/packages/gui_e2e_tests.py",
+   "test/live/packages/infra_e2e_tests.py",
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/maestro_e2e_tests.py",
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/live/packages/screenshot_params_e2e_tests.py",
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/offline/unit/test_gui_package.py",
+   "test/offline/unit/test_layout_contracts.py",
+   "test/offline/unit/test_maestro_package_flow.py",
+   "test/offline/unit/test_schematic_contracts.py",
+   "test/offline/unit/test_symbol_contracts.py",
+   "test/semi/probes/gui_display_probe.py",
+   "test/semi/probes/maestro_batch2_verify_probe.py",
+   "test/semi/probes/maestro_pkg_probe.py",
+   "test/semi/probes/maestro_screenshot_probe.py",
+   "test/semi/probes/symbol_screenshot_probe.py",
+   "test/shared/runners/make_bug_cards.py",
+   "test/shared/runners/run_all_http.py",
+   "test/shared/runners/run_semi_probes.py"
+  ],
+  "call_sites": 20
+ },
+ "set_instance_params": {
+  "package": "(atomic)",
+  "files": [
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/offline/unit/test_schematic_contracts.py",
+   "test/semi/probes/shared_cdf_pollution_probe.py",
+   "test/shared/runners/make_bug_cards.py"
+  ],
+  "call_sites": 6
+ },
+ "set_label_properties": {
+  "package": "(atomic)",
+  "files": [
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/offline/unit/test_layout_contracts.py",
+   "test/offline/unit/test_schematic_contracts.py",
+   "test/offline/unit/test_symbol_contracts.py"
+  ],
+  "call_sites": 5
+ },
+ "set_note_properties": {
+  "package": "(atomic)",
+  "files": [
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/offline/unit/test_schematic_contracts.py"
+  ],
+  "call_sites": 2
+ },
+ "set_pin_properties": {
+  "package": "(atomic)",
+  "files": [
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/offline/unit/test_schematic_contracts.py",
+   "test/offline/unit/test_symbol_contracts.py",
+   "test/semi/probes/schematic_pin_ops_probe.py"
+  ],
+  "call_sites": 5
+ },
+ "set_term_nets": {
+  "package": "(atomic)",
+  "files": [
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/offline/unit/test_schematic_contracts.py",
+   "test/semi/probes/schematic_pin_ops_probe.py",
+   "test/shared/runners/make_bug_cards.py"
+  ],
+  "call_sites": 7
+ },
+ "set_wire_properties": {
+  "package": "(atomic)",
+  "files": [
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/offline/unit/test_schematic_contracts.py"
+  ],
+  "call_sites": 2
+ },
+ "spectre.check_license": {
+  "package": "spectre.py",
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/packages/spectre_e2e_tests.py"
+  ],
+  "call_sites": 8
+ },
+ "spectre.export": {
+  "package": "spectre.py",
+  "files": [
+   "test/live/packages/spectre_e2e_tests.py",
+   "test/live/packages/spectre_params_e2e_tests.py"
+  ],
+  "call_sites": 8
+ },
+ "spectre.measure": {
+  "package": "spectre.py",
+  "files": [
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/packages/spectre_e2e_tests.py",
+   "test/live/packages/spectre_params_e2e_tests.py",
+   "test/semi/probes/spectre_ac_pipeline_probe.py"
+  ],
+  "call_sites": 17
+ },
+ "spectre.read_results": {
+  "package": "spectre.py",
+  "files": [
+   "test/live/packages/spectre_e2e_tests.py"
+  ],
+  "call_sites": 4
+ },
+ "spectre.run": {
+  "package": "spectre.py",
+  "files": [
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/s11_postsim_compare.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/packages/spectre_e2e_tests.py",
+   "test/live/packages/spectre_params_e2e_tests.py",
+   "test/semi/probes/p076_fix_verify_probe.py",
+   "test/semi/probes/p076_spectre_run_hang_probe.py",
+   "test/semi/probes/spectre_ac_pipeline_probe.py",
+   "test/semi/probes/spectre_channel_map_probe.py"
+  ],
+  "call_sites": 30
+ },
+ "virtuoso.cellview.cat.add_cell": {
+  "package": "cellview.py",
+  "files": [
+   "test/live/packages/cellview_e2e_tests.py"
+  ],
+  "call_sites": 1
+ },
+ "virtuoso.cellview.cat.create": {
+  "package": "cellview.py",
+  "files": [
+   "test/live/packages/cellview_e2e_tests.py"
+  ],
+  "call_sites": 4
+ },
+ "virtuoso.cellview.cat.delete": {
+  "package": "cellview.py",
+  "files": [
+   "test/live/packages/cellview_e2e_tests.py"
+  ],
+  "call_sites": 1
+ },
+ "virtuoso.cellview.cat.list": {
+  "package": "cellview.py",
+  "files": [
+   "test/live/packages/cellview_e2e_tests.py"
+  ],
+  "call_sites": 7
+ },
+ "virtuoso.cellview.cat.remove_cell": {
+  "package": "cellview.py",
+  "files": [
+   "test/live/packages/cellview_e2e_tests.py"
+  ],
+  "call_sites": 1
+ },
+ "virtuoso.cellview.cat.rename": {
+  "package": "cellview.py",
+  "files": [
+   "test/live/packages/cellview_e2e_tests.py"
+  ],
+  "call_sites": 1
+ },
+ "virtuoso.cellview.cell.copy": {
+  "package": "cellview.py",
+  "files": [
+   "test/live/packages/cellview_e2e_tests.py"
+  ],
+  "call_sites": 1
+ },
+ "virtuoso.cellview.cell.delete": {
+  "package": "cellview.py",
+  "files": [
+   "test/live/packages/cellview_e2e_tests.py"
+  ],
+  "call_sites": 1
+ },
+ "virtuoso.cellview.cell.list": {
+  "package": "cellview.py",
+  "files": [
+   "test/live/packages/cellview_e2e_tests.py",
+   "test/semi/probes/verilog_cell_and_views_direct_probe.py"
+  ],
+  "call_sites": 11
+ },
+ "virtuoso.cellview.cell.rename": {
+  "package": "cellview.py",
+  "files": [
+   "test/live/packages/cellview_e2e_tests.py"
+  ],
+  "call_sites": 1
+ },
+ "virtuoso.cellview.lib.bind": {
+  "package": "cellview.py",
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/packages/cellview_e2e_tests.py"
+  ],
+  "call_sites": 3
+ },
+ "virtuoso.cellview.lib.copy": {
+  "package": "cellview.py",
+  "files": [
+   "test/live/packages/cellview_e2e_tests.py"
+  ],
+  "call_sites": 1
+ },
+ "virtuoso.cellview.lib.create": {
+  "package": "cellview.py",
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/multiuser_serdes_rx_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/packages/cellview_e2e_tests.py",
+   "test/semi/probes/gds_then_skill_probe.py",
+   "test/semi/probes/shared_cdf_pollution_probe.py"
+  ],
+  "call_sites": 17
+ },
+ "virtuoso.cellview.lib.delete": {
+  "package": "cellview.py",
+  "files": [
+   "test/live/flows/project_flow_tb.py",
+   "test/live/packages/cellview_e2e_tests.py"
+  ],
+  "call_sites": 6
+ },
+ "virtuoso.cellview.lib.get": {
+  "package": "cellview.py",
+  "files": [
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/packages/cellview_e2e_tests.py"
+  ],
+  "call_sites": 4
+ },
+ "virtuoso.cellview.lib.list": {
+  "package": "cellview.py",
+  "files": [
+   "test/live/flows/project_flow_tb.py",
+   "test/live/packages/cellview_e2e_tests.py"
+  ],
+  "call_sites": 12
+ },
+ "virtuoso.cellview.lib.rename": {
+  "package": "cellview.py",
+  "files": [
+   "test/live/packages/cellview_e2e_tests.py"
+  ],
+  "call_sites": 1
+ },
+ "virtuoso.cellview.view.copy": {
+  "package": "cellview.py",
+  "files": [
+   "test/live/packages/cellview_e2e_tests.py"
+  ],
+  "call_sites": 1
+ },
+ "virtuoso.cellview.view.create": {
+  "package": "cellview.py",
+  "files": [
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/packages/cellview_e2e_tests.py",
+   "test/live/packages/layout_geometry_classification_e2e_tests.py",
+   "test/semi/probes/gds_then_skill_probe.py",
+   "test/semi/probes/shared_cdf_pollution_probe.py"
+  ],
+  "call_sites": 26
+ },
+ "virtuoso.cellview.view.delete": {
+  "package": "cellview.py",
+  "files": [
+   "test/live/flows/project_flow_tb.py",
+   "test/live/packages/cellview_e2e_tests.py"
+  ],
+  "call_sites": 2
+ },
+ "virtuoso.cellview.view.list": {
+  "package": "cellview.py",
+  "files": [
+   "test/live/packages/cellview_e2e_tests.py"
+  ],
+  "call_sites": 11
+ },
+ "virtuoso.cellview.view.rename": {
+  "package": "cellview.py",
+  "files": [
+   "test/live/packages/cellview_e2e_tests.py"
+  ],
+  "call_sites": 1
+ },
+ "virtuoso.gui.auto_dismiss": {
+  "package": "gui.py",
+  "files": [
+   "test/live/packages/gui_e2e_tests.py",
+   "test/live/packages/infra_e2e_tests.py"
+  ],
+  "call_sites": 5
+ },
+ "virtuoso.gui.list_windows": {
+  "package": "gui.py",
+  "files": [
+   "test/live/packages/gui_e2e_tests.py",
+   "test/live/packages/infra_e2e_tests.py",
+   "test/live/packages/layout_e2e_tests.py",
+   "test/semi/probes/maestro_p095_overwrite_wedge_probe.py"
+  ],
+  "call_sites": 20
+ },
+ "virtuoso.gui.screenshot": {
+  "package": "gui.py",
+  "files": [
+   "test/live/packages/gui_e2e_tests.py",
+   "test/live/packages/infra_e2e_tests.py"
+  ],
+  "call_sites": 5
+ },
+ "virtuoso.gui.send_key": {
+  "package": "gui.py",
+  "files": [
+   "test/live/packages/gui_e2e_tests.py",
+   "test/live/packages/infra_e2e_tests.py",
+   "test/semi/probes/maestro_p095_overwrite_wedge_probe.py"
+  ],
+  "call_sites": 4
+ },
+ "virtuoso.layout.display": {
+  "package": "layout.py",
+  "files": [
+   "test/live/packages/layout_e2e_tests.py"
+  ],
+  "call_sites": 8
+ },
+ "virtuoso.layout.gds": {
+  "package": "layout.py",
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/s11_inprocess_lvs_tb.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/packages/layout_e2e_tests.py",
+   "test/semi/probes/gds_publish_path_edges_probe.py",
+   "test/semi/probes/gds_then_skill_probe.py"
+  ],
+  "call_sites": 30
+ },
+ "virtuoso.layout.read": {
+  "package": "layout.py",
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/multiuser_layout_handoff_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/s11_inprocess_lvs_tb.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/layout_geometry_classification_e2e_tests.py",
+   "test/semi/probes/gds_then_skill_probe.py",
+   "test/semi/probes/layout_depth_region_direct_probe.py"
+  ],
+  "call_sites": 52
+ },
+ "virtuoso.layout.screenshot": {
+  "package": "layout.py",
+  "files": [
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/screenshot_params_e2e_tests.py"
+  ],
+  "call_sites": 19
+ },
+ "virtuoso.layout.write": {
+  "package": "layout.py",
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/multiuser_layout_handoff_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/layout_geometry_classification_e2e_tests.py",
+   "test/live/stress/layout_multiuser_lock_tb.py",
+   "test/semi/probes/gds_then_skill_probe.py",
+   "test/semi/probes/layout_depth_region_direct_probe.py",
+   "test/semi/probes/layout_lock_ownership_probe.py",
+   "test/semi/probes/layout_p044_second_write_probe.py"
+  ],
+  "call_sites": 54
+ },
+ "virtuoso.maestro.close_gui": {
+  "package": "maestro.py",
+  "files": [
+   "test/live/packages/maestro_e2e_tests.py",
+   "test/live/packages/maestro_mc_e2e_tests.py",
+   "test/live/packages/maestro_view_param_e2e_tests.py"
+  ],
+  "call_sites": 13
+ },
+ "virtuoso.maestro.close_waveform_gui": {
+  "package": "maestro.py",
+  "files": [
+   "test/live/packages/maestro_e2e_tests.py",
+   "test/live/packages/maestro_view_param_e2e_tests.py",
+   "test/semi/probes/maestro_open_waveform_result_probe.py"
+  ],
+  "call_sites": 7
+ },
+ "virtuoso.maestro.export": {
+  "package": "maestro.py",
+  "files": [
+   "test/live/packages/maestro_e2e_tests.py",
+   "test/live/packages/maestro_view_param_e2e_tests.py",
+   "test/semi/probes/maestro_export_include_results_probe.py",
+   "test/semi/probes/maestro_screenshot_probe.py"
+  ],
+  "call_sites": 29
+ },
+ "virtuoso.maestro.open_gui": {
+  "package": "maestro.py",
+  "files": [
+   "test/live/packages/maestro_e2e_tests.py",
+   "test/live/packages/maestro_view_param_e2e_tests.py",
+   "test/semi/probes/maestro_screenshot_probe.py"
+  ],
+  "call_sites": 11
+ },
+ "virtuoso.maestro.open_waveform_gui": {
+  "package": "maestro.py",
+  "files": [
+   "test/live/packages/maestro_e2e_tests.py",
+   "test/live/packages/maestro_view_param_e2e_tests.py",
+   "test/semi/probes/maestro_open_waveform_result_probe.py"
+  ],
+  "call_sites": 7
+ },
+ "virtuoso.maestro.read_config": {
+  "package": "maestro.py",
+  "files": [
+   "test/live/packages/maestro_e2e_tests.py",
+   "test/live/packages/maestro_mc_e2e_tests.py",
+   "test/live/packages/maestro_view_param_e2e_tests.py",
+   "test/live/packages/skill_log_options_e2e_tests.py",
+   "test/semi/probes/maestro_bugfix_batch_probe.py",
+   "test/semi/probes/maestro_p096_write_lock_probe.py"
+  ],
+  "call_sites": 54
+ },
+ "virtuoso.maestro.read_history": {
+  "package": "maestro.py",
+  "files": [
+   "test/live/packages/maestro_e2e_tests.py",
+   "test/live/packages/maestro_mc_e2e_tests.py",
+   "test/live/packages/maestro_view_param_e2e_tests.py",
+   "test/semi/probes/maestro_open_waveform_result_probe.py"
+  ],
+  "call_sites": 39
+ },
+ "virtuoso.maestro.read_results": {
+  "package": "maestro.py",
+  "files": [
+   "test/live/packages/maestro_e2e_tests.py",
+   "test/live/packages/maestro_mc_e2e_tests.py",
+   "test/live/packages/maestro_view_param_e2e_tests.py"
+  ],
+  "call_sites": 26
+ },
+ "virtuoso.maestro.run": {
+  "package": "maestro.py",
+  "files": [
+   "test/live/packages/maestro_e2e_tests.py",
+   "test/live/packages/maestro_mc_e2e_tests.py",
+   "test/live/packages/maestro_view_param_e2e_tests.py",
+   "test/semi/probes/maestro_bugfix_batch_probe.py",
+   "test/semi/probes/maestro_open_waveform_result_probe.py",
+   "test/semi/probes/maestro_p095_overwrite_wedge_probe.py"
+  ],
+  "call_sites": 19
+ },
+ "virtuoso.maestro.write": {
+  "package": "maestro.py",
+  "files": [
+   "test/live/packages/maestro_e2e_tests.py",
+   "test/live/packages/maestro_mc_e2e_tests.py",
+   "test/live/packages/maestro_view_param_e2e_tests.py",
+   "test/semi/probes/maestro_bugfix_batch_probe.py",
+   "test/semi/probes/maestro_delete_var_all_probe.py"
+  ],
+  "call_sites": 53
+ },
+ "virtuoso.maestro.write_history": {
+  "package": "maestro.py",
+  "files": [
+   "test/live/packages/maestro_e2e_tests.py",
+   "test/live/packages/maestro_view_param_e2e_tests.py"
+  ],
+  "call_sites": 10
+ },
+ "virtuoso.schematic.check_and_save": {
+  "package": "schematic.py",
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/multiuser_serdes_rx_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/packages/schematic_e2e_tests.py"
+  ],
+  "call_sites": 14
+ },
+ "virtuoso.schematic.read": {
+  "package": "schematic.py",
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py",
+   "test/live/flows/multiuser_serdes_rx_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/s11_inprocess_lvs_tb.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/semi/probes/shared_cdf_pollution_probe.py",
+   "test/semi/probes/twouser_same_view_probe.py"
+  ],
+  "call_sites": 69
+ },
+ "virtuoso.schematic.screenshot": {
+  "package": "schematic.py",
+  "files": [
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/live/packages/screenshot_params_e2e_tests.py",
+   "test/semi/probes/maestro_batch2_verify_probe.py"
+  ],
+  "call_sites": 12
+ },
+ "virtuoso.schematic.write": {
+  "package": "schematic.py",
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/multiuser_serdes_rx_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/semi/probes/shared_cdf_pollution_probe.py",
+   "test/semi/probes/twouser_same_view_probe.py"
+  ],
+  "call_sites": 57
+ },
+ "virtuoso.skillref.info": {
+  "package": "skillref.py",
+  "files": [
+   "test/live/packages/skillref_e2e_tests.py"
+  ],
+  "call_sites": 11
+ },
+ "virtuoso.skillref.search": {
+  "package": "skillref.py",
+  "files": [
+   "test/live/packages/skillref_e2e_tests.py"
+  ],
+  "call_sites": 21
+ },
+ "virtuoso.symbol.check_and_save": {
+  "package": "symbol.py",
+  "files": [
+   "test/live/packages/symbol_e2e_tests.py"
+  ],
+  "call_sites": 4
+ },
+ "virtuoso.symbol.generate": {
+  "package": "symbol.py",
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/multiuser_serdes_rx_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/live/packages/symbol_e2e_tests.py"
+  ],
+  "call_sites": 22
+ },
+ "virtuoso.symbol.read": {
+  "package": "symbol.py",
+  "files": [
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/multiuser_serdes_rx_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/s11_inprocess_lvs_tb.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/live/packages/symbol_e2e_tests.py"
+  ],
+  "call_sites": 24
+ },
+ "virtuoso.symbol.screenshot": {
+  "package": "symbol.py",
+  "files": [
+   "test/live/packages/screenshot_params_e2e_tests.py",
+   "test/live/packages/symbol_e2e_tests.py"
+  ],
+  "call_sites": 16
+ },
+ "virtuoso.symbol.write": {
+  "package": "symbol.py",
+  "files": [
+   "test/live/packages/symbol_e2e_tests.py"
+  ],
+  "call_sites": 9
+ },
+ "virtuoso.verilog.export": {
+  "package": "verilog.py",
+  "files": [
+   "test/live/packages/verilog_e2e_tests.py",
+   "test/live/packages/verilog_import_params_e2e_tests.py"
+  ],
+  "call_sites": 8
+ },
+ "virtuoso.verilog.import": {
+  "package": "verilog.py",
+  "files": [
+   "test/live/packages/verilog_e2e_tests.py",
+   "test/live/packages/verilog_import_params_e2e_tests.py",
+   "test/semi/probes/maestro_batch2_verify_probe.py",
+   "test/semi/probes/verilog_cell_and_views_direct_probe.py"
+  ],
+  "call_sites": 26
+ },
+ "virtuoso.verilog.read": {
+  "package": "verilog.py",
+  "files": [
+   "test/live/packages/verilog_e2e_tests.py"
+  ],
+  "call_sites": 5
+ },
+ "virtuoso.verilog.write": {
+  "package": "verilog.py",
+  "files": [
+   "test/live/packages/verilog_e2e_tests.py"
+  ],
+  "call_sites": 4
+ },
+ "virtuoso.veriloga.check_and_save": {
+  "package": "veriloga.py",
+  "files": [
+   "test/live/packages/veriloga_e2e_tests.py"
+  ],
+  "call_sites": 9
+ },
+ "virtuoso.veriloga.read": {
+  "package": "veriloga.py",
+  "files": [
+   "test/live/packages/veriloga_e2e_tests.py"
+  ],
+  "call_sites": 14
+ },
+ "virtuoso.veriloga.write": {
+  "package": "veriloga.py",
+  "files": [
+   "test/live/packages/veriloga_e2e_tests.py"
+  ],
+  "call_sites": 16
+ },
+ "write": {
+  "package": "(atomic)",
+  "files": [
+   "test/live/e2e/test_business_local_live.py",
+   "test/live/e2e/test_business_remote_live.py",
+   "test/live/e2e/test_e2e_live.py",
+   "test/live/flows/adc_sar_flow_tb.py",
+   "test/live/flows/design_iterate_tb.py",
+   "test/live/flows/lvs_from_schematic_tb.py",
+   "test/live/flows/multihop_jump_tb.py",
+   "test/live/flows/multiuser_layout_handoff_tb.py",
+   "test/live/flows/multiuser_serdes_rx_tb.py",
+   "test/live/flows/project_flow_tb.py",
+   "test/live/flows/role_split_tb.py",
+   "test/live/flows/s11_full_flow.py",
+   "test/live/flows/s11_inprocess_lvs_tb.py",
+   "test/live/flows/s11_postsim_compare.py",
+   "test/live/flows/scale_100_tb.py",
+   "test/live/flows/serdes_rx_flow_tb.py",
+   "test/live/manual/business_console/serve.py",
+   "test/live/packages/calibre_e2e_tests.py",
+   "test/live/packages/calibre_export_pex_e2e_tests.py",
+   "test/live/packages/calibre_params_e2e_tests.py",
+   "test/live/packages/cellview_e2e_tests.py",
+   "test/live/packages/gui_e2e_tests.py",
+   "test/live/packages/infra_e2e_tests.py",
+   "test/live/packages/layout_e2e_tests.py",
+   "test/live/packages/layout_geometry_classification_e2e_tests.py",
+   "test/live/packages/maestro_e2e_tests.py",
+   "test/live/packages/maestro_mc_e2e_tests.py",
+   "test/live/packages/maestro_view_param_e2e_tests.py",
+   "test/live/packages/schematic_e2e_tests.py",
+   "test/live/packages/screenshot_params_e2e_tests.py",
+   "test/live/packages/skill_log_options_e2e_tests.py",
+   "test/live/packages/skill_log_semantics_e2e_tests.py",
+   "test/live/packages/spectre_e2e_tests.py",
+   "test/live/packages/spectre_params_e2e_tests.py",
+   "test/live/packages/symbol_e2e_tests.py",
+   "test/live/packages/verilog_e2e_tests.py",
+   "test/live/packages/verilog_import_params_e2e_tests.py",
+   "test/live/packages/veriloga_e2e_tests.py",
+   "test/live/registration/registration_http_six_step_tb.py",
+   "test/live/registration/registration_py27_tb.py",
+   "test/live/registration/registration_real_ciw_tb.py",
+   "test/live/registration/registration_role_split_tb.py",
+   "test/live/stress/layout_multiuser_lock_tb.py",
+   "test/live/stress/multi_user_routing_tb.py",
+   "test/live/stress/production_face_stress_tb.py",
+   "test/live/stress/scale_local_fake_tb.py",
+   "test/live/transport/cov_remote_real.py",
+   "test/offline/core/api_server_tb.py",
+   "test/offline/core/daemon_log_protocol_tb.py",
+   "test/offline/core/fault_injection_tb.py",
+   "test/offline/core/p076_tar_completion_tb.py",
+   "test/offline/core/semantics_tb.py",
+   "test/offline/core/thread_lifecycle_tb.py",
+   "test/offline/frontend/registration_mock_server.py",
+   "test/offline/integration/test_business_child_supervision.py",
+   "test/offline/integration/test_daemon_handler.py",
+   "test/offline/integration/test_supervisor_process.py",
+   "test/offline/scenario/test_business_local.py",
+   "test/offline/unit/_daemon_harness.py",
+   "test/offline/unit/_fake_middle.py",
+   "test/offline/unit/_ssh_cred.py",
+   "test/offline/unit/test_api_server_main.py",
+   "test/offline/unit/test_calibre_package.py",
+   "test/offline/unit/test_common_config.py",
+   "test/offline/unit/test_config_snapshot_edges.py",
+   "test/offline/unit/test_daemon_log_contract.py",
+   "test/offline/unit/test_daemon_parity.py",
+   "test/offline/unit/test_daemon_runtime_contracts.py",
+   "test/offline/unit/test_layout_contracts.py",
+   "test/offline/unit/test_layout_publish_contracts.py",
+   "test/offline/unit/test_local_path_expansion.py",
+   "test/offline/unit/test_maestro_command_exprs.py",
+   "test/offline/unit/test_maestro_package_flow.py",
+   "test/offline/unit/test_middle_contracts.py",
+   "test/offline/unit/test_middle_routing.py",
+   "test/offline/unit/test_new_middle.py",
+   "test/offline/unit/test_norm_gap_batch2.py",
+   "test/offline/unit/test_norm_gap_round8.py",
+   "test/offline/unit/test_output_json_safety.py",
+   "test/offline/unit/test_param_timeout_contract.py",
+   "test/offline/unit/test_paramiko.py",
+   "test/offline/unit/test_paramiko_run_command.py",
+   "test/offline/unit/test_paramiko_transport_fakes.py",
+   "test/offline/unit/test_persistent_shell_protocol.py",
+   "test/offline/unit/test_probe.py",
+   "test/offline/unit/test_process_lifetime.py",
+   "test/offline/unit/test_register_flow.py",
+   "test/offline/unit/test_registration_server.py",
+   "test/offline/unit/test_registration_server_edges.py",
+   "test/offline/unit/test_registry_decoupling.py",
+   "test/offline/unit/test_registry_more.py",
+   "test/offline/unit/test_schematic_contracts.py",
+   "test/offline/unit/test_skillref_docs_contracts.py",
+   "test/offline/unit/test_skillref_package.py",
+   "test/offline/unit/test_spectre_contracts.py",
+   "test/offline/unit/test_spectre_util_contracts.py",
+   "test/offline/unit/test_spectre_util_psf_contracts.py",
+   "test/offline/unit/test_ssh.py",
+   "test/offline/unit/test_ssh_credentials.py",
+   "test/offline/unit/test_ssh_edges.py",
+   "test/offline/unit/test_supervisor_internals.py",
+   "test/offline/unit/test_symbol_contracts.py",
+   "test/offline/unit/test_symbol_generate.py",
+   "test/offline/unit/test_transfer.py",
+   "test/offline/unit/test_transport_error_paths.py",
+   "test/offline/unit/test_tunnel_transfer.py",
+   "test/offline/unit/test_upper_layer_import_contract.py",
+   "test/offline/unit/test_verilog_contracts.py",
+   "test/offline/unit/test_veriloga_contracts.py",
+   "test/offline/unit/test_veriloga_lazy_editor_contract.py",
+   "test/offline/unit/test_view_type_param_contract.py",
+   "test/semi/fakevirt/fake_virtuoso.py",
+   "test/semi/fakevirt/skill_ops.py",
+   "test/semi/probes/calibre_cdl_probe.py",
+   "test/semi/probes/calibre_flat_turbo_probe.py",
+   "test/semi/probes/calibre_package_http_probe.py",
+   "test/semi/probes/calibre_timeout_probe.py",
+   "test/semi/probes/cdl_export_variants_probe.py",
+   "test/semi/probes/daemon_internal_error_path_probe.py",
+   "test/semi/probes/gds_publish_path_edges_probe.py",
+   "test/semi/probes/gds_then_skill_probe.py",
+   "test/semi/probes/gui_display_probe.py",
+   "test/semi/probes/layout_depth_probe.py",
+   "test/semi/probes/layout_depth_region_direct_probe.py",
+   "test/semi/probes/layout_lock_ownership_probe.py",
+   "test/semi/probes/layout_p044_second_write_probe.py",
+   "test/semi/probes/log_rotation_lock_probe.py",
+   "test/semi/probes/maestro_batch2_verify_probe.py",
+   "test/semi/probes/maestro_bugfix_batch_probe.py",
+   "test/semi/probes/maestro_delete_var_all_probe.py",
+   "test/semi/probes/maestro_export_include_results_probe.py",
+   "test/semi/probes/maestro_leak_probe.py",
+   "test/semi/probes/maestro_open_waveform_result_probe.py",
+   "test/semi/probes/maestro_p095_overwrite_wedge_probe.py",
+   "test/semi/probes/maestro_p096_write_lock_probe.py",
+   "test/semi/probes/maestro_pkg_probe.py",
+   "test/semi/probes/maestro_save_false_disk_probe.py",
+   "test/semi/probes/p076_spectre_run_hang_probe.py",
+   "test/semi/probes/paramiko_ssh_config_true_probe.py",
+   "test/semi/probes/py27_daemon_probe.py",
+   "test/semi/probes/py27_handler_probe.py",
+   "test/semi/probes/schematic_pin_ops_probe.py",
+   "test/semi/probes/schematic_wire_style_probe.py",
+   "test/semi/probes/shared_cdf_pollution_probe.py",
+   "test/semi/probes/skill_syntax_matrix_tb.py",
+   "test/semi/probes/spectre_ac_pipeline_probe.py",
+   "test/semi/probes/symbol_generate_hierarchy_handle_probe.py",
+   "test/semi/probes/symbol_pkg_probe.py",
+   "test/semi/probes/symbol_regen_handle_probe.py",
+   "test/semi/probes/twouser_same_view_probe.py",
+   "test/semi/probes/verilog_cell_and_views_direct_probe.py",
+   "test/semi/registration/cov_registration_real.py",
+   "test/semi/registration/registration_failure_matrix_tb.py",
+   "test/semi/transport/install_stage_idempotent_tb.py",
+   "test/semi/transport/log_matrix_real_tb.py",
+   "test/semi/transport/one_shot_burst_tb.py",
+   "test/semi/transport/role_credential_isolation_tb.py",
+   "test/semi/transport/ssh_backend_semi_tb.py",
+   "test/shared/fixtures/_daemon_harness.py",
+   "test/shared/fixtures/fake_daemon_py27.py",
+   "test/shared/fixtures/scale100_negative_control.py",
+   "test/shared/runners/audit_atom_coverage.py",
+   "test/shared/runners/audit_spec_matrix_evidence.py",
+   "test/shared/runners/build_op_param_matrix.py",
+   "test/shared/runners/check_skip_reasons.py",
+   "test/shared/runners/check_spec_op_drift.py",
+   "test/shared/runners/check_tb_headers.py",
+   "test/shared/runners/classify_uncovered.py",
+   "test/shared/runners/coverage_evidence.py",
+   "test/shared/runners/coverage_gaps.py",
+   "test/shared/runners/env_check.py",
+   "test/shared/runners/env_up.py",
+   "test/shared/runners/extract_spec_clauses.py",
+   "test/shared/runners/make_bug_cards.py",
+   "test/shared/runners/make_multihop_env.py",
+   "test/shared/runners/make_run_env_complete.py",
+   "test/shared/runners/merge_round8_spec_matrix.py",
+   "test/shared/runners/negative_controls.py",
+   "test/shared/runners/ops_used.py",
+   "test/shared/runners/premap_spec_clauses.py",
+   "test/shared/runners/registry_add_user.py",
+   "test/shared/runners/run_all_http.py",
+   "test/shared/runners/run_core_multi.py",
+   "test/shared/runners/run_semi_probes.py",
+   "test/shared/runners/scenario.py",
+   "test/shared/runners/skill_op_table.py",
+   "test/shared/runners/split_spec_clusters.py",
+   "test/shared/runners/triage_spec_clauses.py",
+   "test/shared/runners/verify_spec_matrix_evidence.py"
+  ],
+  "call_sites": 189
+ }
+}

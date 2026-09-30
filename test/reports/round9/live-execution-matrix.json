@@ -1,0 +1,1134 @@
+{
+ "generated": "2026-09-29T23:05:06",
+ "live_tb_total": 53,
+ "gate_suites": 23,
+ "never_referenced": [],
+ "no_evidence_today": [],
+ "rows": [
+  {
+   "tb": "test/live/e2e/test_business_local_live.py",
+   "in_gate": false,
+   "referenced_by": [
+    "doc/report/_explore/E_current_state.md",
+    "spec/research/08-multi-node-topology-research.md",
+    "test/live/e2e/README.md"
+   ],
+   "ref_count": 3,
+   "evidence_today": [
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/tmp/r8_swallow_scan.txt",
+    "test/artifacts/evidence/round8/tb-headers-final.json",
+    "test/artifacts/tmp/r8-matrix-rebuild/op-coverage.json"
+   ],
+   "evidence_any": [
+    "test/artifacts/evidence/coverage-run-meta.json",
+    "test/artifacts/evidence/tb-headers-audit.json",
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/tmp/r8_swallow_scan.txt"
+   ]
+  },
+  {
+   "tb": "test/live/e2e/test_business_remote_live.py",
+   "in_gate": false,
+   "referenced_by": [
+    "doc/report/_explore/E_current_state.md",
+    "test/live/e2e/README.md",
+    "test/plans/首轮全面测试-计划.md"
+   ],
+   "ref_count": 3,
+   "evidence_today": [
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/tmp/r8_swallow_scan.txt",
+    "test/artifacts/evidence/round8/tb-headers-final.json",
+    "test/artifacts/tmp/r8-matrix-rebuild/op-coverage.json"
+   ],
+   "evidence_any": [
+    "test/artifacts/evidence/coverage-run-meta.json",
+    "test/artifacts/evidence/s10-e2e-live.log",
+    "test/artifacts/evidence/tb-headers-audit.json",
+    "test/artifacts/evidence/tb-headers.json"
+   ]
+  },
+  {
+   "tb": "test/live/e2e/test_e2e_live.py",
+   "in_gate": false,
+   "referenced_by": [
+    "doc/report/_explore/E_current_state.md",
+    "test/live/e2e/README.md",
+    "test/offline/unit/test_all_ops_timeout_field.py",
+    "test/plans/首轮全面测试-计划.md",
+    "test/shared/runners/make_bug_cards.py",
+    "test_bak/tmp_cleanup/patch_e2e.py"
+   ],
+   "ref_count": 6,
+   "evidence_today": [
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/tmp/r8_swallow_scan.txt",
+    "test/artifacts/evidence/round8/tb-headers-final.json",
+    "test/artifacts/tmp/r8-matrix-rebuild/op-coverage.json"
+   ],
+   "evidence_any": [
+    "test/artifacts/evidence/coverage-run-meta.json",
+    "test/artifacts/evidence/s10-e2e-live.log",
+    "test/artifacts/evidence/tb-headers-audit.json",
+    "test/artifacts/evidence/tb-headers.json"
+   ]
+  },
+  {
+   "tb": "test/live/flows/adc_sar_flow_tb.py",
+   "in_gate": false,
+   "referenced_by": [
+    "test/docs/环境与场景.md",
+    "test/live/flows/README.md"
+   ],
+   "ref_count": 2,
+   "evidence_today": [
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/tmp/r8_alite_broad.txt",
+    "test/artifacts/evidence/round8/tb-headers-final.json",
+    "test/artifacts/tmp/r8-matrix-rebuild/op-coverage.json"
+   ],
+   "evidence_any": [
+    "test/artifacts/evidence/tb-headers-audit.json",
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/tmp/r8_alite_broad.txt",
+    "test/artifacts/tmp/tb-headers-after-scope.json"
+   ]
+  },
+  {
+   "tb": "test/live/flows/design_iterate_tb.py",
+   "in_gate": false,
+   "referenced_by": [
+    "test/live/flows/README.md",
+    "test/live/flows/s11_full_flow.py",
+    "test/semi/probes/schematic_wire_style_probe.py",
+    "test/shared/runners/check_tb_headers.py",
+    "test/shared/runners/make_bug_cards.py"
+   ],
+   "ref_count": 5,
+   "evidence_today": [
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/env/s11/s11-lvs-verdict.json",
+    "test/artifacts/env/s11/summary.json",
+    "test/artifacts/evidence/round8/tb-headers-final.json"
+   ],
+   "evidence_any": [
+    "test/artifacts/evidence/tb-headers-audit.json",
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/tmp/p073_msg.txt",
+    "test/artifacts/tmp/tb-headers-after-scope.json"
+   ]
+  },
+  {
+   "tb": "test/live/flows/lvs_from_schematic_tb.py",
+   "in_gate": false,
+   "referenced_by": [
+    "spec/research/calibre/03-网表导出机制调查报告.md",
+    "test/live/flows/README.md"
+   ],
+   "ref_count": 2,
+   "evidence_today": [
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/evidence/round8/tb-headers-final.json",
+    "test/artifacts/tmp/r8-matrix-rebuild/op-coverage.json",
+    "test/artifacts/tmp/r8-matrix-rebuild/op-param-matrix.json"
+   ],
+   "evidence_any": [
+    "test/artifacts/evidence/tb-headers-audit.json",
+    "test/artifacts/evidence/tb-headers-audit.txt",
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/tmp/tb-headers-after-scope.json"
+   ]
+  },
+  {
+   "tb": "test/live/flows/multihop_jump_tb.py",
+   "in_gate": false,
+   "referenced_by": [
+    "test/live/flows/README.md",
+    "test/shared/runners/README.md"
+   ],
+   "ref_count": 2,
+   "evidence_today": [
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/evidence/round8/tb-headers-final.json",
+    "test/artifacts/tmp/r8-matrix-rebuild/op-coverage.json"
+   ],
+   "evidence_any": [
+    "test/artifacts/evidence/tb-headers-audit.json",
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/tmp/tb-headers-after-scope.json",
+    "test/artifacts/tmp/tb-headers-after.json"
+   ]
+  },
+  {
+   "tb": "test/live/flows/multiuser_layout_handoff_tb.py",
+   "in_gate": false,
+   "referenced_by": [
+    "test/live/flows/README.md"
+   ],
+   "ref_count": 1,
+   "evidence_today": [
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/evidence/round8/tb-headers-final.json",
+    "test/artifacts/tmp/r8-matrix-rebuild/op-coverage.json",
+    "test/artifacts/tmp/r8-matrix-rebuild/op-param-matrix.json"
+   ],
+   "evidence_any": [
+    "test/artifacts/evidence/tb-headers-audit.json",
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/tmp/tb-headers-after-scope.json",
+    "test/artifacts/tmp/tb-headers-after.json"
+   ]
+  },
+  {
+   "tb": "test/live/flows/multiuser_serdes_rx_tb.py",
+   "in_gate": false,
+   "referenced_by": [
+    "test/live/flows/README.md"
+   ],
+   "ref_count": 1,
+   "evidence_today": [
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/evidence/round8/tb-headers-final.json",
+    "test/artifacts/tmp/r8-matrix-rebuild/op-coverage.json",
+    "test/artifacts/tmp/r8-matrix-rebuild/op-param-matrix.json"
+   ],
+   "evidence_any": [
+    "test/artifacts/evidence/tb-headers-audit.json",
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/tmp/tb-headers-after-scope.json",
+    "test/artifacts/tmp/tb-headers-after.json"
+   ]
+  },
+  {
+   "tb": "test/live/flows/project_flow_tb.py",
+   "in_gate": false,
+   "referenced_by": [
+    "test/live/flows/README.md",
+    "test/live/flows/serdes_rx_flow_tb.py",
+    "test/plans/首轮全面测试-计划.md",
+    "test/shared/runners/make_bug_cards.py",
+    "test/shared/runners/run_main_coverage.ps1"
+   ],
+   "ref_count": 5,
+   "evidence_today": [
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/tmp/r8_swallow_scan.txt",
+    "test/artifacts/evidence/round8/tb-headers-final.json",
+    "test/artifacts/tmp/r8-matrix-rebuild/op-coverage.json"
+   ],
+   "evidence_any": [
+    "test/artifacts/evidence/tb-headers-audit.json",
+    "test/artifacts/evidence/tb-headers-audit.txt",
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/tmp/r8_swallow_scan.txt"
+   ]
+  },
+  {
+   "tb": "test/live/flows/role_split_tb.py",
+   "in_gate": false,
+   "referenced_by": [
+    "test/live/README.md",
+    "test/live/flows/README.md",
+    "test/live/registration/README.md",
+    "test/live/registration/registration_role_split_tb.py",
+    "test/plans/首轮全面测试-计划.md"
+   ],
+   "ref_count": 5,
+   "evidence_today": [
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/tmp/r8_alite_broad.txt",
+    "test/artifacts/tmp/r8_direct_excerpt.md",
+    "test/artifacts/tmp/r8_direct_sample.md"
+   ],
+   "evidence_any": [
+    "test/artifacts/evidence/tb-headers-audit.json",
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/tmp/r8_alite_broad.txt",
+    "test/artifacts/tmp/r8_direct_excerpt.md"
+   ]
+  },
+  {
+   "tb": "test/live/flows/s11_full_flow.py",
+   "in_gate": false,
+   "referenced_by": [
+    "test/live/README.md",
+    "test/live/flows/README.md",
+    "test/live/flows/lvs_from_schematic_tb.py",
+    "test/plans/首轮全面测试-计划.md",
+    "test/shared/runners/make_bug_cards.py",
+    "test/shared/runners/run_main_coverage.ps1"
+   ],
+   "ref_count": 6,
+   "evidence_today": [
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/tmp/r8_direct_sample.md",
+    "test/artifacts/evidence/round8/tb-headers-final.json",
+    "test/artifacts/tmp/r8-matrix-rebuild/op-coverage.json"
+   ],
+   "evidence_any": [
+    "test/artifacts/evidence/tb-headers-audit.json",
+    "test/artifacts/evidence/tb-headers-audit.txt",
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/tmp/r8_direct_sample.md"
+   ]
+  },
+  {
+   "tb": "test/live/flows/s11_inprocess_lvs_tb.py",
+   "in_gate": false,
+   "referenced_by": [
+    "test/live/flows/README.md",
+    "test/shared/runners/audit_atom_coverage.py"
+   ],
+   "ref_count": 2,
+   "evidence_today": [
+    "test/artifacts/evidence/atom-coverage-2026-09-29.json",
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/evidence/round8/tb-headers-final.json",
+    "test/artifacts/tmp/r8-matrix-rebuild/op-coverage.json"
+   ],
+   "evidence_any": [
+    "test/artifacts/evidence/atom-coverage-2026-09-28.json",
+    "test/artifacts/evidence/atom-coverage-2026-09-29.json",
+    "test/artifacts/evidence/tb-headers-audit.json",
+    "test/artifacts/evidence/tb-headers-audit.txt"
+   ]
+  },
+  {
+   "tb": "test/live/flows/s11_postsim_compare.py",
+   "in_gate": false,
+   "referenced_by": [
+    "test/live/flows/README.md",
+    "test/shared/runners/check_tb_headers.py"
+   ],
+   "ref_count": 2,
+   "evidence_today": [
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/evidence/round8/tb-headers-final.json",
+    "test/artifacts/tmp/r8-matrix-rebuild/op-coverage.json",
+    "test/artifacts/tmp/r8-matrix-rebuild/op-param-matrix.json"
+   ],
+   "evidence_any": [
+    "test/artifacts/evidence/tb-headers-audit.json",
+    "test/artifacts/evidence/tb-headers-audit.txt",
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/evidence/round8/tb-headers-final.json"
+   ]
+  },
+  {
+   "tb": "test/live/flows/scale_100_tb.py",
+   "in_gate": false,
+   "referenced_by": [
+    "test/live/README.md",
+    "test/live/flows/README.md",
+    "test/plans/首轮全面测试-计划.md",
+    "test/shared/fixtures/scale100_negative_control.py"
+   ],
+   "ref_count": 4,
+   "evidence_today": [
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/tmp/r8_swallow_scan.txt",
+    "test/artifacts/evidence/round8/tb-headers-final.json",
+    "test/artifacts/tmp/r8-matrix-rebuild/op-coverage.json"
+   ],
+   "evidence_any": [
+    "test/artifacts/evidence/tb-headers-audit.json",
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/tmp/r8_swallow_scan.txt",
+    "test/artifacts/tmp/tb-headers-after-scope.json"
+   ]
+  },
+  {
+   "tb": "test/live/flows/serdes_rx_flow_tb.py",
+   "in_gate": false,
+   "referenced_by": [
+    "test/live/flows/README.md",
+    "test/shared/runners/make_bug_cards.py"
+   ],
+   "ref_count": 2,
+   "evidence_today": [
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/evidence/round8/tb-headers-final.json",
+    "test/artifacts/tmp/r8-matrix-rebuild/op-coverage.json",
+    "test/artifacts/tmp/r8-matrix-rebuild/op-param-matrix.json"
+   ],
+   "evidence_any": [
+    "test/artifacts/evidence/tb-headers-audit.json",
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/tmp/tb-headers-after-scope.json",
+    "test/artifacts/tmp/tb-headers-after.json"
+   ]
+  },
+  {
+   "tb": "test/live/manual/business_console/serve.py",
+   "in_gate": false,
+   "referenced_by": [
+    "test/live/README.md",
+    "test/live/manual/business_console/README.md"
+   ],
+   "ref_count": 2,
+   "evidence_today": [
+    "test/artifacts/evidence/api-server-c1.json",
+    "test/artifacts/evidence/api-server.json",
+    "test/artifacts/tmp/c4-api-server.json",
+    "test/artifacts/tmp/c4-final-api-server.json"
+   ],
+   "evidence_any": [
+    "test/artifacts/evidence/api-server-c1.json",
+    "test/artifacts/evidence/api-server.json",
+    "test/artifacts/evidence/api-server.log",
+    "test/artifacts/evidence/api_server-check.json"
+   ]
+  },
+  {
+   "tb": "test/live/packages/calibre_e2e_tests.py",
+   "in_gate": true,
+   "referenced_by": [
+    "doc/report/上层业务包开发状态.md",
+    "spec/design-concepts/上层/12-calibre.md",
+    "spec/research/calibre/00-下一步开发方向.md",
+    "spec/research/calibre/README.md",
+    "test/live/packages/calibre_params_e2e_tests.py",
+    "test/shared/runners/audit_atom_coverage.py"
+   ],
+   "ref_count": 8,
+   "evidence_today": [
+    "test/artifacts/evidence/atom-coverage-2026-09-29.json",
+    "test/artifacts/evidence/calibre-params-p092-final.json",
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/tmp/calibre-export-pex2.out.log"
+   ],
+   "evidence_any": [
+    "test/artifacts/evidence/atom-coverage-2026-09-28.json",
+    "test/artifacts/evidence/atom-coverage-2026-09-29.json",
+    "test/artifacts/evidence/calibre-facts.log",
+    "test/artifacts/evidence/calibre-params-p092-final.json"
+   ]
+  },
+  {
+   "tb": "test/live/packages/calibre_export_pex_e2e_tests.py",
+   "in_gate": true,
+   "referenced_by": [
+    "test/shared/runners/make_bug_cards.py",
+    "test/shared/runners/run_all_http.py"
+   ],
+   "ref_count": 2,
+   "evidence_today": [
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/evidence/http-e2e/calibre_export_pex_e2e_tests.py.log",
+    "test/artifacts/evidence/http-e2e/results.json",
+    "test/artifacts/evidence/round8/package-e2e-r8-final3.log"
+   ],
+   "evidence_any": [
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/evidence/http-e2e/calibre_export_pex_e2e_tests.py.log",
+    "test/artifacts/evidence/http-e2e/results.json",
+    "test/artifacts/evidence/round8/package-e2e-r8-final3.log"
+   ]
+  },
+  {
+   "tb": "test/live/packages/calibre_params_e2e_tests.py",
+   "in_gate": true,
+   "referenced_by": [
+    "test/live/packages/README.md",
+    "test/live/packages/calibre_export_pex_e2e_tests.py",
+    "test/shared/runners/run_all_http.py"
+   ],
+   "ref_count": 3,
+   "evidence_today": [
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/evidence/http-e2e/calibre_params_e2e_tests.py.log",
+    "test/artifacts/evidence/http-e2e/results.json",
+    "test/artifacts/evidence/round8/package-e2e-r8-final3.log"
+   ],
+   "evidence_any": [
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/tmp/calibre-params-run2.err.log",
+    "test/artifacts/evidence/http-e2e/calibre_params_e2e_tests.py.log",
+    "test/artifacts/evidence/http-e2e/results.json"
+   ]
+  },
+  {
+   "tb": "test/live/packages/cellview_e2e_tests.py",
+   "in_gate": true,
+   "referenced_by": [
+    "doc/report/上层业务包开发状态.md",
+    "test/shared/runners/ops_used.py",
+    "test/shared/runners/run_all_http.py"
+   ],
+   "ref_count": 3,
+   "evidence_today": [
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/package-e2e-c3-smoke/cellview.log",
+    "test/artifacts/package-e2e-c3-smoke2/cellview.log",
+    "test/artifacts/package-e2e-r9-full/cellview.log"
+   ],
+   "evidence_any": [
+    "test/artifacts/evidence/coverage-run-meta.json",
+    "test/artifacts/evidence/round2-run-all-http.log",
+    "test/artifacts/evidence/round3-run-all-http.log",
+    "test/artifacts/evidence/tb-headers-audit.json"
+   ]
+  },
+  {
+   "tb": "test/live/packages/gui_e2e_tests.py",
+   "in_gate": true,
+   "referenced_by": [
+    "test/shared/runners/run_all_http.py"
+   ],
+   "ref_count": 1,
+   "evidence_today": [
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/evidence/gui-atoms-20260929-2046/gui-atoms-green.json",
+    "test/artifacts/evidence/gui-atoms-20260929-2116/gui-atoms-green.json",
+    "test/artifacts/evidence/gui-display-20260929T063515Z/gui-display-probe.json"
+   ],
+   "evidence_any": [
+    "test/artifacts/evidence/round2-gui-display.json",
+    "test/artifacts/evidence/round3-gui-display.json",
+    "test/artifacts/evidence/tb-headers-audit.json",
+    "test/artifacts/evidence/tb-headers.json"
+   ]
+  },
+  {
+   "tb": "test/live/packages/infra_e2e_tests.py",
+   "in_gate": true,
+   "referenced_by": [
+    "doc/report/上层业务包开发状态.md",
+    "test/docs/环境与场景.md",
+    "test/live/packages/screenshot_params_e2e_tests.py",
+    "test/offline/unit/test_all_ops_timeout_field.py",
+    "test/shared/runners/ops_used.py",
+    "test/shared/runners/run_all_http.py"
+   ],
+   "ref_count": 6,
+   "evidence_today": [
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/package-e2e-c3-smoke/infra.log",
+    "test/artifacts/package-e2e-c3-smoke2/infra.log",
+    "test/artifacts/package-e2e-r9-full/infra.log"
+   ],
+   "evidence_any": [
+    "test/artifacts/evidence/coverage-run-meta.json",
+    "test/artifacts/evidence/round2-run-all-http.log",
+    "test/artifacts/evidence/round3-run-all-http.log",
+    "test/artifacts/evidence/tb-headers-audit.json"
+   ]
+  },
+  {
+   "tb": "test/live/packages/layout_e2e_tests.py",
+   "in_gate": true,
+   "referenced_by": [
+    "doc/report/上层业务包开发状态.md",
+    "test/live/flows/README.md",
+    "test/semi/probes/layout_depth_probe.py",
+    "test/shared/runners/audit_atom_coverage.py",
+    "test/shared/runners/make_bug_cards.py",
+    "test/shared/runners/ops_used.py"
+   ],
+   "ref_count": 7,
+   "evidence_today": [
+    "test/artifacts/evidence/p105-layout-final.json",
+    "test/artifacts/evidence/p105-layout-final2.json",
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/package-e2e-r9-full/layout.log"
+   ],
+   "evidence_any": [
+    "test/artifacts/evidence/coverage-run-meta.json",
+    "test/artifacts/evidence/p105-layout-final.json",
+    "test/artifacts/evidence/p105-layout-final2.json",
+    "test/artifacts/evidence/round2-layout-lock-probe-after-restart.json"
+   ]
+  },
+  {
+   "tb": "test/live/packages/layout_geometry_classification_e2e_tests.py",
+   "in_gate": true,
+   "referenced_by": [
+    "test/shared/runners/run_all_http.py"
+   ],
+   "ref_count": 1,
+   "evidence_today": [
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/tmp/r8_alite_broad.txt",
+    "test/artifacts/tmp/r8_numbers_grep.txt",
+    "test/artifacts/evidence/http-e2e/layout_geometry_classification_e2e_tests.py.log"
+   ],
+   "evidence_any": [
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/tmp/r8_alite_broad.txt",
+    "test/artifacts/tmp/r8_numbers_grep.txt",
+    "test/artifacts/evidence/http-e2e/layout_geometry_classification_e2e_tests.py.log"
+   ]
+  },
+  {
+   "tb": "test/live/packages/maestro_e2e_tests.py",
+   "in_gate": true,
+   "referenced_by": [
+    "doc/report/_explore/MC-3-merge-and-env.md",
+    "doc/report/上层业务包开发状态.md",
+    "test/live/packages/maestro_view_param_e2e_tests.py",
+    "test/semi/probes/maestro_delete_var_all_probe.py",
+    "test/semi/probes/maestro_leak_probe.py",
+    "test/semi/probes/maestro_save_false_disk_probe.py"
+   ],
+   "ref_count": 9,
+   "evidence_today": [
+    "test/artifacts/evidence/maestro-bugfix-batch.json",
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/package-e2e-r9-full/maestro.log",
+    "test/artifacts/tmp/r8_numbers_grep.txt"
+   ],
+   "evidence_any": [
+    "test/artifacts/evidence/coverage-run-meta.json",
+    "test/artifacts/evidence/maestro-bugfix-batch.json",
+    "test/artifacts/evidence/maestro-direct-2.log",
+    "test/artifacts/evidence/round2-run-all-http.log"
+   ]
+  },
+  {
+   "tb": "test/live/packages/maestro_mc_e2e_tests.py",
+   "in_gate": true,
+   "referenced_by": [
+    "doc/report/P-086-上层验收复现-20260929.md",
+    "doc/report/上层修复验收-092A-070-093-094-098-105.md",
+    "test/live/packages/README.md",
+    "test/live/packages/maestro_nested_keys_e2e_tests.py",
+    "test/shared/runners/make_bug_cards.py",
+    "test/shared/runners/run_all_http.py"
+   ],
+   "ref_count": 6,
+   "evidence_today": [
+    "test/artifacts/evidence/tb-headers.json"
+   ],
+   "evidence_any": [
+    "test/artifacts/evidence/tb-headers.json"
+   ]
+  },
+  {
+   "tb": "test/live/packages/maestro_nested_keys_e2e_tests.py",
+   "in_gate": true,
+   "referenced_by": [
+    "test/shared/runners/run_all_http.py"
+   ],
+   "ref_count": 1,
+   "evidence_today": [
+    "test/artifacts/evidence/tb-headers.json"
+   ],
+   "evidence_any": [
+    "test/artifacts/evidence/tb-headers.json"
+   ]
+  },
+  {
+   "tb": "test/live/packages/maestro_view_param_e2e_tests.py",
+   "in_gate": true,
+   "referenced_by": [
+    "test/shared/runners/make_bug_cards.py",
+    "test/shared/runners/run_all_http.py",
+    "test/shared/runners/run_main_coverage.ps1"
+   ],
+   "ref_count": 3,
+   "evidence_today": [
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/tmp/_commit_msg_batch2.txt",
+    "test/artifacts/tmp/_commit_msg_maestro.txt",
+    "test/artifacts/evidence/cov-main/run-full-0129.err.log"
+   ],
+   "evidence_any": [
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/tmp/_commit_msg_batch2.txt",
+    "test/artifacts/tmp/_commit_msg_maestro.txt",
+    "test/artifacts/evidence/cov-main/run-full-0129.err.log"
+   ]
+  },
+  {
+   "tb": "test/live/packages/nested_keys_e2e_tests.py",
+   "in_gate": true,
+   "referenced_by": [
+    "test/live/packages/maestro_nested_keys_e2e_tests.py",
+    "test/shared/runners/make_bug_cards.py",
+    "test/shared/runners/run_all_http.py"
+   ],
+   "ref_count": 3,
+   "evidence_today": [
+    "test/artifacts/evidence/tb-headers.json"
+   ],
+   "evidence_any": [
+    "test/artifacts/evidence/tb-headers.json"
+   ]
+  },
+  {
+   "tb": "test/live/packages/schematic_e2e_tests.py",
+   "in_gate": true,
+   "referenced_by": [
+    "test/shared/runners/ops_used.py",
+    "test/shared/runners/run_all_http.py"
+   ],
+   "ref_count": 2,
+   "evidence_today": [
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/package-e2e-c3-smoke/schematic.log",
+    "test/artifacts/package-e2e-c3-smoke2/schematic.log",
+    "test/artifacts/package-e2e-r9-full/schematic.log"
+   ],
+   "evidence_any": [
+    "test/artifacts/evidence/coverage-run-meta.json",
+    "test/artifacts/evidence/round2-run-all-http.log",
+    "test/artifacts/evidence/round3-run-all-http.log",
+    "test/artifacts/evidence/tb-headers-audit.json"
+   ]
+  },
+  {
+   "tb": "test/live/packages/screenshot_params_e2e_tests.py",
+   "in_gate": true,
+   "referenced_by": [
+    "test/live/packages/README.md",
+    "test/shared/runners/run_all_http.py"
+   ],
+   "ref_count": 2,
+   "evidence_today": [
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/evidence/http-e2e/results.json",
+    "test/artifacts/evidence/http-e2e/screenshot_params_e2e_tests.py.log",
+    "test/artifacts/evidence/round8/package-e2e-r8-final3.log"
+   ],
+   "evidence_any": [
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/evidence/http-e2e/results.json",
+    "test/artifacts/evidence/http-e2e/screenshot_params_e2e_tests.py.log",
+    "test/artifacts/evidence/round8/package-e2e-r8-final3.log"
+   ]
+  },
+  {
+   "tb": "test/live/packages/skill_log_options_e2e_tests.py",
+   "in_gate": false,
+   "referenced_by": [
+    "test/shared/runners/make_bug_cards.py"
+   ],
+   "ref_count": 1,
+   "evidence_today": [
+    "test/artifacts/evidence/tb-headers.json"
+   ],
+   "evidence_any": [
+    "test/artifacts/evidence/tb-headers.json"
+   ]
+  },
+  {
+   "tb": "test/live/packages/skill_log_semantics_e2e_tests.py",
+   "in_gate": false,
+   "referenced_by": [
+    "test/shared/runners/make_bug_cards.py",
+    "test/shared/runners/run_redpins.py"
+   ],
+   "ref_count": 2,
+   "evidence_today": [
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/evidence/redpins/redpins.json"
+   ],
+   "evidence_any": [
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/evidence/redpins/redpins.json"
+   ]
+  },
+  {
+   "tb": "test/live/packages/skillref_e2e_tests.py",
+   "in_gate": true,
+   "referenced_by": [
+    "doc/report/上层业务包开发状态.md",
+    "spec/design-concepts/上层/9-skillref.md",
+    "test/shared/runners/ops_used.py",
+    "test/shared/runners/run_all_http.py"
+   ],
+   "ref_count": 4,
+   "evidence_today": [
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/package-e2e-r9-full/skillref.log",
+    "test/artifacts/tmp/r8_direct_sample.md",
+    "test/artifacts/evidence/http-e2e/results.json"
+   ],
+   "evidence_any": [
+    "test/artifacts/evidence/coverage-run-meta.json",
+    "test/artifacts/evidence/round2-run-all-http.log",
+    "test/artifacts/evidence/round3-run-all-http.log",
+    "test/artifacts/evidence/tb-headers-audit.json"
+   ]
+  },
+  {
+   "tb": "test/live/packages/spectre_e2e_tests.py",
+   "in_gate": true,
+   "referenced_by": [
+    "doc/report/上层业务包开发状态.md",
+    "test/shared/runners/ops_used.py",
+    "test/shared/runners/run_all_http.py"
+   ],
+   "ref_count": 3,
+   "evidence_today": [
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/package-e2e-r9-full/spectre.log",
+    "test/artifacts/env/round8-spectre-params/measure_data.json",
+    "test/artifacts/env/log-vblog/spectre_e2e/e2e_rc.json"
+   ],
+   "evidence_any": [
+    "test/artifacts/evidence/coverage-run-meta.json",
+    "test/artifacts/evidence/round2-run-all-http.log",
+    "test/artifacts/evidence/round3-run-all-http.log",
+    "test/artifacts/evidence/tb-headers-audit.json"
+   ]
+  },
+  {
+   "tb": "test/live/packages/spectre_params_e2e_tests.py",
+   "in_gate": false,
+   "referenced_by": [
+    "test/shared/runners/make_bug_cards.py"
+   ],
+   "ref_count": 1,
+   "evidence_today": [
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/tmp/r8_numbers_grep.txt",
+    "test/artifacts/evidence/round8/tb-headers-final.json",
+    "test/artifacts/evidence/round8/spectre-params/spectre_params_export.json"
+   ],
+   "evidence_any": [
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/tmp/r8_numbers_grep.txt",
+    "test/artifacts/evidence/round8/tb-headers-final.json",
+    "test/artifacts/evidence/round8/unresolved-sites.json"
+   ]
+  },
+  {
+   "tb": "test/live/packages/spectre_pvt_e2e_tests.py",
+   "in_gate": true,
+   "referenced_by": [
+    "test/shared/runners/run_all_http.py"
+   ],
+   "ref_count": 1,
+   "evidence_today": [
+    "test/artifacts/evidence/tb-headers.json"
+   ],
+   "evidence_any": [
+    "test/artifacts/evidence/tb-headers.json"
+   ]
+  },
+  {
+   "tb": "test/live/packages/step_details_e2e_tests.py",
+   "in_gate": true,
+   "referenced_by": [
+    "test/shared/runners/run_all_http.py"
+   ],
+   "ref_count": 1,
+   "evidence_today": [
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/evidence/http-e2e/results.json",
+    "test/artifacts/evidence/http-e2e/step_details_e2e_tests.py.log"
+   ],
+   "evidence_any": [
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/evidence/http-e2e/results.json",
+    "test/artifacts/evidence/http-e2e/step_details_e2e_tests.py.log"
+   ]
+  },
+  {
+   "tb": "test/live/packages/symbol_e2e_tests.py",
+   "in_gate": true,
+   "referenced_by": [
+    "doc/report/上层业务包开发状态.md",
+    "test/offline/unit/test_symbol_generate.py",
+    "test/semi/probes/symbol_http_400_repro.py",
+    "test/shared/runners/make_bug_cards.py",
+    "test/shared/runners/ops_used.py",
+    "test/shared/runners/run_all_http.py"
+   ],
+   "ref_count": 6,
+   "evidence_today": [
+    "test/artifacts/evidence/p105-symbol-final.json",
+    "test/artifacts/evidence/p105-symbol-final2.json",
+    "test/artifacts/evidence/p105-symbol-final3.json",
+    "test/artifacts/evidence/tb-headers.json"
+   ],
+   "evidence_any": [
+    "test/artifacts/evidence/coverage-run-meta.json",
+    "test/artifacts/evidence/p105-symbol-final.json",
+    "test/artifacts/evidence/p105-symbol-final2.json",
+    "test/artifacts/evidence/p105-symbol-final3.json"
+   ]
+  },
+  {
+   "tb": "test/live/packages/verilog_e2e_tests.py",
+   "in_gate": true,
+   "referenced_by": [
+    "doc/report/上层业务包开发状态.md",
+    "test/shared/runners/ops_used.py",
+    "test/shared/runners/run_all_http.py"
+   ],
+   "ref_count": 3,
+   "evidence_today": [
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/package-e2e-r9-full/verilog.log",
+    "test/artifacts/package-e2e-r9-full/veriloga.log",
+    "test/artifacts/package-e2e-standardform-20260929-ABORTED/verilog.log"
+   ],
+   "evidence_any": [
+    "test/artifacts/evidence/coverage-run-meta.json",
+    "test/artifacts/evidence/round2-run-all-http.log",
+    "test/artifacts/evidence/round3-run-all-http.log",
+    "test/artifacts/evidence/tb-headers-audit.json"
+   ]
+  },
+  {
+   "tb": "test/live/packages/verilog_import_params_e2e_tests.py",
+   "in_gate": true,
+   "referenced_by": [
+    "test/shared/runners/make_bug_cards.py",
+    "test/shared/runners/run_all_http.py"
+   ],
+   "ref_count": 2,
+   "evidence_today": [
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/evidence/http-e2e/results.json",
+    "test/artifacts/evidence/http-e2e/verilog_import_params_e2e_tests.py.log",
+    "test/artifacts/evidence/round8/package-e2e-r8-final3.log"
+   ],
+   "evidence_any": [
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/evidence/http-e2e/results.json",
+    "test/artifacts/evidence/http-e2e/verilog_import_params_e2e_tests.py.log",
+    "test/artifacts/evidence/round8/package-e2e-r8-final3.log"
+   ]
+  },
+  {
+   "tb": "test/live/packages/veriloga_e2e_tests.py",
+   "in_gate": true,
+   "referenced_by": [
+    "doc/report/上层业务包开发状态.md",
+    "test/shared/runners/make_bug_cards.py",
+    "test/shared/runners/ops_used.py",
+    "test/shared/runners/run_all_http.py"
+   ],
+   "ref_count": 4,
+   "evidence_today": [
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/package-e2e-r9-full/veriloga.log",
+    "test/artifacts/package-e2e-standardform-20260929-ABORTED/veriloga.log",
+    "test/artifacts/tmp/r8_alite_broad.txt"
+   ],
+   "evidence_any": [
+    "test/artifacts/evidence/coverage-run-meta.json",
+    "test/artifacts/evidence/round2-run-all-http.log",
+    "test/artifacts/evidence/round3-run-all-http.log",
+    "test/artifacts/evidence/tb-headers-audit.json"
+   ]
+  },
+  {
+   "tb": "test/live/registration/registration_hostkey_rotation_tb.py",
+   "in_gate": false,
+   "referenced_by": [
+    "test/docs/环境与场景.md",
+    "test/live/registration/README.md"
+   ],
+   "ref_count": 2,
+   "evidence_today": [
+    "test/artifacts/evidence/tb-headers.json"
+   ],
+   "evidence_any": [
+    "test/artifacts/evidence/tb-headers.json"
+   ]
+  },
+  {
+   "tb": "test/live/registration/registration_http_six_step_tb.py",
+   "in_gate": false,
+   "referenced_by": [
+    "doc/report/BUG-ssh-tunnel-invalid-time-value.md",
+    "doc/report/TB增强轮-缺陷与证据.md",
+    "doc/report/按role分离凭据-落地说明-2026-09-23.md",
+    "test/README.md",
+    "test/docs/环境与场景.md",
+    "test/live/README.md"
+   ],
+   "ref_count": 9,
+   "evidence_today": [
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/tmp/r8_alite_broad.txt",
+    "test/artifacts/tmp/r8_alite_sample.txt",
+    "test/artifacts/tmp/r8_direct_excerpt.md"
+   ],
+   "evidence_any": [
+    "test/artifacts/evidence/coverage-run-meta.json",
+    "test/artifacts/evidence/tb-headers-audit.json",
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/tmp/r8_alite_broad.txt"
+   ]
+  },
+  {
+   "tb": "test/live/registration/registration_py27_tb.py",
+   "in_gate": false,
+   "referenced_by": [
+    "test/docs/环境与场景.md",
+    "test/live/registration/README.md",
+    "test/shared/fixtures/fake_daemon_py27.py"
+   ],
+   "ref_count": 3,
+   "evidence_today": [
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/tmp/r8_swallow_scan.txt",
+    "test/artifacts/evidence/round8/tb-headers-final.json",
+    "test/artifacts/tmp/r8-matrix-rebuild/op-coverage.json"
+   ],
+   "evidence_any": [
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/tmp/r8_swallow_scan.txt",
+    "test/artifacts/evidence/round8/tb-headers-final.json",
+    "test/artifacts/tmp/r8-matrix-rebuild/op-coverage.json"
+   ]
+  },
+  {
+   "tb": "test/live/registration/registration_real_ciw_tb.py",
+   "in_gate": false,
+   "referenced_by": [
+    "test/live/registration/README.md"
+   ],
+   "ref_count": 1,
+   "evidence_today": [
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/tmp/r8_swallow_scan.txt",
+    "test/artifacts/evidence/round8/tb-headers-final.json",
+    "test/artifacts/tmp/r8-matrix-rebuild/op-coverage.json"
+   ],
+   "evidence_any": [
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/tmp/r8_swallow_scan.txt",
+    "test/artifacts/evidence/round8/tb-headers-final.json",
+    "test/artifacts/tmp/r8-matrix-rebuild/op-coverage.json"
+   ]
+  },
+  {
+   "tb": "test/live/registration/registration_role_split_tb.py",
+   "in_gate": false,
+   "referenced_by": [
+    "test/live/registration/README.md"
+   ],
+   "ref_count": 1,
+   "evidence_today": [
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/tmp/r8_swallow_scan.txt",
+    "test/artifacts/evidence/round8/tb-headers-final.json",
+    "test/artifacts/tmp/r8-matrix-rebuild/op-coverage.json"
+   ],
+   "evidence_any": [
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/tmp/r8_swallow_scan.txt",
+    "test/artifacts/evidence/round8/tb-headers-final.json",
+    "test/artifacts/tmp/r8-matrix-rebuild/op-coverage.json"
+   ]
+  },
+  {
+   "tb": "test/live/stress/layout_multiuser_lock_tb.py",
+   "in_gate": false,
+   "referenced_by": [
+    "test/live/flows/multiuser_layout_handoff_tb.py",
+    "test/live/stress/README.md",
+    "test/shared/runners/audit_atom_coverage.py"
+   ],
+   "ref_count": 3,
+   "evidence_today": [
+    "test/artifacts/evidence/atom-coverage-2026-09-29.json",
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/evidence/round8/tb-headers-final.json",
+    "test/artifacts/tmp/r8-matrix-rebuild/op-coverage.json"
+   ],
+   "evidence_any": [
+    "test/artifacts/evidence/atom-coverage-2026-09-28.json",
+    "test/artifacts/evidence/atom-coverage-2026-09-29.json",
+    "test/artifacts/evidence/tb-headers-audit.json",
+    "test/artifacts/evidence/tb-headers.json"
+   ]
+  },
+  {
+   "tb": "test/live/stress/multi_user_routing_tb.py",
+   "in_gate": false,
+   "referenced_by": [
+    "test/live/stress/README.md"
+   ],
+   "ref_count": 1,
+   "evidence_today": [
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/evidence/round8/tb-headers-final.json",
+    "test/artifacts/tmp/r8-matrix-rebuild/op-coverage.json"
+   ],
+   "evidence_any": [
+    "test/artifacts/evidence/tb-headers-audit.json",
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/tmp/tb-headers-after-scope.json",
+    "test/artifacts/tmp/tb-headers-after.json"
+   ]
+  },
+  {
+   "tb": "test/live/stress/production_face_stress_tb.py",
+   "in_gate": false,
+   "referenced_by": [
+    "doc/测试覆盖报告.md",
+    "test/docs/环境与场景.md",
+    "test/live/README.md",
+    "test/live/stress/README.md",
+    "test/shared/fixtures/README.md",
+    "test/shared/runners/run_coverage.ps1"
+   ],
+   "ref_count": 7,
+   "evidence_today": [
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/tmp/r8_alite_broad.txt",
+    "test/artifacts/evidence/round8/tb-headers-final.json",
+    "test/artifacts/tmp/r8-matrix-rebuild/op-coverage.json"
+   ],
+   "evidence_any": [
+    "test/artifacts/evidence/tb-headers-audit.json",
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/tmp/r8_alite_broad.txt",
+    "test/artifacts/tmp/tb-headers-after-scope.json"
+   ]
+  },
+  {
+   "tb": "test/live/stress/scale_local_fake_tb.py",
+   "in_gate": false,
+   "referenced_by": [
+    "test/live/stress/README.md",
+    "test/plans/首轮全面测试-计划.md"
+   ],
+   "ref_count": 2,
+   "evidence_today": [
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/evidence/round8/tb-headers-final.json",
+    "test/artifacts/tmp/r8-matrix-rebuild/op-coverage.json"
+   ],
+   "evidence_any": [
+    "test/artifacts/evidence/tb-headers-audit.json",
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/tmp/tb-headers-after-scope.json",
+    "test/artifacts/tmp/tb-headers-after.json"
+   ]
+  },
+  {
+   "tb": "test/live/transport/cov_remote_real.py",
+   "in_gate": false,
+   "referenced_by": [
+    "doc/report/BUG-ssh-tunnel-invalid-time-value.md",
+    "doc/report/_explore/E_current_state.md",
+    "doc/report/五接口三环境真机测试报告.md",
+    "test/README.md",
+    "test/docs/README.md",
+    "test/docs/环境与场景.md"
+   ],
+   "ref_count": 12,
+   "evidence_today": [
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/tmp/r8_alite_broad.txt",
+    "test/artifacts/tmp/r8_alite_sample.txt",
+    "test/artifacts/evidence/round8/tb-headers-final.json"
+   ],
+   "evidence_any": [
+    "test/artifacts/evidence/coverage-run-meta.json",
+    "test/artifacts/evidence/tb-headers-audit.json",
+    "test/artifacts/evidence/tb-headers.json",
+    "test/artifacts/tmp/r8_alite_broad.txt"
+   ]
+  }
+ ]
+}

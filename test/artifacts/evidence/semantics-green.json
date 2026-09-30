@@ -10,7 +10,7 @@
         "leftovers": [],
         "marker": "crashed-after-first-rename"
       },
-      "elapsed_s": 2.015
+      "elapsed_s": 2.109
     },
     "local-download-timeout": {
       "status": "pass",
@@ -21,7 +21,7 @@
         "clock_calls": 7,
         "partial_target": false
       },
-      "elapsed_s": 1.047
+      "elapsed_s": 1.282
     },
     "local-file-timeout": {
       "status": "pass",
@@ -32,7 +32,7 @@
         "clock_calls": 7,
         "partial_target": false
       },
-      "elapsed_s": 1.078
+      "elapsed_s": 1.531
     },
     "local-tree-timeout": {
       "status": "pass",
@@ -43,7 +43,7 @@
         "clock_calls": 7,
         "partial_target": false
       },
-      "elapsed_s": 1.094
+      "elapsed_s": 1.484
     },
     "query-isolation": {
       "status": "pass",
@@ -51,7 +51,7 @@
         "alpha_root": "/srv/alpha/daemon",
         "beta_root": "/srv/beta/daemon"
       },
-      "elapsed_s": 1.219
+      "elapsed_s": 1.266
     },
     "query-no-budget": {
       "status": "pass",
@@ -59,7 +59,7 @@
         "elapsed_s": 0.0,
         "ok": true
       },
-      "elapsed_s": 1.062
+      "elapsed_s": 1.469
     },
     "query-shape": {
       "status": "pass",
@@ -73,7 +73,7 @@
         ],
         "spectre_bin": "/cadence/bin/spectre"
       },
-      "elapsed_s": 1.063
+      "elapsed_s": 1.234
     },
     "query-unknown-token": {
       "status": "pass",
@@ -103,7 +103,7 @@
           "tok-user3"
         ]
       },
-      "elapsed_s": 2.813
+      "elapsed_s": 3.078
     },
     "skill-no-retry-after-delivery": {
       "status": "pass",
@@ -112,9 +112,9 @@
         "errors": [
           "SKILL execution timed out"
         ],
-        "elapsed_s": 0.031
+        "elapsed_s": 0.0
       },
-      "elapsed_s": 1.093
+      "elapsed_s": 1.266
     }
   }
 }

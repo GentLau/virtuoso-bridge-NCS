@@ -131,6 +131,23 @@ spec《其他/多用户与注册》§1 与《顶层/控制面与业务面》§1.
 > 本轮两处环境修复：① **vbuser2 实例硬重启**（旧 daemon 端口释放后 `bringup_user.sh vbuser2 65402` 重建，
 > 修复"daemon 在听但 SKILL 超时"）；② registry 里 `vbfake1/vbfake2` 的 `ssh.backend` 由 `paramiko` 改 `openssh`
 > （§2.4 推荐修法：w1-gent ssh config 是 `accept-new`，paramiko 后端不接受）→ `POST /api/process/reload` 后两实例通。
+
+> **2026-09-29 21:25（S2 多 role 场景同类修复）**：`test/artifacts/env/scenario-role-split/registry.json` 里
+> `rolesplit` / `vbrolefc6dbc17` 的 `ssh.backend` 同样是 `paramiko`，导致 `role_split_tb` 在环境自检第一步就红
+> （报错原文：`Paramiko backend requires recorded host keys; StrictHostKeyChecking='accept-new' is not supported for host 'w1-gent'`）。
+> 改成 `openssh` 后 `role_split_tb` **5/5 通过**（证据 `test/artifacts/evidence/round9/role-split-r9.json`）。
+> **结论**：凡是 role 落在 **w1-gent** 的 registry 条目，`ssh.backend` 必须写 `openssh`——新建 S2/S15 类场景时先按此配。
+
+> **2026-09-29 22:58–23:05（S15 多跳专项的两处环境修复）**：
+> ① **paramiko 两跳需要 `StrictHostKeyChecking yes`**：`~/.ssh/config` 里 `Host w1-gent` / `Host w3-gent`
+>    原为 `accept-new`，而产品 paramiko 后端只接受 `yes/ask/true`（见 `paramiko_backend.py:809-821`）→
+>    `multihop_jump_tb` 的环境自检直接红（`Paramiko backend requires recorded host keys`）。
+>    已把这两条改成 `yes`（**目标与跳板都要改**；改前备份 `~/.ssh/config.bak-r9`）。
+>    注意 `Start-AllWsl.ps1` 会重写该文件——重启机器层后若 S15 变红，先查这两行。
+> ② **直连基线 token 缺失**：TB 的负控制用 `vb-lab11`（常驻 w1 lab fake，65201）取"无跳板"来源 IP，
+>    而 `make_multihop_env.py` 原先只生成 3 个 hop-* 用户 → 基线恒为空、TB 只能 8/10。
+>    已修生成器：从常驻注册表**原样复制** `vbfake1/vbfake2`（`vb-lab11`/`vb-lab12`）进多跳注册表（生产 loader 复验）。
+>    修复后 `multihop_jump_tb` **10/10 通过**（证据 `test/artifacts/evidence/round9/multihop-r9.json`）。
 > 非日常面：**8130 business console 正被使用（未动，有活跃连接）**；8123 SKILL 文档服务保留（测试工具）。
 
 ## 4. 服务端口与账号约定
@@ -344,3 +361,101 @@ nohup xvfb-run -a --server-args="-screen 0 1280x1024x24" \
    处置：`rm -f <cellview>/*.cdslck` 后重启；Runbook §10.2 的"按 cwd 杀+清锁"同样适用 ADE cellview。
 
 两条都表现为先 `Empty response from daemon`、且**不会自愈**（区别于 §10.3 的 30–90s 窗口）。
+
+### 10.7 死属主锁清理：正确姿势与一次越界记录（2026-09-29）
+
+**正确姿势（只清"属主已死"的锁）**：
+
+```bash
+for f in $(find <项目目录> -name '*.cdslck'); do
+  pid=$(grep -m1 '^ProcessIdentifier' "$f" | awk '{print $2}')
+  [ -n "$pid" ] && ! kill -0 "$pid" 2>/dev/null && rm -f "$f"   # 属主仍活/无法判定 → 保留
+done
+```
+
+适用：硬重启（§10.6）留下的 `maestro.sdb.cdslck` / `*.oa.cdslck` 会让后续 maestro/schematic 用例
+按 P-096 口径**结构化失败**（`stale write lock … pid=…已不存在`）。2026-09-29 清理 opamp_probe 死锁后，
+maestro 系列恢复可用。
+
+**越界记录（如实披露，不可恢复）**：2026-09-29 ~21:27 的一次清理把 `find` 根设成了整个
+`/home/Gent/project/vblog`，除目标死锁外，还删除了 `_lock-archive/round3-20260923/**` 下 **~200 个已归档的
+`.cdslck`**（round3 清理时特意归档的陈旧锁）。它们全部是死属主锁文件、不承载任何测试结论，
+但属于历史归档、且 vblog 非 git 仓库，**无法恢复**。
+**今后清理一律在命令里显式排除 `_lock-archive/`（以及任何 archive 目录）**，
+并在删除前列出 `STALE … -> rm` 清单确认范围。
+
+**同晚新形态（待再现场化）**：`maestro_view_param`（干净实例、read_history 路径）触发
+`# Displaying modal dbox "adexlMessageDialog", title "ADE Assembler Message 1600"`
+（`Cannot find an active session named fnxSession25`）→ CIW 整体阻塞（`1+2` 超时），只能重启。
+当次证据随 21:38 的重启被 CDS.log 截断，未落盘；**若再现，先把 `CDS.log` 尾与 `1+2` 超时拷进
+`test/artifacts/evidence/round9/` 再重启**。（P-086/C09 家族的另一条触发链。）
+
+### 10.9 日常环境恢复：lab 四台全超时（2026-09-30 实证，一条命令）
+
+**现象**：`ssh w1-gent..w4-gent` 全部 `Connection timed out`；
+`resident_env_check.py` 里 `vbfake1/vbfake2` 红（remote 6/8）。
+
+**两个根因（都会独立造成全超时）**：
+
+1. **lab distro 被 WSL 空闲停止**：w1–w4-gent 是本机 WSL distro，停掉后它的
+   `labns` / `vh-wN` veth / `labns` 里的 sshd 全部消失 → Windows 侧看就是超时。
+   *判据*：`wsl -l -v` 显示 `Stopped`；`wsl -d wN-gent -u root -e 'ip netns list'` 为空。
+2. **`.wslconfig` 的 `firewall` 被改成 false**（本文件旧注释曾误导说“必须关掉”，**那是错的**）：
+   `firewall=true` 才会让 VM 的 eth0 落在 **172.20.160.0/20**，与 lab 身份 IP
+   `172.20.170.21-24` 同网段；改成 false 后 VM 换到 **172.17.x**，Windows 会把
+   `172.20.170.2x` 路由到已失效的旧网卡 → 四台全超时。
+   *判据*：`wsl -d w1-gent -u root -e 'ip -4 -o addr show eth0'` 不是 `172.20.*`。
+
+**恢复步骤**：
+
+```powershell
+# ① 保活 + 拉起 labns（脚本会逐台起 sleep infinity 并 start 两个 lab 服务，最后自检 SSH）
+powershell -NoProfile -ExecutionPolicy Bypass -File test/shared/runners/lab_keepalive.ps1
+
+# ② 重建 w1 上的常驻 fake（65201/65202）
+scp test/shared/runners/start_lab_fakes.sh w1-gent:/tmp/start_lab_fakes.sh
+ssh w1-gent 'sed -i "s/\r$//" /tmp/start_lab_fakes.sh && bash /tmp/start_lab_fakes.sh'
+
+# ③ 自检（期望 remote 8/8）
+$env:PYTHONPATH="src"; python test/shared/runners/resident_env_check.py
+```
+
+**注意**：
+* 恢复后**不要**再 `wsl --shutdown`（会把四台连同保活一起打掉，且新 VM 的网段/MAC 会变）；
+* 若必须重启 WSL，重启后先确认 VM 仍落在 `172.20.x`（即 `.wslconfig firewall=true` 生效），再执行上面三步；
+* `w3-gent` 启动时会打一行 `Failed to start the systemd user session for 'root'` —— 实测不影响其 labns/sshd/SSH，属已知噪声。
+
+### 10.10 vblog CIW 被模态窗卡死 + 重启后必须重启业务面（2026-09-30 实证）
+
+**症状（分层判据，30 秒定位）**：
+
+```text
+basic.command.run   （走 SSH）   → 0.2–3 s   ok=True
+basic.skill.execute （走 CIW）   → 30 s      SKILL execution timed out
+```
+
+即 **daemon / SSH 都活着，只有 CIW 不应答** → 十有八九是 CIW 上留了模态窗。
+
+**现场证据**：`DISPLAY=:111 xwininfo -root -tree` 里看到 `"Library Select" ("libSelect")`；
+vblog 的 `CDS.log` 在卡死前有一段 ADE 会话 churn + `ASSEMBLER-2404 handle 0` / `-8001 argument "0"`（C09/P-086 家族）。
+
+**恢复（本次实际执行）**：
+
+1. 按 cwd 精确杀 vblog 的 virtuoso（`readlink /proc/<pid>/cwd == .../vblog/run`）；
+2. `rm -f CDS.log.cdslck`；
+3. **显式钉 display 重启**（不要用 `xvfb-run -a`——它会换到 :111，而注册表里 vblog 的 `roles.gui.display=:11`）：
+   ```bash
+   cd /home/Gent/.virtuoso-bridge/vblog/run
+   DISPLAY=:11 nohup virtuoso -cdslib ./cds.lib -log ./CDS.log > start.log 2>&1 &
+   ```
+4. 等 `ss -ltn | grep 65121`；
+5. **关键一步：重启业务面**（`POST /api/process/restart`，admin token 在 `test/artifacts/admin-token.txt`）——
+   否则 8127 里残留指向**旧 daemon** 的隧道，之后所有 `basic.skill.execute` 仍然 30s 超时（实测踩过）：
+   ```powershell
+   $t=(Get-Content test/artifacts/admin-token.txt -Raw).Trim()
+   Invoke-WebRequest -Uri http://127.0.0.1:8124/api/process/restart -Method Post -Headers @{Authorization="Bearer $t"}
+   ```
+6. 复验：`resident_env_check.py` 期望 **8/8**；`vb-vblog` 的 `1+1` 应在 ~0.3–3 s 返回。
+
+**旁证（同一次实测）**：vbs11 正在跑 3 点 ADE 角扫描时，`vb-s11` 的 `1+1` **0.4 s 就返回** ——
+**仿真本身不会卡住 CIW**；若某实例超时，先按上面的分层判据区分"CIW 卡"还是"隧道/daemon 卡"。

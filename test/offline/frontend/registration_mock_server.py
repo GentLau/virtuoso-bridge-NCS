@@ -349,6 +349,87 @@ class RegistrationMockServer(ThreadingHTTPServer):
         self.flows: dict[str, MockRegistrationState] = {}
         self.flow_lock = threading.RLock()
         self.preview_counter = 0
+        self.mock_registry: dict[str, dict[str, Any]] = {}
+        self.config: dict[str, Any] = {"business_thread_pool_size": 64}
+        self.process_status = "ready"
+        self.reset_registry()
+
+    @staticmethod
+    def _demo_entry() -> dict[str, Any]:
+        return {
+            "mode": {"default": "remote"},
+            "ssh": {
+                "default": {
+                    "host": "mock-server-a",
+                    "user": "designer1",
+                    "jump_host": None,
+                    "jump_user": None,
+                    "proxy": None,
+                    "key_dir": "~/.ssh",
+                    "key": "id_ed25519",
+                },
+                "backend": "paramiko",
+                "control_master": "auto",
+                "tool_override": {},
+            },
+            "root": {"default": None},
+            "roles": {
+                "gui": {
+                    "mode": None, "host": None, "user": None,
+                    "jump_host": None, "jump_user": None, "proxy": None,
+                    "key_dir": None, "key": None,
+                    "root": "/home/designer1/.virtuoso-bridge/demo/gui",
+                    "expected_fingerprint": "SHA256:mock-gui",
+                    "max_sessions": 10, "display": ":11",
+                },
+                "daemon": {
+                    "mode": None, "host": None, "user": None,
+                    "jump_host": None, "jump_user": None, "proxy": None,
+                    "key_dir": None, "key": None,
+                    "root": "/home/designer1/.virtuoso-bridge/demo/daemon",
+                    "expected_fingerprint": "SHA256:mock-daemon",
+                    "max_sessions": 10, "daemon_port": 65081,
+                    "local_port": 65082, "python": "/usr/bin/python3",
+                    "expected_hostname": "mock-server-a",
+                    "expected_user": "designer1",
+                },
+                "command": {
+                    "mode": None, "host": None, "user": None,
+                    "jump_host": None, "jump_user": None, "proxy": None,
+                    "key_dir": None, "key": None,
+                    "root": "/home/designer1/.virtuoso-bridge/demo/command",
+                    "expected_fingerprint": "SHA256:mock-command",
+                    "max_sessions": 10,
+                    "calibre": {"bin": "/opt/eda/calibre/bin/calibre"},
+                },
+                "file": {
+                    "mode": None, "host": None, "user": None,
+                    "jump_host": None, "jump_user": None, "proxy": None,
+                    "key_dir": None, "key": None,
+                    "root": "/home/designer1/.virtuoso-bridge/demo/file",
+                    "expected_fingerprint": "SHA256:mock-file",
+                    "max_sessions": 10,
+                },
+                "spectre": {
+                    "mode": None, "host": None, "user": None,
+                    "jump_host": None, "jump_user": None, "proxy": None,
+                    "key_dir": None, "key": None,
+                    "root": "/home/designer1/.virtuoso-bridge/demo/spectre",
+                    "expected_fingerprint": None,
+                    "max_sessions": 10,
+                    "bin": "/opt/cadence/spectre/bin/spectre",
+                },
+            },
+            "runtime": {"thread_pool_size": 32, "channel_budget": 10, "connect_timeout": 15.0},
+            "cdslog": {"log_level": "all", "log_max_bytes": 65536},
+            "registered_at": 1780000000,
+        }
+
+    def reset_registry(self) -> None:
+        with self.flow_lock:
+            self.mock_registry = {"demo": self._demo_entry()}
+            self.config = {"business_thread_pool_size": 64}
+            self.process_status = "ready"
 
     def config_payload(self) -> dict[str, Any]:
         with self.flow_lock:
@@ -363,6 +444,7 @@ class RegistrationMockServer(ThreadingHTTPServer):
     def reset(self) -> None:
         with self.flow_lock:
             self.flows.clear()
+        self.reset_registry()
 
 
 class RegistrationMockHandler(BaseHTTPRequestHandler):
@@ -441,6 +523,35 @@ class RegistrationMockHandler(BaseHTTPRequestHandler):
 
     def _setup_path(self, user: str) -> str:
         return f"/mock/virtuoso-bridge/{user}/setup/virtuoso_setup.il"
+
+    def _authorized(self) -> bool:
+        header = self.headers.get("Authorization", "")
+        token = header.removeprefix("Bearer ").strip()
+        return token in ("mock-admin", "demo-token")
+
+    @staticmethod
+    def _merge(base: dict[str, Any], patch: dict[str, Any]) -> dict[str, Any]:
+        output = dict(base)
+        for key, value in patch.items():
+            if isinstance(value, dict) and isinstance(output.get(key), dict):
+                output[key] = RegistrationMockHandler._merge(output[key], value)
+            else:
+                output[key] = value
+        return output
+
+    def _entry_payload(self, user: str) -> dict[str, Any] | None:
+        with self.mock_server.flow_lock:
+            entry = self.mock_server.mock_registry.get(user)
+            return None if entry is None else json.loads(json.dumps(entry))
+
+    def _system_status(self) -> dict[str, Any]:
+        return {
+            "status": self.mock_server.process_status,
+            "pid": 4242,
+            "port": self.server.server_address[1],
+            "work_dir": "/mock/work-dir",
+            "startup_args": ["--host", "127.0.0.1", "--port", str(self.server.server_address[1])],
+        }
 
     def _transition(
         self,
@@ -622,6 +733,40 @@ class RegistrationMockHandler(BaseHTTPRequestHandler):
         if path == "/__mock__/health":
             self._send_json(200, {"ok": True, "safe": True})
             return
+        if path == "/api/config":
+            if not self._authorized():
+                self._send_json(401, {"error": "unauthorized"})
+            else:
+                self._send_json(200, self.mock_server.config)
+            return
+        if path == "/api/process/status":
+            if not self._authorized():
+                self._send_json(401, {"error": "unauthorized"})
+            else:
+                self._send_json(200, self._system_status())
+            return
+        if path == "/api/users":
+            if not self._authorized():
+                self._send_json(401, {"error": "unauthorized"})
+            else:
+                with self.mock_server.flow_lock:
+                    users = [
+                        {"user": name, "entry": json.loads(json.dumps(entry))}
+                        for name, entry in self.mock_server.mock_registry.items()
+                    ]
+                self._send_json(200, {"users": users})
+            return
+        if path.startswith("/api/user/"):
+            if not self._authorized():
+                self._send_json(401, {"error": "unauthorized"})
+                return
+            user = unquote(path[len("/api/user/"):].rstrip("/"))
+            entry = self._entry_payload(user)
+            if entry is None:
+                self._send_json(404, {"error": "unknown user", "user": user})
+            else:
+                self._send_json(200, {"user": user, "entry": entry})
+            return
         if path.startswith("/api/register/"):
             self._delay()
             user = unquote(path[len("/api/register/"):].rstrip("/"))
@@ -677,6 +822,36 @@ class RegistrationMockHandler(BaseHTTPRequestHandler):
             self._send_json(200, result)
             return
 
+        if path.startswith("/api/user/") and path.endswith("/update"):
+            if not self._authorized():
+                self._send_json(401, {"error": "unauthorized"})
+                return
+            user = unquote(path[len("/api/user/"):-len("/update")])
+            patch = dict(body)
+            patch.pop("enhanced_token", None)
+            with self.mock_server.flow_lock:
+                current = self.mock_server.mock_registry.get(user)
+                if current is None:
+                    self._send_json(404, {"error": "unknown user", "user": user})
+                    return
+                self.mock_server.mock_registry[user] = self._merge(current, patch)
+                updated = json.loads(json.dumps(self.mock_server.mock_registry[user]))
+            self._send_json(200, {"user": user, "entry": updated})
+            return
+
+        if path in ("/api/process/reload", "/api/process/restart"):
+            if not self._authorized():
+                self._send_json(401, {"error": "unauthorized"})
+                return
+            if body.get("target", "business") != "business":
+                self._send_json(400, {"error": "invalid target"})
+                return
+            with self.mock_server.flow_lock:
+                self.mock_server.process_status = "ready"
+            action = "restart" if path.endswith("/restart") else "reload"
+            self._send_json(200, {"ok": True, "action": action, "status": self._system_status()})
+            return
+
         if path == "/api/register":
             self._delay()
             action = body.get("action")
@@ -725,6 +900,54 @@ class RegistrationMockHandler(BaseHTTPRequestHandler):
                 return
 
         self._send_json(404, {"error": "not found"})
+
+    def do_PUT(self) -> None:  # noqa: N802
+        path = urlparse(self.path).path
+        if path != "/api/config":
+            self._send_json(404, {"error": "not found"})
+            return
+        if not self._authorized():
+            self._send_json(401, {"error": "unauthorized"})
+            return
+        try:
+            body = self._read_json()
+        except (json.JSONDecodeError, UnicodeDecodeError, ValueError) as exc:
+            self._send_json(400, {"error": "invalid JSON body", "detail": [str(exc)]})
+            return
+        pool_size = body.get("business_thread_pool_size")
+        if pool_size is not None and (isinstance(pool_size, bool) or not isinstance(pool_size, int) or pool_size < 1):
+            self._send_json(400, {"error": "business_thread_pool_size must be a positive integer or null"})
+            return
+        with self.mock_server.flow_lock:
+            self.mock_server.config.update(body)
+            payload = dict(self.mock_server.config)
+        self._send_json(200, payload)
+
+    def do_DELETE(self) -> None:  # noqa: N802
+        path = urlparse(self.path).path
+        if not path.startswith("/api/user/"):
+            self._send_json(404, {"error": "not found"})
+            return
+        if not self._authorized():
+            self._send_json(401, {"error": "unauthorized"})
+            return
+        user = unquote(path[len("/api/user/"):].rstrip("/"))
+        with self.mock_server.flow_lock:
+            removed = self.mock_server.mock_registry.pop(user, None)
+        if removed is None:
+            self._send_json(404, {"error": "unknown user", "user": user})
+            return
+        self._send_json(200, {
+            "user": user,
+            "removed": True,
+            "credentials": [{
+                "role": "daemon",
+                "key_dir": "~/.ssh",
+                "key": "id_ed25519",
+                "fingerprint": "SHA256:mock-daemon",
+                "still_used_by": [],
+            }],
+        })
 
     def log_message(self, format: str, *args) -> None:  # noqa: A002
         print(f"[registration-mock] {self.address_string()} - {format % args}")

@@ -24,6 +24,7 @@ from _ssh_cred import make_credential
 
 
 _KEY_DIR, _KEY = make_credential()
+_KEY_DIR2, _KEY2 = make_credential()
 
 
 #: Throwaway admin credential for this test process only.
@@ -1280,6 +1281,145 @@ class TestRegistrationServer(unittest.TestCase):
         entry = self.registry.get("alice")
         self.assertEqual(entry.runtime.thread_pool_size, 8)
         self.assertEqual(entry.cdslog.log_level, "error")
+
+    # -- C11 个人自助（控制面 v42 §3 / 配置文档 §2 自助权限） ----------------
+
+    def test_self_access_matrix_levels(self):
+        from register.server import self_patch_levels
+
+        self.assertEqual(
+            self_patch_levels({"cdslog": {"log_level": "error"}}), {"edit"})
+        self.assertEqual(
+            self_patch_levels({"runtime": {"thread_pool_size": 8}}), {"readonly"})
+        self.assertEqual(
+            self_patch_levels({"mode": {"default": "local"}}), {"readonly"})
+        self.assertEqual(
+            self_patch_levels({"ssh": {"default": {"key": "k"}}}), {"secret"})
+        self.assertEqual(
+            self_patch_levels({"roles": {"daemon": None}}), {"secret"})
+        self.assertEqual(
+            self_patch_levels({"roles": {"command": {"calibre": {"bin": "/x"}}}}),
+            {"edit"})
+
+    def test_self_get_own_entry_redacts_secret_fields(self):
+        self._register_full_remote("selfa", "tok-self-a")
+        status, raw = self.srv.request(
+            "GET", "/api/user/selfa", None,
+            {"Authorization": "Bearer tok-self-a"})
+        self.assertEqual(status, 200, raw)
+        entry = json.loads(raw)["entry"]
+        self.assertNotIn("token", entry)
+        self.assertNotIn("key_dir", entry["ssh"]["default"])
+        self.assertNotIn("key", entry["ssh"]["default"])
+        self.assertEqual(entry["ssh"]["default"]["host"], "server-a")
+
+    def test_self_get_other_user_is_403(self):
+        self._register_full_remote("selfa", "tok-self-a")
+        self._register_full_remote("selfb", "tok-self-b")
+        status, raw = self.srv.request(
+            "GET", "/api/user/selfb", None,
+            {"Authorization": "Bearer tok-self-a"})
+        self.assertEqual(status, 403, raw)
+
+    def test_admin_get_keeps_secret_fields_and_drops_token(self):
+        self._register_full_remote("selfa", "tok-self-a")
+        status, raw = self.srv.request(
+            "GET", "/api/user/selfa", None, _admin_auth())
+        self.assertEqual(status, 200, raw)
+        entry = json.loads(raw)["entry"]
+        self.assertNotIn("token", entry)
+        self.assertIn("key_dir", entry["ssh"]["default"])
+
+    def test_self_update_edit_field_without_enhanced(self):
+        self._register_full_remote("selfa", "tok-self-a")
+        status, raw = self.srv.request(
+            "POST", "/api/user/selfa/update",
+            {"cdslog": {"log_level": "error"}},
+            {"Authorization": "Bearer tok-self-a"})
+        self.assertEqual(status, 200, raw)
+        self.assertEqual(self.registry.get("selfa").cdslog.log_level, "error")
+        self.assertNotIn("key_dir", json.loads(raw)["entry"]["ssh"]["default"])
+
+    def test_self_update_readonly_requires_admin_enhanced(self):
+        self._register_full_remote("selfa", "tok-self-a")
+        status, raw = self.srv.request(
+            "POST", "/api/user/selfa/update",
+            {"runtime": {"thread_pool_size": 16}},
+            {"Authorization": "Bearer tok-self-a"})
+        self.assertEqual(status, 403, raw)
+        self.assertNotEqual(self.registry.get("selfa").runtime.thread_pool_size, 16)
+
+    def test_self_update_rejects_own_token_as_enhanced(self):
+        self._register_full_remote("selfa", "tok-self-a")
+        status, raw = self.srv.request(
+            "POST", "/api/user/selfa/update",
+            {"runtime": {"thread_pool_size": 16}, "enhanced_token": "tok-self-a"},
+            {"Authorization": "Bearer tok-self-a"})
+        self.assertEqual(status, 401, raw)
+        self.assertIn("invalid enhanced_token", raw)
+
+    def test_self_update_readonly_with_admin_enhanced(self):
+        self._register_full_remote("selfa", "tok-self-a")
+        status, raw = self.srv.request(
+            "POST", "/api/user/selfa/update",
+            {"runtime": {"thread_pool_size": 16}, "enhanced_token": _ADMIN_TOKEN},
+            {"Authorization": "Bearer tok-self-a"})
+        self.assertEqual(status, 200, raw)
+        self.assertEqual(self.registry.get("selfa").runtime.thread_pool_size, 16)
+        self.assertNotIn("enhanced_token", json.loads(raw)["entry"])
+        self.assertNotIn("enhanced_token", self.registry.get("selfa").model_dump())
+
+    def test_self_update_secret_field_rejected_even_with_admin_enhanced(self):
+        self._register_full_remote("selfa", "tok-self-a")
+        status, raw = self.srv.request(
+            "POST", "/api/user/selfa/update",
+            {"ssh": {"default": {"key": _KEY2, "key_dir": _KEY_DIR2}},
+             "enhanced_token": _ADMIN_TOKEN},
+            {"Authorization": "Bearer tok-self-a"})
+        self.assertEqual(status, 403, raw)
+
+    def test_admin_update_secret_field_still_works(self):
+        from unittest import mock
+
+        self._register_full_remote("selfa", "tok-self-a")
+        with mock.patch.object(
+                register_server, "host_key_refresh_patch", return_value={}):
+            status, raw = self.srv.request(
+                "POST", "/api/user/selfa/update",
+                {"ssh": {"default": {"key": _KEY2, "key_dir": _KEY_DIR2}}},
+                _admin_auth())
+        self.assertEqual(status, 200, raw)
+        self.assertEqual(self.registry.get("selfa").ssh.default.key, _KEY2)
+
+    def test_self_update_other_user_is_403(self):
+        self._register_full_remote("selfa", "tok-self-a")
+        self._register_full_remote("selfb", "tok-self-b")
+        status, raw = self.srv.request(
+            "POST", "/api/user/selfb/update",
+            {"cdslog": {"log_level": "error"}},
+            {"Authorization": "Bearer tok-self-a"})
+        self.assertEqual(status, 403, raw)
+
+    def test_admin_update_with_invalid_enhanced_token_is_401(self):
+        self._register_full_local("selfm", "tok-self-m")
+        status, raw = self.srv.request(
+            "POST", "/api/user/selfm/update",
+            {"cdslog": {"log_level": "error"}, "enhanced_token": "tok-self-m"},
+            _admin_auth())
+        self.assertEqual(status, 401, raw)
+        self.assertIn("invalid enhanced_token", raw)
+
+    def test_mode_default_readonly_gate(self):
+        self._register_full_local("selfm", "tok-self-m")
+        auth = {"Authorization": "Bearer tok-self-m"}
+        status, raw = self.srv.request(
+            "POST", "/api/user/selfm/update",
+            {"mode": {"default": "local"}}, auth)
+        self.assertEqual(status, 403, raw)
+        status, raw = self.srv.request(
+            "POST", "/api/user/selfm/update",
+            {"mode": {"default": "local"}, "enhanced_token": _ADMIN_TOKEN}, auth)
+        self.assertEqual(status, 200, raw)
 
 
 class TestManagementReload(unittest.TestCase):

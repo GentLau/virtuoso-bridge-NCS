@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=====================
 # 作者: 测试/root
-# 最后改动: 2026-09-28 21:10
+# 最后改动: 2026-09-29 23:05
 # 依赖: 无
 # =====================================================================
 """两个**真实 OS 用户**在同一 cellview 的 layout 上接力/并发（真机级）。
@@ -15,7 +15,8 @@
 
 判据（不是"接口 ok"）：
 
-1. `layout.read` 返回的 `("shape" ...)` 条目数在 A/B 两侧**逐次一致**；
+1. `layout.read` 的**结构化** `shape_count`（C1 后载荷是字典；旧版按 `("shape" ...)` 文本计数，
+   结构化解包后恒为 0，2026-09-29 修）在 A/B 两侧**逐次一致且 >0**；
 2. B 增加形状后，**A 回读**能看到增加（跨用户、跨 daemon 的可见性）；
 3. 并发写：至少一方成功；失败方必须是**锁类结构化错误**（不能是超时/崩溃）；
 4. 收尾：**没有 `*.cdslck` 残留**，且 A 仍能写（系统未卡死）。
@@ -67,17 +68,17 @@ def call(base: str, operation: str, token: str, **fields) -> dict:
 
 
 def detail_of(response: dict) -> str:
-    steps = ((_c1_wrapper(response)).get("steps")) or []
+    steps = ((response).get("steps")) or []
     for step in steps:
         if isinstance(step, dict) and step.get("name") == "read":
             return str(step.get("detail") or "")
-    value = (_c1_wrapper(response)).get("value")
+    value = (response).get("value")
     return str(value or "")
 
 
 def skill_output(response: dict) -> str:
     """取 `basic.skill.execute` 的 output（HTTP 侧可能是 `data.result.output`）。"""
-    data = _c1_wrapper(response)
+    data = response
     result = data.get("result")
     if isinstance(result, dict):
         return str(result.get("output") or "")
@@ -93,16 +94,39 @@ def tech_binding(base: str, token: str, lib: str) -> str:
     return skill_output(response)
 
 
-def shape_count(text: str) -> int:
-    return text.count('("shape"')
+def shape_count_of(response: dict) -> tuple[int, dict]:
+    """取 `layout.read` 的形状数。
+
+    C1 之后 `virtuoso.layout.read` 的业务载荷是**结构化字典**（`shape_count` / `shapes` /
+    `layer_counts`），不再是 `("shape" ...)` 文本——本 TB 旧版按文本计数，在结构化解包后
+    恒为 0，产生过一次**假红**（2026-09-29 round9 实测：A 读到 shape_count=2 而 TB 记 count=0）。
+    判据改为：优先结构化字段；两者都拿不到才退回文本计数，并返回 -1 表示"判据不可用"。
+    """
+    payload = response.get("result")
+    if not isinstance(payload, dict):
+        value = response.get("value")
+        payload = value if isinstance(value, dict) else None
+    if payload is None:
+        data = response.get("data")
+        inner = data.get("value") if isinstance(data, dict) else None
+        payload = inner if isinstance(inner, dict) else {}
+    if isinstance(payload.get("shape_count"), int):
+        return int(payload["shape_count"]), payload
+    shapes = payload.get("shapes")
+    if isinstance(shapes, list):
+        return len(shapes), payload
+    text = detail_of(response)
+    return (-1 if not text else text.count('("shape"'), {"raw": text[:160]})
 
 
 def read_shapes(base: str, token: str, lib: str, cell: str) -> dict:
     response = call(base, "virtuoso.layout.read", token,
                     library=lib, cell=cell, view="layout")
-    text = detail_of(response)
-    return {"ok": bool(response.get("ok")), "count": shape_count(text),
-            "error": response.get("error"), "detail_head": text[:160]}
+    count, payload = shape_count_of(response)
+    return {"ok": bool(response.get("ok")) and count >= 0, "count": count,
+            "shape_count": payload.get("shape_count"),
+            "layer_counts": payload.get("layer_counts"),
+            "error": response.get("error"), "detail_head": str(payload)[:160]}
 
 
 def write_rect(base: str, token: str, lib: str, cell: str, x: float,
@@ -182,7 +206,9 @@ def main(argv: list[str] | None = None) -> int:
 
     # 一个用户操作完 → 另一个用户再操作（接力）
     b_read1 = read_shapes(args.base, args.token_b, args.lib, cell)
-    record("B-sees-A-shapes", b_read1["ok"] and b_read1["count"] == a_read1["count"],
+    # 不得只比"相等"：两边都是 0 是假绿（旧版文本计数踩过）——先钉 A 侧确实有形状。
+    record("B-sees-A-shapes",
+           b_read1["ok"] and a_read1["count"] >= 2 and b_read1["count"] == a_read1["count"],
            a_count=a_read1["count"], b_count=b_read1["count"])
 
     b_write = write_rect(args.base, args.token_b, args.lib, cell, 4.0, args.layer)
@@ -242,19 +268,3 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
-
-# --- C1 兼容垫片（2026-09-29，C3）------------------------------------------------
-# C1（2f88853）起：业务载荷直返顶层（值型 `value`、命令/skill 型 `result`）、
-# 成功默认省略 `steps`、失败壳去掉 `data`。历史 TB 按 `response["data"]` 解析，
-# 本垫片把新契约响应合成为旧 `data` 壳，让既有解析零改动继续工作。
-def _c1_wrapper(body):
-    if not isinstance(body, dict):
-        return {}
-    if isinstance(body.get("data"), dict):
-        return body["data"]
-    wrapped = {"ok": body.get("ok"), "error": body.get("error")}
-    for key in ("value", "result", "steps"):
-        if key in body:
-            wrapped[key] = body[key]
-    return wrapped

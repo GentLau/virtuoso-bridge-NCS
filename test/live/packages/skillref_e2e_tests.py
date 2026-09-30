@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
 # 作者: 测试/root
-# 最后改动: 2026-09-28 19:59
+# 最后改动: 2026-09-30 11:20
 # 依赖: 无
 # =======================================================================
 # 六步流程（test/docs/写TB规范.md §1）：
@@ -74,7 +74,7 @@ def _op(transport, operation: str, **fields: Any) -> Any:
     response = transport.call({"operation": operation, "token": TOKEN, **fields})
     if not response.get("ok"):
         raise AssertionError(f"{operation} failed: {response.get('error')}")
-    return _c1_wrapper(response)
+    return response
 
 
 def _check(condition: bool, message: str) -> None:
@@ -91,23 +91,56 @@ def _info(transport, **fields: Any) -> dict[str, Any]:
 
 
 def _case_search_local(transport) -> None:
-    for search_in, query in (
-        ("name", "dbOpenCellView"),
-        ("entry", "dbOpenCellView"),
-        ("topic", "dbOpenCellView"),
-    ):
-        value = _search(
-            transport, source="local", doc_root=LOCAL_DOC_ROOT,
-            query=query, search_in=search_in,
-        )
+    """SEARCH-01：四档检索的**内容**判据（round9 W-2 补强，原用例只验"命中非空"）。
+
+    期望（实测基准：`C:\\Users\\user\\Desktop\\doc`）：
+
+    * `search_in=name` → 只跑 name 层，命中 `dbOpenCellViewByType`（`skdfref.fnd`），字段齐全；
+    * `search_in=entry` / `topic` → 层集合**累积**（name+entry / name+entry+topic），
+      且各自出现过对应层的命中；
+    * `search_in=body` + `under=["cpf_ref"]` → 命中层为 body、`why` 标出原因、未被截断。
+    """
+    def _hits(**fields: Any) -> dict[str, Any]:
+        value = _search(transport, source="local", doc_root=LOCAL_DOC_ROOT, **fields)
         hits = value.get("results") or []
-        _check(hits, f"{search_in} search empty: {value}")
-    body = _search(
-        transport, source="local", doc_root=LOCAL_DOC_ROOT,
-        query="ground bounce", search_in="body", under=["cpf_ref"],
-    )
-    hits = body.get("results") or []
-    _check(hits, f"body search empty: {body}")
+        _check(hits, f"{fields.get('search_in')} search empty: {value}")
+        for hit in hits:
+            _check(isinstance(hit.get("name"), str) or hit.get("layer") == "body",
+                   f"命中缺少 name 且不是 body 层: {hit}")
+            _check(isinstance(hit.get("why"), list) and hit["why"],
+                   f"命中缺少 why（判据来源）: {hit}")
+            _check(float(hit.get("score") or 0) > 0, f"命中 score 非正: {hit}")
+        return value
+
+    by_name = _hits(query="dbOpenCellView", search_in="name")
+    top = (by_name.get("results") or [{}])[0]
+    _check(by_name.get("layers_run") == ["name"],
+           f"name 档层集合应为 ['name']: {by_name.get('layers_run')}")
+    _check(top.get("name") == "dbOpenCellViewByType",
+           f"name 档首条命中应为 dbOpenCellViewByType: {top.get('name')!r}")
+    _check(top.get("source_file") == "skdfref.fnd",
+           f"命中来源文件应可点开: {top.get('source_file')!r}")
+    _check(top.get("syntax") and top.get("description"),
+           f"命中缺 syntax/description: {top}")
+
+    by_entry = _hits(query="dbOpenCellView", search_in="entry")
+    _check(set(by_entry.get("layers_run") or []) == {"name", "entry"},
+           f"entry 档层集合应为 name+entry: {by_entry.get('layers_run')}")
+    _check(any(h.get("layer") == "entry" for h in by_entry["results"]),
+           f"entry 档未出现 entry 层命中: {[h.get('layer') for h in by_entry['results']]}")
+
+    by_topic = _hits(query="dbOpenCellView", search_in="topic")
+    _check(set(by_topic.get("layers_run") or []) == {"name", "entry", "topic"},
+           f"topic 档层集合应为三层: {by_topic.get('layers_run')}")
+    _check(any(h.get("layer") == "topic" for h in by_topic["results"]),
+           f"topic 档未出现 topic 层命中: {[h.get('layer') for h in by_topic['results']]}")
+
+    by_body = _hits(query="ground bounce", search_in="body", under=["cpf_ref"])
+    _check(set(by_body.get("layers_run") or []) == {"name", "entry", "topic", "body"},
+           f"body 档层集合应为四层: {by_body.get('layers_run')}")
+    _check(any(h.get("layer") == "body" for h in by_body["results"]),
+           f"body 档未出现 body 层命中: {[h.get('layer') for h in by_body['results']]}")
+    _check(by_body.get("truncated") is False, f"body 档意外截断: {by_body.get('truncated')}")
 
 
 def _case_search_modes(transport) -> None:
@@ -163,11 +196,22 @@ def _case_errors(transport) -> None:
         "query": "whatever",
     })
     _check(not response.get("ok"), "missing doc root must fail")
+    # 2026-09-30 加强：原来只判 not ok —— 现在断言失败**原因**（文档根下找不到 finder/SKILL），
+    # 并点名那个不存在的 doc_root，避免"任何失败都算过"。
+    doc_error = str(response.get("error") or "")
+    _check("no\\such\\docroot" in doc_error or "no/such/docroot" in doc_error
+           or "docroot" in doc_error,
+           f"错误文案必须点名 doc_root（实测 {doc_error!r}）")
+    _check("finder" in doc_error or "SKILL" in doc_error,
+           f"错误文案必须说明缺什么（finder/SKILL，实测 {doc_error!r}）")
     bad_source = transport.call({
         "operation": "virtuoso.skillref.search", "token": TOKEN,
         "source": "mars", "query": "whatever",
     })
     _check(not bad_source.get("ok"), "invalid source must fail")
+    source_error = str(bad_source.get("error") or "")
+    _check("source must be one of" in source_error,
+           f"非法 source 必须给出取值域（实测 {source_error!r}）")
 
 
 def _case_params(transport) -> None:
@@ -243,7 +287,8 @@ def run_suite(transport) -> list[tuple[str, str]]:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--transport", choices=("direct", "http"), default="direct")
+    parser.add_argument("--transport", choices=("direct", "http"), default="http",
+                        help="direct=故障定位/覆盖率；真机判据必须 http")
     args = parser.parse_args()
     transport = HttpTransport() if args.transport == "http" else DirectTransport()
     try:
@@ -259,19 +304,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
-
-# --- C1 兼容垫片（2026-09-29，C3）------------------------------------------------
-# C1（2f88853）起：业务载荷直返顶层（值型 `value`、命令/skill 型 `result`）、
-# 成功默认省略 `steps`、失败壳去掉 `data`。历史 TB 按 `response["data"]` 解析，
-# 本垫片把新契约响应合成为旧 `data` 壳，让既有解析零改动继续工作。
-def _c1_wrapper(body):
-    if not isinstance(body, dict):
-        return {}
-    if isinstance(body.get("data"), dict):
-        return body["data"]
-    wrapped = {"ok": body.get("ok"), "error": body.get("error")}
-    for key in ("value", "result", "steps"):
-        if key in body:
-            wrapped[key] = body[key]
-    return wrapped

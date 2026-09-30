@@ -1,0 +1,2707 @@
+{
+ "method": "AST：断言点=assert / raise AssertionError（挂外层 if）/ self.assert* / _check|_expect|... helper 首参",
+ "caveat": "强度是静态启发式；medium/weak 需人工复核，报告只把弱断言当线索",
+ "totals": {
+  "strong": 4212,
+  "weak": 1223,
+  "medium": 495
+ },
+ "weak_only_cases": [
+  {
+   "file": "test/live/packages/screenshot_params_e2e_tests.py",
+   "case": "case_window",
+   "weak": 9,
+   "sample": "opened.get('local_path')"
+  },
+  {
+   "file": "test/live/packages/screenshot_params_e2e_tests.py",
+   "case": "case_region",
+   "weak": 9,
+   "sample": "value"
+  },
+  {
+   "file": "test/offline/unit/test_process_lifetime.py",
+   "case": "test_close_kills_parent_and_descendant",
+   "weak": 7,
+   "sample": "job.assign(parent), 'test process could not be assigned to a Job Object'"
+  },
+  {
+   "file": "test/live/packages/screenshot_params_e2e_tests.py",
+   "case": "case_flags",
+   "weak": 6,
+   "sample": "value"
+  },
+  {
+   "file": "test/offline/unit/test_maestro_command_exprs.py",
+   "case": "test_every_op_builds_balanced_skill",
+   "weak": 5,
+   "sample": "COMMANDS, 'matrix must not be empty'"
+  },
+  {
+   "file": "test/offline/unit/test_paramiko.py",
+   "case": "test_transport_is_ready",
+   "weak": 4,
+   "sample": "pb.ParamikoSessionBackend._transport_is_ready(None)"
+  },
+  {
+   "file": "test/offline/unit/test_probe.py",
+   "case": "test_ssh_port_rule_enforces_22",
+   "weak": 4,
+   "sample": "probes.ssh_port_is_22('alias')"
+  },
+  {
+   "file": "test/offline/unit/test_ssh_edges.py",
+   "case": "test_close_swallows_every_error_and_kills_on_wait_timeout",
+   "weak": 4,
+   "sample": "proc.killed"
+  },
+  {
+   "file": "test/live/packages/maestro_e2e_tests.py",
+   "case": "_case_waveform_gui",
+   "weak": 3,
+   "sample": "opened['window']"
+  },
+  {
+   "file": "test/live/packages/screenshot_params_e2e_tests.py",
+   "case": "case_default",
+   "weak": 3,
+   "sample": "value"
+  },
+  {
+   "file": "test/live/packages/verilog_import_params_e2e_tests.py",
+   "case": "case_result_views_red_pin",
+   "weak": 3,
+   "sample": "truth"
+  },
+  {
+   "file": "test/offline/unit/test_calibre_package.py",
+   "case": "test_export_summary",
+   "weak": 3,
+   "sample": "result.ok, result.error"
+  },
+  {
+   "file": "test/offline/unit/test_maestro_util.py",
+   "case": "test_parse_bool",
+   "weak": 3,
+   "sample": "util.parse_bool('t'), True"
+  },
+  {
+   "file": "test/offline/unit/test_paramiko_run_command.py",
+   "case": "test_close_releases_clients_and_jump_channel",
+   "weak": 3,
+   "sample": "b._target_client"
+  },
+  {
+   "file": "test/offline/unit/test_process_lifetime.py",
+   "case": "test_shutdown_kills_supervised_descendant",
+   "weak": 3,
+   "sample": "_pid_alive(child_pid)"
+  },
+  {
+   "file": "test/offline/unit/test_schematic_contracts.py",
+   "case": "test_require_timeout_accepts_none_and_positive",
+   "weak": 3,
+   "sample": "None"
+  },
+  {
+   "file": "test/offline/unit/test_transfer.py",
+   "case": "test_discard_stage",
+   "weak": 3,
+   "sample": "self.stage.exists()"
+  },
+  {
+   "file": "test/live/flows/design_iterate_tb.py",
+   "case": "stage_lvs",
+   "weak": 2,
+   "sample": "t"
+  },
+  {
+   "file": "test/live/packages/cellview_e2e_tests.py",
+   "case": "_case_negative",
+   "weak": 2,
+   "sample": "transport"
+  },
+  {
+   "file": "test/live/packages/maestro_e2e_tests.py",
+   "case": "_case_gui_lifecycle",
+   "weak": 2,
+   "sample": "opened['session']"
+  },
+  {
+   "file": "test/live/packages/maestro_view_param_e2e_tests.py",
+   "case": "_case_waveform_gui",
+   "weak": 2,
+   "sample": "bool(opened.get('window'))"
+  },
+  {
+   "file": "test/live/packages/skillref_e2e_tests.py",
+   "case": "_case_errors",
+   "weak": 2,
+   "sample": "not response.get('ok')"
+  },
+  {
+   "file": "test/live/packages/spectre_params_e2e_tests.py",
+   "case": "case_measure_bad_source",
+   "weak": 2,
+   "sample": "transport"
+  },
+  {
+   "file": "test/offline/unit/test_api_server_main.py",
+   "case": "test_reload_applies_registry_and_pool_size",
+   "weak": 2,
+   "sample": "ok"
+  },
+  {
+   "file": "test/offline/unit/test_config_snapshot_edges.py",
+   "case": "test_replace_snapshot_without_path_binds_default",
+   "weak": 2,
+   "sample": "config.snapshot(), replaced"
+  },
+  {
+   "file": "test/offline/unit/test_daemon_runtime_contracts.py",
+   "case": "test_unreadable_proc_entries_are_false",
+   "weak": 2,
+   "sample": "mod._is_virtuoso_process(4321)"
+  },
+  {
+   "file": "test/offline/unit/test_gui_package.py",
+   "case": "test_still_mapped_false_when_window_gone",
+   "weak": 2,
+   "sample": "result.ok"
+  },
+  {
+   "file": "test/offline/unit/test_layout_contracts.py",
+   "case": "test_every_atomic_op_builds_balanced_skill",
+   "weak": 2,
+   "sample": "expr.strip(), f'{op} produced empty expression'"
+  },
+  {
+   "file": "test/offline/unit/test_layout_publish_contracts.py",
+   "case": "test_download_publish_creates_local_parent",
+   "weak": 2,
+   "sample": "error, error"
+  },
+  {
+   "file": "test/offline/unit/test_maestro_package_flow.py",
+   "case": "test_close_gui_without_window_is_clean_noop",
+   "weak": 2,
+   "sample": "result.ok, result.error"
+  },
+  {
+   "file": "test/offline/unit/test_maestro_util.py",
+   "case": "test_maestro_uses_basic_objects",
+   "weak": 2,
+   "sample": "maestro.parse_sexpr, basic.parse_sexpr"
+  },
+  {
+   "file": "test/offline/unit/test_middle_routing.py",
+   "case": "test_local_session_removes_temp_dir_on_close",
+   "weak": 2,
+   "sample": "session_dir.exists()"
+  },
+  {
+   "file": "test/offline/unit/test_process_lifetime.py",
+   "case": "test_dispose_kills_process_group_descendant",
+   "weak": 2,
+   "sample": "_pid_alive(child_pid)"
+  },
+  {
+   "file": "test/offline/unit/test_pyapi_interface_contract.py",
+   "case": "test_abstract_interface_cannot_instantiate_but_minimal_impl_can",
+   "weak": 2,
+   "sample": "isinstance(impl, VirtuosoInterface)"
+  },
+  {
+   "file": "test/offline/unit/test_registry_more.py",
+   "case": "test_remove_persists",
+   "weak": 2,
+   "sample": "reg.get('alice')"
+  },
+  {
+   "file": "test/offline/unit/test_resource_release.py",
+   "case": "test_close_stops_port_forward",
+   "weak": 2,
+   "sample": "runner.stopped_forward, 'client.close() must stop the tunnel'"
+  },
+  {
+   "file": "test/offline/unit/test_skillref_package.py",
+   "case": "test_body_layer_truncates_without_under",
+   "weak": 2,
+   "sample": "result.ok, result.error"
+  },
+  {
+   "file": "test/offline/unit/test_skillref_package.py",
+   "case": "test_info_unknown_function_is_not_found",
+   "weak": 2,
+   "sample": "result.ok, result.error"
+  },
+  {
+   "file": "test/offline/unit/test_ssh.py",
+   "case": "test_paramiko_backend_constructs",
+   "weak": 2,
+   "sample": "r._paramiko_backend"
+  },
+  {
+   "file": "test/offline/unit/test_ssh_edges.py",
+   "case": "test_mux_probe_detects_timeout_and_ignores_missing_socket",
+   "weak": 2,
+   "sample": "runner._mux_master_wedged()"
+  },
+  {
+   "file": "test/offline/unit/test_ssh_edges.py",
+   "case": "test_windows_forward_reuses_external_listener",
+   "weak": 2,
+   "sample": "result"
+  },
+  {
+   "file": "test/offline/unit/test_ssh_edges.py",
+   "case": "test_stop_port_forward_swallows_errors",
+   "weak": 2,
+   "sample": "runner._tunnel_proc"
+  },
+  {
+   "file": "test/offline/unit/test_ssh_edges.py",
+   "case": "test_can_reach_port_handles_refused_and_open",
+   "weak": 2,
+   "sample": "SSHRunner.can_reach_port(6508)"
+  },
+  {
+   "file": "test/offline/unit/test_ssh_tunnel_lifecycle.py",
+   "case": "test_close_terminates_own_tunnel_process",
+   "weak": 2,
+   "sample": "proc.terminated, 'close() 必须终止自己的隧道句柄'"
+  },
+  {
+   "file": "test/offline/unit/test_supervisor_internals.py",
+   "case": "test_send_refuses_without_stdin_and_after_exit",
+   "weak": 2,
+   "sample": "proc._send('reload')"
+  },
+  {
+   "file": "test/offline/unit/test_supervisor_internals.py",
+   "case": "test_dispose_skips_kill_when_child_already_exited",
+   "weak": 2,
+   "sample": "popen.killed"
+  },
+  {
+   "file": "test/offline/unit/test_supervisor_internals.py",
+   "case": "test_dispose_ignores_stream_close_errors",
+   "weak": 2,
+   "sample": "job.closed"
+  },
+  {
+   "file": "test/offline/unit/test_supervisor_internals.py",
+   "case": "test_build_wires_middle_and_pool_size",
+   "weak": 2,
+   "sample": "got_middle, middle"
+  },
+  {
+   "file": "test/offline/unit/test_symbol_contracts.py",
+   "case": "test_every_op_builds_balanced_skill",
+   "weak": 2,
+   "sample": "expr.strip(), op"
+  },
+  {
+   "file": "test/offline/unit/test_symbol_generate.py",
+   "case": "test_package_uses_the_util_functions",
+   "weak": 2,
+   "sample": "symbol_mod.generate_skill, util.generate_skill"
+  },
+  {
+   "file": "test/offline/unit/test_top_layer_pool.py",
+   "case": "test_wait_idle_times_out_then_completes",
+   "weak": 2,
+   "sample": "self.server.wait_idle(0.1)"
+  },
+  {
+   "file": "test/live/flows/design_iterate_tb.py",
+   "case": "stage_r1_sch",
+   "weak": 1,
+   "sample": "t"
+  },
+  {
+   "file": "test/live/flows/design_iterate_tb.py",
+   "case": "stage_r1_layout",
+   "weak": 1,
+   "sample": "t"
+  },
+  {
+   "file": "test/live/flows/role_split_tb.py",
+   "case": "main",
+   "weak": 1,
+   "sample": "host"
+  },
+  {
+   "file": "test/live/flows/serdes_rx_flow_tb.py",
+   "case": "stage_buf",
+   "weak": 1,
+   "sample": "t"
+  },
+  {
+   "file": "test/live/flows/serdes_rx_flow_tb.py",
+   "case": "stage_term",
+   "weak": 1,
+   "sample": "t"
+  },
+  {
+   "file": "test/live/flows/serdes_rx_flow_tb.py",
+   "case": "stage_top",
+   "weak": 1,
+   "sample": "t"
+  },
+  {
+   "file": "test/live/flows/serdes_rx_flow_tb.py",
+   "case": "stage_layout",
+   "weak": 1,
+   "sample": "t"
+  },
+  {
+   "file": "test/live/packages/nested_keys_e2e_tests.py",
+   "case": "case_env",
+   "weak": 1,
+   "sample": "response.get('ok') is True"
+  },
+  {
+   "file": "test/live/packages/schematic_e2e_tests.py",
+   "case": "_case_check_and_save",
+   "weak": 1,
+   "sample": "bool(data.get('ok'))"
+  },
+  {
+   "file": "test/live/packages/spectre_e2e_tests.py",
+   "case": "_case_failure",
+   "weak": 1,
+   "sample": "not response.get('ok')"
+  },
+  {
+   "file": "test/live/packages/step_details_e2e_tests.py",
+   "case": "case_env",
+   "weak": 1,
+   "sample": "response.get('ok') is True"
+  },
+  {
+   "file": "test/live/packages/symbol_e2e_tests.py",
+   "case": "_case_missing_view",
+   "weak": 1,
+   "sample": "not response.get('ok')"
+  },
+  {
+   "file": "test/live/packages/veriloga_e2e_tests.py",
+   "case": "_case_delete",
+   "weak": 1,
+   "sample": "not response.get('ok')"
+  },
+  {
+   "file": "test/live/registration/registration_role_split_tb.py",
+   "case": "main",
+   "weak": 1,
+   "sample": "args.lab_host"
+  },
+  {
+   "file": "test/live/stress/scale_local_fake_tb.py",
+   "case": "main",
+   "weak": 1,
+   "sample": "args.base_port"
+  },
+  {
+   "file": "test/offline/unit/test_daemon_import_contract.py",
+   "case": "test_import_survives_pseudofile_stdin",
+   "weak": 1,
+   "sample": "path.exists(), f'daemon 源文件缺失: {path}'"
+  },
+  {
+   "file": "test/offline/unit/test_daemon_runtime_contracts.py",
+   "case": "test_rejects_non_pid_values",
+   "weak": 1,
+   "sample": "mod._is_virtuoso_process(pid)"
+  },
+  {
+   "file": "test/offline/unit/test_daemon_runtime_contracts.py",
+   "case": "test_unrelated_process_is_rejected",
+   "weak": 1,
+   "sample": "mod._is_virtuoso_process(4321)"
+  },
+  {
+   "file": "test/offline/unit/test_daemon_runtime_contracts.py",
+   "case": "test_stale_generation_does_not_interrupt",
+   "weak": 1,
+   "sample": "mod._timeout_flag"
+  },
+  {
+   "file": "test/offline/unit/test_daemon_runtime_contracts.py",
+   "case": "test_matching_generation_interrupts_virtuoso",
+   "weak": 1,
+   "sample": "mod._timeout_flag"
+  },
+  {
+   "file": "test/offline/unit/test_daemon_runtime_contracts.py",
+   "case": "test_kill_failure_is_swallowed",
+   "weak": 1,
+   "sample": "mod._timeout_flag"
+  },
+  {
+   "file": "test/offline/unit/test_maestro_package_flow.py",
+   "case": "test_write_history_rename_success",
+   "weak": 1,
+   "sample": "result.ok, result.error"
+  },
+  {
+   "file": "test/offline/unit/test_maestro_package_flow.py",
+   "case": "test_write_history_invalid_op",
+   "weak": 1,
+   "sample": "result.ok"
+  },
+  {
+   "file": "test/offline/unit/test_maestro_package_flow.py",
+   "case": "test_screenshot_window_not_found",
+   "weak": 1,
+   "sample": "result.ok"
+  },
+  {
+   "file": "test/offline/unit/test_output_json_safety.py",
+   "case": "test_whole_result_is_strictly_serialisable",
+   "weak": 1,
+   "sample": "_no_nan(data), f'出参里仍有非有限值: {data!r}'"
+  },
+  {
+   "file": "test/offline/unit/test_paramiko_run_command.py",
+   "case": "test_ready_transport_returns_immediately",
+   "weak": 1,
+   "sample": "2"
+  },
+  {
+   "file": "test/offline/unit/test_paramiko_session_paths.py",
+   "case": "test_success",
+   "weak": 1,
+   "sample": "b.test_connection(3)"
+  },
+  {
+   "file": "test/offline/unit/test_paramiko_session_paths.py",
+   "case": "test_failures_are_false",
+   "weak": 1,
+   "sample": "b.test_connection(3)"
+  },
+  {
+   "file": "test/offline/unit/test_paramiko_session_paths.py",
+   "case": "test_defaults_when_unset",
+   "weak": 1,
+   "sample": "all((isinstance(f, Path) for f in files))"
+  },
+  {
+   "file": "test/offline/unit/test_paramiko_transport_fakes.py",
+   "case": "test_read_stream_reports_failure",
+   "weak": 1,
+   "sample": "failures.get_nowait(), OSError"
+  },
+  {
+   "file": "test/offline/unit/test_paramiko_transport_fakes.py",
+   "case": "test_send_stream_reports_channel_failure",
+   "weak": 1,
+   "sample": "failures.get_nowait(), OSError"
+  },
+  {
+   "file": "test/offline/unit/test_paramiko_transport_fakes.py",
+   "case": "test_pump_channel_stops_on_event_without_data",
+   "weak": 1,
+   "sample": "worker.is_alive()"
+  },
+  {
+   "file": "test/offline/unit/test_paramiko_transport_fakes.py",
+   "case": "test_pump_channel_reports_read_error_and_swallows_close_error",
+   "weak": 1,
+   "sample": "failures.get_nowait(), OSError"
+  },
+  {
+   "file": "test/offline/unit/test_probe.py",
+   "case": "test_host_key_fingerprint_missing_entry_is_none",
+   "weak": 1,
+   "sample": "probes.host_key_fingerprint('same')"
+  },
+  {
+   "file": "test/offline/unit/test_probe.py",
+   "case": "test_detect_unsupported_version_returns_none",
+   "weak": 1,
+   "sample": "detect_remote_python(runner)"
+  },
+  {
+   "file": "test/offline/unit/test_register_flow.py",
+   "case": "test_local_role_expected_fingerprint_is_cleared",
+   "weak": 1,
+   "sample": "result.entry.roles.gui.expected_fingerprint"
+  },
+  {
+   "file": "test/offline/unit/test_result_contract.py",
+   "case": "test_command_result_is_a_named_model",
+   "weak": 1,
+   "sample": "result, BaseModel"
+  },
+  {
+   "file": "test/offline/unit/test_skill_admission.py",
+   "case": "test_gate_is_released_after_completion",
+   "weak": 1,
+   "sample": "r1.ok and r2.ok"
+  },
+  {
+   "file": "test/offline/unit/test_spectre_contracts.py",
+   "case": "test_has_fatal_detects_markers",
+   "weak": 1,
+   "sample": "S._has_fatal(text), text"
+  },
+  {
+   "file": "test/offline/unit/test_spectre_util_contracts.py",
+   "case": "test_noise_integral_empty_window_should_fail",
+   "weak": 1,
+   "sample": "empty['ok']"
+  },
+  {
+   "file": "test/offline/unit/test_ssh.py",
+   "case": "test_tunnel_stderr_path_is_removed_on_stop",
+   "weak": 1,
+   "sample": "path.exists()"
+  },
+  {
+   "file": "test/offline/unit/test_ssh.py",
+   "case": "test_ensure_persistent_shell_disabled",
+   "weak": 1,
+   "sample": "r._shell_proc"
+  },
+  {
+   "file": "test/offline/unit/test_ssh.py",
+   "case": "test_start_success",
+   "weak": 1,
+   "sample": "r._shell_proc, proc"
+  },
+  {
+   "file": "test/offline/unit/test_ssh_dispatch.py",
+   "case": "test_openssh_failure",
+   "weak": 1,
+   "sample": "r.test_connection(5)"
+  },
+  {
+   "file": "test/offline/unit/test_ssh_dispatch.py",
+   "case": "test_openssh_timeout",
+   "weak": 1,
+   "sample": "r.test_connection(5)"
+  },
+  {
+   "file": "test/offline/unit/test_ssh_edges.py",
+   "case": "test_stop_pipeline_swallows_every_cleanup_error",
+   "weak": 1,
+   "sample": "worker.joined"
+  },
+  {
+   "file": "test/offline/unit/test_ssh_edges.py",
+   "case": "test_interpreter_shutdown_marker_is_sticky",
+   "weak": 1,
+   "sample": "ssh_mod._INTERPRETER_SHUTTING_DOWN"
+  },
+  {
+   "file": "test/offline/unit/test_ssh_edges.py",
+   "case": "test_ensure_is_a_noop_when_disabled",
+   "weak": 1,
+   "sample": "runner._shell_proc"
+  },
+  {
+   "file": "test/offline/unit/test_ssh_edges.py",
+   "case": "test_ensure_reuses_a_live_shell",
+   "weak": 1,
+   "sample": "runner._shell_proc, proc"
+  },
+  {
+   "file": "test/offline/unit/test_ssh_edges.py",
+   "case": "test_mux_probe_skipped_without_multiplexing",
+   "weak": 1,
+   "sample": "runner._mux_master_wedged()"
+  },
+  {
+   "file": "test/offline/unit/test_ssh_edges.py",
+   "case": "test_recover_from_wedged_mux_disables_cm_and_unlinks_socket",
+   "weak": 1,
+   "sample": "runner._use_control_master"
+  },
+  {
+   "file": "test/offline/unit/test_ssh_edges.py",
+   "case": "test_discard_tunnel_stderr_swallows_oserror",
+   "weak": 1,
+   "sample": "runner._tunnel_stderr_path"
+  },
+  {
+   "file": "test/offline/unit/test_ssh_edges.py",
+   "case": "test_paramiko_forward_opens_and_records_process",
+   "weak": 1,
+   "sample": "opened, proc"
+  },
+  {
+   "file": "test/offline/unit/test_ssh_edges.py",
+   "case": "test_close_with_exhausted_budget_kills_without_waiting",
+   "weak": 1,
+   "sample": "proc.killed"
+  },
+  {
+   "file": "test/offline/unit/test_ssh_tunnel_lifecycle.py",
+   "case": "test_alive_process_with_dead_forward_is_not_healthy",
+   "weak": 1,
+   "sample": "runner.is_tunnel_alive"
+  },
+  {
+   "file": "test/offline/unit/test_supervisor_internals.py",
+   "case": "test_send_refuses_when_no_process",
+   "weak": 1,
+   "sample": "proc._send('reload')"
+  },
+  {
+   "file": "test/offline/unit/test_supervisor_internals.py",
+   "case": "test_send_returns_false_on_broken_pipe",
+   "weak": 1,
+   "sample": "proc._send('reload')"
+  },
+  {
+   "file": "test/offline/unit/test_supervisor_internals.py",
+   "case": "test_wait_exit_without_proc_is_true",
+   "weak": 1,
+   "sample": "_process()._wait_exit(0.1)"
+  },
+  {
+   "file": "test/offline/unit/test_supervisor_internals.py",
+   "case": "test_wait_exit_reports_timeout",
+   "weak": 1,
+   "sample": "proc._wait_exit(0.01)"
+  },
+  {
+   "file": "test/offline/unit/test_supervisor_internals.py",
+   "case": "test_dispose_without_proc_or_job_is_a_noop",
+   "weak": 1,
+   "sample": "proc._proc"
+  },
+  {
+   "file": "test/offline/unit/test_supervisor_internals.py",
+   "case": "test_dispose_without_proc_closes_pending_job",
+   "weak": 1,
+   "sample": "job.closed"
+  },
+  {
+   "file": "test/offline/unit/test_supervisor_internals.py",
+   "case": "test_taskkill_success_returns_without_kill",
+   "weak": 1,
+   "sample": "popen.killed"
+  },
+  {
+   "file": "test/offline/unit/test_supervisor_internals.py",
+   "case": "test_taskkill_failure_without_job_kills_directly",
+   "weak": 1,
+   "sample": "popen.killed"
+  },
+  {
+   "file": "test/offline/unit/test_supervisor_internals.py",
+   "case": "test_taskkill_error_with_job_bound_defers_to_job",
+   "weak": 1,
+   "sample": "popen.killed"
+  },
+  {
+   "file": "test/offline/unit/test_supervisor_internals.py",
+   "case": "test_posix_group_sigterm_success_returns",
+   "weak": 1,
+   "sample": "popen.killed"
+  },
+  {
+   "file": "test/offline/unit/test_supervisor_internals.py",
+   "case": "test_restart_kills_child_when_drain_times_out",
+   "weak": 1,
+   "sample": "popen.killed"
+  },
+  {
+   "file": "test/offline/unit/test_supervisor_internals.py",
+   "case": "test_shutdown_kills_child_when_drain_times_out",
+   "weak": 1,
+   "sample": "popen.killed"
+  },
+  {
+   "file": "test/offline/unit/test_supervisor_internals.py",
+   "case": "test_same_process_flag",
+   "weak": 1,
+   "sample": "sup.SameProcessManager.same_process"
+  },
+  {
+   "file": "test/offline/unit/test_supervisor_internals.py",
+   "case": "test_keyboard_interrupt_still_closes_control_face",
+   "weak": 1,
+   "sample": "control.closed"
+  },
+  {
+   "file": "test/offline/unit/test_supervisor_internals.py",
+   "case": "test_shutdown_failure_is_swallowed_on_exit",
+   "weak": 1,
+   "sample": "control.closed"
+  },
+  {
+   "file": "test/offline/unit/test_tunnel.py",
+   "case": "test_parallel_paramiko_reuses_session_backend",
+   "weak": 1,
+   "sample": "serial, parallel"
+  },
+  {
+   "file": "test/offline/unit/test_tunnel_transfer.py",
+   "case": "test_jump_suppressed_when_target_is_jump_host",
+   "weak": 1,
+   "sample": "runner.kwargs['jump_host']"
+  },
+  {
+   "file": "test/offline/unit/test_veriloga_contracts.py",
+   "case": "test_requires_exactly_one_target",
+   "weak": 1,
+   "sample": "result.ok, bool"
+  }
+ ],
+ "log_read_but_unasserted": [
+  "test/live/packages/skill_log_semantics_e2e_tests.py:case_f_multi_print_same_request",
+  "test/live/packages/skill_log_semantics_e2e_tests.py:case_h_loop_print"
+ ],
+ "files": {
+  "test/offline/core/api_server_tb.py": {
+   "counts": {
+    "weak": 1
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/core/daemon_log_protocol_tb.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/core/fault_injection_tb.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/core/p076_tar_completion_tb.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/core/semantics_tb.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/core/thread_lifecycle_tb.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/frontend/registration_mock_server.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/frontend/__init__.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/integration/test_business_child_supervision.py": {
+   "counts": {
+    "weak": 10,
+    "medium": 1,
+    "strong": 14
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/integration/test_daemon_handler.py": {
+   "counts": {
+    "weak": 20,
+    "strong": 30
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/integration/test_integration.py": {
+   "counts": {
+    "weak": 1,
+    "strong": 7
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/integration/test_supervisor_process.py": {
+   "counts": {
+    "weak": 7,
+    "strong": 19
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/scenario/test_business_local.py": {
+   "counts": {
+    "weak": 4,
+    "strong": 30,
+    "medium": 1
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/scenario/test_multi_user_isolation.py": {
+   "counts": {
+    "weak": 2,
+    "strong": 4,
+    "medium": 1
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/scenario/test_registration_local_full.py": {
+   "counts": {
+    "strong": 4,
+    "weak": 6
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_all_ops_timeout_field.py": {
+   "counts": {
+    "medium": 1,
+    "strong": 3
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_api_server_main.py": {
+   "counts": {
+    "strong": 43,
+    "weak": 9,
+    "medium": 1
+   },
+   "weak_only": [
+    "test_reload_applies_registry_and_pool_size"
+   ],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_api_server_method_not_allowed.py": {
+   "counts": {
+    "strong": 10
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_calibre_argv_contracts.py": {
+   "counts": {
+    "strong": 30,
+    "medium": 8,
+    "weak": 2
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_calibre_job_state.py": {
+   "counts": {
+    "strong": 7
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_calibre_lvs_source_contract.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_calibre_package.py": {
+   "counts": {
+    "weak": 36,
+    "strong": 124,
+    "medium": 5
+   },
+   "weak_only": [
+    "test_export_summary"
+   ],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_calibre_parsers.py": {
+   "counts": {
+    "strong": 22,
+    "medium": 1,
+    "weak": 1
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_calibre_verdict_consistency.py": {
+   "counts": {
+    "strong": 3
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_cellview_contracts.py": {
+   "counts": {
+    "strong": 63,
+    "weak": 24
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_commit_shape.py": {
+   "counts": {
+    "strong": 3,
+    "medium": 8
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_common_config.py": {
+   "counts": {
+    "strong": 7,
+    "weak": 2
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_common_request_fields_contract.py": {
+   "counts": {
+    "strong": 2,
+    "weak": 3,
+    "medium": 7
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_config_snapshot_edges.py": {
+   "counts": {
+    "weak": 6,
+    "strong": 9
+   },
+   "weak_only": [
+    "test_replace_snapshot_without_path_binds_default"
+   ],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_connect_retry.py": {
+   "counts": {
+    "strong": 6,
+    "medium": 4
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_credential_routing.py": {
+   "counts": {
+    "weak": 4,
+    "strong": 7
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_daemon27.py": {
+   "counts": {
+    "strong": 2,
+    "weak": 1
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_daemon_import_contract.py": {
+   "counts": {
+    "weak": 1
+   },
+   "weak_only": [
+    "test_import_survives_pseudofile_stdin"
+   ],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_daemon_log_contract.py": {
+   "counts": {
+    "strong": 23,
+    "medium": 9,
+    "weak": 6
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_daemon_log_utf8_budget.py": {
+   "counts": {
+    "weak": 2,
+    "strong": 14
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_daemon_parity.py": {
+   "counts": {
+    "strong": 31,
+    "weak": 4
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_daemon_runtime_contracts.py": {
+   "counts": {
+    "weak": 27,
+    "strong": 87,
+    "medium": 1
+   },
+   "weak_only": [
+    "test_kill_failure_is_swallowed",
+    "test_matching_generation_interrupts_virtuoso",
+    "test_rejects_non_pid_values",
+    "test_stale_generation_does_not_interrupt",
+    "test_unreadable_proc_entries_are_false",
+    "test_unrelated_process_is_rejected"
+   ],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_endpoint_budgets.py": {
+   "counts": {
+    "strong": 14,
+    "weak": 5,
+    "medium": 2
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_gui_package.py": {
+   "counts": {
+    "strong": 34,
+    "weak": 12
+   },
+   "weak_only": [
+    "test_still_mapped_false_when_window_gone"
+   ],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_http_json_safety.py": {
+   "counts": {
+    "strong": 6,
+    "weak": 1
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_jsonutil.py": {
+   "counts": {
+    "strong": 11
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_layout_contracts.py": {
+   "counts": {
+    "strong": 217,
+    "weak": 65,
+    "medium": 13
+   },
+   "weak_only": [
+    "test_every_atomic_op_builds_balanced_skill"
+   ],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_layout_depth_contract.py": {
+   "counts": {
+    "strong": 6
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_layout_publish_contracts.py": {
+   "counts": {
+    "weak": 3,
+    "strong": 5
+   },
+   "weak_only": [
+    "test_download_publish_creates_local_parent"
+   ],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_local_path_expansion.py": {
+   "counts": {
+    "strong": 6,
+    "medium": 3,
+    "weak": 1
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_log_no_fetch.py": {
+   "counts": {
+    "strong": 10,
+    "weak": 1
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_log_off.py": {
+   "counts": {
+    "strong": 1,
+    "weak": 1
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_maestro_command_exprs.py": {
+   "counts": {
+    "strong": 116,
+    "weak": 46,
+    "medium": 7
+   },
+   "weak_only": [
+    "test_every_op_builds_balanced_skill"
+   ],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_maestro_mc.py": {
+   "counts": {
+    "strong": 30,
+    "weak": 8
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_maestro_package_flow.py": {
+   "counts": {
+    "weak": 29,
+    "strong": 33,
+    "medium": 1
+   },
+   "weak_only": [
+    "test_close_gui_without_window_is_clean_noop",
+    "test_screenshot_window_not_found",
+    "test_write_history_invalid_op",
+    "test_write_history_rename_success"
+   ],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_maestro_util.py": {
+   "counts": {
+    "weak": 6,
+    "medium": 1,
+    "strong": 29
+   },
+   "weak_only": [
+    "test_maestro_uses_basic_objects",
+    "test_parse_bool"
+   ],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_maestro_util_edges.py": {
+   "counts": {
+    "strong": 31,
+    "medium": 2,
+    "weak": 2
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_middle_contracts.py": {
+   "counts": {
+    "strong": 49,
+    "weak": 5,
+    "medium": 2
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_middle_reserved_codes.py": {
+   "counts": {
+    "weak": 1,
+    "strong": 9
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_middle_routing.py": {
+   "counts": {
+    "weak": 11,
+    "strong": 37,
+    "medium": 2
+   },
+   "weak_only": [
+    "test_local_session_removes_temp_dir_on_close"
+   ],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_models_paths.py": {
+   "counts": {
+    "weak": 10,
+    "strong": 42,
+    "medium": 1
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_nested_command_keys_contract.py": {
+   "counts": {
+    "weak": 10,
+    "strong": 36
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_new_core.py": {
+   "counts": {
+    "strong": 23,
+    "medium": 1,
+    "weak": 3
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_new_middle.py": {
+   "counts": {
+    "strong": 24
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_norm_gap_batch2.py": {
+   "counts": {
+    "strong": 22,
+    "weak": 4
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_norm_gap_round8.py": {
+   "counts": {
+    "strong": 17,
+    "weak": 3
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_output_json_safety.py": {
+   "counts": {
+    "strong": 8,
+    "weak": 5
+   },
+   "weak_only": [
+    "test_whole_result_is_strictly_serialisable"
+   ],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_paramiko.py": {
+   "counts": {
+    "strong": 53,
+    "weak": 9,
+    "medium": 4
+   },
+   "weak_only": [
+    "test_transport_is_ready"
+   ],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_paramiko_helpers.py": {
+   "counts": {
+    "weak": 1,
+    "medium": 4,
+    "strong": 12
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_paramiko_run_command.py": {
+   "counts": {
+    "strong": 8,
+    "weak": 7,
+    "medium": 3
+   },
+   "weak_only": [
+    "test_close_releases_clients_and_jump_channel",
+    "test_ready_transport_returns_immediately"
+   ],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_paramiko_session_paths.py": {
+   "counts": {
+    "weak": 6,
+    "medium": 2,
+    "strong": 6
+   },
+   "weak_only": [
+    "test_defaults_when_unset",
+    "test_failures_are_false",
+    "test_success"
+   ],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_paramiko_transport_fakes.py": {
+   "counts": {
+    "weak": 17,
+    "strong": 25,
+    "medium": 3
+   },
+   "weak_only": [
+    "test_pump_channel_reports_read_error_and_swallows_close_error",
+    "test_pump_channel_stops_on_event_without_data",
+    "test_read_stream_reports_failure",
+    "test_send_stream_reports_channel_failure"
+   ],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_param_timeout_contract.py": {
+   "counts": {
+    "strong": 4
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_persistent_shell_protocol.py": {
+   "counts": {
+    "weak": 4,
+    "strong": 27,
+    "medium": 1
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_probe.py": {
+   "counts": {
+    "strong": 20,
+    "weak": 18,
+    "medium": 4
+   },
+   "weak_only": [
+    "test_detect_unsupported_version_returns_none",
+    "test_host_key_fingerprint_missing_entry_is_none",
+    "test_ssh_port_rule_enforces_22"
+   ],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_process_lifetime.py": {
+   "counts": {
+    "weak": 14,
+    "medium": 1,
+    "strong": 5
+   },
+   "weak_only": [
+    "test_close_kills_parent_and_descendant",
+    "test_dispose_kills_process_group_descendant",
+    "test_shutdown_kills_supervised_descendant"
+   ],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_pyapi_interface_contract.py": {
+   "counts": {
+    "medium": 6,
+    "weak": 4
+   },
+   "weak_only": [
+    "test_abstract_interface_cannot_instantiate_but_minimal_impl_can"
+   ],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_pyapi_packages.py": {
+   "counts": {
+    "weak": 2,
+    "strong": 6
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_register_flow.py": {
+   "counts": {
+    "medium": 19,
+    "strong": 109,
+    "weak": 18
+   },
+   "weak_only": [
+    "test_local_role_expected_fingerprint_is_cleared"
+   ],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_register_probe_pathname.py": {
+   "counts": {
+    "medium": 3,
+    "strong": 5
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_registration_mock_server.py": {
+   "counts": {
+    "strong": 118,
+    "weak": 10,
+    "medium": 1
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_registration_page.py": {
+   "counts": {
+    "strong": 49
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_registration_probe_status.py": {
+   "counts": {
+    "strong": 16,
+    "weak": 4
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_registration_server.py": {
+   "counts": {
+    "strong": 220,
+    "weak": 18,
+    "medium": 5
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_registration_server_edges.py": {
+   "counts": {
+    "strong": 94,
+    "weak": 5
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_registry_decoupling.py": {
+   "counts": {
+    "strong": 19,
+    "medium": 6,
+    "weak": 3
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_registry_keys.py": {
+   "counts": {
+    "strong": 10
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_registry_more.py": {
+   "counts": {
+    "weak": 8,
+    "strong": 32,
+    "medium": 1
+   },
+   "weak_only": [
+    "test_remove_persists"
+   ],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_remote_posix_path_contract.py": {
+   "counts": {
+    "strong": 2
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_reservation.py": {
+   "counts": {
+    "strong": 23,
+    "weak": 2,
+    "medium": 7
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_resource_release.py": {
+   "counts": {
+    "weak": 4,
+    "strong": 7
+   },
+   "weak_only": [
+    "test_close_stops_port_forward"
+   ],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_result_contract.py": {
+   "counts": {
+    "strong": 20,
+    "weak": 3
+   },
+   "weak_only": [
+    "test_command_result_is_a_named_model"
+   ],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_runner_single_flight.py": {
+   "counts": {
+    "strong": 5
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_runtime_env.py": {
+   "counts": {
+    "weak": 3,
+    "strong": 6
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_schematic_contracts.py": {
+   "counts": {
+    "weak": 24,
+    "strong": 118,
+    "medium": 3
+   },
+   "weak_only": [
+    "test_require_timeout_accepts_none_and_positive"
+   ],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_scope_exclusions.py": {
+   "counts": {
+    "strong": 6,
+    "medium": 1
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_skillref_docs_contracts.py": {
+   "counts": {
+    "medium": 11,
+    "strong": 45
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_skillref_package.py": {
+   "counts": {
+    "strong": 49,
+    "weak": 34,
+    "medium": 1
+   },
+   "weak_only": [
+    "test_body_layer_truncates_without_under",
+    "test_info_unknown_function_is_not_found"
+   ],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_skill_admission.py": {
+   "counts": {
+    "strong": 13,
+    "weak": 1
+   },
+   "weak_only": [
+    "test_gate_is_released_after_completion"
+   ],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_skill_log_options.py": {
+   "counts": {
+    "weak": 5,
+    "strong": 15
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_skill_text_utils.py": {
+   "counts": {
+    "strong": 32,
+    "weak": 6,
+    "medium": 6
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_spectre_contracts.py": {
+   "counts": {
+    "strong": 131,
+    "medium": 15,
+    "weak": 62
+   },
+   "weak_only": [
+    "test_has_fatal_detects_markers"
+   ],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_spectre_metrics.py": {
+   "counts": {
+    "weak": 4,
+    "strong": 4
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_spectre_util_contracts.py": {
+   "counts": {
+    "strong": 72,
+    "weak": 27,
+    "medium": 1
+   },
+   "weak_only": [
+    "test_noise_integral_empty_window_should_fail"
+   ],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_spectre_util_psf_contracts.py": {
+   "counts": {
+    "strong": 82,
+    "weak": 1
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_spec_contracts.py": {
+   "counts": {
+    "strong": 7
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_ssh.py": {
+   "counts": {
+    "strong": 109,
+    "medium": 17,
+    "weak": 20
+   },
+   "weak_only": [
+    "test_ensure_persistent_shell_disabled",
+    "test_paramiko_backend_constructs",
+    "test_start_success",
+    "test_tunnel_stderr_path_is_removed_on_stop"
+   ],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_ssh_credentials.py": {
+   "counts": {
+    "strong": 7,
+    "medium": 4
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_ssh_dispatch.py": {
+   "counts": {
+    "strong": 17,
+    "weak": 4
+   },
+   "weak_only": [
+    "test_openssh_failure",
+    "test_openssh_timeout"
+   ],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_ssh_edges.py": {
+   "counts": {
+    "strong": 106,
+    "weak": 44,
+    "medium": 7
+   },
+   "weak_only": [
+    "test_can_reach_port_handles_refused_and_open",
+    "test_close_swallows_every_error_and_kills_on_wait_timeout",
+    "test_close_with_exhausted_budget_kills_without_waiting",
+    "test_discard_tunnel_stderr_swallows_oserror",
+    "test_ensure_is_a_noop_when_disabled",
+    "test_ensure_reuses_a_live_shell",
+    "test_interpreter_shutdown_marker_is_sticky",
+    "test_mux_probe_detects_timeout_and_ignores_missing_socket",
+    "test_mux_probe_skipped_without_multiplexing",
+    "test_paramiko_forward_opens_and_records_process",
+    "test_recover_from_wedged_mux_disables_cm_and_unlinks_socket",
+    "test_stop_pipeline_swallows_every_cleanup_error",
+    "test_stop_port_forward_swallows_errors",
+    "test_windows_forward_reuses_external_listener"
+   ],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_ssh_tunnel_lifecycle.py": {
+   "counts": {
+    "weak": 11,
+    "strong": 16
+   },
+   "weak_only": [
+    "test_alive_process_with_dead_forward_is_not_healthy",
+    "test_close_terminates_own_tunnel_process"
+   ],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_supervisor_internals.py": {
+   "counts": {
+    "strong": 58,
+    "weak": 42,
+    "medium": 1
+   },
+   "weak_only": [
+    "test_build_wires_middle_and_pool_size",
+    "test_dispose_ignores_stream_close_errors",
+    "test_dispose_skips_kill_when_child_already_exited",
+    "test_dispose_without_proc_closes_pending_job",
+    "test_dispose_without_proc_or_job_is_a_noop",
+    "test_keyboard_interrupt_still_closes_control_face",
+    "test_posix_group_sigterm_success_returns",
+    "test_restart_kills_child_when_drain_times_out",
+    "test_same_process_flag",
+    "test_send_refuses_when_no_process",
+    "test_send_refuses_without_stdin_and_after_exit",
+    "test_send_returns_false_on_broken_pipe",
+    "test_shutdown_failure_is_swallowed_on_exit",
+    "test_shutdown_kills_child_when_drain_times_out",
+    "test_taskkill_error_with_job_bound_defers_to_job",
+    "test_taskkill_failure_without_job_kills_directly",
+    "test_taskkill_success_returns_without_kill",
+    "test_wait_exit_reports_timeout",
+    "test_wait_exit_without_proc_is_true"
+   ],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_symbol_contracts.py": {
+   "counts": {
+    "strong": 151,
+    "weak": 44,
+    "medium": 6
+   },
+   "weak_only": [
+    "test_every_op_builds_balanced_skill"
+   ],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_symbol_generate.py": {
+   "counts": {
+    "strong": 95,
+    "weak": 9
+   },
+   "weak_only": [
+    "test_package_uses_the_util_functions"
+   ],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_top_layer_dispatch.py": {
+   "counts": {
+    "strong": 24,
+    "weak": 1
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_top_layer_pool.py": {
+   "counts": {
+    "strong": 42,
+    "weak": 4
+   },
+   "weak_only": [
+    "test_wait_idle_times_out_then_completes"
+   ],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_transfer.py": {
+   "counts": {
+    "strong": 40,
+    "medium": 3,
+    "weak": 5
+   },
+   "weak_only": [
+    "test_discard_stage"
+   ],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_transport_error_paths.py": {
+   "counts": {
+    "strong": 20,
+    "medium": 6,
+    "weak": 1
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_tunnel.py": {
+   "counts": {
+    "strong": 11,
+    "weak": 10,
+    "medium": 3
+   },
+   "weak_only": [
+    "test_parallel_paramiko_reuses_session_backend"
+   ],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_tunnel_transfer.py": {
+   "counts": {
+    "strong": 49,
+    "weak": 2,
+    "medium": 3
+   },
+   "weak_only": [
+    "test_jump_suppressed_when_target_is_jump_host"
+   ],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_update_host_key_probe.py": {
+   "counts": {
+    "strong": 13,
+    "weak": 1
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_upper_layer_import_contract.py": {
+   "counts": {
+    "medium": 4,
+    "weak": 2
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_validation_roles.py": {
+   "counts": {
+    "strong": 19,
+    "weak": 2,
+    "medium": 1
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_veriloga_contracts.py": {
+   "counts": {
+    "strong": 68,
+    "weak": 38,
+    "medium": 12
+   },
+   "weak_only": [
+    "test_requires_exactly_one_target"
+   ],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_veriloga_lazy_editor_contract.py": {
+   "counts": {
+    "medium": 1,
+    "weak": 5,
+    "strong": 9
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_verilog_contracts.py": {
+   "counts": {
+    "strong": 76,
+    "weak": 33,
+    "medium": 1
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_view_type_param_contract.py": {
+   "counts": {
+    "strong": 9,
+    "weak": 2,
+    "medium": 1
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_workdir_contract.py": {
+   "counts": {
+    "strong": 6
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/_daemon_harness.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/_fake_middle.py": {
+   "counts": {
+    "weak": 1
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/offline/unit/_ssh_cred.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/fakevirt/e2e_check.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/fakevirt/fake_virtuoso.py": {
+   "counts": {
+    "weak": 3
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/fakevirt/probe_real.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/fakevirt/skill_ops.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/probes/calibre_cdl_probe.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/probes/calibre_env_probe.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/probes/calibre_flat_turbo_probe.py": {
+   "counts": {
+    "weak": 7,
+    "strong": 11,
+    "medium": 3
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/probes/calibre_package_http_probe.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/probes/calibre_timeout_probe.py": {
+   "counts": {
+    "weak": 5,
+    "strong": 9,
+    "medium": 1
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/probes/cdl_export_variants_probe.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/probes/daemon_internal_error_path_probe.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/probes/docs_search_probe.py": {
+   "counts": {
+    "weak": 1
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/probes/gds_publish_path_edges_probe.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/probes/gds_then_skill_probe.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/probes/gui_display_probe.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/probes/layout_depth_probe.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/probes/layout_depth_region_direct_probe.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/probes/layout_lock_ownership_probe.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/probes/layout_p044_second_write_probe.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/probes/log_rotation_lock_probe.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/probes/lone_surrogate_probe.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/probes/maestro_batch2_verify_probe.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/probes/maestro_bugfix_batch_probe.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/probes/maestro_delete_var_all_probe.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/probes/maestro_e2e_probe.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/probes/maestro_env_probe.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/probes/maestro_export_include_results_probe.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/probes/maestro_leak_probe.py": {
+   "counts": {
+    "weak": 1
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/probes/maestro_open_waveform_result_probe.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/probes/maestro_p095_overwrite_wedge_probe.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/probes/maestro_p096_write_lock_probe.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/probes/maestro_pkg_probe.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/probes/maestro_save_false_disk_probe.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/probes/maestro_screenshot_probe.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/probes/maestro_session_conflict_probe.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/probes/p076_fix_verify_probe.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/probes/p076_spectre_run_hang_probe.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/probes/paramiko_ssh_config_true_probe.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/probes/py27_daemon_probe.py": {
+   "counts": {
+    "medium": 1
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/probes/py27_handler_probe.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/probes/schematic_pin_ops_probe.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/probes/schematic_wire_style_probe.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/probes/shared_cdf_pollution_probe.py": {
+   "counts": {
+    "strong": 3
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/probes/skillref_probe.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/probes/skill_syntax_matrix_tb.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/probes/skill_tooling_probe.py": {
+   "counts": {
+    "weak": 1
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/probes/spectre_ac_pipeline_probe.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/probes/spectre_channel_map_probe.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/probes/symbol_generate_hierarchy_handle_probe.py": {
+   "counts": {
+    "medium": 1
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/probes/symbol_http_400_repro.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/probes/symbol_pkg_probe.py": {
+   "counts": {
+    "strong": 2
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/probes/symbol_regen_handle_probe.py": {
+   "counts": {
+    "medium": 1
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/probes/symbol_screenshot_probe.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/probes/twouser_same_view_probe.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/probes/verilog_cell_and_views_direct_probe.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/probes/_maestro_tb.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/registration/cov_registration_real.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/registration/registration_failure_matrix_tb.py": {
+   "counts": {
+    "strong": 25,
+    "medium": 16,
+    "weak": 5
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/transport/install_stage_idempotent_tb.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/transport/log_matrix_real_tb.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/transport/one_shot_burst_tb.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/transport/role_credential_isolation_tb.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/transport/ssh_backend_semi_tb.py": {
+   "counts": {
+    "weak": 1,
+    "strong": 18,
+    "medium": 5
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/live/e2e/test_business_local_live.py": {
+   "counts": {
+    "strong": 11,
+    "weak": 1
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/live/e2e/test_business_remote_live.py": {
+   "counts": {
+    "strong": 10,
+    "weak": 1
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/live/e2e/test_e2e_live.py": {
+   "counts": {
+    "strong": 16,
+    "weak": 2
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/live/flows/adc_sar_flow_tb.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/live/flows/design_iterate_tb.py": {
+   "counts": {
+    "strong": 5,
+    "weak": 5
+   },
+   "weak_only": [
+    "stage_lvs",
+    "stage_r1_layout",
+    "stage_r1_sch"
+   ],
+   "log_unasserted": []
+  },
+  "test/live/flows/lvs_from_schematic_tb.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/live/flows/multihop_jump_tb.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/live/flows/multiuser_layout_handoff_tb.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/live/flows/multiuser_serdes_rx_tb.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/live/flows/project_flow_tb.py": {
+   "counts": {
+    "medium": 1,
+    "strong": 5
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/live/flows/role_split_tb.py": {
+   "counts": {
+    "weak": 1
+   },
+   "weak_only": [
+    "main"
+   ],
+   "log_unasserted": []
+  },
+  "test/live/flows/s11_full_flow.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/live/flows/s11_inprocess_lvs_tb.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/live/flows/s11_postsim_compare.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/live/flows/scale_100_tb.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/live/flows/serdes_rx_flow_tb.py": {
+   "counts": {
+    "strong": 8,
+    "weak": 5
+   },
+   "weak_only": [
+    "stage_buf",
+    "stage_layout",
+    "stage_term",
+    "stage_top"
+   ],
+   "log_unasserted": []
+  },
+  "test/live/packages/calibre_e2e_tests.py": {
+   "counts": {
+    "medium": 16,
+    "weak": 19,
+    "strong": 17
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/live/packages/calibre_export_pex_e2e_tests.py": {
+   "counts": {
+    "weak": 11,
+    "strong": 8,
+    "medium": 6
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/live/packages/calibre_params_e2e_tests.py": {
+   "counts": {
+    "weak": 10,
+    "strong": 9,
+    "medium": 15
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/live/packages/cellview_e2e_tests.py": {
+   "counts": {
+    "medium": 4,
+    "weak": 5,
+    "strong": 27
+   },
+   "weak_only": [
+    "_case_negative"
+   ],
+   "log_unasserted": []
+  },
+  "test/live/packages/gui_e2e_tests.py": {
+   "counts": {
+    "medium": 4,
+    "weak": 7,
+    "strong": 8
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/live/packages/infra_e2e_tests.py": {
+   "counts": {
+    "medium": 9,
+    "weak": 5,
+    "strong": 21
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/live/packages/layout_e2e_tests.py": {
+   "counts": {
+    "medium": 20,
+    "weak": 12,
+    "strong": 56
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/live/packages/layout_geometry_classification_e2e_tests.py": {
+   "counts": {
+    "weak": 4,
+    "strong": 1,
+    "medium": 3
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/live/packages/maestro_e2e_tests.py": {
+   "counts": {
+    "weak": 28,
+    "medium": 33,
+    "strong": 70
+   },
+   "weak_only": [
+    "_case_gui_lifecycle",
+    "_case_waveform_gui"
+   ],
+   "log_unasserted": []
+  },
+  "test/live/packages/maestro_mc_e2e_tests.py": {
+   "counts": {
+    "weak": 13,
+    "strong": 14,
+    "medium": 10
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/live/packages/maestro_nested_keys_e2e_tests.py": {
+   "counts": {
+    "weak": 8,
+    "strong": 4,
+    "medium": 8
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/live/packages/maestro_view_param_e2e_tests.py": {
+   "counts": {
+    "medium": 16,
+    "weak": 12,
+    "strong": 2
+   },
+   "weak_only": [
+    "_case_waveform_gui"
+   ],
+   "log_unasserted": []
+  },
+  "test/live/packages/nested_keys_e2e_tests.py": {
+   "counts": {
+    "weak": 9,
+    "medium": 7,
+    "strong": 1
+   },
+   "weak_only": [
+    "case_env"
+   ],
+   "log_unasserted": []
+  },
+  "test/live/packages/schematic_e2e_tests.py": {
+   "counts": {
+    "medium": 5,
+    "weak": 8,
+    "strong": 45
+   },
+   "weak_only": [
+    "_case_check_and_save"
+   ],
+   "log_unasserted": []
+  },
+  "test/live/packages/screenshot_params_e2e_tests.py": {
+   "counts": {
+    "weak": 39,
+    "strong": 2,
+    "medium": 6
+   },
+   "weak_only": [
+    "case_default",
+    "case_flags",
+    "case_region",
+    "case_window"
+   ],
+   "log_unasserted": []
+  },
+  "test/live/packages/skillref_e2e_tests.py": {
+   "counts": {
+    "medium": 13,
+    "weak": 7,
+    "strong": 22
+   },
+   "weak_only": [
+    "_case_errors"
+   ],
+   "log_unasserted": []
+  },
+  "test/live/packages/skill_log_options_e2e_tests.py": {
+   "counts": {
+    "weak": 10,
+    "medium": 13,
+    "strong": 2
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/live/packages/skill_log_semantics_e2e_tests.py": {
+   "counts": {
+    "weak": 5,
+    "strong": 6,
+    "medium": 12
+   },
+   "weak_only": [],
+   "log_unasserted": [
+    "_cdslog",
+    "case_f_multi_print_same_request",
+    "case_h_loop_print"
+   ]
+  },
+  "test/live/packages/spectre_e2e_tests.py": {
+   "counts": {
+    "medium": 5,
+    "weak": 11,
+    "strong": 10
+   },
+   "weak_only": [
+    "_case_failure"
+   ],
+   "log_unasserted": []
+  },
+  "test/live/packages/spectre_params_e2e_tests.py": {
+   "counts": {
+    "weak": 10,
+    "strong": 10,
+    "medium": 5
+   },
+   "weak_only": [
+    "case_measure_bad_source"
+   ],
+   "log_unasserted": []
+  },
+  "test/live/packages/spectre_pvt_e2e_tests.py": {
+   "counts": {
+    "weak": 2
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/live/packages/step_details_e2e_tests.py": {
+   "counts": {
+    "weak": 10,
+    "medium": 4,
+    "strong": 3
+   },
+   "weak_only": [
+    "case_env"
+   ],
+   "log_unasserted": []
+  },
+  "test/live/packages/symbol_e2e_tests.py": {
+   "counts": {
+    "medium": 9,
+    "weak": 9,
+    "strong": 32
+   },
+   "weak_only": [
+    "_case_missing_view"
+   ],
+   "log_unasserted": []
+  },
+  "test/live/packages/veriloga_e2e_tests.py": {
+   "counts": {
+    "medium": 9,
+    "weak": 6,
+    "strong": 8
+   },
+   "weak_only": [
+    "_case_delete"
+   ],
+   "log_unasserted": []
+  },
+  "test/live/packages/verilog_e2e_tests.py": {
+   "counts": {
+    "medium": 6,
+    "weak": 4,
+    "strong": 9
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/live/packages/verilog_import_params_e2e_tests.py": {
+   "counts": {
+    "weak": 16,
+    "medium": 12,
+    "strong": 11
+   },
+   "weak_only": [
+    "case_result_views_red_pin"
+   ],
+   "log_unasserted": []
+  },
+  "test/live/registration/registration_hostkey_rotation_tb.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/live/registration/registration_http_six_step_tb.py": {
+   "counts": {
+    "weak": 1
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/live/registration/registration_py27_tb.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/live/registration/registration_real_ciw_tb.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/live/registration/registration_role_split_tb.py": {
+   "counts": {
+    "weak": 1
+   },
+   "weak_only": [
+    "main"
+   ],
+   "log_unasserted": []
+  },
+  "test/live/stress/layout_multiuser_lock_tb.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/live/stress/multi_user_routing_tb.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/live/stress/production_face_stress_tb.py": {
+   "counts": {
+    "weak": 1
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/live/stress/scale_local_fake_tb.py": {
+   "counts": {
+    "weak": 1
+   },
+   "weak_only": [
+    "main"
+   ],
+   "log_unasserted": []
+  },
+  "test/live/transport/cov_remote_real.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/live/manual/business_console/serve.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  }
+ }
+}

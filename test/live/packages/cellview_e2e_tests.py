@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
-# 作者: 设计/上层开发
-# 最后改动: 2026-09-28 21:45
+# 作者: 测试/root
+# 最后改动: 2026-09-30 11:20
 # 依赖: 无
 # =======================================================================
 """``virtuoso.cellview.*`` 真机**逐操作**验收 TB（lib / cell / view / category 四层）。
@@ -97,7 +97,7 @@ def _op(transport, operation: str, **fields: Any) -> dict[str, Any]:
     response = _call(transport, operation, **fields)
     if not response.get("ok"):
         raise AssertionError(f"{operation} failed: {response.get('error')}")
-    data = _c1_wrapper(response)
+    data = response
     return data
 
 
@@ -110,6 +110,17 @@ def _expect_fail(transport, operation: str, **fields: Any) -> str:
     if response.get("ok"):
         raise AssertionError(f"{operation} expected structured failure, got ok")
     return str(response.get("error") or "")
+
+
+def _ensure(transport, operation: str, allowed: tuple[str, ...], **fields: Any) -> None:
+    """前置构造：幂等——目标已存在（或已在类目）就算成功。"""
+    response = _call(transport, operation, **fields)
+    if response.get("ok"):
+        return
+    error = str(response.get("error") or "")
+    if any(code in error for code in allowed):
+        return
+    raise AssertionError(f"{operation} 前置失败: {error}")
 
 
 class Evidence:
@@ -178,8 +189,10 @@ def _case_lib(transport, ev: Evidence) -> None:
 
     _op(transport, "lib.bind", library=LIB, technology_library="cdsDefTechLib")
     bound = _value(transport, "lib.get", library=LIB) or {}
-    ev.check_true(case, "lib.bind tech set",
-                  "cdsDefTechLib" in json.dumps(bound, ensure_ascii=False), bound)
+    # 2026-09-30 加强（表 C 真缺口 `virtual.cellview.lib.get.technology_library`）：
+    # 原来只在整包 JSON 里找字符串（任何字段含它都算过）→ 改成**点名该字段值级断言**。
+    ev.check(case, "lib.get technology_library", "cdsDefTechLib",
+             bound.get("technology_library"))
 
     _op(transport, "lib.rename", library=LIB, new_name=LIB3)
     names = _lib_names(transport)
@@ -266,16 +279,104 @@ def _case_category(transport, ev: Evidence) -> None:
 
 
 def _case_negative(transport, ev: Evidence) -> None:
-    """负控制：删不存在的对象必须**结构化失败**（spec §4 待修订项的口径）。"""
+    """负控制：删不存在的对象必须**结构化失败**，且错误码点名是哪一层不存在。
+
+    2026-09-30 加强：原来只断言"错误非空"，任何失败都能过（包括拼错 op 名、参数校验失败）。
+    现在按实现/spec 的分层错误码逐条断言（`libraryNotFound` / `cellNotFound` /
+    `viewNotFound` / `categoryNotFound`）——这才是"删不存在的对象"的语义证据。
+    """
     case = "NEG"
-    for label, operation, fields in (
-        ("lib", "lib.delete", {"library": "cv_atoms_no_such_lib"}),
-        ("cell", "cell.delete", {"library": LIB2, "cell": "no_such_cell"}),
-        ("view", "view.delete", {"library": LIB2, "cell": CELL, "view": "no_such_view"}),
-        ("cat", "cat.delete", {"library": LIB2, "category": "no_such_cat"}),
+    for label, operation, fields, expected in (
+        ("lib", "lib.delete", {"library": "cv_atoms_no_such_lib"}, "libraryNotFound"),
+        ("cell", "cell.delete", {"library": LIB2, "cell": "no_such_cell"}, "cellNotFound"),
+        ("view", "view.delete", {"library": LIB2, "cell": CELL, "view": "no_such_view"},
+         "viewNotFound"),
+        ("cat", "cat.delete", {"library": LIB2, "category": "no_such_cat"},
+         "categoryNotFound"),
     ):
         error = _expect_fail(transport, operation, **fields)
         ev.check_true(case, f"{label}: structured failure", bool(error.strip()), error[:160])
+        ev.check(case, f"{label}: error code", expected, error.strip())
+
+
+def _case_negative_copy_rename(transport, ev: Evidence) -> None:
+    """copy/rename 与 category 成员操作的**非法档**（2026-09-30 补：这 8 个 op 此前各只有一条正例）。
+
+    每个 op 至少一条"目标已存在"或"源不存在"的非法档，并断言**具体错误码**
+    （实现里的枚举：`destinationExists` / `libraryNotFound` / `cellNotFound` / `viewNotFound` /
+    `cellAlreadyInCategory` / `cellNotInCategory` / `destinationCategoryExists`）。
+    """
+    case = "NEG2"
+    # ②③ 前置：保证 LIB2/CELL/VIEW 存在，并造出"已存在的目标"（CELL2/VIEW2/cat2）
+    _ensure(transport, "cell.copy", ("destinationExists",),
+            library=LIB2, cell=CELL, new_library=LIB2, new_cell=CELL2)
+    _ensure(transport, "view.copy", ("destinationExists", "copyFailed"),
+            library=LIB2, cell=CELL, view=VIEW, new_library=LIB2, new_cell=CELL,
+            new_view=VIEW2)
+    # 类目是**共享夹具**，可能被别的用例/手工清理掉 → 本用例自带幂等重建
+    _ensure(transport, "cat.create", ("categoryExists",), library=LIB2, category=CAT)
+    _ensure(transport, "cat.create", ("categoryExists",), library=LIB2, category=CAT2)
+    _ensure(transport, "cat.add_cell", ("cellAlreadyInCategory",),
+            library=LIB2, category=CAT, cell=CELL)
+    _ensure(transport, "lib.copy", ("destinationExists", "libraryExists"),
+            library=LIB2, new_library=LIB3, new_path=LIB3_PATH)
+
+    checks = (
+        # op、参数、期望错误码
+        ("cell.copy 目标已存在", "cell.copy",
+         {"library": LIB2, "cell": CELL, "new_library": LIB2, "new_cell": CELL2},
+         "destinationExists"),
+        ("cell.copy 源 cell 不存在", "cell.copy",
+         {"library": LIB2, "cell": "no_such_cell", "new_library": LIB2,
+          "new_cell": "dst_x"}, "cellNotFound"),
+        ("cell.rename 目标已存在", "cell.rename",
+         {"library": LIB2, "cell": CELL, "new_name": CELL2}, "destinationExists"),
+        # 注：`view.copy` 目标已存在时实现给的是**通用** `copyFailed`（lib/cell 两条路径给 `destinationExists`）——
+        # spec `5-cellview.md` 把"copy 能力/目标不存在时的错误语义"列为**待确认**，故这里按实测断言，
+        # 并把"跨层错误码是否统一"并入 P-112（spec 改判）讨论。
+        ("view.copy 目标已存在（实测通用码 copyFailed）", "view.copy",
+         {"library": LIB2, "cell": CELL, "view": VIEW, "new_library": LIB2,
+          "new_cell": CELL, "new_view": VIEW2}, "copyFailed"),
+        ("view.copy 源 view 不存在", "view.copy",
+         {"library": LIB2, "cell": CELL, "view": "no_such_view", "new_library": LIB2,
+          "new_cell": CELL, "new_view": "dst_v"}, "viewNotFound"),
+        ("view.rename 目标已存在", "view.rename",
+         {"library": LIB2, "cell": CELL, "view": VIEW, "new_name": VIEW2},
+         "destinationExists"),
+        # `lib.copy` 目标已存在 → 实测 `libraryExists`（与 cell 层的 `destinationExists` **不一致**，并入 P-112）
+        ("lib.copy 目标已存在（实测 libraryExists）", "lib.copy",
+         {"library": LIB2, "new_library": LIB3, "new_path": LIB3_PATH},
+         "libraryExists"),
+        ("lib.rename 目标已存在", "lib.rename",
+         {"library": LIB2, "new_name": LIB3}, "destinationExists"),
+        ("cat.add_cell 已在类目", "cat.add_cell",
+         {"library": LIB2, "category": CAT, "cell": CELL}, "cellAlreadyInCategory"),
+        ("cat.add_cell cell 不存在", "cat.add_cell",
+         {"library": LIB2, "category": CAT, "cell": "no_such_cell"}, "cellNotFound"),
+        ("cat.remove_cell 不在类目", "cat.remove_cell",
+         {"library": LIB2, "category": CAT, "cell": CELL2}, "cellNotInCategory"),
+        ("cat.rename 目标已存在", "cat.rename",
+         {"library": LIB2, "category": CAT, "new_name": CAT2},
+         "destinationCategoryExists"),
+        # create 族的非法档（2026-09-30 补：`lib.create`/`view.create` 此前只有一条正例）
+        ("lib.create 已存在", "lib.create",
+         {"library": LIB2, "path": LIB2_PATH}, "libraryExists"),
+        ("lib.create 技术库不存在", "lib.create",
+         {"library": "cv_atoms_tmp_x", "path": LIB2_PATH,
+          "technology_library": "no_such_tech"}, "technologyLibraryNotFound"),
+        ("view.create 非法 view_type", "view.create",
+         {"library": LIB2, "cell": CELL, "view": "schematic_badtype",
+          "view_type": "bogus_type"}, "createFailed"),
+    )
+    for label, operation, fields, expected in checks:
+        error = _expect_fail(transport, operation, **fields)
+        ev.check(case, f"{label}: error code", expected, error.strip())
+
+    # ⑤ 反证：上面这些"非法档"都没有产生副作用（目标对象不重复、源对象仍在）
+    ev.check(case, "cell2 未重复", 1, _cell_names(transport).count(CELL2))
+    ev.check(case, "view2 未重复", 1, _view_names(transport, cell=CELL).count(VIEW2))
+    ev.check_true(case, "源 cell 仍在", CELL in _cell_names(transport),
+                  _cell_names(transport))
 
 
 CASES: tuple[tuple[str, Callable[[Any, Evidence], None]], ...] = (
@@ -284,12 +385,14 @@ CASES: tuple[tuple[str, Callable[[Any, Evidence], None]], ...] = (
     ("view", _case_view),
     ("cat", _case_category),
     ("NEG", _case_negative),
+    ("NEG2", _case_negative_copy_rename),
 )
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--transport", choices=("direct", "http"), default="direct")
+    parser.add_argument("--transport", choices=("direct", "http"), default="http",
+                        help="direct=故障定位/覆盖率；真机判据必须 http")
     parser.add_argument("--base", default=API)
     parser.add_argument("--out", default="")
     args = parser.parse_args()
@@ -338,19 +441,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
-
-# --- C1 兼容垫片（2026-09-29，C3）------------------------------------------------
-# C1（2f88853）起：业务载荷直返顶层（值型 `value`、命令/skill 型 `result`）、
-# 成功默认省略 `steps`、失败壳去掉 `data`。历史 TB 按 `response["data"]` 解析，
-# 本垫片把新契约响应合成为旧 `data` 壳，让既有解析零改动继续工作。
-def _c1_wrapper(body):
-    if not isinstance(body, dict):
-        return {}
-    if isinstance(body.get("data"), dict):
-        return body["data"]
-    wrapped = {"ok": body.get("ok"), "error": body.get("error")}
-    for key in ("value", "result", "steps"):
-        if key in body:
-            wrapped[key] = body[key]
-    return wrapped

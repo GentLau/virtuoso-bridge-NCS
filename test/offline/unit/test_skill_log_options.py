@@ -62,12 +62,11 @@ class RecordingMiddle:
 class TestSkillLogOptionsPassThrough(unittest.TestCase):
     def test_registered_skill_request_models_expose_both_fields(self):
         modules = (
-            basic, calibre, cellview, layout, maestro,
+            basic, cellview, layout, maestro,
             schematic, symbol, verilog, veriloga,
         )
         only = {
             basic.__name__: {"execute_skill"},
-            calibre.__name__: {"export_cdl"},
         }
         checked = 0
         for module in modules:

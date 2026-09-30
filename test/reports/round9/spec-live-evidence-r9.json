@@ -1,0 +1,437 @@
+{
+ "cutoff": "2026-09-29T18:00",
+ "rows_total": 18,
+ "status_counts": {
+  "R9-LIVE-STALE": 2,
+  "R9-LIVE-FRESH": 16
+ },
+ "rows": [
+  {
+   "id": "路由#024",
+   "doc": "中层/3-路由设计.md",
+   "verdict": "indirect",
+   "status": "R9-LIVE-STALE",
+   "evidence": [
+    "test/live/flows/role_split_tb.py"
+   ],
+   "resolved": [
+    {
+     "kind": "LIVE-OTHER",
+     "evidence": null,
+     "round9": false
+    }
+   ],
+   "text": "这条准则同时是评审 P0-01 的关闭口径：规范不再承诺\"gui 与 daemon 必须同机\"，也不再假设；bridge 按配置投送。"
+  },
+  {
+   "id": "注册#007",
+   "doc": "其他/1-多用户与注册.md",
+   "verdict": "direct",
+   "status": "R9-LIVE-FRESH",
+   "evidence": [
+    "test/live/registration/registration_http_six_step_tb.py",
+    "test/semi/registration/cov_registration_real.py"
+   ],
+   "resolved": [
+    {
+     "kind": "LIVE-OTHER",
+     "evidence": null,
+     "round9": false
+    },
+    {
+     "kind": "SEMI",
+     "evidence": "test/artifacts/evidence/semi-probes.json",
+     "round9": true
+    }
+   ],
+   "text": "- **注册与使用解耦**：六步注册结束后，除文件系统变更（registry + 远端部署文件）外不得残留隧道、SSH 进程或控制 socket；"
+  },
+  {
+   "id": "注册#011",
+   "doc": "其他/1-多用户与注册.md",
+   "verdict": "indirect",
+   "status": "R9-LIVE-FRESH",
+   "evidence": [
+    "test/semi/registration/cov_registration_real.py",
+    "test/live/registration/registration_http_six_step_tb.py"
+   ],
+   "resolved": [
+    {
+     "kind": "SEMI",
+     "evidence": "test/artifacts/evidence/semi-probes.json",
+     "round9": true
+    },
+    {
+     "kind": "LIVE-OTHER",
+     "evidence": null,
+     "round9": false
+    }
+   ],
+   "text": "- **token 使用范围**：只用于路由与校验（注册表路由、daemon 比对、Skill 请求）；用户可读路径一律用唯一用户名，不用 token。"
+  },
+  {
+   "id": "注册#040",
+   "doc": "其他/1-多用户与注册.md",
+   "verdict": "direct",
+   "status": "R9-LIVE-FRESH",
+   "evidence": [
+    "test/semi/registration/cov_registration_real.py",
+    "test/live/registration/registration_http_six_step_tb.py"
+   ],
+   "resolved": [
+    {
+     "kind": "SEMI",
+     "evidence": "test/artifacts/evidence/semi-probes.json",
+     "round9": true
+    },
+    {
+     "kind": "LIVE-OTHER",
+     "evidence": null,
+     "round9": false
+    }
+   ],
+   "text": "- 第五步通过只报告连通性 OK，**不自动写盘**；第六步由用户显式确认触发（唯一写盘点）；"
+  },
+  {
+   "id": "schematic#018",
+   "doc": "上层/2-schematic.md",
+   "verdict": "direct",
+   "status": "R9-LIVE-STALE",
+   "evidence": [
+    "test/live/packages/screenshot_params_e2e_tests.py",
+    "test/artifacts/evidence/round8/screenshot-params/schematic.json"
+   ],
+   "resolved": [
+    {
+     "kind": "LIVE-PKG",
+     "evidence": null,
+     "round9": false,
+     "note": "未找到本轮日志"
+    },
+    {
+     "kind": "ARTIFACT",
+     "evidence": "test/artifacts/evidence/round8/screenshot-params/schematic.json",
+     "round9": false,
+     "exists": true
+    }
+   ],
+   "text": "- `screenshot`：目标默认 `lib/cell/view`，可选 `window_id`；可选 `region=[pos0, pos1]`（user units，截前 `hiZoomIn(window, bBox)` 把区域填满窗口）；`toplevel` / `centralWidget` 暴露；`leave_open` 默认关窗；格式固定 PNG；远端存 daemon role r"
+  },
+  {
+   "id": "schematic#025",
+   "doc": "上层/2-schematic.md",
+   "verdict": "direct",
+   "status": "R9-LIVE-FRESH",
+   "evidence": [
+    "test/live/packages/schematic_e2e_tests.py",
+    "test/artifacts/evidence/atom-coverage-2026-09-28.json"
+   ],
+   "resolved": [
+    {
+     "kind": "LIVE-PKG",
+     "evidence": "test/artifacts/package-e2e-r9-full/schematic.log",
+     "round9": true,
+     "red": false
+    },
+    {
+     "kind": "ARTIFACT",
+     "evidence": "test/artifacts/evidence/atom-coverage-2026-09-28.json",
+     "round9": false,
+     "exists": true
+    }
+   ],
+   "text": "**write 支持的原子命令**：每个原子 = `op` + **索引**（要动哪个对象）+ 附加参数。"
+  },
+  {
+   "id": "symbol#026",
+   "doc": "上层/3-symbol.md",
+   "verdict": "direct",
+   "status": "R9-LIVE-FRESH",
+   "evidence": [
+    "test/live/packages/symbol_e2e_tests.py",
+    "test/semi/probes/symbol_screenshot_probe.py"
+   ],
+   "resolved": [
+    {
+     "kind": "LIVE-PKG",
+     "evidence": "test/artifacts/package-e2e-r9-full/symbol.log",
+     "round9": true,
+     "red": false
+    },
+    {
+     "kind": "SEMI",
+     "evidence": "test/artifacts/evidence/semi-probes.json",
+     "round9": true
+    }
+   ],
+   "text": "- `view_type` 默认 `schematicSymbol`；格式固定 PNG；"
+  },
+  {
+   "id": "symbol#082",
+   "doc": "上层/3-symbol.md",
+   "verdict": "indirect",
+   "status": "R9-LIVE-FRESH",
+   "evidence": [
+    "test/semi/probes/schematic_pin_ops_probe.py",
+    "test/live/packages/symbol_e2e_tests.py"
+   ],
+   "resolved": [
+    {
+     "kind": "SEMI",
+     "evidence": "test/artifacts/evidence/semi-probes.json",
+     "round9": true
+    },
+    {
+     "kind": "LIVE-PKG",
+     "evidence": "test/artifacts/package-e2e-r9-full/symbol.log",
+     "round9": true,
+     "red": false
+    }
+   ],
+   "text": "真机语义（必须遵守）："
+  },
+  {
+   "id": "layout#048",
+   "doc": "上层/4-layout.md",
+   "verdict": "direct",
+   "status": "R9-LIVE-FRESH",
+   "evidence": [
+    "test/live/packages/layout_e2e_tests.py",
+    "test/artifacts/evidence/atom-coverage-2026-09-28.json"
+   ],
+   "resolved": [
+    {
+     "kind": "LIVE-PKG",
+     "evidence": "test/artifacts/package-e2e-r9-full/layout.log",
+     "round9": true,
+     "red": false
+    },
+    {
+     "kind": "ARTIFACT",
+     "evidence": "test/artifacts/evidence/atom-coverage-2026-09-28.json",
+     "round9": false,
+     "exists": true
+    }
+   ],
+   "text": "**write 支持的原子命令**：每个原子 = `op` + **索引**（要动哪个对象）+ 附加参数。"
+  },
+  {
+   "id": "layout#079",
+   "doc": "上层/4-layout.md",
+   "verdict": "indirect",
+   "status": "R9-LIVE-FRESH",
+   "evidence": [
+    "test/live/packages/layout_e2e_tests.py",
+    "test/semi/probes/layout_p044_second_write_probe.py"
+   ],
+   "resolved": [
+    {
+     "kind": "LIVE-PKG",
+     "evidence": "test/artifacts/package-e2e-r9-full/layout.log",
+     "round9": true,
+     "red": false
+    },
+    {
+     "kind": "SEMI",
+     "evidence": "test/artifacts/evidence/semi-probes.json",
+     "round9": true
+    }
+   ],
+   "text": "批量删层用 `dbShapeQuery(cv lpp bbox 0 <stopLevel>)`，**stopLevel 必须覆盖层次**；"
+  },
+  {
+   "id": "layout#179",
+   "doc": "上层/4-layout.md",
+   "verdict": "direct",
+   "status": "R9-LIVE-FRESH",
+   "evidence": [
+    "test/live/packages/layout_geometry_classification_e2e_tests.py",
+    "test/artifacts/evidence/round8/layout-geometry-classification.json",
+    "test/live/packages/layout_e2e_tests.py"
+   ],
+   "resolved": [
+    {
+     "kind": "LIVE-PKG",
+     "evidence": null,
+     "round9": false,
+     "note": "未找到本轮日志"
+    },
+    {
+     "kind": "ARTIFACT",
+     "evidence": "test/artifacts/evidence/round8/layout-geometry-classification.json",
+     "round9": true,
+     "exists": true
+    },
+    {
+     "kind": "LIVE-PKG",
+     "evidence": "test/artifacts/package-e2e-r9-full/layout.log",
+     "round9": true,
+     "red": false
+    }
+   ],
+   "text": "3. `dbCreateXxx` 失败分两类：**非法 LPP → 抛 SKILL 硬错误**；**几何非法 → nil + WARNING** →"
+  },
+  {
+   "id": "verilog#060",
+   "doc": "上层/8-verilog.md",
+   "verdict": "indirect",
+   "status": "R9-LIVE-FRESH",
+   "evidence": [
+    "src/pyapi/packages/verilog.py:504-519",
+    "test/live/packages/verilog_e2e_tests.py"
+   ],
+   "resolved": [
+    {
+     "kind": "LIVE-OTHER",
+     "evidence": null,
+     "round9": false
+    },
+    {
+     "kind": "LIVE-PKG",
+     "evidence": "test/artifacts/package-e2e-r9-full/verilog.log",
+     "round9": true,
+     "red": false
+    }
+   ],
+   "text": "（ihdl 会往里追加 `DEFINE`，不能给共享/全局那份）；"
+  },
+  {
+   "id": "verilog#065",
+   "doc": "上层/8-verilog.md",
+   "verdict": "indirect",
+   "status": "R9-LIVE-FRESH",
+   "evidence": [
+    "src/pyapi/packages/verilog.py:517",
+    "test/live/packages/verilog_e2e_tests.py"
+   ],
+   "resolved": [
+    {
+     "kind": "LIVE-OTHER",
+     "evidence": null,
+     "round9": false
+    },
+    {
+     "kind": "LIVE-PKG",
+     "evidence": "test/artifacts/package-e2e-r9-full/verilog.log",
+     "round9": true,
+     "red": false
+    }
+   ],
+   "text": "3. 执行（**必须带 LD_LIBRARY_PATH 前缀**，否则缺 `libsasl2.so.2`、rc=127）："
+  },
+  {
+   "id": "verilog#099",
+   "doc": "上层/8-verilog.md",
+   "verdict": "indirect",
+   "status": "R9-LIVE-FRESH",
+   "evidence": [
+    "test/live/packages/verilog_e2e_tests.py"
+   ],
+   "resolved": [
+    {
+     "kind": "LIVE-PKG",
+     "evidence": "test/artifacts/package-e2e-r9-full/verilog.log",
+     "round9": true,
+     "red": false
+    }
+   ],
+   "text": "2. `ihdl` 是 ksh 包装器：裸跑缺 `libsasl2.so.2`（rc=127），必须带"
+  },
+  {
+   "id": "veriloga#069",
+   "doc": "上层/11-veriloga.md",
+   "verdict": "direct",
+   "status": "R9-LIVE-FRESH",
+   "evidence": [
+    "test/live/packages/veriloga_e2e_tests.py",
+    "test/artifacts/evidence/round8"
+   ],
+   "resolved": [
+    {
+     "kind": "LIVE-PKG",
+     "evidence": "test/artifacts/package-e2e-r9-full/veriloga.log",
+     "round9": true,
+     "red": false
+    },
+    {
+     "kind": "ARTIFACT",
+     "evidence": "test/artifacts/evidence/round8",
+     "round9": false,
+     "exists": false
+    }
+   ],
+   "text": "真机结论：上述序列与 GUI Check and Save 的落盘形态**逐文件一致**，唯一差别是不含 GUI 弹窗生成的 `symbol` 视图；"
+  },
+  {
+   "id": "veriloga#088",
+   "doc": "上层/11-veriloga.md",
+   "verdict": "indirect",
+   "status": "R9-LIVE-FRESH",
+   "evidence": [
+    "test/live/flows/adc_sar_flow_tb.py",
+    "test/live/packages/veriloga_e2e_tests.py"
+   ],
+   "resolved": [
+    {
+     "kind": "LIVE-OTHER",
+     "evidence": null,
+     "round9": false
+    },
+    {
+     "kind": "LIVE-PKG",
+     "evidence": "test/artifacts/package-e2e-r9-full/veriloga.log",
+     "round9": true,
+     "red": false
+    }
+   ],
+   "text": "4. `ahdlCompile*` 不存在；编译只能由 Spectre（`ahdlcmi`）完成，缓存 `<netlist>.ahdlSimDB/<srcHash>.*.ahdlcmi/`；"
+  },
+  {
+   "id": "veriloga#094",
+   "doc": "上层/11-veriloga.md",
+   "verdict": "direct",
+   "status": "R9-LIVE-FRESH",
+   "evidence": [
+    "test/live/packages/veriloga_e2e_tests.py",
+    "test/live/flows/adc_sar_flow_tb.py"
+   ],
+   "resolved": [
+    {
+     "kind": "LIVE-PKG",
+     "evidence": "test/artifacts/package-e2e-r9-full/veriloga.log",
+     "round9": true,
+     "red": false
+    },
+    {
+     "kind": "LIVE-OTHER",
+     "evidence": null,
+     "round9": false
+    }
+   ],
+   "text": "9. **headless 的 Check and Save 已真机闭环**：写文件 → `VerAParseModule`（错误进 errFile）→"
+  },
+  {
+   "id": "calibre#172",
+   "doc": "上层/12-calibre.md",
+   "verdict": "indirect",
+   "status": "R9-LIVE-FRESH",
+   "evidence": [
+    "test/semi/probes/calibre_package_http_probe.py",
+    "test/live/flows/s11_full_flow.py"
+   ],
+   "resolved": [
+    {
+     "kind": "SEMI",
+     "evidence": "test/artifacts/evidence/semi-probes.json",
+     "round9": true
+    },
+    {
+     "kind": "LIVE-OTHER",
+     "evidence": null,
+     "round9": false
+    }
+   ],
+   "text": "3. `power`/`ground` 未给时沿用 deck 默认（可能触发 ERC 告警，见可行性报告 §2 的 LVS 实测）；"
+  }
+ ]
+}

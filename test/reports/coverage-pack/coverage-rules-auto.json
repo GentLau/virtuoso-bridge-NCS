@@ -66,14 +66,14 @@
   ],
   "src/register/server.py": [
     {
-      "lines": "1014",
+      "lines": "1017",
       "category": "defensive",
       "why": "main-guard: inside `if __name__ == \"__main__\":`"
     }
   ],
   "src/server/api_server.py": [
     {
-      "lines": "498",
+      "lines": "495",
       "category": "defensive",
       "why": "main-guard: inside `if __name__ == \"__main__\":`"
     }
@@ -117,7 +117,7 @@
   ],
   "src/transport/middle.py": [
     {
-      "lines": "423",
+      "lines": "434",
       "category": "env-blocked",
       "why": "platform-guarded: guarded by `os.name == 'nt'` (this run: platform=win32, os=nt)"
     }

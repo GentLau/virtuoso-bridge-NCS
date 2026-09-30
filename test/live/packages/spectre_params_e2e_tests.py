@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
 # 作者: 测试/root
-# 最后改动: 2026-09-28 19:55
+# 最后改动: 2026-09-30 11:20
 # 依赖: 真机 vblog token（wsl-gent spectre role）+ 本文件自建 RC netlist
 # =======================================================================
 # 六步流程（test/docs/写TB规范.md §1）：
@@ -44,7 +44,10 @@ API = "http://127.0.0.1:8127/api/operation"
 TOKEN = "vb-vblog"
 WORK_DIR = ROOT / "test" / "artifacts" / "env" / "log-vblog"
 PARAM_DIR = ROOT / "test" / "artifacts" / "env" / "round8-spectre-params"
-OUT_DIR = ROOT / "test" / "artifacts" / "evidence" / "round8" / "spectre-params"
+#: 证据目录**不再带轮次号**（2026-09-30 改）：原来写死 `round8`，在 round9/round10 跑出来的
+#: 证据仍落在 round8 目录里，评审看"本轮证据"时会误判为陈旧。默认用稳定路径，
+#: 需要按轮次归档时用 `--out-dir test/artifacts/evidence/roundN/spectre-params` 覆盖。
+OUT_DIR = ROOT / "test" / "artifacts" / "evidence" / "spectre-params"
 SPECTRE_BIN = "/opt/eda/cadence/SPECTRE241/bin/spectre"
 
 RC_NETLIST = """simulator lang=spectre
@@ -103,7 +106,7 @@ class DirectTransport:
 
 def op(transport, operation: str, **fields: Any) -> dict[str, Any]:
     response = transport.call({"operation": operation, "token": transport.token, **fields})
-    data = _c1_wrapper(response)
+    data = response
     if response.get("ok") is False or data.get("ok") is False:
         raise AssertionError(f"{operation} failed: {response.get('error') or data.get('error')}")
     return data
@@ -111,7 +114,7 @@ def op(transport, operation: str, **fields: Any) -> dict[str, Any]:
 
 def expect_fail(transport, operation: str, **fields: Any) -> str:
     response = transport.call({"operation": operation, "token": transport.token, **fields})
-    data = _c1_wrapper(response)
+    data = response
     if response.get("ok") is not False and data.get("ok") is not False:
         raise AssertionError(f"{operation} expected structured failure, got ok")
     return str(response.get("error") or data.get("error") or "")
@@ -131,11 +134,15 @@ def run_case(name: str, check: Callable[[], Any], results: list[dict]) -> None:
 
 
 def main() -> int:
+    global OUT_DIR
     parser = argparse.ArgumentParser()
     parser.add_argument("--transport", choices=["http", "direct"], default="http")
     parser.add_argument("--token", default=TOKEN)
     parser.add_argument("--spice-bin", default=SPECTRE_BIN)
+    parser.add_argument("--out-dir", default=str(OUT_DIR),
+                        help="证据落盘目录（默认 test/artifacts/evidence/spectre-params）")
     args = parser.parse_args()
+    OUT_DIR = Path(args.out_dir)
 
     PARAM_DIR.mkdir(parents=True, exist_ok=True)
     OUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -219,7 +226,7 @@ def main() -> int:
         value_json = op(transport, "spectre.export", format="json", source_path=str(data_path),
                         output_path=str(json_path), timeout=60)["value"]
         payload = json.loads(json_path.read_text(encoding="utf-8"))
-        assert payload.get("format") == "json" and _c1_wrapper(payload), payload
+        assert payload.get("format") == "json" and payload, payload
         assert value_json.get("bytes", 0) > 0, value_json
 
         error = expect_fail(transport, "spectre.export", format="csv",
@@ -235,6 +242,9 @@ def main() -> int:
                             source_path=str(PARAM_DIR / "no_such_data.json"),
                             metrics=[{"type": "min", "signal": "sig"}], timeout=30)
         assert error, "不存在的 source_path 必须结构化失败"
+        # 2026-09-30 加强：断言失败**原因**（读不到该文件）且点名路径，避免"任何失败都算过"
+        assert "cannot read source_path" in error, f"错误文案未说明读不到 source_path：{error[:160]}"
+        assert "no_such_data.json" in error, f"错误文案未点名缺失文件：{error[:160]}"
         return {"error": error[:160]}
 
     run_case("RUN-P1 output_root 落盘", case_output_root, results)
@@ -262,19 +272,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
-
-# --- C1 兼容垫片（2026-09-29，C3）------------------------------------------------
-# C1（2f88853）起：业务载荷直返顶层（值型 `value`、命令/skill 型 `result`）、
-# 成功默认省略 `steps`、失败壳去掉 `data`。历史 TB 按 `response["data"]` 解析，
-# 本垫片把新契约响应合成为旧 `data` 壳，让既有解析零改动继续工作。
-def _c1_wrapper(body):
-    if not isinstance(body, dict):
-        return {}
-    if isinstance(body.get("data"), dict):
-        return body["data"]
-    wrapped = {"ok": body.get("ok"), "error": body.get("error")}
-    for key in ("value", "result", "steps"):
-        if key in body:
-            wrapped[key] = body[key]
-    return wrapped

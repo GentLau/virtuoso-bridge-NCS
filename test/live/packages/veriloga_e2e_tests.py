@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
 # 作者: 测试/root
-# 最后改动: 2026-09-28 20:12
+# 最后改动: 2026-09-30 11:20
 # 依赖: 无
 # =======================================================================
 # 六步流程（test/docs/写TB规范.md §1）：
@@ -94,7 +94,7 @@ def _op(transport, operation: str, **fields: Any) -> Any:
     response = transport.call({"operation": operation, "token": TOKEN, **fields})
     if not response.get("ok"):
         raise AssertionError(f"{operation} failed: {response.get('error')}")
-    return _c1_wrapper(response)
+    return response
 
 
 def _value(transport, operation: str, **fields: Any) -> dict[str, Any]:
@@ -187,7 +187,7 @@ def _case_bad_syntax(transport) -> None:
         "library": LIB, "cell": CELL, "view": VIEW,
     })
     _check(not response.get("ok"), "bad syntax must fail check")
-    errors = (_c1_wrapper(response)).get("value") or {}
+    errors = (response).get("value") or {}
     _check(any("VACOMP-" in item for item in errors.get("errors", [])),
            f"VACOMP diagnostics missing: {errors}")
     _value(
@@ -212,6 +212,11 @@ def _case_delete(transport) -> None:
         "library": LIB, "cell": CELL, "view": VIEW,
     })
     _check(not response.get("ok"), "read after delete must fail")
+    # 2026-09-30 加强：断言失败**原因**是视图已不存在（证明 delete_view 真的生效），
+    # 而不是别的偶发错误；并点名被删的视图路径。
+    error = str(response.get("error") or "")
+    _check("missing" in error.lower(), f"read 失败原因应为视图缺失（实测 {error!r}）")
+    _check(VIEW in error, f"错误文案应点名视图路径（实测 {error!r}）")
 
 
 def _stage_file(name: str, content: str) -> str:
@@ -292,7 +297,8 @@ def run_suite(transport) -> list[tuple[str, str]]:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--transport", choices=("direct", "http"), default="direct")
+    parser.add_argument("--transport", choices=("direct", "http"), default="http",
+                        help="direct=故障定位/覆盖率；真机判据必须 http")
     args = parser.parse_args()
     transport = HttpTransport() if args.transport == "http" else DirectTransport()
     try:
@@ -308,19 +314,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
-
-# --- C1 兼容垫片（2026-09-29，C3）------------------------------------------------
-# C1（2f88853）起：业务载荷直返顶层（值型 `value`、命令/skill 型 `result`）、
-# 成功默认省略 `steps`、失败壳去掉 `data`。历史 TB 按 `response["data"]` 解析，
-# 本垫片把新契约响应合成为旧 `data` 壳，让既有解析零改动继续工作。
-def _c1_wrapper(body):
-    if not isinstance(body, dict):
-        return {}
-    if isinstance(body.get("data"), dict):
-        return body["data"]
-    wrapped = {"ok": body.get("ok"), "error": body.get("error")}
-    for key in ("value", "result", "steps"):
-        if key in body:
-            wrapped[key] = body[key]
-    return wrapped

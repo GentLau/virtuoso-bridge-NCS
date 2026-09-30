@@ -1,0 +1,4597 @@
+{
+ "method": "AST：dispatch 分支 op 字面量/常量集合 + 分支内 command.get() 字段（守卫上下文继承 + handler→op 归属）；TB 端用 AST 字符串字面量精确匹配",
+ "caveat": "字面量出现≠断言语义；只用于找『从未被任何 TB 触碰过的嵌套键』",
+ "totals": {
+  "command_ops": 90,
+  "fields": 105,
+  "uncovered_fields": 0,
+  "enum_values": 23,
+  "uncovered_enum_values": 0
+ },
+ "uncovered_field_list": [],
+ "uncovered_enum_list": [],
+ "helpers_without_op_mapping": {
+  "layout.py": [
+   {
+    "function": "_pos_of",
+    "fields": [
+     "pos"
+    ],
+    "note": "子判别/匹配 helper（按 kind 等二级键分支），未做 op 归属"
+   },
+   {
+    "function": "_shape_match_expr",
+    "fields": [
+     "bbox",
+     "layer",
+     "points",
+     "purpose"
+    ],
+    "note": "子判别/匹配 helper（按 kind 等二级键分支），未做 op 归属"
+   },
+   {
+    "function": "_filter_layers",
+    "fields": [
+     "layers"
+    ],
+    "note": "子判别/匹配 helper（按 kind 等二级键分支），未做 op 归属"
+   },
+   {
+    "function": "_filter_region",
+    "fields": [
+     "region"
+    ],
+    "note": "子判别/匹配 helper（按 kind 等二级键分支），未做 op 归属"
+   },
+   {
+    "function": "_apply_read_filters",
+    "fields": [
+     "kind",
+     "layer",
+     "lpp",
+     "names",
+     "purpose",
+     "types"
+    ],
+    "note": "子判别/匹配 helper（按 kind 等二级键分支），未做 op 归属"
+   },
+   {
+    "function": "write",
+    "fields": [
+     "op"
+    ],
+    "note": "子判别/匹配 helper（按 kind 等二级键分支），未做 op 归属"
+   },
+   {
+    "function": "_check_lpp",
+    "fields": [
+     "layer",
+     "purpose"
+    ],
+    "note": "子判别/匹配 helper（按 kind 等二级键分支），未做 op 归属"
+   },
+   {
+    "function": "_label_match_expr",
+    "fields": [
+     "layer",
+     "old_text",
+     "text"
+    ],
+    "note": "子判别/匹配 helper（按 kind 等二级键分支），未做 op 归属"
+   },
+   {
+    "function": "display",
+    "fields": [
+     "op"
+    ],
+    "note": "子判别/匹配 helper（按 kind 等二级键分支），未做 op 归属"
+   }
+  ],
+  "schematic.py": [
+   {
+    "function": "_parse_schematic",
+    "fields": [
+     "direction",
+     "pos"
+    ],
+    "note": "子判别/匹配 helper（按 kind 等二级键分支），未做 op 归属"
+   },
+   {
+    "function": "_pos_of",
+    "fields": [
+     "pos"
+    ],
+    "note": "子判别/匹配 helper（按 kind 等二级键分支），未做 op 归属"
+   },
+   {
+    "function": "write",
+    "fields": [
+     "op"
+    ],
+    "note": "子判别/匹配 helper（按 kind 等二级键分支），未做 op 归属"
+   }
+  ],
+  "symbol.py": [
+   {
+    "function": "_label_text",
+    "fields": [
+     "text"
+    ],
+    "note": "子判别/匹配 helper（按 kind 等二级键分支），未做 op 归属"
+   },
+   {
+    "function": "_shape_match_expr",
+    "fields": [
+     "bbox",
+     "layer",
+     "points",
+     "purpose"
+    ],
+    "note": "子判别/匹配 helper（按 kind 等二级键分支），未做 op 归属"
+   },
+   {
+    "function": "_label_xy",
+    "fields": [
+     "pos"
+    ],
+    "note": "子判别/匹配 helper（按 kind 等二级键分支），未做 op 归属"
+   },
+   {
+    "function": "_label_match_expr",
+    "fields": [
+     "layer",
+     "purpose"
+    ],
+    "note": "子判别/匹配 helper（按 kind 等二级键分支），未做 op 归属"
+   },
+   {
+    "function": "write",
+    "fields": [
+     "op"
+    ],
+    "note": "子判别/匹配 helper（按 kind 等二级键分支），未做 op 归属"
+   }
+  ],
+  "verilog.py": [],
+  "veriloga.py": [],
+  "maestro.py": [
+   {
+    "function": "read_config",
+    "fields": [
+     "name",
+     "spec",
+     "type",
+     "value"
+    ],
+    "note": "子判别/匹配 helper（按 kind 等二级键分支），未做 op 归属"
+   },
+   {
+    "function": "write",
+    "fields": [
+     "op"
+    ],
+    "note": "子判别/匹配 helper（按 kind 等二级键分支），未做 op 归属"
+   },
+   {
+    "function": "write_history",
+    "fields": [
+     "history",
+     "new_name",
+     "op"
+    ],
+    "note": "子判别/匹配 helper（按 kind 等二级键分支），未做 op 归属"
+   }
+  ],
+  "spectre.py": [
+   {
+    "function": "measure",
+    "fields": [
+     "detail",
+     "ok",
+     "type"
+    ],
+    "note": "子判别/匹配 helper（按 kind 等二级键分支），未做 op 归属"
+   }
+  ]
+ },
+ "report": {
+  "layout.py": {
+   "delete_instance": {
+    "fields": [
+     {
+      "field": "name",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py",
+       "test/live/flows/multihop_jump_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py"
+      ]
+     },
+     {
+      "field": "new_orient",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/layout_e2e_tests.py"
+      ]
+     },
+     {
+      "field": "new_pos",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/layout_e2e_tests.py",
+       "test/offline/unit/test_layout_contracts.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "delete_label": {
+    "fields": [
+     {
+      "field": "new_height",
+      "covered": true,
+      "tb_files": [
+       "test/offline/unit/test_layout_contracts.py"
+      ]
+     },
+     {
+      "field": "new_pos",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/layout_e2e_tests.py",
+       "test/offline/unit/test_layout_contracts.py"
+      ]
+     },
+     {
+      "field": "new_text",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/layout_e2e_tests.py",
+       "test/live/packages/schematic_e2e_tests.py",
+       "test/live/packages/symbol_e2e_tests.py",
+       "test/live/packages/veriloga_e2e_tests.py",
+       "test/offline/unit/test_layout_contracts.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "delete_mosaic": {
+    "fields": [
+     {
+      "field": "name",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py",
+       "test/live/flows/multihop_jump_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "delete_shape": {
+    "fields": [
+     {
+      "field": "all",
+      "covered": true,
+      "tb_files": [
+       "test/live/e2e/test_e2e_live.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/project_flow_tb.py",
+       "test/live/flows/scale_100_tb.py",
+       "test/live/flows/serdes_rx_flow_tb.py"
+      ]
+     },
+     {
+      "field": "kind",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py",
+       "test/live/flows/multihop_jump_tb.py",
+       "test/live/flows/role_split_tb.py",
+       "test/live/flows/s11_full_flow.py"
+      ]
+     },
+     {
+      "field": "new_bbox",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/layout_e2e_tests.py",
+       "test/live/packages/symbol_e2e_tests.py",
+       "test/offline/unit/test_layout_contracts.py",
+       "test/offline/unit/test_symbol_contracts.py"
+      ]
+     },
+     {
+      "field": "new_points",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/symbol_e2e_tests.py"
+      ]
+     },
+     {
+      "field": "new_width",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/layout_e2e_tests.py",
+       "test/offline/unit/test_layout_contracts.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "delete_shapes_on_layer": {
+    "fields": [
+     {
+      "field": "layer",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/s11_full_flow.py",
+       "test/live/flows/serdes_rx_flow_tb.py"
+      ]
+     },
+     {
+      "field": "purpose",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/s11_full_flow.py",
+       "test/live/flows/serdes_rx_flow_tb.py"
+      ]
+     },
+     {
+      "field": "types",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/layout_e2e_tests.py",
+       "test/offline/unit/test_layout_contracts.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "delete_via": {
+    "fields": [
+     {
+      "field": "orient",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/project_flow_tb.py",
+       "test/live/flows/s11_full_flow.py",
+       "test/live/flows/serdes_rx_flow_tb.py",
+       "test/live/packages/layout_e2e_tests.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "fit_view": {
+    "fields": [
+     {
+      "field": "layer",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/s11_full_flow.py",
+       "test/live/flows/serdes_rx_flow_tb.py"
+      ]
+     },
+     {
+      "field": "layers",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/layout_e2e_tests.py",
+       "test/offline/unit/test_layout_contracts.py",
+       "test/offline/unit/test_layout_depth_contract.py",
+       "test/semi/probes/layout_depth_probe.py",
+       "test/semi/probes/layout_depth_region_direct_probe.py"
+      ]
+     },
+     {
+      "field": "op",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py"
+      ]
+     },
+     {
+      "field": "purpose",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/s11_full_flow.py",
+       "test/live/flows/serdes_rx_flow_tb.py"
+      ]
+     },
+     {
+      "field": "scale",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/serdes_rx_flow_tb.py",
+       "test/live/packages/layout_e2e_tests.py",
+       "test/offline/unit/test_layout_contracts.py",
+       "test/offline/unit/test_norm_gap_batch2.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "place_instance": {
+    "fields": [
+     {
+      "field": "master_cell",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py",
+       "test/live/flows/s11_full_flow.py"
+      ]
+     },
+     {
+      "field": "master_lib",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py",
+       "test/live/flows/s11_full_flow.py"
+      ]
+     },
+     {
+      "field": "master_view",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/project_flow_tb.py",
+       "test/live/flows/s11_full_flow.py",
+       "test/live/flows/serdes_rx_flow_tb.py",
+       "test/live/packages/layout_e2e_tests.py"
+      ]
+     },
+     {
+      "field": "name",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py",
+       "test/live/flows/multihop_jump_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py"
+      ]
+     },
+     {
+      "field": "num_inst",
+      "covered": true,
+      "tb_files": [
+       "test/offline/unit/test_layout_contracts.py"
+      ]
+     },
+     {
+      "field": "orient",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/project_flow_tb.py",
+       "test/live/flows/s11_full_flow.py",
+       "test/live/flows/serdes_rx_flow_tb.py",
+       "test/live/packages/layout_e2e_tests.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "place_label": {
+    "fields": [
+     {
+      "field": "font",
+      "covered": true,
+      "tb_files": [
+       "test/offline/unit/test_nested_command_keys_contract.py",
+       "test/offline/unit/test_schematic_contracts.py"
+      ]
+     },
+     {
+      "field": "height",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/layout_e2e_tests.py",
+       "test/live/packages/schematic_e2e_tests.py",
+       "test/live/packages/symbol_e2e_tests.py",
+       "test/offline/unit/test_nested_command_keys_contract.py",
+       "test/offline/unit/test_schematic_contracts.py"
+      ]
+     },
+     {
+      "field": "justify",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/symbol_e2e_tests.py",
+       "test/offline/unit/test_nested_command_keys_contract.py",
+       "test/offline/unit/test_schematic_contracts.py",
+       "test/offline/unit/test_symbol_contracts.py"
+      ]
+     },
+     {
+      "field": "layer",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/s11_full_flow.py",
+       "test/live/flows/serdes_rx_flow_tb.py"
+      ]
+     },
+     {
+      "field": "orient",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/project_flow_tb.py",
+       "test/live/flows/s11_full_flow.py",
+       "test/live/flows/serdes_rx_flow_tb.py",
+       "test/live/packages/layout_e2e_tests.py"
+      ]
+     },
+     {
+      "field": "points",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/packages/layout_e2e_tests.py",
+       "test/live/packages/maestro_e2e_tests.py",
+       "test/live/packages/maestro_view_param_e2e_tests.py",
+       "test/live/packages/nested_keys_e2e_tests.py"
+      ]
+     },
+     {
+      "field": "purpose",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/s11_full_flow.py",
+       "test/live/flows/serdes_rx_flow_tb.py"
+      ]
+     },
+     {
+      "field": "style",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/layout_e2e_tests.py",
+       "test/offline/unit/test_layout_contracts.py",
+       "test/semi/probes/schematic_wire_style_probe.py"
+      ]
+     },
+     {
+      "field": "text",
+      "covered": true,
+      "tb_files": [
+       "test/live/e2e/test_business_remote_live.py",
+       "test/live/e2e/test_e2e_live.py",
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py"
+      ]
+     },
+     {
+      "field": "width",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/packages/layout_e2e_tests.py",
+       "test/live/packages/maestro_e2e_tests.py",
+       "test/live/packages/nested_keys_e2e_tests.py",
+       "test/live/packages/schematic_e2e_tests.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "place_line": {
+    "fields": [
+     {
+      "field": "layer",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/s11_full_flow.py",
+       "test/live/flows/serdes_rx_flow_tb.py"
+      ]
+     },
+     {
+      "field": "points",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/packages/layout_e2e_tests.py",
+       "test/live/packages/maestro_e2e_tests.py",
+       "test/live/packages/maestro_view_param_e2e_tests.py",
+       "test/live/packages/nested_keys_e2e_tests.py"
+      ]
+     },
+     {
+      "field": "purpose",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/s11_full_flow.py",
+       "test/live/flows/serdes_rx_flow_tb.py"
+      ]
+     },
+     {
+      "field": "style",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/layout_e2e_tests.py",
+       "test/offline/unit/test_layout_contracts.py",
+       "test/semi/probes/schematic_wire_style_probe.py"
+      ]
+     },
+     {
+      "field": "width",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/packages/layout_e2e_tests.py",
+       "test/live/packages/maestro_e2e_tests.py",
+       "test/live/packages/nested_keys_e2e_tests.py",
+       "test/live/packages/schematic_e2e_tests.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "place_mosaic": {
+    "fields": [
+     {
+      "field": "col_pitch",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/layout_e2e_tests.py",
+       "test/offline/unit/test_layout_contracts.py"
+      ]
+     },
+     {
+      "field": "cols",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/layout_e2e_tests.py",
+       "test/offline/unit/test_layout_contracts.py"
+      ]
+     },
+     {
+      "field": "master_cell",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py",
+       "test/live/flows/s11_full_flow.py"
+      ]
+     },
+     {
+      "field": "master_lib",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py",
+       "test/live/flows/s11_full_flow.py"
+      ]
+     },
+     {
+      "field": "master_view",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/project_flow_tb.py",
+       "test/live/flows/s11_full_flow.py",
+       "test/live/flows/serdes_rx_flow_tb.py",
+       "test/live/packages/layout_e2e_tests.py"
+      ]
+     },
+     {
+      "field": "name",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py",
+       "test/live/flows/multihop_jump_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py"
+      ]
+     },
+     {
+      "field": "orient",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/project_flow_tb.py",
+       "test/live/flows/s11_full_flow.py",
+       "test/live/flows/serdes_rx_flow_tb.py",
+       "test/live/packages/layout_e2e_tests.py"
+      ]
+     },
+     {
+      "field": "row_pitch",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/layout_e2e_tests.py",
+       "test/offline/unit/test_layout_contracts.py"
+      ]
+     },
+     {
+      "field": "rows",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/layout_e2e_tests.py",
+       "test/live/packages/spectre_params_e2e_tests.py",
+       "test/offline/unit/test_layout_contracts.py",
+       "test/offline/unit/test_spectre_contracts.py",
+       "test/shared/runners/audit_atom_coverage.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "place_path": {
+    "fields": [
+     {
+      "field": "layer",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/s11_full_flow.py",
+       "test/live/flows/serdes_rx_flow_tb.py"
+      ]
+     },
+     {
+      "field": "points",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/packages/layout_e2e_tests.py",
+       "test/live/packages/maestro_e2e_tests.py",
+       "test/live/packages/maestro_view_param_e2e_tests.py",
+       "test/live/packages/nested_keys_e2e_tests.py"
+      ]
+     },
+     {
+      "field": "purpose",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/s11_full_flow.py",
+       "test/live/flows/serdes_rx_flow_tb.py"
+      ]
+     },
+     {
+      "field": "style",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/layout_e2e_tests.py",
+       "test/offline/unit/test_layout_contracts.py",
+       "test/semi/probes/schematic_wire_style_probe.py"
+      ]
+     },
+     {
+      "field": "width",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/packages/layout_e2e_tests.py",
+       "test/live/packages/maestro_e2e_tests.py",
+       "test/live/packages/nested_keys_e2e_tests.py",
+       "test/live/packages/schematic_e2e_tests.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "place_polygon": {
+    "fields": [
+     {
+      "field": "layer",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/s11_full_flow.py",
+       "test/live/flows/serdes_rx_flow_tb.py"
+      ]
+     },
+     {
+      "field": "points",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/packages/layout_e2e_tests.py",
+       "test/live/packages/maestro_e2e_tests.py",
+       "test/live/packages/maestro_view_param_e2e_tests.py",
+       "test/live/packages/nested_keys_e2e_tests.py"
+      ]
+     },
+     {
+      "field": "purpose",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/s11_full_flow.py",
+       "test/live/flows/serdes_rx_flow_tb.py"
+      ]
+     },
+     {
+      "field": "style",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/layout_e2e_tests.py",
+       "test/offline/unit/test_layout_contracts.py",
+       "test/semi/probes/schematic_wire_style_probe.py"
+      ]
+     },
+     {
+      "field": "width",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/packages/layout_e2e_tests.py",
+       "test/live/packages/maestro_e2e_tests.py",
+       "test/live/packages/nested_keys_e2e_tests.py",
+       "test/live/packages/schematic_e2e_tests.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "place_rect": {
+    "fields": [
+     {
+      "field": "bbox",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/s11_full_flow.py",
+       "test/live/flows/serdes_rx_flow_tb.py"
+      ]
+     },
+     {
+      "field": "layer",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/s11_full_flow.py",
+       "test/live/flows/serdes_rx_flow_tb.py"
+      ]
+     },
+     {
+      "field": "points",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/packages/layout_e2e_tests.py",
+       "test/live/packages/maestro_e2e_tests.py",
+       "test/live/packages/maestro_view_param_e2e_tests.py",
+       "test/live/packages/nested_keys_e2e_tests.py"
+      ]
+     },
+     {
+      "field": "purpose",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/s11_full_flow.py",
+       "test/live/flows/serdes_rx_flow_tb.py"
+      ]
+     },
+     {
+      "field": "style",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/layout_e2e_tests.py",
+       "test/offline/unit/test_layout_contracts.py",
+       "test/semi/probes/schematic_wire_style_probe.py"
+      ]
+     },
+     {
+      "field": "width",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/packages/layout_e2e_tests.py",
+       "test/live/packages/maestro_e2e_tests.py",
+       "test/live/packages/nested_keys_e2e_tests.py",
+       "test/live/packages/schematic_e2e_tests.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "place_via": {
+    "fields": [
+     {
+      "field": "orient",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/project_flow_tb.py",
+       "test/live/flows/s11_full_flow.py",
+       "test/live/flows/serdes_rx_flow_tb.py",
+       "test/live/packages/layout_e2e_tests.py"
+      ]
+     },
+     {
+      "field": "via_name",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/layout_e2e_tests.py",
+       "test/offline/unit/test_layout_contracts.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "rename_instance": {
+    "fields": [
+     {
+      "field": "name",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py",
+       "test/live/flows/multihop_jump_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py"
+      ]
+     },
+     {
+      "field": "new_name",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/packages/cellview_e2e_tests.py",
+       "test/live/packages/layout_e2e_tests.py",
+       "test/live/packages/maestro_e2e_tests.py",
+       "test/live/packages/schematic_e2e_tests.py"
+      ]
+     },
+     {
+      "field": "new_orient",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/layout_e2e_tests.py"
+      ]
+     },
+     {
+      "field": "new_pos",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/layout_e2e_tests.py",
+       "test/offline/unit/test_layout_contracts.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "rename_label": {
+    "fields": [
+     {
+      "field": "new_height",
+      "covered": true,
+      "tb_files": [
+       "test/offline/unit/test_layout_contracts.py"
+      ]
+     },
+     {
+      "field": "new_pos",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/layout_e2e_tests.py",
+       "test/offline/unit/test_layout_contracts.py"
+      ]
+     },
+     {
+      "field": "new_text",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/layout_e2e_tests.py",
+       "test/live/packages/schematic_e2e_tests.py",
+       "test/live/packages/symbol_e2e_tests.py",
+       "test/live/packages/veriloga_e2e_tests.py",
+       "test/offline/unit/test_layout_contracts.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "set_instance_properties": {
+    "fields": [
+     {
+      "field": "name",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py",
+       "test/live/flows/multihop_jump_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py"
+      ]
+     },
+     {
+      "field": "new_orient",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/layout_e2e_tests.py"
+      ]
+     },
+     {
+      "field": "new_pos",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/layout_e2e_tests.py",
+       "test/offline/unit/test_layout_contracts.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "set_label_properties": {
+    "fields": [
+     {
+      "field": "new_height",
+      "covered": true,
+      "tb_files": [
+       "test/offline/unit/test_layout_contracts.py"
+      ]
+     },
+     {
+      "field": "new_pos",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/layout_e2e_tests.py",
+       "test/offline/unit/test_layout_contracts.py"
+      ]
+     },
+     {
+      "field": "new_text",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/layout_e2e_tests.py",
+       "test/live/packages/schematic_e2e_tests.py",
+       "test/live/packages/symbol_e2e_tests.py",
+       "test/live/packages/veriloga_e2e_tests.py",
+       "test/offline/unit/test_layout_contracts.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "set_layers_visible": {
+    "fields": [
+     {
+      "field": "layer",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/s11_full_flow.py",
+       "test/live/flows/serdes_rx_flow_tb.py"
+      ]
+     },
+     {
+      "field": "layers",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/layout_e2e_tests.py",
+       "test/offline/unit/test_layout_contracts.py",
+       "test/offline/unit/test_layout_depth_contract.py",
+       "test/semi/probes/layout_depth_probe.py",
+       "test/semi/probes/layout_depth_region_direct_probe.py"
+      ]
+     },
+     {
+      "field": "op",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py"
+      ]
+     },
+     {
+      "field": "purpose",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/s11_full_flow.py",
+       "test/live/flows/serdes_rx_flow_tb.py"
+      ]
+     },
+     {
+      "field": "visible",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/layout_e2e_tests.py",
+       "test/offline/unit/test_layout_contracts.py",
+       "test/offline/unit/test_registration_server.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "set_shape_properties": {
+    "fields": [
+     {
+      "field": "all",
+      "covered": true,
+      "tb_files": [
+       "test/live/e2e/test_e2e_live.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/project_flow_tb.py",
+       "test/live/flows/scale_100_tb.py",
+       "test/live/flows/serdes_rx_flow_tb.py"
+      ]
+     },
+     {
+      "field": "kind",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py",
+       "test/live/flows/multihop_jump_tb.py",
+       "test/live/flows/role_split_tb.py",
+       "test/live/flows/s11_full_flow.py"
+      ]
+     },
+     {
+      "field": "new_bbox",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/layout_e2e_tests.py",
+       "test/live/packages/symbol_e2e_tests.py",
+       "test/offline/unit/test_layout_contracts.py",
+       "test/offline/unit/test_symbol_contracts.py"
+      ]
+     },
+     {
+      "field": "new_points",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/symbol_e2e_tests.py"
+      ]
+     },
+     {
+      "field": "new_width",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/layout_e2e_tests.py",
+       "test/offline/unit/test_layout_contracts.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "zoom": {
+    "fields": [
+     {
+      "field": "layer",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/s11_full_flow.py",
+       "test/live/flows/serdes_rx_flow_tb.py"
+      ]
+     },
+     {
+      "field": "layers",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/layout_e2e_tests.py",
+       "test/offline/unit/test_layout_contracts.py",
+       "test/offline/unit/test_layout_depth_contract.py",
+       "test/semi/probes/layout_depth_probe.py",
+       "test/semi/probes/layout_depth_region_direct_probe.py"
+      ]
+     },
+     {
+      "field": "op",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py"
+      ]
+     },
+     {
+      "field": "purpose",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/s11_full_flow.py",
+       "test/live/flows/serdes_rx_flow_tb.py"
+      ]
+     },
+     {
+      "field": "scale",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/serdes_rx_flow_tb.py",
+       "test/live/packages/layout_e2e_tests.py",
+       "test/offline/unit/test_layout_contracts.py",
+       "test/offline/unit/test_norm_gap_batch2.py"
+      ]
+     }
+    ],
+    "gaps": []
+   }
+  },
+  "schematic.py": {
+   "delete_instance": {
+    "fields": [
+     {
+      "field": "name",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py",
+       "test/live/flows/multihop_jump_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "delete_pin": {
+    "fields": [
+     {
+      "field": "direction",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py",
+       "test/live/flows/serdes_rx_flow_tb.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "place_instance": {
+    "fields": [
+     {
+      "field": "master_cell",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py",
+       "test/live/flows/s11_full_flow.py"
+      ]
+     },
+     {
+      "field": "master_lib",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py",
+       "test/live/flows/s11_full_flow.py"
+      ]
+     },
+     {
+      "field": "master_view",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/project_flow_tb.py",
+       "test/live/flows/s11_full_flow.py",
+       "test/live/flows/serdes_rx_flow_tb.py",
+       "test/live/packages/layout_e2e_tests.py"
+      ]
+     },
+     {
+      "field": "name",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py",
+       "test/live/flows/multihop_jump_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py"
+      ]
+     },
+     {
+      "field": "orient",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/project_flow_tb.py",
+       "test/live/flows/s11_full_flow.py",
+       "test/live/flows/serdes_rx_flow_tb.py",
+       "test/live/packages/layout_e2e_tests.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "place_label": {
+    "fields": [
+     {
+      "field": "alias",
+      "covered": true,
+      "tb_files": [
+       "test/offline/unit/test_paramiko.py",
+       "test/offline/unit/test_probe.py",
+       "test/offline/unit/test_schematic_contracts.py"
+      ]
+     },
+     {
+      "field": "font",
+      "covered": true,
+      "tb_files": [
+       "test/offline/unit/test_nested_command_keys_contract.py",
+       "test/offline/unit/test_schematic_contracts.py"
+      ]
+     },
+     {
+      "field": "height",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/layout_e2e_tests.py",
+       "test/live/packages/schematic_e2e_tests.py",
+       "test/live/packages/symbol_e2e_tests.py",
+       "test/offline/unit/test_nested_command_keys_contract.py",
+       "test/offline/unit/test_schematic_contracts.py"
+      ]
+     },
+     {
+      "field": "justify",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/symbol_e2e_tests.py",
+       "test/offline/unit/test_nested_command_keys_contract.py",
+       "test/offline/unit/test_schematic_contracts.py",
+       "test/offline/unit/test_symbol_contracts.py"
+      ]
+     },
+     {
+      "field": "orient",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/project_flow_tb.py",
+       "test/live/flows/s11_full_flow.py",
+       "test/live/flows/serdes_rx_flow_tb.py",
+       "test/live/packages/layout_e2e_tests.py"
+      ]
+     },
+     {
+      "field": "text",
+      "covered": true,
+      "tb_files": [
+       "test/live/e2e/test_business_remote_live.py",
+       "test/live/e2e/test_e2e_live.py",
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "place_note": {
+    "fields": [
+     {
+      "field": "font",
+      "covered": true,
+      "tb_files": [
+       "test/offline/unit/test_nested_command_keys_contract.py",
+       "test/offline/unit/test_schematic_contracts.py"
+      ]
+     },
+     {
+      "field": "height",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/layout_e2e_tests.py",
+       "test/live/packages/schematic_e2e_tests.py",
+       "test/live/packages/symbol_e2e_tests.py",
+       "test/offline/unit/test_nested_command_keys_contract.py",
+       "test/offline/unit/test_schematic_contracts.py"
+      ]
+     },
+     {
+      "field": "justify",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/symbol_e2e_tests.py",
+       "test/offline/unit/test_nested_command_keys_contract.py",
+       "test/offline/unit/test_schematic_contracts.py",
+       "test/offline/unit/test_symbol_contracts.py"
+      ]
+     },
+     {
+      "field": "orient",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/project_flow_tb.py",
+       "test/live/flows/s11_full_flow.py",
+       "test/live/flows/serdes_rx_flow_tb.py",
+       "test/live/packages/layout_e2e_tests.py"
+      ]
+     },
+     {
+      "field": "text",
+      "covered": true,
+      "tb_files": [
+       "test/live/e2e/test_business_remote_live.py",
+       "test/live/e2e/test_e2e_live.py",
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py"
+      ]
+     },
+     {
+      "field": "type",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py",
+       "test/live/flows/project_flow_tb.py",
+       "test/live/flows/s11_full_flow.py",
+       "test/live/flows/scale_100_tb.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "place_pin": {
+    "fields": [
+     {
+      "field": "direction",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py",
+       "test/live/flows/serdes_rx_flow_tb.py"
+      ]
+     },
+     {
+      "field": "ground_sens",
+      "covered": true,
+      "tb_files": [
+       "test/offline/unit/test_schematic_contracts.py"
+      ]
+     },
+     {
+      "field": "name",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py",
+       "test/live/flows/multihop_jump_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py"
+      ]
+     },
+     {
+      "field": "off_sheet",
+      "covered": true,
+      "tb_files": [
+       "test/offline/unit/test_schematic_contracts.py"
+      ]
+     },
+     {
+      "field": "orient",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/project_flow_tb.py",
+       "test/live/flows/s11_full_flow.py",
+       "test/live/flows/serdes_rx_flow_tb.py",
+       "test/live/packages/layout_e2e_tests.py"
+      ]
+     },
+     {
+      "field": "power_sens",
+      "covered": true,
+      "tb_files": [
+       "test/offline/unit/test_schematic_contracts.py"
+      ]
+     },
+     {
+      "field": "sig_type",
+      "covered": true,
+      "tb_files": [
+       "test/offline/unit/test_schematic_contracts.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "place_wire": {
+    "fields": [
+     {
+      "field": "color",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/schematic_e2e_tests.py",
+       "test/offline/unit/test_schematic_contracts.py",
+       "test/offline/unit/test_top_layer_dispatch.py",
+       "test/semi/probes/schematic_wire_style_probe.py"
+      ]
+     },
+     {
+      "field": "entry",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/skillref_e2e_tests.py",
+       "test/live/registration/registration_hostkey_rotation_tb.py",
+       "test/live/registration/registration_http_six_step_tb.py",
+       "test/live/registration/registration_py27_tb.py",
+       "test/live/registration/registration_real_ciw_tb.py"
+      ]
+     },
+     {
+      "field": "line_style",
+      "covered": true,
+      "tb_files": [
+       "test/offline/unit/test_schematic_contracts.py",
+       "test/semi/probes/schematic_wire_style_probe.py"
+      ]
+     },
+     {
+      "field": "route",
+      "covered": true,
+      "tb_files": [
+       "test/offline/unit/test_registration_mock_server.py",
+       "test/semi/probes/schematic_wire_style_probe.py"
+      ]
+     },
+     {
+      "field": "width",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/packages/layout_e2e_tests.py",
+       "test/live/packages/maestro_e2e_tests.py",
+       "test/live/packages/nested_keys_e2e_tests.py",
+       "test/live/packages/schematic_e2e_tests.py"
+      ]
+     },
+     {
+      "field": "x_spacing",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/nested_keys_e2e_tests.py",
+       "test/offline/unit/test_nested_command_keys_contract.py"
+      ]
+     },
+     {
+      "field": "y_spacing",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/nested_keys_e2e_tests.py",
+       "test/offline/unit/test_nested_command_keys_contract.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "rename_instance": {
+    "fields": [
+     {
+      "field": "name",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py",
+       "test/live/flows/multihop_jump_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py"
+      ]
+     },
+     {
+      "field": "new_name",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/packages/cellview_e2e_tests.py",
+       "test/live/packages/layout_e2e_tests.py",
+       "test/live/packages/maestro_e2e_tests.py",
+       "test/live/packages/schematic_e2e_tests.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "rename_label": {
+    "fields": [
+     {
+      "field": "new_text",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/layout_e2e_tests.py",
+       "test/live/packages/schematic_e2e_tests.py",
+       "test/live/packages/symbol_e2e_tests.py",
+       "test/live/packages/veriloga_e2e_tests.py",
+       "test/offline/unit/test_layout_contracts.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "rename_note": {
+    "fields": [
+     {
+      "field": "new_text",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/layout_e2e_tests.py",
+       "test/live/packages/schematic_e2e_tests.py",
+       "test/live/packages/symbol_e2e_tests.py",
+       "test/live/packages/veriloga_e2e_tests.py",
+       "test/offline/unit/test_layout_contracts.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "rename_pin": {
+    "fields": [
+     {
+      "field": "direction",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py",
+       "test/live/flows/serdes_rx_flow_tb.py"
+      ]
+     },
+     {
+      "field": "new_name",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/packages/cellview_e2e_tests.py",
+       "test/live/packages/layout_e2e_tests.py",
+       "test/live/packages/maestro_e2e_tests.py",
+       "test/live/packages/schematic_e2e_tests.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "set_instance_params": {
+    "fields": [
+     {
+      "field": "name",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py",
+       "test/live/flows/multihop_jump_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py"
+      ]
+     },
+     {
+      "field": "params",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py",
+       "test/live/flows/serdes_rx_flow_tb.py",
+       "test/live/packages/calibre_e2e_tests.py",
+       "test/live/packages/calibre_params_e2e_tests.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "set_pin_properties": {
+    "fields": [
+     {
+      "field": "direction",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py",
+       "test/live/flows/serdes_rx_flow_tb.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "set_term_nets": {
+    "fields": [
+     {
+      "field": "font",
+      "covered": true,
+      "tb_files": [
+       "test/offline/unit/test_nested_command_keys_contract.py",
+       "test/offline/unit/test_schematic_contracts.py"
+      ]
+     },
+     {
+      "field": "height",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/layout_e2e_tests.py",
+       "test/live/packages/schematic_e2e_tests.py",
+       "test/live/packages/symbol_e2e_tests.py",
+       "test/offline/unit/test_nested_command_keys_contract.py",
+       "test/offline/unit/test_schematic_contracts.py"
+      ]
+     },
+     {
+      "field": "justify",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/symbol_e2e_tests.py",
+       "test/offline/unit/test_nested_command_keys_contract.py",
+       "test/offline/unit/test_schematic_contracts.py",
+       "test/offline/unit/test_symbol_contracts.py"
+      ]
+     },
+     {
+      "field": "name",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py",
+       "test/live/flows/multihop_jump_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py"
+      ]
+     },
+     {
+      "field": "orient",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/project_flow_tb.py",
+       "test/live/flows/s11_full_flow.py",
+       "test/live/flows/serdes_rx_flow_tb.py",
+       "test/live/packages/layout_e2e_tests.py"
+      ]
+     },
+     {
+      "field": "stub_length",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/project_flow_tb.py",
+       "test/live/packages/schematic_e2e_tests.py",
+       "test/offline/unit/test_schematic_contracts.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "set_wire_properties": {
+    "fields": [
+     {
+      "field": "color",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/schematic_e2e_tests.py",
+       "test/offline/unit/test_schematic_contracts.py",
+       "test/offline/unit/test_top_layer_dispatch.py",
+       "test/semi/probes/schematic_wire_style_probe.py"
+      ]
+     },
+     {
+      "field": "line_style",
+      "covered": true,
+      "tb_files": [
+       "test/offline/unit/test_schematic_contracts.py",
+       "test/semi/probes/schematic_wire_style_probe.py"
+      ]
+     },
+     {
+      "field": "width",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/packages/layout_e2e_tests.py",
+       "test/live/packages/maestro_e2e_tests.py",
+       "test/live/packages/nested_keys_e2e_tests.py",
+       "test/live/packages/schematic_e2e_tests.py"
+      ]
+     }
+    ],
+    "gaps": []
+   }
+  },
+  "symbol.py": {
+   "delete_label": {
+    "fields": [
+     {
+      "field": "height",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/layout_e2e_tests.py",
+       "test/live/packages/schematic_e2e_tests.py",
+       "test/live/packages/symbol_e2e_tests.py",
+       "test/offline/unit/test_nested_command_keys_contract.py",
+       "test/offline/unit/test_schematic_contracts.py"
+      ]
+     },
+     {
+      "field": "label_kind",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/nested_keys_e2e_tests.py",
+       "test/live/packages/symbol_e2e_tests.py",
+       "test/offline/unit/test_symbol_contracts.py"
+      ]
+     },
+     {
+      "field": "label_type",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/nested_keys_e2e_tests.py",
+       "test/offline/unit/test_nested_command_keys_contract.py"
+      ]
+     },
+     {
+      "field": "layer",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/s11_full_flow.py",
+       "test/live/flows/serdes_rx_flow_tb.py"
+      ]
+     },
+     {
+      "field": "op",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py"
+      ]
+     },
+     {
+      "field": "purpose",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/s11_full_flow.py",
+       "test/live/flows/serdes_rx_flow_tb.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "delete_pin": {
+    "fields": [
+     {
+      "field": "name",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py",
+       "test/live/flows/multihop_jump_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "delete_shape": {
+    "fields": [
+     {
+      "field": "kind",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py",
+       "test/live/flows/multihop_jump_tb.py",
+       "test/live/flows/role_split_tb.py",
+       "test/live/flows/s11_full_flow.py"
+      ]
+     },
+     {
+      "field": "layer",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/s11_full_flow.py",
+       "test/live/flows/serdes_rx_flow_tb.py"
+      ]
+     },
+     {
+      "field": "new_bbox",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/layout_e2e_tests.py",
+       "test/live/packages/symbol_e2e_tests.py",
+       "test/offline/unit/test_layout_contracts.py",
+       "test/offline/unit/test_symbol_contracts.py"
+      ]
+     },
+     {
+      "field": "new_points",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/symbol_e2e_tests.py"
+      ]
+     },
+     {
+      "field": "op",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py"
+      ]
+     },
+     {
+      "field": "purpose",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/s11_full_flow.py",
+       "test/live/flows/serdes_rx_flow_tb.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "place_ellipse": {
+    "fields": [
+     {
+      "field": "bbox",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/s11_full_flow.py",
+       "test/live/flows/serdes_rx_flow_tb.py"
+      ]
+     },
+     {
+      "field": "layer",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/s11_full_flow.py",
+       "test/live/flows/serdes_rx_flow_tb.py"
+      ]
+     },
+     {
+      "field": "op",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py"
+      ]
+     },
+     {
+      "field": "purpose",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/s11_full_flow.py",
+       "test/live/flows/serdes_rx_flow_tb.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "place_label": {
+    "fields": [
+     {
+      "field": "font",
+      "covered": true,
+      "tb_files": [
+       "test/offline/unit/test_nested_command_keys_contract.py",
+       "test/offline/unit/test_schematic_contracts.py"
+      ]
+     },
+     {
+      "field": "height",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/layout_e2e_tests.py",
+       "test/live/packages/schematic_e2e_tests.py",
+       "test/live/packages/symbol_e2e_tests.py",
+       "test/offline/unit/test_nested_command_keys_contract.py",
+       "test/offline/unit/test_schematic_contracts.py"
+      ]
+     },
+     {
+      "field": "justify",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/symbol_e2e_tests.py",
+       "test/offline/unit/test_nested_command_keys_contract.py",
+       "test/offline/unit/test_schematic_contracts.py",
+       "test/offline/unit/test_symbol_contracts.py"
+      ]
+     },
+     {
+      "field": "label_kind",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/nested_keys_e2e_tests.py",
+       "test/live/packages/symbol_e2e_tests.py",
+       "test/offline/unit/test_symbol_contracts.py"
+      ]
+     },
+     {
+      "field": "label_type",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/nested_keys_e2e_tests.py",
+       "test/offline/unit/test_nested_command_keys_contract.py"
+      ]
+     },
+     {
+      "field": "layer",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/s11_full_flow.py",
+       "test/live/flows/serdes_rx_flow_tb.py"
+      ]
+     },
+     {
+      "field": "orient",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/project_flow_tb.py",
+       "test/live/flows/s11_full_flow.py",
+       "test/live/flows/serdes_rx_flow_tb.py",
+       "test/live/packages/layout_e2e_tests.py"
+      ]
+     },
+     {
+      "field": "purpose",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/s11_full_flow.py",
+       "test/live/flows/serdes_rx_flow_tb.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "place_line": {
+    "fields": [
+     {
+      "field": "bbox",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/s11_full_flow.py",
+       "test/live/flows/serdes_rx_flow_tb.py"
+      ]
+     },
+     {
+      "field": "layer",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/s11_full_flow.py",
+       "test/live/flows/serdes_rx_flow_tb.py"
+      ]
+     },
+     {
+      "field": "op",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py"
+      ]
+     },
+     {
+      "field": "points",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/packages/layout_e2e_tests.py",
+       "test/live/packages/maestro_e2e_tests.py",
+       "test/live/packages/maestro_view_param_e2e_tests.py",
+       "test/live/packages/nested_keys_e2e_tests.py"
+      ]
+     },
+     {
+      "field": "purpose",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/s11_full_flow.py",
+       "test/live/flows/serdes_rx_flow_tb.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "place_pin": {
+    "fields": [
+     {
+      "field": "direction",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py",
+       "test/live/flows/serdes_rx_flow_tb.py"
+      ]
+     },
+     {
+      "field": "half_size",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/nested_keys_e2e_tests.py",
+       "test/offline/unit/test_nested_command_keys_contract.py"
+      ]
+     },
+     {
+      "field": "label",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/layout_e2e_tests.py",
+       "test/live/packages/nested_keys_e2e_tests.py",
+       "test/live/packages/schematic_e2e_tests.py",
+       "test/offline/unit/test_api_server_main.py",
+       "test/offline/unit/test_spectre_util_psf_contracts.py"
+      ]
+     },
+     {
+      "field": "label_font",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/nested_keys_e2e_tests.py",
+       "test/offline/unit/test_nested_command_keys_contract.py"
+      ]
+     },
+     {
+      "field": "label_height",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/nested_keys_e2e_tests.py",
+       "test/offline/unit/test_nested_command_keys_contract.py"
+      ]
+     },
+     {
+      "field": "label_justify",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/nested_keys_e2e_tests.py",
+       "test/offline/unit/test_nested_command_keys_contract.py"
+      ]
+     },
+     {
+      "field": "label_orient",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/nested_keys_e2e_tests.py",
+       "test/offline/unit/test_nested_command_keys_contract.py"
+      ]
+     },
+     {
+      "field": "label_pos",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/nested_keys_e2e_tests.py",
+       "test/offline/unit/test_nested_command_keys_contract.py"
+      ]
+     },
+     {
+      "field": "name",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py",
+       "test/live/flows/multihop_jump_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py"
+      ]
+     },
+     {
+      "field": "pos",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py",
+       "test/live/flows/s11_full_flow.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "place_polygon": {
+    "fields": [
+     {
+      "field": "bbox",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/s11_full_flow.py",
+       "test/live/flows/serdes_rx_flow_tb.py"
+      ]
+     },
+     {
+      "field": "layer",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/s11_full_flow.py",
+       "test/live/flows/serdes_rx_flow_tb.py"
+      ]
+     },
+     {
+      "field": "op",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py"
+      ]
+     },
+     {
+      "field": "points",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/packages/layout_e2e_tests.py",
+       "test/live/packages/maestro_e2e_tests.py",
+       "test/live/packages/maestro_view_param_e2e_tests.py",
+       "test/live/packages/nested_keys_e2e_tests.py"
+      ]
+     },
+     {
+      "field": "purpose",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/s11_full_flow.py",
+       "test/live/flows/serdes_rx_flow_tb.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "place_rect": {
+    "fields": [
+     {
+      "field": "bbox",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/s11_full_flow.py",
+       "test/live/flows/serdes_rx_flow_tb.py"
+      ]
+     },
+     {
+      "field": "layer",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/s11_full_flow.py",
+       "test/live/flows/serdes_rx_flow_tb.py"
+      ]
+     },
+     {
+      "field": "op",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py"
+      ]
+     },
+     {
+      "field": "purpose",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/s11_full_flow.py",
+       "test/live/flows/serdes_rx_flow_tb.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "rename_label": {
+    "fields": [
+     {
+      "field": "height",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/layout_e2e_tests.py",
+       "test/live/packages/schematic_e2e_tests.py",
+       "test/live/packages/symbol_e2e_tests.py",
+       "test/offline/unit/test_nested_command_keys_contract.py",
+       "test/offline/unit/test_schematic_contracts.py"
+      ]
+     },
+     {
+      "field": "label_kind",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/nested_keys_e2e_tests.py",
+       "test/live/packages/symbol_e2e_tests.py",
+       "test/offline/unit/test_symbol_contracts.py"
+      ]
+     },
+     {
+      "field": "label_type",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/nested_keys_e2e_tests.py",
+       "test/offline/unit/test_nested_command_keys_contract.py"
+      ]
+     },
+     {
+      "field": "layer",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/s11_full_flow.py",
+       "test/live/flows/serdes_rx_flow_tb.py"
+      ]
+     },
+     {
+      "field": "new_text",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/layout_e2e_tests.py",
+       "test/live/packages/schematic_e2e_tests.py",
+       "test/live/packages/symbol_e2e_tests.py",
+       "test/live/packages/veriloga_e2e_tests.py",
+       "test/offline/unit/test_layout_contracts.py"
+      ]
+     },
+     {
+      "field": "op",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py"
+      ]
+     },
+     {
+      "field": "purpose",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/s11_full_flow.py",
+       "test/live/flows/serdes_rx_flow_tb.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "rename_pin": {
+    "fields": [
+     {
+      "field": "name",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py",
+       "test/live/flows/multihop_jump_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py"
+      ]
+     },
+     {
+      "field": "new_name",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/packages/cellview_e2e_tests.py",
+       "test/live/packages/layout_e2e_tests.py",
+       "test/live/packages/maestro_e2e_tests.py",
+       "test/live/packages/schematic_e2e_tests.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "set_label_properties": {
+    "fields": [
+     {
+      "field": "height",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/layout_e2e_tests.py",
+       "test/live/packages/schematic_e2e_tests.py",
+       "test/live/packages/symbol_e2e_tests.py",
+       "test/offline/unit/test_nested_command_keys_contract.py",
+       "test/offline/unit/test_schematic_contracts.py"
+      ]
+     },
+     {
+      "field": "label_kind",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/nested_keys_e2e_tests.py",
+       "test/live/packages/symbol_e2e_tests.py",
+       "test/offline/unit/test_symbol_contracts.py"
+      ]
+     },
+     {
+      "field": "label_type",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/nested_keys_e2e_tests.py",
+       "test/offline/unit/test_nested_command_keys_contract.py"
+      ]
+     },
+     {
+      "field": "layer",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/s11_full_flow.py",
+       "test/live/flows/serdes_rx_flow_tb.py"
+      ]
+     },
+     {
+      "field": "op",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py"
+      ]
+     },
+     {
+      "field": "purpose",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/s11_full_flow.py",
+       "test/live/flows/serdes_rx_flow_tb.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "set_pin_order": {
+    "fields": [
+     {
+      "field": "op",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py"
+      ]
+     },
+     {
+      "field": "term_names",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/symbol_e2e_tests.py",
+       "test/offline/unit/test_symbol_contracts.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "set_pin_properties": {
+    "fields": [
+     {
+      "field": "access_dir",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/symbol_e2e_tests.py",
+       "test/offline/unit/test_symbol_contracts.py"
+      ]
+     },
+     {
+      "field": "direction",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py",
+       "test/live/flows/serdes_rx_flow_tb.py"
+      ]
+     },
+     {
+      "field": "label",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/layout_e2e_tests.py",
+       "test/live/packages/nested_keys_e2e_tests.py",
+       "test/live/packages/schematic_e2e_tests.py",
+       "test/offline/unit/test_api_server_main.py",
+       "test/offline/unit/test_spectre_util_psf_contracts.py"
+      ]
+     },
+     {
+      "field": "label_font",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/nested_keys_e2e_tests.py",
+       "test/offline/unit/test_nested_command_keys_contract.py"
+      ]
+     },
+     {
+      "field": "label_height",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/nested_keys_e2e_tests.py",
+       "test/offline/unit/test_nested_command_keys_contract.py"
+      ]
+     },
+     {
+      "field": "label_justify",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/nested_keys_e2e_tests.py",
+       "test/offline/unit/test_nested_command_keys_contract.py"
+      ]
+     },
+     {
+      "field": "label_orient",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/nested_keys_e2e_tests.py",
+       "test/offline/unit/test_nested_command_keys_contract.py"
+      ]
+     },
+     {
+      "field": "name",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py",
+       "test/live/flows/multihop_jump_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "set_selection_box": {
+    "fields": [
+     {
+      "field": "bbox",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/s11_full_flow.py",
+       "test/live/flows/serdes_rx_flow_tb.py"
+      ]
+     },
+     {
+      "field": "op",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "set_shape_properties": {
+    "fields": [
+     {
+      "field": "kind",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py",
+       "test/live/flows/multihop_jump_tb.py",
+       "test/live/flows/role_split_tb.py",
+       "test/live/flows/s11_full_flow.py"
+      ]
+     },
+     {
+      "field": "layer",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/s11_full_flow.py",
+       "test/live/flows/serdes_rx_flow_tb.py"
+      ]
+     },
+     {
+      "field": "new_bbox",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/layout_e2e_tests.py",
+       "test/live/packages/symbol_e2e_tests.py",
+       "test/offline/unit/test_layout_contracts.py",
+       "test/offline/unit/test_symbol_contracts.py"
+      ]
+     },
+     {
+      "field": "new_points",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/symbol_e2e_tests.py"
+      ]
+     },
+     {
+      "field": "op",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py"
+      ]
+     },
+     {
+      "field": "purpose",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/s11_full_flow.py",
+       "test/live/flows/serdes_rx_flow_tb.py"
+      ]
+     }
+    ],
+    "gaps": []
+   }
+  },
+  "verilog.py": {
+   "delete_view": {
+    "fields": [
+     {
+      "field": "op",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "ensure_view": {
+    "fields": [
+     {
+      "field": "op",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "patch_source": {
+    "fields": [
+     {
+      "field": "edits",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/veriloga_e2e_tests.py",
+       "test/offline/unit/test_verilog_contracts.py",
+       "test/offline/unit/test_veriloga_contracts.py"
+      ]
+     },
+     {
+      "field": "expected_sha256",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/veriloga_e2e_tests.py",
+       "test/offline/unit/test_verilog_contracts.py",
+       "test/offline/unit/test_veriloga_contracts.py"
+      ]
+     },
+     {
+      "field": "op",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py"
+      ]
+     },
+     {
+      "field": "text",
+      "covered": true,
+      "tb_files": [
+       "test/live/e2e/test_business_remote_live.py",
+       "test/live/e2e/test_e2e_live.py",
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "set_source": {
+    "fields": [
+     {
+      "field": "expected_sha256",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/veriloga_e2e_tests.py",
+       "test/offline/unit/test_verilog_contracts.py",
+       "test/offline/unit/test_veriloga_contracts.py"
+      ]
+     },
+     {
+      "field": "op",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py"
+      ]
+     },
+     {
+      "field": "text",
+      "covered": true,
+      "tb_files": [
+       "test/live/e2e/test_business_remote_live.py",
+       "test/live/e2e/test_e2e_live.py",
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py"
+      ]
+     }
+    ],
+    "gaps": []
+   }
+  },
+  "veriloga.py": {
+   "delete_view": {
+    "fields": [
+     {
+      "field": "op",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "ensure_view": {
+    "fields": [
+     {
+      "field": "op",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "patch_source": {
+    "fields": [
+     {
+      "field": "edits",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/veriloga_e2e_tests.py",
+       "test/offline/unit/test_verilog_contracts.py",
+       "test/offline/unit/test_veriloga_contracts.py"
+      ]
+     },
+     {
+      "field": "expected_sha256",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/veriloga_e2e_tests.py",
+       "test/offline/unit/test_verilog_contracts.py",
+       "test/offline/unit/test_veriloga_contracts.py"
+      ]
+     },
+     {
+      "field": "op",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py"
+      ]
+     },
+     {
+      "field": "text",
+      "covered": true,
+      "tb_files": [
+       "test/live/e2e/test_business_remote_live.py",
+       "test/live/e2e/test_e2e_live.py",
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "set_source": {
+    "fields": [
+     {
+      "field": "expected_sha256",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/veriloga_e2e_tests.py",
+       "test/offline/unit/test_verilog_contracts.py",
+       "test/offline/unit/test_veriloga_contracts.py"
+      ]
+     },
+     {
+      "field": "op",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py"
+      ]
+     },
+     {
+      "field": "text",
+      "covered": true,
+      "tb_files": [
+       "test/live/e2e/test_business_remote_live.py",
+       "test/live/e2e/test_e2e_live.py",
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py"
+      ]
+     }
+    ],
+    "gaps": []
+   }
+  },
+  "maestro.py": {
+   "add_output": {
+    "fields": [
+     {
+      "field": "name",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py",
+       "test/live/flows/multihop_jump_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py"
+      ]
+     },
+     {
+      "field": "op",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py"
+      ]
+     },
+     {
+      "field": "test",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "delete": {
+    "fields": [
+     {
+      "field": "history",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/maestro_e2e_tests.py",
+       "test/live/packages/maestro_mc_e2e_tests.py",
+       "test/live/packages/maestro_view_param_e2e_tests.py",
+       "test/offline/unit/test_maestro_command_exprs.py",
+       "test/offline/unit/test_maestro_mc.py"
+      ]
+     },
+     {
+      "field": "op",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "delete_corner": {
+    "fields": [
+     {
+      "field": "name",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py",
+       "test/live/flows/multihop_jump_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py"
+      ]
+     },
+     {
+      "field": "op",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "delete_output": {
+    "fields": [
+     {
+      "field": "name",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py",
+       "test/live/flows/multihop_jump_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py"
+      ]
+     },
+     {
+      "field": "op",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py"
+      ]
+     },
+     {
+      "field": "spec_name",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/maestro_nested_keys_e2e_tests.py",
+       "test/offline/unit/test_nested_command_keys_contract.py"
+      ]
+     },
+     {
+      "field": "test",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "delete_parameter": {
+    "fields": [
+     {
+      "field": "corner",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/maestro_e2e_tests.py",
+       "test/live/packages/maestro_nested_keys_e2e_tests.py",
+       "test/offline/unit/test_maestro_mc.py",
+       "test/offline/unit/test_maestro_package_flow.py",
+       "test/offline/unit/test_nested_command_keys_contract.py"
+      ]
+     },
+     {
+      "field": "corners",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/maestro_e2e_tests.py",
+       "test/live/packages/maestro_nested_keys_e2e_tests.py",
+       "test/offline/unit/test_maestro_command_exprs.py",
+       "test/offline/unit/test_maestro_mc.py",
+       "test/offline/unit/test_maestro_package_flow.py"
+      ]
+     },
+     {
+      "field": "name",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py",
+       "test/live/flows/multihop_jump_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py"
+      ]
+     },
+     {
+      "field": "op",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py"
+      ]
+     },
+     {
+      "field": "scope",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/maestro_e2e_tests.py",
+       "test/live/packages/maestro_mc_e2e_tests.py",
+       "test/live/packages/maestro_nested_keys_e2e_tests.py",
+       "test/live/packages/maestro_view_param_e2e_tests.py",
+       "test/offline/unit/test_nested_command_keys_contract.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "delete_results": {
+    "fields": [
+     {
+      "field": "history",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/maestro_e2e_tests.py",
+       "test/live/packages/maestro_mc_e2e_tests.py",
+       "test/live/packages/maestro_view_param_e2e_tests.py",
+       "test/offline/unit/test_maestro_command_exprs.py",
+       "test/offline/unit/test_maestro_mc.py"
+      ]
+     },
+     {
+      "field": "keep_netlist",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/maestro_e2e_tests.py",
+       "test/semi/probes/maestro_pkg_probe.py"
+      ]
+     },
+     {
+      "field": "keep_quick_plot",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/maestro_e2e_tests.py",
+       "test/semi/probes/maestro_pkg_probe.py"
+      ]
+     },
+     {
+      "field": "op",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "delete_spec": {
+    "fields": [
+     {
+      "field": "name",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py",
+       "test/live/flows/multihop_jump_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py"
+      ]
+     },
+     {
+      "field": "op",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py"
+      ]
+     },
+     {
+      "field": "output",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multihop_jump_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py"
+      ]
+     },
+     {
+      "field": "spec_name",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/maestro_nested_keys_e2e_tests.py",
+       "test/offline/unit/test_nested_command_keys_contract.py"
+      ]
+     },
+     {
+      "field": "test",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "delete_test": {
+    "fields": [
+     {
+      "field": "op",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py"
+      ]
+     },
+     {
+      "field": "test",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "delete_var": {
+    "fields": [
+     {
+      "field": "corner",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/maestro_e2e_tests.py",
+       "test/live/packages/maestro_nested_keys_e2e_tests.py",
+       "test/offline/unit/test_maestro_mc.py",
+       "test/offline/unit/test_maestro_package_flow.py",
+       "test/offline/unit/test_nested_command_keys_contract.py"
+      ]
+     },
+     {
+      "field": "corners",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/maestro_e2e_tests.py",
+       "test/live/packages/maestro_nested_keys_e2e_tests.py",
+       "test/offline/unit/test_maestro_command_exprs.py",
+       "test/offline/unit/test_maestro_mc.py",
+       "test/offline/unit/test_maestro_package_flow.py"
+      ]
+     },
+     {
+      "field": "name",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py",
+       "test/live/flows/multihop_jump_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py"
+      ]
+     },
+     {
+      "field": "op",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py"
+      ]
+     },
+     {
+      "field": "scope",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/maestro_e2e_tests.py",
+       "test/live/packages/maestro_mc_e2e_tests.py",
+       "test/live/packages/maestro_nested_keys_e2e_tests.py",
+       "test/live/packages/maestro_view_param_e2e_tests.py",
+       "test/offline/unit/test_nested_command_keys_contract.py"
+      ]
+     },
+     {
+      "field": "test",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py"
+      ]
+     },
+     {
+      "field": "tests",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/maestro_e2e_tests.py",
+       "test/live/packages/maestro_mc_e2e_tests.py",
+       "test/live/packages/maestro_nested_keys_e2e_tests.py",
+       "test/live/packages/maestro_view_param_e2e_tests.py",
+       "test/offline/unit/test_maestro_command_exprs.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "load_corners": {
+    "fields": [
+     {
+      "field": "filepath",
+      "covered": true,
+      "tb_files": [
+       "test/offline/unit/test_maestro_command_exprs.py",
+       "test/offline/unit/test_nested_command_keys_contract.py"
+      ]
+     },
+     {
+      "field": "op",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py"
+      ]
+     },
+     {
+      "field": "operation",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py",
+       "test/live/flows/multihop_jump_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py"
+      ]
+     },
+     {
+      "field": "remote_path",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/lvs_from_schematic_tb.py",
+       "test/live/flows/project_flow_tb.py",
+       "test/live/flows/role_split_tb.py",
+       "test/live/flows/s11_inprocess_lvs_tb.py",
+       "test/live/flows/serdes_rx_flow_tb.py"
+      ]
+     },
+     {
+      "field": "sections",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/maestro_nested_keys_e2e_tests.py",
+       "test/live/packages/spectre_pvt_e2e_tests.py",
+       "test/offline/unit/test_nested_command_keys_contract.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "lock": {
+    "fields": [
+     {
+      "field": "history",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/maestro_e2e_tests.py",
+       "test/live/packages/maestro_mc_e2e_tests.py",
+       "test/live/packages/maestro_view_param_e2e_tests.py",
+       "test/offline/unit/test_maestro_command_exprs.py",
+       "test/offline/unit/test_maestro_mc.py"
+      ]
+     },
+     {
+      "field": "op",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "rename": {
+    "fields": [
+     {
+      "field": "history",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/maestro_e2e_tests.py",
+       "test/live/packages/maestro_mc_e2e_tests.py",
+       "test/live/packages/maestro_view_param_e2e_tests.py",
+       "test/offline/unit/test_maestro_command_exprs.py",
+       "test/offline/unit/test_maestro_mc.py"
+      ]
+     },
+     {
+      "field": "new_name",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/packages/cellview_e2e_tests.py",
+       "test/live/packages/layout_e2e_tests.py",
+       "test/live/packages/maestro_e2e_tests.py",
+       "test/live/packages/schematic_e2e_tests.py"
+      ]
+     },
+     {
+      "field": "op",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "set_analysis": {
+    "fields": [
+     {
+      "field": "analysis",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/s11_postsim_compare.py",
+       "test/live/packages/maestro_e2e_tests.py",
+       "test/live/packages/maestro_mc_e2e_tests.py",
+       "test/live/packages/maestro_view_param_e2e_tests.py",
+       "test/live/packages/spectre_e2e_tests.py"
+      ]
+     },
+     {
+      "field": "enable",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/maestro_mc_e2e_tests.py"
+      ]
+     },
+     {
+      "field": "op",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py"
+      ]
+     },
+     {
+      "field": "options",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/maestro_e2e_tests.py",
+       "test/live/packages/maestro_mc_e2e_tests.py",
+       "test/offline/unit/test_maestro_command_exprs.py"
+      ]
+     },
+     {
+      "field": "test",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "set_corner": {
+    "fields": [
+     {
+      "field": "disable_tests",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/maestro_nested_keys_e2e_tests.py",
+       "test/offline/unit/test_nested_command_keys_contract.py"
+      ]
+     },
+     {
+      "field": "enable_tests",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/maestro_nested_keys_e2e_tests.py",
+       "test/offline/unit/test_nested_command_keys_contract.py"
+      ]
+     },
+     {
+      "field": "enabled",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/maestro_nested_keys_e2e_tests.py",
+       "test/offline/unit/test_nested_command_keys_contract.py"
+      ]
+     },
+     {
+      "field": "name",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py",
+       "test/live/flows/multihop_jump_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py"
+      ]
+     },
+     {
+      "field": "op",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "set_design": {
+    "fields": [
+     {
+      "field": "cell",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py"
+      ]
+     },
+     {
+      "field": "lib",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/project_flow_tb.py",
+       "test/live/flows/s11_full_flow.py"
+      ]
+     },
+     {
+      "field": "library",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py"
+      ]
+     },
+     {
+      "field": "op",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py"
+      ]
+     },
+     {
+      "field": "test",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py"
+      ]
+     },
+     {
+      "field": "view",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "set_env_option": {
+    "fields": [
+     {
+      "field": "op",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py"
+      ]
+     },
+     {
+      "field": "options",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/maestro_e2e_tests.py",
+       "test/live/packages/maestro_mc_e2e_tests.py",
+       "test/offline/unit/test_maestro_command_exprs.py"
+      ]
+     },
+     {
+      "field": "test",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "set_job_control_mode": {
+    "fields": [
+     {
+      "field": "mode",
+      "covered": true,
+      "tb_files": [
+       "test/live/e2e/test_business_local_live.py",
+       "test/live/e2e/test_business_remote_live.py",
+       "test/live/e2e/test_e2e_live.py",
+       "test/live/flows/multihop_jump_tb.py",
+       "test/live/flows/project_flow_tb.py"
+      ]
+     },
+     {
+      "field": "op",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "set_job_policy": {
+    "fields": [
+     {
+      "field": "job_type",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/maestro_nested_keys_e2e_tests.py",
+       "test/offline/unit/test_nested_command_keys_contract.py"
+      ]
+     },
+     {
+      "field": "op",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py"
+      ]
+     },
+     {
+      "field": "policy",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/maestro_e2e_tests.py",
+       "test/live/packages/maestro_nested_keys_e2e_tests.py",
+       "test/offline/unit/test_maestro_command_exprs.py",
+       "test/offline/unit/test_nested_command_keys_contract.py"
+      ]
+     },
+     {
+      "field": "test",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py"
+      ]
+     },
+     {
+      "field": "test_name",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/maestro_nested_keys_e2e_tests.py",
+       "test/offline/unit/test_nested_command_keys_contract.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "set_parameter": {
+    "fields": [
+     {
+      "field": "corner",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/maestro_e2e_tests.py",
+       "test/live/packages/maestro_nested_keys_e2e_tests.py",
+       "test/offline/unit/test_maestro_mc.py",
+       "test/offline/unit/test_maestro_package_flow.py",
+       "test/offline/unit/test_nested_command_keys_contract.py"
+      ]
+     },
+     {
+      "field": "corners",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/maestro_e2e_tests.py",
+       "test/live/packages/maestro_nested_keys_e2e_tests.py",
+       "test/offline/unit/test_maestro_command_exprs.py",
+       "test/offline/unit/test_maestro_mc.py",
+       "test/offline/unit/test_maestro_package_flow.py"
+      ]
+     },
+     {
+      "field": "name",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py",
+       "test/live/flows/multihop_jump_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py"
+      ]
+     },
+     {
+      "field": "op",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py"
+      ]
+     },
+     {
+      "field": "scope",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/maestro_e2e_tests.py",
+       "test/live/packages/maestro_mc_e2e_tests.py",
+       "test/live/packages/maestro_nested_keys_e2e_tests.py",
+       "test/live/packages/maestro_view_param_e2e_tests.py",
+       "test/offline/unit/test_nested_command_keys_contract.py"
+      ]
+     },
+     {
+      "field": "value",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "set_run_mode": {
+    "fields": [
+     {
+      "field": "op",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py"
+      ]
+     },
+     {
+      "field": "run_mode",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/maestro_e2e_tests.py",
+       "test/live/packages/maestro_mc_e2e_tests.py",
+       "test/offline/unit/test_maestro_command_exprs.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "set_run_option": {
+    "fields": [
+     {
+      "field": "op",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py"
+      ]
+     },
+     {
+      "field": "options",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/maestro_e2e_tests.py",
+       "test/live/packages/maestro_mc_e2e_tests.py",
+       "test/offline/unit/test_maestro_command_exprs.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "set_sim_option": {
+    "fields": [
+     {
+      "field": "op",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py"
+      ]
+     },
+     {
+      "field": "options",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/maestro_e2e_tests.py",
+       "test/live/packages/maestro_mc_e2e_tests.py",
+       "test/offline/unit/test_maestro_command_exprs.py"
+      ]
+     },
+     {
+      "field": "test",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "set_simulator_mode": {
+    "fields": [
+     {
+      "field": "mode",
+      "covered": true,
+      "tb_files": [
+       "test/live/e2e/test_business_local_live.py",
+       "test/live/e2e/test_business_remote_live.py",
+       "test/live/e2e/test_e2e_live.py",
+       "test/live/flows/multihop_jump_tb.py",
+       "test/live/flows/project_flow_tb.py"
+      ]
+     },
+     {
+      "field": "op",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py"
+      ]
+     },
+     {
+      "field": "option",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/maestro_e2e_tests.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "set_spec": {
+    "fields": [
+     {
+      "field": "name",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py",
+       "test/live/flows/multihop_jump_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py"
+      ]
+     },
+     {
+      "field": "op",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py"
+      ]
+     },
+     {
+      "field": "test",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "set_test": {
+    "fields": [
+     {
+      "field": "cell",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py"
+      ]
+     },
+     {
+      "field": "lib",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/project_flow_tb.py",
+       "test/live/flows/s11_full_flow.py"
+      ]
+     },
+     {
+      "field": "library",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py"
+      ]
+     },
+     {
+      "field": "op",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py"
+      ]
+     },
+     {
+      "field": "simulator",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/maestro_e2e_tests.py",
+       "test/live/packages/maestro_mc_e2e_tests.py",
+       "test/live/packages/maestro_nested_keys_e2e_tests.py",
+       "test/semi/probes/calibre_cdl_probe.py",
+       "test/semi/probes/cdl_export_variants_probe.py"
+      ]
+     },
+     {
+      "field": "test",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py"
+      ]
+     },
+     {
+      "field": "view",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "set_var": {
+    "fields": [
+     {
+      "field": "corner",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/maestro_e2e_tests.py",
+       "test/live/packages/maestro_nested_keys_e2e_tests.py",
+       "test/offline/unit/test_maestro_mc.py",
+       "test/offline/unit/test_maestro_package_flow.py",
+       "test/offline/unit/test_nested_command_keys_contract.py"
+      ]
+     },
+     {
+      "field": "corners",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/maestro_e2e_tests.py",
+       "test/live/packages/maestro_nested_keys_e2e_tests.py",
+       "test/offline/unit/test_maestro_command_exprs.py",
+       "test/offline/unit/test_maestro_mc.py",
+       "test/offline/unit/test_maestro_package_flow.py"
+      ]
+     },
+     {
+      "field": "name",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py",
+       "test/live/flows/multihop_jump_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py"
+      ]
+     },
+     {
+      "field": "op",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py"
+      ]
+     },
+     {
+      "field": "scope",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/maestro_e2e_tests.py",
+       "test/live/packages/maestro_mc_e2e_tests.py",
+       "test/live/packages/maestro_nested_keys_e2e_tests.py",
+       "test/live/packages/maestro_view_param_e2e_tests.py",
+       "test/offline/unit/test_nested_command_keys_contract.py"
+      ]
+     },
+     {
+      "field": "test",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py"
+      ]
+     },
+     {
+      "field": "tests",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/maestro_e2e_tests.py",
+       "test/live/packages/maestro_mc_e2e_tests.py",
+       "test/live/packages/maestro_nested_keys_e2e_tests.py",
+       "test/live/packages/maestro_view_param_e2e_tests.py",
+       "test/offline/unit/test_maestro_command_exprs.py"
+      ]
+     },
+     {
+      "field": "type_name",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/maestro_nested_keys_e2e_tests.py",
+       "test/offline/unit/test_nested_command_keys_contract.py"
+      ]
+     },
+     {
+      "field": "type_value",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/maestro_nested_keys_e2e_tests.py",
+       "test/offline/unit/test_nested_command_keys_contract.py"
+      ]
+     },
+     {
+      "field": "value",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "setup_corner": {
+    "fields": [
+     {
+      "field": "model_file",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/maestro_nested_keys_e2e_tests.py",
+       "test/offline/unit/test_nested_command_keys_contract.py"
+      ]
+     },
+     {
+      "field": "model_section",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/maestro_nested_keys_e2e_tests.py",
+       "test/offline/unit/test_nested_command_keys_contract.py"
+      ]
+     },
+     {
+      "field": "name",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/lvs_from_schematic_tb.py",
+       "test/live/flows/multihop_jump_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py"
+      ]
+     },
+     {
+      "field": "op",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py"
+      ]
+     }
+    ],
+    "gaps": []
+   },
+   "unlock": {
+    "fields": [
+     {
+      "field": "history",
+      "covered": true,
+      "tb_files": [
+       "test/live/packages/maestro_e2e_tests.py",
+       "test/live/packages/maestro_mc_e2e_tests.py",
+       "test/live/packages/maestro_view_param_e2e_tests.py",
+       "test/offline/unit/test_maestro_command_exprs.py",
+       "test/offline/unit/test_maestro_mc.py"
+      ]
+     },
+     {
+      "field": "op",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/adc_sar_flow_tb.py",
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/multiuser_layout_handoff_tb.py",
+       "test/live/flows/multiuser_serdes_rx_tb.py",
+       "test/live/flows/project_flow_tb.py"
+      ]
+     }
+    ],
+    "gaps": []
+   }
+  },
+  "spectre.py": {
+   "<task[]>": {
+    "fields": [
+     {
+      "field": "include_files",
+      "covered": true,
+      "tb_files": [
+       "test/offline/unit/test_spectre_contracts.py"
+      ]
+     },
+     {
+      "field": "job",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/project_flow_tb.py",
+       "test/live/flows/s11_postsim_compare.py",
+       "test/live/flows/serdes_rx_flow_tb.py",
+       "test/live/packages/calibre_params_e2e_tests.py"
+      ]
+     },
+     {
+      "field": "mode",
+      "covered": true,
+      "tb_files": [
+       "test/live/e2e/test_business_local_live.py",
+       "test/live/e2e/test_business_remote_live.py",
+       "test/live/e2e/test_e2e_live.py",
+       "test/live/flows/multihop_jump_tb.py",
+       "test/live/flows/project_flow_tb.py"
+      ]
+     },
+     {
+      "field": "netlist",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/design_iterate_tb.py",
+       "test/live/flows/project_flow_tb.py",
+       "test/live/flows/s11_postsim_compare.py",
+       "test/live/flows/serdes_rx_flow_tb.py",
+       "test/live/packages/maestro_e2e_tests.py"
+      ]
+     },
+     {
+      "field": "spectre_args",
+      "covered": true,
+      "tb_files": [
+       "test/live/flows/s11_full_flow.py",
+       "test/offline/unit/test_spectre_contracts.py"
+      ]
+     }
+    ],
+    "gaps": []
+   }
+  }
+ },
+ "enum_report": {
+  "layout.py": {
+   "_PLACE_ATOMS": [
+    {
+     "value": "place_label",
+     "covered": true,
+     "tb_files": [
+      "test/live/flows/adc_sar_flow_tb.py",
+      "test/live/flows/design_iterate_tb.py",
+      "test/live/flows/s11_full_flow.py",
+      "test/live/flows/serdes_rx_flow_tb.py"
+     ]
+    },
+    {
+     "value": "place_line",
+     "covered": true,
+     "tb_files": [
+      "test/live/packages/layout_e2e_tests.py",
+      "test/live/packages/symbol_e2e_tests.py",
+      "test/offline/unit/test_layout_contracts.py",
+      "test/offline/unit/test_schematic_contracts.py"
+     ]
+    },
+    {
+     "value": "place_path",
+     "covered": true,
+     "tb_files": [
+      "test/live/flows/adc_sar_flow_tb.py",
+      "test/live/packages/layout_e2e_tests.py",
+      "test/offline/unit/test_layout_contracts.py",
+      "test/offline/unit/test_schematic_contracts.py"
+     ]
+    },
+    {
+     "value": "place_polygon",
+     "covered": true,
+     "tb_files": [
+      "test/live/packages/layout_e2e_tests.py",
+      "test/live/packages/symbol_e2e_tests.py",
+      "test/offline/unit/test_layout_contracts.py",
+      "test/offline/unit/test_symbol_contracts.py"
+     ]
+    },
+    {
+     "value": "place_rect",
+     "covered": true,
+     "tb_files": [
+      "test/live/flows/adc_sar_flow_tb.py",
+      "test/live/flows/design_iterate_tb.py",
+      "test/live/flows/multiuser_layout_handoff_tb.py",
+      "test/live/flows/s11_full_flow.py"
+     ]
+    }
+   ],
+   "_SHAPE_KINDS": [
+    {
+     "value": "ellipse",
+     "covered": true,
+     "tb_files": [
+      "test/live/packages/symbol_e2e_tests.py"
+     ]
+    },
+    {
+     "value": "line",
+     "covered": true,
+     "tb_files": [
+      "test/live/flows/lvs_from_schematic_tb.py",
+      "test/live/packages/layout_e2e_tests.py",
+      "test/live/packages/symbol_e2e_tests.py",
+      "test/offline/unit/test_symbol_contracts.py"
+     ]
+    },
+    {
+     "value": "path",
+     "covered": true,
+     "tb_files": [
+      "test/live/flows/adc_sar_flow_tb.py",
+      "test/live/flows/design_iterate_tb.py",
+      "test/live/flows/lvs_from_schematic_tb.py",
+      "test/live/flows/multiuser_serdes_rx_tb.py"
+     ]
+    },
+    {
+     "value": "polygon",
+     "covered": true,
+     "tb_files": [
+      "test/live/packages/layout_e2e_tests.py",
+      "test/live/packages/symbol_e2e_tests.py",
+      "test/offline/unit/test_layout_contracts.py"
+     ]
+    },
+    {
+     "value": "rect",
+     "covered": true,
+     "tb_files": [
+      "test/live/packages/layout_e2e_tests.py",
+      "test/live/packages/symbol_e2e_tests.py",
+      "test/offline/unit/test_layout_contracts.py",
+      "test/offline/unit/test_symbol_contracts.py"
+     ]
+    }
+   ],
+   "_DISPLAY_ATOMS": [
+    {
+     "value": "fit_view",
+     "covered": true,
+     "tb_files": [
+      "test/live/packages/layout_e2e_tests.py",
+      "test/offline/unit/test_layout_contracts.py",
+      "test/offline/unit/test_norm_gap_batch2.py"
+     ]
+    },
+    {
+     "value": "set_entry_layer",
+     "covered": true,
+     "tb_files": [
+      "test/live/packages/layout_e2e_tests.py"
+     ]
+    },
+    {
+     "value": "set_layers_visible",
+     "covered": true,
+     "tb_files": [
+      "test/live/packages/layout_e2e_tests.py",
+      "test/offline/unit/test_layout_contracts.py"
+     ]
+    },
+    {
+     "value": "show_only_layers",
+     "covered": true,
+     "tb_files": [
+      "test/live/packages/layout_e2e_tests.py"
+     ]
+    },
+    {
+     "value": "zoom",
+     "covered": true,
+     "tb_files": [
+      "test/live/packages/layout_e2e_tests.py",
+      "test/offline/unit/test_layout_contracts.py",
+      "test/offline/unit/test_norm_gap_batch2.py"
+     ]
+    }
+   ]
+  },
+  "spectre.py": {
+   "_MODES": [
+    {
+     "value": "aps",
+     "covered": true,
+     "tb_files": [
+      "test/offline/unit/test_nested_command_keys_contract.py",
+      "test/offline/unit/test_spectre_contracts.py"
+     ]
+    },
+    {
+     "value": "ax",
+     "covered": true,
+     "tb_files": [
+      "test/offline/unit/test_nested_command_keys_contract.py"
+     ]
+    },
+    {
+     "value": "cx",
+     "covered": true,
+     "tb_files": [
+      "test/offline/unit/test_nested_command_keys_contract.py"
+     ]
+    },
+    {
+     "value": "lx",
+     "covered": true,
+     "tb_files": [
+      "test/offline/unit/test_nested_command_keys_contract.py"
+     ]
+    },
+    {
+     "value": "mx",
+     "covered": true,
+     "tb_files": [
+      "test/offline/unit/test_nested_command_keys_contract.py"
+     ]
+    },
+    {
+     "value": "spectre",
+     "covered": true,
+     "tb_files": [
+      "test/live/flows/project_flow_tb.py",
+      "test/live/flows/s11_postsim_compare.py",
+      "test/live/flows/scale_100_tb.py",
+      "test/live/packages/maestro_e2e_tests.py"
+     ]
+    },
+    {
+     "value": "vx",
+     "covered": true,
+     "tb_files": [
+      "test/offline/unit/test_nested_command_keys_contract.py"
+     ]
+    },
+    {
+     "value": "x",
+     "covered": true,
+     "tb_files": [
+      "test/live/flows/design_iterate_tb.py",
+      "test/live/flows/serdes_rx_flow_tb.py",
+      "test/live/packages/maestro_e2e_tests.py",
+      "test/live/packages/schematic_e2e_tests.py"
+     ]
+    }
+   ]
+  }
+ }
+}

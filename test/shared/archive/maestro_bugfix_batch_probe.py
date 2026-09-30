@@ -57,7 +57,7 @@ def record(name: str, ok: bool, detail) -> None:
 
 def read_vars() -> dict:
     body = call("virtuoso.maestro.read_config", library=LIB, cell=CELL, view=VIEW)
-    value = (_c1_wrapper(body)).get("value") or {}
+    value = (body).get("value") or {}
     return value.get("variables") or {}
 
 
@@ -73,7 +73,7 @@ deleted = call("virtuoso.maestro.write", library=LIB, cell=CELL, view=VIEW,
                commands=[{"op": "delete_var", "name": name, "scope": "all"}])
 record("P-088 delete_var(all)", deleted.get("ok") is True,
        {"error": deleted.get("error"),
-        "steps": [s["name"] for s in (_c1_wrapper(deleted)).get("steps") or []]})
+        "steps": [s["name"] for s in (deleted).get("steps") or []]})
 record("P-088 变量已消失", name not in read_vars(), {"vars": len(read_vars())})
 
 print("P-087 save=False 隔离")
@@ -83,7 +83,7 @@ call("virtuoso.maestro.write", library=LIB, cell=CELL, view=VIEW,
 unsaved = call("virtuoso.maestro.write", library=LIB, cell=CELL, view=VIEW,
                save=False,
                commands=[{"op": "set_var", "name": probe_var, "value": "2.0"}])
-reason = ((_c1_wrapper(unsaved)).get("value") or {}).get("reason")
+reason = ((unsaved).get("value") or {}).get("reason")
 record("P-087 save=False 被结构化拒绝",
        unsaved.get("ok") is False and reason == "save_false_unsupported",
        {"ok": unsaved.get("ok"), "reason": reason, "error": unsaved.get("error")})
@@ -108,7 +108,7 @@ record("P-089 无 result",
 print("P-095 悬空 Overwrite 目标")
 session_raw = call("basic.skill.execute", timeout=60,
                    skill_code="car(maeGetSessions())")
-session = str(((_c1_wrapper(session_raw)).get("result") or {}).get("output")
+session = str(((session_raw).get("result") or {}).get("output")
               or "").strip('"')
 record("P-095 找到活动会话", bool(session) and session not in ("nil", "t"),
        {"session": session})
@@ -118,14 +118,14 @@ arm = call("basic.skill.execute", timeout=120, skill_code=(
     "axlSetOverwriteHistory(setup t) "
     'axlSetOverwriteHistoryName(setup "NoSuchHistory_P095") '
     "list(axlGetOverwriteHistory(setup) axlGetOverwriteHistoryName(setup)))"))
-record("P-095 悬空目标已就位", "t" in str(((_c1_wrapper(arm)).get("result") or {})
+record("P-095 悬空目标已就位", "t" in str(((arm).get("result") or {})
                                           .get("output")),
-       {"output": ((_c1_wrapper(arm)).get("result") or {}).get("output"),
-        "errors": ((_c1_wrapper(arm)).get("result") or {}).get("errors")})
+       {"output": ((arm).get("result") or {}).get("output"),
+        "errors": ((arm).get("result") or {}).get("errors")})
 
 run = call("virtuoso.maestro.run", library=LIB, cell=CELL, view=VIEW,
            timeout=600, poll_interval=2, blocking=True)
-data = _c1_wrapper(run)
+data = run
 value = data.get("value") or {}
 step_names = [s["name"] for s in data.get("steps") or []]
 record("P-095 未被模态框挂死", run.get("ok") is True,
@@ -133,18 +133,18 @@ record("P-095 未被模态框挂死", run.get("ok") is True,
         "error": run.get("error")})
 record("P-095 有清理动作", "overwrite_clear" in step_names, step_names)
 
-after_session = str(((call("basic.skill.execute", timeout=60,
-                           skill_code="car(maeGetSessions())")
-                      .get("data") or {}).get("result") or {}).get("output")
-                    or "").strip('"')
+after_session = str(
+    (call("basic.skill.execute", timeout=60, skill_code="car(maeGetSessions())")
+     .get("result") or {}).get("output") or ""
+).strip('"')
 after = call("basic.skill.execute", timeout=60, skill_code=(
     "let((sdb setup) "
     f"sdb = axlGetMainSetupDB(\"{after_session}\") setup = axlGetActiveSetup(sdb) "
     "list(axlGetOverwriteHistory(setup) axlGetOverwriteHistoryName(setup)))"))
-flag_output = str(((_c1_wrapper(after)).get("result") or {}).get("output") or "")
+flag_output = str(((after).get("result") or {}).get("output") or "")
 record("P-095 跑完 flag 复位", flag_output.startswith("(nil"),
        {"flag": flag_output,
-        "errors": ((_c1_wrapper(after)).get("result") or {}).get("errors")})
+        "errors": ((after).get("result") or {}).get("errors")})
 
 bogus = call("virtuoso.maestro.run", library=LIB, cell=CELL, view=VIEW,
              history="NoSuchHistory_P095", blocking=True, timeout=60,
@@ -161,19 +161,3 @@ print(f"[summary] {passed}/{len(RESULTS)} green")
     json.dumps({"results": RESULTS}, ensure_ascii=False, indent=1), encoding="utf-8")
 middle.close()
 raise SystemExit(0 if passed == len(RESULTS) else 1)
-
-
-# --- C1 兼容垫片（2026-09-29，C3）------------------------------------------------
-# C1（2f88853）起：业务载荷直返顶层（值型 `value`、命令/skill 型 `result`）、
-# 成功默认省略 `steps`、失败壳去掉 `data`。历史 TB 按 `response["data"]` 解析，
-# 本垫片把新契约响应合成为旧 `data` 壳，让既有解析零改动继续工作。
-def _c1_wrapper(body):
-    if not isinstance(body, dict):
-        return {}
-    if isinstance(body.get("data"), dict):
-        return body["data"]
-    wrapped = {"ok": body.get("ok"), "error": body.get("error")}
-    for key in ("value", "result", "steps"):
-        if key in body:
-            wrapped[key] = body[key]
-    return wrapped

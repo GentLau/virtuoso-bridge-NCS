@@ -1,0 +1,57 @@
+{
+ "log": "test\\artifacts\\evidence\\round9\\coverage-main-r9.log",
+ "strict": "test\\artifacts\\evidence\\cov-main\\coverage-main-strict.json",
+ "log_mtime": "2026-09-29T22:31:33",
+ "all_steps_passed": false,
+ "failed_steps": [
+  "packages/maestro (direct) (rc=1)",
+  "packages/calibre (direct) (rc=1)"
+ ],
+ "total_line": "TOTAL                                            18133   1470   6312    854    90%",
+ "first_step_time": "",
+ "meta": {
+  "head": "86cc16945c8ffe7979e5ffc63269cc9256c47fd2",
+  "dirty": true,
+  "worktree_diff_sha": "351f5c037d615a4aa35ac9c318c05b3690113777",
+  "started_utc": "2026-09-29T13:56:07.6094898Z",
+  "head_now": "86cc16945c8ffe7979e5ffc63269cc9256c47fd2",
+  "head_matches_now": true
+ },
+ "strict_mtime": "2026-09-29T22:31:27",
+ "strict_totals": {
+  "num_statements": 18147,
+  "covered_lines": 16674,
+  "missing_lines": 1473,
+  "num_branches": 6318,
+  "covered_branches": 5303,
+  "missing_branches": 1015,
+  "percent_covered": 89.83036991620682,
+  "percent_covered_display": "90"
+ },
+ "strict_file_count": 57,
+ "baseline": {
+  "path": "coverage-pre-r9-strict.json",
+  "mtime": "2026-09-28T23:33:35",
+  "totals": {
+   "num_statements": 17325,
+   "covered_lines": 15860,
+   "missing_lines": 1465,
+   "num_branches": 6088,
+   "covered_branches": 5091,
+   "missing_branches": 997,
+   "percent_covered": 89.48447443727844,
+   "percent_covered_display": "89"
+  },
+  "file_count": 57,
+  "added": [],
+  "added_count": 0,
+  "removed": [],
+  "removed_count": 0,
+  "stress_server_reappeared": false
+ },
+ "delta": {
+  "num_statements": 822,
+  "covered_lines": 814,
+  "percent_covered": 0.346
+ }
+}

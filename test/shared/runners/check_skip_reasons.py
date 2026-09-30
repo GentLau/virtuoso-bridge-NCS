@@ -78,18 +78,33 @@ def scan_static() -> list[dict]:
                 for target in node.targets:
                     if isinstance(target, ast.Name):
                         consts[target.id] = node.value.value
+        # 只有"真正的 skip 用法"才是判据：装饰器（@skip/@skipIf/...）或
+        # pytest.skip(...)/unittest.skip(...) 这类限定调用；普通业务函数
+        # 恰好叫 skip() 的（如报告工具里的路径过滤 helper）不算。
+        decorator_calls: set[int] = set()
+        for node in ast.walk(tree):
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                for dec in node.decorator_list:
+                    if isinstance(dec, ast.Call):
+                        decorator_calls.add(id(dec))
         for node in ast.walk(tree):
             if not isinstance(node, ast.Call):
                 continue
             func = node.func
             name = None
+            qualified = False
             if isinstance(func, ast.Attribute):
                 name = func.attr
+                qualified = (
+                    isinstance(func.value, ast.Name)
+                    and func.value.id in {"pytest", "unittest"}
+                )
             elif isinstance(func, ast.Name):
                 name = func.id
             if name not in SKIP_DECORATORS:
                 continue
-            parent = getattr(node, "parent", None)
+            if id(node) not in decorator_calls and not qualified:
+                continue
             reason = _reason_of(node, consts)
             if not reason:
                 violations.append({

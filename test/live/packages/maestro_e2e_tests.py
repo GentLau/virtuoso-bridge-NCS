@@ -95,8 +95,16 @@ def _op(transport, operation: str, **fields: Any) -> Any:
     if payload is None:
         payload = response.get("result")
     if payload is None:
-        payload = _c1_wrapper(response)
+        payload = response
     return payload if isinstance(payload, dict) else {}
+
+
+def _raw(transport, operation: str, **fields: Any) -> dict[str, Any]:
+    """未解包的原始响应（`step_details=true` 时要看 `steps` 明细；`_op` 会丢掉它）。"""
+    response = transport.call({"operation": operation, "token": TOKEN, **fields})
+    if not response.get("ok"):
+        raise AssertionError(f"{operation} failed: {response.get('error')}")
+    return response
 
 
 def _value(transport, operation: str, **fields: Any) -> dict[str, Any]:
@@ -145,7 +153,7 @@ def _expect_fail(transport, operation: str, **fields: Any) -> str:
         response = transport.call(payload)
     except urllib.error.HTTPError as error:
         return f"HTTP {error.code}: {error.read().decode('utf-8', 'replace')[:200]}"
-    data = _c1_wrapper(response)
+    data = response
     if response.get("ok") is not False and data.get("ok") is not False:
         raise AssertionError(f"{operation} expected structured failure, got ok")
     return str(response.get("error") or data.get("error") or "")
@@ -183,15 +191,31 @@ def _wait_history_done(
 
 
 def _case_read_config_rc(transport) -> None:
-    value = _value(
+    response = _raw(
         transport, "virtuoso.maestro.read_config",
-        library="maestro_tb", cell="rc_probe",
+        library="maestro_tb", cell="rc_probe", step_details=True,
     )
+    value = response.get("value") or {}
     _check("ac" in value["tests"], "rc_probe/maestro must list the ac test")
     _check(
         "ac" in value["tests"]["ac"]["analyses"],
         "rc_probe/maestro must list the ac analysis",
     )
+    # 表 C：`options` 步明细里的 `env` / `sim` 必须与公开字段逐值一致
+    # （spec 6-maestro.md §3.1：test 级 env_options/sim_options 来自 maeGetEnvOption/maeGetSimOption）。
+    options_steps = [s for s in (response.get("steps") or [])
+                     if s.get("name") == "options"]
+    _check(options_steps, f"step_details 里缺 options 步: {response.get('steps')}")
+    detail = options_steps[-1].get("detail") or {}
+    _check({"env", "sim"} <= set(detail),
+           f"options 步明细缺 env/sim: {sorted(detail)}")
+    for test_name, test in value["tests"].items():
+        _check(detail["sim"].get(test_name) == test.get("sim_options"),
+               f"sim 明细与 tests.{test_name}.sim_options 不一致: "
+               f"{detail['sim'].get(test_name)} vs {test.get('sim_options')}")
+        _check(detail["env"].get(test_name) == test.get("env_options"),
+               f"env 明细与 tests.{test_name}.env_options 不一致: "
+               f"{detail['env'].get(test_name)} vs {test.get('env_options')}")
 
 
 def _case_read_config_logic(transport) -> None:
@@ -495,12 +519,16 @@ def _case_write_job_policy_sim_mode(transport) -> None:
         if not isinstance(before, list) or len(before) < 2:
             raise AssertionError(f"cannot read job policy / simulator mode: {before_raw}")
         configure_timeout, uni_mode = before[0], before[1]
+        # 2026-09-30 修（TB 脆弱性）：`asiGetHighPerformanceOptionVal(as 'uniMode)` 可能返回 nil
+        # （该会话从未设过），此时把 nil 当 mode 传会被请求模型结构化拒绝、红在与判据无关的地方。
+        # 语义不变——仍是"设置→读回"往返：nil 就写入已验证可用的默认值，再断言读回一致。
+        target_mode = uni_mode if isinstance(uni_mode, str) and uni_mode.strip() else "spectre"
         _value(
             transport, "virtuoso.maestro.write", **base,
             commands=[
                 {"op": "set_job_policy",
                  "policy": {"configuretimeout": configure_timeout}},
-                {"op": "set_simulator_mode", "mode": uni_mode,
+                {"op": "set_simulator_mode", "mode": target_mode,
                  "option": "uniMode"},
             ],
         )
@@ -519,8 +547,8 @@ def _case_write_job_policy_sim_mode(transport) -> None:
             f"job policy changed unexpectedly: {before} -> {after}",
         )
         _check(
-            isinstance(after, list) and after[1] == uni_mode,
-            f"simulator mode changed unexpectedly: {before} -> {after}",
+            isinstance(after, list) and after[1] == target_mode,
+            f"simulator mode 设置后读回不一致（期望 {target_mode!r}）: {before} -> {after}",
         )
     finally:
         _skill(
@@ -572,18 +600,33 @@ def _case_exports(transport, history: str) -> None:
         history=history, test="ac",
     )
     _check(Path(csv_value["local_path"]).is_file(), "outputs_csv missing")
+    # 2026-09-30（表 C 真缺口）：`kind` 与 `remote_path` 此前没人断言。
+    _check(csv_value.get("kind") == "outputs_csv",
+           f"export 应回显 kind=outputs_csv（实测 {csv_value.get('kind')!r}）")
+    # `outputs_csv` 直接落本地目标（无远端暂存）→ remote_path 允许为 None；
+    # 一旦给出就必须是远端绝对路径（script/netlist 两档走远端暂存，必须给）。
+    csv_remote = csv_value.get("remote_path")
+    if csv_remote is not None:
+        _check(str(csv_remote).startswith("/"),
+               f"remote_path 若给出必须是远端绝对路径（实测 {csv_remote!r}）")
 
     script = _value(
         transport, "virtuoso.maestro.export",
         library="maestro_tb", cell="rc_probe", kind="script",
     )
     _check(Path(script["local_path"]).is_file(), "script missing")
+    _check(script.get("kind") == "script",
+           f"export 应回显 kind=script（实测 {script.get('kind')!r}）")
+    _check(str(script.get("remote_path") or "").startswith("/"),
+           f"script remote_path 必须是远端绝对路径（实测 {script.get('remote_path')!r}）")
 
     netlist = _value(
         transport, "virtuoso.maestro.export",
         library="maestro_tb", cell="rc_probe", kind="netlist",
         test="ac", corner="Nominal",
     )
+    _check(netlist.get("kind") == "netlist",
+           f"export 应回显 kind=netlist（实测 {netlist.get('kind')!r}）")
     netlist_root = Path(netlist["local_path"])
     _check(netlist_root.is_dir(), "netlist directory missing")
     _check(
@@ -720,7 +763,7 @@ def _case_write_save_flag(transport) -> None:
     })
     _check(rejected.get("ok") is False, f"save=False 必须被拒绝：{rejected}")
     # C1 契约：失败壳为 `{ok:false, error}`；兼容旧 `data.value.reason` 形态。
-    shell = _c1_wrapper(rejected) if isinstance(_c1_wrapper(rejected), dict) else rejected
+    shell = rejected if isinstance(rejected, dict) else rejected
     reason = (shell.get("value") or {}).get("reason") if isinstance(shell, dict) else None
     _check(reason == "save_false_unsupported",
            f"save=False 拒绝原因不对：{rejected}")
@@ -996,9 +1039,11 @@ def run_suite(transport) -> list[tuple[str, str]]:
         try:
             value = func()
             results.append((name, "PASS"))
+            print(f"PASS    {name}", flush=True)  # 逐条打印：失败时也能看见前面过了哪些
             return value
         except Exception as exc:  # noqa: BLE001
             results.append((name, f"FAIL: {type(exc).__name__}: {exc}"))
+            print(f"FAIL    {name}: {type(exc).__name__}: {exc}", flush=True)
             raise
 
     run("CONFIG-01 rc_probe read_config", lambda: _case_read_config_rc(transport))
@@ -1066,19 +1111,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
-
-# --- C1 兼容垫片（2026-09-29，C3）------------------------------------------------
-# C1（2f88853）起：业务载荷直返顶层（值型 `value`、命令/skill 型 `result`）、
-# 成功默认省略 `steps`、失败壳去掉 `data`。历史 TB 按 `response["data"]` 解析，
-# 本垫片把新契约响应合成为旧 `data` 壳，让既有解析零改动继续工作。
-def _c1_wrapper(body):
-    if not isinstance(body, dict):
-        return {}
-    if isinstance(body.get("data"), dict):
-        return body["data"]
-    wrapped = {"ok": body.get("ok"), "error": body.get("error")}
-    for key in ("value", "result", "steps"):
-        if key in body:
-            wrapped[key] = body[key]
-    return wrapped

@@ -1,0 +1,7030 @@
+{
+ "generated_from": "test\\reports\\round8\\round8-spec覆盖矩阵.json",
+ "junit": "test\\artifacts\\evidence\\round9\\offline-windows-r9.xml",
+ "rows_total": 297,
+ "verdict_counts": {
+  "direct": 222,
+  "indirect": 16,
+  "na": 53,
+  "partial": 6
+ },
+ "r9_status_counts": {
+  "R9-GREEN": 226,
+  "NA-NO-EVIDENCE-NEEDED": 53,
+  "NO-OFFLINE-EVIDENCE": 18
+ },
+ "rows": [
+  {
+   "id": "总览#010",
+   "doc": "总览/1-四层整体架构与接口.md",
+   "section": "1.1 总述",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- **中层**：负责路由与并发限流，把指令或文件正确地投送到指定位置，并返回可验证结果；",
+   "evidence": [
+    "test/offline/unit/test_middle_routing.py",
+    "test/offline/unit/test_middle_contracts.py",
+    "test/offline/core/semantics_tb.py",
+    "test/live/transport/cov_remote_real.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_middle_routing.py",
+      "total": 23,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_middle_contracts.py",
+      "total": 22,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/core/semantics_tb.py",
+      "source": "core-multi-r9",
+      "total": 30,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "总览#021",
+   "doc": "总览/1-四层整体架构与接口.md",
+   "section": "1.1 总述",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "四层是职责边界，不要求每层都是独立进程。顶层、上层、中层可以位于同一进程；底层必须是 Virtuoso 可加载、可管理的常驻守护进程。",
+   "evidence": [
+    "test/offline/unit/test_daemon_runtime_contracts.py",
+    "test/live/transport/cov_remote_real.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_daemon_runtime_contracts.py",
+      "total": 54,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "总览#094",
+   "doc": "总览/1-四层整体架构与接口.md",
+   "section": "3.2 上层：封装业务复杂度",
+   "verdict": "indirect",
+   "r9_status": "R9-GREEN",
+   "text": "1. 业务参数校验、操作顺序和领域对象；",
+   "evidence": [
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_layout_contracts.py",
+    "test/live/packages/*_e2e_tests.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_schematic_contracts.py",
+      "total": 39,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_layout_contracts.py",
+      "total": 70,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "总览#103",
+   "doc": "总览/1-四层整体架构与接口.md",
+   "section": "3.3 中层：路由、投送和执行",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 为每个 token 维护线程池：一次未完成的调用占用一个线程，结果返回后线程回池，超限返回错误（预算与记账唯一口径：[并发设计 §2/§3](../中层/2-并发设计.md)）；统一处理连接生命周期、超时、错误分类和诊断信息；",
+   "evidence": [
+    "test/offline/unit/test_endpoint_budgets.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/core/semantics_tb.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_endpoint_budgets.py",
+      "total": 7,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/core/fault_injection_tb.py",
+      "source": "core-multi-r9",
+      "total": 30,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/core/semantics_tb.py",
+      "source": "core-multi-r9",
+      "total": 30,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "总览#110",
+   "doc": "总览/1-四层整体架构与接口.md",
+   "section": "3.4 底层：连接端口与 Virtuoso",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "4. 将 Skill 交给 Virtuoso 求值，并把结果或错误返回给中层。",
+   "evidence": [
+    "test/offline/integration/test_daemon_handler.py",
+    "test/live/transport/cov_remote_real.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/integration/test_daemon_handler.py",
+      "total": 19,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "总览#115",
+   "doc": "总览/1-四层整体架构与接口.md",
+   "section": "3.5 依赖方向",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "顶层不直接访问中层/底层，经上层调用；顶层与上层之间领域方法不固定，调度机制固定（见[顶层 §2](../顶层/1-顶层.md)）。上层不能绕过中层直接连接底层或目标主机；中层不能把传输对象泄漏给上层；底层不能反向调用上层业务代码。",
+   "evidence": [
+    "test/offline/unit/test_upper_layer_import_contract.py",
+    "test/offline/unit/test_top_layer_dispatch.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_upper_layer_import_contract.py",
+      "total": 5,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_top_layer_dispatch.py",
+      "total": 11,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "总览#144",
+   "doc": "总览/1-四层整体架构与接口.md",
+   "section": "4.2 上层 ↔ 中层：query 只读查询",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- `role` 给定 → 只返回该 role 的事实；`name` 必须与 `role` 同给 → 只返回该 role 的该键（`root` / `display` / `bin` / 用户组名），未配置的键省略；",
+   "evidence": [
+    "test/offline/unit/test_middle_contracts.py",
+    "test/offline/core/semantics_tb.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_middle_contracts.py",
+      "total": 22,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/core/semantics_tb.py",
+      "source": "core-multi-r9",
+      "total": 30,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "总览#148",
+   "doc": "总览/1-四层整体架构与接口.md",
+   "section": "4.2 上层 ↔ 中层：query 只读查询",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 非法 `role`/`name` 取值 → 参数错误（`TypeError`/`ValueError`）；",
+   "evidence": [
+    "test/offline/unit/test_middle_contracts.py",
+    "test/offline/unit/test_middle_contracts.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_middle_contracts.py",
+      "total": 22,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_middle_contracts.py",
+      "total": 22,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "总览#159",
+   "doc": "总览/1-四层整体架构与接口.md",
+   "section": "4.3 中层 ↔ 底层：Skill 投送接口",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "`skill`、`timeout` 是现代码字段；`token` 是唯一新增**必填**字段；`log_level`/`log_max_bytes` 属于[日志返回设计标准](../底层/6-日志返回设计标准.md)的可选扩展字段。响应保持 `STX/NAK/RS` 帧，**当前唯一 payload 格式为 JSON**（格式、log 字段与 `off` 语义见日志标准，本文件不复制）：",
+   "evidence": [
+    "test/offline/integration/test_daemon_handler.py",
+    "test/offline/core/daemon_log_protocol_tb.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/integration/test_daemon_handler.py",
+      "total": 19,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/core/daemon_log_protocol_tb.py",
+      "source": "core-multi-r9",
+      "total": 30,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "总览#164",
+   "doc": "总览/1-四层整体架构与接口.md",
+   "section": "4.3 中层 ↔ 底层：Skill 投送接口",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "命令执行与文件操作不经过此接口。上层传入 token，中层转发给底层，底层校验 token；校验失败时不得接触 Virtuoso。token 到达 daemon 供校验，但不得进入 Virtuoso/SKILL 求值文本，也不回显给上层。",
+   "evidence": [
+    "test/offline/integration/test_daemon_handler.py",
+    "test/offline/integration/test_daemon_handler.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/integration/test_daemon_handler.py",
+      "total": 19,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/integration/test_daemon_handler.py",
+      "total": 19,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "总览#175",
+   "doc": "总览/1-四层整体架构与接口.md",
+   "section": "4.4 底层内部实现：连接 Virtuoso（非跨层接口）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "字节示例：成功 `02 33 1e`（`02`=STX，`33`=字符 `3`，`1e`=RS）；失败 `15 <错误文本> 1e`。",
+   "evidence": [
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/integration/test_daemon_handler.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/core/daemon_log_protocol_tb.py",
+      "source": "core-multi-r9",
+      "total": 30,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/integration/test_daemon_handler.py",
+      "total": 19,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "总览#178",
+   "doc": "总览/1-四层整体架构与接口.md",
+   "section": "4.5 结果与错误合同（本版冻结）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "五个业务接口**对外一律返回结构化结果，不向上抛传输异常**。参数编程错误（token 缺失、类型错误）是调用方错误，允许直接抛出 `TypeError/ValueError`；运行期错误（unknown token、daemon NAK、文件失败、传输失败）必须封装为结果。",
+   "evidence": [
+    "test/offline/unit/test_middle_contracts.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/unit/test_transport_error_paths.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_middle_contracts.py",
+      "total": 22,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/core/fault_injection_tb.py",
+      "source": "core-multi-r9",
+      "total": 30,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_transport_error_paths.py",
+      "total": 14,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "总览#179",
+   "doc": "总览/1-四层整体架构与接口.md",
+   "section": "4.5 结果与错误合同（本版冻结）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "`CommandResult` 增加稳定 `kind` 字段：`command`（真实命令）/ `timeout` / `transport` / `path` / `unknown-effect` / `rejected`（容量拒绝）/ `checksum`（文件摘要不一致）/ `invalid-token`（未知 token）；真实命令返回码即使等于 124/255 也保持 `kind=command`，桥保留码只在 `kind !",
+   "evidence": [
+    "test/offline/unit/test_middle_contracts.py",
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/unit/test_middle_reserved_codes.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_middle_contracts.py",
+      "total": 22,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/core/fault_injection_tb.py",
+      "source": "core-multi-r9",
+      "total": 30,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_middle_reserved_codes.py",
+      "total": 5,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "总览#192",
+   "doc": "总览/1-四层整体架构与接口.md",
+   "section": "4.5 结果与错误合同（本版冻结）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- Skill 超时与“结果未知”对外不可区分：一律视为结果未知；是否重试由上层业务操作自行决断；“投递前未投递可安全重试”仅为中层内部策略，不提供可观察的投递状态；",
+   "evidence": [
+    "test/offline/core/semantics_tb.py",
+    "test/offline/unit/test_persistent_shell_protocol.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/core/semantics_tb.py",
+      "source": "core-multi-r9",
+      "total": 30,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_persistent_shell_protocol.py",
+      "total": 13,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "总览#196",
+   "doc": "总览/1-四层整体架构与接口.md",
+   "section": "4.6 文件执行合同（上传/下载，唯一 owner）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- **落盘**：先写入临时位置，**对临时文件做 SHA-256 校验通过后**才原子替换到目标；校验失败删除临时文件、目标不变；传输中途失败同样清理临时内容、不改动已有目标；目标已存在则**覆盖**；",
+   "evidence": [
+    "test/offline/unit/test_transfer.py",
+    "test/offline/unit/test_tunnel_transfer.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_transfer.py",
+      "total": 20,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_tunnel_transfer.py",
+      "total": 31,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "总览#204",
+   "doc": "总览/1-四层整体架构与接口.md",
+   "section": "5.2 上层只面向逻辑业务服务器",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 五个 role（gui/daemon/command/file/spectre）各自独立配置；能力与职责、接口映射与 endpoint 复用规则由[路由设计 §2–§4](../中层/3-路由设计.md)唯一 owner 定义，探测矩阵、部署与文件根见[多用户与注册 §4](../其他/1-多用户与注册.md)，本文不重复；",
+   "evidence": [
+    "test/offline/unit/test_register_flow.py",
+    "test/offline/unit/test_validation_roles.py",
+    "test/live/flows/role_split_tb.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_register_flow.py",
+      "total": 68,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_validation_roles.py",
+      "total": 10,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "总览#206",
+   "doc": "总览/1-四层整体架构与接口.md",
+   "section": "5.2 上层只面向逻辑业务服务器",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 同一 token 内按解析后的 endpoint 去重（唯一口径：[路由设计 §4](../中层/3-路由设计.md)）：每个 endpoint 一条业务连接 + remote daemon 的专用 Skill 隧道；跨 token 不共用；",
+   "evidence": [
+    "test/offline/unit/test_credential_routing.py",
+    "test/offline/unit/test_ssh_tunnel_lifecycle.py",
+    "test/semi/transport/role_credential_isolation_tb.py",
+    "test/offline/scenario/test_multi_user_isolation.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_credential_routing.py",
+      "total": 5,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_ssh_tunnel_lifecycle.py",
+      "total": 12,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/scenario/test_multi_user_isolation.py",
+      "total": 2,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "总览#210",
+   "doc": "总览/1-四层整体架构与接口.md",
+   "section": "5.3 中层保证“正确位置”和“可验证结果”",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "中层不仅负责发送请求，还要确认请求对应的目标、执行阶段和结果。路径不可见、连接失败、命令非零退出、Skill 错误和文件校验失败必须能够区分。",
+   "evidence": [
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/unit/test_transport_error_paths.py",
+    "test/offline/unit/test_middle_contracts.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/core/fault_injection_tb.py",
+      "source": "core-multi-r9",
+      "total": 30,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_transport_error_paths.py",
+      "total": 14,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_middle_contracts.py",
+      "total": 22,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "总览#211",
+   "doc": "总览/1-四层整体架构与接口.md",
+   "section": "5.4 底层最小化且一对一",
+   "verdict": "indirect",
+   "r9_status": "R9-GREEN",
+   "text": "底层只连接一个 Virtuoso 会话并执行 Skill，不扩展成通用远程命令代理。**一个 token = 一个活动 daemon = 一个 CIW**；不同 token 不得共享同一个底层 Skill 通道；需要第二个 CIW 必须注册第二个 user/token。",
+   "evidence": [
+    "test/offline/unit/test_middle_contracts.py",
+    "test/offline/scenario/test_multi_user_isolation.py",
+    "test/live/transport/cov_remote_real.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_middle_contracts.py",
+      "total": 22,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/scenario/test_multi_user_isolation.py",
+      "total": 2,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "总览#215",
+   "doc": "总览/1-四层整体架构与接口.md",
+   "section": "5.6 路径和位置语义明确",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 各 role 的 `root` 只是该 role 的**默认工作目录约定**（部署文件、截图、日志、导入网表等），**不是沙箱**：文件操作允许访问业务服务器上任意可达路径；同 SSH 账号下不同 user 之间不承诺跨目录隔离，安全边界由 OS 账号权限提供；",
+   "evidence": [
+    "test/offline/unit/test_local_path_expansion.py",
+    "test/offline/unit/test_transfer.py",
+    "test/offline/unit/test_local_path_expansion.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_local_path_expansion.py",
+      "total": 3,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_transfer.py",
+      "total": 20,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_local_path_expansion.py",
+      "total": 3,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "总览#216",
+   "doc": "总览/1-四层整体架构与接口.md",
+   "section": "5.6 路径和位置语义明确",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- symlink、不存在的目标、覆盖目录按 OS 语义；目标不可见 → 结构化错误 `VB-PATH-NOT-VISIBLE`，不悄悄改写路径或隐式复制；",
+   "evidence": [
+    "test/offline/unit/test_tunnel_transfer.py",
+    "test/offline/unit/test_transport_error_paths.py",
+    "test/offline/unit/test_middle_contracts.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_tunnel_transfer.py",
+      "total": 31,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_transport_error_paths.py",
+      "total": 14,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_middle_contracts.py",
+      "total": 22,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "总览#218",
+   "doc": "总览/1-四层整体架构与接口.md",
+   "section": "5.7 单 CIW 串行，跨 CIW 并行",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "同一个 Virtuoso CIW 的 Skill 请求必须串行，不同底层会话可以并行；命令默认串行、`parallel=True` 显式并行，文件传输天然并行。排队闸门与超时语义见[并发设计 §1](../中层/2-并发设计.md)。",
+   "evidence": [
+    "test/offline/core/semantics_tb.py",
+    "test/semi/transport/one_shot_burst_tb.py",
+    "test/live/stress/production_face_stress_tb.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/core/semantics_tb.py",
+      "source": "core-multi-r9",
+      "total": 30,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "总览#220",
+   "doc": "总览/1-四层整体架构与接口.md",
+   "section": "5.8 可靠性和可扩展性",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "**五业务接口 deadline 唯一表**（`timeout=None` 时；每个接口一次调用只有一条 deadline，下表各相位共享它）：",
+   "evidence": [
+    "test/offline/unit/test_connect_retry.py",
+    "test/offline/unit/test_tunnel_transfer.py",
+    "test/offline/unit/test_endpoint_budgets.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_connect_retry.py",
+      "total": 4,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_tunnel_transfer.py",
+      "total": 31,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_endpoint_budgets.py",
+      "total": 7,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "总览#229",
+   "doc": "总览/1-四层整体架构与接口.md",
+   "section": "5.8 可靠性和可扩展性",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- `runtime.connect_timeout`（默认 15s）是**该预算内的子预算**，不额外增加总预算；建连阶段耗到该子预算 → `kind=timeout` / `returncode=124`；非超时的拒绝/断连 → `kind=transport` / `returncode=255`（Skill 侧对应 `Daemon connection failed`）；",
+   "evidence": [
+    "test/offline/unit/test_connect_retry.py",
+    "test/offline/unit/test_middle_reserved_codes.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_connect_retry.py",
+      "total": 4,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_middle_reserved_codes.py",
+      "total": 5,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "总览#230",
+   "doc": "总览/1-四层整体架构与接口.md",
+   "section": "5.8 可靠性和可扩展性",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 建连重试与失效恢复（≤3 次总尝试、降级直连、常驻 shell 重建）的唯一口径见[并发设计 §4](../中层/2-并发设计.md)，与初次尝试共享同一条 deadline；",
+   "evidence": [
+    "test/offline/unit/test_connect_retry.py",
+    "test/offline/unit/test_ssh_tunnel_lifecycle.py",
+    "test/offline/unit/test_persistent_shell_protocol.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_connect_retry.py",
+      "total": 4,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_ssh_tunnel_lifecycle.py",
+      "total": 12,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_persistent_shell_protocol.py",
+      "total": 13,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "总览#238",
+   "doc": "总览/1-四层整体架构与接口.md",
+   "section": "5.8 可靠性和可扩展性",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "本版不引入 `request_id` 参数/字段（等待请求留在**中层投递前队列**；daemon 同一时刻只接收/执行一个由闸门放行的 Skill 请求。日志增量由每请求的 `[start,end)` offset 定界）。无法判断请求是否已经产生副作用时返回“结果未知”，中层不盲目重发非幂等操作；是否重试由上层业务操作自行决断；该纪律同样适用于 Skill：**投递前**排队超时=确定未执行（仅中层内部可据此处置）；**投递后**超",
+   "evidence": [
+    "test/offline/unit/test_norm_gap_batch2.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_norm_gap_batch2.py",
+      "total": 12,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "范围#006",
+   "doc": "总览/add-本版范围与明确不支持.md",
+   "section": "1. 本版支持的范围（一句话）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "四层架构：上层通过中层**五个业务接口**（Skill 执行 / 命令执行 / 文件执行 / GUI 命令执行 / Spectre 命令执行）完成业务，另有一个只读查询 `query`（见[四层整体架构与接口 §4.2](1-四层整体架构与接口.md)）供参数准备；中层负责 local/SSH/多用户路由与投送；底层 daemon 只执行 Skill。多用户、并发、CDS.log 增量返回在本版范围内。以下明确不做。",
+   "evidence": [
+    "test/offline/unit/test_middle_contracts.py",
+    "test/offline/unit/test_pyapi_interface_contract.py",
+    "test/live/transport/cov_remote_real.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_middle_contracts.py",
+      "total": 22,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_pyapi_interface_contract.py",
+      "total": 5,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "范围#032",
+   "doc": "总览/add-本版范围与明确不支持.md",
+   "section": "3. 与相关文档的关系",
+   "verdict": "na",
+   "r9_status": "NA-NO-EVIDENCE-NEEDED",
+   "text": "- 每项对应的“该怎么做”由各自 Normative 文档定义：接口见[四层整体架构与接口](1-四层整体架构与接口.md)，路由见[路由设计](../中层/3-路由设计.md)，注册见[多用户与注册](../其他/1-多用户与注册.md)，并发见[并发设计](../中层/2-并发设计.md)，日志见[日志返回设计标准](../底层/6-日志返回设计标准.md)，字段见[中层配置文档](../中层/add-中层配置文档.md)。",
+   "evidence": [],
+   "detail": {}
+  },
+  {
+   "id": "配置#005",
+   "doc": "中层/add-中层配置文档.md",
+   "section": "中层配置文档",
+   "verdict": "na",
+   "r9_status": "NA-NO-EVIDENCE-NEEDED",
+   "text": "> 定位：本文是[多用户与注册](../其他/1-多用户与注册.md)的**字段与 schema 详细补充**——六步状态机与授权归[多用户与注册](../其他/1-多用户与注册.md)；本文是字段与必填清单 owner（§4），并提供默认值、探测写回、注册表 schema、reservation 与 endpoint key。",
+   "evidence": [],
+   "detail": {}
+  },
+  {
+   "id": "配置#006",
+   "doc": "中层/add-中层配置文档.md",
+   "section": "1. 总述",
+   "verdict": "na",
+   "r9_status": "NA-NO-EVIDENCE-NEEDED",
+   "text": "- **唯一 owner**：字段名/类型/默认值、注册表 schema（§6.1）、reservation（§6.4）、endpoint canonical key（§6.5）只在本文定义；其它文档只索引，不复制。",
+   "evidence": [],
+   "detail": {}
+  },
+  {
+   "id": "配置#012",
+   "doc": "中层/add-中层配置文档.md",
+   "section": "1. 总述",
+   "verdict": "na",
+   "r9_status": "NA-NO-EVIDENCE-NEEDED",
+   "text": "- **默认值约定**：标“默认 X”可省略；标“必填”必须写入。",
+   "evidence": [],
+   "detail": {}
+  },
+  {
+   "id": "配置#027",
+   "doc": "中层/add-中层配置文档.md",
+   "section": "2.3 各 role 公共字段",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "五个 role（`gui / daemon / command / file / spectre`）各有下列公共字段。role 的职责、接口对应与连接复用见[路由设计 §2–§4](3-路由设计.md)，本文只定义字段与默认值。",
+   "evidence": [
+    "test/offline/unit/test_validation_roles.py",
+    "test/offline/unit/test_register_flow.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_validation_roles.py",
+      "total": 10,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_register_flow.py",
+      "total": 68,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "配置#053",
+   "doc": "中层/add-中层配置文档.md",
+   "section": "2.5 全局默认与字段回退",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 回退是**逐字段**的：role 有值用自己的，否则回退对应全局默认；`null`/空串 = 未提供；",
+   "evidence": [
+    "test/offline/unit/test_register_flow.py",
+    "test/offline/unit/test_validation_roles.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_register_flow.py",
+      "total": 68,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_validation_roles.py",
+      "total": 10,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "配置#056",
+   "doc": "中层/add-中层配置文档.md",
+   "section": "2.6 固定目录结构（非配置项）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 本地工作目录不是注册字段（启动时传入，不传用实现默认）；子结构固定 `registry.json / config.json / temp/ / log/ / artifact/`，启动时自动创建（`config.json` 见[顶层补充 §5](../顶层/add-控制面与业务面.md)）；",
+   "evidence": [
+    "test/offline/unit/test_workdir_contract.py",
+    "test/offline/unit/test_common_config.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_workdir_contract.py",
+      "total": 6,
+      "red": 0,
+      "skipped": 1
+     },
+     {
+      "file": "test/offline/unit/test_common_config.py",
+      "total": 3,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "配置#063",
+   "doc": "中层/add-中层配置文档.md",
+   "section": "3. 三类处理规则",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "探测动作本身（何时探测、逐 role 探测矩阵、失败级别）见[多用户与注册 §4](../其他/1-多用户与注册.md)，本文只定义字段类型规则。`root` 不是探测发现的环境值，而是按 §2.5 与[多用户与注册 §4.2](../其他/1-多用户与注册.md)的默认算法推导、探测期写回绝对路径，其类型为**配置**。",
+   "evidence": [
+    "test/offline/unit/test_spec_contracts.py",
+    "test/offline/unit/test_register_flow.py",
+    "test/artifacts/env/log-vblog/registry.json"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_spec_contracts.py",
+      "total": 4,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_register_flow.py",
+      "total": 68,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "配置#065",
+   "doc": "中层/add-中层配置文档.md",
+   "section": "4. 必填小结",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 条件必填：每个 remote role 必须可解析出目标（role 级 `host/user` 或 `ssh.default.*`）与凭据（role 级 `key_dir/key` 或 `ssh.default.key_dir/key`）；",
+   "evidence": [
+    "test/offline/unit/test_register_flow.py",
+    "test/offline/unit/test_registration_server_edges.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_register_flow.py",
+      "total": 68,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_registration_server_edges.py",
+      "total": 47,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "配置#068",
+   "doc": "中层/add-中层配置文档.md",
+   "section": "5. 输入校验与首信任",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- `user` 格式 `^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$`；禁止 `/`、`\\`、`..`、绝对路径；Windows 大小写不敏感查重；拒绝保留设备名（CON/PRN/AUX/NUL/COM1–9/LPT1–9 及带扩展名）与结尾 `.`/空格；",
+   "evidence": [
+    "test/offline/unit/test_validation_roles.py",
+    "test/offline/unit/test_registration_server_edges.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_validation_roles.py",
+      "total": 10,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_registration_server_edges.py",
+      "total": 47,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "配置#070",
+   "doc": "中层/add-中层配置文档.md",
+   "section": "5. 输入校验与首信任",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- `local` role 显式提交 `host/user/jump_host/jump_user/proxy` 或 `key_dir/key` → 参数错误；",
+   "evidence": [
+    "test/offline/unit/test_commit_shape.py",
+    "test/offline/unit/test_registration_server_edges.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_commit_shape.py",
+      "total": 8,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_registration_server_edges.py",
+      "total": 47,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "配置#071",
+   "doc": "中层/add-中层配置文档.md",
+   "section": "5. 输入校验与首信任",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- remote role 必须解析出凭据（`key_dir`+`key`），否则拒绝；`key` 只允许文件名、不含目录成分；凭据按**公钥指纹**查重，已被其他条目登记 → 需**任一**已登记持有者的 token 或管理员凭据，否则拒绝（复用规则见[多用户与注册 §3](../其他/1-多用户与注册.md)）；",
+   "evidence": [
+    "test/offline/unit/test_registration_server_edges.py",
+    "test/offline/unit/test_registration_server_edges.py",
+    "test/offline/unit/test_credential_routing.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_registration_server_edges.py",
+      "total": 47,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_registration_server_edges.py",
+      "total": 47,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_credential_routing.py",
+      "total": 5,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "配置#072",
+   "doc": "中层/add-中层配置文档.md",
+   "section": "5. 输入校验与首信任",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- `role.gui.display` 只接受 X display 形式（如 `:11`、`localhost:10.0`、`unix/:0`），禁止空白、引号、`$`、反引号、`;` 等 shell 元字符（防注入）；",
+   "evidence": [
+    "test/offline/unit/test_validation_roles.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_validation_roles.py",
+      "total": 10,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "配置#073",
+   "doc": "中层/add-中层配置文档.md",
+   "section": "5. 输入校验与首信任",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 未知字段拒绝（`extra=forbid`）；各 role 的用户组例外：组名 `^[a-z][a-z0-9_-]{0,63}$`、不与固定字段重名，值为对象、字段值仅 JSON 标量且不含 NUL，每 role 用户组总大小 ≤ 16 KiB；语义由上层业务包约定；空串视为未提供；",
+   "evidence": [
+    "test/offline/unit/test_validation_roles.py",
+    "test/offline/unit/test_validation_roles.py",
+    "test/offline/unit/test_validation_roles.py",
+    "test/offline/unit/test_validation_roles.py",
+    "test/offline/unit/test_norm_gap_round8.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_validation_roles.py",
+      "total": 10,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_validation_roles.py",
+      "total": 10,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_validation_roles.py",
+      "total": 10,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_validation_roles.py",
+      "total": 10,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_norm_gap_round8.py",
+      "total": 9,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "配置#075",
+   "doc": "中层/add-中层配置文档.md",
+   "section": "5. 输入校验与首信任",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- registry 持久化 UTF-8、权限 `0600`、tmp + 原子替换。",
+   "evidence": [
+    "test/offline/core/semantics_tb.py",
+    "test/offline/unit/test_registry_more.py",
+    "test/offline/unit/test_registry_more.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/core/semantics_tb.py",
+      "source": "core-multi-r9",
+      "total": 30,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_registry_more.py",
+      "total": 22,
+      "red": 0,
+      "skipped": 1
+     },
+     {
+      "file": "test/offline/unit/test_registry_more.py",
+      "total": 22,
+      "red": 0,
+      "skipped": 1
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "配置#103",
+   "doc": "中层/add-中层配置文档.md",
+   "section": "6.2 提交 schema 与写回口径",
+   "verdict": "na",
+   "r9_status": "NA-NO-EVIDENCE-NEEDED",
+   "text": "- 何时探测、何时写回、唯一写盘点见[多用户与注册 §3/§4](../其他/1-多用户与注册.md)；本节只约定提交后的字段形态；",
+   "evidence": [],
+   "detail": {}
+  },
+  {
+   "id": "配置#107",
+   "doc": "中层/add-中层配置文档.md",
+   "section": "6.4 端口 reservation（内存候选，唯一口径）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "**唯一性作用域**：`token`/`user` 全局；`daemon_port` 同一 daemon 目标主机（`mode=local` 时即本机）；`local_port` 本机。",
+   "evidence": [
+    "test/offline/unit/test_reservation.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_reservation.py",
+      "total": 13,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "配置#108",
+   "doc": "中层/add-中层配置文档.md",
+   "section": "6.4 端口 reservation（内存候选，唯一口径）",
+   "verdict": "partial",
+   "r9_status": "R9-GREEN",
+   "text": "**联合端口**：`mode=local` 时 `daemon_port` 与 `local_port` 是同一个候选端口——任一缺省由同一值生成并同步写入，显式双值必须相等。",
+   "evidence": [
+    "test/offline/unit/test_register_flow.py",
+    "test/offline/unit/test_norm_gap_round8.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_register_flow.py",
+      "total": 68,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_norm_gap_round8.py",
+      "total": 9,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "配置#111",
+   "doc": "中层/add-中层配置文档.md",
+   "section": "6.4 端口 reservation（内存候选，唯一口径）",
+   "verdict": "na",
+   "r9_status": "NA-NO-EVIDENCE-NEEDED",
+   "text": "**并发**：注册为低并发流程，由注册服务进程内协调；不设跨进程租约与宽限回收。",
+   "evidence": [],
+   "detail": {}
+  },
+  {
+   "id": "配置#112",
+   "doc": "中层/add-中层配置文档.md",
+   "section": "6.4 端口 reservation（内存候选，唯一口径）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "**分配算法**：具体算法与端口范围为实现自由度，合同只要求候选唯一且空闲。",
+   "evidence": [
+    "test/offline/unit/test_probe.py",
+    "test/offline/unit/test_reservation.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_probe.py",
+      "total": 19,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_reservation.py",
+      "total": 13,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "配置#118",
+   "doc": "中层/add-中层配置文档.md",
+   "section": "6.5 endpoint canonical key",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 两条独立规则：① 字符串规范化决定“是否同一 endpoint”（`Server-A`、`server-a.` 同 endpoint，指纹必须一致）；② 不做名称解析（不查 DNS、不把 alias 与真实 hostname 合并）；`~/.ssh/config` 只用于 transport 解析与 22 端口校验，canonical key 只按规范化输入字符串计算；",
+   "evidence": [
+    "test/offline/unit/test_spec_contracts.py",
+    "test/offline/unit/test_spec_contracts.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_spec_contracts.py",
+      "total": 4,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_spec_contracts.py",
+      "total": 4,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "配置#120",
+   "doc": "中层/add-中层配置文档.md",
+   "section": "6.5 endpoint canonical key",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 测试向量（必须逐条可测）：",
+   "evidence": [
+    "test/offline/unit/test_spec_contracts.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_spec_contracts.py",
+      "total": 4,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "配置#130",
+   "doc": "中层/add-中层配置文档.md",
+   "section": "6.5 endpoint canonical key",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 约束：SSH 端口固定 22（注册期校验目标/jump 解析端口，非 22 拒绝）；proxy 固定 `socks5://host:port`；jump 的 known_hosts 由系统 SSH 配置提供；不接受自定义 known_hosts 路径。",
+   "evidence": [
+    "test/offline/unit/test_probe.py",
+    "test/offline/unit/test_register_flow.py",
+    "test/offline/unit/test_paramiko.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_probe.py",
+      "total": 19,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_register_flow.py",
+      "total": 68,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_paramiko.py",
+      "total": 34,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "路由#005",
+   "doc": "中层/3-路由设计.md",
+   "section": "路由设计（5 role）",
+   "verdict": "na",
+   "r9_status": "NA-NO-EVIDENCE-NEEDED",
+   "text": "> 关联：字段定义见[中层配置文档 §2](../中层/add-中层配置文档.md)；接口基线见[四层整体架构与接口 §4](../总览/1-四层整体架构与接口.md)；并发与预算见[并发设计](2-并发设计.md)",
+   "evidence": [],
+   "detail": {}
+  },
+  {
+   "id": "路由#008",
+   "doc": "中层/3-路由设计.md",
+   "section": "0. 两步路由总览（路由是纯消费注册表的行为）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "2. **第二步（用户内检查与投递）**：在用户内按 role 解析目标后，执行并发 owner 的限流检查（线程预算、最大通道数、单目标点上限，见[并发设计 §2/§3](2-并发设计.md)），**容得下才继续投递**；需要排队的进对应队列，不需要排队的直接投递（形态见[并发设计 §1](2-并发设计.md)）。投递目标：串行命令 → command role 常驻 shell，Skill → daemon role 隧道/端口，并",
+   "evidence": [
+    "test/offline/core/semantics_tb.py",
+    "test/offline/unit/test_endpoint_budgets.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/core/semantics_tb.py",
+      "source": "core-multi-r9",
+      "total": 30,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_endpoint_budgets.py",
+      "total": 7,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "路由#009",
+   "doc": "中层/3-路由设计.md",
+   "section": "0. 两步路由总览（路由是纯消费注册表的行为）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "3. 任一限流参数容不下 → 返回容量拒绝并**指明是哪个参数**（结果字段见[四层整体架构与接口 §4.5](../总览/1-四层整体架构与接口.md)）；拒绝文本与记账见[并发设计 §2/§3](2-并发设计.md)。",
+   "evidence": [
+    "test/offline/core/fault_injection_tb.py",
+    "test/offline/unit/test_endpoint_budgets.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/core/fault_injection_tb.py",
+      "source": "core-multi-r9",
+      "total": 30,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_endpoint_budgets.py",
+      "total": 7,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "路由#013",
+   "doc": "中层/3-路由设计.md",
+   "section": "0. 两步路由总览（路由是纯消费注册表的行为）",
+   "verdict": "na",
+   "r9_status": "NA-NO-EVIDENCE-NEEDED",
+   "text": "B --> C[\"第二步：并发限流检查（见 2-并发设计 §2/§3）\"]",
+   "evidence": [],
+   "detail": {}
+  },
+  {
+   "id": "路由#014",
+   "doc": "中层/3-路由设计.md",
+   "section": "0. 两步路由总览（路由是纯消费注册表的行为）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "C -- 容不下 --> R[\"容量拒绝，指明哪个参数\"]",
+   "evidence": [
+    "test/offline/core/fault_injection_tb.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/core/fault_injection_tb.py",
+      "source": "core-multi-r9",
+      "total": 30,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "路由#015",
+   "doc": "中层/3-路由设计.md",
+   "section": "0. 两步路由总览（路由是纯消费注册表的行为）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "C -- 容下 --> D[\"排队或直接投递（见 2-并发设计 §1）\"]",
+   "evidence": [
+    "test/offline/core/semantics_tb.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/core/semantics_tb.py",
+      "source": "core-multi-r9",
+      "total": 30,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "路由#018",
+   "doc": "中层/3-路由设计.md",
+   "section": "0. 两步路由总览（路由是纯消费注册表的行为）",
+   "verdict": "na",
+   "r9_status": "NA-NO-EVIDENCE-NEEDED",
+   "text": "- 排队/投递超时语义、预算与记账见[并发设计 §1–§3](2-并发设计.md)；注册表导入与 token 生命周期见[多用户与注册](../其他/1-多用户与注册.md)。",
+   "evidence": [],
+   "detail": {}
+  },
+  {
+   "id": "路由#024",
+   "doc": "中层/3-路由设计.md",
+   "section": "1. 定位与边界",
+   "verdict": "indirect",
+   "r9_status": "NO-OFFLINE-EVIDENCE",
+   "text": "这条准则同时是评审 P0-01 的关闭口径：规范不再承诺\"gui 与 daemon 必须同机\"，也不再假设；bridge 按配置投送。",
+   "evidence": [
+    "test/live/flows/role_split_tb.py"
+   ],
+   "detail": {}
+  },
+  {
+   "id": "路由#032",
+   "doc": "中层/3-路由设计.md",
+   "section": "2.1 token 与主机边界（唯一口径）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 一个 token 拥有**五个 role**，这些 role **可以分布在多个主机**（含混合 local/remote）；bridge 不因为 role 跨主机而拒绝注册或拒绝投送；",
+   "evidence": [
+    "test/live/flows/role_split_tb.py",
+    "test/offline/unit/test_validation_roles.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_validation_roles.py",
+      "total": 10,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "路由#033",
+   "doc": "中层/3-路由设计.md",
+   "section": "2.1 token 与主机边界（唯一口径）",
+   "verdict": "indirect",
+   "r9_status": "R9-GREEN",
+   "text": "- 一个 token **只允许一个 daemon role、一个活动 daemon、一个 CIW**：daemon 是本版唯一“单实例”资源，第二处 `load` 同一 token 属于配置错误；需要第二个 CIW 时注册第二个 user/token；",
+   "evidence": [
+    "test/offline/unit/test_middle_contracts.py",
+    "test/offline/scenario/test_multi_user_isolation.py",
+    "test/live/transport/cov_remote_real.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_middle_contracts.py",
+      "total": 22,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/scenario/test_multi_user_isolation.py",
+      "total": 2,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "路由#036",
+   "doc": "中层/3-路由设计.md",
+   "section": "2.1 token 与主机边界（唯一口径）",
+   "verdict": "na",
+   "r9_status": "NA-NO-EVIDENCE-NEEDED",
+   "text": "- 该边界是本文的唯一口径；其它文档不得再出现“一个 token 多主机：不支持”这类无限定的表述。",
+   "evidence": [],
+   "detail": {}
+  },
+  {
+   "id": "路由#037",
+   "doc": "中层/3-路由设计.md",
+   "section": "2.1 token 与主机边界（唯一口径）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "`role.<name>.mode=local` 表示中层就在该 role 的目标主机上、直接本地执行、不经 SSH；`mode=remote` 表示经 SSH 投送到该 role 的 host/user；**不同 role 可以混合 mode**（例如客户端就在 daemon 主机上 → daemon=local、command/file=remote）；`mode=local` 是**单用户形态**（声明需管理权限），多用户身份隔离",
+   "evidence": [
+    "test/offline/unit/test_validation_roles.py",
+    "test/offline/unit/test_register_flow.py",
+    "test/offline/unit/test_norm_gap_round8.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_validation_roles.py",
+      "total": 10,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_register_flow.py",
+      "total": 68,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_norm_gap_round8.py",
+      "total": 9,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "路由#046",
+   "doc": "中层/3-路由设计.md",
+   "section": "3. 五个业务接口与 role 的对应关系",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "**GUI / Spectre 命令的本质**：它们是\"用并行模式执行命令\"——每次调用在对应 role 上执行一条一次性（one-shot）命令，不建立常驻会话、不保留 cwd/env，等价于 `parallel=True` 的命令语义。两者同样占用该 token 的 channel 预算（见[中层配置文档 §2.2](../中层/add-中层配置文档.md)与[并发设计](2-并发设计.md)）。",
+   "evidence": [
+    "test/offline/unit/test_tunnel_transfer.py",
+    "test/semi/transport/one_shot_burst_tb.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_tunnel_transfer.py",
+      "total": 31,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "路由#052",
+   "doc": "中层/3-路由设计.md",
+   "section": "4. endpoint 与连接复用",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- endpoint 身份只由 `(host, user, jump_host, jump_user, proxy)` 决定；**连接复用另要求解析后的 SSH 凭据（`key_dir`+`key`）一致**：同一 endpoint 但解析后凭据不同 → 不共用业务连接；经全局默认回退的 role 解析后天然一致；",
+   "evidence": [
+    "test/offline/unit/test_credential_routing.py",
+    "test/offline/unit/test_spec_contracts.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_credential_routing.py",
+      "total": 5,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_spec_contracts.py",
+      "total": 4,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "路由#053",
+   "doc": "中层/3-路由设计.md",
+   "section": "4. endpoint 与连接复用",
+   "verdict": "na",
+   "r9_status": "NA-NO-EVIDENCE-NEEDED",
+   "text": "**复用原则（唯一口径）**：",
+   "evidence": [],
+   "detail": {}
+  },
+  {
+   "id": "路由#059",
+   "doc": "中层/3-路由设计.md",
+   "section": "4. endpoint 与连接复用",
+   "verdict": "na",
+   "r9_status": "NA-NO-EVIDENCE-NEEDED",
+   "text": "- 连接生命周期（建连/重试/关闭）见[并发设计 §4](2-并发设计.md)；",
+   "evidence": [],
+   "detail": {}
+  },
+  {
+   "id": "路由#060",
+   "doc": "中层/3-路由设计.md",
+   "section": "4. endpoint 与连接复用",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 预算：线程预算与最大通道数**每 token 一份**（token 内所有 endpoint 共享），单目标点上限按 endpoint（字段配置在 role、共享 endpoint 取最小值）；记账矩阵见[并发设计 §2/§3](2-并发设计.md)，预算不因 role 数量而增加。",
+   "evidence": [
+    "test/offline/unit/test_endpoint_budgets.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_endpoint_budgets.py",
+      "total": 7,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "路由#067",
+   "doc": "中层/3-路由设计.md",
+   "section": "6. 与其它文档的关系",
+   "verdict": "na",
+   "r9_status": "NA-NO-EVIDENCE-NEEDED",
+   "text": "- 字段与默认值：[中层配置文档](../中层/add-中层配置文档.md)；",
+   "evidence": [],
+   "detail": {}
+  },
+  {
+   "id": "路由#068",
+   "doc": "中层/3-路由设计.md",
+   "section": "6. 与其它文档的关系",
+   "verdict": "na",
+   "r9_status": "NA-NO-EVIDENCE-NEEDED",
+   "text": "- 接口签名与错误模型：[四层整体架构与接口](../总览/1-四层整体架构与接口.md) §4；",
+   "evidence": [],
+   "detail": {}
+  },
+  {
+   "id": "路由#070",
+   "doc": "中层/3-路由设计.md",
+   "section": "6. 与其它文档的关系",
+   "verdict": "na",
+   "r9_status": "NA-NO-EVIDENCE-NEEDED",
+   "text": "- 并发、预算与连接复用：[并发设计](2-并发设计.md)；",
+   "evidence": [],
+   "detail": {}
+  },
+  {
+   "id": "并发#005",
+   "doc": "中层/2-并发设计.md",
+   "section": "并发设计",
+   "verdict": "na",
+   "r9_status": "NA-NO-EVIDENCE-NEEDED",
+   "text": "> 关联：字段定义见[中层配置文档 §2.2/§2.3](../中层/add-中层配置文档.md)；接口语义见[四层整体架构与接口 §4](../总览/1-四层整体架构与接口.md)；错误分类见[四层整体架构与接口 §4.5](../总览/1-四层整体架构与接口.md)",
+   "evidence": [],
+   "detail": {}
+  },
+  {
+   "id": "并发#006",
+   "doc": "中层/2-并发设计.md",
+   "section": "1. 三种执行形态",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "五个业务接口按并发形态归为三类：",
+   "evidence": [
+    "test/offline/core/semantics_tb.py",
+    "test/semi/transport/one_shot_burst_tb.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/core/semantics_tb.py",
+      "source": "core-multi-r9",
+      "total": 30,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "并发#012",
+   "doc": "中层/2-并发设计.md",
+   "section": "1. 三种执行形态",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 串行两类的排队都在中层**投递前**发生，按 token 隔离（per-token 闸门）；",
+   "evidence": [
+    "test/offline/core/semantics_tb.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/core/semantics_tb.py",
+      "source": "core-multi-r9",
+      "total": 30,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "并发#013",
+   "doc": "中层/2-并发设计.md",
+   "section": "1. 三种执行形态",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 排队等待消耗同一条端到端 deadline：**排队中超时 = 未投递**（确定未执行，该“可安全重试”仅属中层内部策略）；**已投递后超时 = 结果未知**（中层不重发；是否重试由上层业务操作自行决断）；Skill 对外超时一律视为结果未知，语义见[四层整体架构与接口 §4.5/§5.8](../总览/1-四层整体架构与接口.md)。",
+   "evidence": [
+    "test/offline/core/semantics_tb.py",
+    "test/offline/unit/test_persistent_shell_protocol.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/core/semantics_tb.py",
+      "source": "core-multi-r9",
+      "total": 30,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_persistent_shell_protocol.py",
+      "total": 13,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "并发#020",
+   "doc": "中层/2-并发设计.md",
+   "section": "2. 三个限流配置（每 token 一份）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 三个预算互相独立，任一超限 → 返回容量拒绝并指明具体预算（结果字段见[四层整体架构与接口 §4.5](../总览/1-四层整体架构与接口.md)），**不排队等待**；",
+   "evidence": [
+    "test/offline/unit/test_endpoint_budgets.py",
+    "test/offline/core/fault_injection_tb.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_endpoint_budgets.py",
+      "total": 7,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/core/fault_injection_tb.py",
+      "source": "core-multi-r9",
+      "total": 30,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "并发#022",
+   "doc": "中层/2-并发设计.md",
+   "section": "2. 三个限流配置（每 token 一份）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 多个 role 解析到同一 endpoint 时共享一个计数器，有效上限取这些 role 的 `max_sessions` 最小值；remote daemon 的专用 Skill tunnel 计入该 endpoint 的通道数；",
+   "evidence": [
+    "test/offline/unit/test_endpoint_budgets.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_endpoint_budgets.py",
+      "total": 7,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "并发#034",
+   "doc": "中层/2-并发设计.md",
+   "section": "4. 连接生命周期与建连（唯一口径）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 建连失败只在无副作用阶段重试，**最多 3 次总尝试（含初次）**；ControlMaster 故障自动降级直连；重试共享同一条剩余预算；",
+   "evidence": [
+    "test/offline/unit/test_connect_retry.py",
+    "test/offline/unit/test_ssh_tunnel_lifecycle.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_connect_retry.py",
+      "total": 4,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_ssh_tunnel_lifecycle.py",
+      "total": 12,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "并发#038",
+   "doc": "中层/2-并发设计.md",
+   "section": "5. 与其它文档的索引",
+   "verdict": "na",
+   "r9_status": "NA-NO-EVIDENCE-NEEDED",
+   "text": "- 字段与默认值：[中层配置文档 §2](../中层/add-中层配置文档.md)；",
+   "evidence": [],
+   "detail": {}
+  },
+  {
+   "id": "并发#040",
+   "doc": "中层/2-并发设计.md",
+   "section": "5. 与其它文档的索引",
+   "verdict": "na",
+   "r9_status": "NA-NO-EVIDENCE-NEEDED",
+   "text": "- 错误 kind 与保留码：[四层整体架构与接口 §4.5](../总览/1-四层整体架构与接口.md)；",
+   "evidence": [],
+   "detail": {}
+  },
+  {
+   "id": "并发#042",
+   "doc": "中层/2-并发设计.md",
+   "section": "5. 与其它文档的索引",
+   "verdict": "na",
+   "r9_status": "NA-NO-EVIDENCE-NEEDED",
+   "text": "- 本版不支持的并发能力：[本版范围与明确不支持](../总览/add-本版范围与明确不支持.md)。",
+   "evidence": [],
+   "detail": {}
+  },
+  {
+   "id": "日志#009",
+   "doc": "底层/6-日志返回设计标准.md",
+   "section": "1. 目标与硬性边界",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- **不向 CDS.log 注入任何输出**：不得因为“要返回日志”就往 CDS.log 写 BEGIN/END marker 或其他行——日志返回只读文件，不改文件；",
+   "evidence": [
+    "test/offline/unit/test_log_no_fetch.py",
+    "test/offline/unit/test_daemon_log_contract.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_log_no_fetch.py",
+      "total": 3,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_daemon_log_contract.py",
+      "total": 12,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "日志#035",
+   "doc": "底层/6-日志返回设计标准.md",
+   "section": "3. 增量机制（offset 定界，无 marker、无 cursor）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- `[start,end)` 之外的并发输出不属于本次增量；等待请求留在中层投递前队列，daemon 同一时刻只接收/执行一个由闸门放行的 Skill 请求。",
+   "evidence": [
+    "test/offline/unit/test_daemon_log_contract.py",
+    "test/offline/unit/test_daemon_log_contract.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_daemon_log_contract.py",
+      "total": 12,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_daemon_log_contract.py",
+      "total": 12,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "日志#045",
+   "doc": "底层/6-日志返回设计标准.md",
+   "section": "5. 限长与自动降级",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "`log_max_bytes`（默认 64KB）：",
+   "evidence": [
+    "test/offline/unit/test_common_config.py",
+    "test/offline/unit/test_daemon_log_utf8_budget.py",
+    "test/offline/unit/test_registry_more.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_common_config.py",
+      "total": 3,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_daemon_log_utf8_budget.py",
+      "total": 5,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_registry_more.py",
+      "total": 22,
+      "red": 0,
+      "skipped": 1
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "日志#055",
+   "doc": "底层/6-日志返回设计标准.md",
+   "section": "5. 限长与自动降级",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 最后一步按**字节截断、只取靠前部分**：例如上限 100 字节、本次增量起于 offset 10、error 增量到 200，则返回 10–110，之后内容本次不补发；",
+   "evidence": [
+    "test/offline/unit/test_daemon_log_utf8_budget.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_daemon_log_utf8_budget.py",
+      "total": 5,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "日志#066",
+   "doc": "底层/6-日志返回设计标准.md",
+   "section": "6.2 回包（daemon → 中层，唯一当前格式）",
+   "verdict": "na",
+   "r9_status": "NA-NO-EVIDENCE-NEEDED",
+   "text": "{\"value\": \"3\", \"log\": \"\\\\e ...本次错误行...\\\\n\"}",
+   "evidence": [],
+   "detail": {}
+  },
+  {
+   "id": "日志#070",
+   "doc": "底层/6-日志返回设计标准.md",
+   "section": "6.2 回包（daemon → 中层，唯一当前格式）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- **本版只解析 JSON payload**；旧 daemon（无 token）不在支持范围，收到非法帧按协议错误处理。",
+   "evidence": [
+    "test/offline/unit/test_daemon_runtime_contracts.py",
+    "test/offline/integration/test_daemon_handler.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_daemon_runtime_contracts.py",
+      "total": 54,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/integration/test_daemon_handler.py",
+      "total": 19,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "日志#077",
+   "doc": "底层/6-日志返回设计标准.md",
+   "section": "6.3 内部 metadata frame（IL → daemon，冻结）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 帧顺序固定：第一帧 `value/error`，第二帧 `meta`；两帧必须由 IL 合并为**一次 `ipcWriteProcess`** 写入，避免重排；",
+   "evidence": [
+    "test/offline/core/daemon_log_protocol_tb.py",
+    "test/offline/unit/test_norm_gap_round8.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/core/daemon_log_protocol_tb.py",
+      "source": "core-multi-r9",
+      "total": 30,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_norm_gap_round8.py",
+      "total": 9,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "日志#082",
+   "doc": "底层/6-日志返回设计标准.md",
+   "section": "7. 边界与错误语义",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- `CDS.log` 不存在/不可读/路径变化且读取失败，或第二帧缺失/超时：**本次 log=\"\"，Skill 结果照常返回**，`VirtuosoResult.warnings` 追加固定文本 `CDS.log unavailable: <reason>`（`<reason>` 仅作诊断，不回退为请求失败）；`log_level=off` 刻意不产生第二帧，**不追加该 warning**。",
+   "evidence": [
+    "test/offline/integration/test_daemon_handler.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/integration/test_daemon_handler.py",
+      "total": 19,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "日志#091",
+   "doc": "底层/6-日志返回设计标准.md",
+   "section": "8. 验收标准",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "7. 非法 `log_level`/`log_max_bytes` 直接拒绝报错；`CDS.log` 不可读时 `log=\"\"` 且 `warnings` 含固定文本 `CDS.log unavailable: <reason>`；截断后尾部不输出半个 UTF-8 字符。",
+   "evidence": [
+    "test/offline/integration/test_daemon_handler.py",
+    "test/offline/unit/test_daemon_log_utf8_budget.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/integration/test_daemon_handler.py",
+      "total": 19,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_daemon_log_utf8_budget.py",
+      "total": 5,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "顶层#005",
+   "doc": "顶层/1-顶层.md",
+   "section": "顶层：HTTP 入口与业务调度",
+   "verdict": "na",
+   "r9_status": "NA-NO-EVIDENCE-NEEDED",
+   "text": "> 定位：顶层只做入口与调度。业务包与业务操作契约见[上层 §2/§4](../上层/1-上层.md)；分层职责与依赖见[四层整体架构与接口 §3](../总览/1-四层整体架构与接口.md)；五业务接口与错误总则见[四层整体架构与接口 §4](../总览/1-四层整体架构与接口.md)。",
+   "evidence": [],
+   "detail": {}
+  },
+  {
+   "id": "顶层#009",
+   "doc": "顶层/1-顶层.md",
+   "section": "1. 总述",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 限流不是顶层职责：中层 per-token 预算由中层计账（见[并发设计 §2/§3](../中层/2-并发设计.md)），顶层不解释该预算；顶层自身业务请求准入上限见[控制面与业务面 §5](add-控制面与业务面.md)。",
+   "evidence": [
+    "test/offline/unit/test_upper_layer_import_contract.py",
+    "test/offline/unit/test_endpoint_budgets.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_upper_layer_import_contract.py",
+      "total": 5,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_endpoint_budgets.py",
+      "total": 7,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "顶层#018",
+   "doc": "顶层/1-顶层.md",
+   "section": "2.1 显式注册表",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 一个业务包可以出现在多行（每个业务操作一行）；**单操作业务包只登记一行，同样成立**；同一业务操作名重复登记是启动错误；",
+   "evidence": [
+    "test/offline/unit/test_top_layer_dispatch.py",
+    "test/offline/core/api_server_tb.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_top_layer_dispatch.py",
+      "total": 11,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/core/api_server_tb.py",
+      "source": "core-multi-r9",
+      "total": 30,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "顶层#028",
+   "doc": "顶层/1-顶层.md",
+   "section": "2.4 中层对象注入",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 可测试约束：处理/调度模块只允许标准库、`common.paths`、`common.jsonutil`、`common.config`（纯工具基座）、`server.*`、`pyapi.*`；不得出现 `transport.*`、`socket`、`subprocess`、`paramiko`。",
+   "evidence": [
+    "test/offline/unit/test_upper_layer_import_contract.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_upper_layer_import_contract.py",
+      "total": 5,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "顶层#042",
+   "doc": "顶层/1-顶层.md",
+   "section": "3. 响应壳与错误分界",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 未预期异常必须被顶层捕获：单请求失败不影响其它请求，不终止服务。",
+   "evidence": [
+    "test/offline/unit/test_api_server_main.py",
+    "test/offline/unit/test_top_layer_pool.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_api_server_main.py",
+      "total": 22,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_top_layer_pool.py",
+      "total": 13,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "顶层#050",
+   "doc": "顶层/1-顶层.md",
+   "section": "5. 与其它文档的索引",
+   "verdict": "na",
+   "r9_status": "NA-NO-EVIDENCE-NEEDED",
+   "text": "- 分层职责、依赖方向、五业务接口与错误总则：[四层整体架构与接口](../总览/1-四层整体架构与接口.md) §3/§4；",
+   "evidence": [],
+   "detail": {}
+  },
+  {
+   "id": "顶层#051",
+   "doc": "顶层/1-顶层.md",
+   "section": "5. 与其它文档的索引",
+   "verdict": "na",
+   "r9_status": "NA-NO-EVIDENCE-NEEDED",
+   "text": "- 并发与限流：[并发设计](../中层/2-并发设计.md)；",
+   "evidence": [],
+   "detail": {}
+  },
+  {
+   "id": "注册#005",
+   "doc": "其他/1-多用户与注册.md",
+   "section": "多用户与注册",
+   "verdict": "na",
+   "r9_status": "NA-NO-EVIDENCE-NEEDED",
+   "text": "> 定位：本文只讲**注册**（六步法、授权、要填参数）与**注册表生命周期**；运行期路由与限流见[路由设计](../中层/3-路由设计.md)、[并发设计](../中层/2-并发设计.md)；字段与默认值的详细清单见[中层配置文档](../中层/add-中层配置文档.md)。",
+   "evidence": [],
+   "detail": {}
+  },
+  {
+   "id": "注册#006",
+   "doc": "其他/1-多用户与注册.md",
+   "section": "1. 总述与 token（授权）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- **注册表是唯一持久化**：本地一份 `registry.json`，`user` 为键；启动时导入一次到内存快照，运行期**不自动读文件**，管理操作成功后由**业务进程管理端点**触发重新导入或重启（见[顶层补充 §1.1](../顶层/add-控制面与业务面.md)），不自动跨进程传播。",
+   "evidence": [
+    "test/offline/unit/test_registry_decoupling.py",
+    "test/offline/integration/test_supervisor_process.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_registry_decoupling.py",
+      "total": 14,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/integration/test_supervisor_process.py",
+      "total": 4,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "注册#007",
+   "doc": "其他/1-多用户与注册.md",
+   "section": "1. 总述与 token（授权）",
+   "verdict": "direct",
+   "r9_status": "NO-OFFLINE-EVIDENCE",
+   "text": "- **注册与使用解耦**：六步注册结束后，除文件系统变更（registry + 远端部署文件）外不得残留隧道、SSH 进程或控制 socket；",
+   "evidence": [
+    "test/live/registration/registration_http_six_step_tb.py",
+    "test/semi/registration/cov_registration_real.py"
+   ],
+   "detail": {}
+  },
+  {
+   "id": "注册#011",
+   "doc": "其他/1-多用户与注册.md",
+   "section": "1. 总述与 token（授权）",
+   "verdict": "indirect",
+   "r9_status": "NO-OFFLINE-EVIDENCE",
+   "text": "- **token 使用范围**：只用于路由与校验（注册表路由、daemon 比对、Skill 请求）；用户可读路径一律用唯一用户名，不用 token。",
+   "evidence": [
+    "test/semi/registration/cov_registration_real.py",
+    "test/live/registration/registration_http_six_step_tb.py"
+   ],
+   "detail": {}
+  },
+  {
+   "id": "注册#015",
+   "doc": "其他/1-多用户与注册.md",
+   "section": "2. 要填参数（摘要）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- **条件必填**：每个 remote role 必须可解析出目标与凭据——`role.<name>.host/user` 或 `ssh.default.host/user`，`role.<name>.key_dir/key` 或 `ssh.default.key_dir/key`；",
+   "evidence": [
+    "test/offline/unit/test_register_flow.py",
+    "test/offline/unit/test_registration_server_edges.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_register_flow.py",
+      "total": 68,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_registration_server_edges.py",
+      "total": 47,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "注册#018",
+   "doc": "其他/1-多用户与注册.md",
+   "section": "2. 要填参数（摘要）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 非法字段、local role 的 host/user、未知字段一律拒绝（规则见[中层配置文档 §5](../中层/add-中层配置文档.md)）。",
+   "evidence": [
+    "test/offline/unit/test_commit_shape.py",
+    "test/offline/unit/test_validation_roles.py",
+    "test/offline/unit/test_norm_gap_round8.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_commit_shape.py",
+      "total": 8,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_validation_roles.py",
+      "total": 10,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_norm_gap_round8.py",
+      "total": 9,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "注册#019",
+   "doc": "其他/1-多用户与注册.md",
+   "section": "3.1 流程与预测目标",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "**①申请 → ②本地校验 → ③探测 → ④部署 → ⑤连通性测试 → ⑥写注册表**；**前五步不写 registry**（`registry.json` 零写入，候选只存内存），第六步是唯一写盘点；未完成六步即放弃全部内存候选。",
+   "evidence": [
+    "test/offline/unit/test_registration_server.py",
+    "test/semi/registration/cov_registration_real.py",
+    "test/live/registration/registration_http_six_step_tb.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_registration_server.py",
+      "total": 74,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "注册#036",
+   "doc": "其他/1-多用户与注册.md",
+   "section": "3.3 deadline 与失败清理",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 各步**各有一条独立的步级 deadline**（默认 30s），步内相位共享、不重置；`runtime.connect_timeout` 是其中的子预算；探测逐项顺序执行；第四步之后用户 `load` 的等待**不计时**；",
+   "evidence": [
+    "test/offline/unit/test_register_flow.py",
+    "test/offline/unit/test_norm_gap_round8.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_register_flow.py",
+      "total": 68,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_norm_gap_round8.py",
+      "total": 9,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "注册#038",
+   "doc": "其他/1-多用户与注册.md",
+   "section": "3.3 deadline 与失败清理",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- **各步失败均不释放候选**：可**原样重试同一步**（不携带参数修正）；**修正参数必须 `cancel` 后重新 `apply`**，从第一步重走；`cancel` / 服务重启才释放候选（见[中层配置文档 §6.4](../中层/add-中层配置文档.md)）；任何失败不写 registry；第四步重试为**覆盖式**（`ramic/`、`setup/`、`status/` 重新投送）；",
+   "evidence": [
+    "test/offline/unit/test_register_flow.py",
+    "test/offline/unit/test_reservation.py",
+    "test/live/registration/registration_http_six_step_tb.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_register_flow.py",
+      "total": 68,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_reservation.py",
+      "total": 13,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "注册#039",
+   "doc": "其他/1-多用户与注册.md",
+   "section": "3.3 deadline 与失败清理",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- `cancel` 合法于任意非 committed 进行中会话（含 failed），**幂等**；成功后丢弃候选、会话 token 立即失效，`GET /api/register/<user>` 返回无进行中会话；**apply 后必须手动 cancel 才释放**；cancel 或服务重启后同 user 才可重新 `apply`；服务重启清空全部内存候选；",
+   "evidence": [
+    "test/offline/unit/test_reservation.py",
+    "test/offline/unit/test_registration_server.py",
+    "test/live/registration/registration_http_six_step_tb.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_reservation.py",
+      "total": 13,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_registration_server.py",
+      "total": 74,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "注册#040",
+   "doc": "其他/1-多用户与注册.md",
+   "section": "3.3 deadline 与失败清理",
+   "verdict": "direct",
+   "r9_status": "NO-OFFLINE-EVIDENCE",
+   "text": "- 第五步通过只报告连通性 OK，**不自动写盘**；第六步由用户显式确认触发（唯一写盘点）；",
+   "evidence": [
+    "test/semi/registration/cov_registration_real.py",
+    "test/live/registration/registration_http_six_step_tb.py"
+   ],
+   "detail": {}
+  },
+  {
+   "id": "注册#051",
+   "doc": "其他/1-多用户与注册.md",
+   "section": "4.1 第三步探测矩阵",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- `role.gui.display`：显式给出 → 在 gui role 上以该值运行 `xdpyinfo`/`xwininfo -root` 校验，不可达 → ERROR（报告参数问题，不静默改号）；未给出 → 仅在 gui 主机上能唯一确定 Virtuoso 进程时探测并写回，存在多个 Virtuoso 进程或探测不到 → 留 `null` 仅 WARNING；bridge 只使用/校验该值，不迁移、不改变 Virtuoso 实",
+   "evidence": [
+    "test/offline/unit/test_register_flow.py",
+    "test/semi/probes/gui_display_probe.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_register_flow.py",
+      "total": 68,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "控制面#007",
+   "doc": "顶层/add-控制面与业务面.md",
+   "section": "1. 双面双端口",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- **控制端口**：注册、用户管理、全局配置与人类操作；低并发，面向人与运维；",
+   "evidence": [
+    "test/offline/unit/test_registration_server.py",
+    "test/offline/unit/test_api_server_main.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_registration_server.py",
+      "total": 74,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_api_server_main.py",
+      "total": 22,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "控制面#008",
+   "doc": "顶层/add-控制面与业务面.md",
+   "section": "1. 双面双端口",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- **业务端口**：业务包调度；程序调用，高并发。",
+   "evidence": [
+    "test/offline/unit/test_api_server_main.py",
+    "test/offline/core/api_server_tb.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_api_server_main.py",
+      "total": 22,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/core/api_server_tb.py",
+      "source": "core-multi-r9",
+      "total": 30,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "控制面#011",
+   "doc": "顶层/add-控制面与业务面.md",
+   "section": "1. 双面双端口",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 控制端口默认只绑定 `127.0.0.1`，管理操作经 SSH 隧道访问；业务端口绑定地址按部署配置。",
+   "evidence": [
+    "test/offline/unit/test_registration_server.py",
+    "test/offline/unit/test_norm_gap_round8.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_registration_server.py",
+      "total": 74,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_norm_gap_round8.py",
+      "total": 9,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "控制面#028",
+   "doc": "顶层/add-控制面与业务面.md",
+   "section": "3. 控制端口端点",
+   "verdict": "na",
+   "r9_status": "NA-NO-EVIDENCE-NEEDED",
+   "text": "**六步注册**（语义唯一 owner 见[多用户与注册 §3](../其他/1-多用户与注册.md)）",
+   "evidence": [],
+   "detail": {}
+  },
+  {
+   "id": "控制面#043",
+   "doc": "顶层/add-控制面与业务面.md",
+   "section": "3. 控制端口端点",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 非法 action/顺序 → 4xx `{\"error\": \"step order violation\", \"current_stage\": …, \"expected\": …}`，**不改变会话状态**；",
+   "evidence": [
+    "test/offline/unit/test_registration_server.py",
+    "test/live/registration/registration_http_six_step_tb.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_registration_server.py",
+      "total": 74,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "控制面#044",
+   "doc": "顶层/add-控制面与业务面.md",
+   "section": "3. 控制端口端点",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 各步失败后候选保留，可**原样重试同一步**（不携带参数修正）；**修正参数必须 `cancel` 后重新 `apply`**；只有 `cancel`（或服务重启）才释放候选；",
+   "evidence": [
+    "test/offline/unit/test_register_flow.py",
+    "test/live/registration/registration_http_six_step_tb.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_register_flow.py",
+      "total": 68,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "控制面#045",
+   "doc": "顶层/add-控制面与业务面.md",
+   "section": "3. 控制端口端点",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- `apply` 响应返回 `token`（用户显式提供则原样，缺省自动生成）；除 `apply` 外的 action 必须携带 `token`，服务端校验其与候选一致，缺失/不一致 → 4xx `invalid token`，**不改变会话状态**；",
+   "evidence": [
+    "test/offline/unit/test_registration_server.py",
+    "test/offline/unit/test_registration_server_edges.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_registration_server.py",
+      "total": 74,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_registration_server_edges.py",
+      "total": 47,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "控制面#066",
+   "doc": "顶层/add-控制面与业务面.md",
+   "section": "3. 控制端口端点",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- `status`：`starting/ready/crashed`（`starting` = 已拉起未 ready）；`restart` 期间监听保持，新请求 `503 + Retry-After`，在途排空 30s 后强杀并重拉；管理端同步等待、自身超时 > 30s；",
+   "evidence": [
+    "test/offline/integration/test_supervisor_process.py",
+    "test/offline/unit/test_top_layer_pool.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/integration/test_supervisor_process.py",
+      "total": 4,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_top_layer_pool.py",
+      "total": 13,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "控制面#069",
+   "doc": "顶层/add-控制面与业务面.md",
+   "section": "3. 控制端口端点",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 修改类（update/delete）路径以 `user` 定位，**收归管理员**：个人 token 不能自助修改；update 请求体含 `token` 字段 → 拒绝；",
+   "evidence": [
+    "test/offline/unit/test_registration_server.py",
+    "test/offline/unit/test_registration_server_edges.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_registration_server.py",
+      "total": 74,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_registration_server_edges.py",
+      "total": 47,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "控制面#071",
+   "doc": "顶层/add-控制面与业务面.md",
+   "section": "3. 控制端口端点",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 请求体上限 **16 MiB**，超限 → `413`；",
+   "evidence": [
+    "test/offline/unit/test_registration_server_edges.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_registration_server_edges.py",
+      "total": 47,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "控制面#072",
+   "doc": "顶层/add-控制面与业务面.md",
+   "section": "3. 控制端口端点",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 控制端口不运行业务操作；`POST /api/bug` 携带个人 token，合法性由控制进程经注册与管理模块的 registry 内存快照校验（不经中层、不读注册表文件）；**无 token 或无效 → 4xx，不记录**；校验通过后，服务端**先剥离 token/Authorization 等凭据**再记录原始请求体，并附加提交 user、提交日期时间、当前状态摘要、备份的近期操作/错误日志，统一写入本地工作目录 `log/bu",
+   "evidence": [
+    "test/offline/unit/test_registration_server.py",
+    "test/offline/unit/test_registration_server.py",
+    "test/offline/unit/test_registration_server_edges.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_registration_server.py",
+      "total": 74,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_registration_server.py",
+      "total": 74,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_registration_server_edges.py",
+      "total": 47,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "控制面#079",
+   "doc": "顶层/add-控制面与业务面.md",
+   "section": "4. 业务端口端点",
+   "verdict": "na",
+   "r9_status": "NA-NO-EVIDENCE-NEEDED",
+   "text": "- 调度顺序与响应壳的唯一口径见[顶层 §2/§3](1-顶层.md)。",
+   "evidence": [],
+   "detail": {}
+  },
+  {
+   "id": "控制面#080",
+   "doc": "顶层/add-控制面与业务面.md",
+   "section": "5. 全局配置与启动参数",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 工作路径下除 `registry.json` 外，另存一份配置 JSON `config.json`；`GET/PUT /api/config` 操作该配置：GET 读内存快照，PUT 只覆盖请求里出现的顶层键、未出现的键原样保留，校验通过后更新快照并原子写回 `config.json`；",
+   "evidence": [
+    "test/offline/unit/test_registration_server.py",
+    "test/offline/unit/test_registration_server_edges.py",
+    "test/offline/unit/test_api_server_main.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_registration_server.py",
+      "total": 74,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_registration_server_edges.py",
+      "total": 47,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_api_server_main.py",
+      "total": 22,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "控制面#081",
+   "doc": "顶层/add-控制面与业务面.md",
+   "section": "5. 全局配置与启动参数",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- `config.json` 经 `common.config` 提供**进程级只读快照**（与 `common.paths` 同性质，四层可读）；控制面是唯一写者；业务进程启动与 `/api/process/reload` 或 `restart` 各导入一次，运行期不读文件、请求期零文件 IO；",
+   "evidence": [
+    "test/offline/unit/test_common_config.py",
+    "test/offline/integration/test_supervisor_process.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_common_config.py",
+      "total": 3,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/integration/test_supervisor_process.py",
+      "total": 4,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "控制面#083",
+   "doc": "顶层/add-控制面与业务面.md",
+   "section": "5. 全局配置与启动参数",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 控制面只理解并校验自己登记的键（本版 `business_thread_pool_size`），其余顶层键**原样透传、不解读**；`business_thread_pool_size` 是**可变准入上限**：reload 后新请求按新上限准入；在途数 ≥ 新上限时，新请求拒绝（`429 + Retry-After`）直至低于上限；",
+   "evidence": [
+    "test/offline/unit/test_api_server_main.py",
+    "test/offline/unit/test_top_layer_pool.py",
+    "test/offline/core/api_server_tb.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_api_server_main.py",
+      "total": 22,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_top_layer_pool.py",
+      "total": 13,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/core/api_server_tb.py",
+      "source": "core-multi-r9",
+      "total": 30,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "控制面#085",
+   "doc": "顶层/add-控制面与业务面.md",
+   "section": "5. 全局配置与启动参数",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- `runtime.thread_pool_size` 是**每 token** 的注册表配置（唯一 owner 见[并发设计 §2](../中层/2-并发设计.md)），与本节的“全局线程池上限”不是一回事：前者是单用户预算，后者是顶层进程能力上限；两者独立，不互相替代。",
+   "evidence": [
+    "test/offline/unit/test_endpoint_budgets.py",
+    "test/offline/unit/test_api_server_main.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_endpoint_budgets.py",
+      "total": 7,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_api_server_main.py",
+      "total": 22,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "控制面#088",
+   "doc": "顶层/add-控制面与业务面.md",
+   "section": "6. 索引",
+   "verdict": "na",
+   "r9_status": "NA-NO-EVIDENCE-NEEDED",
+   "text": "- 调度顺序、响应壳与错误分界：[顶层 §2/§3](1-顶层.md)；",
+   "evidence": [],
+   "detail": {}
+  },
+  {
+   "id": "控制面#089",
+   "doc": "顶层/add-控制面与业务面.md",
+   "section": "6. 索引",
+   "verdict": "na",
+   "r9_status": "NA-NO-EVIDENCE-NEEDED",
+   "text": "- 并发与限流：[并发设计](../中层/2-并发设计.md)；",
+   "evidence": [],
+   "detail": {}
+  },
+  {
+   "id": "上层#005",
+   "doc": "上层/1-上层.md",
+   "section": "上层：业务包与插件化",
+   "verdict": "na",
+   "r9_status": "NA-NO-EVIDENCE-NEEDED",
+   "text": "> 定位：五业务接口签名与错误总则见[四层整体架构与接口 §4](../总览/1-四层整体架构与接口.md)；顶层调度见[顶层 §2](../顶层/1-顶层.md)；role 与并发见[路由设计](../中层/3-路由设计.md)、[并发设计](../中层/2-并发设计.md)。",
+   "evidence": [],
+   "detail": {}
+  },
+  {
+   "id": "上层#031",
+   "doc": "上层/1-上层.md",
+   "section": "2.4 步骤痕迹",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 每步记 `{\"step\": 名, \"ok\": 布尔, \"detail\": 中层结果}`；默认任一步失败即停止；业务操作可自行决定是否重试某步（条件与痕迹自行约定）；",
+   "evidence": [
+    "test/offline/unit/test_maestro_package_flow.py",
+    "test/offline/unit/test_veriloga_contracts.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_maestro_package_flow.py",
+      "total": 27,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_veriloga_contracts.py",
+      "total": 30,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "上层#032",
+   "doc": "上层/1-上层.md",
+   "section": "2.4 步骤痕迹",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 保留全部痕迹；失败不得伪装成成功，也不得只留一句 `error` 丢弃步骤。",
+   "evidence": [
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/offline/unit/test_maestro_package_flow.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_veriloga_contracts.py",
+      "total": 30,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_maestro_package_flow.py",
+      "total": 27,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "上层#042",
+   "doc": "上层/1-上层.md",
+   "section": "3.3 校验与错误",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 领域校验失败是业务失败，写成 `Result(ok=false)`，**不得抛异常表达**；",
+   "evidence": [
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/offline/unit/test_maestro_package_flow.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_veriloga_contracts.py",
+      "total": 30,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_maestro_package_flow.py",
+      "total": 27,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "上层#043",
+   "doc": "上层/1-上层.md",
+   "section": "3.3 校验与错误",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 下层结构化失败按错误总则处置：校验和不一致不忽略；重试策略由业务操作自行决断；中层只做传输层透明重试（见[并发设计 §4](../中层/2-并发设计.md)）；",
+   "evidence": [
+    "test/offline/unit/test_middle_contracts.py",
+    "test/offline/unit/test_pyapi_packages.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_middle_contracts.py",
+      "total": 22,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_pyapi_packages.py",
+      "total": 5,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "上层#045",
+   "doc": "上层/1-上层.md",
+   "section": "4.1 显式注册",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- **插件的登记单元是业务包，条目落在业务操作级**：`{业务操作名: (业务包类, 方法名, Request 模型)}`；注册表结构与重复登记错误由[顶层 §2.1](../顶层/1-顶层.md)唯一 owner；",
+   "evidence": [
+    "test/offline/unit/test_top_layer_dispatch.py",
+    "test/offline/unit/test_pyapi_packages.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_top_layer_dispatch.py",
+      "total": 11,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_pyapi_packages.py",
+      "total": 5,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "上层#063",
+   "doc": "上层/1-上层.md",
+   "section": "7. 与其它文档的索引",
+   "verdict": "na",
+   "r9_status": "NA-NO-EVIDENCE-NEEDED",
+   "text": "- 五业务接口签名与错误总则：[四层整体架构与接口 §4](../总览/1-四层整体架构与接口.md)；",
+   "evidence": [],
+   "detail": {}
+  },
+  {
+   "id": "上层#066",
+   "doc": "上层/1-上层.md",
+   "section": "7. 与其它文档的索引",
+   "verdict": "na",
+   "r9_status": "NA-NO-EVIDENCE-NEEDED",
+   "text": "- 排队、预算与 deadline：[并发设计](../中层/2-并发设计.md)；",
+   "evidence": [],
+   "detail": {}
+  },
+  {
+   "id": "cellview#006",
+   "doc": "上层/5-cellview.md",
+   "section": "1. 业务操作",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "重点在“文件”管理，对象体系分三层：**lib → cell → view**（categories 特殊，另行定义）。每层都有 list/create/copy/delete/rename；get/bind 只在 lib 层。",
+   "evidence": [
+    "test/offline/unit/test_cellview_contracts.py",
+    "test/live/packages/cellview_e2e_tests.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_cellview_contracts.py",
+      "total": 25,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "cellview#038",
+   "doc": "上层/5-cellview.md",
+   "section": "3. 预留（暂不实现）",
+   "verdict": "na",
+   "r9_status": "NA-NO-EVIDENCE-NEEDED",
+   "text": "- **harvest**：输入一个 lib，一次性枚举 lib → cells → views 全貌，对 view 分类，并附带 Maestro setup/analysis 名与结果目录存在性，输出 JSON 报告。可由三层 `list` 拼出，先不实现。",
+   "evidence": [],
+   "detail": {}
+  },
+  {
+   "id": "gui#006",
+   "doc": "上层/10-gui.md",
+   "section": "1. 业务操作",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "窗口处理面向“卡住弹窗的恢复”：唯一清单入口是 X11 顶层窗口列表，动作只接受显式 `window_id`。",
+   "evidence": [
+    "test/offline/unit/test_gui_package.py",
+    "test/semi/probes/gui_display_probe.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_gui_package.py",
+      "total": 12,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "gui#016",
+   "doc": "上层/10-gui.md",
+   "section": "2. 约定",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 唯一清单入口：`list_windows` 只列 X11 顶层窗口，不再提供 SKILL 会话内清单；",
+   "evidence": [
+    "test/offline/unit/test_gui_package.py",
+    "test/offline/unit/test_gui_package.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_gui_package.py",
+      "total": 12,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_gui_package.py",
+      "total": 12,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "gui#019",
+   "doc": "上层/10-gui.md",
+   "section": "2. 约定",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 动作必须带显式 `window_id`，不存在“当前/最近窗口”隐式目标；",
+   "evidence": [
+    "test/offline/unit/test_gui_package.py",
+    "test/offline/unit/test_gui_package.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_gui_package.py",
+      "total": 12,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_gui_package.py",
+      "total": 12,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "gui#022",
+   "doc": "上层/10-gui.md",
+   "section": "2. 约定",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- `auto_dismiss` 只处理分类为 dialog 的窗口，设次数上限并保留逐窗口证据；",
+   "evidence": [
+    "test/offline/unit/test_gui_package.py",
+    "test/offline/unit/test_gui_package.py",
+    "test/semi/probes/gds_then_skill_probe.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_gui_package.py",
+      "total": 12,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_gui_package.py",
+      "total": 12,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "schematic#006",
+   "doc": "上层/2-schematic.md",
+   "section": "1. 业务操作",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "核心只有读和写。写是按对象对称的原子操作：instance / wire / label / pin 各有 place、delete、rename、set。net 是 label/pin 的派生对象，不做操作。",
+   "evidence": [
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/live/packages/schematic_e2e_tests.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_schematic_contracts.py",
+      "total": 39,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "schematic#014",
+   "doc": "上层/2-schematic.md",
+   "section": "1.1 读操作（不改变业务服务器状态）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 可选 `object_filter`：每个对象一个条目，**不写默认 `all`**；条目可以是 `none`（该类一个都不读）。重点是\"只看某实例的端子/位置\"，不把整图读一遍：",
+   "evidence": [
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/offline/unit/test_schematic_contracts.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_schematic_contracts.py",
+      "total": 39,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_schematic_contracts.py",
+      "total": 39,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "schematic#015",
+   "doc": "上层/2-schematic.md",
+   "section": "1.1 读操作（不改变业务服务器状态）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- `instance`：`all`（默认）/ `none` / `{\"names\":[...]}` / `{\"region\":[pos0, pos1]}`；",
+   "evidence": [
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/live/packages/schematic_e2e_tests.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_schematic_contracts.py",
+      "total": 39,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "schematic#016",
+   "doc": "上层/2-schematic.md",
+   "section": "1.1 读操作（不改变业务服务器状态）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- `wire` / `label` / `pin` / `note`：`all`（默认）/ `none` / `{\"region\":[pos0, pos1]}`。",
+   "evidence": [
+    "test/offline/unit/test_schematic_contracts.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_schematic_contracts.py",
+      "total": 39,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "schematic#017",
+   "doc": "上层/2-schematic.md",
+   "section": "1.1 读操作（不改变业务服务器状态）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- object_filter 只对 `positions`、`params`、不填=全部生效；`focus` 含 `connectivity` 时忽略（连接关系必须全量）。",
+   "evidence": [
+    "test/offline/unit/test_norm_gap_batch2.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_norm_gap_batch2.py",
+      "total": 12,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "schematic#018",
+   "doc": "上层/2-schematic.md",
+   "section": "1.1 读操作（不改变业务服务器状态）",
+   "verdict": "direct",
+   "r9_status": "NO-OFFLINE-EVIDENCE",
+   "text": "- `screenshot`：目标默认 `lib/cell/view`，可选 `window_id`；可选 `region=[pos0, pos1]`（user units，截前 `hiZoomIn(window, bBox)` 把区域填满窗口）；`toplevel` / `centralWidget` 暴露；`leave_open` 默认关窗；格式固定 PNG；远端存 daemon role root 的 screenshots/；本",
+   "evidence": [
+    "test/live/packages/screenshot_params_e2e_tests.py",
+    "test/artifacts/evidence/round8/screenshot-params/schematic.json"
+   ],
+   "detail": {}
+  },
+  {
+   "id": "schematic#019",
+   "doc": "上层/2-schematic.md",
+   "section": "1.2 写操作（改变业务服务器状态）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "对外只有一个**通用写操作** `write`：调用方一次给一组原子命令，业务包内部组织 SKILL 逐个改写，最后统一 check/save。调用方不会按单个原子调用多次。",
+   "evidence": [
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/live/packages/schematic_e2e_tests.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_schematic_contracts.py",
+      "total": 39,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "schematic#024",
+   "doc": "上层/2-schematic.md",
+   "section": "1.2 写操作（改变业务服务器状态）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "`write.commands` 每项 = `{\"op\": 原子名, ...该原子参数}`；业务包按顺序执行并保留每步痕迹。",
+   "evidence": [
+    "test/offline/unit/test_schematic_contracts.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_schematic_contracts.py",
+      "total": 39,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "schematic#025",
+   "doc": "上层/2-schematic.md",
+   "section": "1.2 写操作（改变业务服务器状态）",
+   "verdict": "direct",
+   "r9_status": "NO-OFFLINE-EVIDENCE",
+   "text": "**write 支持的原子命令**：每个原子 = `op` + **索引**（要动哪个对象）+ 附加参数。",
+   "evidence": [
+    "test/live/packages/schematic_e2e_tests.py",
+    "test/artifacts/evidence/atom-coverage-2026-09-28.json"
+   ],
+   "detail": {}
+  },
+  {
+   "id": "schematic#048",
+   "doc": "上层/2-schematic.md",
+   "section": "1.3 坐标口径（P-074 定版）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- **单点坐标一律一个字段 `pos`**，值是两元素数组 `[x, y]`（user units）：索引（delete/rename/set_*）、新建（place_*）、读回（read 的实例/端子/label/pin/note）**同一口径**；",
+   "evidence": [
+    "test/live/packages/schematic_e2e_tests.py",
+    "test/offline/unit/test_schematic_contracts.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_schematic_contracts.py",
+      "total": 39,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "schematic#049",
+   "doc": "上层/2-schematic.md",
+   "section": "1.3 坐标口径（P-074 定版）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- **不再出现 `xy` 字段**；**不把坐标拆成两个字段**（`{\"x\":…,\"y\":…}` 一律非法）；`pos` 缺字段/形状不对时校验必须报明缺哪个字段（不得裸 `KeyError`）；",
+   "evidence": [
+    "test/live/packages/schematic_e2e_tests.py",
+    "test/offline/unit/test_schematic_contracts.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_schematic_contracts.py",
+      "total": 39,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "schematic#050",
+   "doc": "上层/2-schematic.md",
+   "section": "1.3 坐标口径（P-074 定版）",
+   "verdict": "partial",
+   "r9_status": "R9-GREEN",
+   "text": "- 多点：`points: [pos, …]`；区域/矩形：`region` / `bbox` 一律**对角两点** `[pos0, pos1]`（read 与 write 同形，**不再用四元组**）；",
+   "evidence": [
+    "test/offline/unit/test_schematic_contracts.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_schematic_contracts.py",
+      "total": 39,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "schematic#058",
+   "doc": "上层/2-schematic.md",
+   "section": "3. 待修订",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "跟进时**不做兼容层**（`xy`/拆字段直接判非法），校验错误必须点名缺哪个字段；",
+   "evidence": [
+    "test/live/packages/schematic_e2e_tests.py",
+    "test/offline/unit/test_schematic_contracts.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_schematic_contracts.py",
+      "total": 39,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "schematic#059",
+   "doc": "上层/2-schematic.md",
+   "section": "3. 待修订",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 唯一 name 索引只有 instance；wire=line segment 列表（无 name），label/note/pin 均按 `pos` 索引（可加 text/name 消歧义）；",
+   "evidence": [
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/live/packages/schematic_e2e_tests.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_schematic_contracts.py",
+      "total": 39,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "schematic#066",
+   "doc": "上层/2-schematic.md",
+   "section": "3. 待修订",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- `check_and_save` 供显式补一次校验保存；读写目标都必须带 `view`，默认 `\"schematic\"`，不假设只有这个视图名。",
+   "evidence": [
+    "test/offline/unit/test_schematic_contracts.py",
+    "test/live/packages/schematic_e2e_tests.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_schematic_contracts.py",
+      "total": 39,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "symbol#004",
+   "doc": "上层/3-symbol.md",
+   "section": "上层业务包：symbol",
+   "verdict": "na",
+   "r9_status": "NA-NO-EVIDENCE-NEEDED",
+   "text": "> Supersedes：Draft v2（坐标口径对齐 [2-schematic.md §1.3](2-schematic.md)：单点一律 `pos`，弃用 `xy`、不拆字段）",
+   "evidence": [],
+   "detail": {}
+  },
+  {
+   "id": "symbol#010",
+   "doc": "上层/3-symbol.md",
+   "section": "1. 总述",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- `generate` 可以从 schematic 生成或覆盖 symbol，内部自带临时 view、校验、备份、回滚。",
+   "evidence": [
+    "test/offline/unit/test_symbol_generate.py",
+    "test/semi/probes/symbol_regen_handle_probe.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_symbol_generate.py",
+      "total": 45,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "symbol#023",
+   "doc": "上层/3-symbol.md",
+   "section": "2.1 读操作",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "`read` 默认 `view=\"symbol\"`、`view_type=\"schematicSymbol\"`；必须返回通用 shapes，",
+   "evidence": [
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/live/packages/symbol_e2e_tests.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_symbol_contracts.py",
+      "total": 49,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "symbol#026",
+   "doc": "上层/3-symbol.md",
+   "section": "2.1 读操作",
+   "verdict": "direct",
+   "r9_status": "NO-OFFLINE-EVIDENCE",
+   "text": "- `view_type` 默认 `schematicSymbol`；格式固定 PNG；",
+   "evidence": [
+    "test/live/packages/symbol_e2e_tests.py",
+    "test/semi/probes/symbol_screenshot_probe.py"
+   ],
+   "detail": {}
+  },
+  {
+   "id": "symbol#038",
+   "doc": "上层/3-symbol.md",
+   "section": "2.2 写操作",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "所以 write 必须先显式探测 view 是否存在，再进入 append 编辑。",
+   "evidence": [
+    "test/offline/unit/test_symbol_contracts.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_symbol_contracts.py",
+      "total": 49,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "symbol#041",
+   "doc": "上层/3-symbol.md",
+   "section": "2.2 写操作",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "`write.commands` 每项 = `{\"op\": 原子名, ...该原子参数}`；按顺序执行并保留每步痕迹。",
+   "evidence": [
+    "test/offline/unit/test_symbol_contracts.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_symbol_contracts.py",
+      "total": 49,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "symbol#053",
+   "doc": "上层/3-symbol.md",
+   "section": "2.2.1 几何原子",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 新建原子的 `layer/purpose` 必填；不设默认层，避免猜 PDK。",
+   "evidence": [
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/offline/unit/test_symbol_contracts.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_symbol_contracts.py",
+      "total": 49,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_symbol_contracts.py",
+      "total": 49,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "symbol#067",
+   "doc": "上层/3-symbol.md",
+   "section": "2.2.3 引脚原子",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "pin 以 **terminal name** 为唯一索引；旧代码 `symbol_create_pin` 本身就以",
+   "evidence": [
+    "test/offline/unit/test_symbol_contracts.py",
+    "test/semi/probes/schematic_pin_ops_probe.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_symbol_contracts.py",
+      "total": 49,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "symbol#075",
+   "doc": "上层/3-symbol.md",
+   "section": "2.2.3 引脚原子",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "`place_pin` 内部顺序：检查 terminal 不存在 → net → term → pin 矩形",
+   "evidence": [
+    "test/offline/unit/test_symbol_contracts.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_symbol_contracts.py",
+      "total": 49,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "symbol#082",
+   "doc": "上层/3-symbol.md",
+   "section": "2.2.3 引脚原子",
+   "verdict": "indirect",
+   "r9_status": "NO-OFFLINE-EVIDENCE",
+   "text": "真机语义（必须遵守）：",
+   "evidence": [
+    "test/semi/probes/schematic_pin_ops_probe.py",
+    "test/live/packages/symbol_e2e_tests.py"
+   ],
+   "detail": {}
+  },
+  {
+   "id": "symbol#107",
+   "doc": "上层/3-symbol.md",
+   "section": "2.3 generate",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "1. source/target view 必须不同；",
+   "evidence": [
+    "test/offline/unit/test_symbol_generate.py",
+    "test/semi/probes/symbol_http_400_repro.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_symbol_generate.py",
+      "total": 45,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "symbol#113",
+   "doc": "上层/3-symbol.md",
+   "section": "2.3 generate",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "7. 任一步失败尝试回滚；回滚失败保留 backup view 并返回失败；",
+   "evidence": [
+    "test/offline/unit/test_symbol_generate.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_symbol_generate.py",
+      "total": 45,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "symbol#117",
+   "doc": "上层/3-symbol.md",
+   "section": "2.3 generate",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "`schPinListToSymbolGen` 对显式 pin list 也按传入顺序生成，**`sort_pins` 参数保留但不承诺排序效果**。",
+   "evidence": [
+    "test/offline/unit/test_symbol_generate.py",
+    "test/live/packages/symbol_e2e_tests.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_symbol_generate.py",
+      "total": 45,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "symbol#118",
+   "doc": "上层/3-symbol.md",
+   "section": "2.3 generate",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "`schPinListToSymbolGen` 会自行 `dbSave`，因此只能用于临时 view（当前实现即如此）。",
+   "evidence": [
+    "test/offline/unit/test_symbol_generate.py",
+    "test/semi/probes/symbol_generate_hierarchy_handle_probe.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_symbol_generate.py",
+      "total": 45,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "symbol#121",
+   "doc": "上层/3-symbol.md",
+   "section": "3. 不在本版",
+   "verdict": "na",
+   "r9_status": "NA-NO-EVIDENCE-NEEDED",
+   "text": "- `port_order` / `term_order` 的独立写入原子；",
+   "evidence": [],
+   "detail": {}
+  },
+  {
+   "id": "symbol#124",
+   "doc": "上层/3-symbol.md",
+   "section": "3. 不在本版",
+   "verdict": "na",
+   "r9_status": "NA-NO-EVIDENCE-NEEDED",
+   "text": "- 移动类原子（`move_shape / move_label / move_pin`）：底层已确认 `dbMoveFig/dbMoveShape` 可用，",
+   "evidence": [],
+   "detail": {}
+  },
+  {
+   "id": "symbol#130",
+   "doc": "上层/3-symbol.md",
+   "section": "3. 不在本版",
+   "verdict": "na",
+   "r9_status": "NA-NO-EVIDENCE-NEEDED",
+   "text": "- circle / arc / donut / path 原子；",
+   "evidence": [],
+   "detail": {}
+  },
+  {
+   "id": "layout#004",
+   "doc": "上层/4-layout.md",
+   "section": "上层业务包：layout",
+   "verdict": "na",
+   "r9_status": "NA-NO-EVIDENCE-NEEDED",
+   "text": "> Supersedes：Draft v4（坐标口径对齐 [2-schematic.md §1.3](2-schematic.md)：单点一律 `pos`，弃用 `xy`、不拆字段）",
+   "evidence": [],
+   "detail": {}
+  },
+  {
+   "id": "layout#006",
+   "doc": "上层/4-layout.md",
+   "section": "1. 业务操作",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "核心是读和写。写是**按对象对称**的原子操作：shape（rect/polygon/path/line）、label、instance、mosaic、via",
+   "evidence": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/live/packages/layout_e2e_tests.py",
+    "test/artifacts/evidence/atom-coverage-2026-09-28.json"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_layout_contracts.py",
+      "total": 70,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "layout#011",
+   "doc": "上层/4-layout.md",
+   "section": "1. 业务操作",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- viewType 固定 `maskLayout`，view 默认 `\"layout\"`；",
+   "evidence": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/live/packages/layout_e2e_tests.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_layout_contracts.py",
+      "total": 70,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "layout#015",
+   "doc": "上层/4-layout.md",
+   "section": "1. 业务操作",
+   "verdict": "indirect",
+   "r9_status": "R9-GREEN",
+   "text": "- 不提供\"按当前选择集\"的写操作（selection 是全局 GUI 状态，不能作业务索引）。",
+   "evidence": [
+    "test/offline/unit/test_pyapi_interface_contract.py",
+    "test/live/packages/layout_e2e_tests.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_pyapi_interface_contract.py",
+      "total": 5,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "layout#023",
+   "doc": "上层/4-layout.md",
+   "section": "1.1 读操作（不改变业务服务器状态）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 可选 `detail`：`geometry`（默认，含坐标与属性）/ `index`（只回 type + LPP，供大版图廉价索引）；",
+   "evidence": [
+    "test/live/packages/layout_e2e_tests.py",
+    "test/offline/unit/test_layout_contracts.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_layout_contracts.py",
+      "total": 70,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "layout#024",
+   "doc": "上层/4-layout.md",
+   "section": "1.1 读操作（不改变业务服务器状态）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 可选 `object_filter`：每个对象一个条目，**不写默认 `all`**；条目可以是 `none`（该类一个都不读）；",
+   "evidence": [
+    "test/live/packages/layout_e2e_tests.py",
+    "test/offline/unit/test_layout_contracts.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_layout_contracts.py",
+      "total": 70,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "layout#028",
+   "doc": "上层/4-layout.md",
+   "section": "1.1 读操作（不改变业务服务器状态）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 可选 `region_mode`：`intersect`（默认）/ `contain`，作用于 object_filter 里的 region；",
+   "evidence": [
+    "test/live/packages/layout_e2e_tests.py",
+    "test/offline/unit/test_layout_contracts.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_layout_contracts.py",
+      "total": 70,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "layout#029",
+   "doc": "上层/4-layout.md",
+   "section": "1.1 读操作（不改变业务服务器状态）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 可选 `depth`：`0`（默认，只读本层）/ `>0`（跨层，需同时给 `region` 或 `layers`）；",
+   "evidence": [
+    "test/live/packages/layout_e2e_tests.py",
+    "test/offline/unit/test_layout_contracts.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_layout_contracts.py",
+      "total": 70,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "layout#039",
+   "doc": "上层/4-layout.md",
+   "section": "1.2 写操作（改变业务服务器状态）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "对外只有一个**通用写操作** `write`：调用方一次给一组原子命令，业务包内部组织 SKILL 逐个改写，最后统一 `dbSave`。",
+   "evidence": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/live/packages/layout_e2e_tests.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_layout_contracts.py",
+      "total": 70,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "layout#040",
+   "doc": "上层/4-layout.md",
+   "section": "1.2 写操作（改变业务服务器状态）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "调用方不会按单个原子调用多次。",
+   "evidence": [
+    "test/offline/unit/test_pyapi_interface_contract.py",
+    "test/live/packages/layout_e2e_tests.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_pyapi_interface_contract.py",
+      "total": 5,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "layout#045",
+   "doc": "上层/4-layout.md",
+   "section": "1.2 写操作（改变业务服务器状态）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "`write.commands` 每项 = `{\"op\": 原子名, ...该原子参数}`；按顺序执行并保留每步痕迹。",
+   "evidence": [
+    "test/offline/unit/test_layout_contracts.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_layout_contracts.py",
+      "total": 70,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "layout#047",
+   "doc": "上层/4-layout.md",
+   "section": "1.2 写操作（改变业务服务器状态）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "**不得靠 `a` 模式凭空创建**；非事务——中途失败时前面的命令已生效，失败响应带 `commands applied: k/n`。",
+   "evidence": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/offline/unit/test_layout_contracts.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_layout_contracts.py",
+      "total": 70,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_layout_contracts.py",
+      "total": 70,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "layout#048",
+   "doc": "上层/4-layout.md",
+   "section": "1.2 写操作（改变业务服务器状态）",
+   "verdict": "direct",
+   "r9_status": "NO-OFFLINE-EVIDENCE",
+   "text": "**write 支持的原子命令**：每个原子 = `op` + **索引**（要动哪个对象）+ 附加参数。",
+   "evidence": [
+    "test/live/packages/layout_e2e_tests.py",
+    "test/artifacts/evidence/atom-coverage-2026-09-28.json"
+   ],
+   "detail": {}
+  },
+  {
+   "id": "layout#075",
+   "doc": "上层/4-layout.md",
+   "section": "1.2.1 LPP 与失败语义",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 底层 `dbCreateXxx` 失败**返回 nil 而不抛错** → 每个原子必须判返回值，失败即业务失败；",
+   "evidence": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/semi/probes/layout_p044_second_write_probe.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_layout_contracts.py",
+      "total": 70,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "layout#076",
+   "doc": "上层/4-layout.md",
+   "section": "1.2.1 LPP 与失败语义",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 默认**不做** techfile 预检；`write` 可选 `strict_lpp=true` 时校验：`techGetLayerNum(tf, layer)` 非 nil +",
+   "evidence": [
+    "test/live/packages/layout_e2e_tests.py",
+    "test/offline/unit/test_layout_contracts.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_layout_contracts.py",
+      "total": 70,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "layout#079",
+   "doc": "上层/4-layout.md",
+   "section": "1.2.1 LPP 与失败语义",
+   "verdict": "indirect",
+   "r9_status": "NO-OFFLINE-EVIDENCE",
+   "text": "批量删层用 `dbShapeQuery(cv lpp bbox 0 <stopLevel>)`，**stopLevel 必须覆盖层次**；",
+   "evidence": [
+    "test/live/packages/layout_e2e_tests.py",
+    "test/semi/probes/layout_p044_second_write_probe.py"
+   ],
+   "detail": {}
+  },
+  {
+   "id": "layout#120",
+   "doc": "上层/4-layout.md",
+   "section": "1.3 gds（导入 / 导出收拢为一个操作）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "`XSTRM-234` + `Translation completed` 才算完成；**完成前不得读目标 cellview**（会读到旧版 stale bbox）；",
+   "evidence": [
+    "test/offline/unit/test_layout_publish_contracts.py",
+    "test/semi/probes/gds_publish_path_edges_probe.py",
+    "test/semi/probes/gds_then_skill_probe.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_layout_publish_contracts.py",
+      "total": 4,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "layout#139",
+   "doc": "上层/4-layout.md",
+   "section": "1.4 screenshot",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- **禁止不带 bbox 的 `hiZoomIn`/`hiZoomOut`**（会进交互橡皮筋并卡死 SKILL 通道）；",
+   "evidence": [
+    "test/offline/unit/test_norm_gap_batch2.py",
+    "test/live/packages/layout_e2e_tests.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_norm_gap_batch2.py",
+      "total": 12,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "layout#158",
+   "doc": "上层/4-layout.md",
+   "section": "3. 不在本版",
+   "verdict": "na",
+   "r9_status": "NA-NO-EVIDENCE-NEEDED",
+   "text": "- 路由抽象（多层/总线）与 `clear_routing`：调用方用几何原子组合；",
+   "evidence": [],
+   "detail": {}
+  },
+  {
+   "id": "layout#179",
+   "doc": "上层/4-layout.md",
+   "section": "5. 真机事实（IC6.1.8，2026-09-21 实测）",
+   "verdict": "direct",
+   "r9_status": "NO-OFFLINE-EVIDENCE",
+   "text": "3. `dbCreateXxx` 失败分两类：**非法 LPP → 抛 SKILL 硬错误**；**几何非法 → nil + WARNING** →",
+   "evidence": [
+    "test/live/packages/layout_geometry_classification_e2e_tests.py",
+    "test/artifacts/evidence/round8/layout-geometry-classification.json",
+    "test/live/packages/layout_e2e_tests.py"
+   ],
+   "detail": {}
+  },
+  {
+   "id": "layout#180",
+   "doc": "上层/4-layout.md",
+   "section": "5. 真机事实（IC6.1.8，2026-09-21 实测）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "上层既要判返回值也要能收错误；`pos` 写 **point**（`7:8`），`bBox`/`points` 写 list；",
+   "evidence": [
+    "test/offline/unit/test_layout_contracts.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_layout_contracts.py",
+      "total": 70,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "layout#181",
+   "doc": "上层/4-layout.md",
+   "section": "5. 真机事实（IC6.1.8，2026-09-21 实测）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "4. **`dbClose` 不落盘**：必须显式 `dbSave` 后再 `dbClose`；未保存的 cellview 留在会话里会污染导出",
+   "evidence": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/semi/probes/layout_p044_second_write_probe.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_layout_contracts.py",
+      "total": 70,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "layout#184",
+   "doc": "上层/4-layout.md",
+   "section": "5. 真机事实（IC6.1.8，2026-09-21 实测）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "6. 区域/层级查询显式给 level（`dbShapeQuery(cv lpp bbox 0 32)`）；3 参数默认形式会下探一层 instance",
+   "evidence": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/live/packages/layout_e2e_tests.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_layout_contracts.py",
+      "total": 70,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "layout#185",
+   "doc": "上层/4-layout.md",
+   "section": "5. 真机事实（IC6.1.8，2026-09-21 实测）",
+   "verdict": "indirect",
+   "r9_status": "R9-GREEN",
+   "text": "但**不含 via 生成图形**，不要依赖默认；",
+   "evidence": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/live/packages/layout_geometry_classification_e2e_tests.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_layout_contracts.py",
+      "total": 70,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "layout#189",
+   "doc": "上层/4-layout.md",
+   "section": "5. 真机事实（IC6.1.8，2026-09-21 实测）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "9. via 的 `~>viaDef` / `~>name` **不可读**（都是 nil）⇒ 只能按 `pos + orient` 索引；",
+   "evidence": [
+    "test/offline/unit/test_layout_contracts.py",
+    "test/live/packages/layout_geometry_classification_e2e_tests.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_layout_contracts.py",
+      "total": 70,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "layout#196",
+   "doc": "上层/4-layout.md",
+   "section": "5. 真机事实（IC6.1.8，2026-09-21 实测）",
+   "verdict": "indirect",
+   "r9_status": "R9-GREEN",
+   "text": "**不能**用来判断 `dbCreate*` 是否接受某 LPP（真机已验证 `(\"y0\" \"pin\")` 不在列表里但可建）；",
+   "evidence": [
+    "test/live/packages/layout_e2e_tests.py",
+    "test/offline/unit/test_layout_contracts.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_layout_contracts.py",
+      "total": 70,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "layout#199",
+   "doc": "上层/4-layout.md",
+   "section": "5. 真机事实（IC6.1.8，2026-09-21 实测）",
+   "verdict": "na",
+   "r9_status": "NA-NO-EVIDENCE-NEEDED",
+   "text": "与 SKILL 侧会话的在内存库表**不是**同一份 ⇒ 会话 run 目录的 `cds.lib` 是唯一权威解析入口；",
+   "evidence": [],
+   "detail": {}
+  },
+  {
+   "id": "layout#202",
+   "doc": "上层/4-layout.md",
+   "section": "5. 真机事实（IC6.1.8，2026-09-21 实测）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "同会话后续 SKILL 调用全部超时（P-075）。批处理路径从根上避开，别再走窗体。",
+   "evidence": [
+    "test/semi/probes/gds_then_skill_probe.py",
+    "test/offline/unit/test_layout_publish_contracts.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_layout_publish_contracts.py",
+      "total": 4,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "maestro#004",
+   "doc": "上层/6-maestro.md",
+   "section": "上层业务包：maestro",
+   "verdict": "na",
+   "r9_status": "NA-NO-EVIDENCE-NEEDED",
+   "text": "> Supersedes：Draft v3（补全历史类读写与全部操作/原子的实现底层；去掉 history 复制）",
+   "evidence": [],
+   "detail": {}
+  },
+  {
+   "id": "maestro#030",
+   "doc": "上层/6-maestro.md",
+   "section": "3.2 write（配置原子）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "每个原子 = `op` + **索引**（动哪个）+ 附加参数。整批在一个后台会话内顺序执行，末尾统一保存。",
+   "evidence": [
+    "test/offline/unit/test_maestro_command_exprs.py",
+    "test/offline/unit/test_maestro_package_flow.py",
+    "test/semi/probes/maestro_pkg_probe.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_maestro_command_exprs.py",
+      "total": 40,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_maestro_package_flow.py",
+      "total": 27,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "maestro#113",
+   "doc": "上层/6-maestro.md",
+   "section": "10. 待定与待验证",
+   "verdict": "na",
+   "r9_status": "NA-NO-EVIDENCE-NEEDED",
+   "text": "1. 会话级原子的索引（`set_run_mode` / `set_job_control_mode` 现按\"当前会话\"处理）；",
+   "evidence": [],
+   "detail": {}
+  },
+  {
+   "id": "maestro#115",
+   "doc": "上层/6-maestro.md",
+   "section": "10. 待定与待验证",
+   "verdict": "na",
+   "r9_status": "NA-NO-EVIDENCE-NEEDED",
+   "text": "3. analyses / outputs 的枚举函数；",
+   "evidence": [],
+   "detail": {}
+  },
+  {
+   "id": "maestro#118",
+   "doc": "上层/6-maestro.md",
+   "section": "10. 待定与待验证",
+   "verdict": "na",
+   "r9_status": "NA-NO-EVIDENCE-NEEDED",
+   "text": "6. 各原子的参数与默认值逐项定稿。",
+   "evidence": [],
+   "detail": {}
+  },
+  {
+   "id": "maestro#119",
+   "doc": "上层/6-maestro.md",
+   "section": "10. 待定与待验证",
+   "verdict": "na",
+   "r9_status": "NA-NO-EVIDENCE-NEEDED",
+   "text": "待真机验证（写 spec 定稿前必须闭环）：",
+   "evidence": [],
+   "detail": {}
+  },
+  {
+   "id": "spectre#033",
+   "doc": "上层/7-spectre.md",
+   "section": "3.1 Request / Result",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 每个 Request 必须有 `token: str`，可选 `timeout`；结构校验失败抛 `ValueError`/`TypeError`。",
+   "evidence": [
+    "test/offline/unit/test_spectre_contracts.py",
+    "test/offline/unit/test_pyapi_interface_contract.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_spectre_contracts.py",
+      "total": 49,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_pyapi_interface_contract.py",
+      "total": 5,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "spectre#036",
+   "doc": "上层/7-spectre.md",
+   "section": "3.1 Request / Result",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 业务失败写 `ok=false` + `error`；只有结构错误或未预期异常才抛出。",
+   "evidence": [
+    "test/offline/unit/test_spectre_contracts.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_spectre_contracts.py",
+      "total": 49,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "spectre#040",
+   "doc": "上层/7-spectre.md",
+   "section": "3.2 路径与 job",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- `run` 的 `job` 必须是安全名：`[A-Za-z0-9][A-Za-z0-9._-]*`，不得含 `/`、`\\`、`..`。",
+   "evidence": [
+    "test/offline/unit/test_spectre_contracts.py",
+    "test/offline/unit/test_spectre_contracts.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_spectre_contracts.py",
+      "total": 49,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_spectre_contracts.py",
+      "total": 49,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "spectre#041",
+   "doc": "上层/7-spectre.md",
+   "section": "3.2 路径与 job",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 包不生成 API 事后不可重建的随机路径；同一 `job` 必须能确定地定位同一组运行目录。",
+   "evidence": [
+    "test/offline/unit/test_spectre_contracts.py",
+    "test/artifacts/tmp/repro_p076_rounds.py",
+    "test/offline/unit/test_spectre_contracts.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_spectre_contracts.py",
+      "total": 49,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_spectre_contracts.py",
+      "total": 49,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "spectre#077",
+   "doc": "上层/7-spectre.md",
+   "section": "5.1 Request",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- `tasks` 非空；job 唯一且为安全名；`max_workers ≥ 1`。",
+   "evidence": [
+    "test/offline/unit/test_spectre_contracts.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_spectre_contracts.py",
+      "total": 49,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "spectre#078",
+   "doc": "上层/7-spectre.md",
+   "section": "5.1 Request",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- `parse=\"auto\"` 时 `download` 必须为 true；`parse=\"none\"` 时必须 `keep_run_dir=true`，否则后续无法再用 `read_results` 定位 role 侧结果。",
+   "evidence": [
+    "test/offline/unit/test_spectre_contracts.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_spectre_contracts.py",
+      "total": 49,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "spectre#083",
+   "doc": "上层/7-spectre.md",
+   "section": "5.2 执行链路（每个 task）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "3. 上传 netlist 为 `<run_dir>/<netlist basename>`；上传 include 文件到同一目录。netlist 与 include 的 basename 必须唯一、不得冲突。",
+   "evidence": [
+    "test/offline/unit/test_spectre_contracts.py",
+    "test/semi/probes/spectre_ac_pipeline_probe.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_spectre_contracts.py",
+      "total": 49,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "spectre#092",
+   "doc": "上层/7-spectre.md",
+   "section": "5.2 执行链路（每个 task）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 包内用受 `max_workers` 限制的并发执行所有 task；所有 task 都等待结束，任一失败不取消其余 task。",
+   "evidence": [
+    "test/offline/unit/test_spectre_contracts.py",
+    "test/offline/core/thread_lifecycle_tb.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_spectre_contracts.py",
+      "total": 49,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/core/thread_lifecycle_tb.py",
+      "source": "core-multi-r9",
+      "total": 30,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "spectre#093",
+   "doc": "上层/7-spectre.md",
+   "section": "5.2 执行链路（每个 task）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 结果按 `tasks` 顺序返回。",
+   "evidence": [
+    "test/offline/unit/test_spectre_contracts.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_spectre_contracts.py",
+      "total": 49,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "spectre#094",
+   "doc": "上层/7-spectre.md",
+   "section": "5.2 执行链路（每个 task）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 中层的 token/channel/thread 预算仍可能拒绝某次调用；被拒绝的 task 记失败，不自动重试。",
+   "evidence": [
+    "test/offline/unit/test_endpoint_budgets.py",
+    "test/offline/unit/test_spectre_contracts.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_endpoint_budgets.py",
+      "total": 7,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_spectre_contracts.py",
+      "total": 49,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "spectre#097",
+   "doc": "上层/7-spectre.md",
+   "section": "5.3 命令构造",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 默认参数（已存在则不重复）：`-64`、`+escchars`、`+log <run_dir>/spectre.out`、`-format psfascii`、`-raw <run_dir>/<stem>.raw`、`+lqtimeout 900`、`-maxw 5`、`-maxn 5`、`+logstatus`。",
+   "evidence": [
+    "test/offline/unit/test_spectre_contracts.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_spectre_contracts.py",
+      "total": 49,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "spectre#098",
+   "doc": "上层/7-spectre.md",
+   "section": "5.3 命令构造",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 参数顺序：task 的 `spectre_args` 后接 mode 映射参数。",
+   "evidence": [
+    "test/offline/unit/test_spectre_contracts.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_spectre_contracts.py",
+      "total": 49,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "spectre#144",
+   "doc": "上层/7-spectre.md",
+   "section": "5.4 结果与状态",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- raw 已下载但解析失败：`status=\"partial\"`，`ok=false`，保留解析错误和已下载文件。",
+   "evidence": [
+    "test/offline/unit/test_spectre_contracts.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_spectre_contracts.py",
+      "total": 49,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "spectre#146",
+   "doc": "上层/7-spectre.md",
+   "section": "5.4 结果与状态",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 终止失败标记至少包括：`error reading`、`read-in failed`、license error、明确 convergence failure、`spectre terminated prematurely due to fatal error`、`ERROR (`、segmentation/core dump。",
+   "evidence": [
+    "test/offline/unit/test_spectre_contracts.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_spectre_contracts.py",
+      "total": 49,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "spectre#197",
+   "doc": "上层/7-spectre.md",
+   "section": "7. `spectre.measure`",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- `noise_integral` 需要数据中含频率轴（默认 `freq`）；`ac_magnitude`/`bandwidth` 只适用于 AC 复数数据。",
+   "evidence": [
+    "test/offline/unit/test_spectre_metrics.py",
+    "test/offline/unit/test_spectre_util_contracts.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_spectre_metrics.py",
+      "total": 3,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_spectre_util_contracts.py",
+      "total": 27,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "spectre#202",
+   "doc": "上层/7-spectre.md",
+   "section": "8. `spectre.export`",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- CSV：按 columns（缺省取 data 中 list 值的顺序，`time`/`freq`/`sweep_var` 优先）写出矩形表；复数按 `<signal>.re`/`<signal>.im` 展开；缺失值留空。",
+   "evidence": [
+    "test/offline/unit/test_spectre_util_psf_contracts.py",
+    "test/offline/unit/test_spectre_contracts.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_spectre_util_psf_contracts.py",
+      "total": 51,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_spectre_contracts.py",
+      "total": 49,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "spectre#214",
+   "doc": "上层/7-spectre.md",
+   "section": "9. 内部中间节点（不对外）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- swept 数据支持 delta 压缩：后续 step 缺省信号沿用前值；首个 step 未出现信号**内部**用缺失哨兵（实现取 `None`；**不得静默填 0**），",
+   "evidence": [
+    "test/offline/unit/test_spectre_util_psf_contracts.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_spectre_util_psf_contracts.py",
+      "total": 51,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "spectre#215",
+   "doc": "上层/7-spectre.md",
+   "section": "9. 内部中间节点（不对外）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "**对外 `value.data` 一律转成 `null`/省略**（保持 JSON-safe）。边界唯一出口是 `psf_external()`：",
+   "evidence": [
+    "test/offline/unit/test_output_json_safety.py",
+    "test/offline/unit/test_spectre_util_psf_contracts.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_output_json_safety.py",
+      "total": 3,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_spectre_util_psf_contracts.py",
+      "total": 51,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "spectre#216",
+   "doc": "上层/7-spectre.md",
+   "section": "9. 内部中间节点（不对外）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "缺失哨兵与任何非有限值（`NaN`/`±Inf`）都在那里收敛成 `null`，其余路径不得自行定义对外表示。",
+   "evidence": [
+    "test/offline/unit/test_output_json_safety.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_output_json_safety.py",
+      "total": 3,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "spectre#217",
+   "doc": "上层/7-spectre.md",
+   "section": "9. 内部中间节点（不对外）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- AC 复数相量不得被破坏；对外 `value.data` 必须 JSON-safe：复数向量用 `{\"re\": [...], \"im\": [...]}`，单值用 `{\"re\": ..., \"im\": ...}`。",
+   "evidence": [
+    "test/offline/unit/test_spectre_util_psf_contracts.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_spectre_util_psf_contracts.py",
+      "total": 51,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "verilog#043",
+   "doc": "上层/8-verilog.md",
+   "section": "1.2 写操作（write）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "`write.commands` 每项 = `{\"op\": 原子名, ...参数}`；**非事务**，失败响应带 `commands applied: k/n`。",
+   "evidence": [
+    "test/offline/unit/test_verilog_contracts.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_verilog_contracts.py",
+      "total": 28,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "verilog#060",
+   "doc": "上层/8-verilog.md",
+   "section": "1.3 导入（import）",
+   "verdict": "indirect",
+   "r9_status": "NO-OFFLINE-EVIDENCE",
+   "text": "（ihdl 会往里追加 `DEFINE`，不能给共享/全局那份）；",
+   "evidence": [
+    "src/pyapi/packages/verilog.py:504-519",
+    "test/live/packages/verilog_e2e_tests.py"
+   ],
+   "detail": {}
+  },
+  {
+   "id": "verilog#062",
+   "doc": "上层/8-verilog.md",
+   "section": "1.3 导入（import）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "`structural_views`（1=schematic / 2=netlist / 4=functional / 5=schematic+functional / 6=netlist+functional，**默认 4**）、",
+   "evidence": [
+    "test/offline/unit/test_verilog_contracts.py",
+    "test/live/packages/verilog_e2e_tests.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_verilog_contracts.py",
+      "total": 28,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "verilog#065",
+   "doc": "上层/8-verilog.md",
+   "section": "1.3 导入（import）",
+   "verdict": "indirect",
+   "r9_status": "NO-OFFLINE-EVIDENCE",
+   "text": "3. 执行（**必须带 LD_LIBRARY_PATH 前缀**，否则缺 `libsasl2.so.2`、rc=127）：",
+   "evidence": [
+    "src/pyapi/packages/verilog.py:517",
+    "test/live/packages/verilog_e2e_tests.py"
+   ],
+   "detail": {}
+  },
+  {
+   "id": "verilog#071",
+   "doc": "上层/8-verilog.md",
+   "section": "1.3 导入（import）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "6. **返回码不可信**（语法错误也 rc=0）：只用日志 + 产物判成败。",
+   "evidence": [
+    "test/offline/unit/test_verilog_contracts.py",
+    "test/offline/unit/test_verilog_contracts.py",
+    "test/live/packages/verilog_e2e_tests.py",
+    "test/live/packages/verilog_import_params_e2e_tests.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_verilog_contracts.py",
+      "total": 28,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_verilog_contracts.py",
+      "total": 28,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "verilog#072",
+   "doc": "上层/8-verilog.md",
+   "section": "1.3 导入（import）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "`functional` 视图 = `verilog.v` 文本 + `netlist.oa`，是 AMS/仿真网表要消费的形态，默认就够；",
+   "evidence": [
+    "test/offline/unit/test_verilog_contracts.py",
+    "test/live/packages/verilog_e2e_tests.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_verilog_contracts.py",
+      "total": 28,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "verilog#097",
+   "doc": "上层/8-verilog.md",
+   "section": "3. 不在本版",
+   "verdict": "na",
+   "r9_status": "NA-NO-EVIDENCE-NEEDED",
+   "text": "- 并发写同一 cell。",
+   "evidence": [],
+   "detail": {}
+  },
+  {
+   "id": "verilog#099",
+   "doc": "上层/8-verilog.md",
+   "section": "4. 真机事实（IC6.1.8，2026-09-21 实测）",
+   "verdict": "indirect",
+   "r9_status": "NO-OFFLINE-EVIDENCE",
+   "text": "2. `ihdl` 是 ksh 包装器：裸跑缺 `libsasl2.so.2`（rc=127），必须带",
+   "evidence": [
+    "test/live/packages/verilog_e2e_tests.py"
+   ],
+   "detail": {}
+  },
+  {
+   "id": "verilog#101",
+   "doc": "上层/8-verilog.md",
+   "section": "4. 真机事实（IC6.1.8，2026-09-21 实测）",
+   "verdict": "partial",
+   "r9_status": "R9-GREEN",
+   "text": "3. `ihdl` **返回码不可信**：语法错误、参考库缺失、降级导入都是 rc=0；成功看 `357/372/345`，",
+   "evidence": [
+    "test/offline/unit/test_verilog_contracts.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_verilog_contracts.py",
+      "total": 28,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "verilog#103",
+   "doc": "上层/8-verilog.md",
+   "section": "4. 真机事实（IC6.1.8，2026-09-21 实测）",
+   "verdict": "partial",
+   "r9_status": "R9-GREEN",
+   "text": "4. `ihdl` 会向 `-cdslib` 指定的文件**追加 DEFINE**（目标库未注册时还在 cwd 建同名库目录）→ 必须用按次副本；",
+   "evidence": [
+    "test/offline/unit/test_verilog_contracts.py",
+    "src/pyapi/packages/verilog.py:504-519"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_verilog_contracts.py",
+      "total": 28,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "verilog#108",
+   "doc": "上层/8-verilog.md",
+   "section": "4. 真机事实（IC6.1.8，2026-09-21 实测）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "否则 `VERILOGIN-127` 拒绝并降级 functional；",
+   "evidence": [
+    "test/offline/unit/test_verilog_contracts.py",
+    "test/live/packages/verilog_e2e_tests.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_verilog_contracts.py",
+      "total": 28,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "veriloga#041",
+   "doc": "上层/11-veriloga.md",
+   "section": "1.1 读操作（read）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- `read` 纯只读：不得调用 `ahdlUpdateViewInfo` 等会改缓存/视图状态的函数。",
+   "evidence": [
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/live/packages/veriloga_e2e_tests.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_veriloga_contracts.py",
+      "total": 30,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "veriloga#045",
+   "doc": "上层/11-veriloga.md",
+   "section": "1.2 写操作（write）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "`write.commands` 每项 = `{\"op\": 原子名, ...参数}`；**非事务**，失败响应带 `commands applied: k/n`。",
+   "evidence": [
+    "test/offline/unit/test_veriloga_contracts.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_veriloga_contracts.py",
+      "total": 30,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "veriloga#053",
+   "doc": "上层/11-veriloga.md",
+   "section": "1.2 写操作（write）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "1. 写临时文件 → 校验读回 → 原子替换 `veriloga.va`；",
+   "evidence": [
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/live/packages/veriloga_e2e_tests.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_veriloga_contracts.py",
+      "total": 30,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "veriloga#055",
+   "doc": "上层/11-veriloga.md",
+   "section": "1.2 写操作（write）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "（`master.tag` = `-- Master.tag File, Rev:1.0\\nveriloga.va\\n`；模块名必须与 cell 名一致）；",
+   "evidence": [
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/live/packages/veriloga_e2e_tests.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_veriloga_contracts.py",
+      "total": 30,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "veriloga#057",
+   "doc": "上层/11-veriloga.md",
+   "section": "1.2 写操作（write）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "4. 有 `*.cdslck`（编辑器开着）时禁止外部写：报失败并提示关闭编辑器，不自动关别人的窗口。",
+   "evidence": [
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/live/packages/veriloga_e2e_tests.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_veriloga_contracts.py",
+      "total": 30,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "veriloga#068",
+   "doc": "上层/11-veriloga.md",
+   "section": "1.3 检查与保存（check_and_save）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "5. **不用** `ahdlCheckModule` / `ahdlSaveFile` / `ahdlEdit`（编辑器 GUI 内部包装，错误或缺 symbol 会弹模态阻塞 CIW）。",
+   "evidence": [
+    "test/offline/unit/test_veriloga_lazy_editor_contract.py",
+    "test/offline/unit/test_veriloga_lazy_editor_contract.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_veriloga_lazy_editor_contract.py",
+      "total": 3,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_veriloga_lazy_editor_contract.py",
+      "total": 3,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "veriloga#069",
+   "doc": "上层/11-veriloga.md",
+   "section": "1.3 检查与保存（check_and_save）",
+   "verdict": "direct",
+   "r9_status": "NO-OFFLINE-EVIDENCE",
+   "text": "真机结论：上述序列与 GUI Check and Save 的落盘形态**逐文件一致**，唯一差别是不含 GUI 弹窗生成的 `symbol` 视图；",
+   "evidence": [
+    "test/live/packages/veriloga_e2e_tests.py",
+    "test/artifacts/evidence/round8"
+   ],
+   "detail": {}
+  },
+  {
+   "id": "veriloga#083",
+   "doc": "上层/11-veriloga.md",
+   "section": "3. 不在本版",
+   "verdict": "na",
+   "r9_status": "NA-NO-EVIDENCE-NEEDED",
+   "text": "- 并发写同一 cell。",
+   "evidence": [],
+   "detail": {}
+  },
+  {
+   "id": "veriloga#085",
+   "doc": "上层/11-veriloga.md",
+   "section": "4. 真机事实（IC6.1.8，2026-09-21 实测）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "`dbOpenCellViewByType(..., \"veriloga\"/\"text.veriloga\", \"w\")` **恒 nil** → 必须走文件路径；",
+   "evidence": [
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/live/packages/veriloga_e2e_tests.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_veriloga_contracts.py",
+      "total": 30,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "veriloga#087",
+   "doc": "上层/11-veriloga.md",
+   "section": "4. 真机事实（IC6.1.8，2026-09-21 实测）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "3. 读源码用 `infile`/`gets` 或直接读文件；**`lineread` 不能读 `.va`**；",
+   "evidence": [
+    "test/offline/unit/test_veriloga_contracts.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_veriloga_contracts.py",
+      "total": 30,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "veriloga#088",
+   "doc": "上层/11-veriloga.md",
+   "section": "4. 真机事实（IC6.1.8，2026-09-21 实测）",
+   "verdict": "indirect",
+   "r9_status": "NO-OFFLINE-EVIDENCE",
+   "text": "4. `ahdlCompile*` 不存在；编译只能由 Spectre（`ahdlcmi`）完成，缓存 `<netlist>.ahdlSimDB/<srcHash>.*.ahdlcmi/`；",
+   "evidence": [
+    "test/live/flows/adc_sar_flow_tb.py",
+    "test/live/packages/veriloga_e2e_tests.py"
+   ],
+   "detail": {}
+  },
+  {
+   "id": "veriloga#089",
+   "doc": "上层/11-veriloga.md",
+   "section": "4. 真机事实（IC6.1.8，2026-09-21 实测）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "5. AHDL 上下文（`ahdlSck.cxt`）默认未加载；**冷启动 `loadContext(\"<IC618>/tools.lnx86/dfII/etc/context/ahdlSck.cxt\")`",
+   "evidence": [
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/live/packages/veriloga_e2e_tests.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_veriloga_contracts.py",
+      "total": 30,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "veriloga#092",
+   "doc": "上层/11-veriloga.md",
+   "section": "4. 真机事实（IC6.1.8，2026-09-21 实测）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "7. 编辑器打开时产生 `veriloga.va.cdslck` 锁 → 外部写文件失效，必须先关编辑器；",
+   "evidence": [
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/live/packages/veriloga_e2e_tests.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_veriloga_contracts.py",
+      "total": 30,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "veriloga#094",
+   "doc": "上层/11-veriloga.md",
+   "section": "4. 真机事实（IC6.1.8，2026-09-21 实测）",
+   "verdict": "direct",
+   "r9_status": "NO-OFFLINE-EVIDENCE",
+   "text": "9. **headless 的 Check and Save 已真机闭环**：写文件 → `VerAParseModule`（错误进 errFile）→",
+   "evidence": [
+    "test/live/packages/veriloga_e2e_tests.py",
+    "test/live/flows/adc_sar_flow_tb.py"
+   ],
+   "detail": {}
+  },
+  {
+   "id": "veriloga#095",
+   "doc": "上层/11-veriloga.md",
+   "section": "4. 真机事实（IC6.1.8，2026-09-21 实测）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "`ahdlUpdateViewInfo`（CDF + `netlist.oa`/`data.dm`），与 GUI 保存逐文件一致，唯一差别是无 `symbol` 视图；",
+   "evidence": [
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/live/packages/veriloga_e2e_tests.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_veriloga_contracts.py",
+      "total": 30,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "veriloga#096",
+   "doc": "上层/11-veriloga.md",
+   "section": "4. 真机事实（IC6.1.8，2026-09-21 实测）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "10. **不要用** `ahdlCheckModule`（错误弹 `QverilogaErr` 阻塞）、`ahdlSaveFile`（缺 symbol 弹模态）、",
+   "evidence": [
+    "test/offline/unit/test_veriloga_contracts.py",
+    "test/offline/unit/test_veriloga_lazy_editor_contract.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_veriloga_contracts.py",
+      "total": 30,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_veriloga_lazy_editor_contract.py",
+      "total": 3,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "veriloga#107",
+   "doc": "上层/11-veriloga.md",
+   "section": "6. 待验证（实现前需 spike）",
+   "verdict": "na",
+   "r9_status": "NA-NO-EVIDENCE-NEEDED",
+   "text": "1. `schPinListToSymbol` 用 `ahdlToPinList` 的 ports 生成 symbol 的可行性（端口顺序/方向）。",
+   "evidence": [],
+   "detail": {}
+  },
+  {
+   "id": "skillref#034",
+   "doc": "上层/9-skillref.md",
+   "section": "3.1 数据源：显式配置，不探测",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "取值顺序（先到先用，结果原样回带 `source` 与 `doc_root`，便于调用方复用与排错）：",
+   "evidence": [
+    "test/offline/unit/test_skillref_package.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_skillref_package.py",
+      "total": 31,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "skillref#051",
+   "doc": "上层/9-skillref.md",
+   "section": "3.1 数据源：显式配置，不探测",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "**只有这三个字段**——`source` + `doc_root` 是数据源位置，`doc_token` 是远端执行代理账号（必须注册一个 user，用该 user 的远端执行）。",
+   "evidence": [
+    "test/offline/unit/test_skillref_package.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_skillref_package.py",
+      "total": 31,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "skillref#055",
+   "doc": "上层/9-skillref.md",
+   "section": "3.2 local 模式（`source=\"local\"`）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "（错误文案带该路径），不退回远端、也不猜别的路径。",
+   "evidence": [
+    "test/offline/unit/test_norm_gap_batch2.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_norm_gap_batch2.py",
+      "total": 12,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "skillref#062",
+   "doc": "上层/9-skillref.md",
+   "section": "3.3 remote 模式（`source=\"remote\"`）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "路径纪律：远端路径一律按 POSIX 语义拼接，**禁止**对远端路径调用 `Path.exists()`。",
+   "evidence": [
+    "test/offline/unit/test_norm_gap_batch2.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_norm_gap_batch2.py",
+      "total": 12,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "skillref#064",
+   "doc": "上层/9-skillref.md",
+   "section": "3.3 remote 模式（`source=\"remote\"`）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "业务失败必须指明\"`skillref.doc_token` 无效或已删除\"，不得只报 `command failed`。",
+   "evidence": [
+    "test/offline/unit/test_skillref_package.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_skillref_package.py",
+      "total": 31,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "skillref#069",
+   "doc": "上层/9-skillref.md",
+   "section": "4. `virtuoso.skillref.search`",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "唯一搜索入口。一次请求 = 一个 `query` + 一组选项，选项只影响\"搜到哪一层\"与\"怎么匹配\"。",
+   "evidence": [
+    "test/offline/unit/test_skillref_package.py",
+    "test/semi/probes/skillref_probe.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_skillref_package.py",
+      "total": 31,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "skillref#102",
+   "doc": "上层/9-skillref.md",
+   "section": "4.2 匹配范围 `search_in`（逐级加深）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "`name` 与 `entry` 的区别只在**是否把语法/描述并入匹配面**，两者共用同一份 `.fnd` 解析。",
+   "evidence": [
+    "test/offline/unit/test_skillref_docs_contracts.py",
+    "test/offline/unit/test_skillref_package.py",
+    "test/live/packages/skillref_e2e_tests.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_skillref_docs_contracts.py",
+      "total": 36,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_skillref_package.py",
+      "total": 31,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "skillref#103",
+   "doc": "上层/9-skillref.md",
+   "section": "4.2 匹配范围 `search_in`（逐级加深）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "`all` = `body`（最深一档，给\"我什么都想搜\"的用户一个不用记顺序的取值）。",
+   "evidence": [
+    "test/offline/unit/test_norm_gap_batch2.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_norm_gap_batch2.py",
+      "total": 12,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "skillref#107",
+   "doc": "上层/9-skillref.md",
+   "section": "4.3 `mode` 语义",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "（语法、描述、正文）一律按**大小写不敏感的子串 AND** 匹配，不受 `mode` 影响：",
+   "evidence": [
+    "test/offline/unit/test_skillref_docs_contracts.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_skillref_docs_contracts.py",
+      "total": 36,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "skillref#129",
+   "doc": "上层/9-skillref.md",
+   "section": "4.5 返回",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "未命中返回空 `results` 且 `ok=true`（\"查不到\"是正常业务结果，不是错误）。",
+   "evidence": [
+    "test/offline/unit/test_skillref_package.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_skillref_package.py",
+      "total": 31,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "skillref#136",
+   "doc": "上层/9-skillref.md",
+   "section": "4.6 上限与边界",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "因此 `search_in=\"body\"` 在 **local 模式必须给 `under`**（如 `[\"cpf_ref\"]`，",
+   "evidence": [
+    "test/offline/unit/test_skillref_package.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_skillref_package.py",
+      "total": 31,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "skillref#140",
+   "doc": "上层/9-skillref.md",
+   "section": "4.6 上限与边界",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "在本地打分与出摘要；`max_candidates` 同时是下载上限；",
+   "evidence": [
+    "test/offline/unit/test_norm_gap_batch2.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_norm_gap_batch2.py",
+      "total": 12,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "skillref#141",
+   "doc": "上层/9-skillref.md",
+   "section": "4.6 上限与边界",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "4. `timeout` 显式传给每次 C/D 调用；正文层远端候选搜索默认给 120 s，调用方可覆盖。",
+   "evidence": [
+    "test/offline/unit/test_norm_gap_batch2.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_norm_gap_batch2.py",
+      "total": 12,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "skillref#153",
+   "doc": "上层/9-skillref.md",
+   "section": "5. `virtuoso.skillref.info`",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "3. 抽取顺序（不可调换，旧实现 `skill_finder/more_info.py:157`）：",
+   "evidence": [
+    "test/offline/unit/test_skillref_package.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_skillref_package.py",
+      "total": 31,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "skillref#166",
+   "doc": "上层/9-skillref.md",
+   "section": "6.1 配置表：`config.json` 的 `skillref` 段（公共只读数据）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "* 本段缺失或 `null` = 未配置，不阻断进程启动，只在调用时返回可读的业务失败。",
+   "evidence": [
+    "test/offline/unit/test_skillref_package.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_skillref_package.py",
+      "total": 31,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "skillref#167",
+   "doc": "上层/9-skillref.md",
+   "section": "6.1 配置表：`config.json` 的 `skillref` 段（公共只读数据）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "实现口径（本包）：读取顺序 = 请求参数 `source`+`doc_root` → `common.config` 快照的",
+   "evidence": [
+    "test/offline/unit/test_skillref_package.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_skillref_package.py",
+      "total": 31,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "skillref#173",
+   "doc": "上层/9-skillref.md",
+   "section": "6.2 单一搜索入口",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "一个入口，`search_in` 是唯一控制匹配深度的参数。旧 `skill-find` CLI 的语义对应",
+   "evidence": [
+    "test/offline/unit/test_skillref_package.py",
+    "test/semi/probes/skillref_probe.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_skillref_package.py",
+      "total": 31,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "skillref#180",
+   "doc": "上层/9-skillref.md",
+   "section": "6.4 与 `tools/skill_doc_server.py`（8123）的关系",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "两者共享同一套解析口径（`.fnd` / `.tgf` / HTML→Markdown），实现以本包为唯一维护点。",
+   "evidence": [
+    "test/semi/probes/skill_tooling_probe.py",
+    "test/offline/unit/test_skillref_docs_contracts.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_skillref_docs_contracts.py",
+      "total": 36,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "skillref#194",
+   "doc": "上层/9-skillref.md",
+   "section": "6.5 决策记录：本版为什么不建索引",
+   "verdict": "na",
+   "r9_status": "NA-NO-EVIDENCE-NEEDED",
+   "text": "→ 文档升级后索引静默过期。若将来要建，必须补\"文档树指纹\"（文件数 + 最新 mtime），",
+   "evidence": [],
+   "detail": {}
+  },
+  {
+   "id": "skillref#206",
+   "doc": "上层/9-skillref.md",
+   "section": "7. 已知限制",
+   "verdict": "na",
+   "r9_status": "NA-NO-EVIDENCE-NEEDED",
+   "text": "2. 正文层无持久索引：本地模式全树扫描 ~190 s（必须给 `under`）；远端模式靠 `grep` 候选",
+   "evidence": [],
+   "detail": {}
+  },
+  {
+   "id": "skillref#211",
+   "doc": "上层/9-skillref.md",
+   "section": "7. 已知限制",
+   "verdict": "na",
+   "r9_status": "NA-NO-EVIDENCE-NEEDED",
+   "text": "6. 正文层远端的 `line` 只在本地算（候选下载后重扫），远端候选本身只保证文件级定位。",
+   "evidence": [],
+   "detail": {}
+  },
+  {
+   "id": "skillref#212",
+   "doc": "上层/9-skillref.md",
+   "section": "7. 已知限制",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "7. **不做路径探测**：`source` 与 `doc_root` 必须由配置表或请求给出；配错只会得到",
+   "evidence": [
+    "test/offline/unit/test_skillref_package.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_skillref_package.py",
+      "total": 31,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "calibre#005",
+   "doc": "上层/12-calibre.md",
+   "section": "上层业务包：calibre",
+   "verdict": "indirect",
+   "r9_status": "R9-GREEN",
+   "text": "> **`calibre.pex` 未按官方三阶段验收，禁止用于交付/签核**；DRC/LVS/`export_cdl`/set 直驱已真机验证。",
+   "evidence": [
+    "test/offline/unit/test_calibre_argv_contracts.py",
+    "test/live/packages/calibre_e2e_tests.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_calibre_argv_contracts.py",
+      "total": 20,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "calibre#011",
+   "doc": "上层/12-calibre.md",
+   "section": "1. 总述",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "2. **默认非阻塞 + 三件套**：run 类操作默认立即返回 `job_id`（Calibre 动辄几十分钟），用 `calibre.status` 看进度、`calibre.read_results` 拿结构化结论；需要阻塞时用 `blocking=true`（包内轮询，形态同 maestro）；",
+   "evidence": [
+    "test/offline/unit/test_calibre_package.py",
+    "test/offline/unit/test_calibre_package.py",
+    "test/live/packages/calibre_e2e_tests.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_calibre_package.py",
+      "total": 49,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_calibre_package.py",
+      "total": 49,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "calibre#014",
+   "doc": "上层/12-calibre.md",
+   "section": "1. 总述",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "5. **失败可定位**：错误带 `kind`、工具原文片段、run dir 路径；`unknown-effect` 一律不自动重试。",
+   "evidence": [
+    "test/offline/unit/test_calibre_package.py",
+    "test/offline/unit/test_calibre_job_state.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_calibre_package.py",
+      "total": 49,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_calibre_job_state.py",
+      "total": 4,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "calibre#031",
+   "doc": "上层/12-calibre.md",
+   "section": "3.1 作业与 run dir（确定性、可重建）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "`job_id` 默认 `<kind>_<top>`（如 `drc_inv2`），请求可显式指定；",
+   "evidence": [
+    "test/offline/unit/test_calibre_package.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_calibre_package.py",
+      "total": 49,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "calibre#054",
+   "doc": "上层/12-calibre.md",
+   "section": "3.3 环境与许可",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "取值顺序：**请求显式 `calibre_bin`** > `query().roles[\"command\"].calibre.bin`；",
+   "evidence": [
+    "test/offline/unit/test_calibre_package.py",
+    "test/semi/probes/calibre_env_probe.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_calibre_package.py",
+      "total": 49,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "calibre#057",
+   "doc": "上层/12-calibre.md",
+   "section": "3.3 环境与许可",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "- 包内启动器固定先 `ulimit -n 65536`（Calibre 对 fd 上限敏感，实测默认 1024 会告警）；",
+   "evidence": [
+    "test/offline/unit/test_calibre_package.py",
+    "test/live/packages/calibre_e2e_tests.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_calibre_package.py",
+      "total": 49,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "calibre#059",
+   "doc": "上层/12-calibre.md",
+   "section": "3.3 环境与许可",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "许可问题由工具日志暴露，`read_results`/`status` 负责把 `license` 相关错误单独归类为 `license`（可重试）。",
+   "evidence": [
+    "test/offline/unit/test_calibre_package.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_calibre_package.py",
+      "total": 49,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "calibre#060",
+   "doc": "上层/12-calibre.md",
+   "section": "3.4 长任务与状态判据",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "run 类操作默认 `blocking=false`：写 launcher、后台启动、立刻返回 `job_id`。",
+   "evidence": [
+    "test/offline/unit/test_calibre_package.py",
+    "test/live/packages/calibre_e2e_tests.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_calibre_package.py",
+      "total": 49,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "calibre#068",
+   "doc": "上层/12-calibre.md",
+   "section": "3.4 长任务与状态判据",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "`blocking=true` 时包内循环：`deadline = now + timeout`，按 `poll_interval`（默认 5 s）调 `status`，",
+   "evidence": [
+    "test/offline/unit/test_calibre_package.py",
+    "test/live/packages/calibre_e2e_tests.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_calibre_package.py",
+      "total": 49,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "calibre#069",
+   "doc": "上层/12-calibre.md",
+   "section": "3.4 长任务与状态判据",
+   "verdict": "partial",
+   "r9_status": "R9-GREEN",
+   "text": "终态或超时即返回；超时返回 `status=timeout` 且**后台作业继续跑**。",
+   "evidence": [
+    "test/offline/unit/test_calibre_package.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_calibre_package.py",
+      "total": 49,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "calibre#096",
+   "doc": "上层/12-calibre.md",
+   "section": "4.2 `calibre.drc`",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "**参数一律用官方机制带**（两条路，互斥）：",
+   "evidence": [
+    "test/offline/unit/test_calibre_package.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_calibre_package.py",
+      "total": 49,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "calibre#120",
+   "doc": "上层/12-calibre.md",
+   "section": "4.3.1 直接喂 Calibre Interactive 的 set（现场形态，官方批处理）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "（先默认名，再 `job.json.report_file`，最后在 run dir 内扫描 `*.report/*.rep`），与 set 是否改名无关。",
+   "evidence": [
+    "test/offline/unit/test_calibre_package.py",
+    "test/offline/unit/test_calibre_package.py",
+    "test/offline/unit/test_calibre_package.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_calibre_package.py",
+      "total": 49,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_calibre_package.py",
+      "total": 49,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_calibre_package.py",
+      "total": 49,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "calibre#123",
+   "doc": "上层/12-calibre.md",
+   "section": "4.3.1 直接喂 Calibre Interactive 的 set（现场形态，官方批处理）",
+   "verdict": "partial",
+   "r9_status": "R9-GREEN",
+   "text": "> 边界：set 只携带**参数**，不携带数据——它引用的 layout / 源网表 / hcell 文件必须已存在于远端；",
+   "evidence": [
+    "test/offline/unit/test_calibre_package.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_calibre_package.py",
+      "total": 49,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "calibre#127",
+   "doc": "上层/12-calibre.md",
+   "section": "4.4 `calibre.pex`",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "包会把它复制进 PEX 的 run dir）；`fmt` 可选 `none`/`spice`/`simple`（默认 `none`，即只到 `-pdb`）。",
+   "evidence": [
+    "test/offline/unit/test_calibre_argv_contracts.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_calibre_argv_contracts.py",
+      "total": 20,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "calibre#128",
+   "doc": "上层/12-calibre.md",
+   "section": "4.4 `calibre.pex`",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "内部固定顺序：`-xrc -phdb` → `-xrc -pdb -rc <deck>` →（可选）`-xrc -fmt -<fmt>`，",
+   "evidence": [
+    "test/offline/unit/test_calibre_argv_contracts.py",
+    "test/offline/unit/test_calibre_argv_contracts.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_calibre_argv_contracts.py",
+      "total": 20,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_calibre_argv_contracts.py",
+      "total": 20,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "calibre#129",
+   "doc": "上层/12-calibre.md",
+   "section": "4.4 `calibre.pex`",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "**每个阶段校验产物存在**才进入下一阶段（phdb 必须是 xRC 类型，见可行性报告 §2）。",
+   "evidence": [
+    "test/offline/unit/test_calibre_package.py",
+    "test/offline/unit/test_calibre_package.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_calibre_package.py",
+      "total": 49,
+      "red": 0,
+      "skipped": 0
+     },
+     {
+      "file": "test/offline/unit/test_calibre_package.py",
+      "total": 49,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "calibre#151",
+   "doc": "上层/12-calibre.md",
+   "section": "4.6 `calibre.export_cdl`（LVS 源网表，官方 auCdl）",
+   "verdict": "direct",
+   "r9_status": "R9-GREEN",
+   "text": "**`checkCAPPERI=nil`**——IC618 auCdl batch 的默认值缺口，缺失即 `OSSHNL-411`）与一致的 `.simrc`；",
+   "evidence": [
+    "test/offline/unit/test_calibre_package.py",
+    "test/live/flows/s11_full_flow.py"
+   ],
+   "detail": {
+    "green": [
+     {
+      "file": "test/offline/unit/test_calibre_package.py",
+      "total": 49,
+      "red": 0,
+      "skipped": 0
+     }
+    ],
+    "missing": []
+   }
+  },
+  {
+   "id": "calibre#160",
+   "doc": "上层/12-calibre.md",
+   "section": "5. 不做与本版限制",
+   "verdict": "na",
+   "r9_status": "NA-NO-EVIDENCE-NEEDED",
+   "text": "5. 不做并发调度：同一 token 建议串行跑 PDR；许可争用表现为工具报错，由调用方决定重试。",
+   "evidence": [],
+   "detail": {}
+  },
+  {
+   "id": "calibre#171",
+   "doc": "上层/12-calibre.md",
+   "section": "7. 已知限制",
+   "verdict": "na",
+   "r9_status": "NA-NO-EVIDENCE-NEEDED",
+   "text": "2. 大设计的 `svdb`/`*.pdb` 可能很大：`export` 默认只取小文件，目录需显式点名；",
+   "evidence": [],
+   "detail": {}
+  },
+  {
+   "id": "calibre#172",
+   "doc": "上层/12-calibre.md",
+   "section": "7. 已知限制",
+   "verdict": "indirect",
+   "r9_status": "NO-OFFLINE-EVIDENCE",
+   "text": "3. `power`/`ground` 未给时沿用 deck 默认（可能触发 ERC 告警，见可行性报告 §2 的 LVS 实测）；",
+   "evidence": [
+    "test/semi/probes/calibre_package_http_probe.py",
+    "test/live/flows/s11_full_flow.py"
+   ],
+   "detail": {}
+  },
+  {
+   "id": "calibre#173",
+   "doc": "上层/12-calibre.md",
+   "section": "7. 已知限制",
+   "verdict": "na",
+   "r9_status": "NA-NO-EVIDENCE-NEEDED",
+   "text": "4. 许可不足、并发争用未做全局串行（§5.5）。",
+   "evidence": [],
+   "detail": {}
+  }
+ ],
+ "change_impact_candidates": [
+  {
+   "id": "总览#159",
+   "verdict": "direct",
+   "doc": "总览/1-四层整体架构与接口.md",
+   "section": "4.3 中层 ↔ 底层：Skill 投送接口",
+   "changes": [
+    "C2 log_level / log_max_bytes（56 skill op）"
+   ],
+   "text": "`skill`、`timeout` 是现代码字段；`token` 是唯一新增**必填**字段；`log_level`/`log_max_bytes` 属于[日志返回设计标准](../底层/6-日志返回设计标准.md)的可选扩展字段。响应保持 `STX/NAK/RS` 帧，**当前唯一 payload 格式为 JSON**（格式、log 字段与 `off` 语义见日志标准，本文件不复制）："
+  },
+  {
+   "id": "总览#179",
+   "verdict": "direct",
+   "doc": "总览/1-四层整体架构与接口.md",
+   "section": "4.5 结果与错误合同（本版冻结）",
+   "changes": [
+    "C4 CommandResult 命名字段"
+   ],
+   "text": "`CommandResult` 增加稳定 `kind` 字段：`command`（真实命令）/ `timeout` / `transport` / `path` / `unknown-effect` / `rejected`（容量拒绝）/ `checksum`（文件摘要不一致）/ `invalid-token`（未知 token）；真实命令返回码即使等于 124/255 也保持 `kind=com"
+  },
+  {
+   "id": "总览#215",
+   "verdict": "direct",
+   "doc": "总览/1-四层整体架构与接口.md",
+   "section": "5.6 路径和位置语义明确",
+   "changes": [
+    "P-091 截图远端暂存口径",
+    "P-105 screenshot view_type 校验"
+   ],
+   "text": "- 各 role 的 `root` 只是该 role 的**默认工作目录约定**（部署文件、截图、日志、导入网表等），**不是沙箱**：文件操作允许访问业务服务器上任意可达路径；同 SSH 账号下不同 user 之间不承诺跨目录隔离，安全边界由 OS 账号权限提供；"
+  },
+  {
+   "id": "总览#229",
+   "verdict": "direct",
+   "doc": "总览/1-四层整体架构与接口.md",
+   "section": "5.8 可靠性和可扩展性",
+   "changes": [
+    "C4 CommandResult 命名字段"
+   ],
+   "text": "- `runtime.connect_timeout`（默认 15s）是**该预算内的子预算**，不额外增加总预算；建连阶段耗到该子预算 → `kind=timeout` / `returncode=124`；非超时的拒绝/断连 → `kind=transport` / `returncode=255`（Skill 侧对应 `Daemon connection failed`）；"
+  },
+  {
+   "id": "总览#230",
+   "verdict": "direct",
+   "doc": "总览/1-四层整体架构与接口.md",
+   "section": "5.8 可靠性和可扩展性",
+   "changes": [
+    "C2 log_level / log_max_bytes（56 skill op）"
+   ],
+   "text": "- 建连重试与失效恢复（≤3 次总尝试、降级直连、常驻 shell 重建）的唯一口径见[并发设计 §4](../中层/2-并发设计.md)，与初次尝试共享同一条 deadline；"
+  },
+  {
+   "id": "并发#034",
+   "verdict": "direct",
+   "doc": "中层/2-并发设计.md",
+   "section": "4. 连接生命周期与建连（唯一口径）",
+   "changes": [
+    "C2 log_level / log_max_bytes（56 skill op）"
+   ],
+   "text": "- 建连失败只在无副作用阶段重试，**最多 3 次总尝试（含初次）**；ControlMaster 故障自动降级直连；重试共享同一条剩余预算；"
+  },
+  {
+   "id": "日志#045",
+   "verdict": "direct",
+   "doc": "底层/6-日志返回设计标准.md",
+   "section": "5. 限长与自动降级",
+   "changes": [
+    "C2 log_level / log_max_bytes（56 skill op）"
+   ],
+   "text": "`log_max_bytes`（默认 64KB）："
+  },
+  {
+   "id": "日志#055",
+   "verdict": "direct",
+   "doc": "底层/6-日志返回设计标准.md",
+   "section": "5. 限长与自动降级",
+   "changes": [
+    "C2 log_level / log_max_bytes（56 skill op）"
+   ],
+   "text": "- 最后一步按**字节截断、只取靠前部分**：例如上限 100 字节、本次增量起于 offset 10、error 增量到 200，则返回 10–110，之后内容本次不补发；"
+  },
+  {
+   "id": "日志#077",
+   "verdict": "direct",
+   "doc": "底层/6-日志返回设计标准.md",
+   "section": "6.3 内部 metadata frame（IL → daemon，冻结）",
+   "changes": [
+    "C1 响应契约（成功默认省略 steps / 失败壳 / CDSlog / 删 metadata / execution_time）"
+   ],
+   "text": "- 帧顺序固定：第一帧 `value/error`，第二帧 `meta`；两帧必须由 IL 合并为**一次 `ipcWriteProcess`** 写入，避免重排；"
+  },
+  {
+   "id": "日志#082",
+   "verdict": "direct",
+   "doc": "底层/6-日志返回设计标准.md",
+   "section": "7. 边界与错误语义",
+   "changes": [
+    "C2 log_level / log_max_bytes（56 skill op）"
+   ],
+   "text": "- `CDS.log` 不存在/不可读/路径变化且读取失败，或第二帧缺失/超时：**本次 log=\"\"，Skill 结果照常返回**，`VirtuosoResult.warnings` 追加固定文本 `CDS.log unavailable: <reason>`（`<reason>` 仅作诊断，不回退为请求失败）；`log_level=off` 刻意不产生第二帧，**不追加该 warning**。"
+  },
+  {
+   "id": "日志#091",
+   "verdict": "direct",
+   "doc": "底层/6-日志返回设计标准.md",
+   "section": "8. 验收标准",
+   "changes": [
+    "C2 log_level / log_max_bytes（56 skill op）"
+   ],
+   "text": "7. 非法 `log_level`/`log_max_bytes` 直接拒绝报错；`CDS.log` 不可读时 `log=\"\"` 且 `warnings` 含固定文本 `CDS.log unavailable: <reason>`；截断后尾部不输出半个 UTF-8 字符。"
+  },
+  {
+   "id": "注册#011",
+   "verdict": "indirect",
+   "doc": "其他/1-多用户与注册.md",
+   "section": "1. 总述与 token（授权）",
+   "changes": [
+    "P-104 maeOpenSetup 读路径 mode=r"
+   ],
+   "text": "- **token 使用范围**：只用于路由与校验（注册表路由、daemon 比对、Skill 请求）；用户可读路径一律用唯一用户名，不用 token。"
+  },
+  {
+   "id": "控制面#043",
+   "verdict": "direct",
+   "doc": "顶层/add-控制面与业务面.md",
+   "section": "3. 控制端口端点",
+   "changes": [
+    "C1 响应契约（成功默认省略 steps / 失败壳 / CDSlog / 删 metadata / execution_time）"
+   ],
+   "text": "- 非法 action/顺序 → 4xx `{\"error\": \"step order violation\", \"current_stage\": …, \"expected\": …}`，**不改变会话状态**；"
+  },
+  {
+   "id": "上层#031",
+   "verdict": "direct",
+   "doc": "上层/1-上层.md",
+   "section": "2.4 步骤痕迹",
+   "changes": [
+    "C1 响应契约（成功默认省略 steps / 失败壳 / CDSlog / 删 metadata / execution_time）"
+   ],
+   "text": "- 每步记 `{\"step\": 名, \"ok\": 布尔, \"detail\": 中层结果}`；默认任一步失败即停止；业务操作可自行决定是否重试某步（条件与痕迹自行约定）；"
+  },
+  {
+   "id": "schematic#018",
+   "verdict": "direct",
+   "doc": "上层/2-schematic.md",
+   "section": "1.1 读操作（不改变业务服务器状态）",
+   "changes": [
+    "P-091 截图远端暂存口径"
+   ],
+   "text": "- `screenshot`：目标默认 `lib/cell/view`，可选 `window_id`；可选 `region=[pos0, pos1]`（user units，截前 `hiZoomIn(window, bBox)` 把区域填满窗口）；`toplevel` / `centralWidget` 暴露；`leave_open` 默认关窗；格式固定 PNG；远端存 daemon role r"
+  },
+  {
+   "id": "symbol#023",
+   "verdict": "direct",
+   "doc": "上层/3-symbol.md",
+   "section": "2.1 读操作",
+   "changes": [
+    "P-105 screenshot view_type 校验"
+   ],
+   "text": "`read` 默认 `view=\"symbol\"`、`view_type=\"schematicSymbol\"`；必须返回通用 shapes，"
+  },
+  {
+   "id": "symbol#026",
+   "verdict": "direct",
+   "doc": "上层/3-symbol.md",
+   "section": "2.1 读操作",
+   "changes": [
+    "P-105 screenshot view_type 校验"
+   ],
+   "text": "- `view_type` 默认 `schematicSymbol`；格式固定 PNG；"
+  },
+  {
+   "id": "layout#139",
+   "verdict": "direct",
+   "doc": "上层/4-layout.md",
+   "section": "1.4 screenshot",
+   "changes": [
+    "P-091 截图远端暂存口径"
+   ],
+   "text": "- **禁止不带 bbox 的 `hiZoomIn`/`hiZoomOut`**（会进交互橡皮筋并卡死 SKILL 通道）；"
+  },
+  {
+   "id": "spectre#214",
+   "verdict": "direct",
+   "doc": "上层/7-spectre.md",
+   "section": "9. 内部中间节点（不对外）",
+   "changes": [
+    "C1 响应契约（成功默认省略 steps / 失败壳 / CDSlog / 删 metadata / execution_time）"
+   ],
+   "text": "- swept 数据支持 delta 压缩：后续 step 缺省信号沿用前值；首个 step 未出现信号**内部**用缺失哨兵（实现取 `None`；**不得静默填 0**），"
+  },
+  {
+   "id": "verilog#101",
+   "verdict": "partial",
+   "doc": "上层/8-verilog.md",
+   "section": "4. 真机事实（IC6.1.8，2026-09-21 实测）",
+   "changes": [
+    "C2 log_level / log_max_bytes（56 skill op）"
+   ],
+   "text": "3. `ihdl` **返回码不可信**：语法错误、参考库缺失、降级导入都是 rc=0；成功看 `357/372/345`，"
+  },
+  {
+   "id": "verilog#108",
+   "verdict": "direct",
+   "doc": "上层/8-verilog.md",
+   "section": "4. 真机事实（IC6.1.8，2026-09-21 实测）",
+   "changes": [
+    "C2 log_level / log_max_bytes（56 skill op）"
+   ],
+   "text": "否则 `VERILOGIN-127` 拒绝并降级 functional；"
+  },
+  {
+   "id": "calibre#005",
+   "verdict": "indirect",
+   "doc": "上层/12-calibre.md",
+   "section": "上层业务包：calibre",
+   "changes": [
+    "P-102/103 PEX 本版不提供"
+   ],
+   "text": "> **`calibre.pex` 未按官方三阶段验收，禁止用于交付/签核**；DRC/LVS/`export_cdl`/set 直驱已真机验证。"
+  },
+  {
+   "id": "calibre#011",
+   "verdict": "direct",
+   "doc": "上层/12-calibre.md",
+   "section": "1. 总述",
+   "changes": [
+    "P-098 blocking 超时 status=timeout"
+   ],
+   "text": "2. **默认非阻塞 + 三件套**：run 类操作默认立即返回 `job_id`（Calibre 动辄几十分钟），用 `calibre.status` 看进度、`calibre.read_results` 拿结构化结论；需要阻塞时用 `blocking=true`（包内轮询，形态同 maestro）；"
+  },
+  {
+   "id": "calibre#060",
+   "verdict": "direct",
+   "doc": "上层/12-calibre.md",
+   "section": "3.4 长任务与状态判据",
+   "changes": [
+    "P-098 blocking 超时 status=timeout"
+   ],
+   "text": "run 类操作默认 `blocking=false`：写 launcher、后台启动、立刻返回 `job_id`。"
+  },
+  {
+   "id": "calibre#068",
+   "verdict": "direct",
+   "doc": "上层/12-calibre.md",
+   "section": "3.4 长任务与状态判据",
+   "changes": [
+    "P-098 blocking 超时 status=timeout"
+   ],
+   "text": "`blocking=true` 时包内循环：`deadline = now + timeout`，按 `poll_interval`（默认 5 s）调 `status`，"
+  },
+  {
+   "id": "calibre#069",
+   "verdict": "partial",
+   "doc": "上层/12-calibre.md",
+   "section": "3.4 长任务与状态判据",
+   "changes": [
+    "P-098 blocking 超时 status=timeout"
+   ],
+   "text": "终态或超时即返回；超时返回 `status=timeout` 且**后台作业继续跑**。"
+  },
+  {
+   "id": "calibre#127",
+   "verdict": "direct",
+   "doc": "上层/12-calibre.md",
+   "section": "4.4 `calibre.pex`",
+   "changes": [
+    "P-102/103 PEX 本版不提供"
+   ],
+   "text": "包会把它复制进 PEX 的 run dir）；`fmt` 可选 `none`/`spice`/`simple`（默认 `none`，即只到 `-pdb`）。"
+  },
+  {
+   "id": "calibre#128",
+   "verdict": "direct",
+   "doc": "上层/12-calibre.md",
+   "section": "4.4 `calibre.pex`",
+   "changes": [
+    "P-102/103 PEX 本版不提供"
+   ],
+   "text": "内部固定顺序：`-xrc -phdb` → `-xrc -pdb -rc <deck>` →（可选）`-xrc -fmt -<fmt>`，"
+  },
+  {
+   "id": "calibre#129",
+   "verdict": "direct",
+   "doc": "上层/12-calibre.md",
+   "section": "4.4 `calibre.pex`",
+   "changes": [
+    "P-102/103 PEX 本版不提供"
+   ],
+   "text": "**每个阶段校验产物存在**才进入下一阶段（phdb 必须是 xRC 类型，见可行性报告 §2）。"
+  },
+  {
+   "id": "calibre#172",
+   "verdict": "indirect",
+   "doc": "上层/12-calibre.md",
+   "section": "7. 已知限制",
+   "changes": [
+    "P-092 删 calibre power/ground"
+   ],
+   "text": "3. `power`/`ground` 未给时沿用 deck 默认（可能触发 ERC 告警，见可行性报告 §2 的 LVS 实测）；"
+  }
+ ]
+}

@@ -4,7 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>Virtuoso Bridge — 用户注册</title>
+<meta http-equiv="Cache-Control" content="no-store">
+<meta http-equiv="Pragma" content="no-cache">
+<title>Virtuoso Bridge — 注册与控制台</title>
 <style>
 :root {
   color-scheme:light;
@@ -48,7 +50,7 @@ button,input,select {
   font:inherit
 }
 .shell {
-  width:min(1480px,calc(100% - 40px));
+  width:min(1560px,calc(100% - 40px));
   margin:auto;
   padding:28px 0 56px
 }
@@ -106,10 +108,651 @@ button,input,select {
   background:var(--primary);
   box-shadow:0 0 0 4px var(--primary-bg)
 }
+.page-tabs {
+  display:flex;
+  gap:6px;
+  margin-bottom:18px;
+  padding:6px;
+  border:1px solid rgba(255,255,255,.94);
+  border-radius:14px;
+  background:rgba(255,255,255,.72);
+  box-shadow:0 8px 24px rgba(27,35,61,.05);
+  backdrop-filter:blur(14px)
+}
+.page-tab {
+  min-width:0;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex:1;
+  padding:10px 14px;
+  border:1px solid transparent;
+  border-radius:10px;
+  cursor:pointer;
+  color:var(--muted);
+  background:transparent;
+  text-align:left;
+  transition:.16s
+}
+.page-tab:hover {
+  color:var(--ink);
+  background:#f7f7fc
+}
+.page-tab.active {
+  border-color:#d8d3ff;
+  color:var(--primary2);
+  background:var(--primary-bg);
+  box-shadow:inset 0 0 0 1px rgba(91,76,230,.05)
+}
+.page-tab-icon {
+  width:32px;
+  height:32px;
+  display:grid;
+  place-items:center;
+  flex:0 0 auto;
+  border-radius:9px;
+  color:#5c6475;
+  background:#eef0f5;
+  font-size:12px;
+  font-weight:900
+}
+.page-tab.active .page-tab-icon {
+  color:#fff;
+  background:linear-gradient(145deg,#7061f2,#4b3acb)
+}
+.page-tab-copy {
+  min-width:0
+}
+.page-tab-copy strong {
+  display:block;
+  font-size:12px
+}
+.page-tab-copy small {
+  display:block;
+  margin-top:1px;
+  overflow:hidden;
+  color:var(--soft);
+  font-size:9px;
+  font-weight:500;
+  text-overflow:ellipsis;
+  white-space:nowrap
+}
+.management-page {
+  min-width:0
+}
+.management-head {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:20px;
+  margin-bottom:16px;
+  padding:20px 22px
+}
+.management-head h1 {
+  margin:0;
+  font-size:22px;
+  letter-spacing:-.03em
+}
+.management-head p:not(.eyebrow) {
+  max-width:720px;
+  margin:5px 0 0;
+  color:var(--muted);
+  font-size:11px
+}
+.scope-note {
+  max-width:360px;
+  padding:9px 11px;
+  border:1px solid #dce2ee;
+  border-radius:10px;
+  color:#56647a;
+  background:#f8fafd;
+  font-size:10px;
+  line-height:1.5
+}
+.management-grid {
+  display:grid;
+  grid-template-columns:minmax(300px,.72fr) minmax(440px,1.42fr) 260px;
+  gap:16px;
+  align-items:start
+}
+.management-panel {
+  min-width:0;
+  overflow:hidden
+}
+.management-panel.sticky {
+  position:sticky;
+  top:18px
+}
+.panel-head {
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:14px;
+  padding:17px 18px 14px;
+  border-bottom:1px solid var(--line)
+}
+.panel-head h2 {
+  margin:0;
+  font-size:14px;
+  letter-spacing:-.015em
+}
+.panel-head p:not(.eyebrow) {
+  margin:4px 0 0;
+  color:var(--muted);
+  font-size:10px
+}
+.panel-head .eyebrow {
+  font-size:9px
+}
+.panel-body {
+  padding:16px 18px 18px
+}
+.panel-body.flush {
+  padding:0
+}
+.panel-actions {
+  display:grid;
+  gap:9px
+}
+.panel-actions .btn {
+  width:100%
+}
+.field.compact {
+  margin-bottom:12px
+}
+.field.compact input,.field.compact select,.field.compact textarea {
+  height:38px;
+  font-size:11px
+}
+.field textarea {
+  width:100%;
+  min-height:80px;
+  resize:vertical;
+  padding:10px 12px;
+  border:1px solid var(--line2);
+  border-radius:10px;
+  outline:0;
+  color:var(--ink);
+  background:#fff;
+  font:11px/1.5 "Cascadia Code",Consolas,monospace
+}
+.field textarea:focus {
+  border-color:var(--primary);
+  box-shadow:0 0 0 4px rgba(91,76,230,.12)
+}
+.search-row {
+  display:flex;
+  gap:8px;
+  margin-bottom:12px
+}
+.search-row input {
+  flex:1
+}
+.search-row .btn {
+  flex:0 0 auto;
+  min-height:38px;
+  padding:7px 11px
+}
+.user-list {
+  display:grid;
+  gap:7px;
+  max-height:calc(100vh - 310px);
+  overflow:auto;
+  padding:12px;
+  overscroll-behavior:contain
+}
+.user-row {
+  width:100%;
+  display:grid;
+  grid-template-columns:34px minmax(0,1fr) auto;
+  align-items:center;
+  gap:10px;
+  padding:10px;
+  border:1px solid var(--line);
+  border-radius:11px;
+  cursor:pointer;
+  color:inherit;
+  background:#fff;
+  text-align:left;
+  transition:.14s
+}
+.user-row:hover {
+  border-color:#b7b0f1;
+  background:#faf9ff
+}
+.user-row.active {
+  border-color:var(--primary);
+  background:var(--primary-bg);
+  box-shadow:inset 0 0 0 1px rgba(91,76,230,.12)
+}
+.user-avatar {
+  width:34px;
+  height:34px;
+  display:grid;
+  place-items:center;
+  border-radius:10px;
+  color:#4f43ba;
+  background:#e9e6ff;
+  font-size:11px;
+  font-weight:900
+}
+.user-row strong {
+  display:block;
+  overflow:hidden;
+  font-size:11px;
+  text-overflow:ellipsis;
+  white-space:nowrap
+}
+.user-row small {
+  display:block;
+  margin-top:2px;
+  overflow:hidden;
+  color:var(--muted);
+  font-size:9px;
+  text-overflow:ellipsis;
+  white-space:nowrap
+}
+.user-row .row-meta {
+  color:var(--soft);
+  font-size:9px;
+  white-space:nowrap
+}
+.empty-state {
+  display:grid;
+  place-items:center;
+  min-height:250px;
+  padding:26px;
+  color:var(--muted);
+  text-align:center
+}
+.empty-state-icon {
+  width:44px;
+  height:44px;
+  display:grid;
+  place-items:center;
+  margin:0 auto 11px;
+  border-radius:14px;
+  color:var(--primary);
+  background:var(--primary-bg);
+  font-size:17px;
+  font-weight:900
+}
+.empty-state strong {
+  display:block;
+  color:#475467;
+  font-size:12px
+}
+.empty-state p {
+  max-width:360px;
+  margin:5px 0 0;
+  font-size:10px;
+  line-height:1.55
+}
+.empty-state.error .empty-state-icon {
+  color:var(--danger);
+  background:var(--danger-bg)
+}
+.empty-state.error strong {
+  color:var(--danger)
+}
+.error-meta {
+  display:flex;
+  justify-content:center;
+  gap:6px;
+  margin-top:10px
+}
+.raw-error {
+  max-width:560px;
+  margin:12px auto 0;
+  text-align:left
+}
+.raw-error summary {
+  cursor:pointer;
+  color:var(--muted);
+  font-size:9px
+}
+.raw-error pre {
+  max-height:180px;
+  overflow:auto;
+  margin:8px 0 0;
+  padding:10px;
+  border:1px solid #efc0c8;
+  border-radius:9px;
+  color:#7f2b3a;
+  background:#fff7f8;
+  white-space:pre-wrap;
+  word-break:break-word;
+  font:9px/1.55 "Cascadia Code",Consolas,monospace
+}
+.entity-head {
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:16px;
+  padding:20px 20px 16px;
+  border-bottom:1px solid var(--line)
+}
+.entity-identity {
+  display:flex;
+  align-items:center;
+  gap:12px
+}
+.entity-identity h2 {
+  margin:0;
+  font-size:20px;
+  letter-spacing:-.03em
+}
+.entity-identity p {
+  margin:4px 0 0;
+  color:var(--muted);
+  font-size:10px
+}
+.badge-row {
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  justify-content:flex-end
+}
+.badge {
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  padding:4px 8px;
+  border-radius:99px;
+  color:#526077;
+  background:#f0f2f6;
+  font-size:9px;
+  font-weight:800
+}
+.badge.ok {
+  color:var(--success);
+  background:var(--success-bg)
+}
+.badge.warn {
+  color:var(--warn);
+  background:var(--warn-bg)
+}
+.badge.danger {
+  color:var(--danger);
+  background:var(--danger-bg)
+}
+.badge.info {
+  color:var(--info);
+  background:var(--info-bg)
+}
+.detail-body {
+  display:grid;
+  gap:13px;
+  padding:16px 20px 20px
+}
+.detail-section {
+  overflow:hidden;
+  border:1px solid var(--line);
+  border-radius:12px
+}
+.detail-section>summary,.detail-section > .detail-section-head {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:11px 12px;
+  border-bottom:1px solid var(--line);
+  color:#475467;
+  background:var(--subtle);
+  font-size:10px;
+  font-weight:850
+}
+.detail-section:not([open])>summary {
+  border-bottom:0
+}
+.detail-section-head span,.detail-section>summary span {
+  color:var(--soft);
+  font-size:9px;
+  font-weight:600
+}
+.detail-grid {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:0;
+  margin:0
+}
+.kv {
+  min-width:0;
+  padding:10px 12px;
+  border-bottom:1px solid #eef0f4
+}
+.kv:nth-last-child(-n+2) {
+  border-bottom:0
+}
+.kv dt {
+  margin:0 0 3px;
+  color:var(--soft);
+  font-size:8px;
+  font-weight:850;
+  letter-spacing:.05em;
+  text-transform:uppercase
+}
+.kv dd {
+  min-width:0;
+  margin:0;
+  overflow-wrap:anywhere;
+  color:#344054;
+  font-size:10px
+}
+.kv dd.mono {
+  font-family:"Cascadia Code",Consolas,monospace;
+  font-size:9px
+}
+.channel-grid {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:9px;
+  padding:12px
+}
+.channel-card {
+  min-width:0;
+  padding:11px;
+  border:1px solid var(--line);
+  border-radius:11px;
+  background:#fff
+}
+.channel-card-head {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  margin-bottom:8px
+}
+.channel-card-head strong {
+  font-size:11px
+}
+.channel-card dl {
+  display:grid;
+  gap:5px;
+  margin:0
+}
+.channel-fact {
+  display:grid;
+  grid-template-columns:67px minmax(0,1fr);
+  gap:7px;
+  font-size:9px
+}
+.channel-fact dt {
+  color:var(--soft)
+}
+.channel-fact dd {
+  min-width:0;
+  margin:0;
+  overflow-wrap:anywhere;
+  color:#475467;
+  font-family:"Cascadia Code",Consolas,monospace
+}
+.editor-body {
+  display:grid;
+  gap:14px;
+  padding:16px 20px 20px
+}
+.editor-section {
+  overflow:hidden;
+  border:1px solid var(--line);
+  border-radius:12px
+}
+.editor-section-head {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:11px 12px;
+  border-bottom:1px solid var(--line);
+  color:#475467;
+  background:var(--subtle);
+  font-size:10px;
+  font-weight:850
+}
+.editor-section-body {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px;
+  padding:12px
+}
+.editor-section-body .span-2 {
+  grid-column:1/-1
+}
+.role-editor {
+  border:1px solid var(--line);
+  border-radius:10px;
+  background:#fff
+}
+.role-editor>summary {
+  list-style:none;
+  cursor:pointer;
+  padding:10px 11px;
+  color:#475467;
+  font-size:10px;
+  font-weight:850
+}
+.role-editor>summary::-webkit-details-marker {
+  display:none
+}
+.role-editor>summary:after {
+  content:"+";
+  float:right;
+  color:var(--primary)
+}
+.role-editor[open]>summary:after {
+  content:"−"
+}
+.role-editor-body {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+  padding:0 11px 12px
+}
+.diff-box {
+  margin-top:13px;
+  padding:11px;
+  border:1px solid #dce2ee;
+  border-radius:11px;
+  background:#f8fafd
+}
+.diff-box h3 {
+  margin:0 0 8px;
+  color:#475467;
+  font-size:10px
+}
+.diff-list {
+  display:grid;
+  gap:7px;
+  max-height:280px;
+  overflow:auto
+}
+.diff-row {
+  padding:8px 9px;
+  border:1px solid var(--line);
+  border-radius:8px;
+  background:#fff;
+  font-size:9px
+}
+.diff-row strong {
+  display:block;
+  margin-bottom:5px;
+  color:#475467;
+  font-family:"Cascadia Code",Consolas,monospace
+}
+.diff-values {
+  display:grid;
+  gap:3px
+}
+.diff-values span {
+  display:block;
+  overflow-wrap:anywhere;
+  color:var(--muted)
+}
+.diff-values b {
+  color:var(--danger);
+  font-weight:700
+}
+.diff-values .new {
+  color:var(--success)
+}
+.danger-zone {
+  margin-top:14px;
+  padding:11px;
+  border:1px solid #efc0c8;
+  border-radius:11px;
+  background:#fff7f8
+}
+.danger-zone strong {
+  display:block;
+  color:var(--danger);
+  font-size:10px
+}
+.danger-zone p {
+  margin:5px 0 9px;
+  color:#8b5360;
+  font-size:9px;
+  line-height:1.5
+}
+.btn-danger {
+  border-color:#e7a6b2;
+  color:#9f263b;
+  background:#fff
+}
+.btn-danger:hover:not(:disabled) {
+  border-color:var(--danger);
+  background:var(--danger-bg)
+}
+.session-card {
+  margin-top:14px;
+  padding:11px;
+  border:1px solid #d9d5ff;
+  border-radius:11px;
+  background:#f8f7ff
+}
+.session-card h3 {
+  margin:0;
+  color:var(--primary2);
+  font-size:10px
+}
+.session-card p {
+  margin:5px 0 9px;
+  color:var(--muted);
+  font-size:9px;
+  line-height:1.5
+}
+.session-card .btn {
+  width:100%
+}
+.profile-token-note {
+  margin:-4px 0 12px;
+  color:var(--soft);
+  font-size:9px;
+  line-height:1.45
+}
 .workspace {
   display:grid;
-  grid-template-columns:minmax(360px,.9fr) minmax(430px,1.1fr) 280px;
-  gap:22px;
+  grid-template-columns:minmax(400px,.9fr) minmax(440px,1.1fr) 250px;
+  gap:18px;
   align-items:start
 }
 .progress-panel {
@@ -689,6 +1332,88 @@ button,input,select {
   gap:20px;
   padding:4px 17px 19px
 }
+.table-scroll {
+  min-width:0;
+  max-width:100%;
+  overflow-x:auto;
+  padding-bottom:4px;
+  overscroll-behavior-x:contain
+}
+.role-table {
+  width:max-content;
+  min-width:100%;
+  border-collapse:separate;
+  border-spacing:0;
+  font-size:11px
+}
+.role-table th,.role-table td {
+  padding:6px 7px;
+  border-bottom:1px solid var(--line);
+  white-space:nowrap;
+  vertical-align:middle
+}
+.role-table thead th {
+  position:sticky;
+  top:0;
+  z-index:2;
+  color:#526077;
+  background:#f4f6fa;
+  font-size:9px;
+  font-weight:850;
+  letter-spacing:.03em;
+  text-transform:uppercase
+}
+.role-table thead th:first-child {
+  left:0;
+  z-index:4
+}
+.role-table tbody th[scope="row"] {
+  position:sticky;
+  left:0;
+  z-index:1;
+  min-width:72px;
+  color:#344054;
+  background:#fff;
+  font-size:11px;
+  text-transform:none
+}
+.role-table th:nth-child(2),.role-table td:nth-child(2) {
+  min-width:86px
+}
+.role-table th:nth-child(3),.role-table td:nth-child(3),
+.role-table th:nth-child(4),.role-table td:nth-child(4),
+.role-table th:nth-child(5),.role-table td:nth-child(5),
+.role-table th:nth-child(6),.role-table td:nth-child(6),
+.role-table th:nth-child(7),.role-table td:nth-child(7),
+.role-table th:nth-child(8),.role-table td:nth-child(8),
+.role-table th:nth-child(9),.role-table td:nth-child(9) {
+  min-width:128px
+}
+.role-table th:nth-child(10),.role-table td:nth-child(10) {
+  min-width:190px
+}
+.role-table th:nth-child(11),.role-table td:nth-child(11) {
+  min-width:138px
+}
+.role-table th:nth-child(12),.role-table td:nth-child(12) {
+  min-width:96px
+}
+.role-table input,.role-table select {
+  width:100%;
+  height:34px;
+  min-width:0;
+  padding:0 8px;
+  border:1px solid var(--line2);
+  border-radius:8px;
+  outline:0;
+  color:var(--ink);
+  background:#fff;
+  font-size:11px
+}
+.role-table input:focus,.role-table select:focus {
+  border-color:var(--primary);
+  box-shadow:0 0 0 3px rgba(91,76,230,.10)
+}
 .advanced-group {
   padding-top:16px;
   border-top:1px solid var(--line)
@@ -1160,8 +1885,63 @@ button,input,select {
 }
 .check-grid {
   display:grid;
-  grid-template-columns:repeat(3,minmax(0,1fr));
+  grid-template-columns:repeat(2,minmax(0,1fr));
   gap:8px
+}
+.probe-list {
+  display:grid;
+  gap:8px
+}
+.probe-item {
+  display:grid;
+  grid-template-columns:88px 70px 60px 58px minmax(0,1fr);
+  align-items:center;
+  gap:9px;
+  padding:10px 11px;
+  border:1px solid var(--line);
+  border-radius:10px;
+  background:var(--subtle);
+  font-size:10px
+}
+.probe-item strong {
+  color:#344054;
+  font-size:11px
+}
+.probe-item .probe-role {
+  color:var(--muted);
+  font-family:"Cascadia Code",Consolas,monospace;
+  font-size:9px
+}
+.probe-item .probe-message {
+  min-width:0;
+  overflow-wrap:anywhere;
+  color:#526077;
+  line-height:1.4
+}
+.probe-status {
+  display:inline-flex;
+  width:max-content;
+  align-items:center;
+  padding:3px 7px;
+  border-radius:99px;
+  font-size:9px;
+  font-weight:850
+}
+.probe-status.ok {
+  color:var(--success);
+  background:var(--success-bg)
+}
+.probe-status.warning {
+  color:var(--warn);
+  background:var(--warn-bg)
+}
+.probe-status.error {
+  color:var(--danger);
+  background:var(--danger-bg)
+}
+.probe-status.not_run {
+  color:#586780;
+  background:#eef1f5
 }
 .check-card {
   padding:10px;
@@ -1267,9 +2047,31 @@ button,input,select {
     transform:rotate(360deg)
   }
 }
-@media(max-width:1050px) and (min-width:621px) {
+@media(max-width:1160px) and (min-width:621px) {
   .shell {
     width:calc(100% - 24px)
+  }
+  .page-tab-copy small {
+    display:none
+  }
+  .management-grid {
+    grid-template-columns:minmax(280px,.72fr) minmax(0,1.28fr);
+    gap:14px
+  }
+  .management-grid .action-column {
+    grid-column:1/-1;
+    position:static
+  }
+  .management-grid .action-column .panel-actions {
+    grid-template-columns:repeat(3,minmax(0,1fr))
+  }
+  .management-grid .action-column .panel-body {
+    display:grid;
+    grid-template-columns:minmax(0,1.2fr) minmax(260px,.8fr);
+    gap:14px
+  }
+  .management-grid .action-column .diff-box {
+    margin-top:0
   }
   .workspace {
     grid-template-columns:minmax(0,1fr) minmax(0,1.12fr);
@@ -1355,6 +2157,46 @@ button,input,select {
   .shell {
     width:calc(100% - 24px);
     padding-top:16px
+  }
+  .page-tabs {
+    display:grid;
+    grid-template-columns:1fr
+  }
+  .page-tab-copy small {
+    display:block
+  }
+  .management-head {
+    align-items:flex-start;
+    flex-direction:column;
+    padding:18px
+  }
+  .scope-note {
+    max-width:none
+  }
+  .management-grid {
+    grid-template-columns:1fr
+  }
+  .management-grid .action-column {
+    grid-column:1;
+    position:static
+  }
+  .management-grid .action-column .panel-actions {
+    grid-template-columns:1fr
+  }
+  .management-grid .action-column .panel-body {
+    display:block
+  }
+  .user-list {
+    max-height:320px
+  }
+  .detail-grid,.channel-grid,.editor-section-body,.role-editor-body {
+    grid-template-columns:1fr
+  }
+  .kv:nth-last-child(-n+2) {
+    border-bottom:1px solid #eef0f4
+  }
+  .kv:last-child {
+    border-bottom:0
   }
   .workspace {
     grid-template-columns:1fr
@@ -1479,10 +2321,15 @@ button,input,select {
 <body>
 <div class="shell">
   <header class="topbar">
-    <div class="brand"><div class="brand-mark" aria-hidden="true">VB</div><div><strong>Virtuoso Bridge</strong><small>Registration Console · 用户接入向导</small></div></div>
+    <div class="brand"><div class="brand-mark" aria-hidden="true">VB</div><div><strong>Virtuoso Bridge</strong><small>Control Console · 注册、个人与管理员工作区</small></div></div>
     <div class="persist-badge"><i aria-hidden="true"></i>仅第 6 步写入 registry.json</div>
   </header>
-  <main class="workspace">
+  <nav class="page-tabs" aria-label="工作区切换">
+    <button class="page-tab active" type="button" data-page="register" aria-selected="true"><span class="page-tab-icon" aria-hidden="true">01</span><span class="page-tab-copy"><strong>新用户注册</strong><small>六步申请、探测、部署与写入</small></span></button>
+    <button class="page-tab" type="button" data-page="personal" aria-selected="false"><span class="page-tab-icon" aria-hidden="true">02</span><span class="page-tab-copy"><strong>个人管理</strong><small>查询与修改自己的注册表条目</small></span></button>
+    <button class="page-tab" type="button" data-page="admin" aria-selected="false"><span class="page-tab-icon" aria-hidden="true">03</span><span class="page-tab-copy"><strong>管理员管理</strong><small>全局参数与业务进程系统管理</small></span></button>
+  </nav>
+  <main id="page-register" class="workspace page-view">
     <div class="content">
       <section id="formCard" class="card">
         <div class="form-head"><div><p class="eyebrow">New Registration</p><h1>配置用户接入信息</h1><p>先填写必要参数。后续每一步都会单独确认，页面不会跳过检查或提前写入注册表。</p></div><span class="step-chip">第 1 步 · 申请</span></div>
@@ -1666,6 +2513,103 @@ button,input,select {
       <div class="safety-note"><b aria-hidden="true">✓</b><span>安全约束：第 1–5 步失败时不会写入注册表，可放心排查后重新申请。</span></div>
     </aside>
   </main>
+
+  <main id="page-personal" class="management-page page-view" hidden>
+    <header class="card management-head">
+      <div><p class="eyebrow">Personal Registry</p><h1>个人配置管理</h1><p>查询自己的注册条目，修改个人连接、五条通道与个人策略，并在保存前查看逐字段差异。查询和修改放在同一详情面板中。</p></div>
+      <div class="scope-note"><strong>身份边界：</strong>这里只处理一个 user 自己的 registry 条目，不展示其他用户，也不处理全局业务进程和系统配置。</div>
+    </header>
+    <div class="management-grid">
+      <section class="card management-panel">
+        <div class="panel-head"><div><p class="eyebrow">My Entry</p><h2>查询我的条目</h2><p>先验证身份，再读取当前注册表配置。</p></div></div>
+        <div class="panel-body">
+          <div class="field compact"><label for="personalUserInput">用户名</label><input id="personalUserInput" maxlength="64" placeholder="例如 alice" autocomplete="username" spellcheck="false"></div>
+          <div class="field compact"><label for="personalTokenInput">个人 Token <span class="required" aria-hidden="true">*</span></label><input id="personalTokenInput" type="password" maxlength="64" autocomplete="off" spellcheck="false" placeholder="本人的注册表 token"><p class="field-help">作为 <code>Authorization: Bearer</code>，后端据此确认“只能读写自己”。</p></div>
+          <div class="field compact"><label for="personalEnhancedInput">增强凭据 <span class="optional">保存/删除必填</span></label><input id="personalEnhancedInput" type="password" maxlength="64" autocomplete="off" spellcheck="false" placeholder="管理员 token 或任一已登记持有者 token"><p class="field-help">修改或删除个人注册表时放入请求体 <code>enhanced_token</code>。页面不会把它改作 Authorization，也不会自动回退到管理员端点。</p></div>
+          <button id="personalConnectBtn" class="btn btn-primary" type="button" style="width:100%">查询我的注册表配置</button>
+          <div id="personalAuthState" class="notice" role="status">尚未查询。请输入用户名和个人 Token；保存或删除时再填增强凭据。</div>
+          <div class="scope-note" style="margin-top:14px"><strong>页面职责矩阵：</strong><br>个人 Token：确认本人身份并限定只能访问自己的条目。<br>增强凭据：随修改/删除请求提交 <code>enhanced_token</code>，用于受保护变更。<br>仅管理员：全局配置文件、业务进程 reload/restart。<br><b>当前后端缺陷：</b><code>/api/user/*</code> 仍强制管理员 Authorization，<code>enhanced_token</code> 也尚未接入 update；个人自助请求会被 401 拒绝。</div>
+        </div>
+      </section>
+      <section class="card management-panel">
+        <div id="personalEmpty" class="empty-state"><div><div class="empty-state-icon" aria-hidden="true">02</div><strong>查询一位用户</strong><p>读取成功后，这里显示身份、默认配置、五条通道、策略与凭据摘要；点击“编辑个人配置”后原位切换为表单。</p></div></div>
+        <div id="personalDetail" hidden></div>
+        <div id="personalEditor" class="editor-body" hidden></div>
+      </section>
+      <aside class="card management-panel action-column sticky">
+        <div class="panel-head"><div><p class="eyebrow">My Changes</p><h2>查询与修改</h2><p>查看详情和修改操作共用同一选中条目。</p></div></div>
+        <div class="panel-body">
+          <div class="panel-actions">
+            <button id="personalRefreshBtn" class="btn btn-secondary" type="button" disabled>重新读取条目</button>
+            <button id="personalEditBtn" class="btn btn-primary" type="button" disabled>编辑个人配置</button>
+            <button id="personalCancelBtn" class="btn btn-secondary" type="button" hidden>取消编辑</button>
+            <button id="personalSaveBtn" class="btn btn-primary" type="button" hidden disabled>保存更改</button>
+          </div>
+          <div id="personalDiffBox" class="diff-box" hidden><h3>待保存变更</h3><div id="personalDiffList" class="diff-list"></div></div>
+          <div id="personalDangerZone" class="danger-zone" hidden>
+            <strong>删除我的注册条目</strong>
+            <p>删除后本机解绑，但远端 daemon 可能仍接受旧 token，直到执行 <code>RBStop()</code> 并清理部署。该操作只在后端授权通过时生效。</p>
+            <button id="personalDeleteBtn" class="btn btn-danger" type="button">删除我的条目</button>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <main id="page-admin" class="management-page page-view" hidden>
+    <header class="card management-head">
+      <div><p class="eyebrow">System Administration</p><h1>系统管理</h1><p>管理员主要负责全局业务参数和业务进程生命周期，不在这里逐项维护个人连接参数。个人配置回到“个人管理”页修改。</p></div>
+      <div class="scope-note"><strong>高权限工作区：</strong>管理 <code>config.json</code> 的业务线程池上限，以及业务进程的 status / reload / restart。管理员凭据只保存在当前浏览器会话。</div>
+    </header>
+    <div class="management-grid">
+      <section class="card management-panel">
+        <div class="panel-head"><div><p class="eyebrow">Admin Session</p><h2>管理员凭据</h2><p>用于系统配置和进程管理接口。</p></div></div>
+        <div class="panel-body">
+          <div class="field compact"><label for="adminTokenInput">管理员凭据</label><input id="adminTokenInput" type="password" autocomplete="off" spellcheck="false" placeholder="Authorization: Bearer …"></div>
+          <div class="search-row"><button id="adminConnectBtn" class="btn btn-primary" type="button">连接</button><button id="adminForgetBtn" class="btn btn-secondary" type="button">清除</button></div>
+          <div id="adminAuthState" class="notice" role="status">尚未连接。页面只把凭据放在当前浏览器会话。</div>
+          <div class="scope-note" style="margin-top:14px"><strong>职责分离：</strong>个人参数走个人管理；系统管理只负责全局配置、业务进程和运行状态。管理员不再把“逐用户改连接参数”当作日常操作入口。</div>
+        </div>
+      </section>
+      <section class="card management-panel">
+        <div class="panel-head"><div><p class="eyebrow">System State</p><h2>全局配置与进程</h2><p>从控制面读取实时状态；保存和 reload/restart 都显示原始返回。</p></div><button id="adminRefreshSystemBtn" class="btn btn-secondary" type="button" disabled>刷新状态</button></div>
+        <div class="panel-body">
+          <section class="editor-section">
+            <div class="editor-section-head">业务全局配置 <span>config.json</span></div>
+            <div class="editor-section-body">
+              <div class="field compact"><label for="adminBusinessPoolSize">业务线程池上限 <span class="optional">business_thread_pool_size</span></label><input id="adminBusinessPoolSize" type="number" min="1" inputmode="numeric" placeholder="等待读取"></div>
+              <div class="field compact"><label>配置版本</label><input id="adminConfigSummary" readonly placeholder="等待读取"></div>
+            </div>
+          </section>
+          <section class="editor-section" style="margin-top:14px">
+            <div class="editor-section-head">业务进程状态 <span id="adminProcessBadge">未读取</span></div>
+            <div class="editor-section-body">
+              <div class="field compact"><label>进程状态</label><input id="adminProcessState" readonly placeholder="等待读取"></div>
+              <div class="field compact"><label>PID / 端口</label><input id="adminProcessPid" readonly placeholder="等待读取"></div>
+              <div class="field compact span-2"><label>工作目录</label><input id="adminProcessWorkdir" readonly placeholder="等待读取"></div>
+              <div class="field compact span-2"><label>启动参数摘要</label><textarea id="adminProcessArgs" readonly placeholder="等待读取"></textarea></div>
+            </div>
+          </section>
+          <section class="editor-section" style="margin-top:14px">
+            <div class="editor-section-head">注册表概览 <span>只读</span></div>
+            <div id="adminRegistryOverview" class="empty-state" style="min-height:150px"><div><strong>尚未读取</strong><p>连接管理员凭据后显示用户数量和用户名，不在此编辑个人参数。</p></div></div>
+          </section>
+        </div>
+      </section>
+      <aside class="card management-panel action-column sticky">
+        <div class="panel-head"><div><p class="eyebrow">System Actions</p><h2>系统操作</h2><p>高危操作会二次确认。</p></div></div>
+        <div class="panel-body">
+          <div class="panel-actions">
+            <button id="adminSaveConfigBtn" class="btn btn-primary" type="button" disabled>保存全局配置</button>
+            <button id="adminReloadBtn" class="btn btn-secondary" type="button" disabled>Reload 业务进程</button>
+            <button id="adminRestartBtn" class="btn btn-danger" type="button" disabled>Restart 业务进程</button>
+          </div>
+          <div class="scope-note" style="margin-top:14px">Reload 重新导入 <code>registry.json</code> 和 <code>config.json</code>，不影响在途请求；Restart 会排空在途请求后重启业务进程，期间新请求返回 503。</div>
+          <div id="adminSystemResult" class="diff-box" hidden><h3>最近一次系统操作</h3><pre id="adminSystemResultText" style="margin:0;white-space:pre-wrap;font:9px/1.5 'Cascadia Code',Consolas,monospace"></pre></div>
+        </div>
+      </aside>
+    </div>
+  </main>
 </div>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 <script>
@@ -1693,10 +2637,49 @@ const NUMERIC_FIELDS = ['daemon_port', 'local_port', 'channel_budget', 'connect_
 ];
 const ACTIVE_USER_KEY = 'vb.registration.activeUser';
 const DRAFT_KEY = 'vb.registration.draft';
+const ADMIN_TOKEN_KEY = 'vb.admin.token';
+const CHANNEL_META = {
+  daemon: {
+    label: 'Skill',
+    detail: 'SKILL 执行与 daemon 部署'
+  },
+  command: {
+    label: 'Command',
+    detail: '远程命令与工具调用'
+  },
+  file: {
+    label: 'File',
+    detail: '文件上传与下载'
+  },
+  gui: {
+    label: 'GUI',
+    detail: '图形界面一次性命令'
+  },
+  spectre: {
+    label: 'Spectre',
+    detail: 'Spectre 仿真命令'
+  }
+};
+const ROLE_NAMES = ['gui', 'daemon', 'command', 'file', 'spectre'];
+const ROLE_FIXED_FIELDS = ['mode', 'host', 'user', 'jump_host', 'jump_user',
+  'proxy', 'key_dir', 'key', 'root', 'expected_fingerprint', 'max_sessions',
+  'daemon_port', 'local_port', 'python', 'expected_hostname', 'expected_user',
+  'display', 'bin'
+];
 let CURRENT_USER = null,
   CURRENT_STATE = null,
   BUSY = false,
-  toastTimer = null;
+  toastTimer = null,
+  PERSONAL_ORIGINAL = null,
+  PERSONAL_EDITING = false,
+  PERSONAL_PATCH = {},
+  PERSONAL_BUSY = false,
+  PERSONAL_LAST_MODE = '',
+  ADMIN_TOKEN = '',
+  ADMIN_USERS = [],
+  ADMIN_CONFIG = null,
+  ADMIN_PROCESS = null,
+  ADMIN_BUSY = false;
 
 function byId(id) {
   return document.getElementById(id)
@@ -1762,6 +2745,1039 @@ async function copyText(text, label) {
   } catch (error) {
     toast('复制失败，请手动选择复制', 'error')
   }
+}
+
+function jsonClone(value) {
+  if (value === undefined) return undefined;
+  return JSON.parse(JSON.stringify(value))
+}
+
+function isPlainObject(value) {
+  return Boolean(value) && Object.prototype.toString.call(value) === '[object Object]'
+}
+
+function deepGet(source, path) {
+  return path.split('.').reduce(function(value, part) {
+    return value === null || value === undefined ? undefined : value[part]
+  }, source)
+}
+
+function deepSet(target, path, value) {
+  const parts = path.split('.');
+  let cursor = target;
+  for (let index = 0; index < parts.length - 1; index += 1) {
+    const part = parts[index];
+    if (!isPlainObject(cursor[part])) cursor[part] = {};
+    cursor = cursor[part]
+  }
+  cursor[parts[parts.length - 1]] = value;
+  return target
+}
+
+function deepEqual(left, right) {
+  return JSON.stringify(left) === JSON.stringify(right)
+}
+
+function displayValue(value) {
+  if (value === null || value === undefined || value === '') return '—';
+  if (typeof value === 'boolean') return value ? 'true' : 'false';
+  if (typeof value === 'object') return JSON.stringify(value);
+  return String(value)
+}
+
+function formatRegisteredAt(value) {
+  if (!value) return '未记录';
+  const date = new Date(Number(value) * 1000);
+  return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString()
+}
+
+function roleExtras(role) {
+  return Object.keys(role || {}).filter(function(name) {
+    return ROLE_FIXED_FIELDS.indexOf(name) < 0
+  }).reduce(function(out, name) {
+    out[name] = role[name];
+    return out
+  }, {})
+}
+
+function effectiveEntryMode(entry, roleName) {
+  const role = entry && entry.roles ? entry.roles[roleName] || {} : {};
+  return role.mode || (entry && entry.mode ? entry.mode.default : null)
+}
+
+function effectiveEntryRoot(entry, roleName) {
+  const role = entry && entry.roles ? entry.roles[roleName] || {} : {};
+  if (role.root) return role.root;
+  const base = entry && entry.root && entry.root.default;
+  return base ? base.replace(/\/$/, '') + '/' + roleName : '~/.virtuoso-bridge/<user>/' + roleName
+}
+
+function makeDetailSection(title, note) {
+  const section = make('section', 'detail-section');
+  const head = make('div', 'detail-section-head');
+  head.append(make('span', '', title), make('span', '', note || ''));
+  section.appendChild(head);
+  return section
+}
+
+function appendKv(grid, label, value, mono) {
+  const item = make('div', 'kv');
+  item.append(make('dt', '', label), make('dd', mono ? 'mono' : '', displayValue(value)));
+  grid.appendChild(item)
+}
+
+function renderEntryDetail(target, entry, user) {
+  clear(target);
+  const head = make('div', 'entity-head'),
+    identity = make('div', 'entity-identity'),
+    avatar = make('div', 'user-avatar', String(user || '?').slice(0, 2).toUpperCase()),
+    copy = make('div'),
+    title = make('h2', '', user || '用户条目'),
+    subtitle = make('p', '', '注册时间：' + formatRegisteredAt(entry.registered_at)),
+    badges = make('div', 'badge-row');
+  copy.append(title, subtitle);
+  identity.append(avatar, copy);
+  badges.append(make('span', 'badge info', 'mode.default: ' + displayValue(entry.mode && entry.mode.default)));
+  badges.append(make('span', 'badge', 'Token 已配置（不回显）'));
+  head.append(identity, badges);
+  target.appendChild(head);
+
+  const body = make('div', 'detail-body');
+  const defaults = makeDetailSection('默认连接与根目录', '个人注册表字段');
+  const defaultsGrid = make('div', 'detail-grid');
+  const ssh = entry.ssh && entry.ssh.default ? entry.ssh.default : {};
+  appendKv(defaultsGrid, 'ssh.default.host', ssh.host, true);
+  appendKv(defaultsGrid, 'ssh.default.user', ssh.user, true);
+  appendKv(defaultsGrid, 'ssh.default.jump_host', ssh.jump_host, true);
+  appendKv(defaultsGrid, 'ssh.default.jump_user', ssh.jump_user, true);
+  appendKv(defaultsGrid, 'ssh.default.proxy', ssh.proxy, true);
+  appendKv(defaultsGrid, 'ssh.default.key_dir', ssh.key_dir, true);
+  appendKv(defaultsGrid, 'ssh.default.key', ssh.key, true);
+  appendKv(defaultsGrid, 'root.default', entry.root && entry.root.default, true);
+  defaults.appendChild(defaultsGrid);
+  body.appendChild(defaults);
+
+  const channels = makeDetailSection('五条业务通道', 'role、有效 mode 与实际事实');
+  const channelGrid = make('div', 'channel-grid');
+  ROLE_NAMES.forEach(function(roleName) {
+    const role = entry.roles && entry.roles[roleName] ? entry.roles[roleName] : {},
+      meta = CHANNEL_META[roleName],
+      card = make('article', 'channel-card'),
+      cardHead = make('div', 'channel-card-head'),
+      facts = make('div'),
+      inherited = !role.mode,
+      mode = effectiveEntryMode(entry, roleName);
+    cardHead.append(make('strong', '', meta.label + ' · ' + roleName),
+      make('span', 'badge ' + (mode === 'local' ? 'warn' : 'info'), (mode || '—') + (inherited ? '（继承）' : '（覆盖）')));
+    [
+      ['host', mode === 'local' ? '本机直连' : role.host || ssh.host],
+      ['user', mode === 'local' ? '—' : role.user || ssh.user],
+      ['root', effectiveEntryRoot(entry, roleName)],
+      ['max_sessions', role.max_sessions]
+    ].forEach(function(pair) {
+      const row = make('div', 'channel-fact');
+      row.append(make('dt', '', pair[0]), make('dd', '', displayValue(pair[1])));
+      facts.appendChild(row)
+    });
+    if (roleName === 'gui') {
+      const row = make('div', 'channel-fact');
+      row.append(make('dt', '', 'display'), make('dd', '', displayValue(role.display)));
+      facts.appendChild(row)
+    }
+    if (roleName === 'daemon') {
+      [['daemon_port', role.daemon_port], ['local_port', role.local_port], ['python', role.python]].forEach(function(pair) {
+        const row = make('div', 'channel-fact');
+        row.append(make('dt', '', pair[0]), make('dd', '', displayValue(pair[1])));
+        facts.appendChild(row)
+      })
+    }
+    if (roleName === 'spectre') {
+      const row = make('div', 'channel-fact');
+      row.append(make('dt', '', 'bin'), make('dd', '', displayValue(role.bin)));
+      facts.appendChild(row)
+    }
+    const groups = roleExtras(role);
+    if (Object.keys(groups).length) {
+      const row = make('div', 'channel-fact');
+      row.append(make('dt', '', 'groups'), make('dd', '', Object.keys(groups).join(', ')));
+      facts.appendChild(row)
+    }
+    card.append(cardHead, facts);
+    channelGrid.appendChild(card)
+  });
+  channels.appendChild(channelGrid);
+  body.appendChild(channels);
+
+  const advanced = makeDetailSection('个人策略与校验基线', 'runtime / cdslog / expected_*');
+  const advancedGrid = make('div', 'detail-grid');
+  appendKv(advancedGrid, 'ssh.backend', entry.ssh && entry.ssh.backend, true);
+  appendKv(advancedGrid, 'ssh.control_master', entry.ssh && entry.ssh.control_master, true);
+  appendKv(advancedGrid, 'runtime.thread_pool_size', entry.runtime && entry.runtime.thread_pool_size, true);
+  appendKv(advancedGrid, 'runtime.channel_budget', entry.runtime && entry.runtime.channel_budget, true);
+  appendKv(advancedGrid, 'runtime.connect_timeout', entry.runtime && entry.runtime.connect_timeout, true);
+  appendKv(advancedGrid, 'cdslog.log_level', entry.cdslog && entry.cdslog.log_level, true);
+  appendKv(advancedGrid, 'cdslog.log_max_bytes', entry.cdslog && entry.cdslog.log_max_bytes, true);
+  ROLE_NAMES.forEach(function(roleName) {
+    const role = entry.roles && entry.roles[roleName] ? entry.roles[roleName] : {};
+    appendKv(advancedGrid, roleName + '.expected_fingerprint', role.expected_fingerprint, true)
+  });
+  advanced.appendChild(advancedGrid);
+  body.appendChild(advanced);
+  target.appendChild(body)
+}
+
+function makeEditorSelect(value, options) {
+  const select = document.createElement('select');
+  options.forEach(function(option) {
+    const node = document.createElement('option');
+    node.value = option.value;
+    node.textContent = option.label;
+    select.appendChild(node)
+  });
+  select.value = value === null || value === undefined ? '' : String(value);
+  return select
+}
+
+function addEditorField(container, spec) {
+  const field = make('div', 'field compact' + (spec.full ? ' span-2' : '')),
+    label = make('label', '', spec.label);
+  let control;
+  if (spec.options) control = makeEditorSelect(spec.value, spec.options);
+  else if (spec.textarea) {
+    control = document.createElement('textarea');
+    control.value = spec.value === null || spec.value === undefined ? '' : String(spec.value)
+  } else {
+    control = document.createElement('input');
+    control.type = spec.type === 'number' ? 'number' : 'text';
+    if (spec.type === 'number') {
+      if (spec.min !== undefined) control.min = spec.min;
+      if (spec.step !== undefined) control.step = spec.step
+    }
+    control.value = spec.value === null || spec.value === undefined ? '' : String(spec.value)
+  }
+  control.dataset.entryPath = spec.path || '';
+  control.dataset.entryType = spec.entryType || spec.type || 'text';
+  if (spec.extraRole) control.dataset.entryExtra = spec.extraRole;
+  if (spec.readonly) control.readOnly = true;
+  control.spellcheck = false;
+  field.append(label, control);
+  if (spec.help) field.appendChild(make('p', 'field-help', spec.help));
+  container.appendChild(field);
+  return control
+}
+
+function renderEntryEditor(target, entry) {
+  clear(target);
+  const modeSelectOptions = [{
+    value: '',
+    label: '继承 mode.default'
+  }, {
+    value: 'remote',
+    label: 'remote'
+  }, {
+    value: 'local',
+    label: 'local'
+  }],
+    ssh = entry.ssh || {},
+    sshDefault = ssh.default || {},
+    rootConfig = entry.root || {},
+    runtime = entry.runtime || {},
+    cdslog = entry.cdslog || {};
+
+  const basics = make('section', 'editor-section'),
+    basicsHead = make('div', 'editor-section-head'),
+    basicsBody = make('div', 'editor-section-body');
+  basicsHead.append(make('span', '', '默认配置'), make('span', '', 'root / ssh.default'));
+  addEditorField(basicsBody, {
+    path: 'mode.default',
+    label: 'mode.default',
+    value: entry.mode && entry.mode.default,
+    options: [{
+      value: 'remote',
+      label: 'remote'
+    }, {
+      value: 'local',
+      label: 'local'
+    }]
+  });
+  addEditorField(basicsBody, {
+    path: 'root.default',
+    label: 'root.default',
+    value: rootConfig.default,
+    help: '留空表示使用 ~/.virtuoso-bridge/<user>；不会覆盖已写入的 role.root。'
+  });
+  [
+    ['ssh.default.host', 'ssh.default.host', sshDefault.host],
+    ['ssh.default.user', 'ssh.default.user', sshDefault.user],
+    ['ssh.default.jump_host', 'ssh.default.jump_host', sshDefault.jump_host],
+    ['ssh.default.jump_user', 'ssh.default.jump_user', sshDefault.jump_user],
+    ['ssh.default.proxy', 'ssh.default.proxy', sshDefault.proxy],
+    ['ssh.default.key_dir', 'ssh.default.key_dir', sshDefault.key_dir],
+    ['ssh.default.key', 'ssh.default.key', sshDefault.key]
+  ].forEach(function(item) {
+    addEditorField(basicsBody, {
+      path: item[0],
+      label: item[1],
+      value: item[2]
+    })
+  });
+  basics.append(basicsHead, basicsBody);
+  target.appendChild(basics);
+
+  ROLE_NAMES.forEach(function(roleName) {
+    const role = entry.roles && entry.roles[roleName] ? entry.roles[roleName] : {},
+      meta = CHANNEL_META[roleName],
+      details = make('details', 'role-editor'),
+      summary = make('summary', '', meta.label + ' · ' + roleName + '（' + (role.mode || '继承') + '）'),
+      body = make('div', 'role-editor-body');
+    addEditorField(body, {
+      path: 'roles.' + roleName + '.mode',
+      label: 'mode',
+      value: role.mode,
+      options: modeSelectOptions
+    });
+    [
+      ['host', role.host],
+      ['user', role.user],
+      ['jump_host', role.jump_host],
+      ['jump_user', role.jump_user],
+      ['proxy', role.proxy],
+      ['key_dir', role.key_dir],
+      ['key', role.key],
+      ['root', role.root],
+      ['max_sessions', role.max_sessions]
+    ].forEach(function(item) {
+      addEditorField(body, {
+        path: 'roles.' + roleName + '.' + item[0],
+        label: item[0],
+        value: item[1],
+        type: item[0] === 'max_sessions' ? 'number' : 'text',
+        min: item[0] === 'max_sessions' ? 1 : undefined
+      })
+    });
+    if (roleName === 'gui') {
+      addEditorField(body, {
+        path: 'roles.gui.display',
+        label: 'display',
+        value: role.display
+      })
+    }
+    if (roleName === 'daemon') {
+      addEditorField(body, {
+        path: 'roles.daemon.daemon_port',
+        label: 'daemon_port',
+        value: role.daemon_port,
+        type: 'number',
+        min: 1
+      });
+      addEditorField(body, {
+        path: 'roles.daemon.local_port',
+        label: 'local_port',
+        value: role.local_port,
+        type: 'number',
+        min: 1
+      });
+      addEditorField(body, {
+        path: 'roles.daemon.python',
+        label: 'python',
+        value: role.python
+      })
+    }
+    if (roleName === 'spectre') {
+      addEditorField(body, {
+        path: 'roles.spectre.bin',
+        label: 'bin',
+        value: role.bin
+      })
+    }
+    if (roleName === 'command') {
+      addEditorField(body, {
+        path: 'roles.command.calibre.bin',
+        label: 'calibre.bin（已知用户组）',
+        value: role.calibre && role.calibre.bin,
+        full: true,
+        help: '留空会删除 command.calibre 组。'
+      })
+    }
+    const extras = roleExtras(role);
+    if (roleName === 'command' && role.calibre) delete extras.calibre;
+    addEditorField(body, {
+      path: '',
+      label: '扩展用户组 JSON',
+      value: JSON.stringify(extras, null, 2),
+      textarea: true,
+      full: true,
+      extraRole: roleName,
+      help: '键值对象；空对象会删除当前 role 的扩展组。只支持 JSON 标量字段。'
+    });
+    const expected = make('details', 'role-editor'),
+      expectedSummary = make('summary', '', '校验基线（高级）'),
+      expectedBody = make('div', 'role-editor-body');
+    addEditorField(expectedBody, {
+      path: 'roles.' + roleName + '.expected_fingerprint',
+      label: 'expected_fingerprint',
+      value: role.expected_fingerprint,
+      help: '机器重装或 host-key 轮换时才修改；不确定请留空。'
+    });
+    if (roleName === 'daemon') {
+      addEditorField(expectedBody, {
+        path: 'roles.daemon.expected_hostname',
+        label: 'expected_hostname',
+        value: role.expected_hostname
+      });
+      addEditorField(expectedBody, {
+        path: 'roles.daemon.expected_user',
+        label: 'expected_user',
+        value: role.expected_user
+      })
+    }
+    expected.append(expectedSummary, expectedBody);
+    body.appendChild(expected);
+    details.append(summary, body);
+    target.appendChild(details)
+  });
+
+  const advanced = make('section', 'editor-section'),
+    advancedHead = make('div', 'editor-section-head'),
+    advancedBody = make('div', 'editor-section-body');
+  advancedHead.append(make('span', '', '个人策略'), make('span', '', 'runtime / cdslog / ssh 策略'));
+  addEditorField(advancedBody, {
+    path: 'ssh.backend',
+    label: 'ssh.backend',
+    value: ssh.backend,
+    options: [{
+      value: 'paramiko',
+      label: 'paramiko'
+    }, {
+      value: 'openssh',
+      label: 'openssh'
+    }]
+  });
+  addEditorField(advancedBody, {
+    path: 'ssh.control_master',
+    label: 'ssh.control_master',
+    value: ssh.control_master,
+    options: [{
+      value: 'auto',
+      label: 'auto'
+    }, {
+      value: 'force',
+      label: 'force'
+    }, {
+      value: 'disable',
+      label: 'disable'
+    }]
+  });
+  addEditorField(advancedBody, {
+    path: 'ssh.tool_override',
+    label: 'ssh.tool_override JSON',
+    value: JSON.stringify(ssh.tool_override || {}, null, 2),
+    textarea: true,
+    full: true,
+    entryType: 'json'
+  });
+  [
+    ['runtime.thread_pool_size', runtime.thread_pool_size, 1],
+    ['runtime.channel_budget', runtime.channel_budget, 1],
+    ['runtime.connect_timeout', runtime.connect_timeout, 0.1],
+    ['cdslog.log_max_bytes', cdslog.log_max_bytes, 1]
+  ].forEach(function(item) {
+    addEditorField(advancedBody, {
+      path: item[0],
+      label: item[0],
+      value: item[1],
+      type: 'number',
+      min: item[2],
+      step: item[0] === 'runtime.connect_timeout' ? '0.1' : '1'
+    })
+  });
+  addEditorField(advancedBody, {
+    path: 'cdslog.log_level',
+    label: 'cdslog.log_level',
+    value: cdslog.log_level,
+    options: [{
+      value: 'all',
+      label: 'all'
+    }, {
+      value: 'off',
+      label: 'off'
+    }, {
+      value: 'warn',
+      label: 'warn'
+    }, {
+      value: 'error',
+      label: 'error'
+    }]
+  });
+  advanced.append(advancedHead, advancedBody);
+  target.appendChild(advanced)
+}
+
+function collectEditorDraft(container, base) {
+  const draft = jsonClone(base),
+    extrasByRole = {};
+  container.querySelectorAll('[data-entry-extra]').forEach(function(control) {
+    const roleName = control.dataset.entryExtra;
+    let parsed;
+    try {
+      parsed = JSON.parse(control.value || '{}')
+    } catch (error) {
+      throw new Error(roleName + ' 扩展组 JSON 解析失败：' + error.message)
+    }
+    if (!isPlainObject(parsed)) throw new Error(roleName + ' 扩展组必须是 JSON 对象');
+    extrasByRole[roleName] = parsed
+  });
+  container.querySelectorAll('[data-entry-path]').forEach(function(control) {
+    const path = control.dataset.entryPath,
+      valueType = control.dataset.entryType || 'text';
+    if (!path) return;
+    let value;
+    if (valueType === 'number') {
+      value = control.value.trim() === '' ? null : Number(control.value)
+    } else if (valueType === 'json') {
+      try {
+        value = JSON.parse(control.value || '{}')
+      } catch (error) {
+        throw new Error(path + ' JSON 解析失败：' + error.message)
+      }
+    } else {
+      value = control.value.trim() === '' ? null : control.value.trim()
+    }
+    deepSet(draft, path, value)
+  });
+  Object.keys(extrasByRole).forEach(function(roleName) {
+    if (!draft.roles || !draft.roles[roleName]) return;
+    Object.keys(draft.roles[roleName]).forEach(function(key) {
+      if (ROLE_FIXED_FIELDS.indexOf(key) >= 0) return;
+      if (roleName === 'command' && key === 'calibre') return;
+      delete draft.roles[roleName][key]
+    });
+    Object.assign(draft.roles[roleName], extrasByRole[roleName])
+  });
+  if (draft.roles && draft.roles.command && draft.roles.command.calibre) {
+    const calibre = draft.roles.command.calibre;
+    if (!calibre.bin) {
+      delete calibre.bin;
+      if (!Object.keys(calibre).length) draft.roles.command.calibre = null
+    }
+  }
+  return draft
+}
+
+function nestedDiff(baseValue, nextValue) {
+  if (deepEqual(baseValue, nextValue)) return undefined;
+  if (isPlainObject(baseValue) && isPlainObject(nextValue)) {
+    const output = {},
+      keys = Object.keys(baseValue).concat(Object.keys(nextValue)).filter(function(value, index, all) {
+        return all.indexOf(value) === index
+      });
+    keys.forEach(function(key) {
+      const child = nestedDiff(baseValue[key], nextValue[key]);
+      if (child !== undefined) output[key] = child
+    });
+    return Object.keys(output).length ? output : undefined
+  }
+  return nextValue === undefined ? null : nextValue
+}
+
+function buildEntryPatch(base, draft) {
+  const patch = {};
+  ['ssh', 'root', 'runtime', 'cdslog'].forEach(function(key) {
+    const value = nestedDiff(base[key], draft[key]);
+    if (value !== undefined) patch[key] = value
+  });
+  if (base.ssh && draft.ssh && !deepEqual(base.ssh.tool_override, draft.ssh.tool_override)) {
+    patch.ssh = patch.ssh || {};
+    patch.ssh.tool_override = draft.ssh.tool_override || {}
+  }
+  const rolesPatch = {};
+  ROLE_NAMES.forEach(function(roleName) {
+    const before = base.roles && base.roles[roleName],
+      after = draft.roles && draft.roles[roleName];
+    if (!deepEqual(before, after)) rolesPatch[roleName] = after
+  });
+  if (Object.keys(rolesPatch).length) patch.roles = rolesPatch;
+  return patch
+}
+
+function flattenPatch(base, patch, prefix, output) {
+  const rows = output || [];
+  Object.keys(patch || {}).forEach(function(key) {
+    const path = prefix ? prefix + '.' + key : key,
+      next = patch[key],
+      before = base ? base[key] : undefined;
+    if (isPlainObject(next) && isPlainObject(before)) flattenPatch(before, next, path, rows);
+    else rows.push({
+      path: path,
+      old: before,
+      new: next
+    })
+  });
+  return rows
+}
+
+function renderChangeDiff(box, list, patch, base) {
+  clear(list);
+  const rows = flattenPatch(base, patch, '', []);
+  if (!rows.length) {
+    box.hidden = true;
+    return false
+  }
+  rows.forEach(function(row) {
+    const item = make('div', 'diff-row'),
+      values = make('div', 'diff-values'),
+      oldLine = make('span'),
+      newLine = make('span', 'new');
+    oldLine.append(make('b', '', '− '), document.createTextNode(displayValue(row.old)));
+    newLine.append(make('b', '', '+ '), document.createTextNode(displayValue(row.new)));
+    values.append(oldLine, newLine);
+    item.append(make('strong', '', row.path), values);
+    list.appendChild(item)
+  });
+  box.hidden = false;
+  return true
+}
+
+function perRoleModeCount(entry) {
+  return ROLE_NAMES.reduce(function(out, roleName) {
+    const mode = effectiveEntryMode(entry, roleName) || '未设置';
+    out[mode] = (out[mode] || 0) + 1;
+    return out
+  }, {})
+}
+
+function renderPersonalStatus(message, tone) {
+  const node = byId('personalAuthState');
+  node.className = 'notice' + (tone ? ' ' + tone : '');
+  node.textContent = message
+}
+
+function renderPersonalFailure(error, action) {
+  const host = byId('personalEmpty'),
+    wrapper = make('div'),
+    icon = make('div', 'empty-state-icon', '!'),
+    title = make('strong', '', '无法' + action + '个人注册表条目'),
+    message = make('p', '', error.status === 401
+      ? '后端权限层拒绝了个人 token。当前 server 尚未实现个人自助查询/修改契约；页面没有改走管理员凭据，也没有用其他用户的数据填充。'
+      : errorMessages(error).join('；')),
+    meta = make('div', 'error-meta'),
+    details = make('details', 'raw-error'),
+    raw = {
+      action: action,
+      status: error.status || null,
+      response: error.data || {
+        error: error.message || 'request failed'
+      }
+    };
+  clear(host);
+  host.classList.add('error');
+  meta.append(make('span', 'badge danger', 'HTTP ' + displayValue(error.status)),
+    make('span', 'badge warn', '后端契约缺口'));
+  details.append(make('summary', '', '查看原始响应'), make('pre', '', JSON.stringify(raw, null, 2)));
+  wrapper.append(icon, title, message, meta, details);
+  host.appendChild(wrapper);
+  host.hidden = false;
+  byId('personalDetail').hidden = true;
+  byId('personalEditor').hidden = true
+}
+
+function renderPersonalEntry(entry, user) {
+  PERSONAL_ORIGINAL = jsonClone(entry);
+  PERSONAL_EDITING = false;
+  PERSONAL_PATCH = {};
+  byId('personalEmpty').hidden = true;
+  byId('personalEmpty').classList.remove('error');
+  byId('personalEditor').hidden = true;
+  byId('personalDetail').hidden = false;
+  byId('personalDangerZone').hidden = false;
+  byId('personalDiffBox').hidden = true;
+  byId('personalEditBtn').hidden = false;
+  byId('personalCancelBtn').hidden = true;
+  byId('personalSaveBtn').hidden = true;
+  byId('personalRefreshBtn').disabled = false;
+  byId('personalEditBtn').disabled = false;
+  byId('personalDeleteBtn').disabled = false;
+  renderEntryDetail(byId('personalDetail'), entry, user)
+}
+
+function personalPreviewChanges() {
+  if (!PERSONAL_EDITING || !PERSONAL_ORIGINAL) return;
+  try {
+    const draft = collectEditorDraft(byId('personalEditor'), PERSONAL_ORIGINAL);
+    PERSONAL_PATCH = buildEntryPatch(PERSONAL_ORIGINAL, draft);
+    const changed = renderChangeDiff(byId('personalDiffBox'), byId('personalDiffList'), PERSONAL_PATCH, PERSONAL_ORIGINAL);
+    byId('personalSaveBtn').disabled = !changed
+  } catch (error) {
+    PERSONAL_PATCH = {};
+    byId('personalSaveBtn').disabled = true;
+    toast(error.message, 'error')
+  }
+}
+
+function personalStartEdit() {
+  if (!PERSONAL_ORIGINAL) return;
+  PERSONAL_EDITING = true;
+  byId('personalDetail').hidden = true;
+  byId('personalEditor').hidden = false;
+  byId('personalEditBtn').hidden = true;
+  byId('personalCancelBtn').hidden = false;
+  byId('personalSaveBtn').hidden = false;
+  byId('personalSaveBtn').disabled = true;
+  byId('personalDiffBox').hidden = true;
+  renderEntryEditor(byId('personalEditor'), PERSONAL_ORIGINAL)
+}
+
+function personalCancelEdit() {
+  PERSONAL_EDITING = false;
+  PERSONAL_PATCH = {};
+  byId('personalEditor').hidden = true;
+  byId('personalDiffBox').hidden = true;
+  if (PERSONAL_ORIGINAL) {
+    byId('personalDetail').hidden = false;
+    byId('personalEditBtn').hidden = false;
+    byId('personalCancelBtn').hidden = true;
+    byId('personalSaveBtn').hidden = true
+  }
+}
+
+function personalCredentials() {
+  return {
+    personal: byId('personalTokenInput').value.trim(),
+    enhanced: byId('personalEnhancedInput').value.trim()
+  }
+}
+
+async function personalRequest(path, options, payload) {
+  const credentials = personalCredentials();
+  if (!credentials.personal) throw new Error('个人 Token 必填；不能用管理员凭据代替个人身份');
+  const body = payload === undefined ? undefined : jsonClone(payload);
+  if (body !== undefined && credentials.enhanced) body.enhanced_token = credentials.enhanced;
+  const headers = {
+    'Authorization': 'Bearer ' + credentials.personal,
+    'Accept': 'application/json'
+  };
+  if (body !== undefined) headers['Content-Type'] = 'application/json';
+  const data = await requestJSON(path, {
+    method: (options && options.method) || 'GET',
+    headers: headers,
+    body: body === undefined ? undefined : JSON.stringify(body)
+  });
+  PERSONAL_LAST_MODE = credentials.enhanced ? '个人 Token + 增强凭据' : '个人 Token';
+  return {
+    data: data,
+    mode: PERSONAL_LAST_MODE
+  }
+}
+
+async function personalLoadEntry() {
+  if (PERSONAL_BUSY) return;
+  const user = byId('personalUserInput').value.trim(),
+    credentials = personalCredentials();
+  if (!user) {
+    renderPersonalStatus('请先填写用户名。', 'danger');
+    byId('personalUserInput').focus();
+    return
+  }
+  if (!credentials.personal) {
+    renderPersonalStatus('个人 Token 必填。管理员管理页的系统权限不能替代个人身份。', 'danger');
+    byId('personalTokenInput').focus();
+    return
+  }
+  PERSONAL_BUSY = true;
+  byId('personalConnectBtn').disabled = true;
+  byId('personalConnectBtn').textContent = '正在读取…';
+  renderPersonalStatus('正在读取 ' + user + ' 的注册表条目…');
+  try {
+    const result = await personalRequest('/api/user/' + encodeURIComponent(user), {
+      method: 'GET'
+    });
+    const data = result.data;
+    renderPersonalEntry(data.entry, data.user || user);
+    renderPersonalStatus('已读取 ' + user + ' 的注册表条目。查询模式：' + result.mode + '。', 'success')
+  } catch (error) {
+    const message = error.status === 401
+      ? '后端拒绝了该凭据（401）。当前规范中 update/query 端点要求管理员权限，个人 token 不能自助调用。'
+      : errorMessages(error).join('；');
+    renderPersonalStatus(message, 'danger');
+    renderPersonalFailure(error, '查询');
+    toast(message, 'error')
+  } finally {
+    PERSONAL_BUSY = false;
+    byId('personalConnectBtn').disabled = false;
+    byId('personalConnectBtn').textContent = '查询我的注册表配置'
+  }
+}
+
+async function personalSaveChanges() {
+  if (!PERSONAL_ORIGINAL || PERSONAL_BUSY) return;
+  personalPreviewChanges();
+  const user = byId('personalUserInput').value.trim();
+  if (!user || !Object.keys(PERSONAL_PATCH).length) return;
+  if (!personalCredentials().enhanced) {
+    renderPersonalStatus('保存个人注册表变更需要增强凭据。当前页不会回退到管理员 token。', 'danger');
+    byId('personalEnhancedInput').focus();
+    return
+  }
+  PERSONAL_BUSY = true;
+  byId('personalSaveBtn').disabled = true;
+  renderPersonalStatus('正在保存个人注册表变更…');
+  try {
+    const result = await personalRequest('/api/user/' + encodeURIComponent(user) + '/update', {
+      method: 'POST'
+    }, PERSONAL_PATCH);
+    const data = result.data;
+    renderPersonalEntry(data.entry, data.user || user);
+    renderPersonalStatus('个人配置已保存并触发业务运行时重载。保存模式：' + result.mode + '。', 'success');
+    toast('个人配置已保存')
+  } catch (error) {
+    const message = error.status === 401
+      ? '保存被拒绝（401）：当前后端只接受管理员权限。个人 token + enhanced_token 的自助 update 尚未在当前服务器实现。'
+      : errorMessages(error).join('；');
+    renderPersonalStatus(message, 'danger');
+    toast(message, 'error')
+  } finally {
+    PERSONAL_BUSY = false;
+    byId('personalSaveBtn').disabled = false
+  }
+}
+
+async function personalDeleteEntry() {
+  const user = byId('personalUserInput').value.trim();
+  if (!user || !PERSONAL_ORIGINAL || PERSONAL_BUSY) return;
+  if (!personalCredentials().enhanced) {
+    renderPersonalStatus('删除个人注册表条目前需要增强凭据。当前页不会回退到管理员 token。', 'danger');
+    byId('personalEnhancedInput').focus();
+    return
+  }
+  if (!window.confirm('确认删除用户“' + user + '”的注册条目？\n\n本机解绑不等于远端吊销。')) return;
+  PERSONAL_BUSY = true;
+  renderPersonalStatus('正在删除 ' + user + '…');
+  try {
+    const result = await personalRequest('/api/user/' + encodeURIComponent(user), {
+      method: 'DELETE'
+    }, {});
+    PERSONAL_LAST_MODE = result.mode;
+    PERSONAL_ORIGINAL = null;
+    byId('personalDetail').hidden = true;
+    byId('personalEditor').hidden = true;
+    byId('personalEmpty').hidden = false;
+    byId('personalDangerZone').hidden = true;
+    byId('personalRefreshBtn').disabled = true;
+    byId('personalEditBtn').disabled = true;
+    renderPersonalStatus('用户“' + user + '”已从本机注册表移除。', 'success');
+    toast('注册条目已删除')
+  } catch (error) {
+    const message = error.status === 401
+      ? '删除被拒绝（401）：当前后端要求管理员权限。'
+      : errorMessages(error).join('；');
+    renderPersonalStatus(message, 'danger');
+    toast(message, 'error')
+  } finally {
+    PERSONAL_BUSY = false
+  }
+}
+
+function renderAdminStatus(message, tone) {
+  const node = byId('adminAuthState');
+  node.className = 'notice' + (tone ? ' ' + tone : '');
+  node.textContent = message
+}
+
+function adminHeaders(json) {
+  const headers = {
+    'Authorization': 'Bearer ' + ADMIN_TOKEN,
+    'Accept': 'application/json'
+  };
+  if (json) headers['Content-Type'] = 'application/json';
+  return headers
+}
+
+function renderAdminRegistryOverview(users) {
+  const target = byId('adminRegistryOverview');
+  clear(target);
+  if (!users.length) {
+    const empty = make('div');
+    empty.append(make('strong', '', '注册表为空'), make('p', '', '当前没有已注册用户。'));
+    target.appendChild(empty);
+    return
+  }
+  const copy = make('div');
+  copy.append(make('strong', '', '共 ' + users.length + ' 位注册用户'),
+    make('p', '', '这里只做只读概览；个人连接参数请在“个人管理”页查询和修改。'));
+  const badges = make('div', 'badge-row');
+  badges.style.justifyContent = 'flex-start';
+  badges.style.marginTop = '10px';
+  users.slice().sort(function(left, right) {
+    return String(left.user).localeCompare(String(right.user))
+  }).forEach(function(item) {
+    badges.appendChild(make('span', 'badge info', item.user))
+  });
+  copy.appendChild(badges);
+  target.appendChild(copy)
+}
+
+function renderAdminSystem() {
+  const config = ADMIN_CONFIG || {},
+    process = ADMIN_PROCESS || {},
+    processState = process.state || process.status;
+  byId('adminBusinessPoolSize').value = config.business_thread_pool_size === null ||
+    config.business_thread_pool_size === undefined ? '' : config.business_thread_pool_size;
+  byId('adminConfigSummary').value = Object.keys(config).sort().join(', ') || '空配置';
+  byId('adminProcessState').value = displayValue(processState);
+  byId('adminProcessPid').value = displayValue(process.pid) + ' / ' + displayValue(process.port);
+  byId('adminProcessWorkdir').value = displayValue(process.work_dir);
+  byId('adminProcessArgs').value = JSON.stringify(process.startup_args || process.args || [], null, 2);
+  const badge = byId('adminProcessBadge');
+  badge.className = 'badge ' + (processState === 'ready' ? 'ok' : processState === 'crashed' ? 'danger' : 'warn');
+  badge.textContent = displayValue(processState)
+}
+
+async function adminLoadSystem() {
+  if (ADMIN_BUSY) return;
+  const presented = byId('adminTokenInput').value.trim();
+  if (!presented) {
+    renderAdminStatus('请填写管理员凭据。', 'danger');
+    return
+  }
+  ADMIN_TOKEN = presented;
+  ADMIN_BUSY = true;
+  renderAdminStatus('正在读取系统配置和业务进程状态…');
+  try {
+    const results = await Promise.all([
+      requestJSON('/api/config', {
+        headers: adminHeaders()
+      }),
+      requestJSON('/api/process/status', {
+        headers: adminHeaders()
+      }),
+      requestJSON('/api/users', {
+        headers: adminHeaders()
+      })
+    ]);
+    ADMIN_CONFIG = results[0];
+    ADMIN_PROCESS = results[1];
+    ADMIN_USERS = results[2].users || [];
+    storageSet(ADMIN_TOKEN_KEY, ADMIN_TOKEN);
+    renderAdminSystem();
+    renderAdminRegistryOverview(ADMIN_USERS);
+    renderAdminStatus('已连接。系统配置与业务进程状态已刷新。', 'success');
+    ['adminRefreshSystemBtn', 'adminSaveConfigBtn', 'adminReloadBtn', 'adminRestartBtn'].forEach(function(id) {
+      byId(id).disabled = false
+    })
+  } catch (error) {
+    const message = error.status === 401
+      ? '管理员凭据无效或未授权（401）。'
+      : errorMessages(error).join('；');
+    renderAdminStatus(message, 'danger');
+    toast(message, 'error')
+  } finally {
+    ADMIN_BUSY = false
+  }
+}
+
+function showAdminSystemResult(title, value) {
+  byId('adminSystemResult').hidden = false;
+  byId('adminSystemResult').querySelector('h3').textContent = title;
+  byId('adminSystemResultText').textContent = typeof value === 'string' ? value : JSON.stringify(value, null, 2)
+}
+
+async function adminSaveConfig() {
+  if (!ADMIN_TOKEN || ADMIN_BUSY) return;
+  const raw = byId('adminBusinessPoolSize').value.trim(),
+    value = raw === '' ? null : Number(raw);
+  if (raw !== '' && (!Number.isInteger(value) || value < 1)) {
+    toast('业务线程池上限必须是正整数或留空', 'error');
+    return
+  }
+  ADMIN_BUSY = true;
+  try {
+    const data = await requestJSON('/api/config', {
+      method: 'PUT',
+      headers: adminHeaders(true),
+      body: JSON.stringify({
+        business_thread_pool_size: value
+      })
+    });
+    ADMIN_CONFIG = data;
+    renderAdminSystem();
+    showAdminSystemResult('全局配置已保存', data);
+    toast('全局配置已保存')
+  } catch (error) {
+    const message = errorMessages(error).join('；');
+    renderAdminStatus(message, 'danger');
+    showAdminSystemResult('保存失败', message);
+    toast(message, 'error')
+  } finally {
+    ADMIN_BUSY = false
+  }
+}
+
+async function adminProcessAction(action) {
+  if (!ADMIN_TOKEN || ADMIN_BUSY) return;
+  if (action === 'restart' && !window.confirm('确认重启业务进程？在途请求会先等待最多 30 秒，期间新请求返回 503。')) return;
+  ADMIN_BUSY = true;
+  try {
+    const data = await requestJSON('/api/process/' + action, {
+      method: 'POST',
+      headers: adminHeaders(true),
+      body: JSON.stringify({
+        target: 'business'
+      })
+    });
+    showAdminSystemResult(action === 'restart' ? '业务进程已重启' : '业务进程已重载', data);
+    ADMIN_PROCESS = await requestJSON('/api/process/status', {
+      headers: adminHeaders()
+    });
+    renderAdminSystem();
+    toast(action === 'restart' ? '业务进程已重启' : '业务进程已重载')
+  } catch (error) {
+    const message = errorMessages(error).join('；');
+    showAdminSystemResult('系统操作失败', message);
+    toast(message, 'error')
+  } finally {
+    ADMIN_BUSY = false
+  }
+}
+
+function adminForgetCredential() {
+  ADMIN_TOKEN = '';
+  ADMIN_CONFIG = null;
+  ADMIN_PROCESS = null;
+  ADMIN_USERS = [];
+  storageRemove(ADMIN_TOKEN_KEY);
+  byId('adminTokenInput').value = '';
+  byId('adminBusinessPoolSize').value = '';
+  byId('adminConfigSummary').value = '';
+  byId('adminProcessState').value = '';
+  byId('adminProcessPid').value = '';
+  byId('adminProcessWorkdir').value = '';
+  byId('adminProcessArgs').value = '';
+  byId('adminSystemResult').hidden = true;
+  renderAdminRegistryOverview([]);
+  ['adminRefreshSystemBtn', 'adminSaveConfigBtn', 'adminReloadBtn', 'adminRestartBtn'].forEach(function(id) {
+    byId(id).disabled = true
+  });
+  renderAdminStatus('已清除当前浏览器会话中的管理员凭据。')
+}
+
+function switchWorkspace(name) {
+  const target = byId('page-' + name);
+  if (!target) return;
+  document.querySelectorAll('.page-view').forEach(function(page) {
+    page.hidden = page !== target
+  });
+  document.querySelectorAll('.page-tab').forEach(function(tab) {
+    const active = tab.dataset.page === name;
+    tab.classList.toggle('active', active);
+    tab.setAttribute('aria-selected', active ? 'true' : 'false')
+  });
+  if (name === 'personal' && CURRENT_STATE && CURRENT_STATE.stage === 'committed' && !byId('personalUserInput').value) {
+    byId('personalUserInput').value = CURRENT_STATE.user || ''
+  }
+  window.scrollTo({
+    top: 0,
+    behavior: 'smooth'
+  })
 }
 
 function selectedMode() {
@@ -2387,7 +4403,49 @@ function addComparisonRow(table, label, configured, result) {
   table.appendChild(row)
 }
 
+const PROBE_CHANNEL_LABELS = {
+  gui: 'GUI',
+  daemon: 'Skill',
+  command: 'Command',
+  file: 'File',
+  spectre: 'Spectre'
+};
+const PROBE_STATUS_LABELS = {
+  ok: '通过',
+  warning: '警告',
+  error: '失败',
+  not_run: '未执行'
+};
+
+function appendProbeResults(container, data) {
+  const rows = data && data.probe_results;
+  if (!Array.isArray(rows) || !rows.length) return;
+  const section = make('section', 'comparison'),
+    head = make('div', 'comparison-head'),
+    heading = make('div'),
+    list = make('div', 'probe-list');
+  heading.append(make('h3', '', '逐 role / 通道探测结果'), make('span', '', '来自后端 probe_results'));
+  head.appendChild(heading);
+  section.appendChild(head);
+  rows.forEach(function(row) {
+    const item = make('div', 'probe-item'),
+      status = row && row.status || 'not_run',
+      channel = PROBE_CHANNEL_LABELS[row && row.role] || '—',
+      role = row && row.role || '—',
+      blocking = row && row.blocking ? '阻断' : '不阻断',
+      message = row && row.message ? row.message : '';
+    const statusNode = make('span', 'probe-status ' + status, PROBE_STATUS_LABELS[status] || status);
+    const text = make('span', 'probe-message', message || (status === 'ok' ? '正常' : '—'));
+    item.append(make('strong', '', channel), make('span', 'probe-role', role),
+      statusNode, make('span', 'probe-role', blocking), text);
+    list.appendChild(item)
+  });
+  section.appendChild(list);
+  container.appendChild(section)
+}
+
 function appendComparison(container, data) {
+  appendProbeResults(container, data);
   const snapshot = configurationSnapshot(data),
     resolved = resolvedValues(data),
     section = make('section', 'comparison'),
@@ -2482,14 +4540,16 @@ function appendComparison(container, data) {
 
   let connectivityResult = checkpointResult(data, 5, '命令、SKILL 与 Token 均通过', '连通性未通过');
   if (data && data.report) {
-    const passed = data.report.command_ok && data.report.skill_ok && data.report.token_ok;
+    const fingerprintOk = data.report.fingerprint_ok !== false;
+    const passed = data.report.command_ok && data.report.skill_ok && data.report.token_ok && fingerprintOk;
     connectivityResult = {
       tone: passed ? 'success' : 'danger',
       text: '命令 ' + (data.report.command_ok ? '✓' : '×') + ' · SKILL ' +
-        (data.report.skill_ok ? '✓' : '×') + ' · Token ' + (data.report.token_ok ? '✓' : '×')
+        (data.report.skill_ok ? '✓' : '×') + ' · Token ' + (data.report.token_ok ? '✓' : '×') +
+        ' · 指纹 ' + (fingerprintOk ? '✓' : '×')
     }
   }
-  addComparisonRow(table, '连通性', '命令 + SKILL + Token', connectivityResult);
+  addComparisonRow(table, '连通性', '命令 + SKILL + Token + 指纹', connectivityResult);
 
   let registryResult = {tone: '', text: '等待第 6 步'};
   if (data && data.stage === 'committed') registryResult = {tone: 'success', text: '已写入 registry.json'};
@@ -2513,7 +4573,8 @@ function appendReport(container, report) {
   [
     ['命令通道', report.command_ok, '远程/本机命令可执行'],
     ['SKILL 通道', report.skill_ok, 'CIW daemon 可响应'],
-    ['Token 校验', report.token_ok, '身份令牌匹配']
+    ['Token 校验', report.token_ok, '身份令牌匹配'],
+    ['SSH 指纹', report.fingerprint_ok !== false, 'host-key 未变化']
   ].forEach(function(check) {
     const card = make('div', 'check-card ' + (check[1] ? 'ok' : 'bad'));
     card.append(make('strong', '', (check[1] ? '✓ ' : '× ') + check[0]), make('span', '', check[2]));
@@ -2685,6 +4746,8 @@ function renderDeployed(data) {
 function renderVerified(data) {
   const view = newStatus('success', '5 / 6 · 连通性通过', '第五步已通过，尚未落盘',
     'daemon 可达、token 比对通过、命令与 Skill 冒烟均通过。确认后才会执行第六步：写入 registry.json（唯一写盘点）。');
+  appendComparison(view.body, data);
+  appendReport(view.body, data.report);
   const actions = appendActions(view.body, '确认无误后执行第 6 步写入注册表。');
   actionButton(actions, '写入注册表（第 6 步）', 'primary', function() {
     runStep(data.user, 'commit', 6, '正在写入注册表')
@@ -2988,6 +5051,49 @@ document.querySelectorAll('#f input,#f select').forEach(function(control) {
     if (!CURRENT_STATE && !byId('formCard').hidden) renderIdleStatus()
   })
 });
+document.querySelectorAll('.page-tab').forEach(function(tab) {
+  tab.addEventListener('click', function() {
+    switchWorkspace(tab.dataset.page)
+  })
+});
+byId('personalConnectBtn').addEventListener('click', personalLoadEntry);
+byId('personalRefreshBtn').addEventListener('click', personalLoadEntry);
+byId('personalEditBtn').addEventListener('click', personalStartEdit);
+byId('personalCancelBtn').addEventListener('click', personalCancelEdit);
+byId('personalSaveBtn').addEventListener('click', personalSaveChanges);
+byId('personalDeleteBtn').addEventListener('click', personalDeleteEntry);
+[byId('personalUserInput'), byId('personalTokenInput'), byId('personalEnhancedInput')].forEach(function(control) {
+  control.addEventListener('keydown', function(event) {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      personalLoadEntry()
+    }
+  })
+});
+byId('personalEditor').addEventListener('input', personalPreviewChanges);
+byId('personalEditor').addEventListener('change', personalPreviewChanges);
+byId('adminConnectBtn').addEventListener('click', adminLoadSystem);
+byId('adminForgetBtn').addEventListener('click', adminForgetCredential);
+byId('adminRefreshSystemBtn').addEventListener('click', adminLoadSystem);
+byId('adminSaveConfigBtn').addEventListener('click', adminSaveConfig);
+byId('adminReloadBtn').addEventListener('click', function() {
+  adminProcessAction('reload')
+});
+byId('adminRestartBtn').addEventListener('click', function() {
+  adminProcessAction('restart')
+});
+byId('adminTokenInput').addEventListener('keydown', function(event) {
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    adminLoadSystem()
+  }
+});
+const savedAdminToken = storageGet(ADMIN_TOKEN_KEY);
+if (savedAdminToken) {
+  ADMIN_TOKEN = savedAdminToken;
+  byId('adminTokenInput').value = savedAdminToken;
+  renderAdminStatus('检测到当前会话中的管理员凭据，点击“连接”读取系统状态。')
+}
 const savedUser = storageGet(ACTIVE_USER_KEY);
 if (savedUser) refreshState(savedUser, true);
 </script>

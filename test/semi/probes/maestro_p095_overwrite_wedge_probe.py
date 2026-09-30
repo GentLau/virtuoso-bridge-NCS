@@ -1,8 +1,10 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
-# 作者: 设计/上层开发
-# 最后改动: 2026-09-29 11:40
+# 作者: 测试/root
+# 最后改动: 2026-09-30 17:40
 # 依赖: 真机 vblog token（maestro_tb/rc_probe 夹具）+ 8127 业务面
 # =======================================================================
+# 夹具说明（2026-09-30 补）：探针**自带会话夹具** —— 没有活动 ADE 会话时自己 `open_gui`，
+# 收尾再关掉；此前在无会话时直接判 RED，被误读成产品缺陷。
 """P-095 红灯探针：悬空 Overwrite History 目标 → run 必须不挂死。
 
 判据（全部满足才算 GREEN）：
@@ -18,6 +20,7 @@
 """
 from __future__ import annotations
 
+import argparse
 import json
 import sys
 import time
@@ -65,7 +68,7 @@ def _payload(body):
         value = body.get(key)
         if isinstance(value, dict):
             return value
-    data = _c1_wrapper(body)
+    data = body
     if isinstance(data, dict):
         inner = data.get("value")
         return inner if isinstance(inner, dict) else data
@@ -84,6 +87,32 @@ def session_name():
     if not raw or raw in ("nil", "t"):
         return None
     return str(raw).strip('"')
+
+
+def ensure_session() -> bool:
+    """确保存在 `maestro_tb/rc_probe` 的 ADE 会话（设置 overwrite 标志需要一个活动 session）。
+
+    返回 True 表示**本探针自己开的**（收尾时要关掉，避免在别人屏幕上留窗口）。
+    2026-09-30 补：此前该探针在"没有活动会话"时直接判 RED（`no-session`），
+    被误读成产品缺陷 —— 实际是夹具缺失。
+    """
+    if session_name():
+        return False
+    opened = call("virtuoso.maestro.open_gui", http_timeout=180,
+                  library=LIB, cell=CELL, view=VIEW, timeout=180)
+    for _ in range(15):
+        if session_name():
+            return True
+        time.sleep(1)
+    raise AssertionError(f"open_gui 后仍找不到活动会话: {str(opened.get('error'))[:120]}")
+
+
+def close_own_session() -> None:
+    try:
+        call("virtuoso.maestro.close_gui", http_timeout=120,
+             library=LIB, cell=CELL, view=VIEW, timeout=120)
+    except Exception:  # noqa: BLE001 - 收尾失败只记录，不影响判定
+        pass
 
 
 def flag_state() -> str:
@@ -141,7 +170,11 @@ def skill_alive() -> bool:
 
 checks = []
 started = time.monotonic()
+opened_session = False
 try:
+    opened_session = ensure_session()
+    checks.append({"name": "session_ready", "ok": session_name() is not None,
+                   "detail": {"opened_by_probe": opened_session}})
     armed = arm_dangling_target()
     checks.append({"name": "armed_dangling_target", "ok": armed,
                    "detail": {"flag": flag_state(), "bogus": BOGUS}})
@@ -175,31 +208,24 @@ finally:
     flag = flag_state()
     checks.append({"name": "overwrite_flag_reset", "ok": flag in ("nil", ""),
                    "detail": {"flag": flag}})
+    if opened_session:
+        close_own_session()
+        checks.append({"name": "own_session_closed", "ok": session_name() is None,
+                       "detail": {"closed_by_probe": True}})
+
+_parser = argparse.ArgumentParser(description="P-095 overwrite 悬空目标不挂死探针")
+_parser.add_argument("--out", default=str(ROOT / "test" / "artifacts" / "evidence"
+                                         / "round9" / "p095-overwrite-wedge.json"))
+_args = _parser.parse_args()
 
 verdict = "GREEN" if all(item["ok"] for item in checks) else "RED"
 print(json.dumps({"probe": "maestro_p095_overwrite_wedge_probe",
                   "checks": checks, "verdict": verdict},
                  ensure_ascii=False, indent=1))
-evidence = ROOT / "test/artifacts/evidence/round8"
-evidence.mkdir(parents=True, exist_ok=True)
-(evidence / "p095-overwrite-wedge.json").write_text(
+evidence = Path(_args.out)
+evidence.parent.mkdir(parents=True, exist_ok=True)
+evidence.write_text(
     json.dumps({"checks": checks, "verdict": verdict}, ensure_ascii=False, indent=1),
     encoding="utf-8")
-print("evidence:", evidence / "p095-overwrite-wedge.json")
+print("evidence:", evidence)
 raise SystemExit(0 if verdict == "GREEN" else 1)
-
-
-# --- C1 兼容垫片（2026-09-29，C3）------------------------------------------------
-# C1（2f88853）起：业务载荷直返顶层（值型 `value`、命令/skill 型 `result`）、
-# 成功默认省略 `steps`、失败壳去掉 `data`。历史 TB 按 `response["data"]` 解析，
-# 本垫片把新契约响应合成为旧 `data` 壳，让既有解析零改动继续工作。
-def _c1_wrapper(body):
-    if not isinstance(body, dict):
-        return {}
-    if isinstance(body.get("data"), dict):
-        return body["data"]
-    wrapped = {"ok": body.get("ok"), "error": body.get("error")}
-    for key in ("value", "result", "steps"):
-        if key in body:
-            wrapped[key] = body[key]
-    return wrapped

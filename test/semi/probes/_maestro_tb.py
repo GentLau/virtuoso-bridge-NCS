@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
 # 作者: 设计/上层开发
-# 最后改动: 2026-09-28 22:40
+# 最后改动: 2026-09-29 21:27
 # 依赖: 无
 # =======================================================================
 # 六步流程（test/docs/写TB规范.md §1）：
@@ -43,7 +43,7 @@ def data(operation: str, token: str = DEFAULT_TOKEN, timeout: float = 300.0, **p
     env = call(operation, token=token, timeout=timeout, **payload)
     if not env.get("ok"):
         raise RuntimeError(f"{operation} failed: {env.get('error')}")
-    return _c1_wrapper(env)
+    return env
 
 
 def skill(code: str, token: str = DEFAULT_TOKEN, timeout: float = 300.0):
@@ -56,8 +56,12 @@ def skill(code: str, token: str = DEFAULT_TOKEN, timeout: float = 300.0):
 def shell(cmd: str, token: str = DEFAULT_TOKEN, timeout: float = 300.0):
     """Run a shell command on the command role."""
     inner = data("basic.command.run", token=token, timeout=timeout, cmd=cmd)
-    rc, out, err = inner["result"][0], inner["result"][1], inner["result"][2]
-    return rc, out, err
+    # C4 契约：`CommandResult` 现在是具名对象（returncode/stdout/stderr/kind）；
+    # 兼容旧的位置数组形态仅用于尚未升级的中间层（不作为判据）。
+    result = inner.get("result")
+    if isinstance(result, dict):
+        return (result.get("returncode"), result.get("stdout", ""), result.get("stderr", ""))
+    return result[0], result[1], result[2]
 
 
 def unquote(value: str) -> str:
@@ -93,7 +97,11 @@ def xwininfo(pattern: str, display: str = ":99", token: str = DEFAULT_TOKEN):
         "basic.gui.run", token=token, timeout=120,
         cmd=f"DISPLAY={display} xwininfo -root -tree | grep -i -E '{pattern}'",
     )
-    return r["result"][1]
+    # C4 契约：命令结果是具名对象（returncode/stdout/stderr/kind），不能再按位置索引
+    result = r.get("result") or {}
+    if isinstance(result, dict):
+        return result.get("stdout", "")
+    return result[1]
 
 
 def artifacts_dir() -> Path:
@@ -113,19 +121,3 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
-
-
-# --- C1 兼容垫片（2026-09-29，C3）------------------------------------------------
-# C1（2f88853）起：业务载荷直返顶层（值型 `value`、命令/skill 型 `result`）、
-# 成功默认省略 `steps`、失败壳去掉 `data`。历史 TB 按 `response["data"]` 解析，
-# 本垫片把新契约响应合成为旧 `data` 壳，让既有解析零改动继续工作。
-def _c1_wrapper(body):
-    if not isinstance(body, dict):
-        return {}
-    if isinstance(body.get("data"), dict):
-        return body["data"]
-    wrapped = {"ok": body.get("ok"), "error": body.get("error")}
-    for key in ("value", "result", "steps"):
-        if key in body:
-            wrapped[key] = body[key]
-    return wrapped

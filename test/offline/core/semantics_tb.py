@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=====================
-# 作者: 设计/Codex
-# 最后改动: 2026-09-28 12:04
+# 作者: 测试/root
+# 最后改动: 2026-09-30 18:35
 # 依赖: 无
 # =====================================================================
 # 六步流程（按 test/docs/写TB规范.md §1–§6）：
@@ -347,11 +347,22 @@ class _BlockingSkillClient:
         self.release = threading.Event()
 
     def execute_skill(self, code, timeout=None, *, log_level=None, log_max_bytes=None):
+        return self.execute_skill_checked(
+            code, timeout, log_level=log_level, log_max_bytes=log_max_bytes
+        )[0]
+
+    def execute_skill_checked(self, code, timeout=None, *, log_level=None,
+                              log_max_bytes=None):
+        """中层走的就是 checked 形态（返回 (result, delivery)）。
+
+        只实现 ``execute_skill`` 会让 AttributeError 被中层的兜底 except 吞成
+        "Daemon connection failed"，槽位永远占不上——2026-09-30 的老化原因。
+        """
         from pyapi.models import ExecutionStatus, VirtuosoResult
 
         self.started.set()
         self.release.wait(10)
-        return VirtuosoResult(status=ExecutionStatus.SUCCESS, output="2")
+        return VirtuosoResult(status=ExecutionStatus.SUCCESS, output="2"), "completed"
 
 
 def _facts_server() -> tuple[BusinessServer, Path]:

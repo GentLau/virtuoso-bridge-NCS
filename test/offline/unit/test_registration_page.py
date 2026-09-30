@@ -155,6 +155,53 @@ class TestRegistrationPageContract(unittest.TestCase):
         self.assertNotIn("缺省同 command 主机", self.html)
         self.assertIn("继承 ssh.default", self.html)
 
+    def test_console_has_three_separate_workspaces(self):
+        """注册、个人管理、管理员系统管理必须是三个可切换工作区。"""
+        for page_id in ("page-register", "page-personal", "page-admin"):
+            self.assertIn(f'id="{page_id}"', self.html)
+        self.assertIn('data-page="register"', self.html)
+        self.assertIn('data-page="personal"', self.html)
+        self.assertIn('data-page="admin"', self.html)
+        self.assertIn("function switchWorkspace(name)", self.html)
+
+    def test_personal_page_combines_query_and_update(self):
+        """个人页必须在同一详情面板内完成查询、编辑、diff、保存和删除。"""
+        for element_id in (
+            "personalConnectBtn",
+            "personalTokenInput",
+            "personalEnhancedInput",
+            "personalDetail",
+            "personalEditBtn",
+            "personalEditor",
+            "personalDiffBox",
+            "personalSaveBtn",
+            "personalDeleteBtn",
+        ):
+            self.assertIn(f'id="{element_id}"', self.html)
+        self.assertIn("'/api/user/' + encodeURIComponent(user)", self.html)
+        self.assertIn("'/api/user/' + encodeURIComponent(user) + '/update'", self.html)
+        self.assertIn("function personalRequest(path, options, payload)", self.html)
+        self.assertIn("body.enhanced_token = credentials.enhanced", self.html)
+        self.assertIn("'Authorization': 'Bearer ' + credentials.personal", self.html)
+        self.assertNotIn("'Authorization': 'Bearer ' + credentials.enhanced", self.html)
+        self.assertNotIn("增强凭据兼容模式", self.html)
+
+    def test_admin_page_is_system_scoped(self):
+        """管理员页只管理系统配置和进程，不承载逐用户参数编辑。"""
+        self.assertIn('id="adminBusinessPoolSize"', self.html)
+        self.assertIn("'/api/config'", self.html)
+        self.assertIn("'/api/process/status'", self.html)
+        self.assertIn("'/api/process/' + action", self.html)
+        self.assertNotIn('id="adminEditBtn"', self.html)
+
+    def test_personal_page_discloses_current_backend_permission_gap(self):
+        """真实 server 目前仍要求管理员 Authorization，页面必须显式披露。"""
+        self.assertIn("<code>/api/user/*</code> 仍强制管理员 Authorization", self.html)
+        self.assertIn("<code>enhanced_token</code> 也尚未接入 update", self.html)
+        self.assertIn("当前页不会回退到管理员 token", self.html)
+        self.assertIn("function renderPersonalFailure(error, action)", self.html)
+        self.assertIn("后端契约缺口", self.html)
+
 
 if __name__ == "__main__":
     unittest.main()

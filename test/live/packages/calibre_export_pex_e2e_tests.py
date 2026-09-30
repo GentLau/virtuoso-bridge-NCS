@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
 # 作者: 测试/root
-# 最后改动: 2026-09-29 16:26
+# 最后改动: 2026-09-29 21:19
 # 依赖: 无
 # =======================================================================
 """补掉 `calibre.export` 的产物面，并钉住 `calibre.pex` 的本版不支持语义。
@@ -74,22 +74,25 @@ def _value(transport, operation: str, **fields: Any) -> dict[str, Any]:
     if payload is None:
         payload = response.get("result")
     if payload is None:
-        data = _c1_wrapper(response)
+        data = response
         payload = data.get("value") if data.get("value") is not None else data
     return payload if isinstance(payload, dict) else {}
 
 
 def _command(transport, cmd: str, timeout: int = 120) -> str:
+    """C4 契约：`basic.command.run` 的 `result` 是命名对象
+    `{returncode,stdout,stderr,kind}`（旧的位置数组 `[rc,stdout,...]` 已废除——
+    2026-09-29 21:0x 门禁实测：旧索引写法让 ENV-01 的 `drc_ok` 恒为空串）。
+    """
     response = _op(transport, "basic.command.run", cmd=cmd, timeout=timeout)
     if not response.get("ok"):
         raise AssertionError(f"command failed: {response.get('error')}")
-    result = response.get("result") if isinstance(response.get("result"), list) else None
-    if result is None:
-        result = response.get("value") if isinstance(response.get("value"), list) else None
-    if result is None:
-        result = (_c1_wrapper(response)).get("result")
-    result = result or ["", ""]
-    return str((result if isinstance(result, list) else ["", ""])[1])
+    result = response.get("result")
+    if not isinstance(result, dict):
+        raise AssertionError(f"command result 不是命名对象（C4 契约）: {response}")
+    if result.get("returncode") != 0:
+        raise AssertionError(f"command rc != 0: {response}")
+    return str(result.get("stdout") or "")
 
 
 def _check(condition: Any, message: str) -> None:
@@ -172,7 +175,7 @@ def run_suite(transport) -> list[tuple[str, str]]:
             "operation": "calibre.pex", "token": TOKEN, "deck": RCX_DECK,
         })
         # 兼容顶层统一壳与“业务结果本体直出”两种形态。
-        data = _c1_wrapper(response) or response
+        data = response or response
         _check(response.get("ok") is False and data.get("ok") is False,
                f"PEX 必须结构化失败: {response}")
         value = data.get("value") or {}
@@ -239,19 +242,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
-
-# --- C1 兼容垫片（2026-09-29，C3）------------------------------------------------
-# C1（2f88853）起：业务载荷直返顶层（值型 `value`、命令/skill 型 `result`）、
-# 成功默认省略 `steps`、失败壳去掉 `data`。历史 TB 按 `response["data"]` 解析，
-# 本垫片把新契约响应合成为旧 `data` 壳，让既有解析零改动继续工作。
-def _c1_wrapper(body):
-    if not isinstance(body, dict):
-        return {}
-    if isinstance(body.get("data"), dict):
-        return body["data"]
-    wrapped = {"ok": body.get("ok"), "error": body.get("error")}
-    for key in ("value", "result", "steps"):
-        if key in body:
-            wrapped[key] = body[key]
-    return wrapped

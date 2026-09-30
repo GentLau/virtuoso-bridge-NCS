@@ -1,0 +1,3011 @@
+{
+ "source_matrix": "test/reports/round9/op-param-matrix.json（本轮由 build_op_param_matrix.py 重跑，OUT 指向 round9，未改动 round8 产物）",
+ "totals": {
+  "rows": 811,
+  "candidate": 571,
+  "non_candidate": 240
+ },
+ "classification_counts": {
+  "CONTRACT_STEP_DETAILS": 77,
+  "CONTRACT_TIMEOUT": 29,
+  "NA_KIND_LEGACY_CDL": 1,
+  "INERT_PEX_ONLY_FIELD": 4,
+  "NA_KIND_LVS_ONLY": 3,
+  "CONTRACT_LOG_OPTIONS": 109,
+  "NA_PEX_UNSUPPORTED": 17
+ },
+ "real_tb_gaps": [],
+ "rows": [
+  {
+   "op": "basic.command.run",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 29,
+   "op_sites": [
+    "test/live/flows/adc_sar_flow_tb.py:199",
+    "test/live/flows/adc_sar_flow_tb.py:242",
+    "test/live/flows/design_iterate_tb.py:236"
+   ]
+  },
+  {
+   "op": "basic.file.download",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 6,
+   "op_sites": [
+    "test/live/flows/lvs_from_schematic_tb.py:363",
+    "test/live/flows/lvs_from_schematic_tb.py:379",
+    "test/live/flows/project_flow_tb.py:386"
+   ]
+  },
+  {
+   "op": "basic.file.upload",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 10,
+   "op_sites": [
+    "test/live/flows/lvs_from_schematic_tb.py:314",
+    "test/live/flows/lvs_from_schematic_tb.py:315",
+    "test/live/flows/lvs_from_schematic_tb.py:379"
+   ]
+  },
+  {
+   "op": "basic.gui.run",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 3,
+   "op_sites": [
+    "test/live/packages/infra_e2e_tests.py:119",
+    "test/live/packages/infra_e2e_tests.py:259",
+    "test/live/packages/infra_e2e_tests.py:286"
+   ]
+  },
+  {
+   "op": "basic.skill.execute",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 30,
+   "op_sites": [
+    "test/live/flows/adc_sar_flow_tb.py:115",
+    "test/live/flows/adc_sar_flow_tb.py:173",
+    "test/live/flows/adc_sar_flow_tb.py:242"
+   ]
+  },
+  {
+   "op": "basic.spectre.run",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 3,
+   "op_sites": [
+    "test/live/packages/infra_e2e_tests.py:122",
+    "test/live/packages/infra_e2e_tests.py:259",
+    "test/live/packages/infra_e2e_tests.py:286"
+   ]
+  },
+  {
+   "op": "calibre.check_env",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 3,
+   "op_sites": [
+    "test/live/packages/calibre_e2e_tests.py:140",
+    "test/live/packages/calibre_e2e_tests.py:338",
+    "test/live/packages/calibre_e2e_tests.py:355"
+   ]
+  },
+  {
+   "op": "calibre.check_env",
+   "param": "timeout",
+   "status": "GAP",
+   "class": "CONTRACT_TIMEOUT",
+   "reason": "跨 op 通用字段；离线合同 test/offline/unit/test_param_timeout_contract.py（79/79 op 枚举）+ test_all_ops_timeout_field.py",
+   "op_tb_files": 3,
+   "op_sites": [
+    "test/live/packages/calibre_e2e_tests.py:140",
+    "test/live/packages/calibre_e2e_tests.py:338",
+    "test/live/packages/calibre_e2e_tests.py:355"
+   ]
+  },
+  {
+   "op": "calibre.drc",
+   "param": "cdl",
+   "status": "GAP",
+   "class": "NA_KIND_LEGACY_CDL",
+   "reason": "cdl 经 deck_rewrite(gds, top, cdl) 参与占位符替换（calibre.py:848-850），语义属 LVS 源网表；DRC deck 不含 CDL 占位符时无效果",
+   "op_tb_files": 7,
+   "op_sites": [
+    "test/live/flows/s11_full_flow.py:271",
+    "test/live/flows/serdes_rx_flow_tb.py:649",
+    "test/live/packages/calibre_e2e_tests.py:165"
+   ]
+  },
+  {
+   "op": "calibre.drc",
+   "param": "fmt",
+   "status": "GAP",
+   "class": "INERT_PEX_ONLY_FIELD",
+   "reason": "唯一行为读取点在 PEX 分支（lvs_run_dir: calibre.py:499 于 kind==\"pex\"；fmt: calibre.py:1029-1030 PEX 第三阶段），而 calibre.pex 本版不可达（spec §4.4 / calibre.py:425-433）；对 calibre.drc / calibre.lvs 为惰性字段（仅校验 + 回填 meta）",
+   "op_tb_files": 7,
+   "op_sites": [
+    "test/live/flows/s11_full_flow.py:271",
+    "test/live/flows/serdes_rx_flow_tb.py:649",
+    "test/live/packages/calibre_e2e_tests.py:165"
+   ]
+  },
+  {
+   "op": "calibre.drc",
+   "param": "hcell_file",
+   "status": "GAP",
+   "class": "NA_KIND_LVS_ONLY",
+   "reason": "_argv_for 只在 kind==\"lvs\" 追加 -spice/-hcell/-xcell（src/pyapi/packages/calibre.py:1017-1023）；spec 上层/12-calibre.md:188 亦说明这三者只服务 LVS 的无 runset 路径",
+   "op_tb_files": 7,
+   "op_sites": [
+    "test/live/flows/s11_full_flow.py:271",
+    "test/live/flows/serdes_rx_flow_tb.py:649",
+    "test/live/packages/calibre_e2e_tests.py:165"
+   ]
+  },
+  {
+   "op": "calibre.drc",
+   "param": "lvs_run_dir",
+   "status": "GAP",
+   "class": "INERT_PEX_ONLY_FIELD",
+   "reason": "唯一行为读取点在 PEX 分支（lvs_run_dir: calibre.py:499 于 kind==\"pex\"；fmt: calibre.py:1029-1030 PEX 第三阶段），而 calibre.pex 本版不可达（spec §4.4 / calibre.py:425-433）；对 calibre.drc / calibre.lvs 为惰性字段（仅校验 + 回填 meta）",
+   "op_tb_files": 7,
+   "op_sites": [
+    "test/live/flows/s11_full_flow.py:271",
+    "test/live/flows/serdes_rx_flow_tb.py:649",
+    "test/live/packages/calibre_e2e_tests.py:165"
+   ]
+  },
+  {
+   "op": "calibre.drc",
+   "param": "spice_file",
+   "status": "GAP",
+   "class": "NA_KIND_LVS_ONLY",
+   "reason": "_argv_for 只在 kind==\"lvs\" 追加 -spice/-hcell/-xcell（src/pyapi/packages/calibre.py:1017-1023）；spec 上层/12-calibre.md:188 亦说明这三者只服务 LVS 的无 runset 路径",
+   "op_tb_files": 7,
+   "op_sites": [
+    "test/live/flows/s11_full_flow.py:271",
+    "test/live/flows/serdes_rx_flow_tb.py:649",
+    "test/live/packages/calibre_e2e_tests.py:165"
+   ]
+  },
+  {
+   "op": "calibre.drc",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 7,
+   "op_sites": [
+    "test/live/flows/s11_full_flow.py:271",
+    "test/live/flows/serdes_rx_flow_tb.py:649",
+    "test/live/packages/calibre_e2e_tests.py:165"
+   ]
+  },
+  {
+   "op": "calibre.drc",
+   "param": "xcell_file",
+   "status": "GAP",
+   "class": "NA_KIND_LVS_ONLY",
+   "reason": "_argv_for 只在 kind==\"lvs\" 追加 -spice/-hcell/-xcell（src/pyapi/packages/calibre.py:1017-1023）；spec 上层/12-calibre.md:188 亦说明这三者只服务 LVS 的无 runset 路径",
+   "op_tb_files": 7,
+   "op_sites": [
+    "test/live/flows/s11_full_flow.py:271",
+    "test/live/flows/serdes_rx_flow_tb.py:649",
+    "test/live/packages/calibre_e2e_tests.py:165"
+   ]
+  },
+  {
+   "op": "calibre.export",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/calibre_export_pex_e2e_tests.py:141",
+    "test/live/packages/calibre_export_pex_e2e_tests.py:162",
+    "test/live/packages/calibre_export_pex_e2e_tests.py:196"
+   ]
+  },
+  {
+   "op": "calibre.export_cdl",
+   "param": "log_level",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 5,
+   "op_sites": [
+    "test/live/flows/design_iterate_tb.py:763",
+    "test/live/flows/design_iterate_tb.py:841",
+    "test/live/flows/project_flow_tb.py:370"
+   ]
+  },
+  {
+   "op": "calibre.export_cdl",
+   "param": "log_max_bytes",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 5,
+   "op_sites": [
+    "test/live/flows/design_iterate_tb.py:763",
+    "test/live/flows/design_iterate_tb.py:841",
+    "test/live/flows/project_flow_tb.py:370"
+   ]
+  },
+  {
+   "op": "calibre.export_cdl",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 5,
+   "op_sites": [
+    "test/live/flows/design_iterate_tb.py:763",
+    "test/live/flows/design_iterate_tb.py:841",
+    "test/live/flows/project_flow_tb.py:370"
+   ]
+  },
+  {
+   "op": "calibre.lvs",
+   "param": "fmt",
+   "status": "GAP",
+   "class": "INERT_PEX_ONLY_FIELD",
+   "reason": "唯一行为读取点在 PEX 分支（lvs_run_dir: calibre.py:499 于 kind==\"pex\"；fmt: calibre.py:1029-1030 PEX 第三阶段），而 calibre.pex 本版不可达（spec §4.4 / calibre.py:425-433）；对 calibre.drc / calibre.lvs 为惰性字段（仅校验 + 回填 meta）",
+   "op_tb_files": 7,
+   "op_sites": [
+    "test/live/flows/design_iterate_tb.py:781",
+    "test/live/flows/design_iterate_tb.py:881",
+    "test/live/flows/lvs_from_schematic_tb.py:324"
+   ]
+  },
+  {
+   "op": "calibre.lvs",
+   "param": "lvs_run_dir",
+   "status": "GAP",
+   "class": "INERT_PEX_ONLY_FIELD",
+   "reason": "唯一行为读取点在 PEX 分支（lvs_run_dir: calibre.py:499 于 kind==\"pex\"；fmt: calibre.py:1029-1030 PEX 第三阶段），而 calibre.pex 本版不可达（spec §4.4 / calibre.py:425-433）；对 calibre.drc / calibre.lvs 为惰性字段（仅校验 + 回填 meta）",
+   "op_tb_files": 7,
+   "op_sites": [
+    "test/live/flows/design_iterate_tb.py:781",
+    "test/live/flows/design_iterate_tb.py:881",
+    "test/live/flows/lvs_from_schematic_tb.py:324"
+   ]
+  },
+  {
+   "op": "calibre.lvs",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 7,
+   "op_sites": [
+    "test/live/flows/design_iterate_tb.py:781",
+    "test/live/flows/design_iterate_tb.py:881",
+    "test/live/flows/lvs_from_schematic_tb.py:324"
+   ]
+  },
+  {
+   "op": "calibre.pex",
+   "param": "blocking",
+   "status": "GAP",
+   "class": "NA_PEX_UNSUPPORTED",
+   "reason": "spec 上层/12-calibre.md §4.4「本版不提供 PEX 启动」；实现 calibre.py:425-433 在 _run 之前直接返回 pex_unsupported；请求仍按 RunRequest 校验",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/calibre_export_pex_e2e_tests.py:171"
+   ]
+  },
+  {
+   "op": "calibre.pex",
+   "param": "calibre_bin",
+   "status": "GAP",
+   "class": "NA_PEX_UNSUPPORTED",
+   "reason": "spec 上层/12-calibre.md §4.4「本版不提供 PEX 启动」；实现 calibre.py:425-433 在 _run 之前直接返回 pex_unsupported；请求仍按 RunRequest 校验",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/calibre_export_pex_e2e_tests.py:171"
+   ]
+  },
+  {
+   "op": "calibre.pex",
+   "param": "cdl",
+   "status": "GAP",
+   "class": "NA_PEX_UNSUPPORTED",
+   "reason": "spec 上层/12-calibre.md §4.4「本版不提供 PEX 启动」；实现 calibre.py:425-433 在 _run 之前直接返回 pex_unsupported；请求仍按 RunRequest 校验",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/calibre_export_pex_e2e_tests.py:171"
+   ]
+  },
+  {
+   "op": "calibre.pex",
+   "param": "fmt",
+   "status": "GAP",
+   "class": "NA_PEX_UNSUPPORTED",
+   "reason": "spec 上层/12-calibre.md §4.4「本版不提供 PEX 启动」；实现 calibre.py:425-433 在 _run 之前直接返回 pex_unsupported；请求仍按 RunRequest 校验",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/calibre_export_pex_e2e_tests.py:171"
+   ]
+  },
+  {
+   "op": "calibre.pex",
+   "param": "gds",
+   "status": "GAP",
+   "class": "NA_PEX_UNSUPPORTED",
+   "reason": "spec 上层/12-calibre.md §4.4「本版不提供 PEX 启动」；实现 calibre.py:425-433 在 _run 之前直接返回 pex_unsupported；请求仍按 RunRequest 校验",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/calibre_export_pex_e2e_tests.py:171"
+   ]
+  },
+  {
+   "op": "calibre.pex",
+   "param": "hcell_file",
+   "status": "GAP",
+   "class": "NA_PEX_UNSUPPORTED",
+   "reason": "spec 上层/12-calibre.md §4.4「本版不提供 PEX 启动」；实现 calibre.py:425-433 在 _run 之前直接返回 pex_unsupported；请求仍按 RunRequest 校验",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/calibre_export_pex_e2e_tests.py:171"
+   ]
+  },
+  {
+   "op": "calibre.pex",
+   "param": "hier",
+   "status": "GAP",
+   "class": "NA_PEX_UNSUPPORTED",
+   "reason": "spec 上层/12-calibre.md §4.4「本版不提供 PEX 启动」；实现 calibre.py:425-433 在 _run 之前直接返回 pex_unsupported；请求仍按 RunRequest 校验",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/calibre_export_pex_e2e_tests.py:171"
+   ]
+  },
+  {
+   "op": "calibre.pex",
+   "param": "job_id",
+   "status": "GAP",
+   "class": "NA_PEX_UNSUPPORTED",
+   "reason": "spec 上层/12-calibre.md §4.4「本版不提供 PEX 启动」；实现 calibre.py:425-433 在 _run 之前直接返回 pex_unsupported；请求仍按 RunRequest 校验",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/calibre_export_pex_e2e_tests.py:171"
+   ]
+  },
+  {
+   "op": "calibre.pex",
+   "param": "lvs_run_dir",
+   "status": "GAP",
+   "class": "NA_PEX_UNSUPPORTED",
+   "reason": "spec 上层/12-calibre.md §4.4「本版不提供 PEX 启动」；实现 calibre.py:425-433 在 _run 之前直接返回 pex_unsupported；请求仍按 RunRequest 校验",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/calibre_export_pex_e2e_tests.py:171"
+   ]
+  },
+  {
+   "op": "calibre.pex",
+   "param": "params",
+   "status": "GAP",
+   "class": "NA_PEX_UNSUPPORTED",
+   "reason": "spec 上层/12-calibre.md §4.4「本版不提供 PEX 启动」；实现 calibre.py:425-433 在 _run 之前直接返回 pex_unsupported；请求仍按 RunRequest 校验",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/calibre_export_pex_e2e_tests.py:171"
+   ]
+  },
+  {
+   "op": "calibre.pex",
+   "param": "poll_interval",
+   "status": "GAP",
+   "class": "NA_PEX_UNSUPPORTED",
+   "reason": "spec 上层/12-calibre.md §4.4「本版不提供 PEX 启动」；实现 calibre.py:425-433 在 _run 之前直接返回 pex_unsupported；请求仍按 RunRequest 校验",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/calibre_export_pex_e2e_tests.py:171"
+   ]
+  },
+  {
+   "op": "calibre.pex",
+   "param": "run_dir",
+   "status": "GAP",
+   "class": "NA_PEX_UNSUPPORTED",
+   "reason": "spec 上层/12-calibre.md §4.4「本版不提供 PEX 启动」；实现 calibre.py:425-433 在 _run 之前直接返回 pex_unsupported；请求仍按 RunRequest 校验",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/calibre_export_pex_e2e_tests.py:171"
+   ]
+  },
+  {
+   "op": "calibre.pex",
+   "param": "runset",
+   "status": "GAP",
+   "class": "NA_PEX_UNSUPPORTED",
+   "reason": "spec 上层/12-calibre.md §4.4「本版不提供 PEX 启动」；实现 calibre.py:425-433 在 _run 之前直接返回 pex_unsupported；请求仍按 RunRequest 校验",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/calibre_export_pex_e2e_tests.py:171"
+   ]
+  },
+  {
+   "op": "calibre.pex",
+   "param": "spice_file",
+   "status": "GAP",
+   "class": "NA_PEX_UNSUPPORTED",
+   "reason": "spec 上层/12-calibre.md §4.4「本版不提供 PEX 启动」；实现 calibre.py:425-433 在 _run 之前直接返回 pex_unsupported；请求仍按 RunRequest 校验",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/calibre_export_pex_e2e_tests.py:171"
+   ]
+  },
+  {
+   "op": "calibre.pex",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/calibre_export_pex_e2e_tests.py:171"
+   ]
+  },
+  {
+   "op": "calibre.pex",
+   "param": "timeout",
+   "status": "GAP",
+   "class": "CONTRACT_TIMEOUT",
+   "reason": "跨 op 通用字段；离线合同 test/offline/unit/test_param_timeout_contract.py（79/79 op 枚举）+ test_all_ops_timeout_field.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/calibre_export_pex_e2e_tests.py:171"
+   ]
+  },
+  {
+   "op": "calibre.pex",
+   "param": "top",
+   "status": "GAP",
+   "class": "NA_PEX_UNSUPPORTED",
+   "reason": "spec 上层/12-calibre.md §4.4「本版不提供 PEX 启动」；实现 calibre.py:425-433 在 _run 之前直接返回 pex_unsupported；请求仍按 RunRequest 校验",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/calibre_export_pex_e2e_tests.py:171"
+   ]
+  },
+  {
+   "op": "calibre.pex",
+   "param": "turbo",
+   "status": "GAP",
+   "class": "NA_PEX_UNSUPPORTED",
+   "reason": "spec 上层/12-calibre.md §4.4「本版不提供 PEX 启动」；实现 calibre.py:425-433 在 _run 之前直接返回 pex_unsupported；请求仍按 RunRequest 校验",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/calibre_export_pex_e2e_tests.py:171"
+   ]
+  },
+  {
+   "op": "calibre.pex",
+   "param": "xcell_file",
+   "status": "GAP",
+   "class": "NA_PEX_UNSUPPORTED",
+   "reason": "spec 上层/12-calibre.md §4.4「本版不提供 PEX 启动」；实现 calibre.py:425-433 在 _run 之前直接返回 pex_unsupported；请求仍按 RunRequest 校验",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/calibre_export_pex_e2e_tests.py:171"
+   ]
+  },
+  {
+   "op": "calibre.read_results",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 8,
+   "op_sites": [
+    "test/live/flows/design_iterate_tb.py:797",
+    "test/live/flows/design_iterate_tb.py:898",
+    "test/live/flows/lvs_from_schematic_tb.py:332"
+   ]
+  },
+  {
+   "op": "calibre.status",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 4,
+   "op_sites": [
+    "test/live/packages/calibre_params_e2e_tests.py:166",
+    "test/live/packages/calibre_params_e2e_tests.py:270",
+    "test/live/packages/calibre_params_e2e_tests.py:292"
+   ]
+  },
+  {
+   "op": "spectre.check_license",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 2,
+   "op_sites": [
+    "test/live/flows/adc_sar_flow_tb.py:227",
+    "test/live/flows/adc_sar_flow_tb.py:242",
+    "test/live/packages/spectre_e2e_tests.py:103"
+   ]
+  },
+  {
+   "op": "spectre.export",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 2,
+   "op_sites": [
+    "test/live/packages/spectre_e2e_tests.py:168",
+    "test/live/packages/spectre_e2e_tests.py:221",
+    "test/live/packages/spectre_e2e_tests.py:233"
+   ]
+  },
+  {
+   "op": "spectre.measure",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 6,
+   "op_sites": [
+    "test/live/flows/design_iterate_tb.py:561",
+    "test/live/flows/design_iterate_tb.py:574",
+    "test/live/flows/design_iterate_tb.py:598"
+   ]
+  },
+  {
+   "op": "spectre.read_results",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/spectre_e2e_tests.py:136",
+    "test/live/packages/spectre_e2e_tests.py:220",
+    "test/live/packages/spectre_e2e_tests.py:233"
+   ]
+  },
+  {
+   "op": "spectre.run",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 11,
+   "op_sites": [
+    "test/live/flows/design_iterate_tb.py:531",
+    "test/live/flows/design_iterate_tb.py:598",
+    "test/live/flows/design_iterate_tb.py:708"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.cat.add_cell",
+   "param": "log_level",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:248"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.cat.add_cell",
+   "param": "log_max_bytes",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:248"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.cat.add_cell",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:248"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.cat.add_cell",
+   "param": "timeout",
+   "status": "GAP",
+   "class": "CONTRACT_TIMEOUT",
+   "reason": "跨 op 通用字段；离线合同 test/offline/unit/test_param_timeout_contract.py（79/79 op 枚举）+ test_all_ops_timeout_field.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:248"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.cat.create",
+   "param": "log_level",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:160",
+    "test/live/packages/cellview_e2e_tests.py:260",
+    "test/live/packages/cellview_e2e_tests.py:309"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.cat.create",
+   "param": "log_max_bytes",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:160",
+    "test/live/packages/cellview_e2e_tests.py:260",
+    "test/live/packages/cellview_e2e_tests.py:309"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.cat.create",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:160",
+    "test/live/packages/cellview_e2e_tests.py:260",
+    "test/live/packages/cellview_e2e_tests.py:309"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.cat.create",
+   "param": "timeout",
+   "status": "GAP",
+   "class": "CONTRACT_TIMEOUT",
+   "reason": "跨 op 通用字段；离线合同 test/offline/unit/test_param_timeout_contract.py（79/79 op 枚举）+ test_all_ops_timeout_field.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:160",
+    "test/live/packages/cellview_e2e_tests.py:260",
+    "test/live/packages/cellview_e2e_tests.py:309"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.cat.delete",
+   "param": "log_level",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:263"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.cat.delete",
+   "param": "log_max_bytes",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:263"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.cat.delete",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:263"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.cat.delete",
+   "param": "timeout",
+   "status": "GAP",
+   "class": "CONTRACT_TIMEOUT",
+   "reason": "跨 op 通用字段；离线合同 test/offline/unit/test_param_timeout_contract.py（79/79 op 枚举）+ test_all_ops_timeout_field.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:263"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.cat.list",
+   "param": "log_level",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:165",
+    "test/live/packages/cellview_e2e_tests.py:246",
+    "test/live/packages/cellview_e2e_tests.py:256"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.cat.list",
+   "param": "log_max_bytes",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:165",
+    "test/live/packages/cellview_e2e_tests.py:246",
+    "test/live/packages/cellview_e2e_tests.py:256"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.cat.list",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:165",
+    "test/live/packages/cellview_e2e_tests.py:246",
+    "test/live/packages/cellview_e2e_tests.py:256"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.cat.list",
+   "param": "timeout",
+   "status": "GAP",
+   "class": "CONTRACT_TIMEOUT",
+   "reason": "跨 op 通用字段；离线合同 test/offline/unit/test_param_timeout_contract.py（79/79 op 枚举）+ test_all_ops_timeout_field.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:165",
+    "test/live/packages/cellview_e2e_tests.py:246",
+    "test/live/packages/cellview_e2e_tests.py:256"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.cat.remove_cell",
+   "param": "log_level",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:252"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.cat.remove_cell",
+   "param": "log_max_bytes",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:252"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.cat.remove_cell",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:252"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.cat.remove_cell",
+   "param": "timeout",
+   "status": "GAP",
+   "class": "CONTRACT_TIMEOUT",
+   "reason": "跨 op 通用字段；离线合同 test/offline/unit/test_param_timeout_contract.py（79/79 op 枚举）+ test_all_ops_timeout_field.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:252"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.cat.rename",
+   "param": "log_level",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:255"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.cat.rename",
+   "param": "log_max_bytes",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:255"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.cat.rename",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:255"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.cat.rename",
+   "param": "timeout",
+   "status": "GAP",
+   "class": "CONTRACT_TIMEOUT",
+   "reason": "跨 op 通用字段；离线合同 test/offline/unit/test_param_timeout_contract.py（79/79 op 枚举）+ test_all_ops_timeout_field.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:255"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.cell.copy",
+   "param": "log_level",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:202"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.cell.copy",
+   "param": "log_max_bytes",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:202"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.cell.copy",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:202"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.cell.copy",
+   "param": "timeout",
+   "status": "GAP",
+   "class": "CONTRACT_TIMEOUT",
+   "reason": "跨 op 通用字段；离线合同 test/offline/unit/test_param_timeout_contract.py（79/79 op 枚举）+ test_all_ops_timeout_field.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:202"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.cell.delete",
+   "param": "log_level",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:214"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.cell.delete",
+   "param": "log_max_bytes",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:214"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.cell.delete",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:214"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.cell.delete",
+   "param": "timeout",
+   "status": "GAP",
+   "class": "CONTRACT_TIMEOUT",
+   "reason": "跨 op 通用字段；离线合同 test/offline/unit/test_param_timeout_contract.py（79/79 op 枚举）+ test_all_ops_timeout_field.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:214"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.cell.list",
+   "param": "log_level",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 2,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:138",
+    "test/live/packages/cellview_e2e_tests.py:162",
+    "test/live/packages/cellview_e2e_tests.py:200"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.cell.list",
+   "param": "log_max_bytes",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 2,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:138",
+    "test/live/packages/cellview_e2e_tests.py:162",
+    "test/live/packages/cellview_e2e_tests.py:200"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.cell.list",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 2,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:138",
+    "test/live/packages/cellview_e2e_tests.py:162",
+    "test/live/packages/cellview_e2e_tests.py:200"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.cell.list",
+   "param": "timeout",
+   "status": "GAP",
+   "class": "CONTRACT_TIMEOUT",
+   "reason": "跨 op 通用字段；离线合同 test/offline/unit/test_param_timeout_contract.py（79/79 op 枚举）+ test_all_ops_timeout_field.py",
+   "op_tb_files": 2,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:138",
+    "test/live/packages/cellview_e2e_tests.py:162",
+    "test/live/packages/cellview_e2e_tests.py:200"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.cell.rename",
+   "param": "log_level",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:208"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.cell.rename",
+   "param": "log_max_bytes",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:208"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.cell.rename",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:208"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.cell.rename",
+   "param": "timeout",
+   "status": "GAP",
+   "class": "CONTRACT_TIMEOUT",
+   "reason": "跨 op 通用字段；离线合同 test/offline/unit/test_param_timeout_contract.py（79/79 op 枚举）+ test_all_ops_timeout_field.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:208"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.lib.bind",
+   "param": "log_level",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 2,
+   "op_sites": [
+    "test/live/flows/adc_sar_flow_tb.py:106",
+    "test/live/flows/adc_sar_flow_tb.py:242",
+    "test/live/packages/cellview_e2e_tests.py:179"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.lib.bind",
+   "param": "log_max_bytes",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 2,
+   "op_sites": [
+    "test/live/flows/adc_sar_flow_tb.py:106",
+    "test/live/flows/adc_sar_flow_tb.py:242",
+    "test/live/packages/cellview_e2e_tests.py:179"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.lib.bind",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 2,
+   "op_sites": [
+    "test/live/flows/adc_sar_flow_tb.py:106",
+    "test/live/flows/adc_sar_flow_tb.py:242",
+    "test/live/packages/cellview_e2e_tests.py:179"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.lib.bind",
+   "param": "timeout",
+   "status": "GAP",
+   "class": "CONTRACT_TIMEOUT",
+   "reason": "跨 op 通用字段；离线合同 test/offline/unit/test_param_timeout_contract.py（79/79 op 枚举）+ test_all_ops_timeout_field.py",
+   "op_tb_files": 2,
+   "op_sites": [
+    "test/live/flows/adc_sar_flow_tb.py:106",
+    "test/live/flows/adc_sar_flow_tb.py:242",
+    "test/live/packages/cellview_e2e_tests.py:179"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.lib.copy",
+   "param": "log_level",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:189"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.lib.copy",
+   "param": "log_max_bytes",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:189"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.lib.copy",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:189"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.lib.copy",
+   "param": "timeout",
+   "status": "GAP",
+   "class": "CONTRACT_TIMEOUT",
+   "reason": "跨 op 通用字段；离线合同 test/offline/unit/test_param_timeout_contract.py（79/79 op 枚举）+ test_all_ops_timeout_field.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:189"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.lib.create",
+   "param": "log_level",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 9,
+   "op_sites": [
+    "test/live/flows/adc_sar_flow_tb.py:101",
+    "test/live/flows/adc_sar_flow_tb.py:242",
+    "test/live/flows/design_iterate_tb.py:302"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.lib.create",
+   "param": "log_max_bytes",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 9,
+   "op_sites": [
+    "test/live/flows/adc_sar_flow_tb.py:101",
+    "test/live/flows/adc_sar_flow_tb.py:242",
+    "test/live/flows/design_iterate_tb.py:302"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.lib.create",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 9,
+   "op_sites": [
+    "test/live/flows/adc_sar_flow_tb.py:101",
+    "test/live/flows/adc_sar_flow_tb.py:242",
+    "test/live/flows/design_iterate_tb.py:302"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.lib.delete",
+   "param": "log_level",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 2,
+   "op_sites": [
+    "test/live/flows/project_flow_tb.py:247",
+    "test/live/packages/cellview_e2e_tests.py:150",
+    "test/live/packages/cellview_e2e_tests.py:154"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.lib.delete",
+   "param": "log_max_bytes",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 2,
+   "op_sites": [
+    "test/live/flows/project_flow_tb.py:247",
+    "test/live/packages/cellview_e2e_tests.py:150",
+    "test/live/packages/cellview_e2e_tests.py:154"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.lib.delete",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 2,
+   "op_sites": [
+    "test/live/flows/project_flow_tb.py:247",
+    "test/live/packages/cellview_e2e_tests.py:150",
+    "test/live/packages/cellview_e2e_tests.py:154"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.lib.get",
+   "param": "log_level",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 3,
+   "op_sites": [
+    "test/live/flows/s11_full_flow.py:130",
+    "test/live/flows/serdes_rx_flow_tb.py:200",
+    "test/live/packages/cellview_e2e_tests.py:173"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.lib.get",
+   "param": "log_max_bytes",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 3,
+   "op_sites": [
+    "test/live/flows/s11_full_flow.py:130",
+    "test/live/flows/serdes_rx_flow_tb.py:200",
+    "test/live/packages/cellview_e2e_tests.py:173"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.lib.get",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 3,
+   "op_sites": [
+    "test/live/flows/s11_full_flow.py:130",
+    "test/live/flows/serdes_rx_flow_tb.py:200",
+    "test/live/packages/cellview_e2e_tests.py:173"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.lib.list",
+   "param": "log_level",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 2,
+   "op_sites": [
+    "test/live/flows/project_flow_tb.py:243",
+    "test/live/flows/project_flow_tb.py:244",
+    "test/live/packages/cellview_e2e_tests.py:134"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.lib.list",
+   "param": "log_max_bytes",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 2,
+   "op_sites": [
+    "test/live/flows/project_flow_tb.py:243",
+    "test/live/flows/project_flow_tb.py:244",
+    "test/live/packages/cellview_e2e_tests.py:134"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.lib.list",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 2,
+   "op_sites": [
+    "test/live/flows/project_flow_tb.py:243",
+    "test/live/flows/project_flow_tb.py:244",
+    "test/live/packages/cellview_e2e_tests.py:134"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.lib.rename",
+   "param": "log_level",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:184"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.lib.rename",
+   "param": "log_max_bytes",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:184"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.lib.rename",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:184"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.lib.rename",
+   "param": "timeout",
+   "status": "GAP",
+   "class": "CONTRACT_TIMEOUT",
+   "reason": "跨 op 通用字段；离线合同 test/offline/unit/test_param_timeout_contract.py（79/79 op 枚举）+ test_all_ops_timeout_field.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:184"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.view.copy",
+   "param": "log_level",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:228"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.view.copy",
+   "param": "log_max_bytes",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:228"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.view.copy",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:228"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.view.copy",
+   "param": "timeout",
+   "status": "GAP",
+   "class": "CONTRACT_TIMEOUT",
+   "reason": "跨 op 通用字段；离线合同 test/offline/unit/test_param_timeout_contract.py（79/79 op 枚举）+ test_all_ops_timeout_field.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:228"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.view.create",
+   "param": "log_level",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 8,
+   "op_sites": [
+    "test/live/flows/design_iterate_tb.py:315",
+    "test/live/flows/design_iterate_tb.py:332",
+    "test/live/flows/design_iterate_tb.py:409"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.view.create",
+   "param": "log_max_bytes",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 8,
+   "op_sites": [
+    "test/live/flows/design_iterate_tb.py:315",
+    "test/live/flows/design_iterate_tb.py:332",
+    "test/live/flows/design_iterate_tb.py:409"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.view.create",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 8,
+   "op_sites": [
+    "test/live/flows/design_iterate_tb.py:315",
+    "test/live/flows/design_iterate_tb.py:332",
+    "test/live/flows/design_iterate_tb.py:409"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.view.delete",
+   "param": "log_level",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 2,
+   "op_sites": [
+    "test/live/flows/project_flow_tb.py:268",
+    "test/live/packages/cellview_e2e_tests.py:238"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.view.delete",
+   "param": "log_max_bytes",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 2,
+   "op_sites": [
+    "test/live/flows/project_flow_tb.py:268",
+    "test/live/packages/cellview_e2e_tests.py:238"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.view.delete",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 2,
+   "op_sites": [
+    "test/live/flows/project_flow_tb.py:268",
+    "test/live/packages/cellview_e2e_tests.py:238"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.view.list",
+   "param": "log_level",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:142",
+    "test/live/packages/cellview_e2e_tests.py:163",
+    "test/live/packages/cellview_e2e_tests.py:206"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.view.list",
+   "param": "log_max_bytes",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:142",
+    "test/live/packages/cellview_e2e_tests.py:163",
+    "test/live/packages/cellview_e2e_tests.py:206"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.view.list",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:142",
+    "test/live/packages/cellview_e2e_tests.py:163",
+    "test/live/packages/cellview_e2e_tests.py:206"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.view.list",
+   "param": "timeout",
+   "status": "GAP",
+   "class": "CONTRACT_TIMEOUT",
+   "reason": "跨 op 通用字段；离线合同 test/offline/unit/test_param_timeout_contract.py（79/79 op 枚举）+ test_all_ops_timeout_field.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:142",
+    "test/live/packages/cellview_e2e_tests.py:163",
+    "test/live/packages/cellview_e2e_tests.py:206"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.view.rename",
+   "param": "log_level",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:232"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.view.rename",
+   "param": "log_max_bytes",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:232"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.view.rename",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:232"
+   ]
+  },
+  {
+   "op": "virtuoso.cellview.view.rename",
+   "param": "timeout",
+   "status": "GAP",
+   "class": "CONTRACT_TIMEOUT",
+   "reason": "跨 op 通用字段；离线合同 test/offline/unit/test_param_timeout_contract.py（79/79 op 枚举）+ test_all_ops_timeout_field.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/cellview_e2e_tests.py:232"
+   ]
+  },
+  {
+   "op": "virtuoso.gui.auto_dismiss",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 2,
+   "op_sites": [
+    "test/live/packages/gui_e2e_tests.py:183",
+    "test/live/packages/infra_e2e_tests.py:228",
+    "test/live/packages/infra_e2e_tests.py:264"
+   ]
+  },
+  {
+   "op": "virtuoso.gui.auto_dismiss",
+   "param": "timeout",
+   "status": "GAP",
+   "class": "CONTRACT_TIMEOUT",
+   "reason": "跨 op 通用字段；离线合同 test/offline/unit/test_param_timeout_contract.py（79/79 op 枚举）+ test_all_ops_timeout_field.py",
+   "op_tb_files": 2,
+   "op_sites": [
+    "test/live/packages/gui_e2e_tests.py:183",
+    "test/live/packages/infra_e2e_tests.py:228",
+    "test/live/packages/infra_e2e_tests.py:264"
+   ]
+  },
+  {
+   "op": "virtuoso.gui.list_windows",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 4,
+   "op_sites": [
+    "test/live/packages/gui_e2e_tests.py:129",
+    "test/live/packages/gui_e2e_tests.py:135",
+    "test/live/packages/gui_e2e_tests.py:145"
+   ]
+  },
+  {
+   "op": "virtuoso.gui.list_windows",
+   "param": "timeout",
+   "status": "GAP",
+   "class": "CONTRACT_TIMEOUT",
+   "reason": "跨 op 通用字段；离线合同 test/offline/unit/test_param_timeout_contract.py（79/79 op 枚举）+ test_all_ops_timeout_field.py",
+   "op_tb_files": 4,
+   "op_sites": [
+    "test/live/packages/gui_e2e_tests.py:129",
+    "test/live/packages/gui_e2e_tests.py:135",
+    "test/live/packages/gui_e2e_tests.py:145"
+   ]
+  },
+  {
+   "op": "virtuoso.gui.screenshot",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 2,
+   "op_sites": [
+    "test/live/packages/gui_e2e_tests.py:195",
+    "test/live/packages/infra_e2e_tests.py:242",
+    "test/live/packages/infra_e2e_tests.py:264"
+   ]
+  },
+  {
+   "op": "virtuoso.gui.screenshot",
+   "param": "timeout",
+   "status": "GAP",
+   "class": "CONTRACT_TIMEOUT",
+   "reason": "跨 op 通用字段；离线合同 test/offline/unit/test_param_timeout_contract.py（79/79 op 枚举）+ test_all_ops_timeout_field.py",
+   "op_tb_files": 2,
+   "op_sites": [
+    "test/live/packages/gui_e2e_tests.py:195",
+    "test/live/packages/infra_e2e_tests.py:242",
+    "test/live/packages/infra_e2e_tests.py:264"
+   ]
+  },
+  {
+   "op": "virtuoso.gui.send_key",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 3,
+   "op_sites": [
+    "test/live/packages/gui_e2e_tests.py:153",
+    "test/live/packages/infra_e2e_tests.py:233",
+    "test/semi/probes/maestro_p095_overwrite_wedge_probe.py:120"
+   ]
+  },
+  {
+   "op": "virtuoso.gui.send_key",
+   "param": "timeout",
+   "status": "GAP",
+   "class": "CONTRACT_TIMEOUT",
+   "reason": "跨 op 通用字段；离线合同 test/offline/unit/test_param_timeout_contract.py（79/79 op 枚举）+ test_all_ops_timeout_field.py",
+   "op_tb_files": 3,
+   "op_sites": [
+    "test/live/packages/gui_e2e_tests.py:153",
+    "test/live/packages/infra_e2e_tests.py:233",
+    "test/semi/probes/maestro_p095_overwrite_wedge_probe.py:120"
+   ]
+  },
+  {
+   "op": "virtuoso.layout.display",
+   "param": "log_level",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/layout_e2e_tests.py:341",
+    "test/live/packages/layout_e2e_tests.py:355",
+    "test/live/packages/layout_e2e_tests.py:547"
+   ]
+  },
+  {
+   "op": "virtuoso.layout.display",
+   "param": "log_max_bytes",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/layout_e2e_tests.py:341",
+    "test/live/packages/layout_e2e_tests.py:355",
+    "test/live/packages/layout_e2e_tests.py:547"
+   ]
+  },
+  {
+   "op": "virtuoso.layout.display",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/layout_e2e_tests.py:341",
+    "test/live/packages/layout_e2e_tests.py:355",
+    "test/live/packages/layout_e2e_tests.py:547"
+   ]
+  },
+  {
+   "op": "virtuoso.layout.gds",
+   "param": "log_level",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 10,
+   "op_sites": [
+    "test/live/flows/adc_sar_flow_tb.py:194",
+    "test/live/flows/adc_sar_flow_tb.py:242",
+    "test/live/flows/design_iterate_tb.py:428"
+   ]
+  },
+  {
+   "op": "virtuoso.layout.gds",
+   "param": "log_max_bytes",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 10,
+   "op_sites": [
+    "test/live/flows/adc_sar_flow_tb.py:194",
+    "test/live/flows/adc_sar_flow_tb.py:242",
+    "test/live/flows/design_iterate_tb.py:428"
+   ]
+  },
+  {
+   "op": "virtuoso.layout.gds",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 10,
+   "op_sites": [
+    "test/live/flows/adc_sar_flow_tb.py:194",
+    "test/live/flows/adc_sar_flow_tb.py:242",
+    "test/live/flows/design_iterate_tb.py:428"
+   ]
+  },
+  {
+   "op": "virtuoso.layout.read",
+   "param": "log_level",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 11,
+   "op_sites": [
+    "test/live/flows/adc_sar_flow_tb.py:186",
+    "test/live/flows/adc_sar_flow_tb.py:208",
+    "test/live/flows/adc_sar_flow_tb.py:242"
+   ]
+  },
+  {
+   "op": "virtuoso.layout.read",
+   "param": "log_max_bytes",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 11,
+   "op_sites": [
+    "test/live/flows/adc_sar_flow_tb.py:186",
+    "test/live/flows/adc_sar_flow_tb.py:208",
+    "test/live/flows/adc_sar_flow_tb.py:242"
+   ]
+  },
+  {
+   "op": "virtuoso.layout.read",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 11,
+   "op_sites": [
+    "test/live/flows/adc_sar_flow_tb.py:186",
+    "test/live/flows/adc_sar_flow_tb.py:208",
+    "test/live/flows/adc_sar_flow_tb.py:242"
+   ]
+  },
+  {
+   "op": "virtuoso.layout.screenshot",
+   "param": "log_level",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 2,
+   "op_sites": [
+    "test/live/packages/layout_e2e_tests.py:354",
+    "test/live/packages/layout_e2e_tests.py:359",
+    "test/live/packages/layout_e2e_tests.py:368"
+   ]
+  },
+  {
+   "op": "virtuoso.layout.screenshot",
+   "param": "log_max_bytes",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 2,
+   "op_sites": [
+    "test/live/packages/layout_e2e_tests.py:354",
+    "test/live/packages/layout_e2e_tests.py:359",
+    "test/live/packages/layout_e2e_tests.py:368"
+   ]
+  },
+  {
+   "op": "virtuoso.layout.screenshot",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 2,
+   "op_sites": [
+    "test/live/packages/layout_e2e_tests.py:354",
+    "test/live/packages/layout_e2e_tests.py:359",
+    "test/live/packages/layout_e2e_tests.py:368"
+   ]
+  },
+  {
+   "op": "virtuoso.layout.screenshot",
+   "param": "timeout",
+   "status": "GAP",
+   "class": "CONTRACT_TIMEOUT",
+   "reason": "跨 op 通用字段；离线合同 test/offline/unit/test_param_timeout_contract.py（79/79 op 枚举）+ test_all_ops_timeout_field.py",
+   "op_tb_files": 2,
+   "op_sites": [
+    "test/live/packages/layout_e2e_tests.py:354",
+    "test/live/packages/layout_e2e_tests.py:359",
+    "test/live/packages/layout_e2e_tests.py:368"
+   ]
+  },
+  {
+   "op": "virtuoso.layout.write",
+   "param": "log_level",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 13,
+   "op_sites": [
+    "test/live/flows/adc_sar_flow_tb.py:183",
+    "test/live/flows/adc_sar_flow_tb.py:242",
+    "test/live/flows/design_iterate_tb.py:410"
+   ]
+  },
+  {
+   "op": "virtuoso.layout.write",
+   "param": "log_max_bytes",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 13,
+   "op_sites": [
+    "test/live/flows/adc_sar_flow_tb.py:183",
+    "test/live/flows/adc_sar_flow_tb.py:242",
+    "test/live/flows/design_iterate_tb.py:410"
+   ]
+  },
+  {
+   "op": "virtuoso.layout.write",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 13,
+   "op_sites": [
+    "test/live/flows/adc_sar_flow_tb.py:183",
+    "test/live/flows/adc_sar_flow_tb.py:242",
+    "test/live/flows/design_iterate_tb.py:410"
+   ]
+  },
+  {
+   "op": "virtuoso.maestro.close_gui",
+   "param": "log_level",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 3,
+   "op_sites": [
+    "test/live/packages/maestro_e2e_tests.py:1032",
+    "test/live/packages/maestro_e2e_tests.py:1034",
+    "test/live/packages/maestro_e2e_tests.py:1049"
+   ]
+  },
+  {
+   "op": "virtuoso.maestro.close_gui",
+   "param": "log_max_bytes",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 3,
+   "op_sites": [
+    "test/live/packages/maestro_e2e_tests.py:1032",
+    "test/live/packages/maestro_e2e_tests.py:1034",
+    "test/live/packages/maestro_e2e_tests.py:1049"
+   ]
+  },
+  {
+   "op": "virtuoso.maestro.close_gui",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 3,
+   "op_sites": [
+    "test/live/packages/maestro_e2e_tests.py:1032",
+    "test/live/packages/maestro_e2e_tests.py:1034",
+    "test/live/packages/maestro_e2e_tests.py:1049"
+   ]
+  },
+  {
+   "op": "virtuoso.maestro.close_waveform_gui",
+   "param": "log_level",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 3,
+   "op_sites": [
+    "test/live/packages/maestro_e2e_tests.py:1031",
+    "test/live/packages/maestro_e2e_tests.py:1049",
+    "test/live/packages/maestro_e2e_tests.py:1068"
+   ]
+  },
+  {
+   "op": "virtuoso.maestro.close_waveform_gui",
+   "param": "log_max_bytes",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 3,
+   "op_sites": [
+    "test/live/packages/maestro_e2e_tests.py:1031",
+    "test/live/packages/maestro_e2e_tests.py:1049",
+    "test/live/packages/maestro_e2e_tests.py:1068"
+   ]
+  },
+  {
+   "op": "virtuoso.maestro.close_waveform_gui",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 3,
+   "op_sites": [
+    "test/live/packages/maestro_e2e_tests.py:1031",
+    "test/live/packages/maestro_e2e_tests.py:1049",
+    "test/live/packages/maestro_e2e_tests.py:1068"
+   ]
+  },
+  {
+   "op": "virtuoso.maestro.close_waveform_gui",
+   "param": "timeout",
+   "status": "GAP",
+   "class": "CONTRACT_TIMEOUT",
+   "reason": "跨 op 通用字段；离线合同 test/offline/unit/test_param_timeout_contract.py（79/79 op 枚举）+ test_all_ops_timeout_field.py",
+   "op_tb_files": 3,
+   "op_sites": [
+    "test/live/packages/maestro_e2e_tests.py:1031",
+    "test/live/packages/maestro_e2e_tests.py:1049",
+    "test/live/packages/maestro_e2e_tests.py:1068"
+   ]
+  },
+  {
+   "op": "virtuoso.maestro.export",
+   "param": "log_level",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 4,
+   "op_sites": [
+    "test/live/packages/maestro_e2e_tests.py:1023",
+    "test/live/packages/maestro_e2e_tests.py:1024",
+    "test/live/packages/maestro_e2e_tests.py:1026"
+   ]
+  },
+  {
+   "op": "virtuoso.maestro.export",
+   "param": "log_max_bytes",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 4,
+   "op_sites": [
+    "test/live/packages/maestro_e2e_tests.py:1023",
+    "test/live/packages/maestro_e2e_tests.py:1024",
+    "test/live/packages/maestro_e2e_tests.py:1026"
+   ]
+  },
+  {
+   "op": "virtuoso.maestro.export",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 4,
+   "op_sites": [
+    "test/live/packages/maestro_e2e_tests.py:1023",
+    "test/live/packages/maestro_e2e_tests.py:1024",
+    "test/live/packages/maestro_e2e_tests.py:1026"
+   ]
+  },
+  {
+   "op": "virtuoso.maestro.export",
+   "param": "timeout",
+   "status": "GAP",
+   "class": "CONTRACT_TIMEOUT",
+   "reason": "跨 op 通用字段；离线合同 test/offline/unit/test_param_timeout_contract.py（79/79 op 枚举）+ test_all_ops_timeout_field.py",
+   "op_tb_files": 4,
+   "op_sites": [
+    "test/live/packages/maestro_e2e_tests.py:1023",
+    "test/live/packages/maestro_e2e_tests.py:1024",
+    "test/live/packages/maestro_e2e_tests.py:1026"
+   ]
+  },
+  {
+   "op": "virtuoso.maestro.open_gui",
+   "param": "log_level",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 3,
+   "op_sites": [
+    "test/live/packages/maestro_e2e_tests.py:1023",
+    "test/live/packages/maestro_e2e_tests.py:1032",
+    "test/live/packages/maestro_e2e_tests.py:1034"
+   ]
+  },
+  {
+   "op": "virtuoso.maestro.open_gui",
+   "param": "log_max_bytes",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 3,
+   "op_sites": [
+    "test/live/packages/maestro_e2e_tests.py:1023",
+    "test/live/packages/maestro_e2e_tests.py:1032",
+    "test/live/packages/maestro_e2e_tests.py:1034"
+   ]
+  },
+  {
+   "op": "virtuoso.maestro.open_gui",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 3,
+   "op_sites": [
+    "test/live/packages/maestro_e2e_tests.py:1023",
+    "test/live/packages/maestro_e2e_tests.py:1032",
+    "test/live/packages/maestro_e2e_tests.py:1034"
+   ]
+  },
+  {
+   "op": "virtuoso.maestro.open_gui",
+   "param": "timeout",
+   "status": "GAP",
+   "class": "CONTRACT_TIMEOUT",
+   "reason": "跨 op 通用字段；离线合同 test/offline/unit/test_param_timeout_contract.py（79/79 op 枚举）+ test_all_ops_timeout_field.py",
+   "op_tb_files": 3,
+   "op_sites": [
+    "test/live/packages/maestro_e2e_tests.py:1023",
+    "test/live/packages/maestro_e2e_tests.py:1032",
+    "test/live/packages/maestro_e2e_tests.py:1034"
+   ]
+  },
+  {
+   "op": "virtuoso.maestro.open_waveform_gui",
+   "param": "log_level",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 3,
+   "op_sites": [
+    "test/live/packages/maestro_e2e_tests.py:1031",
+    "test/live/packages/maestro_e2e_tests.py:1049",
+    "test/live/packages/maestro_e2e_tests.py:1068"
+   ]
+  },
+  {
+   "op": "virtuoso.maestro.open_waveform_gui",
+   "param": "log_max_bytes",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 3,
+   "op_sites": [
+    "test/live/packages/maestro_e2e_tests.py:1031",
+    "test/live/packages/maestro_e2e_tests.py:1049",
+    "test/live/packages/maestro_e2e_tests.py:1068"
+   ]
+  },
+  {
+   "op": "virtuoso.maestro.open_waveform_gui",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 3,
+   "op_sites": [
+    "test/live/packages/maestro_e2e_tests.py:1031",
+    "test/live/packages/maestro_e2e_tests.py:1049",
+    "test/live/packages/maestro_e2e_tests.py:1068"
+   ]
+  },
+  {
+   "op": "virtuoso.maestro.open_waveform_gui",
+   "param": "timeout",
+   "status": "GAP",
+   "class": "CONTRACT_TIMEOUT",
+   "reason": "跨 op 通用字段；离线合同 test/offline/unit/test_param_timeout_contract.py（79/79 op 枚举）+ test_all_ops_timeout_field.py",
+   "op_tb_files": 3,
+   "op_sites": [
+    "test/live/packages/maestro_e2e_tests.py:1031",
+    "test/live/packages/maestro_e2e_tests.py:1049",
+    "test/live/packages/maestro_e2e_tests.py:1068"
+   ]
+  },
+  {
+   "op": "virtuoso.maestro.read_config",
+   "param": "log_max_bytes",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 6,
+   "op_sites": [
+    "test/live/packages/maestro_e2e_tests.py:1004",
+    "test/live/packages/maestro_e2e_tests.py:1005",
+    "test/live/packages/maestro_e2e_tests.py:1007"
+   ]
+  },
+  {
+   "op": "virtuoso.maestro.read_history",
+   "param": "log_level",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 4,
+   "op_sites": [
+    "test/live/packages/maestro_e2e_tests.py:1018",
+    "test/live/packages/maestro_e2e_tests.py:1027",
+    "test/live/packages/maestro_e2e_tests.py:1029"
+   ]
+  },
+  {
+   "op": "virtuoso.maestro.read_history",
+   "param": "log_max_bytes",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 4,
+   "op_sites": [
+    "test/live/packages/maestro_e2e_tests.py:1018",
+    "test/live/packages/maestro_e2e_tests.py:1027",
+    "test/live/packages/maestro_e2e_tests.py:1029"
+   ]
+  },
+  {
+   "op": "virtuoso.maestro.read_history",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 4,
+   "op_sites": [
+    "test/live/packages/maestro_e2e_tests.py:1018",
+    "test/live/packages/maestro_e2e_tests.py:1027",
+    "test/live/packages/maestro_e2e_tests.py:1029"
+   ]
+  },
+  {
+   "op": "virtuoso.maestro.read_results",
+   "param": "log_level",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 3,
+   "op_sites": [
+    "test/live/packages/maestro_e2e_tests.py:1019",
+    "test/live/packages/maestro_e2e_tests.py:1021",
+    "test/live/packages/maestro_e2e_tests.py:1023"
+   ]
+  },
+  {
+   "op": "virtuoso.maestro.read_results",
+   "param": "log_max_bytes",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 3,
+   "op_sites": [
+    "test/live/packages/maestro_e2e_tests.py:1019",
+    "test/live/packages/maestro_e2e_tests.py:1021",
+    "test/live/packages/maestro_e2e_tests.py:1023"
+   ]
+  },
+  {
+   "op": "virtuoso.maestro.read_results",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 3,
+   "op_sites": [
+    "test/live/packages/maestro_e2e_tests.py:1019",
+    "test/live/packages/maestro_e2e_tests.py:1021",
+    "test/live/packages/maestro_e2e_tests.py:1023"
+   ]
+  },
+  {
+   "op": "virtuoso.maestro.run",
+   "param": "log_level",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 6,
+   "op_sites": [
+    "test/live/packages/maestro_e2e_tests.py:1018",
+    "test/live/packages/maestro_e2e_tests.py:1027",
+    "test/live/packages/maestro_e2e_tests.py:1029"
+   ]
+  },
+  {
+   "op": "virtuoso.maestro.run",
+   "param": "log_max_bytes",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 6,
+   "op_sites": [
+    "test/live/packages/maestro_e2e_tests.py:1018",
+    "test/live/packages/maestro_e2e_tests.py:1027",
+    "test/live/packages/maestro_e2e_tests.py:1029"
+   ]
+  },
+  {
+   "op": "virtuoso.maestro.run",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 6,
+   "op_sites": [
+    "test/live/packages/maestro_e2e_tests.py:1018",
+    "test/live/packages/maestro_e2e_tests.py:1027",
+    "test/live/packages/maestro_e2e_tests.py:1029"
+   ]
+  },
+  {
+   "op": "virtuoso.maestro.write",
+   "param": "log_level",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 5,
+   "op_sites": [
+    "test/live/packages/maestro_e2e_tests.py:1007",
+    "test/live/packages/maestro_e2e_tests.py:1008",
+    "test/live/packages/maestro_e2e_tests.py:1010"
+   ]
+  },
+  {
+   "op": "virtuoso.maestro.write",
+   "param": "log_max_bytes",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 5,
+   "op_sites": [
+    "test/live/packages/maestro_e2e_tests.py:1007",
+    "test/live/packages/maestro_e2e_tests.py:1008",
+    "test/live/packages/maestro_e2e_tests.py:1010"
+   ]
+  },
+  {
+   "op": "virtuoso.maestro.write_history",
+   "param": "log_level",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 2,
+   "op_sites": [
+    "test/live/packages/maestro_e2e_tests.py:1035",
+    "test/live/packages/maestro_e2e_tests.py:1049",
+    "test/live/packages/maestro_e2e_tests.py:1068"
+   ]
+  },
+  {
+   "op": "virtuoso.maestro.write_history",
+   "param": "log_max_bytes",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 2,
+   "op_sites": [
+    "test/live/packages/maestro_e2e_tests.py:1035",
+    "test/live/packages/maestro_e2e_tests.py:1049",
+    "test/live/packages/maestro_e2e_tests.py:1068"
+   ]
+  },
+  {
+   "op": "virtuoso.maestro.write_history",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 2,
+   "op_sites": [
+    "test/live/packages/maestro_e2e_tests.py:1035",
+    "test/live/packages/maestro_e2e_tests.py:1049",
+    "test/live/packages/maestro_e2e_tests.py:1068"
+   ]
+  },
+  {
+   "op": "virtuoso.maestro.write_history",
+   "param": "timeout",
+   "status": "GAP",
+   "class": "CONTRACT_TIMEOUT",
+   "reason": "跨 op 通用字段；离线合同 test/offline/unit/test_param_timeout_contract.py（79/79 op 枚举）+ test_all_ops_timeout_field.py",
+   "op_tb_files": 2,
+   "op_sites": [
+    "test/live/packages/maestro_e2e_tests.py:1035",
+    "test/live/packages/maestro_e2e_tests.py:1049",
+    "test/live/packages/maestro_e2e_tests.py:1068"
+   ]
+  },
+  {
+   "op": "virtuoso.schematic.check_and_save",
+   "param": "log_level",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 7,
+   "op_sites": [
+    "test/live/flows/adc_sar_flow_tb.py:225",
+    "test/live/flows/adc_sar_flow_tb.py:242",
+    "test/live/flows/design_iterate_tb.py:336"
+   ]
+  },
+  {
+   "op": "virtuoso.schematic.check_and_save",
+   "param": "log_max_bytes",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 7,
+   "op_sites": [
+    "test/live/flows/adc_sar_flow_tb.py:225",
+    "test/live/flows/adc_sar_flow_tb.py:242",
+    "test/live/flows/design_iterate_tb.py:336"
+   ]
+  },
+  {
+   "op": "virtuoso.schematic.check_and_save",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 7,
+   "op_sites": [
+    "test/live/flows/adc_sar_flow_tb.py:225",
+    "test/live/flows/adc_sar_flow_tb.py:242",
+    "test/live/flows/design_iterate_tb.py:336"
+   ]
+  },
+  {
+   "op": "virtuoso.schematic.read",
+   "param": "log_level",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 11,
+   "op_sites": [
+    "test/live/flows/adc_sar_flow_tb.py:204",
+    "test/live/flows/adc_sar_flow_tb.py:219",
+    "test/live/flows/adc_sar_flow_tb.py:242"
+   ]
+  },
+  {
+   "op": "virtuoso.schematic.read",
+   "param": "log_max_bytes",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 11,
+   "op_sites": [
+    "test/live/flows/adc_sar_flow_tb.py:204",
+    "test/live/flows/adc_sar_flow_tb.py:219",
+    "test/live/flows/adc_sar_flow_tb.py:242"
+   ]
+  },
+  {
+   "op": "virtuoso.schematic.read",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 11,
+   "op_sites": [
+    "test/live/flows/adc_sar_flow_tb.py:204",
+    "test/live/flows/adc_sar_flow_tb.py:219",
+    "test/live/flows/adc_sar_flow_tb.py:242"
+   ]
+  },
+  {
+   "op": "virtuoso.schematic.screenshot",
+   "param": "log_level",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 3,
+   "op_sites": [
+    "test/live/packages/schematic_e2e_tests.py:391",
+    "test/live/packages/screenshot_params_e2e_tests.py:167",
+    "test/live/packages/screenshot_params_e2e_tests.py:172"
+   ]
+  },
+  {
+   "op": "virtuoso.schematic.screenshot",
+   "param": "log_max_bytes",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 3,
+   "op_sites": [
+    "test/live/packages/schematic_e2e_tests.py:391",
+    "test/live/packages/screenshot_params_e2e_tests.py:167",
+    "test/live/packages/screenshot_params_e2e_tests.py:172"
+   ]
+  },
+  {
+   "op": "virtuoso.schematic.screenshot",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 3,
+   "op_sites": [
+    "test/live/packages/schematic_e2e_tests.py:391",
+    "test/live/packages/screenshot_params_e2e_tests.py:167",
+    "test/live/packages/screenshot_params_e2e_tests.py:172"
+   ]
+  },
+  {
+   "op": "virtuoso.schematic.write",
+   "param": "log_level",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 9,
+   "op_sites": [
+    "test/live/flows/adc_sar_flow_tb.py:143",
+    "test/live/flows/adc_sar_flow_tb.py:169",
+    "test/live/flows/adc_sar_flow_tb.py:214"
+   ]
+  },
+  {
+   "op": "virtuoso.schematic.write",
+   "param": "log_max_bytes",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 9,
+   "op_sites": [
+    "test/live/flows/adc_sar_flow_tb.py:143",
+    "test/live/flows/adc_sar_flow_tb.py:169",
+    "test/live/flows/adc_sar_flow_tb.py:214"
+   ]
+  },
+  {
+   "op": "virtuoso.schematic.write",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 9,
+   "op_sites": [
+    "test/live/flows/adc_sar_flow_tb.py:143",
+    "test/live/flows/adc_sar_flow_tb.py:169",
+    "test/live/flows/adc_sar_flow_tb.py:214"
+   ]
+  },
+  {
+   "op": "virtuoso.skillref.info",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/skillref_e2e_tests.py:131",
+    "test/live/packages/skillref_e2e_tests.py:138",
+    "test/live/packages/skillref_e2e_tests.py:152"
+   ]
+  },
+  {
+   "op": "virtuoso.skillref.search",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/skillref_e2e_tests.py:105",
+    "test/live/packages/skillref_e2e_tests.py:114",
+    "test/live/packages/skillref_e2e_tests.py:122"
+   ]
+  },
+  {
+   "op": "virtuoso.symbol.check_and_save",
+   "param": "log_level",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/symbol_e2e_tests.py:296",
+    "test/live/packages/symbol_e2e_tests.py:447",
+    "test/live/packages/symbol_e2e_tests.py:465"
+   ]
+  },
+  {
+   "op": "virtuoso.symbol.check_and_save",
+   "param": "log_max_bytes",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/symbol_e2e_tests.py:296",
+    "test/live/packages/symbol_e2e_tests.py:447",
+    "test/live/packages/symbol_e2e_tests.py:465"
+   ]
+  },
+  {
+   "op": "virtuoso.symbol.check_and_save",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/symbol_e2e_tests.py:296",
+    "test/live/packages/symbol_e2e_tests.py:447",
+    "test/live/packages/symbol_e2e_tests.py:465"
+   ]
+  },
+  {
+   "op": "virtuoso.symbol.generate",
+   "param": "log_level",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 8,
+   "op_sites": [
+    "test/live/flows/adc_sar_flow_tb.py:147",
+    "test/live/flows/adc_sar_flow_tb.py:242",
+    "test/live/flows/design_iterate_tb.py:362"
+   ]
+  },
+  {
+   "op": "virtuoso.symbol.generate",
+   "param": "log_max_bytes",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 8,
+   "op_sites": [
+    "test/live/flows/adc_sar_flow_tb.py:147",
+    "test/live/flows/adc_sar_flow_tb.py:242",
+    "test/live/flows/design_iterate_tb.py:362"
+   ]
+  },
+  {
+   "op": "virtuoso.symbol.generate",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 8,
+   "op_sites": [
+    "test/live/flows/adc_sar_flow_tb.py:147",
+    "test/live/flows/adc_sar_flow_tb.py:242",
+    "test/live/flows/design_iterate_tb.py:362"
+   ]
+  },
+  {
+   "op": "virtuoso.symbol.read",
+   "param": "log_level",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 9,
+   "op_sites": [
+    "test/live/flows/adc_sar_flow_tb.py:151",
+    "test/live/flows/adc_sar_flow_tb.py:242",
+    "test/live/flows/design_iterate_tb.py:364"
+   ]
+  },
+  {
+   "op": "virtuoso.symbol.read",
+   "param": "log_max_bytes",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 9,
+   "op_sites": [
+    "test/live/flows/adc_sar_flow_tb.py:151",
+    "test/live/flows/adc_sar_flow_tb.py:242",
+    "test/live/flows/design_iterate_tb.py:364"
+   ]
+  },
+  {
+   "op": "virtuoso.symbol.read",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 9,
+   "op_sites": [
+    "test/live/flows/adc_sar_flow_tb.py:151",
+    "test/live/flows/adc_sar_flow_tb.py:242",
+    "test/live/flows/design_iterate_tb.py:364"
+   ]
+  },
+  {
+   "op": "virtuoso.symbol.screenshot",
+   "param": "log_level",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 2,
+   "op_sites": [
+    "test/live/packages/screenshot_params_e2e_tests.py:220",
+    "test/live/packages/screenshot_params_e2e_tests.py:225",
+    "test/live/packages/screenshot_params_e2e_tests.py:230"
+   ]
+  },
+  {
+   "op": "virtuoso.symbol.screenshot",
+   "param": "log_max_bytes",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 2,
+   "op_sites": [
+    "test/live/packages/screenshot_params_e2e_tests.py:220",
+    "test/live/packages/screenshot_params_e2e_tests.py:225",
+    "test/live/packages/screenshot_params_e2e_tests.py:230"
+   ]
+  },
+  {
+   "op": "virtuoso.symbol.screenshot",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 2,
+   "op_sites": [
+    "test/live/packages/screenshot_params_e2e_tests.py:220",
+    "test/live/packages/screenshot_params_e2e_tests.py:225",
+    "test/live/packages/screenshot_params_e2e_tests.py:230"
+   ]
+  },
+  {
+   "op": "virtuoso.symbol.screenshot",
+   "param": "timeout",
+   "status": "GAP",
+   "class": "CONTRACT_TIMEOUT",
+   "reason": "跨 op 通用字段；离线合同 test/offline/unit/test_param_timeout_contract.py（79/79 op 枚举）+ test_all_ops_timeout_field.py",
+   "op_tb_files": 2,
+   "op_sites": [
+    "test/live/packages/screenshot_params_e2e_tests.py:220",
+    "test/live/packages/screenshot_params_e2e_tests.py:225",
+    "test/live/packages/screenshot_params_e2e_tests.py:230"
+   ]
+  },
+  {
+   "op": "virtuoso.symbol.write",
+   "param": "log_level",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/symbol_e2e_tests.py:183",
+    "test/live/packages/symbol_e2e_tests.py:222",
+    "test/live/packages/symbol_e2e_tests.py:254"
+   ]
+  },
+  {
+   "op": "virtuoso.symbol.write",
+   "param": "log_max_bytes",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/symbol_e2e_tests.py:183",
+    "test/live/packages/symbol_e2e_tests.py:222",
+    "test/live/packages/symbol_e2e_tests.py:254"
+   ]
+  },
+  {
+   "op": "virtuoso.symbol.write",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/symbol_e2e_tests.py:183",
+    "test/live/packages/symbol_e2e_tests.py:222",
+    "test/live/packages/symbol_e2e_tests.py:254"
+   ]
+  },
+  {
+   "op": "virtuoso.verilog.export",
+   "param": "log_level",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 2,
+   "op_sites": [
+    "test/live/packages/verilog_e2e_tests.py:207",
+    "test/live/packages/verilog_e2e_tests.py:231",
+    "test/live/packages/verilog_e2e_tests.py:241"
+   ]
+  },
+  {
+   "op": "virtuoso.verilog.export",
+   "param": "log_max_bytes",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 2,
+   "op_sites": [
+    "test/live/packages/verilog_e2e_tests.py:207",
+    "test/live/packages/verilog_e2e_tests.py:231",
+    "test/live/packages/verilog_e2e_tests.py:241"
+   ]
+  },
+  {
+   "op": "virtuoso.verilog.export",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 2,
+   "op_sites": [
+    "test/live/packages/verilog_e2e_tests.py:207",
+    "test/live/packages/verilog_e2e_tests.py:231",
+    "test/live/packages/verilog_e2e_tests.py:241"
+   ]
+  },
+  {
+   "op": "virtuoso.verilog.import",
+   "param": "log_level",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 4,
+   "op_sites": [
+    "test/live/packages/verilog_e2e_tests.py:173",
+    "test/live/packages/verilog_e2e_tests.py:183",
+    "test/live/packages/verilog_e2e_tests.py:200"
+   ]
+  },
+  {
+   "op": "virtuoso.verilog.import",
+   "param": "log_max_bytes",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 4,
+   "op_sites": [
+    "test/live/packages/verilog_e2e_tests.py:173",
+    "test/live/packages/verilog_e2e_tests.py:183",
+    "test/live/packages/verilog_e2e_tests.py:200"
+   ]
+  },
+  {
+   "op": "virtuoso.verilog.import",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 4,
+   "op_sites": [
+    "test/live/packages/verilog_e2e_tests.py:173",
+    "test/live/packages/verilog_e2e_tests.py:183",
+    "test/live/packages/verilog_e2e_tests.py:200"
+   ]
+  },
+  {
+   "op": "virtuoso.verilog.read",
+   "param": "log_level",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/verilog_e2e_tests.py:155",
+    "test/live/packages/verilog_e2e_tests.py:162",
+    "test/live/packages/verilog_e2e_tests.py:228"
+   ]
+  },
+  {
+   "op": "virtuoso.verilog.read",
+   "param": "log_max_bytes",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/verilog_e2e_tests.py:155",
+    "test/live/packages/verilog_e2e_tests.py:162",
+    "test/live/packages/verilog_e2e_tests.py:228"
+   ]
+  },
+  {
+   "op": "virtuoso.verilog.read",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/verilog_e2e_tests.py:155",
+    "test/live/packages/verilog_e2e_tests.py:162",
+    "test/live/packages/verilog_e2e_tests.py:228"
+   ]
+  },
+  {
+   "op": "virtuoso.verilog.write",
+   "param": "log_level",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/verilog_e2e_tests.py:147",
+    "test/live/packages/verilog_e2e_tests.py:228",
+    "test/live/packages/verilog_e2e_tests.py:241"
+   ]
+  },
+  {
+   "op": "virtuoso.verilog.write",
+   "param": "log_max_bytes",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/verilog_e2e_tests.py:147",
+    "test/live/packages/verilog_e2e_tests.py:228",
+    "test/live/packages/verilog_e2e_tests.py:241"
+   ]
+  },
+  {
+   "op": "virtuoso.verilog.write",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/verilog_e2e_tests.py:147",
+    "test/live/packages/verilog_e2e_tests.py:228",
+    "test/live/packages/verilog_e2e_tests.py:241"
+   ]
+  },
+  {
+   "op": "virtuoso.veriloga.check_and_save",
+   "param": "log_level",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/veriloga_e2e_tests.py:130",
+    "test/live/packages/veriloga_e2e_tests.py:185",
+    "test/live/packages/veriloga_e2e_tests.py:198"
+   ]
+  },
+  {
+   "op": "virtuoso.veriloga.check_and_save",
+   "param": "log_max_bytes",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/veriloga_e2e_tests.py:130",
+    "test/live/packages/veriloga_e2e_tests.py:185",
+    "test/live/packages/veriloga_e2e_tests.py:198"
+   ]
+  },
+  {
+   "op": "virtuoso.veriloga.check_and_save",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/veriloga_e2e_tests.py:130",
+    "test/live/packages/veriloga_e2e_tests.py:185",
+    "test/live/packages/veriloga_e2e_tests.py:198"
+   ]
+  },
+  {
+   "op": "virtuoso.veriloga.read",
+   "param": "log_level",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/veriloga_e2e_tests.py:121",
+    "test/live/packages/veriloga_e2e_tests.py:151",
+    "test/live/packages/veriloga_e2e_tests.py:159"
+   ]
+  },
+  {
+   "op": "virtuoso.veriloga.read",
+   "param": "log_max_bytes",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/veriloga_e2e_tests.py:121",
+    "test/live/packages/veriloga_e2e_tests.py:151",
+    "test/live/packages/veriloga_e2e_tests.py:159"
+   ]
+  },
+  {
+   "op": "virtuoso.veriloga.read",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/veriloga_e2e_tests.py:121",
+    "test/live/packages/veriloga_e2e_tests.py:151",
+    "test/live/packages/veriloga_e2e_tests.py:159"
+   ]
+  },
+  {
+   "op": "virtuoso.veriloga.write",
+   "param": "log_level",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/veriloga_e2e_tests.py:113",
+    "test/live/packages/veriloga_e2e_tests.py:143",
+    "test/live/packages/veriloga_e2e_tests.py:164"
+   ]
+  },
+  {
+   "op": "virtuoso.veriloga.write",
+   "param": "log_max_bytes",
+   "status": "GAP",
+   "class": "CONTRACT_LOG_OPTIONS",
+   "reason": "56 个 skill 型 Request 的跨切字段；离线合同 test/offline/unit/test_skill_log_options.py（逐 op subTest 枚举 + 透传样本）+ 真机 test/live/packages/skill_log_options_e2e_tests.py + semi log_matrix_real_tb.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/veriloga_e2e_tests.py:113",
+    "test/live/packages/veriloga_e2e_tests.py:143",
+    "test/live/packages/veriloga_e2e_tests.py:164"
+   ]
+  },
+  {
+   "op": "virtuoso.veriloga.write",
+   "param": "step_details",
+   "status": "GAP",
+   "class": "CONTRACT_STEP_DETAILS",
+   "reason": "全局响应开关：ResultPackage 子类经 pyapi/models.py::_finalize_step_details 统一生效（成功默认省略 steps、step_details=true 保留、失败恒保留）；离线合同 test/offline/unit/test_result_contract.py",
+   "op_tb_files": 1,
+   "op_sites": [
+    "test/live/packages/veriloga_e2e_tests.py:113",
+    "test/live/packages/veriloga_e2e_tests.py:143",
+    "test/live/packages/veriloga_e2e_tests.py:164"
+   ]
+  }
+ ]
+}

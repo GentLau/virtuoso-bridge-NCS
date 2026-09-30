@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
 # 作者: 测试/root
-# 最后改动: 2026-09-29 15:50
+# 最后改动: 2026-09-29 21:18
 # 依赖: 无
 # =======================================================================
 """`virtuoso.verilog.import` 的**全参数面** + `verilog.export.recursive` 的真机覆盖。
@@ -83,7 +83,7 @@ def _value(transport, operation: str, **fields: Any) -> dict[str, Any]:
     response = _op(transport, operation, **fields)
     if not response.get("ok"):
         raise AssertionError(f"{operation} failed: {response.get('error')}")
-    data = _c1_wrapper(response)
+    data = response
     return data.get("value") if data.get("value") is not None else data
 
 
@@ -91,7 +91,7 @@ def _command(transport, cmd: str, timeout: int = 120) -> list[Any]:
     response = _op(transport, "basic.command.run", cmd=cmd, timeout=timeout)
     if not response.get("ok"):
         raise AssertionError(f"command failed: {response.get('error')}")
-    return ((_c1_wrapper(response)).get("result")) or []
+    return ((response).get("result")) or []
 
 
 def _check(condition: Any, message: str) -> None:
@@ -300,20 +300,22 @@ def run_suite(transport) -> list[tuple[str, str]]:
         _check(not response.get("ok"), f"语法错文件必须失败: {response}")
         text = json.dumps(response, ensure_ascii=False)
         _check("parse_failed" in text, f"失败原因不是 parse_failed: {text[:300]}")
-        diagnostics = ((_c1_wrapper(response)).get("value") or {}).get("diagnostics")
+        diagnostics = ((response).get("value") or {}).get("diagnostics")
         print(f"NOTE  parse_failed diagnostics={str(diagnostics)[:160]}", flush=True)
 
     def case_overwrite_false() -> None:
         marker = f"{LIB}/vimp_top/functional"
         mtime_before = _command(transport,
                                 f"stat -c %Y /home/Gent/project/vblog/{marker} 2>/dev/null || echo 0")
-        before = str(mtime_before[1]).strip() if len(mtime_before) > 1 else "0"
+        # C4 契约：CommandResult 是命名字段对象（JSON 为 {returncode,stdout,stderr,kind}），
+        # 不能再按位置索引（旧 `[1]` 在 C4 后必抛 KeyError: 1 —— 2026-09-29 21:0x 门禁实测）。
+        before = str((mtime_before or {}).get("stdout") or "").strip() or "0"
         response = _op(transport, "virtuoso.verilog.import",
                        library=LIB, cell=CELL, file_path=str(local_good),
                        file_is_local=True, ref_libs=["basic"], overwrite=False, timeout=600)
         mtime_after = _command(transport,
                                f"stat -c %Y /home/Gent/project/vblog/{marker} 2>/dev/null || echo 0")
-        after = str(mtime_after[1]).strip() if len(mtime_after) > 1 else "0"
+        after = str((mtime_after or {}).get("stdout") or "").strip() or "0"
         if response.get("ok"):
             print(f"NOTE  overwrite=False 返回成功；{marker} mtime {before} → {after}"
                   f"（变化={'是' if before != after else '否'}）", flush=True)
@@ -321,7 +323,7 @@ def run_suite(transport) -> list[tuple[str, str]]:
                    f"P-101：overwrite=False 却改写了已存在 cell（mtime {before} → {after}）")
             # P-101 红钉：什么都没写就必须有"跳过/已存在"的显式标记，否则调用方无法区分
             # 「导入成功」与「静默 no-op」。今天的结果里既没有 skipped/existing，也没有 warning。
-            value = (_c1_wrapper(response)).get("value") or {}
+            value = (response).get("value") or {}
             marked = bool(value.get("skipped") or value.get("existing") or value.get("warnings"))
             _check(marked,
                    "P-101：overwrite=False 未写入却返回 completed，且无 skipped/existing 标记"
@@ -410,19 +412,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
-
-# --- C1 兼容垫片（2026-09-29，C3）------------------------------------------------
-# C1（2f88853）起：业务载荷直返顶层（值型 `value`、命令/skill 型 `result`）、
-# 成功默认省略 `steps`、失败壳去掉 `data`。历史 TB 按 `response["data"]` 解析，
-# 本垫片把新契约响应合成为旧 `data` 壳，让既有解析零改动继续工作。
-def _c1_wrapper(body):
-    if not isinstance(body, dict):
-        return {}
-    if isinstance(body.get("data"), dict):
-        return body["data"]
-    wrapped = {"ok": body.get("ok"), "error": body.get("error")}
-    for key in ("value", "result", "steps"):
-        if key in body:
-            wrapped[key] = body[key]
-    return wrapped

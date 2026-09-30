@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=====================
-# 作者: 设计/Codex
-# 最后改动: 2026-09-28 15:19
+# 作者: 测试/root
+# 最后改动: 2026-09-29 20:22
 # 依赖: 无
 # =====================================================================
 # 六步流程（按 test/docs/写TB规范.md §1–§6）：
@@ -10,6 +10,8 @@
 # §4 执行：apply → validate → probe → deploy → verify → commit。
 # §5 比对：每步 stage、返回体、redacted entry、registry 字节与期望一致。
 # §6 重复/收尾：update/delete/乱序/重放重复；保留最终注册表与 JSON 证据。
+# 2026-09-29 测试/root 扩写：step3 断言结构化 probe_results（B3）、step5 断言
+# report.fingerprint_ok（B5）——覆盖 86cc169 新增的用户可见字段。
 """Six-step registration over the real HTTP API (artifact-producing TB).
 
 Drives ``register.server`` exactly as the registration page does:
@@ -484,6 +486,56 @@ def main() -> int:
         if not results.add("step3-five-role-entries", not missing_roles,
                            missing=missing_roles):
             raise ProbeFailure(f"step 3 entry is missing roles: {missing_roles}")
+        # B3（86cc169）：per-role 结构化探测结果——页面据此区分
+        # ok / warning / error / not_run，不得再解析自然语言。
+        probe_rows = body.get("probe_results")
+        if not results.add("step3-probe-results-present",
+                           isinstance(probe_rows, list) and len(probe_rows) == 5,
+                           count=len(probe_rows) if isinstance(probe_rows, list) else None):
+            raise ProbeFailure(
+                f"step 3 did not return 5 structured probe_results: {probe_rows!r}"
+            )
+        by_role = {row.get("role"): row for row in probe_rows
+                   if isinstance(row, dict)}
+        if set(by_role) != {"gui", "daemon", "command", "file", "spectre"}:
+            raise ProbeFailure(f"probe_results roles drifted: {sorted(by_role)}")
+        fixed_keys = {"role", "status", "blocking", "code", "message"}
+        shape_bad = [name for name, row in by_role.items()
+                     if not fixed_keys.issubset(row)]
+        if not results.add("step3-probe-results-shape", not shape_bad,
+                           bad=shape_bad):
+            raise ProbeFailure(f"probe_results rows miss fixed keys: {shape_bad}")
+        status_bad = [name for name, row in by_role.items()
+                      if row.get("status") not in ("ok", "warning")]
+        if not results.add("step3-probe-results-status", not status_bad,
+                           bad=status_bad):
+            raise ProbeFailure(
+                f"a successful probe must not carry error/not_run rows: {status_bad}"
+            )
+        # blocking 语义（flow._probe mark 规则）：spectre 永远 non-blocking；
+        # 其余 role 只有 warning 行才是 non-blocking（如 gui display 未探测到）。
+        blocking_bad = [name for name, row in by_role.items()
+                        if bool(row.get("blocking")) != (
+                            name != "spectre" and row.get("status") != "warning"
+                        )]
+        if not results.add("step3-probe-results-blocking", not blocking_bad,
+                           bad=blocking_bad):
+            raise ProbeFailure(f"blocking flags drifted: {blocking_bad}")
+        ok_fields_bad = [
+            name for name, row in by_role.items()
+            if row.get("status") == "ok"
+            and (row.get("code") is not None or row.get("message") is not None)
+        ]
+        if not results.add("step3-probe-results-ok-fields", not ok_fields_bad,
+                           bad=ok_fields_bad):
+            raise ProbeFailure(
+                f"status=ok rows must not carry code/message: {ok_fields_bad}"
+            )
+        warning_notes = {name: {"code": row.get("code"),
+                                "message": row.get("message")}
+                         for name, row in by_role.items()
+                         if row.get("status") == "warning"}
+        results.add("step3-probe-results-warnings", True, warnings=warning_notes)
         for role_name in ("gui", "daemon", "command", "file"):
             role_root = (roles.get(role_name) or {}).get("root")
             absolute = bool(role_root) and (
@@ -572,6 +624,19 @@ def main() -> int:
         report = body.get("report") or {}
         if not (report.get("command_ok") and report.get("skill_ok") and report.get("token_ok")):
             raise ProbeFailure(f"connectivity report incomplete: {report}")
+        # B5（86cc169）：连通性报告必须带四项检查之一 fingerprint_ok，
+        # 成功路径必须为 true（host-key 轮换失败路径由 P5 专项 TB 覆盖）。
+        if "fingerprint_ok" not in report:
+            raise ProbeFailure("connectivity report lacks fingerprint_ok (B5)")
+        if not results.add("step5-report-fingerprint-ok",
+                           report.get("fingerprint_ok") is True,
+                           fingerprint_ok=report.get("fingerprint_ok"),
+                           expected_fingerprints={
+                               name: bool((roles.get(name) or {})
+                                          .get("expected_fingerprint"))
+                               for name in ("gui", "daemon", "command", "file",
+                                            "spectre")}):
+            raise ProbeFailure(f"fingerprint_ok must be true: {report}")
         # 第五步只报告，不落盘；第六步必须显式 commit
         assert_no_registry_write("step 5 (verified)")
         if registry_path().exists() and args.user in json.loads(
