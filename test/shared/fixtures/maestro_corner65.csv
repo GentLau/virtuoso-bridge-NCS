@@ -1,0 +1,12 @@
+Corner,FFF_HVLT,FSF_LVHT
+Enable,t,t
+Temperature,-40,125
+Tags,,
+VDD,1.1,0.9
+Modelfile::/opt/eda/PDK/CRN65GPNEW/CRN65GPNEW/models/spectre/crn65gplus_2d5_lk_v1d0.scs,t ff,t fs
+Modelfile::/opt/eda/PDK/CRN65GPNEW/CRN65GPNEW/models/spectre/crn65gplus_2d5_lk_v1d0.scs,t ff_res,t fs_res
+Modelfile::/opt/eda/PDK/CRN65GPNEW/CRN65GPNEW/models/spectre/crn65gplus_2d5_lk_v1d0.scs,t ff_mim,t fs_mim
+f Test::ctle_dc,t,t
+t Test::ctle_ac_schematic,t,t
+f Test::ctle_tran_schematic,t,t
+f Test::ctle_ac_pex,t,t

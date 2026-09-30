@@ -102,7 +102,7 @@ maestro 包覆盖 ADE Assembler / Explorer 的**配置、结果、导出、历�
 | 环境 | set_sim_option | test | options | `maeSetSimOption` |
 | corner | set_corner | name | disable_tests? | `maeSetCorner` |
 | corner | setup_corner | name | model_file / model_section / variables | `maeSetCorner` + `maeSetVar(corner)` + `axlGetCorner`/`axlPutModel`/`axlSetModelFile`/`axlSetModelSection` |
-| corner | load_corners | —（文件导入） | filepath / sections / operation | `maeLoadCorners`（CSV 先经 File 接口上传） |
+| corner | load_corners | —（文件导入） | filepath / operation / sections? | `maeLoadCorners`（CSV 先经 File 接口上传；`sections` 只对 `.sdb` 显式透传） |
 | 运行 | set_run_mode | —（会话级） | run_mode | `maeSetCurrentRunMode` |
 | 运行 | set_run_option | —（固定 MC mode） | options（dict） | `axlPutRunOption` + `axlSetRunOptionValue` |
 | 运行 | set_job_control_mode | —（会话级） | mode | `maeSetJobControlMode` |
@@ -110,6 +110,9 @@ maestro 包覆盖 ADE Assembler / Explorer 的**配置、结果、导出、历�
 | 运行 | set_simulator_mode | test | mode | `asiSetHighPerformanceOptionVal`（内部映射 `'uniMode` / `'spectreXPreset`） |
 
 `set_run_option` 只服务 Monte Carlo：`options` 的键必须是 §7.3.1 的 17 项，包内做类型/值域校验并归一化为 ADE 字符串；一条命令可同时写多项。
+
+`load_corners` 对 `.csv` 默认不传 `?sections`；当前 Virtuoso 构建不识别该关键字，
+因此只有调用方显式给出 `sections`（针对 `.sdb`）时才透传（P-110）。
 
 ## 4. 结果类
 

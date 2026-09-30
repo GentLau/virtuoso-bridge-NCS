@@ -1300,12 +1300,18 @@ class Package(ResultPackage):
                 command.get("filepath") or command.get("remote_path"),
                 "command.filepath",
             )
-            sections = command.get("sections", "corners")
+            sections = command.get("sections")
             operation = command.get("operation", "overwrite")
-            return [
-                f"maeLoadCorners({q(filepath)} ?sections {q(sections)} "
-                f"?operation {q(operation)})"
+            parts = [
+                q(filepath),
+                f"?operation {q(operation)}",
             ]
+            # ?sections 只适用于 .sdb 导出文件；CSV 默认加载不能带它。
+            # 当前 Virtuoso 构建还会直接拒绝该关键字，因此只有调用方显式
+            # 给出 sections 时才透传（P-110）。
+            if sections:
+                parts.append(f"?sections {q(sections)}")
+            return [f"maeLoadCorners({' '.join(parts)})"]
 
         if op == "set_run_mode":
             mode = _require_text(command.get("run_mode"), "command.run_mode")
