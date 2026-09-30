@@ -31,15 +31,11 @@
 
 ① spec 补字段级权限矩阵，明确 personal token 只能访问本人、哪些字段普通修改、哪些字段必须 `enhanced_token`；② server 提供 personal-token-only-own-user 的查询/更新语义，并在 update 接入 `enhanced_token`（只校验、不落盘、不回显）；③ 个人页用本人 token 可查询自己 entry（剔除保密字段）并改自助权限=编辑字段，含只读/保密字段的修改需 `enhanced_token`（仅管理员 token）；④ 负例：个人 token 访问他人条目必须拒绝。
 
-## 讨论决策（2026-09-30）
-
-字段级授权以[中层配置文档 §2]自助权限列为唯一口径：编辑=本人可改，只读=本人只可读不可改，保密=本人不可读。本人读 `/api/user/<user>` 剔除保密字段；update 含只读/保密字段 → 整请求需 `enhanced_token`（仅管理员 token）。读他人 403；DELETE 保持纯管理员。
-
 ## 下一步 / 责任人
 
 spec owner 先拍板权限矩阵与 self 端点形状；后端按 spec 实现。前端已移除管理员 Authorization 回退，仍在 401 时显式点名该缺口。
 
-
+讨论决策（2026-09-30）：字段级授权以中层配置文档 §2 自助权限列为唯一口径——编辑=本人可改；只读=本人只可读不可改、personal+`enhanced_token`（仅管理员）可改；保密=本人不可读、任何 personal 路径不可写（仅管理员 Authorization）。个人 token 走 `Authorization: Bearer`；本人读 `/api/user/<user>` 剔除保密字段；读他人 403；DELETE 保持纯管理员；`mode.default` 已入 update 白名单（只读档）。
 ---
 
 > 权威事实仍以 [问题登记.md](../问题登记.md)（台账）与 `第五轮-缺陷清单-*.md`（送修视图）为准；
