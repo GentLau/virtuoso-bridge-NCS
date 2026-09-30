@@ -46,7 +46,7 @@
 | rename_instance | `name` | `new_name` |
 | set_instance_params | `name` | `params: dict` |
 | set_term_nets | `name` | `term_nets: {term: net}`；内部超短 stub + label；可选样式 `justify/orient/font/height/stub_length`（不传用默认） |
-| place_wire | —（新建） | `points: [pos, …]`（≥2 点）；可选 `entry/route/width/color/line_style`（传了才拼，不传用底层默认） |
+| place_wire | —（新建） | `points: [pos, …]`（≥2 点）；可选 `entry/route/width/color/line_style`（传了才拼，不传用底层默认）；可选 `x_spacing/y_spacing`（创建期 X/Y 吸附网格，默认 0；不是 wire-to-wire spacing，不落 DB） |
 | delete_wire | `points`（wire 是多个 2 点 line segment，按 `pos` 端点匹配） | — |
 | set_wire_properties | `points` | `width?, color?, line_style?` |
 | place_label | —（新建） | `text, pos`；可选样式 `justify/orient/font/height/alias`（不传用默认） |
@@ -61,6 +61,11 @@
 | delete_note | `pos`（可选加 `text`） | — |
 | rename_note | `pos`（可选加 `old_text`） | `new_text` |
 | set_note_properties | `pos`（可选加 `text`） | `justify?, orient?, font?, height?` |
+
+`place_wire` 的 `x_spacing` / `y_spacing` 是传给底层 `schCreateWire` 的
+**创建期 X/Y 吸附网格步距**（默认 `0`）：只影响创建时控制点及
+route 生成顶点的吸附，不是两根线之间的固定间距，也不会作为 wire 的 DB
+属性保存或读回。
 
 #### 1.3 坐标口径（P-074 定版）
 
