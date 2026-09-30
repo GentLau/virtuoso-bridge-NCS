@@ -1,0 +1,295 @@
+# === TB 注释头（规范见 test/docs/写TB规范.md §0）=====================
+# 作者: 设计/Codex
+# 最后改动: 2026-09-30
+# 依赖: wsl-gent disposable CIW（destb1, port 64600, token vb-destb1）
+# =======================================================================
+"""Disposable-CIW real test: C06 log flushing + P-086 dirty gate recovery.
+
+The test uses one isolated disposable CIW.  It first runs the existing C06
+semantic matrix through a direct daemon transport, then drives the middle
+BusinessServer through:
+
+    delivered timeout -> dirty -> probe/busy -> CIW restart -> probe idle
+    -> next SKILL succeeds
+
+No permanent vblog/8127 instance is touched.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import socket
+import subprocess
+import sys
+import tempfile
+import time
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[3]
+SRC = ROOT / "src"
+PACKAGES = ROOT / "test" / "live" / "packages"
+for path in (SRC, PACKAGES):
+    if str(path) not in sys.path:
+        sys.path.insert(0, str(path))
+
+from common.paths import init_work_dir, registry_path  # noqa: E402
+from common.registry import UserEntry, load_registry  # noqa: E402
+from common.skill_client import SkillClient  # noqa: E402
+from pyapi.models import ExecutionStatus  # noqa: E402
+from skill_log_semantics_e2e_tests import run_suite as run_c06_suite  # noqa: E402
+from transport.middle import BusinessServer  # noqa: E402
+
+
+def _run(cmd: list[str], timeout: float = 120) -> subprocess.CompletedProcess:
+    return subprocess.run(
+        cmd, capture_output=True, text=True, timeout=timeout,
+        **({"creationflags": subprocess.CREATE_NO_WINDOW} if sys.platform == "win32" else {}),
+    )
+
+
+def _ssh(host: str, command: str, timeout: float = 120) -> subprocess.CompletedProcess:
+    return _run(["ssh", "-o", "BatchMode=yes", host, command], timeout=timeout)
+
+
+def _free_port() -> int:
+    with socket.socket() as sock:
+        sock.bind(("127.0.0.1", 0))
+        return sock.getsockname()[1]
+
+
+class DirectDaemonTransport:
+    """Map the C06 HTTP operation shape onto the disposable daemon."""
+
+    def __init__(self, host: str, local_port: int, token: str) -> None:
+        self.host = host
+        self.local_port = local_port
+        self.token = token
+
+    def _skill(self, payload: dict) -> dict:
+        client = SkillClient(
+            host="127.0.0.1",
+            port=self.local_port,
+            timeout=float(payload.get("timeout") or 600),
+            token=self.token,
+            log_level=payload.get("log_level", "all"),
+        )
+        result = client.execute_skill(
+            payload["skill_code"],
+            timeout=payload.get("timeout"),
+            log_level=payload.get("log_level"),
+        )
+        body = {
+            "status": result.status.value,
+            "output": result.output,
+            "errors": list(result.errors),
+            "warnings": list(result.warnings),
+            "CDSlog": result.log,
+            "execution_time": result.execution_time,
+        }
+        return {"ok": result.ok, "result": body,
+                "error": None if result.ok else "; ".join(result.errors)}
+
+    def _command(self, payload: dict) -> dict:
+        proc = _ssh(self.host, payload["cmd"], timeout=payload.get("timeout") or 120)
+        result = {
+            "returncode": proc.returncode,
+            "stdout": proc.stdout,
+            "stderr": proc.stderr,
+            "kind": "command",
+        }
+        return {"ok": proc.returncode == 0, "result": result,
+                "error": None if proc.returncode == 0 else proc.stderr.strip()}
+
+    def _upload(self, payload: dict) -> dict:
+        proc = _run([
+            "scp", "-q", payload["local_path"],
+            f"{self.host}:{payload['remote_path']}",
+        ], timeout=payload.get("timeout") or 120)
+        result = {"returncode": proc.returncode, "stdout": "", "stderr": proc.stderr}
+        return {"ok": proc.returncode == 0, "result": result,
+                "error": None if proc.returncode == 0 else proc.stderr.strip()}
+
+    def call(self, payload: dict) -> dict:
+        operation = payload.get("operation")
+        if operation == "basic.skill.execute":
+            return self._skill(payload)
+        if operation == "basic.command.run":
+            return self._command(payload)
+        if operation == "basic.file.upload":
+            return self._upload(payload)
+        return {"ok": False, "error": f"unsupported operation: {operation}"}
+
+
+def _cdslog_increment(transport: DirectDaemonTransport, skill_code: str) -> str:
+    response = transport.call({"operation": "basic.skill.execute",
+                               "skill_code": skill_code, "log_level": "all"})
+    if response.get("ok") is not True:
+        raise AssertionError(f"skill failed: {response.get('error')}")
+    result = response.get("result") or {}
+    return str(result.get("CDSlog") or "")
+
+
+def _check_silent_increment(transport: DirectDaemonTransport) -> dict:
+    """修复回归：IL 补的行终止符不得漏进返回值。
+
+    静默请求（1+1）的增量必须仍是空串；带 print 的请求必须拿到自己的标记
+    且不把它留给下一条请求。
+    """
+    transport.call({"operation": "basic.skill.execute",
+                    "skill_code": 'printf("\\n")', "log_level": "all"})
+    silent = _cdslog_increment(transport, "1+1")
+    mark = f"C06S_{time.strftime('%H%M%S')}"
+    printed = _cdslog_increment(transport, f'print("{mark}")')
+    after = _cdslog_increment(transport, "1+1")
+    return {
+        "silent_prefix_len": len(silent),
+        "silent_prefix": silent[:80],
+        "print_log": printed[:200],
+        "after_log": after[:200],
+        "mark": mark,
+        "ok": (silent == "" and mark in printed and mark not in after and after == ""),
+    }
+
+
+def _wait_port(port: int, timeout: float = 15) -> None:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        try:
+            with socket.create_connection(("127.0.0.1", port), timeout=0.5):
+                return
+        except OSError:
+            time.sleep(0.2)
+    raise RuntimeError(f"local forwarded port {port} not ready")
+
+
+def _restart_destb1(host: str, port: int, token: str) -> None:
+    stop = (
+        "bash ~/.virtuoso-bridge/disposable/bin/stop_disposable_ciw.sh "
+        f"destb1 {port} {token}"
+    )
+    _ssh(host, stop, timeout=90)
+    start = (
+        "VB_RESOURCES=$HOME/.virtuoso-bridge/disposable/ramic "
+        "bash ~/.virtuoso-bridge/disposable/bin/start_disposable_ciw.sh "
+        f"destb1 {port}"
+    )
+    started = _ssh(host, start, timeout=150)
+    if started.returncode != 0:
+        raise RuntimeError(f"start disposable CIW failed: {started.stderr[-400:]}")
+    deadline = time.monotonic() + 120
+    while time.monotonic() < deadline:
+        ping = _ssh(
+            host,
+            "python3 ~/.virtuoso-bridge/disposable/bin/daemon_ping.py "
+            f"{port} {token} '1+1'",
+            timeout=20,
+        )
+        if ping.returncode == 0 and "OK" in ping.stdout:
+            return
+        time.sleep(2)
+    raise RuntimeError("disposable daemon did not recover after restart")
+
+
+def _business_server(work_dir: Path, local_port: int, token: str) -> BusinessServer:
+    init_work_dir(str(work_dir))
+    registry = load_registry(registry_path())
+    entry = UserEntry(token=token, mode="local")
+    entry.runtime.thread_pool_size = 4
+    entry.roles.daemon.daemon_port = local_port
+    entry.roles.daemon.local_port = local_port
+    registry.register("destb1", entry)
+    return BusinessServer()
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--host", default="wsl-gent")
+    parser.add_argument("--remote-port", type=int, default=64600)
+    parser.add_argument("--token", default="vb-destb1")
+    parser.add_argument("--out", default="")
+    args = parser.parse_args(argv)
+
+    # The disposable CIW may have been started before the current resources
+    # were synced.  Restart first so C06/P086 run against this checkout.
+    _restart_destb1(args.host, args.remote_port, args.token)
+    local_port = _free_port()
+    tunnel = subprocess.Popen(
+        ["ssh", "-o", "BatchMode=yes", "-o", "ExitOnForwardFailure=yes",
+         "-N", "-L", f"127.0.0.1:{local_port}:127.0.0.1:{args.remote_port}",
+         args.host],
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+    )
+    evidence: dict = {"host": args.host, "remote_port": args.remote_port,
+                      "token": args.token, "local_port": local_port,
+                      "startup_restart_ok": True}
+    try:
+        _wait_port(local_port)
+        c06_results, c06_evidence = run_c06_suite(
+            DirectDaemonTransport(args.host, local_port, args.token)
+        )
+        evidence["c06"] = c06_evidence
+        evidence["c06_results"] = [
+            {"case": name, "status": status} for name, status in c06_results
+        ]
+        evidence["c06_silent_increment"] = _check_silent_increment(
+            DirectDaemonTransport(args.host, local_port, args.token)
+        )
+
+        work_dir = Path(tempfile.mkdtemp(prefix="vb-p086-"))
+        server = _business_server(work_dir, local_port, args.token)
+        try:
+            timed_out = server.execute_skill("hiSleep(8)", timeout=1, token=args.token)
+            evidence["dirty_after_timeout"] = args.token in server._skill_dirty
+            blocked = server.execute_skill("1+3", timeout=2, token=args.token)
+            evidence["blocked_while_dirty"] = {
+                "ok": blocked.ok,
+                "errors": list(blocked.errors),
+                "dirty": args.token in server._skill_dirty,
+            }
+
+            _restart_destb1(args.host, args.remote_port, args.token)
+            recovered = server.execute_skill("1+3", timeout=10, token=args.token)
+            evidence["recovered_after_restart"] = {
+                "ok": recovered.ok,
+                "output": recovered.output,
+                "dirty": args.token in server._skill_dirty,
+            }
+            p086_ok = (
+                bool(timed_out and not timed_out.ok)
+                and evidence["dirty_after_timeout"]
+                and not blocked.ok
+                and evidence["blocked_while_dirty"]["dirty"]
+                and recovered.ok
+                and recovered.output.strip().strip('"') == "4"
+                and not evidence["recovered_after_restart"]["dirty"]
+            )
+        finally:
+            server.close()
+        evidence["p086_ok"] = p086_ok
+        c06_ok = (
+            bool(c06_results)
+            and all(status == "PASS" for _, status in c06_results)
+            and evidence["c06_silent_increment"]["ok"]
+        )
+        evidence["c06_ok"] = c06_ok
+        out = Path(args.out) if args.out else (
+            ROOT / "test" / "artifacts" / "evidence" /
+            f"disposable-c06-p086-{time.strftime('%Y%m%dT%H%M%S')}.json"
+        )
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps(evidence, ensure_ascii=False, indent=2) + "\n",
+                       encoding="utf-8")
+        print(json.dumps({"c06_ok": c06_ok, "p086_ok": p086_ok,
+                          "evidence": str(out)}, ensure_ascii=False))
+        return 0 if c06_ok and p086_ok else 1
+    finally:
+        tunnel.terminate()
+        try:
+            tunnel.wait(timeout=3)
+        except subprocess.TimeoutExpired:
+            tunnel.kill()
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -69,9 +69,11 @@ procedure(RBIpcDataHandler(ipcId data)
   ; Handler for successful data received from the Python daemon.
   ; Code is executed via evalstring(), which bypasses CIW's interactive loop.
   ; As a result, CIW output (printf) is line-buffered: only text ending with
-  ; "\n" is flushed immediately.  Without "\n", output stays in the buffer
-  ; until the next newline or explicit flush.  This differs from typing
-  ; directly in CIW, where the interactive loop flushes after every command.
+  ; "\n" is committed to CIW/CDS.log immediately.  Without "\n", output stays
+  ; in the buffer; hiFlush/hiFlushInfo/hiFlushCIW/drain(poport) only repaint or
+  ; empty the SKILL port buffer and do NOT commit the partial line (verified
+  ; on IC618).  This differs from typing directly in CIW, where the
+  ; interactive loop terminates the output line after every command.
   ;
   ; We wrap data in (progn ...) so multi-statement payloads run all the
   ; way through.  Bare evalstring() parses ONE form and silently drops
@@ -80,11 +82,12 @@ procedure(RBIpcDataHandler(ipcId data)
   ; single-form input and returns the last form's value for multi-form
   ; input, matching what every Python caller already expects.
   ;
-  ; CDS.log delta: we NEVER print into CDS.log for log-return.  When
-  ; RBDLogOn is nil, this handler does exactly the old no-log work (no
-  ; flush, no fileLength, no meta frame).  When RBDLogOn is t, we flush
-  ; the existing buffer and capture the byte offsets around the SKILL
-  ; execution, then send one meta frame: STX + path + US + start + US + end + RS.
+  ; CDS.log delta: no BEGIN/END markers are ever written.  When RBDLogOn
+  ; is nil, this handler does exactly the old no-log work (no flush, no
+  ; fileLength, no meta frame).  When RBDLogOn is t, it first terminates
+  ; the pending output line (same as the interactive loop), then captures
+  ; the byte offsets around the SKILL execution and sends one meta frame:
+  ; STX + path + US + start + US + end + RS.
     let((result lp lo_start lo_end frames log_on)
     when(RBEcho printf("[RAMIC Bridge (%L)] receive:%L\n" ipcId data))
     lp = "" lo_start = 0 lo_end = 0
@@ -108,6 +111,15 @@ procedure(RBIpcDataHandler(ipcId data)
         frames = sprintf(nil "%c%L%c" intToChar(21) errset.errset intToChar(30))
     )
     when(log_on
+        ; evalstring bypasses CIW's interactive loop, which terminates every
+        ; command's output line with a newline.  Without that terminator a
+        ; partial line (e.g. print without "\n") stays buffered: it is not
+        ; displayed and only enters CDS.log when a later request writes one.
+        ; Emit the same terminator so this request owns and can return its
+        ; output.  The daemon drops the empty "\o \n" line it creates when
+        ; the request produced no pending output.
+        errset(printf("\n"))
+        errset(hiFlushInfo())
         errset(hiFlushLogFile())
         errset(progn(lp = hiGetLogFileName() lo_end = fileLength(lp)))
         frames = strcat(frames

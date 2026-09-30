@@ -464,7 +464,7 @@ class TestHandleConnectionProtocol(unittest.TestCase):
                 self.assertTrue(sent.startswith(STX))
                 self.assertEqual(parsed, {"value": "2", "log": ""})
                 self.assertIn(b"RBDLogOn=nil", ciw)
-                self.assertIn(b"let(((__vb_r progn(1+1\n))) hiFlush() __vb_r)", ciw)
+                self.assertIn(b"let(((__vb_r progn(1+1\n))) __vb_r)", ciw)
                 self.assertEqual(mod._RB_CALLS, before + 1)
 
     def test_multi_line_skill_goes_through_a_temp_file_and_is_cleaned(self):
@@ -1004,6 +1004,8 @@ class TestProbeAndDirty(unittest.TestCase):
                 _ciw, sent, _unread, parsed = run_request(mod, request())
             self.assertEqual(sent[:1], NAK)
             self.assertIn("SKILL execution timed out", parsed["error"])
+            self.assertEqual(parsed["status"], "timeout")
+            self.assertEqual(parsed["code"], "skill_timeout")
             self.assertTrue(mod._dirty)
 
 

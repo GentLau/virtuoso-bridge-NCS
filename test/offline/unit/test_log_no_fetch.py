@@ -19,6 +19,30 @@ class TestLogOffNoFetch(unittest.TestCase):
         self.assertIn("when(log_on", il)
         self.assertIn("hiFlushLogFile()", il)
 
+    def test_il_flushes_ciw_before_reading_log_end(self):
+        il = (RES / "ramic_bridge.il").read_text(encoding="utf-8")
+        eval_pos = il.index("evalstring(")
+        terminator_pos = il.index('errset(printf("\\n"))')
+        flush_info_pos = il.index("hiFlushInfo()")
+        log_end_pos = il.index("lo_end = fileLength(lp)")
+        # evalstring 路径没有交互循环的行终止符：先补一个换行把未完结的
+        # CIW 输出行送入 CDS.log，再 hiFlushInfo 让它显示，最后取 lo_end。
+        self.assertLess(eval_pos, terminator_pos)
+        self.assertLess(terminator_pos, flush_info_pos)
+        self.assertLess(flush_info_pos, log_end_pos)
+        self.assertNotIn("hiFlushCIW()", il)
+
+    def test_daemons_drop_the_il_terminator_line(self):
+        for name in ("ramic_bridge_daemon_3.py", "ramic_bridge_daemon_27.py"):
+            src = (RES / name).read_text(encoding="utf-8")
+            self.assertIn('raw.endswith("\\\\o \\n")', src, name)
+            self.assertIn("raw = raw[:-4]", src, name)
+
+    def test_daemons_do_not_add_misleading_hiFlush(self):
+        for name in ("ramic_bridge_daemon_3.py", "ramic_bridge_daemon_27.py"):
+            src = (RES / name).read_text(encoding="utf-8")
+            self.assertNotIn("hiFlush()", src, name)
+
     def test_daemons_gate_meta_frame_on_log_on(self):
         for name in ("ramic_bridge_daemon_3.py", "ramic_bridge_daemon_27.py"):
             src = (RES / name).read_text(encoding="utf-8")

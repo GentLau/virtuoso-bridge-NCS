@@ -55,6 +55,20 @@ class TestDaemonParity(unittest.TestCase):
             self.assertIn("error", text, name)
             self.assertNotIn("warn", text, name)
 
+    def test_filter_drops_il_terminator_line_only(self):
+        r"""IL 补的行终止符：无待刷输出时的空 "\o " 行要剥掉；
+        用户自己输出的空行（终止符之前的那个）必须保留。"""
+        for name, mod in MODULES:
+            # 静默请求：raw == "\o \n"（IL 终止符）→ 增量必须为空
+            self.assertEqual(mod.filter_delta("\\o \n", "all", 1000), ("", False), name)
+            # printf("X\n")：用户行 + IL 空行 → 只剥 IL 那一行
+            self.assertEqual(
+                mod.filter_delta("\\o X\n\\o \n", "all", 1000), ("\\o X\n", False), name)
+            # 用户自己最后就是空行：printf("X\n\n") + IL 空行 → 保留用户空行
+            self.assertEqual(
+                mod.filter_delta("\\o X\n\\o \n\\o \n", "all", 1000),
+                ("\\o X\n\\o \n", False), name)
+
     def test_truncation_degrade_parity(self):
         raw = "\\e " + ("x" * 200) + "\n" + ("\\o y\n" * 100)
         for name, mod in MODULES:

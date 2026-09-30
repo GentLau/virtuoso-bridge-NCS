@@ -277,9 +277,15 @@ _TRUNCATE_NOTE = "\n[log truncated: increment not fully returned due to log_max_
 def filter_delta(raw, level, max_bytes):
     """Filter by level; on overflow degrade to error-only, then to the
     leading ``max_bytes`` bytes of the increment.  Marker lines explaining
-    degradation/truncation are exempt from ``max_bytes``."""
+    degradation/truncation are exempt from ``max_bytes``.
+
+    The IL terminates the pending CIW output line (the interactive CIW does
+    the same) so a request owns what it printed; drop the empty ``\\o `` line
+    that terminator leaves when nothing was pending."""
     if level == "off":
         return "", False
+    if raw.endswith("\\o \n"):
+        raw = raw[:-4]
     if level == "all" and len(raw.encode("utf-8")) <= max_bytes:
         return raw, False  # byte-for-byte identity with the file interval
     lines = raw.splitlines()
@@ -443,14 +449,14 @@ def handle_connection(conn):
             with os.fdopen(fd, "w", encoding="utf-8") as f:
                 f.write(f"_vb_eval_result = progn(\n{skill_code}\n)\n")
             escaped = tmp_il_path.replace("\\", "/")
-            send_code = log_directive + f'load("{escaped}") hiFlush() _vb_eval_result\n'
+            send_code = log_directive + f'load("{escaped}") _vb_eval_result\n'
         else:
             # Keep the inline path equivalent to the file path for legal
             # multi-form input and trailing ``;`` comments.  The newline
             # before the closing parentheses terminates a trailing comment.
             send_code = (
                 log_directive
-                + f'let(((__vb_r progn({skill_code}\n))) hiFlush() __vb_r)\n'
+                + f'let(((__vb_r progn({skill_code}\n))) __vb_r)\n'
             )
 
         sys.stdout.buffer.write(send_code.encode("utf-8"))
@@ -465,8 +471,9 @@ def handle_connection(conn):
 
         frame1 = _read_frame()
         with _watchdog_lock:
-            if _timeout_flag:
-                _dirty = True
+            first_timed_out = _timeout_flag
+        if first_timed_out:
+            _dirty = True
 
         status_byte = frame1[:1]
         value_payload = frame1[1:].decode("utf-8", errors="replace").rstrip("\x1e")
@@ -492,6 +499,9 @@ def handle_connection(conn):
             log_text, _truncated = filter_delta(raw_delta, log_level, log_max_bytes)
 
         resp = {"value" if ok else "error": value_payload, "log": log_text}
+        if first_timed_out:
+            resp["status"] = "timeout"
+            resp["code"] = "skill_timeout"
         if warnings:
             resp["warnings"] = warnings
         payload = json.dumps(resp, ensure_ascii=False)

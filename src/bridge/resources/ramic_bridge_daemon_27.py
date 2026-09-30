@@ -278,6 +278,10 @@ _TRUNCATE_NOTE = "\n[log truncated: increment not fully returned due to log_max_
 def filter_delta(raw, level, max_bytes):
     if level == "off":
         return "", False
+    # IL 在 evalstring 后补行终止符（等同交互 CIW）；没有待刷输出时它只
+    # 留下一个空的 "\o " 行，不属于本次增量内容，先剥掉。
+    if raw.endswith("\\o \n"):
+        raw = raw[:-4]
     if level == "all" and len(raw.encode("utf-8")) <= max_bytes:
         return raw, False  # byte-for-byte identity with the file interval
     lines = raw.splitlines()
@@ -441,13 +445,13 @@ def handle_connection(conn):
             with os.fdopen(fd, "wb") as f:
                 f.write(("_vb_eval_result = progn(\n%s\n)\n" % skill_code).encode("utf-8"))
             escaped = tmp_il_path.replace("\\", "/")
-            send_code = log_directive + ('load("%s") hiFlush() _vb_eval_result\n' % escaped)
+            send_code = log_directive + ('load("%s") _vb_eval_result\n' % escaped)
         else:
             # Same contract as the Python 3 daemon: legal multi-form input
             # and trailing comments must survive the inline wrapper.
             send_code = (
                 log_directive
-                + 'let(((__vb_r progn(%s\n))) hiFlush() __vb_r)\n' % skill_code
+                + 'let(((__vb_r progn(%s\n))) __vb_r)\n' % skill_code
             )
 
         sys.stdout.write(send_code.encode("utf-8"))
@@ -462,8 +466,9 @@ def handle_connection(conn):
 
         frame1 = _read_frame()
         with _watchdog_lock:
-            if _timeout_flag:
-                _dirty = True
+            first_timed_out = _timeout_flag
+        if first_timed_out:
+            _dirty = True
 
         status_byte = frame1[0] if isinstance(frame1[0], int) else ord(frame1[0])
         value_payload = frame1[1:].decode("utf-8", "replace").rstrip("\x1e")
@@ -489,6 +494,9 @@ def handle_connection(conn):
             log_text, _truncated = filter_delta(raw_delta, log_level, log_max_bytes)
 
         resp = {"value" if ok else "error": value_payload, "log": log_text}
+        if first_timed_out:
+            resp["status"] = "timeout"
+            resp["code"] = "skill_timeout"
         if warnings:
             resp["warnings"] = warnings
         payload = json.dumps(resp, ensure_ascii=False)

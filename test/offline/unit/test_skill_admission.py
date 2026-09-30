@@ -261,6 +261,18 @@ class TestSkillClientOutcome(unittest.TestCase):
             _result, delivery = self.client.execute_skill_checked("1+1")
         self.assertEqual(delivery, "delivered_unknown")
 
+    def test_timeout_status_is_delivered_unknown(self):
+        with mock.patch.object(
+            self.client, "_round_trip",
+            return_value=self._response(
+                self.NAK,
+                {"status": "timeout", "code": "skill_timeout",
+                 "error": "SKILL execution timed out", "log": ""},
+            ),
+        ):
+            _result, delivery = self.client.execute_skill_checked("1+1")
+        self.assertEqual(delivery, "delivered_unknown")
+
     def test_connect_refusal_is_not_delivered(self):
         with mock.patch.object(
             self.client, "_round_trip",

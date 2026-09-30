@@ -117,7 +117,7 @@ class SkillClient:
                 elapsed = time.monotonic() - start
                 if not raw or raw[0] not in (STX, NAK):
                     return self._parse_response(raw, elapsed), "delivered_unknown"
-                if self._response_status(raw) == "busy":
+                if self._response_status(raw) in ("busy", "timeout"):
                     return self._parse_response(raw, elapsed), "delivered_unknown"
                 return self._parse_response(raw, elapsed), "completed"
             except _DeliveredRequestFailure:

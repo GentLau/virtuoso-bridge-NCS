@@ -51,10 +51,10 @@ US = 0x1F
 _DIRECTIVE_RE = re.compile(r"^RBDLogOn=(t|nil) (.*)$", re.S)
 #: 多行 body 也适用的前缀判定（`_DIRECTIVE_RE` 的 `$` 不跨行）
 _DIRECTIVE_PREFIX_RE = re.compile(r"^RBDLogOn=(t|nil) ", re.S)
-#: 现行 daemon 的包装：`let(((__vb_r progn(<skill>\n))) hiFlush() __vb_r)`。
+#: 现行 daemon 的包装：`let(((__vb_r progn(<skill>\n))) __vb_r)`。
 #: 必须显式吃掉 `progn(`，否则贪婪分组会把 `progn(` 一起captured（实测被当成函数调用）。
-_SINGLE_RE = re.compile(r"^let\(\(\(__vb_r progn\((.*)\)\)\) hiFlush\(\) __vb_r\)$", re.S)
-_LOAD_RE = re.compile(r'^load\("([^"]+)"\) hiFlush\(\) _vb_eval_result$')
+_SINGLE_RE = re.compile(r"^let\(\(\(__vb_r progn\((.*)\)\)\) __vb_r\)$", re.S)
+_LOAD_RE = re.compile(r'^load\("([^"]+)"\) _vb_eval_result$')
 _BANNER_RE = re.compile(r"\[RB-banner\] pid=(\d+) bind=(\S+) host=(\S+) ip=(\S+) user=(\S+)")
 _DEFAULT_TEMP_DIR = os.path.join(
     os.path.expanduser("~"), ".virtuoso-bridge", "fakevirt", "tmp"
@@ -143,7 +143,7 @@ class FakeCIW:
             line = raw.decode("utf-8", errors="replace").rstrip("\n")
             # 当前 daemon 的包装可能是多行：
             #   let(((__vb_r progn(<skill>
-            #   ))) hiFlush() __vb_r)
+            #   ))) __vb_r)
             # 逐行处理会把前缀当成完整 payload（"unrecognized daemon payload"）。
             # 这里按"已知完整形状"成帧；不成形的行仍走旧路径（保持协议语义不变）。
             # 真实行形如 `RBDLogOn=t let(((__vb_r progn(<skill>`，body 可能跨行；
