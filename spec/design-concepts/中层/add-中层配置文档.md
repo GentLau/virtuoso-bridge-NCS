@@ -1,9 +1,9 @@
 # 中层配置文档
 
-> 版本：Draft v44
-> 日期：2026-09-23
+> 版本：Draft v45
+> 日期：2026-09-30
 > 状态：Normative（字段目录、默认值、探测写回、注册表 schema、reservation 与 endpoint key 的唯一规范源）
-> Supersedes：Draft v43（`key_dir` 缺省目录；凭据位于客户端侧；endpoint 复用补凭据条件）
+> Supersedes：Draft v44（字段总表增加「自助权限」列）
 > 定位：本文是[多用户与注册](../其他/1-多用户与注册.md)的**字段与 schema 详细补充**——六步状态机与授权归[多用户与注册](../其他/1-多用户与注册.md)；本文是字段与必填清单 owner（§4），并提供默认值、探测写回、注册表 schema、reservation 与 endpoint key。
 
 ## 1. 总述
@@ -18,62 +18,64 @@
 
 ## 2. 字段总表（唯一来源）
 
+- 末列「自助权限」= 本人 personal token 的自助口径：**编辑**（可自己读写）、**只读**（可自己读、不可自己写）、**保密**（不可自己读，自写一律不可）。
+
 ### 2.1 通用
 
-| 字段 | 作用 | 类型 | 默认/必填 |
-|---|---|---|---|
-| `token` | 每次调用携带的寻址与授权参数；每用户唯一、终生不变（格式见 §5，生命周期见[多用户与注册 §1](../其他/1-多用户与注册.md)） | 配置 | 注册生成（未提交则自动生成） |
-| `user` | 人类可读 id + 路径名，非安全凭证 | 配置 | 必填（格式见 §5） |
+| 字段 | 作用 | 类型 | 默认/必填 | 自助权限 |
+|---|---|---|---|---|
+| `token` | 每次调用携带的寻址与授权参数；每用户唯一、终生不变（格式见 §5，生命周期见[多用户与注册 §1](../其他/1-多用户与注册.md)） | 配置 | 注册生成（未提交则自动生成） | 保密 |
+| `user` | 人类可读 id + 路径名，非安全凭证 | 配置 | 必填（格式见 §5） | 只读 |
 
 ### 2.2 策略
 
-| 字段 | 作用 | 类型 | 默认/必填 |
-|---|---|---|---|
-| `ssh.backend` | SSH 后端 openssh / paramiko；默认 paramiko：同一业务连接上多 channel 复用；Skill 隧道由外部 OpenSSH `ssh -N -L` 承载 | 配置 | 默认 `paramiko` |
-| `ssh.control_master` | openssh 后端的复用策略 auto/force/disable；复用边界是 token，跨 token 不共享；paramiko 不适用 | 配置 | 默认 `auto` |
-| `ssh.tool_override` | 可选 ssh/scp/tar 工具路径覆盖 | 配置 | 可选 |
-| `runtime.thread_pool_size` | 线程预算：在途请求上限（任何未完成动作占位）；超限语义见[并发设计 §2](2-并发设计.md) | 配置 | 默认 `32` |
-| `runtime.channel_budget` | 最大通道数：token 内所有 endpoint 已打开 SSH 通道总数；超限语义见[并发设计 §2](2-并发设计.md) | 配置 | 默认 `10` |
-| `runtime.connect_timeout` | 连接建立超时（各步 deadline 的子预算，见[四层整体架构与接口 §5.8](../总览/1-四层整体架构与接口.md)） | 配置 | 默认 `15` 秒 |
-| `cdslog.log_level` | 返回日志级别 off/all/warn/error；off 从 IL 源头不读不注入；业务接口可显式覆盖 | 配置 | 默认 `all` |
-| `cdslog.log_max_bytes` | 单次日志内联长度上限，超限自动降级（规则见[日志返回设计标准 §5](../底层/6-日志返回设计标准.md)）；业务接口可显式覆盖 | 配置 | 默认 `65536` |
+| 字段 | 作用 | 类型 | 默认/必填 | 自助权限 |
+|---|---|---|---|---|
+| `ssh.backend` | SSH 后端 openssh / paramiko；默认 paramiko：同一业务连接上多 channel 复用；Skill 隧道由外部 OpenSSH `ssh -N -L` 承载 | 配置 | 默认 `paramiko` | 编辑 |
+| `ssh.control_master` | openssh 后端的复用策略 auto/force/disable；复用边界是 token，跨 token 不共享；paramiko 不适用 | 配置 | 默认 `auto` | 编辑 |
+| `ssh.tool_override` | 可选 ssh/scp/tar 工具路径覆盖 | 配置 | 可选 | 编辑 |
+| `runtime.thread_pool_size` | 线程预算：在途请求上限（任何未完成动作占位）；超限语义见[并发设计 §2](2-并发设计.md) | 配置 | 默认 `32` | 只读 |
+| `runtime.channel_budget` | 最大通道数：token 内所有 endpoint 已打开 SSH 通道总数；超限语义见[并发设计 §2](2-并发设计.md) | 配置 | 默认 `10` | 只读 |
+| `runtime.connect_timeout` | 连接建立超时（各步 deadline 的子预算，见[四层整体架构与接口 §5.8](../总览/1-四层整体架构与接口.md)） | 配置 | 默认 `15` 秒 | 只读 |
+| `cdslog.log_level` | 返回日志级别 off/all/warn/error；off 从 IL 源头不读不注入；业务接口可显式覆盖 | 配置 | 默认 `all` | 编辑 |
+| `cdslog.log_max_bytes` | 单次日志内联长度上限，超限自动降级（规则见[日志返回设计标准 §5](../底层/6-日志返回设计标准.md)）；业务接口可显式覆盖 | 配置 | 默认 `65536` | 编辑 |
 
 ### 2.3 各 role 公共字段
 
 五个 role（`gui / daemon / command / file / spectre`）各有下列公共字段。role 的职责、接口对应与连接复用见[路由设计 §2–§4](3-路由设计.md)，本文只定义字段与默认值。
 
-| 字段 | 作用 | 类型 | 默认/必填 |
-|---|---|---|---|
-| `role.<name>.mode` | 投送方式：`local` = 中层就在该 role 目标主机上直接本地执行、不经 SSH（声明需管理权限，见[多用户与注册 §2](../其他/1-多用户与注册.md)）；`remote` = 经 SSH 投送；不同 role 可混合 | 配置 | 回退 `mode.default` |
-| `role.<name>.host/user/jump_host/jump_user/proxy` | 该 role 登录主机/账号/跳板/代理；`local` role 提交即参数错误 | 配置 | 回退 §2.5 全局默认（remote 需可解析） |
-| `role.<name>.key_dir/key` | 该 role 的 SSH 凭据目录/文件名，位于客户端侧（remote 使用；`local` role 不适用） | 配置 | 回退 §2.5 全局默认 |
-| `role.<name>.root` | 该 role 文件根；申请期缺省 `root.default/<role>`，探测后为最终绝对路径 | 配置 | 可选（探测写回，见 §6.2） |
-| `role.<name>.max_sessions` | 该 role 解析到的 endpoint 的并发通道上限（配置在 role、生效在 endpoint；多 role 同 endpoint 取最小值；`local` 不适用） | 配置 | 默认 `10` |
-| `role.<name>.expected_fingerprint` | 该 role endpoint 的 host-key 指纹比对基准（业务 role 必检；spectre 例外，见 §3）；`mode=local` 无 endpoint，省略或为 `null` | 校验 | 探测写入 |
+| 字段 | 作用 | 类型 | 默认/必填 | 自助权限 |
+|---|---|---|---|---|
+| `role.<name>.mode` | 投送方式：`local` = 中层就在该 role 目标主机上直接本地执行、不经 SSH（声明需管理权限，见[多用户与注册 §2](../其他/1-多用户与注册.md)）；`remote` = 经 SSH 投送；不同 role 可混合 | 配置 | 回退 `mode.default` | 只读 |
+| `role.<name>.host/user/jump_host/jump_user/proxy` | 该 role 登录主机/账号/跳板/代理；`local` role 提交即参数错误 | 配置 | 回退 §2.5 全局默认（remote 需可解析） | 编辑 |
+| `role.<name>.key_dir/key` | 该 role 的 SSH 凭据目录/文件名，位于客户端侧（remote 使用；`local` role 不适用） | 配置 | 回退 §2.5 全局默认 | 保密 |
+| `role.<name>.root` | 该 role 文件根；申请期缺省 `root.default/<role>`，探测后为最终绝对路径 | 配置 | 可选（探测写回，见 §6.2） | 编辑 |
+| `role.<name>.max_sessions` | 该 role 解析到的 endpoint 的并发通道上限（配置在 role、生效在 endpoint；多 role 同 endpoint 取最小值；`local` 不适用） | 配置 | 默认 `10` | 只读 |
+| `role.<name>.expected_fingerprint` | 该 role endpoint 的 host-key 指纹比对基准（业务 role 必检；spectre 例外，见 §3）；`mode=local` 无 endpoint，省略或为 `null` | 校验 | 探测写入 | 只读 |
 
-- 各 role 可携带**用户组** `role.<name>.<组名>`（如 `role.command.calibre`）：值必须是对象且仅含标量字段；中层只做结构约束，**不校验语义、不探测**，注册原样落盘、`query` 原样返回，含义由上层业务包约定；组名不得与本节/§2.4 固定字段重名（字符集与大小限制见 §5）。
+- 各 role 可携带**用户组** `role.<name>.<组名>`（如 `role.command.calibre`）：值必须是对象且仅含标量字段；中层只做结构约束，**不校验语义、不探测**，注册原样落盘、`query` 原样返回，含义由上层业务包约定；组名不得与本节/§2.4 固定字段重名（字符集与大小限制见 §5）；自助权限 = 编辑。
 
 ### 2.4 role 特有字段
 
-| 字段 | 作用 | 类型 | 默认/必填 |
-|---|---|---|---|
-| `role.daemon.daemon_port` | daemon 监听端口，每用户分配不冲突 | 配置 | 缺省分配（见 §6.4） |
-| `role.daemon.local_port` | `remote` 时是隧道本地端口；`local` 时直连端口，必须 `= daemon_port` | 配置 | 缺省分配 |
-| `role.daemon.python` | daemon role 上的 python 解释器（部署/启动 daemon 消费；`local` 时即本机 python） | 环境 | 显式→校验，缺省→探测；失败=注册失败 |
-| `role.daemon.expected_hostname` | daemon 主机名比对基准 | 校验 | 探测写入 |
-| `role.daemon.expected_user` | daemon 进程账号比对基准 | 校验 | 探测写入 |
-| `role.spectre.bin` | spectre 可执行文件（显式→校验，缺省→探测；失败仅 warning） | 环境 | 可选 |
-| `role.gui.display` | gui role 的 X server（`DISPLAY` 值，每用户单值）；经只读查询 `query` 返回，供上层拼 X11 命令（见[四层整体架构与接口 §4.2](../总览/1-四层整体架构与接口.md)） | 环境 | 显式→校验；缺省→探测写回，失败留空（见 §3） |
+| 字段 | 作用 | 类型 | 默认/必填 | 自助权限 |
+|---|---|---|---|---|
+| `role.daemon.daemon_port` | daemon 监听端口，每用户分配不冲突 | 配置 | 缺省分配（见 §6.4） | 只读 |
+| `role.daemon.local_port` | `remote` 时是隧道本地端口；`local` 时直连端口，必须 `= daemon_port` | 配置 | 缺省分配 | 只读 |
+| `role.daemon.python` | daemon role 上的 python 解释器（部署/启动 daemon 消费；`local` 时即本机 python） | 环境 | 显式→校验，缺省→探测；失败=注册失败 | 编辑 |
+| `role.daemon.expected_hostname` | daemon 主机名比对基准 | 校验 | 探测写入 | 只读 |
+| `role.daemon.expected_user` | daemon 进程账号比对基准 | 校验 | 探测写入 | 只读 |
+| `role.spectre.bin` | spectre 可执行文件（显式→校验，缺省→探测；失败仅 warning） | 环境 | 可选 | 编辑 |
+| `role.gui.display` | gui role 的 X server（`DISPLAY` 值，每用户单值）；经只读查询 `query` 返回，供上层拼 X11 命令（见[四层整体架构与接口 §4.2](../总览/1-四层整体架构与接口.md)） | 环境 | 显式→校验；缺省→探测写回，失败留空（见 §3） | 编辑 |
 
 ### 2.5 全局默认与字段回退
 
-| 字段 | 作用 | 类型 | 默认/必填 |
-|---|---|---|---|
-| `mode.default` | 各 role 缺省 mode（local/remote） | 配置 | **必填，无默认** |
-| `ssh.default.host/user` | 各 role 缺省登录主机/账号 | 配置 | 存在未在 role 级提供的 remote role 时必填 |
-| `ssh.default.jump_host/jump_user/proxy` | 各 role 缺省跳板/代理 | 配置 | 可选 |
-| `ssh.default.key_dir/key` | 各 role 缺省 SSH 凭据目录/文件名，位于客户端侧；`key_dir` 缺省 = 客户端 `~/.ssh` | 配置 | `key_dir` 可选；存在 remote role 时 `key` 必填 |
-| `root.default` | 各 role 文件根的申请期基准；探测后写回各 `role.*.root`，运行期不依赖本字段 | 配置 | 默认 `~/.virtuoso-bridge/<userid>`（持久化 `null`） |
+| 字段 | 作用 | 类型 | 默认/必填 | 自助权限 |
+|---|---|---|---|---|
+| `mode.default` | 各 role 缺省 mode（local/remote） | 配置 | **必填，无默认** | 只读 |
+| `ssh.default.host/user` | 各 role 缺省登录主机/账号 | 配置 | 存在未在 role 级提供的 remote role 时必填 | 编辑 |
+| `ssh.default.jump_host/jump_user/proxy` | 各 role 缺省跳板/代理 | 配置 | 可选 | 编辑 |
+| `ssh.default.key_dir/key` | 各 role 缺省 SSH 凭据目录/文件名，位于客户端侧；`key_dir` 缺省 = 客户端 `~/.ssh` | 配置 | `key_dir` 可选；存在 remote role 时 `key` 必填 | 保密 |
+| `root.default` | 各 role 文件根的申请期基准；探测后写回各 `role.*.root`，运行期不依赖本字段 | 配置 | 默认 `~/.virtuoso-bridge/<userid>`（持久化 `null`） | 编辑 |
 
 - 回退是**逐字段**的：role 有值用自己的，否则回退对应全局默认；`null`/空串 = 未提供；
 - 不支持逐 role 显式“禁用”全局 jump/proxy——需要不同值就显式写该 role 的最终值；
