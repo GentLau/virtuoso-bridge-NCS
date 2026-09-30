@@ -18,7 +18,7 @@
    本包现有手写三阶段 argv 与官方不一致 → **PEX 未验收，禁止用于交付/签核**；
 2. **等外部资产**：真机侧需要一份**可用的 PEX set + 输入数据**（layout GDS / 源网表 / hcell）
    才能做"与 GUI 逐字节一致"的验收；
-3. 其余能力（DRC/LVS/export_cdl/set 直驱）已可用，先冻结在现状态，不再加功能。
+3. 其余能力（DRC/LVS（源网表走 `lvs(source=…)`）/set 直驱）已可用，先冻结在现状态，不再加功能。
 
 ## 现状一览（截至 2026-09-28）
 
@@ -26,8 +26,7 @@
 |---|---|---|
 | `check_env`（工具事实来自注册表 per-role 用户组） | ✅ 真机验证 | 常驻套件 `ENV-01` |
 | `drc`（deck + 白名单占位符改写；官方 CLI） | ✅ 真机验证 | `DRC-01/02` |
-| `lvs`（同 DRC，另收 `cdl`） | ✅ 真机验证 | `LVS-01` |
-| `export_cdl`（官方 auCdl：`si -batch -command netlist` + `checkCAPPERI=nil`） | ✅ 真机验证 | `EXPORT-01`、`LVS-02`（→ LVS `correct`） |
+| `lvs`（同 DRC；源网表 `source.kind=cdl` 现成 / `schematic` 走官方 auCdl 在 run dir 内现产） | ✅ 真机验证 | `LVS-01/02/03`（→ LVS `correct`） |
 | `runset` 直驱（官方批处理 `-gui -<app> -runset … -batch`） | ✅ LVS 真机验证；DRC/PEX 未单独验证 | `SET-01`（产物含 Calibre 生成的 `_calibre.lvs_`） |
 | `read_results` / `export`（报告解析、产物下载） | ✅ DRC/LVS 验证；报告改名也能解析 | `test/offline/unit/test_calibre_*.py` |
 | `pex` | ⚠️ **未验收（argv 与官方不一致）** | 见 [00](00-下一步开发方向.md) P0-1 |
@@ -57,7 +56,8 @@
    （`#!tvf` + `tvf::VERBATIM{…}` + 末尾 `source "<PDK deck>"`）再 spawn 引擎。
    → 我们要么用官方入口翻译（首选），要么直接拿现成控制文件，**不要自己翻译**。
 2. **batch 不做 Virtuoso 导出**：布局/网表必须是现成文件（我们的 `layout.gds` 产的是 GDSII，
-   可以直接填 `xrc.layout.layoutFile.value`；源网表用 `export_cdl` 的产物填 `xrc.source.sourceFile.value`）。
+   可以直接填 `xrc.layout.layoutFile.value`；源网表由 `lvs(source=…)` 提供（`schematic` 现产 / `cdl` 现成）
+   填 `xrc.source.sourceFile.value`）。
 3. **命令行修饰符是内容的一部分**：PEX 三段必须整条照抄
    （`-lvs -hier -spice svdb/<cell>.sp -turbo` → `-xrc -pdb -rcc -turbo -xcell hcells` →
    `-xrc -fmt -all -xcell hcells`），并且 batch 与 GUI 产物**逐字节一致**（仅 DATE 行不同）。

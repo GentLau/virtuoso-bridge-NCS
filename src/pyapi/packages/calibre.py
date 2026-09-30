@@ -21,7 +21,7 @@ import posixpath
 import re
 import shlex
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any
 
@@ -37,7 +37,6 @@ OPERATION_NAMES = (
     "calibre.status",
     "calibre.read_results",
     "calibre.export",
-    "calibre.export_cdl",
 )
 
 _KINDS = ("drc", "lvs", "pex")
@@ -92,6 +91,9 @@ class RunRequest:
     gds: str | None = None
     top: str | None = None
     cdl: str | None = None
+    source: dict[str, Any] | None = None
+    emit_cdl: bool = False
+    cds_lib: str | None = None
     lvs_run_dir: str | None = None
     job_id: str | None = None
     run_dir: str | None = None
@@ -117,6 +119,35 @@ class RunRequest:
         _opt_text(self.gds, "gds")
         _opt_text(self.top, "top")
         _opt_text(self.cdl, "cdl")
+        if self.source is not None:
+            if not isinstance(self.source, dict):
+                raise ValueError("source must be an object")
+            kind = self.source.get("kind")
+            if kind not in ("cdl", "schematic"):
+                raise ValueError("source.kind must be cdl or schematic")
+            if kind == "cdl":
+                _require_text(self.source.get("path"), "source.path")
+            else:
+                _require_text(self.source.get("library"), "source.library")
+                _require_text(self.source.get("cell"), "source.cell")
+                _opt_text(self.source.get("view", "schematic"), "source.view")
+            if self.cdl:
+                raise ValueError(
+                    "source and cdl are mutually exclusive "
+                    f"(cdl={self.cdl!r}, source={self.source!r})"
+                )
+            if self.runset:
+                raise ValueError("source cannot be combined with runset")
+        _require_bool(self.emit_cdl, "emit_cdl")
+        _opt_text(self.cds_lib, "cds_lib")
+        if self.emit_cdl and (
+            self.source is None or self.source.get("kind") != "schematic"
+        ):
+            raise ValueError("emit_cdl requires source.kind=schematic")
+        if self.cds_lib and (
+            self.source is None or self.source.get("kind") != "schematic"
+        ):
+            raise ValueError("cds_lib requires source.kind=schematic")
         _opt_text(self.lvs_run_dir, "lvs_run_dir")
         _opt_text(self.job_id, "job_id")
         _opt_text(self.run_dir, "run_dir")
@@ -220,35 +251,6 @@ class ExportRequest:
         _opt_timeout(self.timeout)
 
 
-@dataclass(frozen=True)
-class ExportCdlRequest:
-    """从 schematic 导出 LVS 源网表（CDL）——Virtuoso 官方 auCdl 链路。"""
-
-    token: str
-    library: str
-    cell: str
-    view: str = "schematic"
-    netlist_name: str | None = None
-    run_dir: str | None = None
-    cds_lib: str | None = None
-    timeout: int | None = None
-    log_level: str | None = None
-    log_max_bytes: int | None = None
-    step_details: bool = False
-
-    def __post_init__(self) -> None:
-        _require_token(self.token)
-        _require_text(self.library, "library")
-        _require_text(self.cell, "cell")
-        _require_text(self.view, "view")
-        _opt_text(self.netlist_name, "netlist_name")
-        _opt_text(self.run_dir, "run_dir")
-        _opt_text(self.cds_lib, "cds_lib")
-        _opt_timeout(self.timeout)
-        if self.netlist_name and ("/" in self.netlist_name or "\\" in self.netlist_name):
-            raise ValueError("netlist_name must be a plain file name")
-
-
 @dataclass
 class Result(ResultBase):
     ok: bool
@@ -338,89 +340,104 @@ class Package(ResultPackage):
     def lvs(self, request: RunRequest) -> Result:
         return self._run("lvs", request)
 
-    def export_cdl(self, request: ExportCdlRequest) -> Result:
-        """官方 auCdl（CDL Out Analog）链路导出 LVS 源网表。"""
-        self._log_level = request.log_level
-        self._log_max_bytes = request.log_max_bytes
-        steps: list[dict[str, Any]] = []
-        root = self._command_root(request.token, steps)
-        if root is None:
-            return Result(False, steps, "command role root unavailable", None)
-        run_dir = request.run_dir or posixpath.join(
-            root, "calibre", f"cdl_{_slug(request.cell)}")
-        netlist_name = request.netlist_name or f"{request.cell}.cdl"
-        cds_lib = request.cds_lib or self._ciw_cds_lib(
-            request.token, request.timeout, steps)
+    def _export_cdl_into_run_dir(
+        self,
+        *,
+        run_dir: str,
+        library: str,
+        cell: str,
+        view: str,
+        cds_lib: str | None,
+        netlist_name: str,
+        token: str,
+        timeout: int | float | None,
+        steps: list[dict[str, Any]],
+    ) -> dict[str, Any] | None:
+        """Run the official auCdl netlister inside an existing LVS run dir."""
+        cds_lib = cds_lib or self._ciw_cds_lib(token, timeout, steps)
         if not cds_lib:
-            return Result(
-                False, steps,
-                "cds.lib not resolved (CIW cwd unavailable; pass cds_lib explicitly)",
-                None,
-            )
-        timeout = request.timeout
+            steps.append({
+                "name": "cdl:resolve-cds-lib", "ok": False,
+                "detail": "cds.lib not resolved (pass cds_lib explicitly)",
+            })
+            return None
         exists = self.middle.run_command(
             f"test -f {shlex.quote(cds_lib)} && echo yes || echo no",
-            timeout=timeout, token=request.token,
+            timeout=timeout, token=token,
         )
         if "yes" not in (exists.stdout or ""):
-            return Result(False, steps, f"cds.lib not found: {cds_lib}", None)
+            steps.append({
+                "name": "cdl:resolve-cds-lib", "ok": False,
+                "detail": f"cds.lib not found: {cds_lib}",
+            })
+            return None
 
         remote_cds_lib = posixpath.join(run_dir, "cds.lib")
         prepare = self.middle.run_command(
-            f"rm -rf {shlex.quote(run_dir)} && mkdir -p {shlex.quote(run_dir)} && "
+            f"mkdir -p {shlex.quote(run_dir)} && "
             f"cp {shlex.quote(cds_lib)} {shlex.quote(remote_cds_lib)} && echo ready",
-            timeout=timeout or 120, token=request.token,
+            timeout=timeout or 120, token=token,
         )
-        steps.append({"name": "prepare", "ok": prepare.returncode == 0,
+        steps.append({"name": "cdl:prepare", "ok": prepare.returncode == 0,
                       "detail": {"run_dir": run_dir, "cds_lib": cds_lib}})
         if prepare.returncode != 0:
-            return Result(False, steps, prepare.stderr or "prepare run dir failed", None)
+            return None
 
-        si_env = _si_env_text(request.library, request.cell, request.view,
-                              netlist_name, run_dir)
+        si_env = _si_env_text(library, cell, view, netlist_name, run_dir)
         env_up = self._upload_text(
-            si_env, posixpath.join(run_dir, "si.env"), request.token, timeout)
+            si_env, posixpath.join(run_dir, "si.env"), token, timeout)
         rc_up = self._upload_text(
-            _simrc_text(), posixpath.join(run_dir, ".simrc"), request.token, timeout)
+            _simrc_text(), posixpath.join(run_dir, ".simrc"), token, timeout)
         upload_ok = env_up.returncode == 0 and rc_up.returncode == 0
-        steps.append({"name": "upload", "ok": upload_ok,
+        steps.append({"name": "cdl:upload", "ok": upload_ok,
                       "detail": {"si.env": env_up.returncode, ".simrc": rc_up.returncode}})
         if not upload_ok:
-            return Result(False, steps, "si.env/.simrc upload failed", None)
+            return None
 
         run = self.middle.run_command(
             f"cd {shlex.quote(run_dir)} && CDS_Netlisting_Mode=Analog "
             f"si . -batch -command netlist -cdslib {shlex.quote(remote_cds_lib)} "
             "> si.log 2>&1",
-            timeout=timeout or 600, token=request.token,
+            timeout=timeout or 600, token=token,
         )
         netlist_path = posixpath.join(run_dir, netlist_name)
+        count_cmd = (
+            f"if test -s {shlex.quote(netlist_path)}; then "
+            "awk '/^\\.SUBCKT/{s++} /^[Mm][^ ]+ +/{d++} "
+            "END{printf \"%d %d\", s, d}' "
+            f"{shlex.quote(netlist_path)}; else echo '0 0'; fi"
+        )
+        counts = self.middle.run_command(count_cmd, timeout=timeout, token=token)
         size_run = self.middle.run_command(
             f"test -s {shlex.quote(netlist_path)} && "
             f"wc -c < {shlex.quote(netlist_path)} || true",
-            timeout=timeout, token=request.token,
+            timeout=timeout, token=token,
         )
         size_text = (size_run.stdout or "").strip().splitlines()
         size = int(size_text[0]) if size_text and size_text[0].isdigit() else 0
-        ok = run.returncode == 0 and size > 0
-        steps.append({"name": "si", "ok": ok,
+        count_parts = (counts.stdout or "").strip().split()
+        subckts = int(count_parts[0]) if len(count_parts) >= 2 and count_parts[0].isdigit() else 0
+        devices = int(count_parts[1]) if len(count_parts) >= 2 and count_parts[1].isdigit() else 0
+        ok = run.returncode == 0 and size > 0 and subckts >= 1 and devices >= 1
+        steps.append({"name": "cdl:si", "ok": ok,
                       "detail": {"rc": run.returncode, "bytes": size,
+                                 "subckts": subckts, "devices": devices,
                                  "netlist_path": netlist_path}})
         if not ok:
-            tail = self._log_tail(run_dir, request.token, _LOG_TAIL_DEFAULT, timeout)
-            return Result(
-                False, steps,
-                f"si netlisting failed (rc={run.returncode}, bytes={size}): {tail[-400:]}",
-                {"run_dir": run_dir, "log_path": posixpath.join(run_dir, "si.log")},
-            )
-        return Result(True, steps, None, {
+            tail = self._log_tail(run_dir, token, _LOG_TAIL_DEFAULT, timeout)
+            steps.append({"name": "cdl:si-tail", "ok": False,
+                          "detail": tail[-400:]})
+            return None
+        return {
             "run_dir": run_dir,
             "netlist_path": netlist_path,
             "netlist_name": netlist_name,
             "bytes": size,
+            "subckts": subckts,
+            "devices": devices,
             "cds_lib": cds_lib,
             "log_path": posixpath.join(run_dir, "si.log"),
-        })
+        }
 
     def pex(self, request: RunRequest) -> Result:
         # PEX 调试受限，本版不提供；保留下方 _run("pex") 相关实现供后续恢复。
@@ -435,6 +452,14 @@ class Package(ResultPackage):
     def _run(self, kind: str, request: RunRequest) -> Result:
         started = time.monotonic()
         steps: list[dict[str, Any]] = []
+        if kind != "lvs" and (request.source or request.emit_cdl or request.cds_lib):
+            # source/emit_cdl/cds_lib 是 calibre.lvs 专属（spec §4.3）；别的 kind
+            # 静默忽略会变成 P-092 同族的“死参数”，这里直接结构化拒绝。
+            return Result(
+                False, steps,
+                f"source/emit_cdl/cds_lib are only valid for calibre.lvs (kind={kind})",
+                None,
+            )
         root = self._command_root(request.token, steps)
         if root is None:
             return Result(False, steps, "command role root unavailable", None)
@@ -495,6 +520,48 @@ class Package(ResultPackage):
         if stage.returncode != 0:
             return Result(False, steps, _command_error("stage deck", stage), None)
 
+        source_meta: dict[str, Any] | None = None
+        emit_cdl_requested = request.emit_cdl
+        if kind == "lvs" and request.source:
+            src = request.source
+            if src["kind"] == "cdl":
+                cdl_path = str(src["path"])
+                check = self.middle.run_command(
+                    f"test -f {shlex.quote(cdl_path)} && echo yes || echo no",
+                    timeout=request.timeout, token=request.token,
+                )
+                if "yes" not in (check.stdout or ""):
+                    steps.append({
+                        "name": "source-cdl", "ok": False,
+                        "detail": f"source cdl not found: {cdl_path}",
+                    })
+                    return Result(False, steps, f"source cdl not found: {cdl_path}", None)
+                request = replace(
+                    request, cdl=cdl_path, source=None, emit_cdl=False, cds_lib=None,
+                )
+                source_meta = {"kind": "cdl", "path": cdl_path}
+                steps.append({"name": "source-cdl", "ok": True,
+                              "detail": {"path": cdl_path}})
+            else:
+                exported = self._export_cdl_into_run_dir(
+                    run_dir=run_dir,
+                    library=str(src["library"]),
+                    cell=str(src["cell"]),
+                    view=str(src.get("view", "schematic")),
+                    cds_lib=request.cds_lib,
+                    netlist_name=f"{src['cell']}.cdl",
+                    token=request.token,
+                    timeout=request.timeout,
+                    steps=steps,
+                )
+                if exported is None:
+                    return Result(False, steps, "auCdl export failed", None)
+                request = replace(
+                    request, cdl=exported["netlist_path"], source=None,
+                    emit_cdl=False, cds_lib=None,
+                )
+                source_meta = {"kind": "schematic", **exported}
+
         if kind == "pex":
             svdb = posixpath.join(request.lvs_run_dir or "", "svdb")
             copy_svdb = self.middle.run_command(
@@ -535,10 +602,16 @@ class Package(ResultPackage):
             "cdl": request.cdl, "deck": request.deck, "deck_sha256": cu.deck_sha256(deck_text),
             "deck_changes": changes, "turbo": request.turbo, "fmt": request.fmt,
             "params": request.params, "mode": "deck",
+            "source": source_meta, "emit_cdl": emit_cdl_requested,
             "report_file": cu.report_file_from_deck(kind, deck_text),
         }
-        return self._launch_and_wait(kind, request, steps, run_dir, job_id,
-                                     argv_list, meta, started)
+        result = self._launch_and_wait(kind, request, steps, run_dir, job_id,
+                                       argv_list, meta, started)
+        if source_meta is not None and isinstance(result.value, dict):
+            result.value["source"] = source_meta
+            if emit_cdl_requested and source_meta.get("kind") == "schematic":
+                result.value["cdl_path"] = request.cdl
+        return result
 
     def _launch_and_wait(self, kind: str, request: RunRequest, steps: list[dict[str, Any]],
                          run_dir: str, job_id: str, argv_list: list[list[str]],
@@ -1123,12 +1196,10 @@ OPERATIONS = (
     ("calibre.status", "status", StatusRequest, Result),
     ("calibre.read_results", "read_results", ReadResultsRequest, Result),
     ("calibre.export", "export", ExportRequest, Result),
-    ("calibre.export_cdl", "export_cdl", ExportCdlRequest, Result),
 )
 
 __all__ = [
     "CheckEnvRequest",
-    "ExportCdlRequest",
     "ExportRequest",
     "OPERATION_NAMES",
     "OPERATIONS",

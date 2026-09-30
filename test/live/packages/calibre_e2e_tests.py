@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
-# 作者: 设计/上层开发
-# 最后改动: 2026-09-28 21:10
+# 作者: 测试/root
+# 最后改动: 2026-09-30 17:58
 # 依赖: 无
 # =======================================================================
 # 六步流程（test/docs/写TB规范.md §1）：
@@ -13,12 +13,12 @@
 本套件把"用户经业务面跑 Calibre"的链固定下来：
 
 * `ENV-01`  `calibre.check_env` —— 工具事实与版本；
-* `EXPORT-01` `calibre.export_cdl` —— 官方 auCdl（`si -batch -command netlist`）导出源网表，
-  **必须含 `.SUBCKT` 与器件行**（P-069 的上游：源网表不再靠手写）；
+* `LVS-02` `calibre.lvs(source.kind=schematic)` —— 官方 auCdl 在 LVS run dir 内现产源网表，
+  `emit_cdl=true` 回传 `cdl_path`，且 **必须含 `.SUBCKT` 与器件行**；
 * `DRC-01`  DRC 跑完 + `read_results`（规则数 / 结果数 / 逐规则计数 / 违规明细）—— P-059 的验收；
 * `DRC-02`  坏 deck 必须**结构化失败**（不挂死、不崩）—— P-061 的同类防线；
 * `LVS-01`  LVS 跑完 + `read_results`（结论枚举 + 计数表格 + **两条路径同一枚举**）—— P-062/P-071 的验收；
-* `LVS-02`  **闭环**：`EXPORT-01` 的 CDL 直接喂 `calibre.lvs`，`VB_CALIBRE_REQUIRE_LVS_VERDICT=1` 下要求 `correct`。
+* `LVS-03`  **闭环**：复用 LVS-02 的内产 CDL，以 `source.kind=cdl` 再跑一次 LVS。
 * `PARAM-01` **带参数**（不改 deck、不走 GUI）：`params` 内联 / `.runset` 文件原位改写 deck；未知键结构化失败。
 
 `LVS-01` 的口径：默认只断言**结构契约**（status 属已知枚举、`log_counters.lvs_status` 与
@@ -37,6 +37,7 @@ import argparse
 import json
 import os
 import sys
+import time
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -61,6 +62,9 @@ CDL = os.environ.get("VB_CALIBRE_CDL", "/home/Gent/.virtuoso-bridge/calprobe/com
 RUN_DIR = os.environ.get("VB_CALIBRE_RUN_DIR", "/home/Gent/project/vblog/calibre-e2e")
 CDL_LIB = os.environ.get("VB_CALIBRE_CDL_LIB", "CMP_LIB")
 CDL_CELL = os.environ.get("VB_CALIBRE_CDL_CELL", "inv2")
+# round9：每个 job 的 run_dir 带本轮唯一后缀，避免复用陈旧目录导致
+# "job already running" / `process_gone_without_report` 误判（2026-09-29 实测）
+STAMP = time.strftime("%H%M%S")
 CDL_GDS = os.environ.get("VB_CALIBRE_CDL_GDS", "/home/Gent/project/test/inv2.gds")
 REQUIRE_LVS_VERDICT = os.environ.get("VB_CALIBRE_REQUIRE_LVS_VERDICT", "") == "1"
 KNOWN_VERDICTS = {"correct", "incorrect", "not_compared", "unknown", "not_comparable"}
@@ -123,11 +127,16 @@ def _check(condition: bool, message: str) -> None:
 
 def _run_and_read(transport, kind: str, *, deck: str, run_dir: str,
                   cdl: str | None = None, gds: str | None = None,
-                  top: str | None = None) -> tuple[dict, dict]:
+                  top: str | None = None, source: dict | None = None,
+                  emit_cdl: bool = False) -> tuple[dict, dict]:
     fields: dict[str, Any] = {"gds": gds or GDS, "top": top or TOP, "deck": deck,
                               "run_dir": run_dir, "blocking": True, "timeout": 900}
     if cdl:
         fields["cdl"] = cdl
+    if source is not None:
+        fields["source"] = source
+    if emit_cdl:
+        fields["emit_cdl"] = True
     job = _value(transport, f"calibre.{kind}", **fields)
     job_id, effective_dir = job.get("job_id"), job.get("run_dir") or run_dir
     _check(job.get("status") == "completed", f"{kind} did not complete: {job.get('status')}")
@@ -144,7 +153,7 @@ def _case_env(transport) -> None:
 
 
 def _case_drc(transport) -> None:
-    _, read = _run_and_read(transport, "drc", deck=DRC_DECK, run_dir=f"{RUN_DIR}/drc")
+    _, read = _run_and_read(transport, "drc", deck=DRC_DECK, run_dir=f"{RUN_DIR}/drc-{STAMP}")
     summary = read.get("summary") or {}
     _check((summary.get("rules_checked") or 0) > 0, f"rules_checked missing: {summary}")
     _check((summary.get("total_results") or 0) >= 0, f"total_results missing: {summary}")
@@ -165,7 +174,7 @@ def _case_drc_bad_deck(transport) -> None:
     response = transport.call({
         "operation": "calibre.drc", "token": TOKEN,
         "gds": GDS, "top": TOP, "deck": f"{RUN_DIR}/does-not-exist.drc",
-        "run_dir": f"{RUN_DIR}/drc-bad", "blocking": True, "timeout": 120,
+        "run_dir": f"{RUN_DIR}/drc-bad-{STAMP}", "blocking": True, "timeout": 120,
     })
     _check(not response.get("ok"), f"bad deck must fail structurally: {response}")
     _check(str(response.get("error") or ""), f"bad deck must carry an error message: {response}")
@@ -183,27 +192,20 @@ def _cdl_counts(transport, path: str) -> tuple[int, int]:
     return int(parts[0]), int(parts[1])
 
 
-def _case_export_cdl(transport) -> None:
-    """EXPORT-01：官方 auCdl 链路导出源网表，必须有器件行（P-069 上游）。"""
-    value = _value(transport, "calibre.export_cdl", library=CDL_LIB, cell=CDL_CELL,
-                   run_dir=f"{RUN_DIR}/cdl")
-    path = value.get("netlist_path")
-    _check(path, f"export_cdl 未返回 netlist_path: {value}")
-    _check((value.get("bytes") or 0) > 0, f"export_cdl 产物为空: {value}")
-    _check(value.get("cds_lib"), f"export_cdl 未记录 cds.lib 来源: {value}")
+def _case_lvs_source_schematic(transport) -> None:
+    """LVS-02：`source.kind=schematic` 在 LVS run dir 内走官方 auCdl。"""
+    job, read = _run_and_read(
+        transport, "lvs", deck=LVS_DECK, gds=CDL_GDS, top=CDL_CELL,
+        source={"kind": "schematic", "library": CDL_LIB, "cell": CDL_CELL,
+                "view": "schematic"},
+        emit_cdl=True, run_dir=f"{RUN_DIR}/lvs-source-sch-{STAMP}",
+    )
+    path = job.get("cdl_path")
+    _check(path, f"LVS source.schematic 未返回 cdl_path: {job}")
     subckts, devices = _cdl_counts(transport, path)
-    _check(subckts >= 1, f"CDL 无 .SUBCKT（只剩端口壳）：{value}")
-    _check(devices >= 1, f"CDL 无器件行（auCdl 只出了端口）：{value}")
+    _check(subckts >= 1, f"CDL 无 .SUBCKT（只剩端口壳）：{job}")
+    _check(devices >= 1, f"CDL 无器件行（auCdl 只出了端口）：{job}")
     _exported["cdl"] = path
-
-
-def _case_lvs_chain(transport) -> None:
-    """LVS-02：EXPORT-01 的 CDL 直接喂 LVS —— schematic→CDL→LVS 全链闭环。"""
-    exported = _exported.get("cdl")
-    _check(exported, "LVS-02 依赖 EXPORT-01 的 CDL，但 EXPORT-01 未产出")
-    _, read = _run_and_read(transport, "lvs", deck=LVS_DECK, cdl=exported,
-                            gds=CDL_GDS, top=CDL_CELL,
-                            run_dir=f"{RUN_DIR}/lvs-chain")
     summary = read.get("summary") or {}
     status = summary.get("status")
     _check(status in KNOWN_VERDICTS, f"LVS 结论不在已知枚举: {status!r}")
@@ -213,8 +215,27 @@ def _case_lvs_chain(transport) -> None:
             raise AssertionError(
                 f"auCdl 导出的 CDL 未通过 LVS 比对：status={status!r}，"
                 f"differences={json.dumps(summary.get('differences'))[:300]}")
-        print(f"        WARN   LVS-02 结论是 {status}（EXPORT-01 的 CDL 未对齐版图）；"
+        print(f"        WARN   LVS-02 结论是 {status}（source.schematic 的 CDL 未对齐版图）；"
               "结构契约已通过", flush=True)
+
+
+def _case_lvs_source_cdl(transport) -> None:
+    """LVS-03：复用 LVS-02 内产 CDL，验证 `source.kind=cdl` 直接入口。"""
+    exported = _exported.get("cdl")
+    _check(exported, "LVS-03 依赖 LVS-02 的内产 CDL，但 LVS-02 未产出")
+    _, read = _run_and_read(
+        transport, "lvs", deck=LVS_DECK, gds=CDL_GDS, top=CDL_CELL,
+        source={"kind": "cdl", "path": exported},
+        run_dir=f"{RUN_DIR}/lvs-source-cdl-{STAMP}",
+    )
+    summary = read.get("summary") or {}
+    status = summary.get("status")
+    _check(status in KNOWN_VERDICTS, f"LVS 结论不在已知枚举: {status!r}")
+    _check(summary.get("counts"), f"LVS counts 未解出: {json.dumps(summary)[:300]}")
+    if status != "correct" and REQUIRE_LVS_VERDICT:
+        raise AssertionError(
+            f"source.kind=cdl 未通过 LVS 比对：status={status!r}，"
+            f"differences={json.dumps(summary.get('differences'))[:300]}")
 
 
 def _case_params(transport) -> None:
@@ -226,7 +247,7 @@ def _case_params(transport) -> None:
               "SOURCE PATH": f'SOURCE PATH "{exported}"',
               "SOURCE PRIMARY": f'SOURCE PRIMARY "{CDL_CELL}"'}
     job = _value(transport, "calibre.lvs", deck=LVS_DECK, params=params,
-                 run_dir=f"{RUN_DIR}/lvs-params", blocking=True, timeout=900)
+                 run_dir=f"{RUN_DIR}/lvs-params-{STAMP}", blocking=True, timeout=900)
     changes = job.get("deck_changes") or []
     _check(any("LAYOUT PRIMARY" in item for item in changes),
            f"参数没落进 deck（deck_changes={changes}）")
@@ -241,7 +262,7 @@ def _case_params(transport) -> None:
     bad = transport.call({"operation": "calibre.lvs", "token": TOKEN, "deck": LVS_DECK,
                           "gds": CDL_GDS, "top": CDL_CELL, "cdl": exported,
                           "params": {"lvsLayoutPrimary": CDL_CELL},
-                          "run_dir": f"{RUN_DIR}/lvs-bad-param"})
+                          "run_dir": f"{RUN_DIR}/lvs-bad-param-{STAMP}"})
     _check(not bad.get("ok"), f"runset 键不允许出现在 params: {str(bad)[:200]}")
     _check("SVRF 语句头" in str(bad.get("error") or ""), f"错误要指路: {bad}")
 
@@ -249,8 +270,8 @@ def _case_params(transport) -> None:
 def _case_set_file(transport) -> None:
     """SET-01：现场形态的 `.lvs` set 作为**唯一输入**（deck/输入/选项都在 set 里）。"""
     exported = _exported.get("cdl")
-    _check(exported, "SET-01 依赖 EXPORT-01 的 CDL，但 EXPORT-01 未产出")
-    run_dir = f"{RUN_DIR}/lvs-set"
+    _check(exported, "SET-01 依赖 LVS-02 的内产 CDL，但 LVS-02 未产出")
+    run_dir = f"{RUN_DIR}/lvs-set-{STAMP}"
     lines = [
         f"*lvsRulesFile: {LVS_DECK}",
         f"*lvsRunDir: {run_dir}",
@@ -281,7 +302,7 @@ def _case_set_file(transport) -> None:
     tmp.mkdir(parents=True, exist_ok=True)
     local = tmp / "e2e-lvs.lvs"
     local.write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
-    remote = f"{RUN_DIR}/e2e-lvs.lvs"
+    remote = f"{RUN_DIR}/e2e-lvs-{STAMP}.lvs"
     _op(transport, "basic.file.upload", local_path=str(local), remote_path=remote, timeout=120)
 
     job = _value(transport, "calibre.lvs", runset=remote, blocking=True, timeout=900)
@@ -307,7 +328,7 @@ def _case_set_file(transport) -> None:
 
 def _case_lvs(transport) -> None:
     _, read = _run_and_read(transport, "lvs", deck=LVS_DECK,
-                            run_dir=f"{RUN_DIR}/lvs", cdl=CDL)
+                            run_dir=f"{RUN_DIR}/lvs-{STAMP}", cdl=CDL)
     summary = read.get("summary") or {}
     counters = read.get("log_counters") or {}
     status = summary.get("status")
@@ -336,11 +357,11 @@ def run_suite(transport) -> list[tuple[str, str]]:
             raise
 
     run("ENV-01 check_env", lambda: _case_env(transport))
-    run("EXPORT-01 auCdl 源网表", lambda: _case_export_cdl(transport))
     run("DRC-01 run + read_results", lambda: _case_drc(transport))
     run("DRC-02 bad deck fails", lambda: _case_drc_bad_deck(transport))
     run("LVS-01 run + read_results", lambda: _case_lvs(transport))
-    run("LVS-02 export_cdl → LVS 闭环", lambda: _case_lvs_chain(transport))
+    run("LVS-02 source.schematic auCdl 内产 + LVS", lambda: _case_lvs_source_schematic(transport))
+    run("LVS-03 source.cdl 复用内产 CDL", lambda: _case_lvs_source_cdl(transport))
     run("PARAM-01 无 set 取数口（SVRF 语句头）", lambda: _case_params(transport))
     run("SET-01 只给 .lvs set（官方批处理）", lambda: _case_set_file(transport))
     return results
@@ -348,7 +369,8 @@ def run_suite(transport) -> list[tuple[str, str]]:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--transport", choices=("direct", "http"), default="direct")
+    parser.add_argument("--transport", choices=("direct", "http"), default="http",
+                        help="direct=故障定位/覆盖率；真机判据必须 http")
     args = parser.parse_args()
     transport = HttpTransport() if args.transport == "http" else DirectTransport()
     try:

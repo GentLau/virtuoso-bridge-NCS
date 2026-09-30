@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
 # 作者: 测试/root
-# 最后改动: 2026-09-28 20:40
+# 最后改动: 2026-09-30 17:58
 # 依赖: 无
 # =======================================================================
 """设计迭代全链 TB（第七轮新增）：**改图 → 二次出图 → 版图二次发布 → 仿真复测**。
@@ -24,9 +24,9 @@ RF 的 r）现场拼出来的（本文件内的迷你网表器 ``_netlist_from_r
 "改图生效 → 仿真数值变化"是一条可追溯的因果链，而不是两段各说各话的脚本。
 
 可选 ``--with-lvs``：另建一个只有 MP/MN 的 cell，做
-``calibre.export_cdl``（官方 auCdl）→ ``virtuoso.layout.gds`` →
-``calibre.lvs``（deck + cdl）→ ``calibre.read_results``，断言得到
-**correct**（对应 P-069 的验收判据）。
+``calibre.lvs(source.kind=schematic)``（官方 auCdl 在 run dir 内现产 CDL）→
+``virtuoso.layout.gds``（CMP_LIB/inv2 档）→ ``calibre.lvs`` →
+``calibre.read_results``，断言得到 **correct**（对应 P-069/C07 的验收判据）。
 
 用法::
 
@@ -742,8 +742,10 @@ def stage_lvs(t: HttpTransport, cfg) -> Stage:
     分两段，结论不要混：
 
     * **A（断言 correct）**：用工程里既有的真实 cell（`CMP_LIB/inv2`：schematic +
-      layout + symbol 齐全，2026-08-17 前就在），走 export_cdl → layout.gds →
-      `calibre.lvs`(deck+cdl) → `calibre.read_results`；这是 P-069 卡片的验收判据。
+      layout + symbol 齐全，2026-08-17 前就在），走
+      `calibre.lvs(source.kind=schematic)`（auCdl 在 run dir 内现产 CDL，
+      `emit_cdl=true` 回传 `cdl_path`）→ `virtuoso.layout.gds` → `calibre.read_results`；
+      这是 P-069/C07 卡片的验收判据。
     * **B（只记录，不断言）**：本 TB 自己搭的 `DI65/inv_only`（版图只有 M1 矩形 +
       4 个 pin 标签，没有真实布线/端口层）——实测 verdict 为 `not_compared`
       （ports 0/4）。这是**TB 手搭版图的局限**（LVS deck 认端口要正确的层/标签），
@@ -760,17 +762,6 @@ def stage_lvs(t: HttpTransport, cfg) -> Stage:
                      f"grep -c 'DEFINE CMP_LIB' {cds_lib_a} && "
                      f"ls -l /home/Gent/project/test/inv2.gds 2>&1 | tail -1"), timeout=120)
     st.value["prep_a"] = cmd_stdout(prep_a).strip()[-300:]
-    export_a = raw_call(t, "calibre.export_cdl", library="CMP_LIB", cell="inv2",
-                        view="schematic", netlist_name="inv2", run_dir=run_a,
-                        cds_lib=cds_lib_a, timeout=900)
-    val_a = ((export_a).get("value")) or {}
-    st.value["export_cdl_inv2"] = {k: val_a.get(k) for k in ("bytes", "netlist_path")}
-    if not (export_a.get("ok") and val_a.get("bytes")):
-        st.bad("export-cdl-inv2", export_a.get("error") or val_a)
-        st.error = f"export_cdl(CMP_LIB/inv2) failed: {export_a.get('error')}"
-        return st
-    st.ok("export-cdl-inv2", st.value["export_cdl_inv2"])
-
     gds_a = f"{FILE_ROOT}/gds/lvs/inv2.gds"
     op(t, "basic.command.run", cmd=f"mkdir -p {FILE_ROOT}/gds/lvs && echo ok", timeout=60)
     call_a = raw_call(t, "virtuoso.layout.gds", action="export", library="CMP_LIB",
@@ -779,8 +770,18 @@ def stage_lvs(t: HttpTransport, cfg) -> Stage:
                       tech_lib=PDK_LIB, timeout=900)
     (st.ok if call_a.get("ok") else st.bad)("gds-export-inv2", call_a.get("error"))
     lvs_a = raw_call(t, "calibre.lvs", gds=gds_a, top="inv2", deck=LVS_DECK,
-                     cdl=str(val_a.get("netlist_path")), blocking=True, timeout=1800)
+                     source={"kind": "schematic", "library": "CMP_LIB", "cell": "inv2",
+                             "view": "schematic"},
+                     emit_cdl=True, cds_lib=cds_lib_a, blocking=True, timeout=1800)
     lvs_a_value = ((lvs_a).get("value")) or {}
+    st.value["export_cdl_inv2"] = {
+        "netlist_path": lvs_a_value.get("cdl_path"),
+        "bytes": (lvs_a_value.get("source") or {}).get("bytes"),
+    }
+    if lvs_a_value.get("cdl_path"):
+        st.ok("export-cdl-inv2", st.value["export_cdl_inv2"])
+    else:
+        st.bad("export-cdl-inv2", lvs_a_value or lvs_a.get("error"))
     st.value["lvs_inv2"] = {"ok": lvs_a.get("ok"), "job_id": lvs_a_value.get("job_id"),
                             "run_dir": lvs_a_value.get("run_dir"),
                             "status": lvs_a_value.get("status"),
@@ -838,19 +839,6 @@ def stage_lvs(t: HttpTransport, cfg) -> Stage:
                    f"echo 'DEFINE {LIB} {FILE_ROOT}/{LIB}' >> {cds_lib}; "
                    f"grep -n 'DEFINE {LIB}' {cds_lib}"), timeout=120)
     st.ok("cds-lib-prep", cmd_stdout(prep).strip()[-200:])
-    export = raw_call(t, "calibre.export_cdl", library=LIB, cell=INV_CELL,
-                      view="schematic", netlist_name=INV_CELL, run_dir=run_dir,
-                      cds_lib=cds_lib, timeout=900)
-    exp_value = ((export).get("value")) or {}
-    st.value["export_cdl"] = {k: exp_value.get(k) for k in ("bytes", "netlist_path",
-                                                            "run_dir", "log_path")}
-    if not (export.get("ok") and exp_value.get("bytes")):
-        st.bad("export-cdl", export.get("error") or exp_value)
-        st.error = f"calibre.export_cdl failed: {export.get('error')}"
-        return st
-    st.ok("export-cdl", st.value["export_cdl"])
-    remote_cdl = str(exp_value.get("netlist_path"))
-
     _ensure_cell_view(t, INV_CELL, "layout", "maskLayout", st)
     op(t, "virtuoso.layout.write", library=LIB, cell=INV_CELL, view="layout",
        commands=[
@@ -879,8 +867,19 @@ def stage_lvs(t: HttpTransport, cfg) -> Stage:
                     timeout=900)
     (st.ok if call.get("ok") else st.bad)("gds-export-lvs", call.get("error"))
     lvs = raw_call(t, "calibre.lvs", gds=gds, top=INV_CELL, deck=LVS_DECK,
-                   cdl=remote_cdl, blocking=True, timeout=1800)
+                   source={"kind": "schematic", "library": LIB, "cell": INV_CELL,
+                           "view": "schematic"},
+                   emit_cdl=True, cds_lib=cds_lib, blocking=True, timeout=1800)
     lvs_value = ((lvs).get("value")) or {}
+    st.value["export_cdl"] = {
+        "netlist_path": lvs_value.get("cdl_path"),
+        "bytes": (lvs_value.get("source") or {}).get("bytes"),
+        "run_dir": lvs_value.get("run_dir"),
+    }
+    if lvs_value.get("cdl_path"):
+        st.ok("export-cdl", st.value["export_cdl"])
+    else:
+        st.bad("export-cdl", lvs_value or lvs.get("error"))
     st.value["lvs"] = {"ok": lvs.get("ok"), "error": lvs.get("error"),
                        "job_id": lvs_value.get("job_id"),
                        "run_dir": lvs_value.get("run_dir"),

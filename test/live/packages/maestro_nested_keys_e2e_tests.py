@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
 # 作者: 测试/root
-# 最后改动: 2026-09-30 00:05
+# 最后改动: 2026-09-30 17:55
 # 依赖: test/live/packages/maestro_mc_e2e_tests.py（建 setup 的调用姿势一致）
 # =======================================================================
 # 六步流程（test/docs/写TB规范.md §1）：
@@ -9,8 +9,8 @@
 #    不碰共享 tb_ctle 的 setup；
 # ④ 只做被测动作：每个键一条命令（enabled / enable_tests / disable_tests / model_file /
 #    model_section / sections / job_type / type_name / type_value / test_name / spec_name）；
-# ⑤ 读回比对：**能用公开 read 面读到的一律值级断言**（corner 名、corner 变量/参数、
-#    outputs[].spec），读不到的**如实记"接受性覆盖 + 无公开读回"**（不冒充值级）；
+# ⑤ 读回比对：P-109 补齐后 12 个键**全部值级断言**（corner 名/变量/参数/启用状态/models、
+#    test job_policy、outputs[].spec），不再有 readback:none；
 # ⑥ 收尾：只写本 TB 的 cell；证据 JSON 落盘。
 """maestro 嵌套键真机补测（round9 缺口：`nested-key-coverage.md` §2 的 12 个 maestro 键）。
 
@@ -21,15 +21,14 @@
 判定口径（诚实优先）：
 
 * `model_file` / `model_section` / `job_type` / `enabled` / `enable_tests` / `disable_tests` /
-  `test_name` 在 `virtuoso.maestro.read_config` 的**公开 schema 里没有对应字段**
-  （schema 顶层键 = library/cell/view/tests/variables/parameters/corners/run_options/run_mode/
-  job_control_mode/current_history；test 条目 = variables/analyses/outputs/env_options/sim_options）
-  → 本 TB 只断言"写被接受且不破坏可读状态"，并在证据里显式标注 `readback: none`，
-  **不声称已做值级覆盖**；由设计决定是补 read 面还是补 spec 说明。
+  `test_name` 的公开读回面在 P-109 已补齐（`read_config` 的 corner
+  `enabled/enabled_tests/disabled_tests/models[].{name,file,section,test}` 与 test
+  `job_policy.{simulation,netlisting}`）→ 本 TB 对 7 键全部做**值级断言**
+  （NKM-02/03/05；修复前这三条记为 `readback:none`）。
 * `type_name`/`type_value`（set_var/set_parameter 的别名）、`spec_name`（delete_spec）、
   corner 变量/参数、corner 名 → **有公开读回**，逐条值级断言。
-* `sections`（load_corners）本轮**只做负路径**：仓库里没有合法的 ADE corners CSV 样例
-  （离线用例用的是假 CSV），无法构造正例输入 → 见报告残留，已向设计要样例。
+* `sections`（load_corners）：正例用 `test/shared/fixtures/maestro_corner65.csv`
+  （NKM-07a，corner 名值级读回），负例见 NKM-07b。
 
 用法::
 

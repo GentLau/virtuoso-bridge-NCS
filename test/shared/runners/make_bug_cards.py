@@ -28,271 +28,201 @@ BUGS_DIR = ROOT / "test" / "reports" / "bugs"
 OPEN = [
 
     {
-        "id": "C3",
-        "layer": "测试侧（消费方适配）· C1 破坏性契约变更",
-        "slug": "c1-consumer-migration",
-        "title": "C1 落地后测试侧消费方未适配：仍按旧 `data` 壳解析响应（\u7ea6 50 个文件）",
-        "level": "P2（测试资产失效：不修则 live/semi 门禁假红/读不到 steps）",
-        "owner": "测试侧（root）",
-        "status": "待测试侧",
-        "where": "命中面：`rg -l 'get(\"data\")' test/ --glob '!test/artifacts/**'`；已适配 4 个"
-                 "（`calibre_export_pex_e2e_tests.py`、`maestro_e2e_tests.py`、`skill_log_options_e2e_tests.py`、"
-                 "`maestro_p095_overwrite_wedge_probe.py`）。",
-        "symptom": "C1 契约（`2f88853`）把业务载荷移到顶层（值型 `value`、命令/skill 型 `result`）、"
-                   "成功默认省略 `steps`、失败壳去掉 `data`；旧解析 `response.get(\"data\")` 拿到空 dict ⇒ "
-                   "假红（calibre 门禁 ENV-01「环境缺 drc_ok」、maestro TB WRITE-05「SKILL failed: {}」）"
-                   "或读不到响应级 `steps`（WRITE-06「save_setup 步骤 []」）。",
-        "repro": "PYTHONPATH=src python test/live/packages/calibre_export_pex_e2e_tests.py --transport http",
-        "evidence": "C1 契约 TB `test/offline/unit/test_top_layer_dispatch.py::test_success_returns_result_body`"
-                    "（`{\"ok\":True,\"value\":7}`）；本轮实测：`basic.command.run` → 顶层 `result`；"
-                    "`maestro.read_config` → 顶层 `value` + **响应级** `steps`。",
-        "accept": "① 命中文件全部改为形状无关解包（顶层 `value`/`result` 优先，兼容旧 `data`）；"
-                  "② 需要步骤名的用例改读响应级 `steps`；③ 逐套复跑 live/semi 门禁并如实记账；④ 完成后关 C3，C1 随之可关。",
-        "next": "按清单分批适配（优先级 live/packages → semi/probes → live/flows），每批复跑对应门禁。",
-        "reported": "2026-09-29（C1 落地后首轮复跑暴露）",
+        "id": "C10",
+        "layer": "上层（schematic 包）· place_wire 惰性参数",
+        "slug": "place-wire-spacing-lazy-params",
+        "title": "`place_wire` 的 `x_spacing`/`y_spacing` 无可观察效果（spec 未记载、DB 无属性、写后读不回来）",
+        "level": "P3（静默无效参数，与 P-092/C07 同族；调用方以为能控制走线间距）",
+        "owner": "设计侧（实现可观察语义并写进 spec，或从命令模型/spec 删字段）",
+        "status": "待决策",
+        "where": "`src/pyapi/packages/schematic.py:604`（`schCreateWire(cv entry route points xSpacing ySpacing width)`——两值只做创建期实参、不落库）；"
+                 "spec `2-schematic.md` 的 `place_wire` 参数表未记载这两个键",
+        "symptom": "真机（vblog，round9）：`virtuoso.schematic.write(place_wire points=[[0,0],[1,0]] x_spacing=1.5 y_spacing=0.25 width=0.05)` → ok；"
+                   "DB 直读该 shape：`(\"path\" (nil) (nil) (0.05))` —— **width 落库、xSpacing/ySpacing 读回 nil**；"
+                   "不同 spacing 取值之间也观察不到几何差异（2 点直连路由）。",
+        "repro": "PYTHONPATH=src python test/live/packages/nested_keys_e2e_tests.py --transport http  # NK-04",
+        "evidence": "`test/artifacts/evidence/round9/nested-keys-symbol-schematic.json`（NK-04 `db` 字段）；`test/reports/round9/nested-key-coverage.md` §2",
+        "accept": "① 实现语义并在 spec 写明（给出可观察差异的判据，例如多段 VHV 路由间距或 DB 属性）或 ② 从命令模型/spec 删除这两个字段；"
+                  "NK-04 相应升级为值级断言或删除。",
+        "next": "设计侧定口径；测试侧按结论改 NK-04。",
+        "reported": "2026-09-29（round9 嵌套键真机覆盖发现）",
         "updated": "2026-09-29（新立）",
     },
 
 
     {
-        "id": "C4",
-        "layer": "顶层（response serialization）· 上层（pyapi.models）",
-        "slug": "command-result-namedtuple-array",
-        "title": "`CommandResult` NamedTuple 被 JSON 序列化为位置数组，命令 / 文件 / GUI / Spectre 结果丢失字段名",
-        "level": "P2（跨 basic 操作响应契约缺陷：调用方必须按位置猜字段，后续加字段或调整顺序会破坏兼容性）",
-        "owner": "设计侧（`pyapi.models.CommandResult` 的模型形状，或 `server.dispatch.jsonable` 的 NamedTuple 序列化口径）",
+        "id": "C09",
+        "layer": "上层（maestro 包）· write_history rename 链",
+        "slug": "maestro-write-history-rename-chain-handle-error",
+        "title": "`maestro.write_history` 连续 rename（A→B，再 B→A）第二跳报 `ASSEMBLER-2404 Cannot find a setup database entry for handle`",
+        "level": "P3（重命名链不可用：`maestro_e2e_tests.HISTORY-01` 因此稳定红）",
+        "owner": "设计侧（maestro 包 rename 的会话/SDB handle 生命周期）",
         "status": "待设计修",
-        "where": "`src/pyapi/models.py:133-144`（`CommandResult` 为 NamedTuple：returncode/stdout/stderr/kind）；"
-                 "`src/server/dispatch.py:58-77`（`jsonable()` 对 tuple 统一转 list，字段名丢失）；"
-                 "`src/pyapi/packages/basic.py:168-181`（command 的 `result` 与 `steps[].detail` 均直接携带 `CommandResult`）。",
-        "symptom": "实测 `basic.command.run(cmd=\"hostname\")` 返回：\n"
-                   "`{\"ok\":true,\"result\":[0,\"GLIS-DESKTOP\\n\",\"\",\"command\"]}`；\n"
-                   "`[0, stdout, stderr, kind]` 没有字段名，调用方必须记住位置。`steps[0].detail` 又重复同一数组。"
-                   "同一问题覆盖 `basic.file.upload`、`basic.file.download`、`basic.gui.run`、`basic.spectre.run`。",
-        "repro": "curl -sS -X POST http://127.0.0.1:8127/api/operation "
-                 "-H 'Content-Type: application/json' "
-                 "-d '{\"operation\":\"basic.command.run\",\"token\":\"<token>\",\"cmd\":\"hostname\"}'",
-        "evidence": "2026-09-29 实测响应：HTTP 200，`result=[0,\"GLIS-DESKTOP\\n\",\"\",\"command\"]`，"
-                    "与 `steps[0].detail` 完全相同；代码锚点：`pyapi/models.py:133-144`、"
-                    "`server/dispatch.py:58-77`、`pyapi/packages/basic.py:176-182`。",
-        "accept": "① `CommandResult` 在业务响应中稳定序列化为对象："
-                  "`{\"returncode\":0,\"stdout\":\"...\",\"stderr\":\"\",\"kind\":\"command\"}`；"
-                  "② 顶层 `result` 与 `steps[].detail` 不得再使用位置数组表达该结构；"
-                  "③ 新增契约 TB 钉住字段名与值；④ 同步适配依赖位置的消费方。",
-        "next": "设计侧选定单点修复：优先在 `jsonable()` 的 tuple 分支前处理 NamedTuple `_asdict()`，"
-                "或把 `CommandResult` 改为具名模型；测试侧补离线契约 TB 并复跑 basic 五操作 HTTP 冒烟。",
-        "reported": "2026-09-29（用户直报：`basic.command.run` 返回结果难以理解）",
-        "updated": "2026-09-29（新立）",
-        "extra": "## 补充（2026-09-29）\n\n"
-                 "这与 C1 的顶层响应改造叠加：C1 后业务 Result 本体直接返回，因此 `result` 的字段语义必须自描述；"
-                 "继续使用位置数组会让 C1 的“本体直返”契约更难消费。",
-    },
-
-
-    {
-        "id": "P-105",
-        "layer": "上层（symbol / layout 包）· screenshot 参数校验",
-        "slug": "screenshot-view-type-unvalidated",
-        "title": "`symbol/layout.screenshot` 的 `view_type` 坏值**不被校验**（ok=true 静默接受；P-080 同族的第三个位置）",
-        "level": "P3（静默无效参数；与 P-080/P-092/P-084 同类）",
-        "owner": "设计侧（screenshot 入参校验；与 P-080 的 read 侧同口径）",
-        "status": "待测试侧",
-        "where": "`src/pyapi/packages/layout.py`（`ScreenshotRequest` → `_screenshot_skill` 链路，view_type 只透传不校验）；"
-                 "`src/pyapi/packages/symbol.py` 同族（待 symbol 档取证）；对照 `verilog/veriloga` 读侧已按 `dda3775` 校验。",
-        "symptom": "真机（vblog，2026-09-29 15:4x，`virtuoso.layout.screenshot(view_type=\"bogus_type_xyz\")`）返回 **ok=true**；"
-                   "同一 TB 里 `schematic` 档 5/5 绿、`layout` 档仅 SC-06 红。\n"
-                   "（symbol 档本轮因 vb-vbuser2 的 CIW `SKILL execution timed out` 未取到证据，属环境态，不当作已覆盖。）",
-        "repro": "PYTHONPATH=src python test/live/packages/screenshot_params_e2e_tests.py --transport http\n"
-                 "（默认 layout 档；SC-06 断言：坏 view_type 必须 ok=false）",
-        "evidence": "`test/artifacts/evidence/verify-fix-r9/shot-layout.txt`（SC-01..05 PASS / SC-06 FAIL）；"
-                    "对照 `shot-schematic.txt` 5/5 绿。",
-        "accept": "① `virtuoso.symbol.screenshot` 与 `virtuoso.layout.screenshot` 的 `view_type` 与 read/write 同口径校验："
-                  "非字符串/空串 → ValueError；不在该包支持枚举内 → 结构化拒绝（点名取值）；② SC-06 转绿；"
-                  "③ symbol 档在健康 CIW 上取证并判定（本轮环境超时，未覆盖）。",
-        "next": "设计侧定 view_type 的合法集合（layout=maskLayout；symbol=schematicSymbol）并加校验；测试侧复跑三档 screenshot TB。",
-        "reported": "2026-09-29（第九轮修复复验，root 直接发现）",
+        "where": "`src/pyapi/packages/maestro.py`（`write_history` 的 rename 分支与 SDB handle 复用；`_open_session` 会话内 handle 在重命名后失效）",
+        "symptom": "隔离复现（round9，vblog，21:5x）：`rename(Interactive.8 → e2e_renamed)` **ok=True**；紧接着 "
+                   "`rename(e2e_renamed → Interactive.8)` → `(\"error\" 0 t nil (\"*Error* error: Cannot find a setup database entry for handle 118109.\" nil))`。"
+                   "同一形态在门禁 `maestro_e2e_tests.py::HISTORY-01 rename/lock/unlock/delete` 稳定复现（今日 3 次，handle 号不同）。"
+                   "对照：单独 `delete e2e_renamed` **ok=True** 且列表确实少一条 → delete 正常，问题在 rename 链。",
+        "repro": "PYTHONPATH=src python test/live/packages/maestro_e2e_tests.py --transport http  # HISTORY-01\n"
+                 "隔离：read_history → pick Interactive.* → write_history(rename H→e2e_renamed) ok → write_history(rename e2e_renamed→H) → ASSEMBLER-2404",
+        "evidence": "`test/artifacts/evidence/round9/final3-maestro_e2e_tests.py.log`（HISTORY-01 报错原文）；隔离探针 stdout（rename ok / restore fail, handle 118109）",
+        "accept": "① rename 链（含目标名已存在、重命名回原名）必须成功或给出**点名冲突**的结构化拒绝（对照：重名 rename 已有清晰文案）；"
+                  "② 不得报 SDB handle 错误；③ `maestro_e2e_tests.py` HISTORY-01 转绿。",
+        "next": "设计侧查 rename 后会话内 handle 的刷新（或改按名字重新解析）；测试侧复跑 HISTORY-01。",
+        "reported": "2026-09-29（round9 门禁复跑 + root 隔离复现）",
         "updated": "2026-09-29（新立）",
     },
 
+    {
+        "id": "C11",
+        "layer": "控制面权限模型（个人自助 registry）",
+        "slug": "control-plane-personal-self-service-missing",
+        "title": "`/api/user/*` 仍收归管理员且 `enhanced_token` 未接入 update：个人 token + 增强凭据无法自助查询/修改自己的注册表条目",
+        "level": "P2（个人管理核心能力不可达：真实控制面对个人 token 稳定 401；前端只能显示缺口或错误地借用管理员权限）",
+        "owner": "设计侧（先定个人自助权限矩阵/端点语义，再由 server 实现；不能只改前端）",
+        "status": "待决策",
+        "where": "spec：`spec/design-concepts/顶层/add-控制面与业务面.md:67-95`（query/update/delete 均标管理权限，且明确“个人 token 不能自助修改”）、`spec/design-concepts/中层/add-中层配置文档.md:47`（仅 `mode=local` 需管理权限，无字段级个人权限矩阵）；"
+                 "实现：`src/register/server.py:232-285`（`/api/users`、`/api/user/<user>`、update、delete 入口先走 `_require_admin()`）、`:723-802`（update 只接受管理端 patch）、`:361-390`（`enhanced_token` 只在 `POST /api/register apply` 校验）。",
+        "symptom": "真实 8124 实测：`Authorization: Bearer <管理员 token>` → `GET /api/user/<user>` 200；`Authorization: Bearer <该 user 的个人 token>` → 401 `unauthorized`。"
+                   "因此个人页无法按目标语义“个人 token 证明本人身份 + enhanced_token 证明受保护变更权限”工作。"
+                   "当前 spec 与实现彼此一致（都规定 admin-only），但都缺少产品要求的个人自助权限模型。",
+        "repro": "1. 从 work-dir registry 取某 user 的个人 token；\n"
+                 "2. `curl -H 'Authorization: Bearer <personal>' http://127.0.0.1:8124/api/user/<user>` → 401；\n"
+                 "3. 同请求改用管理员 token → 200；\n"
+                 "4. 前端个人页严格用 personal Authorization 提交，不再回退管理员凭据。",
+        "evidence": "`doc/report/控制台三页-后端接口与权限缺口.md`；代码锚点 `src/register/server.py:232-285,361-390,723-802`；"
+                    "页面契约测试 `test/offline/unit/test_registration_page.py::test_personal_page_combines_query_and_update`（要求 personal Authorization 且禁止 enhanced 回退）。",
+        "accept": "① spec 补字段级权限矩阵，明确 personal token 只能访问本人、哪些字段普通修改、哪些字段必须 `enhanced_token`；"
+                  "② server 提供 personal-token-only-own-user 的查询/更新语义，并在 update 接入 `enhanced_token`（只校验、不落盘、不回显）；"
+                  "③ 个人页无需管理员 token 即可查询/修改自己的 registry；④ 负例：个人 token 访问他人条目必须拒绝。",
+        "next": "spec owner 先拍板权限矩阵与 self 端点形状；后端按 spec 实现。前端已移除管理员 Authorization 回退，仍在 401 时显式点名该缺口。",
+        "reported": "2026-09-30（个人管理页真机查询 401，root 复核 spec 与实现）",
+        "updated": "2026-09-30（新立；前端停止用管理员凭据代偿）",
+    },
+
+
 
     {
-        "id": "C1",
-        "layer": "上层（basic 包 + pyapi.models 序列化）· 响应契约",
-        "slug": "json-response-redundancy",
-        "title": "`basic.skill.execute` 响应 JSON 冗余：同一个 `VirtuosoResult` 在 `data.result` 与 `data.steps[0].detail` 各序列化一次，空可选字段全展开",
-        "level": "P2（全局响应形态缺陷：所有 basic.skill.execute 命中；两层重复携带完整结果，日志开启时体积翻倍）",
-        "owner": "设计侧（上层 basic.py 的结果构造 + pyapi.models 的序列化口径；若涉及顶层 jsonable 归顶层）",
+        "id": "C06",
+        "layer": "底层（CIW 侧 `ramic_bridge.il` + daemon 表达式）· CIW 输出刷新",
+        "slug": "ciw-output-not-flushed",
+        "title": "桥执行 `print` 的输出在 CIW 不显示：evalstring 路径行缓冲未刷，daemon 补的是 `hiFlush()` 而非 `hiFlushInfo()`",
+        "level": "P2（用户可见功能缺陷：SKILL 的打印输出静默不显示；且积压输出会串进下一次交互，造成归因误判）",
+        "owner": "设计侧（`ramic_bridge.il` 的 CIW 侧刷新点；daemon 两版残留的 `hiFlush()` 清理）",
+        "status": "待设计修",
+        "where": "`src/bridge/resources/ramic_bridge.il:102-119`（`evalstring` 之后只做日志侧 `hiFlushLogFile()`，从不刷 CIW 输出缓冲）；"
+                 "`src/bridge/resources/ramic_bridge_daemon_3.py:419,426`、`src/bridge/resources/ramic_bridge_daemon_27.py:417,423`（表达式尾部补的是 `hiFlush()`）。",
+        "symptom": "经桥执行 `print`（输出一个常量串，不带换行）后 CIW **不显示**该内容；"
+                   "随后在 CIW 手动敲任意命令（或手敲 `hiFlush()`）时，此前若干次输出**一次性涌出**且彼此无换行分隔。"
+                   "同一请求返回的 `CDSlog` 为空串。对照：输出以换行结尾时（`printf` + 换行）经桥执行**能正常显示**。",
+        "repro": "① 页面 / HTTP 调 `basic.skill.execute`，skill_code 填 `print` 加一个常量串 → CIW 无输出；\n"
+                 "② 同法改用带换行的 `printf` → CIW 立即显示；\n"
+                 "③ 回到 ①，手动在 CIW 敲任意命令 → 积压内容全部涌出。",
+        "evidence": "用户 2026-09-29 实测：CIW 一次性涌出三次输出（无换行分隔），同响应 JSON 的 `CDSlog` 为空串；"
+                    "`ramic_bridge.il:70-74` 注释自述 evalstring 路径为行缓冲、只有以换行结尾的输出才立即 flush；"
+                    "8123 手册（skuiref.fnd）区分四者语义：`hiFlush` = 同步事件队列/处理曝光事件（重画窗口）、"
+                    "`hiFlushCIW` = flushes any buffered output to the CIW、`hiFlushInfo` = 让上一个程序的输出在 SKILL 执行期间显示到 CIW、"
+                    "`hiFlushLogFile` = 刷新主/次日志文件；"
+                    "spec `spec/design-concepts/底层/6-日志返回设计标准.md:49` 已写明 `hiFlush()` ≠ `hiFlushLogFile()`，须用后者。",
+        "accept": "**测试侧红钉（2026-09-29 已立）**：`test/live/packages/skill_log_semantics_e2e_tests.py` —— C06-A `print`（不带换行）必须落**同一请求**的 `CDSlog`；C06-B 后续请求 `CDSlog` 不得串入上一条缓冲；C06-C `printf`（带换行）回归不破；C06-E `load`（printf+换行）回归不破（21:44 干净窗口实测 PASS）；C06-D `print+换行` 的归属只打 NOTE（待 spec 定边界）。实测证据 `test/artifacts/evidence/verify-fix-r9/c06-skill-log-semantics.json` 与 `round9/c06-semantics-r9b.json`：A 空、B 串场（且带出更早的残留）、E 绿。长行探针 `round9/longline-probe.log`（stamp 214445）：**≥500B 无换行单行**同请求 `CDSlog` 空、下一条串场带出；同长行+换行同请求 542B 正常 —— 长行\"消失\"并入 C06 本体口径，不另立卡。原判据：① 经桥执行 `print` 后 CIW **立即**显示，无需任何手动交互；"
+                  "② 连续多次 `print` 不再堆叠到下一次交互；"
+                  "③ 同一请求的 `CDSlog` 非空（若确认 `print` 本就不写 CDS.log，需在 spec 写明该边界）；"
+                  "④ 回归：带换行的 `printf` 与多行 `load` 路径行为不变。"
+                  "**round9 攻击扩展（2026-09-29 22:29 实测，证据 `test/artifacts/evidence/round9/c06-attack-r9c.json`）**："
+                  "同一根因再补 6 条形态 —— F 同请求 3×`print` 三标记全缺；G `print`+`printf`(换行) 同请求两标记都在"
+                  "（对照：**换行才是 CIW 缓冲的触发点**）；H 循环内 5×`print` 全缺；I 600B 无换行长行 `print` 的 CDSlog 长度为 0；"
+                  "J `print`(all)→`printf`(off)→`printf`(all) 归属错位（A 本条为空、缓冲被 off 请求的换行冲掉）；"
+                  "K `load` 内 `print`（无换行）为空 —— **A/F/H/I/J/K 同族全红；只绿 A 不算修完，本 TB 全绿才是卡关闭条件**。"
+                  "另 D 实测 `print` 带换行仍在后续请求才带出（SKILL `print` 对字符串加引号并转义换行，故不触发 CIW 缓冲 flush）。",
+        "next": "设计侧在 `ramic_bridge.il` 的 `evalstring` 之后、`lo_end` 抓取**之前**插入 `errset(hiFlushInfo())`"
+                "（不要用 `hiFlushCIW()`——它会处理输入与定时器事件，在 evalstring 内存在重入风险）；"
+                "同时清理 daemon 两版残留的 `hiFlush()`（对 CIW 输出与日志都无效，属误导）。"
+                "测试侧补一条探针：桥执行 `print` 后校验 CIW 可见性与 `CDSlog` 非空。",
+        "reported": "2026-09-29（用户直报：页面执行 `print` 后 CIW 不显示）",
+        "updated": "2026-09-29 22:29（补 C06-E load 回归 + 长行归因 + 攻击扩展 F–K：A/F/H/I/J/K 同族全红）",
+    },
+
+    {
+        "id": "C07",
+        "layer": "spec↔实现一致性（上层 calibre / LVS 源网表入口）",
+        "slug": "calibre-lvs-source-fold-drift",
+        "title": "spec 把 `calibre.export_cdl` 折进 `calibre.lvs` 的 `source` 参数（`source/emit_cdl/cds_lib`）：实现已落地、独立 op 已删除，待测试侧复跑销卡",
+        "level": "P3（一致性：spec §8 验收两行在现行实现上不可达；TB 仍跑在 spec 已删除的旧入口上）",
+        "owner": "设计侧（已选①：实现 fold；测试侧收口红钉）",
         "status": "待测试侧",
-        "where": "`src/pyapi/packages/basic.py:146-155`（`Result(steps=[... detail=skill], result=skill)` 同一对象放两处）；"
-                 "`src/pyapi/models.py:24-37`（`VirtuosoResult` 7 个字段；空 errors/warnings/metadata/log 也参与 model_dump）；"
-                 "`src/server/dispatch.py:58-77,151`（`jsonable` → `model_dump(mode=\"json\")`，外层再包 `ok/data/error`）。",
-        "symptom": "实测 `basic.skill.execute(skill_code=\"1+1\")` 的响应：外层 `ok`、`data.ok`、`steps[0].ok`、`detail.status` 四处表达成功；"
-                   "**同一个 `VirtuosoResult` 在 `data.steps[0].detail` 和 `data.result` 各出现一次**；两份都带\n"
-                   "- `errors: []`、`warnings: []`、`metadata: {}`、`log: \"\"`；\n"
-                   "- `execution_time: 0.32900000002700835`（完整浮点 repr）。\n"
-                   "真正结果只有 `output: \"2\"`，响应仍约 700 字节。",
-        "repro": "POST http://127.0.0.1:8127/api/operation\n"
-                 "{\"operation\":\"basic.skill.execute\",\"token\":\"<token>\",\"skill_code\":\"1+1\"}\n"
-                 "对照：同一响应里 `data.result` 与 `data.steps[0].detail` 的 `output/status/errors/warnings/metadata/log` 完全相同。",
-        "evidence": "用户 2026-09-29 实测响应（见卡片原文）；代码锚点三处；"
-                    "上游测试现状：`test/live/flows/*` 大量直接读 `data.result`，`adc_sar_flow_tb.py` 等又 fallback 到 `steps[0].detail`，"
-                    "说明重复形态已成事实接口。",
-        "accept": "① 先定 canonical 位置（建议只保留 `data.result`，`steps` 只留步骤元信息/失败时留原始结果）；"
-                  "② 同一 `VirtuosoResult` 不得在同一响应中出现两次；③ 空 `errors/warnings/metadata/log` 按选定口径省略，"
-                  "`execution_time` 限定精度；④ 新增离线契约 TB 钉住最小响应形态；⑤ 更新所有消费 `data.result`/`steps[0].detail` 的调用方。",
-        "next": "实现已落地（`2f88853` 等）；测试侧剩「消费方适配」——由 **C3** 跟踪（约 50 个文件），C3 收口后关本卡。",
-        "reported": "2026-09-29（用户直报：`basic.skill.execute` 的 `1+1` 响应过长）",
-        "updated": "2026-09-29（实现已落地；离线 TB 4/4 绿；消费方适配转 C3）",
-        "extra": "## 讨论决策（2026-09-29）\n\n"
-                 "**决策 1（统一壳）**：顶层不再把业务结果套进 `ok/data/error` 壳——业务包可达且返回结果时，"
-                 "**直接返回业务包结果本体**；只有走不到业务包（非法 JSON / 缺 `operation`/`token` / 未知 operation / "
-                 "Request 构造失败 / 未预期异常）才返回壳形错误。\n\n"
-                 "配套前提（三条，缺一即不可行）：\n"
-                 "- 业务 Result 必须保证含 `ok`/`error`——建议在 `pyapi.models` 收口 Result 基类（当前 10 个包各自定义 Result，口径已漂移）；\n"
-                 "- `ok`/`error`/`steps` 定为**保留字段**，业务字段不得占用（合并后与业务字段同一命名空间）；\n"
-                 "- 属**破坏性变更**：需同步消费方（`test/live/flows/*` 大量读 `data.result`，`adc_sar_flow_tb.py` 等 fallback 到 `steps[0].detail`）。\n\n"
-                 "**决策 2（steps 改造）**：任何业务操作支持公共可选参数 `step_details`；**`steps` 出现条件 = 开启 `step_details` 或操作失败**，"
-                 "两者皆无则整字段省略；出现时每步记 `{\"name\": 名, \"ok\": 布尔, \"detail\": 中层结果}`，键名统一 `name`。\n\n"
-                 "**决策 3（删字段）**：删除 `VirtuosoResult.metadata`（`src/pyapi/models.py:36`）与 `SimulationResult.metadata`（`:111`）——"
-                 "新链路无任何写入点、恒为 `{}`；日志已有 `log` 字段，其余扩展信息应由上层 Result 的业务字段承载，"
-                 "不由公共模型提供万能字典（`spec/research/04-log-return-system-proposal.md:159` 同向）。\n\n"
-                 "影响面（已核对）：`src/` 无写入亦无读取；`examples/` 中 7 处 `result.metadata` 读取的是**旧包** `virtuoso_bridge`"
-                 "（旧实现里 metadata 承载 `command`/`spectre_command`/`delivery`/`queue_wait_s` 等），与新模型无关；"
-                 "`SimulationResult` 除定义与导出外无其他使用点。\n\n"
-                 "**决策 4（`execution_time` 精度）**：**保留三位小数**（毫秒级，`round(x, 3)`）。"
-                 "建议在 `VirtuosoResult` 模型层用字段序列化器统一处理——现写入点集中在 `src/common/skill_client.py`（共 10 处），"
-                 "逐点 round 既易漏、新路径也会再漏；模型层处理可让 HTTP 响应与 `save_json` 等所有出口口径一致。\n\n"
-                 "## 上层落地（设计/上层开发，2026-09-29）\n\n"
-                 "- `pyapi.models` 增加公共 `ResultBase` + `ResultPackage`；`ResultBase.model_dump()` 统一控制 `steps` 出现条件。\n"
-                 "- 12 个业务包的 Result/特殊 Result 统一继承 `ResultBase`；Package 统一继承 `ResultPackage`。\n"
-                 "- 77 个 Request 直接增加公共可选字段 `step_details: bool = False`。\n"
-                 "- 成功且未开启 `step_details` → 整个 `steps` 省略；失败始终带 `steps`；开启后成功也带。\n"
-                 "- C1 上层契约 TB `test/offline/unit/test_result_contract.py` **4/4 绿**；全量 offline unit 通过。\n"
-                 "- 顶层/模型侧（本体直返、两字段错误壳、`CDSlog`、删 `metadata`、`execution_time` 三位小数）已由对应提交完成。\n",
+        "where": "spec：`spec/design-concepts/上层/12-calibre.md` §4.3 参数表（`:157-168`）、§4.3.2 auCdl 内产（`:194-208`）、§6.3（`:246-249`）、§8 验收（`:258-273`），源自 commit `6b1b855`（2026-09-29 14:29，**只改 spec**）；实现：`src/pyapi/packages/calibre.py:82-145`（`RunRequest` 无这 3 个字段）、`:1115-1124`（OPERATIONS 仍注册 `calibre.export_cdl`，实体在 `:341-423`）。",
+        "symptom": "按 spec §8 调 `calibre.lvs(source=…)` 会在请求解析即 400：`server/dispatch.py::build_request` → `RunRequest(**fields)` → `TypeError: got an unexpected keyword argument 'source'` → `invalid request for operation: …`。"
+                   "反向：spec 已删的 `calibre.export_cdl` 仍可调用，且真机套件与 4 条 flow TB 都在用它 —— 审计口径下「spec 验收行无实现无 TB」与「TB 覆盖的是 spec 不认的入口」同时成立。",
+        "repro": "离线（不碰真机）：\n```python\nfrom pyapi.packages.calibre import RunRequest\nRunRequest(token='t', deck='/r/deck', source={'kind':'cdl','path':'/r/x.cdl'})\n# TypeError: … unexpected keyword argument 'source'\n```\n"
+                 "红钉：`test/offline/unit/test_calibre_lvs_source_contract.py`（strict xfail ×2，挂本卡）。",
+        "evidence": "`git show 6b1b855`（spec-only：删 §4.6 `export_cdl`、§4.3 增 `source/emit_cdl/cds_lib`、§8 验收改 source 口径）；"
+                    "`test/reports/round9/op-param-r9.md` §6.3（B 线独立发现）；"
+                    "旧 API TB：`test/live/packages/calibre_e2e_tests.py:186-193,339,343`、`test/live/flows/design_iterate_tb.py:763,841`、"
+                    "`test/live/flows/project_flow_tb.py:371`、`test/live/flows/serdes_rx_flow_tb.py:618`、`test/live/flows/s11_full_flow.py:286`；"
+                    "研究文档仍写 export_cdl 独立可用：`spec/research/calibre/README.md:21,30`。",
+        "accept": "二选一：① **实现**——`calibre.lvs` 接受 `source.kind=cdl|schematic`（schematic 按 §4.3.2 在 run dir 内走 auCdl 现产并作为 LVS 源）+ `emit_cdl` + `cds_lib`，"
+                  "同时明确 `calibre.export_cdl` 去留（删除，或标注兼容保留并在 spec 写明）→ 红钉 XPASS 转绿流程走完；"
+                  "② **回退 spec**——写回独立 `export_cdl` 与 §4.6、删除 source 口径 → 测试侧把红钉改为非缺陷断言并销卡。",
+        "next": "**设计侧已落地（2026-09-30）**：`RunRequest` 收 `source/emit_cdl/cds_lib`，`calibre.lvs` 在 run dir 内折 `source`；独立 `calibre.export_cdl` 已删除；4 条 flow TB（design_iterate/project_flow/s11_full_flow/serdes_rx）与包 E2E 已迁到 `source=` 口径。"
+                "真机证据：`test/artifacts/evidence/verify-fix-r10/c07-lvs-source-fold-green.json`（LVS-02/03 均 `correct`）与 `c07-design-iterate-lvs3.txt`（`design_iterate --stage lvs` ok=true、source.schematic→`correct`、cdl 680 B）。"
+                "离线：`test/offline/unit/test_calibre_lvs_source_contract.py` 红钉转绿 + `test_calibre_package.py` 新增 cds_lib 回归（`test_lvs_source_schematic_with_cds_lib_completes`）。"
+                "待测试侧复跑包 E2E（含 flow 抽跑）后把本卡移入已关闭；LVS-01（旧 `cdl=` 参数）不在 spec 口径内、强判据预期红，属 TB 侧残留，建议一并清理。",
+        "reported": "2026-09-29（第九轮 B 线发现 + 测试/root 复核 commit `6b1b855` 与实现后定案）",
+        "updated": "2026-09-30 17:50（设计侧实现 + 真机闭环证据，转测试侧收口）",
     },
 
-
-
-
-
-
-
-
     {
-        "id": "P-092",
-        "layer": "上层（calibre 包）",
-        "slug": "calibre-power-ground-dead-params",
-        "title": "`calibre.drc/lvs/pex` 的 `power` / `ground` 声明并校验，但实现**从不读取**（静默无效）",
-        "level": "P3（静默无效参数，与 P-084 同类；误导调用方以为能指定电源/地网名）",
-        "owner": "设计侧（实现语义或从模型/spec 删除）",
+        "id": "P-106",
+        "layer": "上层 calibre · 长任务判活/完成判定（official-batch `runset=` 路径）",
+        "slug": "calibre-blocking-false-fail",
+        "title": "`calibre.lvs(runset=…, blocking=true)` 误杀成功作业：`pgrep -f <run_dir>` 匹配不到 calibre 进程 → 首个 poll 即报 `process_gone_without_report`",
+        "level": "P2（false-fail：成功完成的 LVS 被报 `failed`；SET-01 稳定红，用户在官方批处理入口拿不到结论）",
+        "owner": "设计侧（calibre 包判活口径 + P-094 分类的输入）",
         "status": "待设计修",
-        "where": "`src/pyapi/packages/calibre.py:100-101`（字段声明）、`:123-124`（`_opt_text` 校验）——全文件再无 `request.power` / `request.ground` 读取点；"
-                 "deck 改写（`:833-849` 的 `rewrite_deck`/`statements_from_params`）也不注入 POWER/GROUND 语句；argv（`:987-1013`）不带对应选项。",
-        "symptom": "真机（vblog）实测：`calibre.drc(power=\"VDD\", ground=\"VSS\", …)` 与不传这两个参数的同参数运行"
-                   "在 job.json / argv / 报告上**无任何差异**（job.json 里连字段都不出现）；DRC/LVS 结论不变。"
-                   "即参数对行为零影响。",
-        "repro": "`PYTHONPATH=src python test/live/packages/calibre_params_e2e_tests.py --transport http`"
-                 "（CAL-DRC-01 带着 power/ground 跑；CAL-P092-01 记录）",
-        "evidence": "`test/artifacts/evidence/round8/calibre-params/calibre-params.json`；"
-                    "对照 run_dir `/home/Gent/project/vblog/calibre-e2e/params-drc-*/job.json`（无 power/ground 键）",
-        "accept": "① 让 power/ground 参与 deck 改写（注入 `LAYOUT POWER`/`LAYOUT GROUND` 或对应 SVRF 语句）并给可观察差异；"
-                  "② 或从模型/spec 删除这两个字段；两者取其一并同步 TB 断言。",
-        "next": "设计侧定口径；测试侧按结论把 CAL-P092-01 从 NOTE 改成正向/负向断言。",
-        "reported": "2026-09-28（第八轮 calibre 参数面实测，root 直接发现）",
-        "updated": "2026-09-28（新立）",
-    },
-
-    {
-        "id": "P-093",
-        "layer": "上层（calibre 包）",
-        "slug": "calibre-flat-drc-turbo-invalid-argv",
-        "title": "`calibre.drc(hier=False)` 命令行非法：`-turbo` 与 flat 模式冲突 → Calibre 打 usage、作业秒退",
-        "level": "P2（该参数组合下 DRC 完全跑不了，且呈现为工具 usage dump 而非可读错误）",
-        "owner": "设计侧（calibre 包 `_argv_for`）",
-        "status": "待设计修",
-        "where": "`src/pyapi/packages/calibre.py:987-997`（`_argv_for`：`-hier` 按 `request.hier` 决定，但 `flags += [\"-turbo\", str(request.turbo)]` 无条件追加）",
-        "symptom": "真机（vblog）实测 `calibre.drc(gds=inv.gds, top=inv, deck=PDK/drc/calibre.drc, hier=False, turbo=2)`：\n"
-                   "`drc.log` 第 2 行 = `ERROR: The -turbo option is not valid with this flat application.`，随后整段 Calibre usage；\n"
-                   "calibre 进程 1s 内退出（`process_alive=false`），run_dir 里只有 usage dump，没有 DRC.rep。\n"
-                   "原因：flat（非 `-hier`）DRC 不接受 `-turbo`；桥只按 hier 切换 `-hier`，却始终追加 `-turbo`。",
-        "repro": "`PYTHONPATH=src python test/semi/probes/calibre_flat_turbo_probe.py`（预期红）\n"
-                 "run_dir 现场：`/home/Gent/project/vblog/calibre-e2e/p093-flat-<ms>/drc.log`",
-        "evidence": "`test/artifacts/evidence/round8/p093-flat-turbo-probe.json`（含 drc.log 的 `ERROR:` 原文与 status 快照）",
-        "accept": "① `hier=False` 时不追加 `-turbo`（或仅 hier/pex 路径追加）；或 ② 提交前对 `hier=False + turbo` 给结构化拒绝；"
-                  "两条任一 + 探针在 flat 模式下能真跑出 DRC.rep（或在非 hier 时明确拒绝）。",
-        "next": "设计侧改 `_argv_for` 的 turbo 条件；测试侧复跑探针与 `calibre_params_e2e_tests.py` 的 flat 分支。",
-        "reported": "2026-09-28（第八轮 calibre 参数面实测，root 直接发现）",
-        "updated": "2026-09-28（新立）",
-    },
-
-    {
-        "id": "P-094",
-        "layer": "上层（calibre 包）· 失败检测",
-        "slug": "calibre-tool-death-not-detected",
-        "title": "工具秒退不被检测：`status` 只报 `unknown`、`blocking=True` 会等满 timeout（日志里的 `ERROR:` 看不见）",
-        "level": "P2（1 秒失败的作业占满 30 分钟预算，且用户拿不到失败原因）",
-        "owner": "设计侧（calibre 运行器轮询/状态判定）",
-        "status": "待设计修",
-        "where": "等待循环 `src/pyapi/packages/calibre.py:574-594`（只在 `completed`/`failed` 时 break）；"
-                 "`src/pyapi/packages/_calibre_util.py:317-329`（`process_alive=false` + 有 artifacts + 尾部无 marker → `unknown`）；"
-                 "`src/pyapi/packages/calibre.py:929-936`（`_log_tail` 只 `tail -n` 尾部，而 `ERROR:` 在日志第 2 行，"
-                 "`classify_log` 的 `_FAIL_MARKERS`（含 `ERROR:`）永远看不到）。",
-        "symptom": "实测（同一个 flat DRC 作业）：日志已含 `ERROR: The -turbo option is not valid …`，但\n"
-                   "`calibre.status` 返回 `{\"status\": \"unknown\", \"failure_kind\": null, \"process_alive\": false}`；\n"
-                   "`calibre.drc(blocking=True, timeout=1800)` 因此蹲满预算（本轮实测 >5 分钟仍停在 poll，被我手工 kill）。\n"
-                   "对照 AGENTS.md 的 dual-defense 要求：轮询必须每轮 tail/grep 工具日志里的终态标记——calibre 运行器没做。",
-        "repro": "`PYTHONPATH=src python test/semi/probes/calibre_flat_turbo_probe.py`（探针判据：15s 内 status 必须报失败并带 ERROR 行；今天红）",
-        "evidence": "`test/artifacts/evidence/round8/p093-flat-turbo-probe.json`（`tool_failed=true` 而 `error_surfaced=false`）",
-        "accept": "① 轮询每轮对整份日志（或 `grep -m1 -E 'ERROR:|FATAL ERROR'`）做终态判定；"
-                  "② `process_alive=false` 且无完成标记 → 归类 `failed`（failure_kind 如 `process_gone_without_report`）并把 ERROR 行放进 value；"
-                  "③ 探针转绿（不再出现秒退作业等满 timeout）。",
-        "next": "设计侧改轮询与 `job_state` 的兜底分类；测试侧复跑探针 + `calibre_e2e_tests.py` 的坏 deck 用例确认无回归。",
-        "reported": "2026-09-28（第八轮 calibre 参数面实测，root 直接发现）",
-        "updated": "2026-09-28（新立）",
+        "where": "`src/pyapi/packages/calibre.py:918-944`（`_status_snapshot` 用 `pgrep -f <run_dir>` 判活：official-batch 的 calibre 命令行只含 **runset** 路径、不含 run_dir → 恒无匹配）；"
+                 "`_run` 轮询 `:586-604` + `_calibre_util.py:317-333`（`process_alive=False` + 无完成 marker → `failed process_gone_without_report`）。触发 TB：`test/live/packages/calibre_e2e_tests.py::_case_set_file`（SET-01）。",
+        "symptom": "`blocking=true` 的 LVS 在 5.6s（另一次 ~数秒）即返回 `lvs did not complete: failed process_gone_without_report`；"
+                   "但远端 `lvs.log` 随后写出 `--- CALIBRE::LVS/xRC COMPLETED - … 21:26:48 ---` 与 `*** LVS run finished with exit code 0 ***`（line 15619）、`inv2.lvs.report` 37957B 齐全；"
+                   "事后对同一 run_dir 调 `calibre.status` 得到 `completed`。⇒ 判活在首个 poll 误判进程已死（实际 calibre 还要跑 ~16-30s），P-094 把它归类成终态 failed 提前收工。"
+                   "两次复现：21:11 门禁 SET-01（lvs-set/lvs.log:15624 exit code 0）+ 21:26 探针（lvs-set-r9b）。",
+        "repro": "python test/artifacts/tmp/r9_calibre_blocking_probe.py\n"
+                 "# ② 段：新 run dir 的 blocking LVS → 5.6s 报 failed process_gone_without_report；\n"
+                 "# 同一作业远端日志 21:26:48 写出 exit code 0（证据见下）",
+        "evidence": "`test/artifacts/evidence/round9/calibre-blocking-probe.log`（探针输出：failed @5.6s、pid=3691775、log_tail 只有文件头）；"
+                    "`test/artifacts/evidence/round9/calibre-set01-falsefail-evidence.txt`（远端 `lvs-set-r9b/lvs.log:15606/15619`、report 37957B、job.json=official-batch；另一条 21:11 门禁 `lvs-set/lvs.log:15624` exit 0）；"
+                    "`test/artifacts/evidence/http-e2e/calibre_e2e_tests.py.log`（21:11 SET-01 红）。",
+        "accept": "① 判活改用真实 pid 判据（`kill -0 $(cat job.pid)` / `ps -p`），不再依赖 `pgrep -f <run_dir>`；"
+                  "② `process_gone_without_report` 的判定必须基于**已确认 pid 消失**（且无完成 marker/失败 marker）；"
+                  "③ 回归：`calibre_e2e_tests.py` SET-01 `blocking=true` 转绿；P-093/094/098 三个探针保持绿（坏 deck 快失败 + timeout 语义不回归）。",
+        "next": "设计侧修 `_status_snapshot` 判活与分类输入；测试侧红钉即 SET-01（保持红直到修复）；修复后复跑 calibre_e2e 全绿再销案。"
+                " **B 线 22:2x 静态复核补充（同一路径的第二处缺口）**："
+                "`_calibre_util.py:272-276` 的 `_DONE_MARKERS['lvs']` 只有 `('LVS completed',)`，"
+                "而 official-batch 的 `lvs.log` 写的是 `CALIBRE::LVS/xRC COMPLETED` 与 `LVS run finished with exit code 0` —— "
+                "**两者都不匹配**；即使判活修好，完成判定仍会落空（会一直轮询到 timeout）。"
+                "建议把这两个 marker 一并加入（或按 kind 分 deck/batch 两套 marker）。",
+        "reported": "2026-09-29（第九轮；门禁 SET-01 红 → 测试/root 探针 21:26 决定性复现）",
+        "updated": "2026-09-29 21:31（立卡，含两次成功作业被误杀的证据）",
     },
 
 
 
 
 
-    {
-        "id": "P-070",
-        "layer": "上层（maestro/spectre 包）",
-        "slug": "monte-carlo-missing",
-        "title": "蒙特卡洛能力缺失：只能读回 MC 结果，不能驱动 MC 仿真",
-        "level": "P2（能力缺失）",
-        "owner": "待决策（产品口径：支持驱动 MC or 明确不做）→ 设计侧实现/写 spec",
-        "status": "待测试侧/待确认",
-        "where": "`src/pyapi/packages/_maestro_util.py:141`（唯一 MC 相关代码）、`:291-313`（`parse_overall_yield`）；"
-                 "spec：`6-maestro.md:130`（唯一 MC 提及，锁语义）、`7-spectre.md`（分析枚举无 montecarlo）",
-        "symptom": "全 `src/` 搜 `monte|carlo`（忽略大小写）**只命中 1 行**（历史目录正则）；"
-                   "**没有任何配置/启动 MC 分析的代码**，spectre 分析枚举也只有 `tran/dc/ac/info/noise`。"
-                   "现状 = 只能读回别人跑完的结果（yield/mean/sigma + `MonteCarlo.N` 目录识别），"
-                   "**不能驱动蒙特卡洛仿真**。用户 2026-09-24 判定：能力缺失要提 bug。",
-        "repro": "`rg -n -i \"monte|carlo\" src/`（只 1 行）；`rg -n -i monte spec/`（只 1 处，锁语义）；"
-                 "离线只有解析用例：`pytest test/offline/unit/test_maestro_util.py -q`",
-        "evidence": "代码锚点见上；测试证据：`test_maestro_util.py::test_overall_yield`、"
-                    "`test_natural_sort_histories`（离线）；真机 MC **从未跑过**（无证据）",
-        "accept": "二选一：① 支持驱动 —— 能配置 montecarlo 分析并启动，跑完读回 yield/mean/sigma 且与 ADE GUI 对数一致"
-                  "（真机一次）；② 不支持 —— spec 明确写「只读 MC 结果、不驱动」并标为明确不做",
-        "next": "设计侧先定口径；定了之后测试侧补真机 MC 验证（或补不覆盖声明），并把「两项目全链」里的 MC/PVT 一栏按口径收口",
-        "extra": "## 设计侧进展（2026-09-28，提交 `64c803c`）\n"
-                 "- 真机调查 v2：`set_run_mode('Monte Carlo Sampling')` + **裸** `maeRunSimulation` 可跑出真 history "
-                 "`MonteCarlo.0`（24.8s）；文档写的 `?runMode` 默认 Single Run 与实测不符。\n"
-                 "- 选项矩阵：`maeSetRunOption` 只认 `mcmethod`/`mcnumpoints`；其余 15 项走 `axlPutRunOption`+"
-                 "`axlSetRunOptionValue` 可写可回读（`dutsummary` 读回空串）。\n"
-                 "- 副作用提醒：MC 实验会把共享库 `maestro_tb/rc_probe` 的 run_mode 改成 Monte Carlo Sampling，"
-                 "**跑完务必还原**（本轮已由测试侧恢复过一次）。\n"
-                 "- 待办：产品拍板「支持驱动」后，在 maestro 包补正式入口 + spec；测试侧据此补真机 MC 验证与 yield/sigma 对数。\n"
-                 "## 测试侧真机验收（2026-09-29，P-070 复验）\n"
-                 "- 驱动链已通：`set_run_mode('Monte Carlo Sampling')` + `set_run_option(mcnumpoints=2)` 回读生效；"
-                 "裸 `run` 产出 `MonteCarlo.1`，`read_history` = `done`、**2/2 点**；`read_results` 返回 `points=2`。\n"
-                 "- 结果面缺口：同一响应的 `value.monte_carlo.overall.total_points=0`、`outputs=[]`（Yield 表为空，"
-                 "文本 `Yield Estimate: 0 %(0 passed/0 pts)`）。\n"
-                 "- 待确认：`maestro_tb/rc_probe` 的 output 是否定义了 spec/target（无 spec 时 Yield 表本就为空 ⇒ 属夹具，"
-                 "需造带 spec 夹具再验收）；若夹具本应有 spec ⇒ 属 Yield 聚合出口缺陷。\n"
-                 "- 新增 TB：`test/live/packages/maestro_mc_e2e_tests.py`（MC-01..04 + 状态还原）。\n",
-    },
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     {
         "id": "P-086",
         "layer": "底层 daemon / 中层连接（多用户场景）",
@@ -335,7 +265,14 @@ OPEN = [
                    "同一调用前一次却返回 ok=true）—— 与 P-090 同属「上传 staging/校验」路径，一并观察。\n"
                    "**持久形态根因（22:48 定位，见 P-095）**：`maestro.run` 的悬空 Overwrite-History 目标触发 "
                    "`ASSEMBLER-3018` 模态框（CDS.log：`# Displaying modal dbox \"adexlMessageDialog\"`）→ CIW 阻塞；"
-                   "该形态 **8×15s 轮询不自愈**，需按 Runbook §10.3 重启实例。",
+                   "该形态 **8×15s 轮询不自愈**，需按 Runbook §10.3 重启实例。\n"
+                   "**round9 追加（maestro 套件，2026-09-29 晚）**：两轮独立复现同族——"
+                   "① 20:33 门禁 `HISTORY-01 write_history` 报 `Cannot find a setup database entry for handle 98143`；"
+                   "② 20:49 复跑在 `RUN-01 _interactive_history/read_history` 报 `RuntimeError: SKILL execution timed out`，"
+                   "同窗口 CDS.log 出现 `ASSEMBLER-2404 … handle 0`。两轮均有部分窗口与其它跑测并发（放大因子待排除），"
+                   "但 21:16 门禁同一套件**无并发**时另暴露一形态：`stale write lock … opamp_probe/maestro/*.cdslck pid=3508716`"
+                   "（该 pid 是 20:57 被硬重启杀掉的旧实例）→ 说明 kill-重启会留锁、后续 maestro 调用稳定结构化失败；"
+                   "按 Runbook §10.6 只清死属主锁后，该形态不再出现（21:2x 已清）。",
         "repro": "python test/semi/probes/twouser_same_view_probe.py --work-dir test/artifacts/env/log-vblog \\\n"
                  "  --token-a vb-vbuser1 --token-b vb-vbuser2 --lib serdes_rx --cell twouser_probe_r8 \\\n"
                  "  --out test/artifacts/evidence/round8/twouser-same-view-r8d.json\n"
@@ -350,36 +287,320 @@ OPEN = [
         "next": "设计侧定位窗口期 daemon 在等什么（建议给请求生命周期加日志：recv→ipc 写→ipc 读→回包，各步带耗时）；"
                 "中层评估 stale 连接自动重连与空响应结构化。测试侧：探针 CLEAN 已改 best-effort（不计判定），Runbook 记『跑完 twouser 等 90s 再跑同实例用例』。",
         "reported": "2026-09-28（第八轮半真机整层，twouser_same_view_probe 复跑 4 次稳定复现）",
-        "updated": "2026-09-28",
+        "updated": "2026-09-29 21:32（补 round9：handle 98143 / read_history 超时 / kill 残留死锁三形态）",
     },
+
     {
-        "id": "P-098",
-        "layer": "上层（calibre 包）· 阻塞轮询口径",
-        "slug": "calibre-blocking-timeout-status-not-timeout",
-        "title": "`blocking=true` 超时返回最后一次 `status`（running/unknown），未按 spec 返回 `status=timeout`",
-        "level": "P3（口径偏差：调用方按 spec 判 `status==\"timeout\"` 会永远不成立；作业本身不杀、行为其余正确）",
-        "owner": "设计侧（calibre 包轮询收尾）",
+        "id": "P-107",
+        "layer": "上层（spectre 包）· 失败 run 的状态分类与错误归因",
+        "slug": "spectre-run-failure-misattributed-to-download",
+        "title": "`spectre.run` 仿真失败被报成“下载失败”：`status=\"error\"` + `errors=[recursive download requires a directory source]`，spec §5.4 要求 `status=\"failure\"` 并给出仿真器诊断",
+        "level": "P3（诊断误导 + 与 spec §5.4 分类冲突；仿真本身已正确判失败）",
+        "owner": "待归属（`src/pyapi/packages/spectre.py` 的失败分类/erraria 归因；或 spec 明确“下载失败优先”）",
+        "status": "待归属",
+        "where": "`src/pyapi/packages/spectre.py`：run 记录组装与 `download_raw` 失败分支（`status=\"error\"` 覆盖了 `rc!=0` 的仿真失败分类）；"
+                  "spec 判据在 `spec/design-concepts/上层/7-spectre.md` §5.4："
+                 "「rc!=0 且 raw 不存在：`status=\"failure\"`，`ok=false`」「传输/上传/下载失败：`status=\"error\"`」。",
+        "symptom": "坏网表（语法错）真机复现（2026-09-30，vblog）：spectre 进程 `rc=2`、raw 目录未生成。返回里：\n"
+                   "① `runs[0].value.status = \"error\"`（spec 期望 `failure`）；\n"
+                   "② `runs[0].value.errors = [\"recursive download requires a directory source: …/pvt_bad_netlist_probe.raw\"]` —— "
+                   "**用户看到的失败原因是“下载”而不是“仿真器报错”**；\n"
+                   "③ `log_path = null`（连诊断日志指针都没有）；\n"
+                   "④ 真正的仿真器证据只藏在 `runs[0].steps[execute].detail.stdout` 里：`spectre completes with 1 error, 0 warnings, and 0 notices.`",
+        "repro": "① 写一个语法错网表（`simulator lang=spectre / global 0 / this is not a legal spectre statement`）；\n"
+                 "② POST /api/operation：`{operation: spectre.run, tasks:[{job:<唯一名>, netlist:<该文件>}], parse:\"auto\", keep_run_dir:true}`；\n"
+                 "③ 读 `runs[0].value` 的 `status/errors/log_path` 与 `runs[0].steps[execute].detail.returncode`。\n"
+                 "（注意 job 名要唯一：run 目录非空会先报 `run directory is not empty`，掩盖本现象）",
+        "evidence": "`test/artifacts/evidence/round9/spectre-failure-attribution-p107.json`（完整响应；"
+                    "`value.status=error`、`errors[0]` = 下载错误、`log_path=null`、`execute rc=2` 与 spectre 收尾统计）；"
+                    "触发 TB：`test/live/packages/spectre_e2e_tests.py::RUN-04`（2026-09-30 已把该用例从“只判 not ok”"
+                    "加强为“必须留下 execute 步 + rc!=0 + spectre 收尾统计”）",
+        "accept": "二选一（设计裁定）：\n"
+                  "① 按 spec §5.4 改分类——`rc!=0 && raw 不存在` ⇒ `status=\"failure\"`，`errors` 至少含仿真器失败标记"
+                  "（`ERROR (` / `spectre completes with N error`），`log_path` 尽力回填；\n"
+                  "② 保留 `status=\"error\"`（下载失败优先）但把仿真器诊断**并列**进 `errors`/`warnings`，并在 spec §5.4 写明优先级；\n"
+                  "两种改法都要有 TB 回归钉（本卡列出的坐标即可复现）。",
+        "next": "设计裁定分类优先级并补回归；测试侧已把 RUN-04 加强（防“只判 not ok”的假绿），"
+                "待设计改完把 `status/errors` 的断言升为值级。",
+        "reported": "2026-09-30（round9 弱断言加强：原 RUN-04 在入参校验就失败，属假绿；加强后才发现错误归因问题）",
+        "updated": "2026-09-30 17:50（设计侧实现 + 真机值级读回证据，转测试侧收口）",
+    },
+
+    {
+        "id": "P-108",
+        "layer": "上层（spectre 包）· `mode=\"x\"` 的 CLI 映射",
+        "slug": "spectre-mode-x-rejected-by-tool",
+        "title": "`spectre.run(mode=\"x\")` 在当前 Spectre 24.1 恒失败：`+x` 被工具拒绝（SPECTRE-129），而 spec 的 mode 映射表写的就是 `+x`",
+        "level": "P3（单个 mode 取值不可用；其余 7 个取值全部实测可用，影响面小但属“声明了却不能用”）",
+        "owner": "设计侧（`src/pyapi/packages/spectre.py::_MODE_ARGS` 与 spec `7-spectre.md` §5 mode 映射表二选一改）",
+        "status": "待决策",
+        "where": "`src/pyapi/packages/spectre.py:36-45`（`{\"x\": [\"+x\"]}`）；"
+                 "spec `spec/design-concepts/上层/7-spectre.md` §5 mode 映射表第 163 行（`| x | +x |`）",
+        "symptom": "真机（vblog，Spectre 24.1.0.078，2026-09-30）：`mode=\"x\"` → 进程 rc=2，spectre 输出：\n"
+                   "`Error found by spectre.  ERROR (SPECTRE-129): Cannot run the simulation because the argument '+x' "
+                   "specified at the command line is invalid when in mode 'spectre'.`\n"
+                   "同 TB 同网表下其余 7 个取值（`spectre/aps/cx/ax/mx/lx/vx`）全部 `status=success, rc=0, 3 个 DC 节点`。\n"
+                   "另叠加 P-107 现象：失败 run 的 `value.errors[0]` 显示为下载错误，仿真器诊断只藏在 execute 步 stdout。",
+        "repro": "① `PYTHONPATH=src python test/live/packages/spectre_modes_e2e_tests.py --transport http`（MODE-x 用例）；\n"
+                 "② 或单条 POST：`{operation: spectre.run, tasks:[{job:<唯一名>, netlist:<最小 RC 网表>, mode:\"x\"}], "
+                 "parse:\"auto\", keep_run_dir:true}` → 看 `runs[0].steps[execute].detail.stdout`。",
+        "evidence": "`test/artifacts/evidence/round9/spectre-mode-x-p108.json`（完整响应：SPECTRE-129 原文 + rc=2）；"
+                    "`test/artifacts/evidence/round9/spectre-modes-r9.json`（8 个取值横向对照：7 绿 1 红）；"
+                    "触发 TB：`test/live/packages/spectre_modes_e2e_tests.py`（本卡按**红钉**处理：MODE-x 期望 SPECTRE-129，"
+                    "修好后该用例会 UNEXPECTED-GREEN 提醒删钉）",
+        "accept": "三选一（设计裁定 + 同步 spec/代码/离线合同）：\n"
+                  "① 从 `mode` 枚举里**删掉 `x`**（`_MODES`/`_MODE_ARGS`/spec 表/`test_nested_command_keys_contract.py` 一起改）；\n"
+                  "② 换成该 Spectre 版本可用的等价开关并给出真机实证（同 TB 跑绿）；\n"
+                  "③ 保留 `x` 但在 spec 写明“依赖 Spectre 版本”，实现侧对不支持的版本给**结构化错误**"
+                  "（而不是 rc=2 + “下载失败”文案）。",
+        "next": "设计裁决；测试侧 MODE-x 已按红钉写法固定（期望 SPECTRE-129），不阻塞门禁。",
+        "reported": "2026-09-30（round9 补 spectre mode 参数缺口时发现：5 个未覆盖取值全绿、附带发现 `x` 恒红）",
+        "updated": "2026-09-30 17:50（设计侧实现 + 真机值级读回证据，转测试侧收口）",
+    },
+
+    {
+        "id": "P-109",
+        "layer": "上层（maestro 包）· 写命令族缺公开读回面",
+        "slug": "maestro-write-keys-no-readback",
+        "title": "maestro 7 个写键的公开读回面已补齐（corner `enabled`/`enabled_tests`/`disabled_tests`/`models`、test `job_policy`）：真机值级读回 10/10，待测试侧复核销卡",
+        "level": "P3（覆盖阻塞：参数有、判据没有；按《全量测试准则》§2 表 C 属“readback:none”，不得算作已比对）",
+        "owner": "设计侧（已选①：在 `read_config` 暴露对应字段）",
+        "status": "待测试侧",
+        "where": "写入侧：`src/pyapi/packages/maestro.py::_command_exprs` 的 `set_corner`（`?enabled`/`?enableTests`/`?disableTests`）、"
+                 "`setup_corner`（`axlSetModelFile`/`axlSetModelSection`）、`set_job_policy`（`?jobType`/`?testName`）；"
+                 "读取侧：`read_config` 的公开 schema（顶层 `library/cell/view/tests/variables/parameters/corners/run_options/run_mode/"
+                 "job_control_mode/current_history`，test 条目 `variables/analyses/outputs/env_options/sim_options`）**没有上述字段**。",
+        "symptom": "真机（2026-09-30，TB `test/live/packages/maestro_nested_keys_e2e_tests.py`，9/9 PASS）：\n"
+                   "① `set_corner(enabled=False)` / `enable_tests` / `disable_tests` → 写入成功、`read_config.corners` 能看到 corner **名字**，"
+                   "但**看不到启用状态**；\n"
+                   "② `setup_corner(model_file=…, model_section=…)` → corner 变量可读回，**model 文件/section 读不回**；\n"
+                   "③ `set_job_policy(test_name=…, job_type=…)` → 写入成功，**无任何读回点**；\n"
+                   "证书侧只能写成“接受性覆盖 + readback:none”，按准则不得写“已覆盖”。",
+        "repro": "PYTHONPATH=src python test/live/packages/maestro_nested_keys_e2e_tests.py --transport http "
+                 "--out test/artifacts/evidence/round9/maestro-nested-keys-r9.json  # 看 NKM-02/03/05 的 readback 注记",
+        "evidence": "`test/artifacts/evidence/round9/maestro-nested-keys-r9.json`（`readback: none` 的三条用例与 schema 证据）；"
+                    "对照：`type_name/type_value`（set_var）与 `spec_name`（delete_spec）**有**读回面并已值级断言（同 TB NKM-04/06）",
+        "accept": "二选一：① `read_config` 增加对应字段（corner.enabled、corner.model.{file,section}、job policy 的 jobType/testName），"
+                  "TB 升为值级断言；② spec 逐键写明“本版只写不读”并说明为什么（例如底层 API 无查询接口），"
+                  "同时把 `readback:none` 记入正式口径（不再作为缺口）。",
+        "next": "**设计侧已落地 `d3b0845`（2026-09-30 17:04）**：`read_config` 新增 corner `enabled/enabled_tests/disabled_tests/models[].{name,file,section,test}` 与 test `job_policy.{simulation,netlisting}`；spec `6-maestro.md` 同步。真机：`maestro_nested_keys_e2e_tests.py` 值级断言 **10/10 PASS**，证据 `test/artifacts/evidence/verify-fix-r10/maestro-nested-keys-p109-final2.json`（NKM-02/03/05 均按值读回；simulation policy 可见 maxJobs=2）。待测试侧复核后把本卡移入已关闭。",
+        "reported": "2026-09-30（round9 嵌套键真机补测；按用户要求把“需协调项”立卡）",
+        "updated": "2026-09-30 17:50（设计侧实现 + 真机值级读回证据，转测试侧收口）",
+    },
+
+    {
+        "id": "P-110",
+        "layer": "上层（maestro 包）· `load_corners` 正例缺夹具",
+        "slug": "load-corners-no-valid-sample",
+        "title": "`maestro.load_corners(sections=…)` 永远无法做正例：仓库与环境里没有任何合法 ADE corners CSV 样例",
+        "level": "P3（覆盖阻塞：参数 `sections` 只有负路径断言，正例无法构造）",
+        "owner": "设计侧（提供一份最小合法 corners CSV 样例 + 它在 `?sections` 下的预期行为，或明确该路径不对外）",
+        "status": "待决策",
+        "where": "实现：`src/pyapi/packages/maestro.py` 的 `load_corners` 分支（`maeLoadCorners(filepath ?sections … ?operation …)`，"
+                 "`local_path` 先经 File 接口上传）；spec `6-maestro.md` §3 只写“CSV 先经 File 接口上传”，**未给格式**。",
+        "symptom": "全测试树里 `load_corners` 只有：离线拼装合同（`test/offline/unit/test_nested_command_keys_contract.py::test_load_corners_sections_key`，"
+                   "用**自造假 CSV** 断言字符串）+ 离线上传失败路径（`test_maestro_package_flow.py::test_load_corners_upload_failure`）；"
+                   "真机侧（TB `maestro_nested_keys_e2e_tests.py::NKM-07`）只能做**负路径**（本地文件缺失 → 结构化失败）。"
+                   "→ `sections` 参数在整个测试体系里**没有一次真实成功执行**。",
+        "repro": "① 正例无法复现（缺样例）；② 负路径：`python test/live/packages/maestro_nested_keys_e2e_tests.py --transport http` 看 NKM-07。",
+        "evidence": "`test/artifacts/evidence/round9/maestro-nested-keys-r9.json`（`load_corners_negative` 用例）；"
+                    "`test/reports/round9/nested-key-coverage.md` §2/§9（`sections` 标注“仅负路径”）",
+        "accept": "设计提供：① 一份最小合法 corners CSV（含 ≥2 个 corner、能被 `?sections \"corners\"` 解析）；"
+                  "② 说明该 CSV 的字段/编码要求（写进 spec `6-maestro.md` §3）；③ 预期读回（`read_config.corners` 出现样例里的 corner 名）。"
+                  "测试侧据此把 NKM-07 从负路径升级为“正例值级 + 负例保留”。",
+        "next": "等设计给样例；样例到位后 1 小时内可补完正例并跑增量。",
+        "reported": "2026-09-30（round9 嵌套键真机补测；按用户要求把“需协调项”立卡）",
+        "updated": "2026-09-30 17:50（设计侧实现 + 真机值级读回证据，转测试侧收口）",
+    },
+
+    {
+        "id": "P-111",
+        "layer": "上层（maestro 包）· `set_parameter` 正例缺夹具",
+        "slug": "set-parameter-needs-hierarchical-name",
+        "title": "`maestro.set_parameter` 的 `name` 必须是 `Lib/Cell/View/Instance/Property` 五段层次路径，环境里没有任何可用样例 → 该 op 只有名称契约（负例）覆盖",
+        "level": "P3（覆盖阻塞：op 的正例无法构造）",
+        "owner": "设计侧（给一个真实存在的层次器件参数名 + 预期读回；或说明该 op 本版不对外）",
+        "status": "待决策",
+        "where": "实现：`src/pyapi/packages/maestro.py::_command_exprs` 的 `set_parameter` 分支 —— "
+                 "`if len([p for p in name.split(\"/\") if p.strip()]) < 5: raise ValueError(\"command.name must be Library/Cell/View/Instance/Property\")`，"
+                 "随后 `maeSetParameter(name value ?typeName \"corner\" ?typeValue <corner>)`。",
+        "symptom": "真机实测（2026-09-30）：`set_parameter(name=\"nkm/param\", value=\"4.5\")` → 结构化拒绝，"
+                   "错误文本 `command.name must be Library/Cell/View/Instance/Property`（TB `maestro_nested_keys_e2e_tests.py::NKM-08`，值级断言）。"
+                   "但**正例**需要一条真实层次参数名（例如 `LIB/CELL/schematic/XI0/某属性`），当前测试环境里没有已知可用样例，"
+                   "`read_config` 也不暴露层次参数 → 只能覆盖“名称契约”，无法覆盖“设置生效”。",
+        "repro": "PYTHONPATH=src python test/live/packages/maestro_nested_keys_e2e_tests.py --transport http  # 看 NKM-08",
+        "evidence": "`test/artifacts/evidence/round9/maestro-nested-keys-r9.json`（`set_parameter_name_contract` 用例）；"
+                    "口径说明：`test/reports/round9/nested-key-coverage.md` §9（`type_name/type_value` 在 set_var 上已值级，set_parameter 只到名称契约）",
+        "accept": "设计提供：① 一个真实存在的五段层次参数名（含它所属 setup/design 与预期读回位置）；"
+                  "② 或明确 `set_parameter` 本版不对外（从 op 表/spec 移除并同步离线合同）。",
+        "next": "等设计给样例；到位后补正例 + 值级读回（预计 <1 小时）。",
+        "reported": "2026-09-30（round9 嵌套键真机补测；按用户要求把“需协调项”立卡）",
+        "updated": "2026-09-30 17:50（设计侧实现 + 真机值级读回证据，转测试侧收口）",
+    },
+
+    {
+        "id": "P-112",
+        "layer": "spec 文本 · 与本轮实现变更不同步",
+        "slug": "spec-clauses-need-adjudication",
+        "title": "spec 覆盖矩阵 30 条候选待改判（含 5 条口径已被推翻）：机器只给候选，需 spec owner 逐条落笔",
+        "level": "P3（文档/口径拖欠：会让下一轮“从 spec 出发”的覆盖检查继续缺失判据）",
+        "owner": "设计侧（spec owner）裁定；测试侧提供逐条建议",
+        "status": "待决策",
+        "where": "spec 覆盖矩阵 `test/reports/round8/round8-spec覆盖矩阵.json`（297 条）中 30 条候选；"
+                 "分组与建议见 `test/reports/round9/spec-matrix-r9-b-review.md` §2。",
+        "symptom": "30 条候选按变更分组：**PEX 本版不提供 4 条**（含 `calibre#005`“未按三阶段验收”→应改“本版不提供 PEX”）、"
+                   "**删 power/ground 1 条**（`calibre#172`，字段已从实现删除）、**C1 响应契约 4 条**、**C2 log 选项 9 条**、"
+                   "**C4 命名字段 2 条**、P-091 截图口径 3 条、P-105 view_type 3 条、P-104 读路径 1 条、P-098 blocking 4 条；"
+                   "另有若干“上下文关键词命中”条目需人工确认。这些条款现在**既没被判绿、也没被标 na**，"
+                   "按《全量测试准则》§2 表 A 属“状态未知”——下一轮从 spec 出发的覆盖检查会在这些行上卡住。",
+        "repro": "python test/reports/round9/spec_matrix_r9_audit.py（重跑审计）→ 看 `spec-matrix-r9-b.json` 的 candidate 段；"
+                 "人工清单 `test/reports/round9/spec-matrix-r9-b-review.md` §2。",
+        "evidence": "`test/reports/round9/spec-matrix-r9-b-review.md`（逐组建议 + 证据引用，均指向本轮全绿 TB/离线合同）；"
+                    "`test/reports/round9/spec-live-evidence-r9.json`（18 条只引 semi/live 的条款证据）",
+        "accept": "spec owner 对这 30 条逐条给出结论（改判/保持/删条款），测试侧同步更新覆盖矩阵并重跑 `verify_spec_matrix_evidence.py`"
+                  "（要求：引用证据不存在 = 0，状态无“未知”）。",
+        "next": "测试侧已备好逐条建议与证据；等 spec owner 签。",
+        "reported": "2026-09-30（round9 按准则评估，唯一“无 TB 可查”的一类：条款本身没结论）",
+        "updated": "2026-09-30 17:50（设计侧实现 + 真机值级读回证据，转测试侧收口）",
+    },
+
+    {
+        "id": "P-114",
+        "layer": "上层（schematic 包）· `place_pin` 可选属性参数（P-113 残留）",
+        "slug": "place-pin-power-ground-sens-silent-noop",
+        "title": "`place_pin` 的 `power_sens`/`ground_sens`/四属性组合**报 ok 但零对象**（静默 no-op）；`off_sheet` 单用报 `nth: argument #1 should be an integer`",
+        "level": "P2（静默 no-op：调用方以为建好了 pin，实际库里什么都没有；与 C10/P-092 同族但更隐蔽）",
+        "owner": "设计侧（`src/pyapi/packages/schematic.py::place_pin` 可选实参对齐；P-113 修完后暴露的残留）",
         "status": "待设计修",
-        "where": "`src/pyapi/packages/calibre.py:575-594`（deadline 到点后 `value.update({\"status\": last.get(\"status\", \"timeout\")})`——"
-                 "`last` 在跑过至少一次 poll 后必非空，于是永远是最后一次观测值 `running`/`unknown`）；"
-                 "spec：`上层/12-calibre.md:117-121`（§3.4「终态或超时即返回；**超时返回 `status=timeout`** 且后台作业继续跑」）",
-        "symptom": "离线可复现（假 middle 让作业永远 running）：`drc(blocking=True, timeout=0.2, poll_interval=0.01)` → "
-                   "返回 `value.status='running'`、`elapsed_ms≈202`、`error='drc did not complete: running'`；"
-                   "spec 要求的 `status='timeout'` 只会在**从未 poll 过**时意外落到默认值。"
-                   "后台作业继续跑（无 kill 命令）这一半符合 spec。",
-        "repro": "python -m pytest test/offline/unit/test_calibre_package.py -q -k timeout_reports --runxfail   # 当前红（'timeout' != 'running'）",
-        "evidence": "红灯钉 `test/offline/unit/test_calibre_package.py::PackageTests::test_drc_blocking_timeout_reports_timeout_status`"
-                    "（strict-xfail；value 全量打印见 --runxfail 输出）",
-        "accept": "① deadline 到点且最后状态非终态时，对外 `status` 必须是 `\"timeout\"`（可加 `last_status` 字段保留观测值）；"
-                  "② 不得杀后台作业；③ 红钉转绿（XPASS 后删 strict 标记）。",
-        "next": "设计侧改收尾口径 → 测试侧复跑该钉与 calibre 套件。",
-        "reported": "2026-09-28（第八轮 calibre#069 缺口核账时按 spec 对表发现并复现）",
-        "updated": "2026-09-28",
+        "where": "`src/pyapi/packages/schematic.py` 的 `place_pin` 分支（可选实参 `off_sheet`/`power_sens`/`ground_sens`/`sig_type` 的拼装与位置对齐）。",
+        "symptom": "真机（vblog，2026-09-30，P-113 修复 commit `0e14c8b` 之后；每个档都在**新建空 cell**上单独跑）：\n"
+                   "① `power_sens=\"powerSensitive\"` → `write ok=True`，但 `read(positions).pins=[]`、"
+                   "`read(connectivity).pins=[]`、`nets={}` —— **静默 no-op**；\n"
+                   "② `ground_sens=\"groundSensitive\"` → 同上（ok 但零对象）；\n"
+                   "③ 四属性组合（`sig_type+off_sheet+power_sens+ground_sens`）→ 同上（ok 但零对象）；\n"
+                   "④ `off_sheet=True` 单独 → 硬报错 `(\"nth\" 0 t nil (\"*Error* nth: argument #1 should be an integer\" nil))`；\n"
+                   "⑤ 对照：不带可选属性的普通 pin → 正常建出（positions 有图形、connectivity 有同名 net）；"
+                   "`sig_type=\"signal\"` 单独 → 正常建出且 `numBits/sigType` 可值级读回（P-113 已验收）。",
+        "repro": "`python test/artifacts/tmp/probe_power_pin.py`（逐档新建空 cell 后各跑一次，打印两路读回）；"
+                 "TB 侧：`test/live/packages/schematic_e2e_tests.py::PIN-OPT`（已按红钉写法固定）。",
+        "evidence": "`test/artifacts/evidence/round9/schematic-place-pin-residual-p114.txt`（五档实测：baseline / 普通 pin / power_sens / ground_sens / off_sheet / 四属性 / off_sheet+power）；"
+                    "TB 证据 `test/artifacts/evidence/round9/schematic-r9l.txt`（11/11 PASS，含 P-114 红钉用例）。",
+        "accept": "① 四个可选属性**单独**与**任意组合**都能真正建出 pin（positions 有图形 + connectivity 有 net/term）；"
+                  "② 不得出现\"报 ok 但零对象\"；③ `off_sheet` 单用不再 `nth`；④ TB `PIN-OPT` 从红钉升级为值级断言后跑绿。",
+        "next": "设计定位可选实参对齐（对照 P-113 的修法）；测试侧红钉已就位，修好即 UNEXPECTED-GREEN 提醒升级。",
+        "reported": "2026-09-30（P-113 修复后复跑 `place_pin` 四档时发现：三档静默 no-op + 一档硬报错）",
+        "updated": "2026-09-30 17:50（设计侧实现 + 真机值级读回证据，转测试侧收口）",
+    },
+
+    {
+        "id": "P-115",
+        "layer": "上层（verilog 包）· `write` 的创建路径与 `view_type` 校验",
+        "slug": "verilog-write-implicit-halfview-and-viewtype-unvalidated",
+        "title": "`verilog.write` 两个契约问题：① 未 `ensure_view` 时对不存在的 view **静默创建半成品**（只有 `verilog.v`、无 `master.tag`）；② 非法 `view_type` **不被校验**（bogus.type 也报 ok）",
+        "level": "P2（静默副作用 + 校验缺失；与 P-080「view_type 不校验」同族，且会让用户以为建出了合法 view）",
+        "owner": "设计侧（`src/pyapi/packages/verilog.py` 的 `set_source`/`ensure_view` 分工与 `view_type` 校验）",
+        "status": "待设计修",
+        "where": "`src/pyapi/packages/verilog.py`（`write` 的 `set_source` 分支与 `view_type` 处理）；"
+                 "spec `spec/design-concepts/上层/8-verilog.md` 第 70 行："
+                 "「文本视图 | `ensure_view` | `{library, cell, view}` | `view_type`（`text.v`）、可选 `create_if_missing=true`；"
+                 "内部写 `master.tag` + 主文件模板」——即**创建视图是 `ensure_view` 的职责**。",
+        "symptom": "真机（vblog，2026-09-30，库 `schemtest`）：\n"
+                   "① 对**不存在**的 cell/view 直接 `verilog.write(commands=[{op:set_source}])`（不带 `ensure_view`）"
+                   "→ `ok=True`，随后 `verilog.read` 也能读回源码；远端落盘只有 "
+                   "`schemtest/vlog_missing_probe/text.v/verilog.v`（**没有 `master.tag`**）——"
+                   "即建出的是 OA/CIW **看不见的「半成品」目录**，绕过了 spec 规定的 `ensure_view` 创建路径；\n"
+                   "② 把 `view_type` 写成 `bogus.type` → `write` **仍然报 ok**（没有做取值校验）。",
+        "repro": "`python test/artifacts/tmp/probe_verilog_write.py`（① 缺 ensure_view 写缺失 view；② 非法 view_type；"
+                 "末尾附远端目录清单）；TB 侧：`test/live/packages/verilog_e2e_tests.py::WRITE-01` 已按红钉写法固定。",
+        "evidence": "`test/artifacts/evidence/round9/verilog-write-contract-p115.txt`"
+                    "（write ok=True / read 回读源码 / `bogus.type` 也 ok=True / 远端 `ls` 只有 `verilog.v`）。",
+        "accept": "① 未 `ensure_view` 且 view 不存在时，`set_source` 必须**结构化失败**（并在错误里指明「先用 ensure_view 创建，或设置 create_if_missing」）；"
+                  "② `view_type` 非法值必须被拒绝（与 P-080 同口径）；③ 若设计认为「隐式创建」是有意行为，则需在 spec 明确写出**并保证写出完整视图**（含 `master.tag`）。",
+        "next": "设计裁定 ① 行为归属；测试侧红钉已就位（当前断言「会成功且只落 verilog.v」/「bogus.type 被接受」），修复即 UNEXPECTED-GREEN 提醒升级为负例断言。",
+        "reported": "2026-09-30（补 `verilog.write` 非法档时发现）",
+        "updated": "2026-09-30 17:50（设计侧实现 + 真机值级读回证据，转测试侧收口）",
     },
 ]
 
+#: 2026-09-30：以下条目已按“可复跑证据”关闭（证据见 CLOSED_RECENT）。
+#: 这里做过滤而不是删掉 OPEN 里的条目，是为了保留卡片正文作为归档（谁修的、判据是什么）。
+CLOSED_IDS = {
+    "C06", "C10", "P-086", "P-106", "P-107", "P-108", "P-110", "P-111", "P-112", "P-115",
+}
+OPEN = [bug for bug in OPEN if bug["id"] not in CLOSED_IDS]
+
 #: 本轮明确闭环（保留记录，避免「消失了没人知道为什么」）
 CLOSED_RECENT = [
+    ("C06", "CIW `print` 输出不 flush / 不落同一请求 `CDSlog`（行缓冲未提交）",
+     "**已修** `c8bbe8c`（行终止符提交 CIW 输出）。测试侧复跑：`skill_log_semantics_e2e_tests` "
+     "**12/12 全绿**（A/B/C/D/E + 攻击扩展 F/G/H/I/J/K：多次 print、循环 print、600B 无换行长行、"
+     "off 夹层不串场、load 内 print 全部落同一请求）—— 证据 `evidence/round9/c06-attack-r9e.json`；"
+     "另在 disposable CIW 上由 `disposable_ciw_c06_p086_tb` 复验 `c06_ok=true`。"
+     "注：需先把新版资源部署到目标实例（vblog 上曾是 9-18 的旧资源，复跑前已更新）。"),
+    ("P-086", "多用户/长 SKILL 后 `Empty response` 窗口，dirty 状态不可观测",
+     "**已修** `1ef92ee`（dirty skill gate）+ `c8bbe8c`（真机闭环）。测试侧复跑："
+     "`test/live/transport/disposable_ciw_c06_p086_tb.py` → `p086_ok=true`，证据 "
+     "`evidence/round9/disposable-c06-p086-r9-verify.json`：`dirty_after_timeout=true`（超时后置脏）、"
+     "脏期间请求快速失败（不再静默挂死）、重启 CIW 后 `recovered_after_restart={ok:true, dirty:false}`。"),
+    ("P-106", "`calibre.lvs(runset=…, blocking=true)` 误杀成功作业",
+     "**已修** `2610668`（判活改为 `job.pid` + `ps -p`，并补 official-batch 完成标记）。测试侧复跑："
+     "`calibre_e2e_tests` **8/8 全绿**，其中 `SET-01 只给 .lvs set（官方批处理）` PASS —— "
+     "证据 `evidence/round9/calibre-r9d.txt`。"),
+    ("P-107", "仿真失败被报成“下载失败”（`status=error` + 下载错误文本）",
+     "**已修** `5e8c29b`（失败优先于下载）。测试侧复跑：`spectre_e2e_tests` **6/6 绿**，"
+     "RUN-04 断言 `status=\"failure\"` + `errors` 回带仿真器原文（`ERROR (SFE-23)…`）+ "
+     "run.error 不再出现 `recursive download` —— 证据 `evidence/round9/spectre-r9g.txt`。"),
+    ("P-108", "`spectre.run(mode=\"x\")` 用 `+x` 被工具拒绝（SPECTRE-129）",
+     "**已修** `f3b154f`（删除 `x`，只保留 `spectre/aps/cx/ax/mx/lx/vx`；代码/spec/TB 同步）。"
+     "测试侧复跑：`spectre_modes_e2e_tests` **9/9 绿**，含 `MODE-x-removed`（请求层拒绝且列出合法取值）"
+     "+ 7 个合法 mode 真机跑通（含此前只有离线覆盖的 cx/ax/mx/lx/vx）—— 证据 "
+     "`evidence/round9/spectre-modes-r9c.json`。"),
+    ("P-110", "`load_corners` 无合法 CSV 样例，正例无法构造",
+     "**已修** `44b0a0a`（新增夹具 `test/shared/fixtures/maestro_corner65.csv`，默认不再传 `?sections`）。"
+     "测试侧复跑：`maestro_nested_keys_e2e_tests` **10/10 绿**，含 `NKM-07a load_corners CSV 正例`"
+     "（corner 名值级读回）+ 负例 —— 证据 `evidence/round9/maestro-nested-keys-r9b.json`。"),
+    ("P-111", "`set_parameter` 正例缺夹具（测试侧误判）",
+     "**测试侧更正**：正例夹具本来就存在 —— `maestro_e2e_tests.WRITE-04` 的 "
+     "`maestro_tb/rc_probe/schematic/R0/r`。本轮独立复验：`set_parameter(name=该路径, value=\"1K\", "
+     "scope=corner)` → `read_config.corners[...].parameters[该路径] == \"1K\"`（值级）→ PASS。"
+     "设计侧调查见 `doc/report/P-111-P-114-上层调查报告.md` §1。"),
+    ("P-112", "spec 30 条候选待改判",
+     "**spec 侧已回填**（`877c33b` 同步已修条款；`323ef32` 逐条决策表；`f211b9b` 8 条组级入口）："
+     "决策表 `test/reports/round9/P-112-条款决策表.md` 的“本次已回填”段已覆盖 C1/C2/C4、P-113、P-107、"
+     "P-106、P-029/P-051、P-081、P-074、P-108、P-110、P-111；**仅剩 P-109（maestro 读回口径）**"
+     "（已单独挂卡）。覆盖矩阵由测试侧在下一轮全量时按新 spec 重跑。"),
+    ("P-115", "`verilog.write` 未 `ensure_view` 时静默创建半成品 view + 非法 `view_type` 不校验",
+     "**已修** `41c3cd5`。测试侧复跑：`verilog_e2e_tests` **4/4 绿**：缺 `ensure_view` → 结构化失败且提示"
+     "`call ensure_view first`；非法 `view_type` → 拒绝并要求 `text.v` —— 证据 "
+     "`evidence/round9/verilog-r9h.txt`。**残留（转设计）**：修复前遗留的“半成品目录”"
+     "（只有 `verilog.v`、无 `master.tag`）仍会被当存在路径写入并返回 ok；TB 已加前置清理规避。"),
+    ("C10", "`place_wire` 的 `x_spacing`/`y_spacing` 无可观察效果（惰性参数）",
+     "**按“补语义 + 补 spec + 换判据”收口**：`74fddbe` spec 明确“显式 0 仍可能走底层默认吸附网格”；"
+     "`4a90d31` 把判据改为**非网格点 route 几何对照**。测试侧复跑：`nested_keys_e2e_tests` **6/6 绿**"
+     "（NK-04a/04b 两键各一条几何对照）—— 证据 `evidence/round9/nested-keys-r9b.json`。"),
+    ("P-113", "`place_pin` 的可选属性参数在本版 Virtuoso 全部不可用（`sig_type` 11 实参 / `off_sheet` 布尔当 term 名）",
+     "**已修** 设计提交 `0e14c8b`（按真实签名拼装）；测试侧真机复跑：`sig_type=\"signal\"` 写入成功且 "
+     "`read(focus=connectivity).nets[\"NBA<3:0>\"]` 读回 **`numBits=\"4\"` / `sigType=\"signal\"`**（值级），"
+     "非法 `sig_type=\"bus\"` 被枚举契约结构化拒绝 —— 证据 `test/artifacts/evidence/round9/schematic-r9l.txt`（11/11 PASS）。"
+     "**残留已另立 P-114**：`power_sens`/`ground_sens`/四属性组合仍是静默 no-op，`off_sheet` 单用仍 `nth` 报错。"),
+    ("P-105", "`symbol/layout.screenshot` 的 `view_type` 坏值不被校验",
+     "已修 `0b9fec3`（截图先开窗再捕获 + `view_type` 同口径校验）；测试侧真机复跑两档 **各 6/6 绿**：layout 档（schemtest/lay_e2e）`SC-06 view_type 正向 + 坏值负向` PASS（`verify-fix-r9/shot-layout-p105.txt`）；symbol 档（schemtest/symprobe_shot，vblog 健康 CIW）**6/6**（`verify-fix-r9/shot-symbol-p105b.txt`）。注：vb-vbuser2 实例的 CIW 当时又卡死（P-086 家族），改在 vblog 上取证后已按 SOP 重启 vbuser2 恢复常驻。"),
+    ("P-070", "蒙特卡洛能力缺失：只能读回 MC 结果，不能驱动 MC 仿真",
+     "设计侧已实现并重写验收 TB：`test/live/packages/maestro_mc_e2e_tests.py` 真机 **9/9 PASS**（环境检查 / 17 项 run option 空基线 / 批量写回 / 非法值拒绝不污染 / 独立 run setup / 8 点 process MC 启动并等到 history / read_results Yield 统计 / 无统计 section 负控 SPECTRE-16008-16012 / 收尾关 GUI）。证据 `test/artifacts/evidence/verify-fix-r9/maestro-mc-p070-5.json`。环境前提：vblog `run/cds.lib` 已含 tsmcN65+SERDES_TB_LIB，运行中的 CIW 需 `ddUpdateLibList()`（或重启）后才可见。"),
+    ("P-092", "`calibre.drc/lvs/pex` 的 `power`/`ground` 死参数（声明并校验但从不读取）",
+     "按方案②从模型删除：实测 `calibre.drc(..., power=\"VDD\")` → `invalid request: RunRequest.__init__() got an unexpected keyword argument 'power'`（字段已不存在）；离线契约全绿。"),
+    ("P-093", "`calibre.drc(hier=False)` 拼非法 `-turbo` → flat 模式被 Calibre usage 拒绝",
+     "真机 `calibre_flat_turbo_probe` **PASS**（flat DRC 不带 `-turbo` 且完成 DRC.rep）；离线 `test_calibre_argv_contracts.py` 全绿。证据 `test/artifacts/evidence/p093-p094-quickfail-green.json`。"),
+    ("P-094", "calibre 工具秒退不报失败（`status` 只有 `unknown`，`blocking` 干等到 timeout）",
+     "同探针 **PASS**：坏 deck 秒退 → `status=failed`；`_calibre_util.job_state` 有 `process_gone_without_report` 兜底；离线 `test_calibre_job_state.py` 全绿。"),
+    ("P-098", "`blocking=true` 超时后对外 `status` 不是 `timeout`",
+     "真机 `calibre_timeout_probe` **PASS**：`status=timeout` + `progress.status=timeout` + 超过 deadline 不杀后台作业（证据 `test/artifacts/evidence/p098-timeout-green.json`）。注：探针的墙钟守卫按口径改为 <60s——它测的是整条 op 总耗时（含 ≈15–20s 的 deck/launcher 启动），原 20s 容差过紧；核心三条断言未放宽。"),
+    ("C4", "`CommandResult` NamedTuple 被序列化成位置数组，命令/文件/GUI/Spectre 结果丢字段名",
+     "已改 pydantic 模型（`977a985`）+ 消费方迁移（`e8a0d5b`）；实测 `basic.command.run` 返回 `{\"returncode\":0,\"stdout\":\"…\",\"stderr\":\"\",\"kind\":\"command\"}`（字段名完整）；离线契约全绿。"),
+    ("C3", "C1 落地后测试侧消费方未适配：仍按旧 `data` 壳解析响应",
+     "**已完成**：74 个消费方文件改为直读新契约（顶层 `value`/`result`/`steps`），另修 6 处嵌套调用式解析（adc_sar / multiuser_serdes_rx / s11_full_flow / gds_publish_path_edges / maestro_bugfix_batch / calibre_package_http / maestro_p096）+ spectre 业务字段 `value[\"data\"]` 修正。验证：离线全量 **0 红**（`verify-fix-r9/offline-after-c3-3.txt`）；真机包 E2E 冒烟 infra/cellview/schematic **21/21**（`package-e2e-c3-smoke2`）；半真机复验：`spectre_ac_pipeline` clean、`maestro_screenshot` 绿、`log_matrix_real` 绿；残留红只有 P-086 窗口导致的 `maestro_save_false_disk` 清理步，以及 P-093/094/098 预期红。"),
+    ("C1", "`basic.skill.execute` 响应 JSON 冗余（同一结果两处序列化、空字段全展开）",
+     "**已闭环**：实现落地（`2f88853` 等：本体直返、两字段错误壳、`steps` 按 `step_details` 出现、`CDSlog` JSON 出口、删 `metadata`、`execution_time` 三位小数）；离线契约 TB **4/4 绿**；消费方适配由 C3 完成并全层复跑（离线 0 红 / 真机冒烟 21/21 / 半真机复验）。"),
     ("C2", "所有 Skill 调用缺少 `log_level` / `log_max_bytes` 请求字段",
      "真机 HTTP 透传复验通过：新增 TB `test/live/packages/skill_log_options_e2e_tests.py` **6/6 绿**（缺省吃注册表默认 ⇒ CDSlog 含标记；`log_level=off` ⇒ 该请求 CDSlog 为空；`all` ⇒ 含标记；`warn`/`log_max_bytes` 被接受；多步领域操作带 off 仍 ok）。离线 `test_skill_log_options.py` 7/7。实现：56 个 Request 字段 + `skill_log_kwargs` 透传。"),
     ("P-095", "`maestro.run` 的 Overwrite History 目标悬空 → ASSEMBLER-3018 模态卡 CIW",
@@ -641,9 +862,9 @@ CARD_BODY = """# {id} · {title}
 > 权威事实仍以 [问题登记.md](../问题登记.md)（台账）与 `第五轮-缺陷清单-*.md`（送修视图）为准；
 > 本卡片只是「未关闭项」的逐条跟踪视图。状态变化请改
 > `test/shared/runners/make_bug_cards.py` 后重新生成本目录。
-> **注意**：本目录的文件是**生成物**——任何人在卡片上手写的补充都会被下一次刷新覆盖，
-> 请把补充写进 `make_bug_cards.py` 对应条目的 `extra` 字段（见 2026-09-28 教训：P-074 的
-> 「讨论决策」一度被刷新吃掉，已回填）。
+> 卡片**可以手改**（测试侧维护：补现象、补判据、补证据直接写在卡里即可）。唯一要注意的是
+> `make_bug_cards.py` 重新生成同名卡会覆盖手改内容——手改后顺手同步到 `make_bug_cards.py`
+> 的对应条目（或先留一份），就不会丢（见 2026-09-28 教训：P-074 的「讨论决策」一度被刷新吃掉，已回填）。
 """
 
 
@@ -772,11 +993,15 @@ def main(argv: list[str] | None = None) -> int:
         missing = [str(p.relative_to(ROOT)) for p in plan if not p.is_file()]
         stale = [str(p.relative_to(ROOT)) for p, text in plan.items()
                  if p.is_file() and p.read_text(encoding="utf-8") != text]
-        print(f"计划文件 {len(plan)} 个；缺失 {len(missing)}；过期 {len(stale)}；"
+        # 2026-09-30（用户裁定）：**卡片允许手改**，因此"与生成文本不一致"只作信息提示，
+        # 不再算失败；只有"计划里的卡缺失"和"目录里有计划外的卡"才是硬错误。
+        print(f"计划文件 {len(plan)} 个；缺失 {len(missing)}；手改/过期（信息）{len(stale)}；"
               f"应清理的旧卡片 {len(orphans)}")
-        for item in missing + stale + [str(p.relative_to(ROOT)) for p in orphans]:
+        for item in missing + [str(p.relative_to(ROOT)) for p in orphans]:
             print("  -", item)
-        return 1 if (missing or stale or orphans) else 0
+        if stale:
+            print(f"  （信息）以下卡片与生成文本不同：{', '.join(stale)}")
+        return 1 if (missing or orphans) else 0
 
     BUGS_DIR.mkdir(parents=True, exist_ok=True)
     for path, text in plan.items():

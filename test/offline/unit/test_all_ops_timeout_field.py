@@ -1,9 +1,10 @@
 """spec §5.8：`timeout` 是**全部业务操作**的通用参数（模型级逐 op 断言）。
 
-口径（第八轮"每个可传参数"）：`timeout` 不是某个 op 的专属字段，而是 79 个
+口径（第八轮"每个可传参数"）：`timeout` 不是某个 op 的专属字段，而是当前 78 个
 业务操作请求模型的通用可选字段（默认 None = 用接口默认预算 30s）。因此：
 
-* **参数面**：本文件逐 op 断言其 Request 模型暴露 `timeout` 且默认 None（79/79）；
+* **参数面**：本文件逐 op 断言其 Request 模型暴露 `timeout` 且默认 None（78/78；
+  C07 按 spec 删除 `calibre.export_cdl` 后从 79 降为 78）；
 * **语义面**：由接口级用例钉住 —— `test/offline/core/semantics_tb.py`
   （skill/command/upload/download 的预算不被忽略）、
   `test/semi/transport/ssh_backend_semi_tb.py`（命令 timeout=1 触发 TimeoutExpired）、
@@ -42,7 +43,7 @@ class TestAllOpsTimeoutField(unittest.TestCase):
                 default = fields["timeout"].default
                 if default is not dataclasses.MISSING and default is not None:
                     bad_default.append(f"{op} default={default!r}")
-        self.assertEqual(total, 79, f"OPERATIONS 总数变了：{total}")
+        self.assertEqual(total, 78, f"OPERATIONS 总数变了：{total}")
         self.assertEqual(missing, [], f"缺 timeout 的 op：{missing}")
         self.assertEqual(bad_default, [], f"timeout 默认值不是 None：{bad_default}")
 

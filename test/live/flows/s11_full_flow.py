@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
 # 作者: 设计/上层开发
-# 最后改动: 2026-09-28 23:30
+# 最后改动: 2026-09-30 17:58
 # 依赖: 无
 # =======================================================================
 """S11 - end-to-end engineering flow on a real PDK: spec -> schematic -> symbol
@@ -279,15 +279,15 @@ def stage_drc(runner: Runner) -> None:
 def stage_lvs(runner: Runner) -> None:
     gds = runner.state.get("gds") or f"{REMOTE_WORK}/{CELL}.gds"
     deck = f"{PDK}/Calibre/lvs/calibre.lvs"
-    # 注意：``cdl`` 必须是**远端路径**（calibre 包不代传源网表；传本地 Windows 路径
-    # 会被 deck 当成相对名，报 "Can not open source netlist file C:Users..."）。
-    #
-    # 2026-09-24（第七轮）改：源网表不再用"本地探针网表"这种必然 FAIL 的兜底，
-    # 改为走产品自己的官方链路 `calibre.export_cdl`（PDK 器件可导出，见 P-069 复验）；
-    # 这样 S11 的 lvs 阶段才是"链路真的通"的证据。
+    # 源网表入口按 spec 折叠进 ``calibre.lvs(source=…)``（C07）：``source.kind=cdl``
+    # 用已有远端 CDL；``source.kind=schematic`` 由本包在 run dir 内走官方 auCdl 现产。
+    # （传本地 Windows 路径会被 deck 当成相对名，报 "Can not open source netlist file"，
+    # 因此两种形态的 CDL 都必须是远端路径。）
     cdl = runner.state.get("cdl")
-    if not cdl or not str(cdl).startswith("/"):
-        export_dir = f"{REMOTE_WORK}/cdl"
+    if cdl and str(cdl).startswith("/"):
+        source = {"kind": "cdl", "path": str(cdl)}
+        source_kwargs = {}
+    else:
         # cds.lib 必须是"带 Cadence 默认库（basic/analogLib）的完整清单"——只有工程
         # 自己的 cds.lib 时，auCdl 找不到 basic/ipin 的视图，报
         # `Add one of these views to the cell 'ipin' in the library 'basic'`（实测 2026-09-24）。
@@ -307,28 +307,22 @@ def stage_lvs(runner: Runner) -> None:
             runner.record("lvs", {"operation": "calibre.lvs"}, {}, "BLOCKED",
                           "cds.lib 准备失败，无法导出源网表")
             return
-        runner.record("cdl-export", {"operation": "calibre.export_cdl"},
-                      {}, "INFO", f"run_dir={export_dir} cds_lib={remote_cds_lib}")
-        export = call("calibre.export_cdl", runner.token, library=LIB, cell=CELL,
-                      view="schematic", netlist_name=CELL, run_dir=export_dir,
-                      cds_lib=remote_cds_lib, timeout=900)
-        export_value = ((export).get("value") or {})
-        exported = str(export_value.get("netlist_path") or "")
-        runner.record("cdl", {"operation": "calibre.export_cdl", "library": LIB,
-                              "cell": CELL, "run_dir": export_dir}, export,
-                      "PASS" if (export.get("ok") and exported) else "FAIL",
-                      f"bytes={export_value.get('bytes')} path={exported}")
-        if not (export.get("ok") and exported):
-            runner.record("lvs", {"operation": "calibre.lvs"}, {}, "BLOCKED",
-                          "no remote CDL (export_cdl failed) — see the cdl stage above")
-            return
-        cdl = exported
-    payload = {"operation": "calibre.lvs", "gds": gds, "top": CELL, "deck": deck, "cdl": cdl}
+        source = {"kind": "schematic", "library": LIB, "cell": CELL,
+                  "view": "schematic"}
+        source_kwargs = {"cds_lib": remote_cds_lib, "emit_cdl": True}
+    payload = {"operation": "calibre.lvs", "gds": gds, "top": CELL, "deck": deck,
+               "source": source, **source_kwargs}
     response = call("calibre.lvs", runner.token, gds=gds, top=CELL, deck=deck,
-                    cdl=cdl, blocking=True, timeout=1800)
+                    source=source, blocking=True, timeout=1800, **source_kwargs)
     ok = bool(response.get("ok"))
     value = ((response).get("value") or {})
     job_id = value.get("job_id") if isinstance(value, dict) else None
+    if ok and isinstance(value, dict) and value.get("cdl_path"):
+        runner.state["cdl"] = str(value["cdl_path"])
+        runner.record("cdl", {"operation": "calibre.lvs", "source": source["kind"]},
+                      response, "PASS",
+                      f"bytes={(value.get('source') or {}).get('bytes')} "
+                      f"path={value['cdl_path']}")
     verdict = None
     if ok and job_id:
         results = call("calibre.read_results", runner.token, kind="lvs", job_id=job_id,

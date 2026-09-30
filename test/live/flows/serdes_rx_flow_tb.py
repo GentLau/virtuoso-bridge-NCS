@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=====================
 # 作者: 测试/root
-# 最后改动: 2026-09-28 16:15
+# 最后改动: 2026-09-30 17:58
 # 依赖: 无
 # =====================================================================
 """SerDes RX 前端全流程 TB（第五轮新增的真实业务场景）。
@@ -230,6 +230,7 @@ def stage_buf(t: HttpTransport, cfg) -> Stage:
     saved = op(t, "virtuoso.schematic.check_and_save", library=LIB, cell=BUF,
                view="schematic", timeout=300)
     st.ok("check-and-save", saved)
+    _readback_schematic(t, BUF, st, "buf", BUF_COMMANDS)
     sym = op(t, "virtuoso.symbol.generate", library=LIB, cell=BUF,
              schematic_view="schematic", symbol_view="symbol", overwrite=True, timeout=600)
     st.ok("symbol-generate", sym)
@@ -309,6 +310,45 @@ def _nets_of(read_value: dict) -> dict[str, set[str]]:
     return nets
 
 
+def _placed_names(commands: list[dict[str, Any]]) -> list[str]:
+    return [str(c["name"]) for c in commands if c.get("op") == "place_instance"]
+
+
+def _term_net_names(commands: list[dict[str, Any]]) -> set[str]:
+    out: set[str] = set()
+    for command in commands:
+        if command.get("op") == "set_term_nets":
+            out |= {str(v) for v in (command.get("term_nets") or {}).values()}
+    return out
+
+
+def _readback_schematic(t: HttpTransport, cell: str, st: Stage, label: str,
+                        commands: list[dict[str, Any]]) -> None:
+    """round9 W-4：写之后**读回**并比对实例名与网络名（原 stage 只记"操作 ok"）。
+
+    期望从命令表推导（`place_instance` 的 name / `set_term_nets` 的 net），
+    这样以后改命令表时判据自动跟随；实际取自 `virtuoso.schematic.read`（默认 focus）。
+    """
+    read = op(t, "virtuoso.schematic.read", library=LIB, cell=cell, view="schematic",
+              timeout=300)
+    value = read.get("value") or {}
+    got_instances = sorted(str(i.get("name")) for i in (value.get("instances") or []))
+    want_instances = sorted(set(_placed_names(commands)))
+    missing = sorted(set(want_instances) - set(got_instances))
+    st.value[f"{label}_instances"] = got_instances
+    (st.ok if not missing else st.bad)(
+        f"{label}-instances-readback", {"want": want_instances, "got": got_instances,
+                                        "missing": missing})
+    want_nets = _term_net_names(commands)
+    if want_nets:
+        got_nets = sorted(_nets_of(value))
+        missing_nets = sorted(want_nets - set(got_nets))
+        st.value[f"{label}_nets"] = got_nets
+        (st.ok if not missing_nets else st.bad)(
+            f"{label}-nets-readback", {"want": sorted(want_nets), "got": got_nets,
+                                       "missing": missing_nets})
+
+
 def stage_ctle(t: HttpTransport, cfg) -> Stage:
     st = Stage("ctle", cfg.out)
     cfg.created.append(st)
@@ -337,6 +377,7 @@ def stage_ctle(t: HttpTransport, cfg) -> Stage:
     saved = op(t, "virtuoso.schematic.check_and_save", library=LIB, cell=CTLE,
                view="schematic", timeout=300)
     st.ok("check-and-save", saved)
+    _readback_schematic(t, CTLE, st, "ctle", CTLE_COMMANDS)
 
     read = op(t, "virtuoso.schematic.read", library=LIB, cell=CTLE, view="schematic",
               timeout=300)
@@ -591,52 +632,26 @@ cdlPrintComments = 't
 
 
 def stage_cdl(t: HttpTransport, cfg) -> Stage:
-    """导出 LVS 源网表（CDL）——走**官方 auCdl 链路的包内入口** `calibre.export_cdl`。
+    """LVS 源网表前置：只准备 cds.lib。
 
-    2026-09-24 更新：旧路径（自己写 si.env/.simrc 再 `si -batch`）对含 PDK 器件的 cell
-    会报 `hnlCDLParamList is not defined`；设计侧已把官方链路收进 `calibre.export_cdl`
-    （见 spec《上层/12-calibre》"导出"节），本 TB 改为调它。
+    CDL 不再单独导出：源网表入口已按 spec 折叠进 ``calibre.lvs(source.kind=schematic)``
+    （C07），由 calibre 阶段在 LVS run dir 内走官方 auCdl 现产（原
+    ``calibre.export_cdl`` 操作已删除）。
     """
     st = Stage("cdl", cfg.out)
     cfg.created.append(st)
-    target = BUF
-    run_dir = f"{COMMAND_ROOT}/cdl/serdes_{target}"
+    cds_lib = f"{COMMAND_ROOT}/cdl/serdes_{CTLE}.cds.lib"
     prep = op(t, "basic.command.run",
-              cmd=(f"rm -rf {run_dir} && mkdir -p {run_dir} && "
-                   f"mkdir -p {COMMAND_ROOT}/cdl && "
-                   f"cp {CDS_LIB_FILE} {COMMAND_ROOT}/cdl/serdes_{target}.cds.lib && "
-                   f"grep -q 'DEFINE {LIB}' {COMMAND_ROOT}/cdl/serdes_{target}.cds.lib || "
+              cmd=(f"mkdir -p {COMMAND_ROOT}/cdl && "
+                   f"cp {CDS_LIB_FILE} {cds_lib} && "
+                   f"grep -q 'DEFINE {LIB}' {cds_lib} || "
                    f"echo 'DEFINE {LIB} {FILE_ROOT}/{LIB}' >> "
-                   f"{COMMAND_ROOT}/cdl/serdes_{target}.cds.lib; "
-                   f"grep -n 'DEFINE {LIB}' {COMMAND_ROOT}/cdl/serdes_{target}.cds.lib"),
+                   f"{cds_lib}; "
+                   f"grep -n 'DEFINE {LIB}' {cds_lib}"),
               timeout=120)
-    # 注意：cds.lib 必须放在 run_dir **外面**——export_cdl 会先清空自己的 run_dir 再复制
-    # cds.lib，放在里面会被清掉（实测报 `cp: cannot stat <run_dir>/cds.lib`）。
-    cds_lib = f"{COMMAND_ROOT}/cdl/serdes_{target}.cds.lib"
-    st.ok("prep", {"run_dir": run_dir, "cds_lib": cds_lib,
+    st.ok("prep", {"cds_lib": cds_lib,
                    "cds_lib_def": cmd_stdout(prep).strip()[-200:]})
-    export = raw_call(t, "calibre.export_cdl", library=LIB, cell=target,
-                      view="schematic", netlist_name=target,
-                      run_dir=run_dir, cds_lib=cds_lib, timeout=900)
-    value = ((export).get("value")) or {}
-    st.value["export_cdl"] = value
-    if export.get("ok") and value.get("bytes"):
-        st.ok("export-cdl", {"bytes": value.get("bytes"),
-                             "path": value.get("netlist_path")})
-    else:
-        st.bad("export-cdl", export.get("error") or value)
-        st.error = f"calibre.export_cdl failed: {export.get('error')}"
-        return st
-    remote_cdl = str(value.get("netlist_path"))
-    local_cdl = cfg.out / f"{target}.cdl"
-    try:
-        op(t, "basic.file.download", remote_path=remote_cdl,
-           local_path=str(local_cdl), timeout=300)
-        st.value["cdl_bytes"] = local_cdl.stat().st_size
-        st.ok("cdl-downloaded", {"bytes": st.value["cdl_bytes"]})
-    except Exception as exc:  # noqa: BLE001
-        st.bad("cdl-download", f"{type(exc).__name__}: {exc}")
-    st.value["cdl_remote"] = remote_cdl
+    st.value["cds_lib"] = cds_lib
     return st
 
 
@@ -665,36 +680,41 @@ def stage_calibre(t: HttpTransport, cfg) -> Stage:
         st.value["drc_read_results"] = summary
         (st.ok if isinstance(rules, int) and rules > 0 and isinstance(total, int)
          else st.bad)("drc-results-parsed", {"rules_checked": rules, "total_results": total})
-    if cfg.cdl_remote:
-        lvs = raw_call(t, "calibre.lvs", gds=gds, top=CTLE, deck=lvs_deck,
-                       cdl=cfg.cdl_remote, blocking=True, timeout=1800)
-        lvs_value = ((lvs).get("value")) or {}
-        st.value["lvs"] = {"ok": lvs.get("ok"), "error": lvs.get("error"),
-                           "job_id": lvs_value.get("job_id"), "run_dir": lvs_value.get("run_dir")}
-        (st.ok if lvs.get("ok") else st.bad)("lvs", lvs.get("error"))
-        if lvs.get("ok"):
-            # B3（C0）：读回 LVS 结论（CORRECT/INCORRECT/NOT COMPARED 的确定枚举 + counts），
-            # 不再只看 calibre.lvs 的 ok。
-            req = {"kind": "lvs", "timeout": 300}
-            if lvs_value.get("job_id"):
-                req["job_id"] = lvs_value["job_id"]
-            elif lvs_value.get("run_dir"):
-                req["run_dir"] = lvs_value["run_dir"]
-            res = raw_call(t, "calibre.read_results", **req)
-            summary = (((res).get("value")) or {}).get("summary") or {}
-            verdict = str(summary.get("status") or "").lower()
-            counts = summary.get("counts") or {}
-            st.value["lvs_read_results"] = {"status": verdict, "counts": counts}
-            if verdict == "not_compared":
-                # 本 TB 手搭的 ctle 版图没有端口层/标签，LVS 只能给 not_compared ——
-                # 这是 TB 局限，**不是**"接口 ok 就算过"：明确记录并指向正例。
-                st.ok("lvs-verdict-readback",
-                      {"status": verdict, "counts": counts,
-                       "note": "TB 手搭版图限制；correct 正例见 "
-                               "design_iterate_tb --with-lvs（真实 cell CMP_LIB/inv2）"})
-            else:
-                (st.ok if verdict in ("correct", "incorrect") and counts else st.bad)(
-                    "lvs-verdict-readback", {"status": verdict, "counts": counts})
+    lvs_kwargs: dict[str, Any] = {}
+    if cfg.cds_lib:
+        lvs_kwargs["cds_lib"] = cfg.cds_lib
+    lvs = raw_call(t, "calibre.lvs", gds=gds, top=CTLE, deck=lvs_deck,
+                   source={"kind": "schematic", "library": LIB, "cell": CTLE,
+                           "view": "schematic"},
+                   emit_cdl=True, blocking=True, timeout=1800, **lvs_kwargs)
+    lvs_value = ((lvs).get("value")) or {}
+    st.value["lvs"] = {"ok": lvs.get("ok"), "error": lvs.get("error"),
+                       "job_id": lvs_value.get("job_id"), "run_dir": lvs_value.get("run_dir"),
+                       "cdl_path": lvs_value.get("cdl_path")}
+    (st.ok if lvs.get("ok") else st.bad)("lvs", lvs.get("error"))
+    if lvs.get("ok"):
+        # B3（C0）：读回 LVS 结论（CORRECT/INCORRECT/NOT COMPARED 的确定枚举 + counts），
+        # 不再只看 calibre.lvs 的 ok。
+        req = {"kind": "lvs", "timeout": 300}
+        if lvs_value.get("job_id"):
+            req["job_id"] = lvs_value["job_id"]
+        elif lvs_value.get("run_dir"):
+            req["run_dir"] = lvs_value["run_dir"]
+        res = raw_call(t, "calibre.read_results", **req)
+        summary = (((res).get("value")) or {}).get("summary") or {}
+        verdict = str(summary.get("status") or "").lower()
+        counts = summary.get("counts") or {}
+        st.value["lvs_read_results"] = {"status": verdict, "counts": counts}
+        if verdict == "not_compared":
+            # 本 TB 手搭的 ctle 版图没有端口层/标签，LVS 只能给 not_compared ——
+            # 这是 TB 局限，**不是**"接口 ok 就算过"：明确记录并指向正例。
+            st.ok("lvs-verdict-readback",
+                  {"status": verdict, "counts": counts,
+                   "note": "TB 手搭版图限制；correct 正例见 "
+                           "design_iterate_tb --with-lvs（真实 cell CMP_LIB/inv2）"})
+        else:
+            (st.ok if verdict in ("correct", "incorrect") and counts else st.bad)(
+                "lvs-verdict-readback", {"status": verdict, "counts": counts})
     return st
 
 
@@ -872,7 +892,7 @@ def main(argv: list[str] | None = None) -> int:
     transport = HttpTransport(args.token)
     require_environment(base=API, token=args.token, require_lib=[PDK_LIB])
     args.created = []
-    args.cdl_remote = None
+    args.cds_lib = None
     args.out = args.out
 
     skip = {item.strip() for item in args.skip.split(",") if item.strip()}
@@ -891,7 +911,7 @@ def main(argv: list[str] | None = None) -> int:
             st.error = f"{type(exc).__name__}: {exc}"
             failed = True
         if st.name == "cdl":
-            args.cdl_remote = st.value.get("cdl_remote")
+            args.cds_lib = st.value.get("cds_lib")
         path = st.save()
         results.append(st.to_json())
         print(json.dumps({k: v for k, v in st.to_json().items() if k != "steps"},

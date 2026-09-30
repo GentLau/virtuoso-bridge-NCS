@@ -1,9 +1,13 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
-# 作者: 设计/上层开发
-# 最后改动: 2026-09-28 23:30
+# 作者: 测试/root
+# 最后改动: 2026-09-30 17:58
 # 依赖: 无
 # =======================================================================
-"""S11 端到端工程流程 TB：建库 → 原理图 → symbol → CDL → 版图 → GDS → LVS → 仿真。
+"""S11 端到端工程流程 TB：建库 → 原理图 → symbol → 版图 → GDS → 仿真。
+
+CDL/LVS 不在本流程内展开：源网表入口已按 spec 折叠进 ``calibre.lvs(source=…)``
+（schematic 现产 / cdl 现成），由 ``test/live/packages/calibre_e2e_tests.py`` 的
+LVS-02/03 覆盖。
 
 这是**跨包工程流程**测试（区别于 ``test/live/packages/*`` 的单包验收）：
 一个真实 PDK（tsmcN65）环境里，从零建库开始，走完整的设计迭代链路，
@@ -16,7 +20,7 @@
     python test/live/flows/project_flow_tb.py --stage all
 
 证据：``test/artifacts/env/scenario-project65/evidence-<stage>.json``
-远端产物：``<file role root>/project65/``（库、GDS、CDL）
+远端产物：``<file role root>/project65/``（库、GDS）
 六步流程（test/docs/写TB规范.md §1）：
 ① `require_environment`（靶机指纹 / 业务面 / 需要的库）；②③ 造并校验基线（专属库、cell、前置对象）；
 ④ 只做被测动作；⑤ 读回比对（期望 / 实际入证据）；⑥ 跑完不清理现场。
@@ -333,65 +337,6 @@ def stage_symbol(transport, cfg) -> Stage:
     return st
 
 
-SI_ENV = """simLibName = "{lib}"
-simCellName = "{cell}"
-simViewName = "schematic"
-hnlNetlistFileName = "{cell}.cdl"
-simRunDir = "{run_dir}/"
-simSimulator = "cdl"
-simViewList = '("auCdl" "schematic")
-simPrintInhConnAttributes = 'nil
-simNetNamePrefix = "N"
-simInstNamePrefix = "X"
-simModelNamePrefix = "M"
-hnlMaxLineLength = 79
-preserveALL = t
-retainBusses = t
-CDLUsePortOrderForPinList = 'nil
-"""
-
-SIMRC = """cdlSimViewList = '("auCdl" "schematic")
-cdlSimStopList = '("auCdl")
-cdlNetlistType = 'hnl
-cdlPrintComments = 't
-"""
-
-
-def stage_cdl(transport, cfg) -> Stage:
-    """用产品操作 ``calibre.export_cdl``（官方 auCdl 链路）导出 LVS 用 CDL。
-
-    旧版这里手写 si.env（Digital/hnl 模式：`simSimulator="cdl"`）并裸跑 si →
-    必踩 `hnlCDLParamList`/`hnlCDLFormatInst` 未定义（见调查报告 §6/§11 的 Digital vs
-    Analog 结论）。现在改调已真机验收的官方链路（auCdl + checkCAPPERI=nil）。
-    """
-    st = Stage("cdl-" + cfg.cell, cfg.out)
-    cfg.created.append(st)
-    run_dir = f"{cfg.command_root}/cdl/{cfg.cell}"
-    data = op(
-        transport, "calibre.export_cdl", token=PDK_TOKEN,
-        library=cfg.lib, cell=cfg.cell, view="schematic",
-        netlist_name=f"{cfg.cell}.cdl", run_dir=run_dir, cds_lib=cfg.cds_lib_file,
-        timeout=600,
-    )
-    value = (data or {}).get("value") or {}
-    netlist_path = value.get("netlist_path")
-    st.ok("export-cdl", {"run_dir": run_dir, "netlist_path": netlist_path,
-                         "bytes": value.get("bytes")})
-    if not netlist_path or not value.get("bytes"):
-        st.bad("export-cdl-empty", value)
-        raise FlowError("cdl-export", "export_cdl 未产出非空 CDL", value)
-
-    local_cdl = cfg.out / f"{cfg.cell}.cdl"
-    try:
-        op(transport, "basic.file.download", token=PDK_TOKEN,
-           remote_path=str(netlist_path), local_path=str(local_cdl), timeout=180)
-        st.value["cdl_path"] = str(local_cdl)
-        st.ok("cdl-downloaded", {"bytes": local_cdl.stat().st_size})
-    except Exception as exc:  # noqa: BLE001 - 下载失败不算致命，stdout 已留证
-        st.bad("cdl-download", f"{type(exc).__name__}: {exc}")
-    return st
-
-
 PDK_LAYERMAP = f"{PDK_ROOT}/tsmcN65/tsmcN65.layermap"
 
 
@@ -543,7 +488,6 @@ STAGES = {
     "lib": stage_lib,
     "schematic": stage_schematic,
     "symbol": stage_symbol,
-    "cdl": stage_cdl,
     "layout": stage_layout,
     "gds": stage_gds,
     "sim": stage_sim,
@@ -554,7 +498,8 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--stage", default="all",
                     help="probe|lib|schematic|symbol|all")
-    ap.add_argument("--transport", default="direct", choices=["http", "direct"])
+    ap.add_argument("--transport", default="http", choices=["http", "direct"],
+                    help="direct=故障定位/覆盖率；真机判据必须 http")
     ap.add_argument("--token", default=PDK_TOKEN)
     ap.add_argument("--lib", default=PROJ_LIB)
     ap.add_argument("--cell", default=INV_CELL)
@@ -562,7 +507,6 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--remote-root",
                     default="/home/Gent/.virtuoso-bridge/calprobe/file/project65")
     ap.add_argument("--command-root", default="/home/Gent/.virtuoso-bridge/calprobe/command")
-    ap.add_argument("--cds-lib-file", default="/home/Gent/project/calprobe/cds.lib")
     ap.add_argument("--spectre-root", default="/home/Gent/.virtuoso-bridge/calprobe/spectre")
     ap.add_argument("--out", type=Path, default=WORK_DIR)
     args = ap.parse_args(argv)

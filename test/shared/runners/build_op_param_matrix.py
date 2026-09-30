@@ -506,7 +506,7 @@ def main() -> int:
         f"- 条目 {len(rows)}：CANDIDATE {by_status['CANDIDATE']} / GAP {by_status['GAP']} "
         f"/ NO-OP-TB {by_status['NO-OP-TB']}",
         f"- 非 CANDIDATE 中：通用 `timeout` 字段 {len(generic_gaps)} 条（由 "
-        f"`test/offline/unit/test_param_timeout_contract.py` 的 79/79 op 合同承担）；"
+        f"`test/offline/unit/test_param_timeout_contract.py` 的全 op 合同承担）；"
         f"其余 {len(open_gaps)} 条为逐 op 缺口。",
         f"- 无法静态解析的调用点 {len(unresolved_all)} 个 = 管道行 "
         f"{sum(1 for u in unresolved_all if u.get('plumbing'))}（op 载体内部把形参转发，"
