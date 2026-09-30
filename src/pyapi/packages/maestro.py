@@ -467,6 +467,7 @@ class Package(ResultPackage):
             return name
 
         session = open_once()
+        created = session not in before
         if not self._session_is_active(session, token, timeout):
             # C09 现场：maeGetSessions() 会暂时列出已失效的后台 session，
             # maeOpenSetup 可能原样把它返回；后续 axl/mae 调用就会报
@@ -481,7 +482,8 @@ class Package(ResultPackage):
                     f"maeOpenSetup returned inactive session {session!r} "
                     f"for {library}/{cell}/{view}"
                 )
-        return session, session not in before
+            created = True
+        return session, created
 
     def _session_is_active(
         self,
