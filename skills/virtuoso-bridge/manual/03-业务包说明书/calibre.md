@@ -1,111 +1,185 @@
-# calibre —— DRC / LVS 与 CDL 导出（PEX 本版不提供）
+# calibre —— DRC / LVS / PEX
 
-在目标机器上跑 Calibre 验证，默认**后台执行**：先拿 `job_id`，再轮询状态、读结论、导出报告。
-另外提供 `export_cdl`：从原理图现产 LVS 源网表。`calibre.pex` 本版不提供，
-调用会直接返回 `ok=false` + `value.reason=pex_unsupported`。
+在目标机器上跑 Calibre 物理验证。默认**后台执行**：先拿 `job_id`，再轮询、读结论、导出报告。
 
-> **当前状态（请先读）**
+> **当前状态（先读这一段）**
 >
-> - `calibre.drc`、`calibre.lvs`、`calibre.export_cdl` 已真机验证可用；
-> - **`calibre.pex` 本版不提供（调试条件受限）；操作保留，但调用不会执行远程动作**；
-> - 该包的开发处于暂缓状态，恢复方向见仓库内的调研文档。
+> - `calibre.drc` 与 `calibre.lvs` 可用：无 runset 时走官方 CLI（deck + 白名单占位符改写），
+>   给了 `runset` 时走 `calibre -gui -<app> -runset <file> -batch`（本包不翻译参数）；
+> - **`calibre.pex` 本版不提供**：操作保留，但调用会立即返回 `pex_unsupported`；
+> - 该包整体处于暂缓开发状态，恢复方向见仓库内调研文档。
 
 ## 1. `calibre.check_env` — 查环境
+
+**功能**：确认 Calibre 可执行文件、版本与 deck 是否就位。
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
 | `calibre_bin` | str | — | 自动探测 | 指定 calibre 可执行文件 |
 | `deck` | str | — | 无 | 顺带检查某个 rule deck 是否存在 |
 
-先跑这个，确认工具与许可没问题，再提交任务。
+**返回**
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `value.calibre_path` / `value.version` | str | 可执行文件与版本 |
+| `value.deck_ok` / `value.deck_detail` | bool/str | deck 检查结果与说明 |
+
+**示例**
+
+```json
+// 输入
+{"operation":"calibre.check_env","token":"TOKEN","deck":"/pdks/calibre/drc.deck"}
+// 输出（data 内容）
+{"ok":true,"error":null,"value":{"calibre_path":"/eda/calibre/bin/calibre","version":"2023.4_28.15",
+ "deck_ok":true,"deck_detail":"exists"}}
+```
 
 ## 2. `calibre.drc` / `calibre.lvs` — 提交任务
 
-两者共用一套参数；差别在"需要哪些输入"，而这一点**由 deck 里是否出现占位符决定**：
-（`calibre.pex` 本版不提供；它的 `RunRequest` 仍需 `deck` 或 `runset` 通过结构校验，
-随后直接返回 `pex_unsupported`，不会执行任务。）
+**功能**：跑一次 DRC / LVS（默认后台），返回任务名供后续查询。
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `deck` | str | 与 `runset` 二选一 | — | rule deck 路径；deck 里出现 `$gds`/`$top` 一类占位符时，对应参数必须给 |
-| `runset` | str | 与 `deck` 二选一 | — | 直接用 GUI runset 生成的 control file（自包含时不必再给 deck/gds/top） |
+| `deck` | str | 与 `runset` 二选一 | — | rule deck；deck 里出现的占位符（GDS/顶层/网表等）必须由对应参数补上 |
+| `runset` | str | 与 `deck` 二选一 | — | GUI runset 生成的 control file（自包含时不必再给 deck/gds/top） |
 | `gds` | str | 见上 | 无 | 版图 GDS 路径（目标机器上） |
 | `top` | str | 见上 | 无 | 顶层 cell 名 |
-| `cdl` | str | 见上 | 无 | 网表（LVS/PEX；deck 引用 `lvs_top.cdl` 时必须给） |
-| `lvs_run_dir` | str | — | 无 | PEX 复用 LVS 结果时给 LVS 运行目录 |
-| `job_id` | str | — | 自动生成 | 任务名，后续查状态/结果的主键，**建议自己起名** |
+| `cdl` | str | LVS 常用 | 无 | 源网表（deck 引用它时必须给） |
+| `lvs_run_dir` | str | — | 无 | 复用已有 LVS 结果时给 |
+| `job_id` | str | — | 自动 | 任务名，后续查询的主键（建议自己起名） |
 | `run_dir` | str | — | 自动 | 运行目录 |
 | `calibre_bin` | str | — | 自动 | 可执行文件 |
-| `turbo` | int | — | `4` | 并行度，取值 1–64 |
-| `hier` | bool | — | `true` | 是否层次化 |
-| `fmt` | str | — | `none` | 输出格式：`none` / `spice` / `simple` |
-| `params` | dict[str,str] | — | 无 | 覆盖 deck 里的变量；**每个值必须是单行** |
-| `spice_file` | str | — | 无 | 指定 SPICE 网表文件（需要时） |
-| `hcell_file`, `xcell_file` | str | — | 无 | 层次化/黑盒控制文件 |
-| `blocking` | bool | — | `false` | `true` 时等跑完再返回 |
-| `poll_interval` | number | — | `5.0` | `blocking=true` 时的轮询间隔（秒，>0） |
+| `turbo` | int | — | `4` | 并行度，1–64 |
+| `hier` | bool | — | `true` | 层次化 |
+| `fmt` | str | — | `none` | `none` / `spice` / `simple` |
+| `params` | dict[str,str] | — | 无 | 覆盖 deck 变量；**每个值必须是单行** |
+| `spice_file` | str | — | 无 | 指定 SPICE 网表文件 |
+| `hcell_file` / `xcell_file` | str | — | 无 | 层次化/黑盒控制文件 |
+| `blocking` | bool | — | `false` | `true` 时等跑完 |
+| `poll_interval` | number | — | `5.0` | `blocking=true` 时的轮询间隔（秒） |
+
+**返回**
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `value.job_id` | str | 任务名（后续 `status`/`read_results`/`export` 用它） |
+| `value.run_dir` | str | 运行目录 |
+| `value.status` | str | 提交后的状态（后台跑时为运行中） |
+
+**示例**
 
 ```json
 {"operation":"calibre.drc","token":"TOKEN","job_id":"drc_inv",
  "gds":"/home/user/work/inv.gds","top":"inv","deck":"/pdks/calibre/drc.deck","blocking":false}
+// 输出（data.value 内容）
+{"ok":true,"error":null,"value":{"job_id":"drc_inv","run_dir":"/home/user/.virtuoso-bridge/<user>/calibre/drc_inv","status":"running"}}
+```
 
+```json
 {"operation":"calibre.lvs","token":"TOKEN","job_id":"lvs_inv",
  "gds":"/home/user/work/inv.gds","top":"inv","cdl":"/home/user/work/inv.cdl",
- "deck":"/pdks/calibre/lvs.deck","params":{"TOP":"inv"},"blocking":false}
+ "deck":"/pdks/calibre/lvs.deck","params":{"TOP":"inv"}}
+// 输出（data.value 内容）
+{"ok":true,"error":null,"value":{"job_id":"lvs_inv","run_dir":"/home/user/.virtuoso-bridge/<user>/calibre/lvs_inv","status":"running"}}
 ```
 
 ## 3. `calibre.status` — 查进度
 
+**功能**：查任务当前状态（轮询用）。
+
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `job_id` 或 `run_dir` | str | **至少给一个** | — | 定位任务 |
+| `job_id` 或 `run_dir` | str | **至少一个** | — | 定位任务 |
 | `kind` | str | — | `drc` | `drc` / `lvs` / `pex` |
 
-返回 `data.value`：任务状态、运行目录、阶段信息。**轮询用这个。**
+**返回**
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `value.status` | str | 任务状态 |
+| `value.job_id` / `value.run_dir` | str | 任务标识 |
+| `value.process_alive` / `value.pid` | bool/int | 进程是否还活着 |
+| `value.log_tail` | str | 日志尾部（排查用） |
+| `value.artifacts` | list | 已产生的产物 |
+| `value.failure_kind` | str | 失败分类（失败时） |
+
+**示例**
+
+```json
+// 输入
+{"operation":"calibre.status","token":"TOKEN","job_id":"drc_inv","kind":"drc"}
+// 输出（data.value 内容）
+{"ok":true,"error":null,"value":{"job_id":"drc_inv","kind":"drc","status":"done","process_alive":false,
+ "run_dir":"/home/user/.virtuoso-bridge/<user>/calibre/drc_inv","log_tail":"TOTAL Results: 0","artifacts":["DRC.rep"]}}
+```
 
 ## 4. `calibre.read_results` — 读结论
 
+**功能**：把报告解析成结构化结论（违规数、摘要等）。
+
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `job_id` 或 `run_dir` | str | **至少给一个** | — | 定位任务 |
+| `job_id` 或 `run_dir` | str | **至少一个** | — | 定位任务 |
 | `kind` | str | — | 自动 | `drc` / `lvs` / `pex` |
-| `limit` | int | — | `20` | 最多返回多少条问题，1–500 |
-| `log_lines` | int | — | `40` | 附带多少行日志，0–500 |
+| `limit` | int | — | `20` | 最多返回多少条问题（1–500） |
+| `log_lines` | int | — | `40` | 附带日志行数（0–500） |
 
-返回结构化结论（违规数、类别、摘要等），比翻报告文件快。
+**返回**
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `value.summary` | dict | 结论摘要（违规数/结果等） |
+| `value.report` | dict | 报告要点（按 kind 分组） |
+| `value.report_used` | str | 实际解析的报告文件 |
+| `value.log_tail` / `value.log_counters` | str/dict | 日志尾部与计数 |
+| `value.artifacts` | list | 产物清单 |
+
+**示例**
+
+```json
+// 输入
+{"operation":"calibre.read_results","token":"TOKEN","job_id":"drc_inv","kind":"drc","limit":20}
+// 输出（data.value 内容）
+{"ok":true,"error":null,"value":{"kind":"drc","run_dir":"/home/user/.virtuoso-bridge/<user>/calibre/drc_inv",
+ "summary":{"total_results":0,"errors":0},"report":{"DRC.rep":{"path":"DRC.rep"}},"report_used":"DRC.rep","log_tail":"TOTAL Results: 0"}}
+```
 
 ## 5. `calibre.export` — 导出报告
 
+**功能**：把报告/结果库/日志拉回本机。
+
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `job_id` 或 `run_dir` | str | **至少给一个** | — | 定位任务 |
+| `job_id` 或 `run_dir` | str | **至少一个** | — | 定位任务 |
 | `kind` | str | — | 自动 | `drc` / `lvs` / `pex` |
-| `items` | list[str] | — | `["summary"]` | `summary`（报告）/ `results_db`（结果库）/ `netlist`（svdb）/ `log`（日志），或 `all_small`（= summary+results_db+log） |
-| `local_dir` | str | — | 无 | 拉回本机的目录 |
+| `items` | list[str] | — | `["summary"]` | `summary` / `results_db` / `netlist` / `log`，或 `all_small` |
+| `local_dir` | str | — | 无 | 本机落点目录 |
 
-## 6. `calibre.export_cdl` — 从原理图导 CDL
+**返回**
 
-用 Virtuoso 官方 auCdl 链路，从原理图现产 LVS 用的源网表（source 侧）。
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `value.local_dir` | str | 本机目录 |
+| `value.downloaded` | list | 每个文件的下载明细（远程/本地路径、字节数、失败原因） |
 
-| 参数 | 类型 | 必填 | 默认 | 说明 |
-|---|---|---|---|---|
-| `library` / `cell` | str | ✅ | — | 源原理图 |
-| `view` | str | — | `schematic` | 源视图 |
-| `netlist_name` | str | — | `<cell>.cdl` | 输出的 CDL 文件名（**只能是文件名**，不能带路径） |
-| `run_dir` | str | — | 自动（command 根下 `calibre/cdl_<cell>`） | 运行目录 |
-| `cds_lib` | str | — | 从 CIW 推断 | `cds.lib` 路径；CIW 工作目录不可用时必须显式给 |
-
-典型用法：`export_cdl` 产出 CDL → 把它作为 `calibre.lvs` 的 `cdl` 输入。
+**示例**
 
 ```json
-{"operation":"calibre.export_cdl","token":"TOKEN","library":"mylib","cell":"inv","view":"schematic"}
+// 输入
+{"operation":"calibre.export","token":"TOKEN","job_id":"drc_inv","kind":"drc","items":["summary","log"],"local_dir":"C:/work/drc"}
+// 输出（data.value 内容）
+{"ok":true,"error":null,"value":{"local_dir":"C:/work/drc",
+ "downloaded":[{"item":"summary","remote":"DRC.rep","local":"C:/work/drc/DRC.rep","bytes":1024,"ok":true}]}}
 ```
+
+## 6. `calibre.pex`
+
+**本版不提供**：调用会立即返回 `pex_unsupported`，不要用于交付或签核。
 
 ## 7. 注意事项
 
-- 默认后台跑；提交后**不要重复提交同一个 job**，用 `status` 等。
-- 输入路径都是目标机器上的路径；本机文件先 `basic.file.upload`。
-- 用 `deck` 时，deck 里引用到的文件（GDS/网表/规则）必须都能在目标机器上解析；
-  用 `runset` 时，runset 里写死的路径同理。
-- `params` 的值是单行字符串，含换行会被拒绝。
-- `job_id` 是后续所有操作的主键，命名建议：`<类型>_<cell>_<时间>`。
+- 默认后台跑；提交后不要重复提交同一个 job，用 `status` 等。
+- 输入路径都是目标机器上的路径；本机文件先上传。
+- 用 `deck` 时，deck 引用的文件必须都能在目标机器上解析；用 `runset` 时其内部路径同理。
+- `params` 的值必须单行；`job_id` 建议命名 `<类型>_<cell>_<时间>`。

@@ -1,88 +1,98 @@
 # maestro —— ADE / Maestro 仿真
 
-Maestro（ADE）是 Virtuoso 的仿真环境：一个 `maestro` 视图里放若干 test（仿真用例）、
-变量、corner、分析类型和输出。本包负责**改配置 → 跑仿真 → 读结果 → 看历史**。
+Maestro（ADE）是 Virtuoso 的仿真环境：一个 `maestro` 视图里放若干 test、变量、corner、分析和输出。
+本包负责**改配置 → 跑仿真 → 读结果 → 管历史**。
 
-前提：目标 cell 已经有一个 `maestro` 视图（通常先在 Virtuoso 里建好或用 ADE 打开保存一次）。
-先 `read_config` 能读到内容，再往下做。
+前提：目标 cell 已经有 `maestro` 视图（通常先在 Virtuoso 里建好并保存一次）。先 `read_config` 能读到内容再往下做。
 
 ## 1. `virtuoso.maestro.read_config` — 读配置
 
+**功能**：读取整个 Maestro 配置（测试、变量、corner、分析、输出、spec、运行模式）。
+
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
 | `library` / `cell` | str | ✅ | — | 目标 |
 | `view` | str | — | `maestro` | 视图名 |
-| `include_parameters` | bool | — | `true` | 是否包含参数（大设计可以关掉省流量） |
+| `include_parameters` | bool | — | `true` | 是否包含参数（大设计可关掉省流量） |
 | `include_raw` | bool | — | `false` | 是否附带原始 SKILL 文本 |
 
-返回 `data.value`：`tests.<test>.{variables,analyses,outputs,env_options,sim_options}`、
-`corners.<corner>.{variables,parameters}`、全局 `variables`/`parameters`、`run_options`、
-`run_mode`、`job_control_mode`、`current_history`。
+**返回**
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `value.tests` | list | 测试列表（名字、绑定的设计、仿真器） |
+| `value.analyses` / `value.outputs` / `value.specs` | list | 分析、输出与规格 |
+| `value.variables` / `value.parameters` | list | 全局变量与器件参数 |
+| `value.corners` / `value.corner_variables` | list | corner 及其变量 |
+| `value.run_mode` / `value.job_control_mode` | str | 运行模式与任务控制模式 |
+| `value.current_history` | str | 当前 history |
+| `value.raw` | dict | 原始 SKILL（`include_raw=true` 时） |
+
+**示例**
+
+```json
+// 输入
+{"operation":"virtuoso.maestro.read_config","token":"TOKEN","library":"maestro_tb","cell":"rc_probe","view":"maestro"}
+// 输出（data.value 内容，节选）
+{"ok":true,"error":null,"value":{"tests":[{"name":"rc_tran","lib":"maestro_tb","cell":"rc_probe","view":"schematic"}],
+ "analyses":[{"test":"rc_tran","name":"tran","enable":true,"options":{"stop":"10n"}}],
+ "outputs":[{"test":"rc_tran","name":"VOUT","signal_name":"VOUT"}],
+ "variables":[{"name":"vcm","value":"0.6","scope":"global"}],
+ "corners":["TT"],"run_mode":"single","current_history":"Interactive.1"}}
+```
 
 ## 2. `virtuoso.maestro.write` — 改配置
 
+**功能**：用原子命令批量修改 Maestro 配置。
+
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
 | `library` / `cell` | str | ✅ | — | 目标 |
-| `commands` | list[dict] | ✅ | — | 原子命令组（见 §2.1） |
+| `commands` | list[dict] | ✅ | — | 原子命令组 |
 | `view` | str | — | `maestro` | 视图名 |
-| `save` | bool | — | `true` | 改完是否立即保存 |
+| `save` | bool | — | `true` | **本版不支持 `save=false`**（会明确报错） |
 
-返回 `data.value` = `{"applied": n}`。
+**返回**
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `value.applied` | int | 成功应用的命令条数 |
+| `value.session` | str | 本次使用的会话标识 |
 
 ### 2.1 原子命令
 
 | 原子 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|---|
-| `set_test` | `test` | str | ✅ | — | 测试名（不存在则新建） |
-| | `lib`（或 `library`）, `cell` | str | ✅ | — | 该 test 指向的设计 |
-| | `view`, `simulator` | str | — | `schematic` / `spectre` | 设计视图与仿真器 |
-| `set_design` | `test`, `lib`（或 `library`）, `cell` | str | ✅ | — | 只改 test 绑定的设计 |
-| | `view` | str | — | `schematic` | 设计视图 |
-| `delete_test` | `test` | str | ✅ | — | 删除测试 |
-| `set_analysis` | `test`, `analysis` | str | ✅ | — | 分析类型，如 `tran` / `dc` / `ac` / `noise` |
-| | `enable` | bool | — | `true` | 是否启用 |
-| | `options` | dict | — | 无 | 分析参数，如 `{"stop":"10n"}` / `{"start":"1u","stop":"10m"}` |
-| `set_var` | `name`, `value` | str/任意 | ✅ | — | 变量名与值（值可以是数字/字符串/表达式） |
-| | `scope` | str | — | `global` | `global` / `test` / `corner` |
-| | `test`（或 `tests`） | str/list | scope=test 时 | — | 作用范围 |
-| | `corner`（或 `corners`） | str/list | scope=corner 时 | — | 作用范围 |
-| `delete_var` | `name` | str | ✅ | — | 变量名 |
-| | `scope` | str | — | `global` | 也可用 `all` 清所有范围 |
-| | `test`/`tests`, `corner`/`corners`, `all_tests` | — | — | — | 限定范围 |
-| `set_parameter` | `name` | str | ✅ | — | 参数路径，必须是 `库/cell/视图/实例/参数` 五段 |
-| | `value` | 任意 | ✅ | — | 新值 |
-| | `corner`（或 `corners`） | str/list | — | 无 | 给 corner 级参数时必填 |
-| `delete_parameter` | `name` | str | ✅ | — | 参数路径 |
-| | `corner`（或 `corners`） | str/list | — | 无 | corner 级参数 |
-| `set_env_option` / `set_sim_option` | `test` | str | ✅ | — | 目标测试 |
-| | `options` | dict | ✅ | — | 环境/仿真选项，如 `{"temp":"27"}` |
-| `set_corner` | `name` | str | ✅ | — | corner 名 |
-| | `enabled` | bool | — | 无 | 是否启用 |
-| | `enable_tests` / `disable_tests` | list[str] | — | 无 | 该 corner 覆盖哪些 test |
-| `delete_corner` | `name` | str | ✅ | — | 删除 corner |
-| `setup_corner` | `name` | str | ✅ | — | corner 名 |
-| | `variables` | dict | — | 无 | corner 变量，如 `{"temperature":27}` |
-| | `model_file`, `model_section` | str | — | 无 | 该 corner 的模型文件与 section |
-| `load_corners` | `filepath`（或 `remote_path`） | str | ✅ | — | corner 定义文件 |
-| | `sections`, `operation` | str | — | `corners` / `overwrite` | 读哪些段、如何合并 |
+| `set_test` | `test`, `lib`（或 `library`）, `cell` | str | ✅ | — | 新建/改测试 |
+| | `view` / `simulator` | str | — | `schematic` / `spectre` | 设计视图与仿真器 |
+| `set_design` | `test`, `lib`, `cell`；可选 `view` | str | ✅ | — | 只改测试绑定的设计 |
+| `delete_test` | `test` | str | ✅ | — | 删测试 |
+| `set_analysis` | `test`, `analysis` | str | ✅ | — | 分析类型：`tran`/`dc`/`ac`/`noise`… |
+| | `enable` / `options` | bool/dict | — | `true` / 无 | 是否启用与参数，如 `{"stop":"10n"}` |
+| `set_var` | `name`, `value` | str/任意 | ✅ | — | 变量 |
+| | `scope` | str | — | `global` | `global`/`test`/`corner` |
+| | `test`/`tests`、`corner`/`corners` | str/list | — | 无 | 限定作用范围 |
+| `delete_var` | `name` | str | ✅ | — | 删变量；`scope=all` 清所有范围 |
+| | `test`/`tests`、`corner`/`corners`、`all_tests` | — | — | 无 | 限定范围 |
+| `set_parameter` | `name`, `value` | str/任意 | ✅ | — | 参数路径必须是 `库/cell/视图/实例/参数` 五段 |
+| | `corner`/`corners` | str/list | — | 无 | corner 级参数 |
+| `delete_parameter` | `name`；可选 `corner`/`corners` | str | ✅ | — | 删参数 |
+| `set_env_option` / `set_sim_option` | `test`, `options` | str/dict | ✅ | — | 环境/仿真选项，如 `{"temp":"27"}` |
+| `set_run_option` | `options` | dict | ✅ | — | 运行选项（Monte Carlo 等），至少一项 |
+| `set_corner` | `name` | str | ✅ | — | corner；可选 `enabled`、`enable_tests`、`disable_tests` |
+| `delete_corner` | `name` | str | ✅ | — | 删 corner |
+| `setup_corner` | `name` | str | ✅ | — | corner；可选 `variables`、`model_file`、`model_section` |
+| `load_corners` | `filepath`（或 `remote_path`） | str | ✅ | — | 导入 corner 文件（支持 CSV）；可选 `operation`（默认 `overwrite`）、`sections`（仅 .sdb 用） |
 | `set_run_mode` | `run_mode` | str | ✅ | — | 运行模式 |
 | `set_job_control_mode` | `mode` | str | ✅ | — | 任务控制模式 |
-| `set_simulator_mode` | `mode` | str | ✅ | — | 仿真模式值 |
-| | `option` | str | — | `uniMode` | 选项名 |
-| `set_job_policy` | `policy` | dict 或 str | ✅ | — | 任务策略（对象或 SKILL 表达式） |
-| | `test`（或 `test_name`）, `job_type` | str | — | 无 | 限定作用对象 |
-| `add_output` | `name`, `test` | str | ✅ | — | 输出名与所属测试 |
-| | `signal_name`, `expr`, `output_type` | str | — | 无 | 信号名 / 表达式 / 输出类型 |
-| | `plot`, `save` | bool | — | 无 | 是否画图 / 是否保存 |
-| `delete_output` | `name`, `test` | str | ✅ | — | 删除输出 |
-| | `delete_spec` | bool | — | 无 | 连同 spec 一起删 |
-| `set_spec` | `name`, `test` | str | ✅ | — | 给该输出加规格 |
-| | `gt` / `lt` / `min` / `max` / `tol` / `range` | 任意 | — | 只给其中一个 | 规格界 |
-| | `info`, `weight`, `corner` | 任意 | — | 无 | 说明/权重/适用 corner |
-| `delete_spec` | `name`, `test` | str | ✅ | — | 删除规格 |
+| `set_simulator_mode` | `mode`；可选 `option` | str | ✅ | `uniMode` | 高性能仿真模式 |
+| `set_job_policy` | `policy`（dict 或 SKILL 表达式） | — | ✅ | — | 任务策略；可选 `test`/`test_name`、`job_type` |
+| `add_output` | `name`, `test` | str | ✅ | — | 加输出；可选 `output_type`、`signal_name`、`expr`、`plot`、`save` |
+| `delete_output` | `name`, `test`；可选 `delete_spec` | str/bool | ✅ | — | 删输出 |
+| `set_spec` | `name`, `test` + 一个界（`gt`/`lt`/`min`/`max`/`tol`/`range`） | — | ✅ | — | 加规格；可选 `info`、`weight`、`corner` |
+| `delete_spec` | `spec_name`（或 `test`+`output`） | str | ✅ | — | 删规格 |
 
-### 2.2 示例
+**示例**
 
 ```json
 {"operation":"virtuoso.maestro.write","token":"TOKEN","library":"maestro_tb","cell":"rc_probe","view":"maestro",
@@ -92,43 +102,110 @@ Maestro（ADE）是 Virtuoso 的仿真环境：一个 `maestro` 视图里放若�
   {"op":"set_corner","name":"TT","enable_tests":["rc_tran"]},
   {"op":"add_output","test":"rc_tran","name":"VOUT","signal_name":"VOUT"},
   {"op":"set_spec","test":"rc_tran","name":"VOUT","min":0.3}]}
+// 输出（data.value 内容；save=false 会被明确拒绝）
+{"ok":true,"error":null,"value":{"applied":5,"session":"VB_..._1"}}
 ```
 
 ## 3. `virtuoso.maestro.run` — 跑仿真
 
+**功能**：启动一次仿真（默认后台），返回 history 名。
+
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
 | `library` / `cell` | str | ✅ | — | 目标 |
 | `view` | str | — | `maestro` | 视图名 |
-| `history` | str | — | 新建 | 要跑的 history 名；不给就新建一条 |
-| `blocking` | bool | — | `false` | `false` 立即返回 history，`true` 等跑完再返回 |
+| `history` | str | — | 新建 | 要跑的 history；不给就新建一条 |
+| `blocking` | bool | — | `false` | `true` 时等跑完再返回 |
 | `poll_interval` | number | — | `2.0` | `blocking=true` 时的轮询间隔（秒） |
 
-返回：新 history 的名字（后续读结果用它）。
+**返回**
 
-## 4. `virtuoso.maestro.read_history` — 看历史与状态（轮询用这个）
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `value.history` | str | history 名（读结果用它） |
+| `value.status` | str | 运行状态 |
+| `value.session` | str | 会话标识 |
+| `value.progress` | dict | 进度（运行中时） |
+
+**示例**
+
+```json
+// 输入
+{"operation":"virtuoso.maestro.run","token":"TOKEN","library":"maestro_tb","cell":"rc_probe","view":"maestro","blocking":false}
+// 输出（data.value 内容）
+{"ok":true,"error":null,"value":{"history":"Interactive.2","status":"running","session":"VB_..._2"}}
+```
+
+## 4. `virtuoso.maestro.read_history` — 看历史与状态
+
+**功能**：读某条（或当前）history 的状态与进度——**轮询用这个**。
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
 | `library` / `cell` | str | ✅ | — | 目标 |
-| `history` | str | — | 最新 | history 名 |
+| `history` | str | — | 当前 | history 名 |
 | `view` | str | — | `maestro` | 视图名 |
 
-返回 `data.value`：各 history 的状态、时间等信息。**判断"跑完没有"看这里**。
+**返回**
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `value.histories` | list | 历史记录列表 |
+| `value.current` / `value.current_history` | str | 当前 history |
+| `value.status` | str | 状态 |
+| `value.tests_done` / `value.tests_total` | int | 测试完成/总数 |
+| `value.corners_done` / `value.corners_total` | int | corner 完成/总数 |
+| `value.points_done` / `value.points_total` | int | 扫描点完成/总数 |
+| `value.results_dir` / `value.lock_flag` | str/bool | 结果目录 / 是否加锁 |
+
+**示例**
+
+```json
+// 输入
+{"operation":"virtuoso.maestro.read_history","token":"TOKEN","library":"maestro_tb","cell":"rc_probe","view":"maestro","history":"Interactive.2"}
+// 输出（data.value 内容）
+{"ok":true,"error":null,"value":{"histories":["Interactive.1","Interactive.2"],"current":"Interactive.2",
+ "status":"running","tests_done":1,"tests_total":1,"corners_done":0,"corners_total":1,
+ "points_done":0,"points_total":1,"results_dir":"/home/user/sim/.../Interactive.2","lock_flag":false}}
+```
 
 ## 5. `virtuoso.maestro.read_results` — 读结果
 
+**功能**：读取仿真结果（可按 test/analysis/波形过滤）。
+
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
 | `library` / `cell` | str | ✅ | — | 目标 |
 | `history` | str | — | 最新 | history 名 |
-| `test` / `analysis` / `waveform` / `result` | str | — | 全部 | 逐级过滤到某个信号/结果 |
+| `test` / `analysis` / `waveform` / `result` | str | — | 全部 | 逐级过滤 |
 | `view` | str | — | `maestro` | 视图名 |
-| `notation` | str | — | `scientific` | 数值表示法 |
-| `precision` / `width` | int | — | 无 | 数值精度 / 显示宽度 |
-| `output_path` | str | — | 无 | 结果另存到该路径 |
+| `notation` / `precision` / `width` | str/int | — | `scientific`/默认 | 数值格式 |
+| `output_path` | str | — | 无 | 结果另存位置 |
+
+**返回**
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `value.history` | str | history 名 |
+| `value.tests` / `value.outputs` | list | 测试与输出结果 |
+| `value.points` | list | 扫描点结果 |
+| `value.overall_spec` / `value.overall_yield` | — | 总体规格通过情况与良率 |
+| `value.local_path` | str | 另存位置（给了 `output_path` 时） |
+
+**示例**
+
+```json
+// 输入
+{"operation":"virtuoso.maestro.read_results","token":"TOKEN","library":"maestro_tb","cell":"rc_probe","view":"maestro","history":"Interactive.1","test":"rc_tran"}
+// 输出（data.value 内容，节选）
+{"ok":true,"error":null,"value":{"history":"Interactive.1",
+ "tests":[{"name":"rc_tran","outputs":[{"name":"VOUT","value":1.203,"unit":"V","spec":{"type":"min","value":0.3,"pass":true}}]}],
+ "points":[],"overall_spec":"pass","overall_yield":1.0}}
+```
 
 ## 6. `virtuoso.maestro.export` — 导出
+
+**功能**：导出网表、脚本、结果 CSV、快照或截图。
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
@@ -137,9 +214,30 @@ Maestro（ADE）是 Virtuoso 的仿真环境：一个 `maestro` 视图里放若�
 | `history` | str | — | 最新 | 针对哪条 history |
 | `test` / `corner` | str | — | 全部 | 过滤 |
 | `output_path` | str | — | 自动 | 导出落点 |
-| `window_id`, `region`, `toplevel` | — | — | — | `kind=screenshot` 时用 |
+| `window_id` / `region` / `toplevel` | — | — | — | `kind=screenshot` 时用 |
+
+**返回**
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `value.kind` | str | 导出类型 |
+| `value.local_path` | str | 本机落点 |
+| `value.remote_path` | str | 目标机器上的原始文件 |
+| `value.script` / `value.snapshot` | dict | 脚本/快照内容（对应 kind） |
+
+**示例**
+
+```json
+// 输入
+{"operation":"virtuoso.maestro.export","token":"TOKEN","library":"maestro_tb","cell":"rc_probe","kind":"outputs_csv","history":"Interactive.1"}
+// 输出（data.value 内容）
+{"ok":true,"error":null,"value":{"kind":"outputs_csv","local_path":"C:/work/artifact/maestro/rc_probe/Interactive.1/outputs.csv",
+ "remote_path":"/home/user/.virtuoso-bridge/<user>/artifact/maestro/rc_probe/Interactive.1/outputs.csv"}}
+```
 
 ## 7. `virtuoso.maestro.write_history` — 管理历史记录
+
+**功能**：重命名、加解锁、删除 history 或其结果。
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
@@ -151,25 +249,38 @@ Maestro（ADE）是 Virtuoso 的仿真环境：一个 `maestro` 视图里放若�
 
 | 原子 | 参数 | 必填 | 说明 |
 |---|---|---|---|
-| `rename` | `history`, `new_name` | ✅ | 重命名 history |
-| `lock` / `unlock` | `history` | ✅ | 加锁/解锁（锁住的不能被删） |
+| `rename` | `history`, `new_name` | ✅ | 重命名 |
+| `lock` / `unlock` | `history` | ✅ | 加锁/解锁（锁住不能删） |
 | `delete` | `history` | ✅ | 删除 history |
-| `delete_results` | `history` | ✅ | 只删结果数据；可选 `keep_netlist`, `keep_quick_plot`（bool） |
+| `delete_results` | `history`；可选 `keep_netlist`、`keep_quick_plot` | ✅ | 只删结果数据 |
+
+**返回**：`value.applied` / `value.rename` / `value.session`。
+
+```json
+{"operation":"virtuoso.maestro.write_history","token":"TOKEN","library":"maestro_tb","cell":"rc_probe","view":"maestro",
+ "commands":[{"op":"rename","history":"Interactive.1","new_name":"rc_v1"}]}
+// 输出（data.value 内容）
+{"ok":true,"error":null,"value":{"applied":1,"rename":{"history":"Interactive.1","new_name":"rc_v1"},"session":"VB_..._1"}}
+```
 
 ## 8. GUI 相关
 
-| 操作 | 参数 | 必填 | 说明 |
+| 操作 | 功能 | 输入参数 | 返回 |
 |---|---|---|---|
-| `virtuoso.maestro.open_gui` | `library`, `cell`；可选 `view`, `history` | ✅ | 打开 ADE 窗口 |
-| `virtuoso.maestro.close_gui` | `library`, `cell`；可选 `view` | ✅ | 关闭窗口 |
-| `virtuoso.maestro.open_waveform_gui` | `library`, `cell`, `history`, `signals`；可选 `test`, `analysis`, `view` | ✅ | 打开波形窗口，`signals` 如 `["VOUT","VIN"]` |
-| `virtuoso.maestro.close_waveform_gui` | 可选 `session`, `window` | — | 关闭波形窗口 |
+| `virtuoso.maestro.open_gui` | 打开 ADE 窗口 | `library`, `cell`；可选 `view`, `history` | `value.session` / `window` / `title` / `mode` |
+| `virtuoso.maestro.close_gui` | 关闭窗口 | `library`, `cell`；可选 `view` | `value.session` / `window` / `closed` |
+| `virtuoso.maestro.open_waveform_gui` | 打开波形窗口 | `library`, `cell`, `history`, `signals`；可选 `test`, `analysis`, `view` | `value.session` / `session_created` / `window` / `signals` |
+| `virtuoso.maestro.close_waveform_gui` | 关闭波形窗口 | 可选 `session`, `window` | `value.session` / `window` / `closed` |
 
-> 后台操作与 GUI 会话操作同一个 `maestro` 视图时容易互相冲突：跑批量任务前先关掉 ADE 窗口。
+```json
+// 输入
+{"operation":"virtuoso.maestro.open_waveform_gui","token":"TOKEN","library":"maestro_tb","cell":"rc_probe","history":"Interactive.1","signals":["VOUT"]}
+// 输出（data.value 内容）
+{"ok":true,"error":null,"value":{"session":"VB_..._3","session_created":true,"window":"0x2a0000b","signals":["VOUT"]}}
+```
 
 ## 9. 注意事项
 
-- `run` 默认非阻塞；**不要用 `read_results` 当轮询**，用 `read_history`。
-- `set_var` 的值建议用字符串或数字；表达式类值按 SKILL 语义解析。
-- corner 相关的原子在 corner 不存在时会直接报 `corner not found: xxx`。
-- 改了配置记得确认 `save`（默认 `true`），否则只改了内存中的会话。
+- `run` 默认非阻塞；**用 `read_history` 轮询**，不要用 `read_results` 当轮询。
+- corner/测试相关的原子在对象不存在时会直接报错（如 `corner not found: xxx`）。
+- 后台操作与 GUI 会话操作同一个 `maestro` 视图容易冲突：批量任务前先关掉 ADE 窗口。

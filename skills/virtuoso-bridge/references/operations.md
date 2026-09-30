@@ -230,7 +230,7 @@
 
 ## Calibre（DRC / LVS / PEX）
 
-> **状态：暂缓（2026-09-28）**。DRC/LVS/`export_cdl` 与"set 直驱"已真机验证可用；
+> **状态：暂缓（2026-09-28）**。DRC/LVS 与"set 直驱"已真机验证可用；
 > **`calibre.pex` 本版不提供**——调用返回 `pex_unsupported`，不执行远程动作。
 > 恢复开发方向见 `spec/research/calibre/00-下一步开发方向.md`。
 
@@ -238,12 +238,11 @@
 |---|---|---|---|
 | `calibre.check_env` | — | `calibre_bin`, `deck` | 查环境/许可 |
 | `calibre.drc` | `deck` | `gds`, `top`（deck 有占位符时才必需）, `params`/`runset`, `job_id`, `run_dir`, `turbo`（默认 4）、`hier`, `blocking`（默认 `false`）, `poll_interval` | 跑 DRC；默认后台，先用返回的 `job_id` |
-| `calibre.lvs` | `deck` | 同上 + `cdl`（deck 引用 `lvs_top.cdl` 时必需）, `lvs_run_dir` | 跑 LVS；`cdl` 可用 `calibre.export_cdl` 现产 |
+| `calibre.lvs` | `deck` | 同上 + `cdl`（deck 引用 `lvs_top.cdl` 时必需）, `lvs_run_dir` | 跑 LVS；`cdl` 先用 Virtuoso 侧能力产出 |
 | `calibre.pex` | `deck` 或 `runset` | — | **本版不提供**；合法请求返回 `ok=false` + `value.reason=pex_unsupported`，不建 run dir |
 | `calibre.status` | `job_id` 或 `run_dir` | `kind`（默认 `drc`） | 查进度 |
 | `calibre.read_results` | `job_id` 或 `run_dir` | `kind`, `limit`, `log_lines` | 读结构化结论 |
 | `calibre.export` | `job_id` 或 `run_dir` | `kind`, `items`（默认 `["summary"]`）、`local_dir` | 导出报告到本机 |
-| `calibre.export_cdl` | `library`, `cell` | `view`（默认 `schematic`）, `netlist_name`, `run_dir`, `cds_lib`, `timeout` | 用 Virtuoso 官方 auCdl 从 schematic 现产 CDL 源网表（LVS 的 source 侧） |
 
 **改参数**：`params={"lvsLayoutPrimary":"inv2", "lvsSourcePath":"/x/inv2.cdl", …}`（也收 `runset=<远端 .runset 路径>`）。
 支持的键：`drcLayoutPaths/drcLayoutPrimary/drcLayoutSystem/lvsLayoutPaths/lvsLayoutPrimary/lvsSourcePath/lvsSourcePrimary/lvsSourceSystem/lvsSVDBDir`；

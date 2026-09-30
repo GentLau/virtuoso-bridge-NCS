@@ -1,140 +1,151 @@
 # schematic —— 原理图
 
-原理图（schematic）的读、写、检查保存、截屏。写操作是**原子命令组**：一次给一组命令，
-按顺序执行，遇到第一个失败就停。
+原理图的读、写、检查保存、截屏。`write` 是**一组原子命令**：按顺序执行，遇到第一个失败就停。
 
 ## 1. `virtuoso.schematic.read` — 读原理图
 
+**功能**：读取视图内容（器件、连线、引脚、标签、参数），可按 `focus` 裁剪。
+
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `library` | str | ✅ | — | 库名 |
-| `cell` | str | ✅ | — | cell 名 |
+| `library` / `cell` | str | ✅ | — | 目标 |
 | `view` | str | — | `schematic` | 视图名 |
-| `focus` | str | — | 全部 | 逗号分隔，可取 `positions` / `connectivity` / `params` 的组合，如 `"positions,params"` |
-| `param_filter` | list[str] | — | 无 | 只要这些参数名（配合 `focus` 含 `params`） |
-| `object_filter` | dict | — | 无 | 只取某个区域内的对象，如 `{"instances":{"region":[x0,y0,x1,y1]}}` |
+| `focus` | str | — | 全部 | 逗号分隔，可取 `positions` / `connectivity` / `params`，如 `"positions,params"` |
+| `param_filter` | list[str] | — | 无 | 只要这些参数名（配合含 `params` 的 focus） |
+| `object_filter` | dict | — | 无 | 只取某区域内的对象 |
 
-返回 `data.value`：
+**返回**
 
-| 字段 | 内容 |
-|---|---|
-| `instances` | 实例列表：`name` / `lib` / `cell` / `master_view` / `pos` / `orient` / `bBox` / `numInst` / `terms`（端子→网络）/ `params`（参数）/ `terminals`（端子坐标） |
-| `nets` | 网络 → 连接信息 |
-| `pins` | 引脚列表 |
-| `labels` | 标签列表 |
-| `wires` | 连线列表 |
-| `notes` | 注释列表 |
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `value.instances` | list | 实例：`name`/`lib`/`cell`/`master_view`/`pos`/`orient`/`bBox`/`numInst`/`terms`/`params`/`terminals` |
+| `value.nets` | dict | 网络 → 连接信息 |
+| `value.pins` / `value.labels` / `value.wires` / `value.notes` | list | 引脚 / 标签 / 连线 / 注释 |
+
+**示例**
 
 ```json
+// 输入
 {"operation":"virtuoso.schematic.read","token":"TOKEN","library":"mylib","cell":"inv","view":"schematic","focus":"connectivity"}
+// 输出（data 内容）
+{"ok":true,"error":null,"value":{
+  "instances":[{"name":"M0","lib":"analogLib","cell":"nmos4","master_view":"symbol",
+                "pos":[0,-1],"orient":"R0","terms":{"G":"IN","D":"OUT"},"params":{"w":"1u"}}],
+  "nets":{"IN":[["M0","G"]],"OUT":[["M0","D"]]},
+  "pins":[],"labels":[],"wires":[],"notes":[]}}
 ```
 
 ## 2. `virtuoso.schematic.write` — 写原理图
 
+**功能**：用原子命令批量修改原理图（放器件、连线、引脚、标注、改参数……）。
+
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `library` | str | ✅ | — | 库名 |
-| `cell` | str | ✅ | — | cell 名 |
-| `commands` | list[dict] | ✅ | — | 原子命令组，见下表 |
+| `library` / `cell` | str | ✅ | — | 目标 |
+| `commands` | list[dict] | ✅ | — | 原子命令组 |
 | `view` | str | — | `schematic` | 视图名 |
 
-返回 `data.value` = `{"applied": n}`（成功应用了几条命令）；失败时 `error` 形如
-`"... (applied: 2/5)"`，`data.steps` 里有每条命令的结果。
+**返回**
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `value` | null | 成功时不返回业务数据；失败时 `error` 会写 `(applied: n/m)` |
+| `steps` | list | 失败或 `step_details=true` 时出现，每条命令一步 |
 
 ### 2.1 原子命令
 
-坐标单位是用户单位（一般 µm）；`x`/`y` 是数字，`points` 是 `[[x,y], …]`。
-
 | 原子 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|---|
-| `place_instance` | `master_lib` | str | ✅ | — | 被放置器件的库 |
-| | `master_cell` | str | ✅ | — | 器件名 |
-| | `master_view` | str | — | `symbol` | 器件视图 |
-| | `name` | str | ✅ | — | 实例名（图中唯一） |
-| | `x` / `y` | number | ✅ | — | 放置坐标 |
-| | `orient` | str | — | `R0` | 方向，如 `R0`/`R90`/`MX`/`MY` |
-| `delete_instance` | `name` | str | ✅ | — | 实例名 |
-| `rename_instance` | `name` / `new_name` | str | ✅ | — | 原名 / 新名 |
-| `set_instance_params` | `name` | str | ✅ | — | 实例名 |
-| | `params` | dict | ✅ | — | 参数名→值，如 `{"w":"1u","l":"60n"}`；参数名必须是该器件的 CDF 参数 |
-| `set_term_nets` | `name` | str | ✅ | — | 实例名 |
-| | `term_nets` | dict | ✅ | — | 端子→网络，如 `{"G":"net1","D":"OUT"}` |
-| | `justify` / `orient` / `font` | str | — | `lowerCenter`/`R0`/`stick` | 生成的网络标签样式 |
-| | `height` | number | — | `0.0625` | 标签字高 |
-| | `stub_length` | number | — | 按引脚几何自动推导 | 从端子引出的短线长度 |
-| `place_wire` | `points` | list | ✅ | — | 折线端点，至少两点 |
-| | `entry` | str | — | `route` | 连线类型 |
-| | `route` | str | — | `full` | 走线方式 |
-| | `x_spacing` / `y_spacing` | number | — | `0` | 总线间距 |
-| | `width` / `color` / `line_style` | number/str | — | 无 | 线宽/颜色/线型 |
-| `delete_wire` | `points` | list | ✅ | — | 按这条折线的范围删除 |
-| `set_wire_properties` | `points` | list | ✅ | — | 定位用 |
-| | `width` / `color` / `line_style` | number/str | — | 无 | 至少要给一个 |
-| `place_label` | `x` / `y` / `text` | number/number/str | ✅ | — | 标签内容与位置 |
-| | `justify` / `orient` / `font` | str | — | `lowerCenter`/`R0`/`stick` | 样式 |
-| | `height` | number | — | `0.0625` | 字高 |
-| | `alias` | bool | — | `false` | 是否作为别名标签 |
-| `delete_label` | `x` / `y` | number | ✅ | — | 按位置删除 |
-| `rename_label` | `x` / `y` / `new_text` | number/number/str | ✅ | — | 按位置改名 |
-| `set_label_properties` | `x` / `y` | number | ✅ | — | 定位 |
-| | `justify` / `orient` / `font` / `height` | str/number | — | — | 至少给一个 |
-| `place_pin` | `name` / `x` / `y` | str/number/number | ✅ | — | 引脚名与位置 |
-| | `direction` | str | — | `inputOutput` | `input` / `output` / `inputOutput` / `switch` / `jumper` |
-| | `orient` | str | — | `R0` | 方向 |
-| | `off_sheet` / `power_sens` / `ground_sens` / `sig_type` | bool/str | — | 无 | 引脚高级属性（一般不用给） |
-| `delete_pin` | `x` / `y` | number | ✅ | — | 按位置删除 |
-| `rename_pin` | `x` / `y` / `new_name` | number/str | ✅ | — | 按位置改名 |
-| `set_pin_properties` | `x` / `y` / `direction` | number/str | ✅ | — | 改引脚类型 |
-| `place_note` | `x` / `y` / `text` | number/number/str | ✅ | — | 注释文本与位置 |
-| | `justify` / `orient` / `font` | str | — | `lowerLeft`/`R0`/`stick` | 样式 |
-| | `height` | number | — | `0.0625` | 字高 |
-| | `type` | str | — | `normalLabel` | 注释类型 |
-| `delete_note` | `x` / `y` | number | ✅ | — | 按位置删除 |
-| `rename_note` | `x` / `y` / `new_text` | number/str | ✅ | — | 按位置改名 |
-| `set_note_properties` | `x` / `y` | number | ✅ | — | 定位 |
-| | `justify` / `orient` / `font` / `height` | str/number | — | — | 至少给一个 |
+| `place_instance` | `master_lib`, `master_cell`, `name`, `x`, `y` | str/number | ✅ | — | 放实例 |
+| | `master_view` / `orient` | str | — | `symbol` / `R0` | 器件视图与方向 |
+| `delete_instance` | `name` | str | ✅ | — | 删实例 |
+| `rename_instance` | `name`, `new_name` | str | ✅ | — | 改名 |
+| `set_instance_params` | `name`, `params`（`{"w":"1u"}`） | str/dict | ✅ | — | 改参数（参数名必须是该器件的 CDF 参数） |
+| `set_term_nets` | `name`, `term_nets`（`{"G":"net1"}`） | str/dict | ✅ | — | 给端子指定网络 |
+| | `justify`/`orient`/`font`/`height`/`stub_length` | — | — | `lowerCenter`/`R0`/`stick`/`0.0625`/自动 | 生成的网络标签样式 |
+| `place_wire` | `points` | list | ✅ | — | 折线，至少两点 |
+| | `entry`/`route`/`x_spacing`/`y_spacing`/`width`/`color`/`line_style` | — | — | `route`/`full`/`0`/`0`/— | 走线样式（注意：即使 spacing 给 0，底层仍可能按默认网格吸附） |
+| `delete_wire` | `points` | list | ✅ | — | 按折线范围删除 |
+| `set_wire_properties` | `points` + `width`/`color`/`line_style` | list/… | ✅（points） | — | 改线属性 |
+| `place_label` | `x`, `y`, `text` | number/str | ✅ | — | 放标签 |
+| | `justify`/`orient`/`font`/`height`/`alias` | — | — | `lowerCenter`/`R0`/`stick`/`0.0625`/false | 样式 |
+| `delete_label` | `x`, `y` | number | ✅ | — | 按位置删 |
+| `rename_label` | `x`, `y`, `new_text` | number/str | ✅ | — | 按位置改名 |
+| `set_label_properties` | `x`, `y` + 至少一个样式字段 | — | ✅（x,y） | — | 改标签样式 |
+| `place_pin` | `name` + (`pos` 或 `x`+`y`) | str/list | ✅ | — | 放引脚（`pos:[x,y]` 与 `x`/`y` 二选一） |
+| | `direction` / `orient` | str | — | `inputOutput` / `R0` | `input`/`output`/`inputOutput`/`switch`/`jumper` |
+| | `power_sens` / `ground_sens` / `sig_type` | str | — | 无 | 引脚高级属性（按位置透传，可只给其中后面的项） |
+| | `off_sheet` | bool | — | — | **本环境不支持**，传 `true` 会被明确拒绝 |
+| `delete_pin` | `x`, `y` | number | ✅ | — | 按位置删 |
+| `rename_pin` | `x`, `y`, `new_name` | number/str | ✅ | — | 按位置改名 |
+| `set_pin_properties` | `x`, `y`, `direction` | number/str | ✅ | — | 改引脚类型 |
+| `place_note` | `x`, `y`, `text` | number/str | ✅ | — | 放注释 |
+| | `justify`/`orient`/`font`/`height`/`type` | — | — | `lowerLeft`/`R0`/`stick`/`0.0625`/`normalLabel` | 样式 |
+| `delete_note` | `x`, `y` | number | ✅ | — | 删注释 |
+| `rename_note` | `x`, `y`, `new_text` | number/str | ✅ | — | 注释改名 |
+| `set_note_properties` | `x`, `y` + 至少一个样式字段 | — | ✅（x,y） | — | 改注释样式 |
 
-### 2.2 示例
+**示例**
 
 ```json
+// 输入
 {"operation":"virtuoso.schematic.write","token":"TOKEN","library":"mylib","cell":"inv","view":"schematic",
  "commands":[
   {"op":"place_pin","name":"IN","x":-2.5,"y":0,"direction":"input"},
-  {"op":"place_pin","name":"OUT","x":2.5,"y":0,"direction":"output"},
-  {"op":"place_instance","master_lib":"analogLib","master_cell":"nmos4","master_view":"symbol","name":"M0","x":0,"y":-1,"orient":"R0"},
+  {"op":"place_pin","name":"OUT","pos":[2.5,0],"direction":"output"},
+  {"op":"place_instance","master_lib":"analogLib","master_cell":"nmos4","master_view":"symbol","name":"M0","x":0,"y":-1},
   {"op":"set_instance_params","name":"M0","params":{"w":"1u","l":"60n"}},
   {"op":"place_wire","points":[[-2.5,0],[-1,0]]},
   {"op":"set_term_nets","name":"M0","term_nets":{"G":"IN","D":"OUT"}}]}
+// 输出（data 内容）
+{"ok":true,"error":null,"value":null}
 ```
 
 ## 3. `virtuoso.schematic.check_and_save` — 检查并保存
 
+**功能**：让 Virtuoso 做一次一致性检查并落盘。
+
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `library` | str | ✅ | — | 库名 |
-| `cell` | str | ✅ | — | cell 名 |
+| `library` / `cell` | str | ✅ | — | 目标 |
 | `view` | str | — | `schematic` | 视图名 |
 
-用途：让 Virtuoso 做一次一致性检查并落盘；写操作后想确认"保存了"可以用它。
+**返回**：`value` = null；失败时看 `error` 与 `steps`。
+
+```json
+// 输入
+{"operation":"virtuoso.schematic.check_and_save","token":"TOKEN","library":"mylib","cell":"inv","view":"schematic"}
+// 输出（data 内容）
+{"ok":true,"error":null,"value":null}
+```
 
 ## 4. `virtuoso.schematic.screenshot` — 截屏
 
+**功能**：把原理图窗口截图并送回本机。
+
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `library` | str | ✅ | — | 库名 |
-| `cell` | str | ✅ | — | cell 名 |
+| `library` / `cell` | str | ✅ | — | 目标 |
 | `view` | str | — | `schematic` | 视图名 |
-| `window_id` | int | — | 无 | 指定窗口；不给就自动找 |
-| `region` | list[float] | — | 无 | 只截 `[x0,y0,x1,y1]` 区域 |
-| `toplevel` | bool | — | `true` | 是否截顶层窗口 |
-| `central_widget` | bool | — | `true` | 是否只截中央绘图区 |
-| `leave_open` | bool | — | `false` | 截完是否保持窗口打开 |
+| `window_id` | int | — | 自动 | 指定窗口 |
+| `region` | list[float] | — | 全图 | `[x0,y0,x1,y1]` |
+| `toplevel` / `central_widget` / `leave_open` | bool | — | `true`/`true`/`false` | 顶层窗口 / 只截绘图区 / 截完保持打开 |
 
-返回：`data.local_path`（截图在本机的落点）。
+**返回**
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `local_path` | str | 截图在本机的落点 |
+
+```json
+// 输入
+{"operation":"virtuoso.schematic.screenshot","token":"TOKEN","library":"mylib","cell":"inv","view":"schematic"}
+// 输出（data 内容）
+{"ok":true,"error":null,"local_path":"C:/work/artifact/screenshots/inv_schematic_1.png"}
+```
 
 ## 5. 注意事项
 
-- 放器件前确认 `master_lib.master_cell.master_view` 存在（用 cellview 包查）。
+- 放器件前确认 `master_lib/master_cell/master_view` 存在。
 - 参数名必须是器件 CDF 里真实存在的名字，否则报 `unknown CDF param: xxx`。
-- 视图被 Virtuoso 窗口打开时写入可能报锁；写之前先让用户关掉该视图。
-- 写完建议 `read` 一次复核连接关系，不要只信 `ok=true`。
+- 视图被窗口打开时写入可能报锁；写完建议 `read` 复核连接关系。
