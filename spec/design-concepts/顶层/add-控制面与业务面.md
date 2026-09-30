@@ -1,9 +1,9 @@
 # 顶层补充：控制面与业务面
 
-> 版本：Draft v42
+> 版本：Draft v43
 > 日期：2026-09-30
 > 状态：Normative（顶层 HTTP 端点清单、端口划分与权限口径的唯一 owner）
-> Supersedes：Draft v41（个人 token 走 Authorization；保密字段仅管理员路径）
+> Supersedes：Draft v42（update 改黑名单口径）
 > 定位：本文是[顶层](1-顶层.md)的端点补充——[顶层](1-顶层.md)定义顶层职责、调度与响应壳；本文定义顶层开哪些端口、哪些方法、支持哪些请求、每个端点需要什么权限。注册语义见[多用户与注册 §3/§5](../其他/1-多用户与注册.md)。
 
 ## 1. 双面双端口
@@ -70,7 +70,7 @@
 |---|---|---|---|
 | GET | `/api/users` | 用户列表（响应脱敏 token） | 管理权限 |
 | GET | `/api/user/<user>` | 读取用户条目（响应脱敏 token） | 管理权限；或本人 personal token（读本人、剔除保密字段；读他人 403） |
-| POST | `/api/user/<user>/update` | 修改条目（白名单字段） | 管理权限；或本人 personal token（编辑字段直改；只读字段需 `enhanced_token`；保密字段仅管理权限） |
+| POST | `/api/user/<user>/update` | 修改条目（除 `token`/`registered_at` 外的注册表字段） | 管理权限；或本人 personal token（编辑字段直改；只读字段需 `enhanced_token`；保密字段仅管理权限） |
 | DELETE | `/api/user/<user>` | 删除条目（本机解绑 ≠ 远端吊销） | 管理权限 |
 
 **全局配置**（边界见 §5）
