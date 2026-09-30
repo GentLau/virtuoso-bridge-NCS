@@ -435,6 +435,45 @@ class Package(ResultPackage):
         raw = self._q("maeGetSessions()", token, timeout)
         return parse_skill_str_leaves(raw)
 
+    def _session_cellview(
+        self,
+        session: str,
+        token: str,
+        timeout: int | float | None,
+    ) -> tuple[str, str, str] | None:
+        """C09: session -> (lib, cell, view)；探不到返回 None（不阻断旧路径）。"""
+        try:
+            raw = self._q(
+                "car(errset(list("
+                f"axlGetSessionLibName({q(session)}) "
+                f"axlGetSessionCellName({q(session)}) "
+                f"axlGetSessionViewName({q(session)}))))",
+                token,
+                timeout,
+            )
+            parsed = parse_sexpr(raw.strip())
+        except Exception:  # noqa: BLE001 - optional probe
+            return None
+        if not isinstance(parsed, list) or len(parsed) < 3:
+            return None
+        names = [str(item) for item in parsed[:3]]
+        if any(not name or name in ("nil", "0") for name in names):
+            return None
+        return names[0], names[1], names[2]
+
+    def _session_read_only(
+        self,
+        session: str,
+        token: str,
+        timeout: int | float | None,
+    ) -> bool | None:
+        """C09: True=read-only / False=editable / None=unknown（API 失败）。"""
+        try:
+            raw = self._q(f"axlIsSessionReadOnly({q(session)})", token, timeout)
+        except Exception:  # noqa: BLE001 - optional probe
+            return None
+        return parse_bool(raw.strip())
+
     def _open_session(
         self,
         library: str,
@@ -449,6 +488,29 @@ class Package(ResultPackage):
         blocker = self._write_lock_blocker(library, cell, view, token, timeout)
         if blocker:
             raise RuntimeError(blocker)
+        # C09：cellview 若已在某个 **editable** session 里打开，直接复用它。
+        # 否则 maeOpenSetup 会在"view 已被其他 session 以 edit 模式打开"时新开一个
+        # read-only session（maeSKILLref 明确此行为），后续写调用就会以 stale
+        # SDB handle 报错（Cannot find a setup database entry for handle …）。
+        matching: list[str] = []
+        for existing in before:
+            if self._session_cellview(existing, token, timeout) != (library, cell, view):
+                continue
+            matching.append(existing)
+            if self._session_read_only(existing, token, timeout) is False:
+                return existing, False
+        if matching:
+            if mode == "r":
+                # 读操作复用只读 session 是安全的，避免再无谓地多开一个会话。
+                return matching[0], False
+            # 写路径：view 已在（只读）session 里打开。此时再调 maeOpenSetup 会让
+            # ADE 弹 ASSEMBLER-8127 模态（把 CIW 挂死）或返回 read-only session，
+            # 后续写以 stale SDB handle 报错。这里直接结构化拒绝，点名冲突会话。
+            raise RuntimeError(
+                f"{library}/{cell}/{view} is already open in a non-editable Maestro "
+                f"session ({', '.join(sorted(matching))}); close it or make it "
+                "editable first"
+            )
         # 官方文档（maeSKILLref → maeOpenSetup）：`?mode` 缺省是 "a"（append），
         # 且「cellview 不存在时会新建一个同名 cellview」——读路径若沿用默认，
         # 就会在"目标不存在"时静默建出空 view 并返回空配置（P-104）。读路径一律
@@ -661,6 +723,15 @@ class Package(ResultPackage):
         """
         window = self._session_window(session, token, timeout)
         if window is None:
+            # C09：无窗口的 background session 也可能是 read-only（view 已在别处
+            # 以 edit 模式打开时 maeOpenSetup 会这样返回）。不能盲目当可写。
+            if self._session_read_only(session, token, timeout) is True:
+                if steps is not None:
+                    steps.append(_step(
+                        "session_editable", False,
+                        {"session": session, "mode": "read-only-background"},
+                    ))
+                return False
             if steps is not None:
                 steps.append(_step(
                     "session_editable", True, {"session": session, "mode": "background"},

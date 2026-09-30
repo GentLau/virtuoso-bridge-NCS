@@ -1,14 +1,14 @@
-# C09 · `maestro.write_history` 连续 rename（A→B，再 B→A）第二跳报 `ASSEMBLER-2404 Cannot find a setup database entry for handle`
+# C09 · `maestro.write_history` rename 链撞只读/陈旧的 Maestro session → `Cannot find a setup database entry for handle`（已修：复用 editable session + 只读冲突结构化拒绝）
 
 | 字段 | 值 |
 |---|---|
 | 级别 | P3（重命名链不可用：`maestro_e2e_tests.HISTORY-01` 因此稳定红） |
 | 层 | 上层（maestro 包）· write_history rename 链 |
-| 归属 | 设计侧（按**完整套件**复现：maestro 包会话/SDB handle 生命周期；隔离路径已修但整链仍红） |
-| 状态 | **待设计修** |
+| 归属 | 设计侧（已修：maestro 包 session 选择 + 只读冲突处理） |
+| 状态 | **待测试侧** |
 | 位置 | `src/pyapi/packages/maestro.py`（`write_history` 的 rename 分支与 SDB handle 复用；`_open_session` 会话内 handle 在重命名后失效） |
 | 首报 | 2026-09-29（round9 门禁复跑 + root 隔离复现） |
-| 最近更新 | 2026-09-30 22:20（测试侧复跑：隔离路径已绿，完整套件 HISTORY-01 仍红，退回设计复现） |
+| 最近更新 | 2026-09-30 19:21（设计侧定位只读 session 根因并修复，vbs11 真机链验证通过，转测试侧） |
 
 ## 现象
 
@@ -31,7 +31,7 @@ PYTHONPATH=src python test/live/packages/maestro_e2e_tests.py --transport http  
 
 ## 下一步 / 责任人
 
-**设计侧已修 `2610668` + `50e6576`（2026-09-30 12:47）**：`_open_session` 校验 `maeOpenSetup` 返回会话可活跃、失效则关闭重开，rename 链按本次创建路径收尾。真机证据 `test/artifacts/evidence/verify-fix-r10/c09-maestro-history-green.json`（HISTORY-01 隔离路径 HTTP 全链通过）。**测试侧复跑（2026-09-30 22:1x，HEAD=9d24708）**：完整套件仍红 —— `maestro_e2e_tests.py --transport http` 在 `_case_write_history` 报 `Cannot find a setup database entry for handle 52134`（前序用例全部 PASS 后失败），证据 `test/artifacts/evidence/round9/maestro-c09-verify2.txt`。分歧点=**套件内前序用例留下的会话/handle 状态**（隔离 probe 绿、整链红）→ 请设计按完整套件复现定位；修好后 HISTORY-01 转绿即销卡。
+**设计侧二修（2026-09-30 19:2x，本轮）**：根因是 `maeOpenSetup` 在 view 已被其他 session 以 edit 模式打开时会返回 **read-only** session（或直接弹 `ASSEMBLER-8127` 模态）；旧代码把无窗口的后台 session 一律当可写，于是 rename 在只读 session 上以 stale SDB handle 报错。修法：① `_open_session` 先用 `axlGetSessionLibName/CellName/ViewName` + `axlIsSessionReadOnly` 扫描，优先复用同 cellview 的 **editable** session；② 只有只读匹配 session 时**不再调 maeOpenSetup**（避免弹模态/拿到只读会话），写路径直接给出点名的结构化拒绝，读路径复用只读会话；③ `_ensure_session_editable` 对后台 session 也查 `axlIsSessionReadOnly`，不再盲信可写。真机证据（新代码、vbs11 + 临时业务面 8138，fresh CIW）：happy path `Interactive.1→c09_tmp→Interactive.1` 全绿；预置 editable session 后 `Interactive.0→c09_tmp2→Interactive.0` 仍全绿、复用同一 session（未多开）、链后 `1+2=3` 存活；证据 `test/artifacts/evidence/verify-fix-r10/c09-vbs11-fix-green.json`。离线回归：`test/maestro_package_flow.py` 新增 3 条（复用 editable / 只读后台拒写 / 只读冲突不调 maeOpenSetup），`test_maestro_command_exprs.py` fake 适配；maestro 离线 **104 全绿**。待测试侧在 vblog fresh CIW 复跑 `maestro_e2e_tests.py`，HISTORY-01 转绿后销卡。
 
 
 ---

@@ -27,6 +27,33 @@ BUGS_DIR = ROOT / "test" / "reports" / "bugs"
 #: 未关闭条目。状态只允许：待设计修 / 待测试侧 / 待归属 / 待决策 / 观察
 OPEN = [
     {
+        "id": "P-118",
+        "layer": "上层（maestro 包）· `set_job_policy` 的 `job_type=netlisting` 分支",
+        "slug": "maestro-netlisting-job-policy-silent-noop",
+        "title": "`set_job_policy(job_type=\"netlisting\")` 在未设置过该 policy 的 test 上报 **ok=true 但零效果**（`read_config.job_policy.netlisting` 恒 `null`）——静默 no-op",
+        "level": "P2（静默 no-op：调用方以为 netlisting job policy 已生效；与 P-114/C10 同族）",
+        "owner": "设计侧（`maestro.set_job_policy` 的 netlisting 分支：`maeGetJobPolicy` 返回 nil 时应创建/或结构化失败，不得静默成功）",
+        "status": "待设计修",
+        "where": "`src/pyapi/packages/maestro.py:1402-1429`（`jp = maeGetJobPolicy(...) when(jp …) maeSetJobPolicy(jp …)` —— `jp=nil` 时整段 no-op 且无错误）",
+        "symptom": "真机（vblog，2026-10-01 00:0x，实例重启后复测）：触发条件是**目标 test 没有 netlisting policy 对象**"
+                   "（样本：`maestro_tb/rc_probe` 的 `ac` test，读回 `job_policy.netlisting == null`）：\n"
+                   "① 对照组 `job_type=\"simulation\"` + `policy={\"maxjobs\":2}` → `ok=true` 且读回 `simulation.maxjobs == 2`（写路径本身可用）；\n"
+                   "② `job_type=\"netlisting\"` + `policy={\"maxjobs\":1}` → `ok=true`，读回 `job_policy.netlisting` 仍 `null`；\n"
+                   "③ 反复写不同值（1 / 9）都 `ok=true`、读回都 `null`（零效果）。\n"
+                   "对照：本 TB 自建的 `nkm_*` setup（ADE 默认已建 netlisting policy）写同参数**能**值级读回 → 缺 policy 才触发静默 no-op。",
+        "repro": "对任一 test 调 `maestro.write(commands=[{op:set_job_policy, test_name:…, job_type:\"netlisting\", policy:{maxjobs:1}}])`，\n"
+                 "再 `read_config` 读 `tests.<test>.job_policy.netlisting`（恒 null）；对照 simulation 分支可正常落盘。",
+        "evidence": "`test/artifacts/evidence/round9/maestro-netlisting-policy-probe.txt`（逐次实测）+ "
+                    "`test/artifacts/evidence/round9/maestro-nkm-p118.txt`（TB 红钉：10 PASS + NKM-09 FAIL，含 baseline/after 值）+ "
+                    "`maestro-nested-keys-p118-verify2.json`",
+        "accept": "① `job_type=netlisting` 要么真正把 policy 落盘并能值级读回，要么在“该 test 没有 netlisting policy”时**结构化失败**（点名原因/建议），"
+                  "不得返回 ok；② spec `6-maestro.md:94` 的选择器语义与实现一致；③ TB NKM-09 转绿（或按裁决改成“结构化拒绝”断言）。",
+        "next": "等设计定位；测试侧红钉已就位（放最后，不挡 NKM 其它用例）。",
+        "reported": "2026-09-30（测试/root：补 `read_config.job_policy.netlisting` 读回面覆盖时发现）",
+        "updated": "2026-09-30 23:55（新立）",
+    },
+
+    {
         "id": "P-117",
         "layer": "spec↔实现一致性（上层 calibre 包）· `export.items` 枚举",
         "slug": "calibre-export-pdb-dir-missing",
@@ -99,10 +126,10 @@ OPEN = [
         "id": "C09",
         "layer": "上层（maestro 包）· write_history rename 链",
         "slug": "maestro-write-history-rename-chain-handle-error",
-        "title": "`maestro.write_history` 连续 rename（A→B，再 B→A）第二跳报 `ASSEMBLER-2404 Cannot find a setup database entry for handle`",
+        "title": "`maestro.write_history` rename 链撞只读/陈旧的 Maestro session → `Cannot find a setup database entry for handle`（已修：复用 editable session + 只读冲突结构化拒绝）",
         "level": "P3（重命名链不可用：`maestro_e2e_tests.HISTORY-01` 因此稳定红）",
-        "owner": "设计侧（按**完整套件**复现：maestro 包会话/SDB handle 生命周期；隔离路径已修但整链仍红）",
-        "status": "待设计修",
+        "owner": "设计侧（已修：maestro 包 session 选择 + 只读冲突处理）",
+        "status": "待测试侧",
         "where": "`src/pyapi/packages/maestro.py`（`write_history` 的 rename 分支与 SDB handle 复用；`_open_session` 会话内 handle 在重命名后失效）",
         "symptom": "隔离复现（round9，vblog，21:5x）：`rename(Interactive.8 → e2e_renamed)` **ok=True**；紧接着 "
                    "`rename(e2e_renamed → Interactive.8)` → `(\"error\" 0 t nil (\"*Error* error: Cannot find a setup database entry for handle 118109.\" nil))`。"
@@ -113,14 +140,12 @@ OPEN = [
         "evidence": "`test/artifacts/evidence/round9/final3-maestro_e2e_tests.py.log`（HISTORY-01 报错原文）；隔离探针 stdout（rename ok / restore fail, handle 118109）",
         "accept": "① rename 链（含目标名已存在、重命名回原名）必须成功或给出**点名冲突**的结构化拒绝（对照：重名 rename 已有清晰文案）；"
                   "② 不得报 SDB handle 错误；③ `maestro_e2e_tests.py` HISTORY-01 转绿。",
-        "next": "**设计侧已修 `2610668` + `50e6576`（2026-09-30 12:47）**：`_open_session` 校验 `maeOpenSetup` 返回会话可活跃、失效则关闭重开，rename 链按本次创建路径收尾。"
-                "真机证据 `test/artifacts/evidence/verify-fix-r10/c09-maestro-history-green.json`（HISTORY-01 隔离路径 HTTP 全链通过）。"
-                "**测试侧复跑（2026-09-30 22:1x，HEAD=9d24708）**：完整套件仍红 —— `maestro_e2e_tests.py --transport http` 在 `_case_write_history` 报 "
-                "`Cannot find a setup database entry for handle 52134`（前序用例全部 PASS 后失败），证据 "
-                "`test/artifacts/evidence/round9/maestro-c09-verify2.txt`。"
-                "分歧点=**套件内前序用例留下的会话/handle 状态**（隔离 probe 绿、整链红）→ 请设计按完整套件复现定位；修好后 HISTORY-01 转绿即销卡。",
+        "next": "**设计侧二修（2026-09-30 19:2x，本轮）**：根因是 `maeOpenSetup` 在 view 已被其他 session 以 edit 模式打开时会返回 **read-only** session（或直接弹 `ASSEMBLER-8127` 模态）；旧代码把无窗口的后台 session 一律当可写，于是 rename 在只读 session 上以 stale SDB handle 报错。"
+                "修法：① `_open_session` 先用 `axlGetSessionLibName/CellName/ViewName` + `axlIsSessionReadOnly` 扫描，优先复用同 cellview 的 **editable** session；② 只有只读匹配 session 时**不再调 maeOpenSetup**（避免弹模态/拿到只读会话），写路径直接给出点名的结构化拒绝，读路径复用只读会话；③ `_ensure_session_editable` 对后台 session 也查 `axlIsSessionReadOnly`，不再盲信可写。"
+                "真机证据（新代码、vbs11 + 临时业务面 8138，fresh CIW）：happy path `Interactive.1→c09_tmp→Interactive.1` 全绿；预置 editable session 后 `Interactive.0→c09_tmp2→Interactive.0` 仍全绿、复用同一 session（未多开）、链后 `1+2=3` 存活；证据 `test/artifacts/evidence/verify-fix-r10/c09-vbs11-fix-green.json`。"
+                "离线回归：`test/maestro_package_flow.py` 新增 3 条（复用 editable / 只读后台拒写 / 只读冲突不调 maeOpenSetup），`test_maestro_command_exprs.py` fake 适配；maestro 离线 **104 全绿**。待测试侧在 vblog fresh CIW 复跑 `maestro_e2e_tests.py`，HISTORY-01 转绿后销卡。",
         "reported": "2026-09-29（round9 门禁复跑 + root 隔离复现）",
-        "updated": "2026-09-30 22:20（测试侧复跑：隔离路径已绿，完整套件 HISTORY-01 仍红，退回设计复现）",
+        "updated": "2026-09-30 19:21（设计侧定位只读 session 根因并修复，vbs11 真机链验证通过，转测试侧）",
     },
 
     {
@@ -145,7 +170,7 @@ OPEN = [
         "accept": "① spec 补字段级权限矩阵，明确 personal token 只能访问本人、哪些字段普通修改、哪些字段必须 `enhanced_token`；"
                   "② server 提供 personal-token-only-own-user 的查询/更新语义，并在 update 接入 `enhanced_token`（只校验、不落盘、不回显）；"
                   "③ 个人页用本人 token 可查询自己 entry（剔除保密字段）并改自助权限=编辑字段，含只读/保密字段的修改需 `enhanced_token`（仅管理员 token）；④ 负例：个人 token 访问他人条目必须拒绝。",
-        "extra": "讨论决策（2026-09-30）：字段级授权以中层配置文档 §2 自助权限列为唯一口径——编辑=本人可改；只读=本人只可读不可改、personal+enhanced_token（仅管理员）可改；保密=本人不可读、任何 personal 路径不可写（仅管理员 Authorization）。个人 token 走 Authorization Bearer；本人读 /api/user/<user> 剔除保密字段；读他人 403；DELETE 保持纯管理员；mode.default 已入 update 白名单（只读档）。",
+        "extra": "讨论决策（2026-09-30）：字段级授权以中层配置文档 §2 自助权限列为唯一口径——编辑=本人可改；只读=本人只可读不可改、personal+enhanced_token（仅管理员）可改；保密=本人不可读、任何 personal 路径不可写（仅管理员 Authorization）。个人 token 走 Authorization Bearer；本人读 /api/user/<user> 剔除保密字段；读他人 403；DELETE 保持纯管理员。update 字段范围改黑名单：除 token/registered_at 外均可提交，各字段按自助权限列分级。",
         "next": "spec owner 先拍板权限矩阵与 self 端点形状；后端按 spec 实现。前端已移除管理员 Authorization 回退，仍在 401 时显式点名该缺口。",
         "reported": "2026-09-30（个人管理页真机查询 401，root 复核 spec 与实现）",
         "updated": "2026-09-30（新立；前端停止用管理员凭据代偿）",
@@ -578,13 +603,30 @@ OPEN = [
 #: 2026-09-30：以下条目已按“可复跑证据”关闭（证据见 CLOSED_RECENT）。
 #: 这里做过滤而不是删掉 OPEN 里的条目，是为了保留卡片正文作为归档（谁修的、判据是什么）。
 CLOSED_IDS = {
-    "C06", "C10", "P-086", "P-106", "P-107", "P-108", "P-110", "P-111", "P-112", "P-115",
-    "P-109", "P-114", "C07",
+    "C06", "C10", "C11", "P-086", "P-106", "P-107", "P-108", "P-110", "P-111", "P-112", "P-115",
+    "P-109", "P-114", "C07", "P-116",
 }
 OPEN = [bug for bug in OPEN if bug["id"] not in CLOSED_IDS]
 
 #: 本轮明确闭环（保留记录，避免「消失了没人知道为什么」）
 CLOSED_RECENT = [
+    ("P-116", "spec 3-symbol.md:200 称 `schEditPinOrder` 后 pin_order 与 term_order 一致（真机不符）",
+     "**spec 侧定稿 `b4036d0`**：`pin_order`（schGetPinOrder）与 `port_order` 权威且一致；"
+     "`term_order`（`cv~>termOrder`）是 **legacy raw**，可能为空/陈旧，不得当权威；实现不写它。"
+     "测试侧按定稿把 TB 从红钉降级为「pin==port 强断言 + term_order 存在且为 list」，"
+     "`symbol_e2e_tests.py` **10/10 绿**（三键真实值入证据）；红钉从 `run_redpins.py` 移除。"
+     "证据 `test/artifacts/evidence/round9/symbol-p116-fixed.txt`。"),
+    ("C11", "个人 token 无法自助查询/修改自己的注册表条目（enhanced_token 未接入 update）",
+     "**后端已按控制面 v42 实现**：GET/update 采用 self-or-admin 授权，个人 token 只能访问本人；"
+     "`_redacted_self` 对个人视图隐藏 `key/key_dir`；`self_patch_blacklist` 区分 secret/readonly；"
+     "readonly 字段需 `enhanced_token`，且只接受管理员 token。临时隔离实例 `8144/8147` 实测："
+     "GET 本人 200、GET 他人 403、cdslog 普通更新 200、runtime 无 enhanced 403、"
+     "runtime + admin enhanced 200、secret 字段 403。前端已同步适配：普通字段可直接改，"
+     "只读字段要求管理员 token，`key/key_dir` 不再进个人表单，delete 明确保持管理员专属。"
+     "**测试侧独立验证（2026-10-01）**：`test/live/registration/control_plane_write_tb.py` **12/12 绿** —— "
+     "CPW-05..08 在**一次性实例**上逐条重跑同一矩阵（self 视图不泄露 key/key_dir、他人 403、"
+     "普通字段值级落盘、只读需 enhanced[无→403 / 他人 token→401 / admin→200]、保密字段 403、"
+     "个人 DELETE 401、被拒改动零落盘）；证据 `test/artifacts/evidence/round9/control-plane-write-tb-c11.json`。"),
     ("C07", "spec 把 `calibre.export_cdl` 折进 `calibre.lvs` 的 `source` 参数（独立 op 已删）",
      "设计侧实现 `62575c6` 后，**测试侧真机整链复跑**：`calibre_e2e_tests.py` **12/12 绿** —— "
      "`LVS-02 source.kind=schematic`（auCdl 在 run dir 内现产，含 `.SUBCKT`+器件行）、"

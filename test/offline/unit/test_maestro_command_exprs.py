@@ -325,6 +325,9 @@ class WriteMiddle:
             return VirtuosoResult(status=ExecutionStatus.SUCCESS, output=self.save_output)
         if code.startswith("maeCloseSession"):
             return VirtuosoResult(status=ExecutionStatus.SUCCESS, output="t")
+        if "axlIsSessionReadOnly" in code:
+            # C09：本 fake 的后台会话默认是 editable（无窗口、可写）。
+            return VirtuosoResult(status=ExecutionStatus.SUCCESS, output="nil")
         return VirtuosoResult(status=ExecutionStatus.SUCCESS, output="t")
 
 

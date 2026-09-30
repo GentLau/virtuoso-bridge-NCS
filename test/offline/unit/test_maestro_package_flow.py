@@ -589,5 +589,76 @@ class TestGuiFlow(unittest.TestCase):
         self.assertFalse(result.value["closed"])
 
 
+class TestSessionReuse(unittest.TestCase):
+    """C09 回归：cellview 已在别处 editable 打开时，不得再开 read-only 会话。
+
+    maeSKILLref：view 已在其他 session 以 edit 模式打开时，maeOpenSetup 会把它
+    以 **read-only** 模式开进当前 session；写调用随后会以 stale SDB handle 报
+    "Cannot find a setup database entry for handle …"。正确做法是复用那个
+    editable session；只有 read-only session 时结构化拒绝，不进入写路径。
+    """
+
+    def test_open_session_reuses_editable_session(self):
+        middle = FakeMiddle()
+        middle.skill_script = [
+            ("maeGetSessions()", '("fnxSession1")'),
+            ("axlGetSessionLibName", '("L" "C" "maestro")'),
+            ("axlIsSessionReadOnly", "nil"),
+        ]
+        session, created = M.Package(middle)._open_session(
+            "L", "C", "maestro", "t", 30,
+        )
+        self.assertEqual("fnxSession1", session)
+        self.assertFalse(created)
+        self.assertFalse(
+            any(kind == "skill" and "maeOpenSetup" in code
+                for kind, code in middle.calls),
+            "已有 editable session 时不应再 maeOpenSetup",
+        )
+
+    def test_background_read_only_session_is_not_editable(self):
+        middle = FakeMiddle()
+        middle.skill_script = [("axlIsSessionReadOnly", "t")]
+        steps: list[dict[str, Any]] = []
+        ok = M.Package(middle)._ensure_session_editable(
+            "fnxSession1", "t", 30, steps,
+        )
+        self.assertFalse(ok)
+        self.assertEqual("session_editable", steps[-1]["name"])
+        self.assertFalse(steps[-1]["ok"])
+        self.assertEqual("read-only-background", steps[-1]["detail"]["mode"])
+
+    def test_write_refuses_when_only_read_only_session_matches(self):
+        """只读匹配 session 存在时，写路径不得再 maeOpenSetup（会弹模态/撞 stale handle）。"""
+        middle = FakeMiddle()
+        middle.skill_script = [
+            ("maeGetSessions()", '("fnxSession1")'),
+            ("axlGetSessionLibName", '("L" "C" "maestro")'),
+            ("axlIsSessionReadOnly", "t"),
+        ]
+        with self.assertRaises(RuntimeError) as ctx:
+            M.Package(middle)._open_session("L", "C", "maestro", "t", 30)
+        self.assertIn("non-editable Maestro session", str(ctx.exception))
+        self.assertIn("fnxSession1", str(ctx.exception))
+        self.assertFalse(
+            any(kind == "skill" and "maeOpenSetup" in code
+                for kind, code in middle.calls),
+            "只读冲突时不得再 maeOpenSetup",
+        )
+
+    def test_read_mode_reuses_read_only_session(self):
+        middle = FakeMiddle()
+        middle.skill_script = [
+            ("maeGetSessions()", '("fnxSession1")'),
+            ("axlGetSessionLibName", '("L" "C" "maestro")'),
+            ("axlIsSessionReadOnly", "t"),
+        ]
+        session, created = M.Package(middle)._open_session(
+            "L", "C", "maestro", "t", 30, mode="r",
+        )
+        self.assertEqual("fnxSession1", session)
+        self.assertFalse(created)
+
+
 if __name__ == "__main__":
     unittest.main()
