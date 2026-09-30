@@ -13,23 +13,25 @@
 3. **刷新方式**：改 `test/shared/runners/make_bug_cards.py` 的 `OPEN` / `CLOSED_RECENT` 段，
    然后 `python test/shared/runners/make_bug_cards.py`（幂等；`--check` 只校验不写盘）。
 
-## 1. 未关闭（5 条）
+## 1. 未关闭（4 条）
 
 | ID | 层 | 级别 | 归属 | 状态 | 一句话 | 卡片 |
 |---|---|---|---|---|---|---|
-| **C09** | 上层（maestro 包）· write_history rename 链 | P3（重命名链不可用：`maestro_e2e_tests.HISTORY-01` 因此稳定红） | 设计侧（已修：maestro 包会话/SDB handle 生命周期） | 待测试侧 | `maestro.write_history` 连续 rename（A→B，再 B→A）第二跳报 `ASSEMBLER-2404 Cannot find a setup database entry for handle` | [C09-maestro-write-history-rename-chain-handle-error.md](C09-maestro-write-history-rename-chain-handle-error.md) |
+| **P-116** | spec↔真机一致性（上层 symbol 包）· orders 读回口径 | P3（文档与真机不一致：按 spec 断言的测试必红；调用方可能把 term_order 当权威顺序） | spec 侧（已裁决：改 spec 文字，不改实现） | 待测试侧 | spec `3-symbol.md:200` 称 `schEditPinOrder` 后 `pin_order` 与 `port_order`/`term_order` 一致；真机实测 `term_order`（`cv~>termOrder` legacy raw）不同步（空/陈旧） | [P-116-symbol-term-order-not-synced.md](P-116-symbol-term-order-not-synced.md) |
+| **C09** | 上层（maestro 包）· write_history rename 链 | P3（重命名链不可用：`maestro_e2e_tests.HISTORY-01` 因此稳定红） | 设计侧（按**完整套件**复现：maestro 包会话/SDB handle 生命周期；隔离路径已修但整链仍红） | 待设计修 | `maestro.write_history` 连续 rename（A→B，再 B→A）第二跳报 `ASSEMBLER-2404 Cannot find a setup database entry for handle` | [C09-maestro-write-history-rename-chain-handle-error.md](C09-maestro-write-history-rename-chain-handle-error.md) |
 | **C11** | 控制面权限模型（个人自助 registry） | P2（个人管理核心能力不可达：真实控制面对个人 token 稳定 401；前端只能显示缺口或错误地借用管理员权限） | 设计侧（先定个人自助权限矩阵/端点语义，再由 server 实现；不能只改前端） | 待决策 | `/api/user/*` 仍收归管理员且 `enhanced_token` 未接入 update：个人 token + 增强凭据无法自助查询/修改自己的注册表条目 | [C11-control-plane-personal-self-service-missing.md](C11-control-plane-personal-self-service-missing.md) |
 | **C07** | spec↔实现一致性（上层 calibre / LVS 源网表入口） | P3（一致性：spec §8 验收两行在现行实现上不可达；TB 仍跑在 spec 已删除的旧入口上） | 设计侧（已选①：实现 fold；测试侧收口红钉） | 待测试侧 | spec 把 `calibre.export_cdl` 折进 `calibre.lvs` 的 `source` 参数（`source/emit_cdl/cds_lib`）：实现已落地、独立 op 已删除，待测试侧复跑销卡 | [C07-calibre-lvs-source-fold-drift.md](C07-calibre-lvs-source-fold-drift.md) |
-| **P-109** | 上层（maestro 包）· 写命令族缺公开读回面 | P3（覆盖阻塞：参数有、判据没有；按《全量测试准则》§2 表 C 属“readback:none”，不得算作已比对） | 设计侧（已选①：在 `read_config` 暴露对应字段） | 待测试侧 | maestro 7 个写键的公开读回面已补齐（corner `enabled`/`enabled_tests`/`disabled_tests`/`models`、test `job_policy`）：真机值级读回 10/10，待测试侧复核销卡 | [P-109-maestro-write-keys-no-readback.md](P-109-maestro-write-keys-no-readback.md) |
-| **P-114** | 上层（schematic 包）· `place_pin` 可选属性参数（P-113 残留） | P2（静默 no-op：调用方以为建好了 pin，实际库里什么都没有；与 C10/P-092 同族但更隐蔽） | 设计侧（已修：`place_pin` 可选实参对齐；P-113 修完后暴露的残留） | 待测试侧 | `place_pin` 的 `power_sens`/`ground_sens`/四属性组合**报 ok 但零对象**（静默 no-op）；`off_sheet` 单用报 `nth: argument #1 should be an integer` | [P-114-place-pin-power-ground-sens-silent-noop.md](P-114-place-pin-power-ground-sens-silent-noop.md) |
 
 > 优先级口径：**P1** = Linux 侧资源/安全或核心指标链路断（P-056、P-053）；
 > **P2** = 真实设计流会给出错的/空的结果，且多数**静默**；**P3/观察** = 非阻塞但建议顺手修。
 
-## 2. 本轮/近期已关闭（94 条，保留记录）
+## 2. 本轮/近期已关闭（97 条，保留记录）
 
 | ID | 事项 | 关闭依据（证据） |
 |---|---|---|
+| P-109 | maestro 7 个写键无公开读回面（readback:none） | 设计侧 `d3b0845` 在 `read_config` 暴露 corner `enabled/enabled_tests/disabled_tests/models` 与 test `job_policy.{simulation,netlisting}`。测试侧独立复跑：`maestro_nested_keys_e2e_tests.py` **10/10 绿**，NKM-02/03/05 全部按**值级**读回（enabled=false/true、enabled_tests/disabled_tests、models[].{file,section}、simulation policy maxJobs=2）；证据 `test/artifacts/evidence/round9/maestro-nested-keys-p109-verify.json`。 |
+| P-114 | `place_pin` 的 `power_sens`/`ground_sens`/四属性组合报 ok 但零对象（静默 no-op） | 设计侧 `09af55c`（不静默不猜 + 对象存在性校验）。测试侧独立复跑：`schematic_e2e_tests.py` **11/11 绿**，PIN-OPT 按新口径值级断言 —— power/ground sens 引用已存在 terminal 时建出 PSENS（connectivity 读回）、引用不存在 terminal 结构化失败（`power_sens/ground_sens terminal not found`）、`off_sheet=true` 无可用 master 时结构化拒绝（不再 `nth`/不再静默 no-op）；证据 `test/artifacts/evidence/round9/schematic-p114-verify.json`。 |
+| P-086·D | 投递超时把实例永久置忙（dirty 后不恢复：直连 `SKILL channel busy`，只能重启 CIW） | **已修** `97baf13`：delivered-timeout 后由 probe 收齐迟到帧自动恢复。测试侧回归钉 `test/live/transport/delivered_timeout_recovery_tb.py` **5/5 绿**（独立 disposable destb2/64601）：投递超时快速失败 → 不重启 CIW → 下一条请求在有界时间内成功（自动 probe idle 清 dirty）→ 再等一拍仍可用；证据 `test/artifacts/evidence/round9/delivered-timeout-recovery.json`。 |
 | C06 | CIW `print` 输出不 flush / 不落同一请求 `CDSlog`（行缓冲未提交） | **已修** `c8bbe8c`（行终止符提交 CIW 输出）。测试侧复跑：`skill_log_semantics_e2e_tests` **12/12 全绿**（A/B/C/D/E + 攻击扩展 F/G/H/I/J/K：多次 print、循环 print、600B 无换行长行、off 夹层不串场、load 内 print 全部落同一请求）—— 证据 `evidence/round9/c06-attack-r9e.json`；另在 disposable CIW 上由 `disposable_ciw_c06_p086_tb` 复验 `c06_ok=true`。注：需先把新版资源部署到目标实例（vblog 上曾是 9-18 的旧资源，复跑前已更新）。 |
 | P-086 | 多用户/长 SKILL 后 `Empty response` 窗口，dirty 状态不可观测 | **已修** `1ef92ee`（dirty skill gate）+ `c8bbe8c`（真机闭环）。测试侧复跑：`test/live/transport/disposable_ciw_c06_p086_tb.py` → `p086_ok=true`，证据 `evidence/round9/disposable-c06-p086-r9-verify.json`：`dirty_after_timeout=true`（超时后置脏）、脏期间请求快速失败（不再静默挂死）、重启 CIW 后 `recovered_after_restart={ok:true, dirty:false}`。 |
 | P-106 | `calibre.lvs(runset=…, blocking=true)` 误杀成功作业 | **已修** `2610668`（判活改为 `job.pid` + `ps -p`，并补 official-batch 完成标记）。测试侧复跑：`calibre_e2e_tests` **8/8 全绿**，其中 `SET-01 只给 .lvs set（官方批处理）` PASS —— 证据 `evidence/round9/calibre-r9d.txt`。 |

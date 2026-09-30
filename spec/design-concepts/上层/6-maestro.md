@@ -50,8 +50,8 @@ maestro 包覆盖 ADE Assembler / Explorer 的**配置、结果、导出、历�
        "env_options": {},
        "sim_options": {},
        "job_policy": {
-         "simulation": {"name": "…", "…": "…"} | null,
-         "netlisting": {"name": "…", "…": "…"} | null
+         "simulation": {"name": "…"},
+         "netlisting": null
        }
      }
   },
@@ -59,9 +59,9 @@ maestro 包覆盖 ADE Assembler / Explorer 的**配置、结果、导出、历�
   "parameters": {},
   "corners": {
     "<corner>": {
-      "variables": {},
+       "variables": {},
        "parameters": {},
-       "enabled": true | false | null,
+       "enabled": true,
        "enabled_tests": [],
        "disabled_tests": [],
        "models": [
@@ -77,6 +77,9 @@ maestro 包覆盖 ADE Assembler / Explorer 的**配置、结果、导出、历�
   "current_history": "…"
 }
 ```
+
+> 注：`job_policy.{simulation,netlisting}` 与 `corners.<corner>.enabled` 在“未设置”时为 `null`；
+> `enabled_tests`/`disabled_tests`/`models` 为空数组表示未配置。
 
 | 数据 | 返回位置 | 底层 |
 |---|---|---|

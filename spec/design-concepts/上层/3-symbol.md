@@ -32,7 +32,7 @@ symbol 包覆盖 **符号语义读回、手工批写、校验保存、从原理�
 | `terms` | 每个 terminal：`name / direction / num_bits / bbox / access_dir` |
 | `labels` | 每个 label：`text / label_type / pos / layer / purpose / justify / orient / font / height / bbox` |
 | `shapes` | 已知类型 line / rect / polygon / ellipse 及兜底类型（path / arc / inst / textDisplay 等）：`kind / layer / purpose / bbox / points` |
-| `orders` | `pin_order`（权威，`schGetPinOrder`）；`port_order` / `term_order` raw（兼容旧 reader） |
+| `orders` | `pin_order`（权威，`schGetPinOrder`）；`port_order`（原生属性，随 `set_pin_order` 同步）；`term_order`（`cv~>termOrder` legacy raw，可能为空/陈旧，不得当权威顺序） |
 | `selection_boxes` | `instance/drawing` 矩形列表 |
 
 `read` 默认 `view="symbol"`、`view_type="schematicSymbol"`；必须返回通用 shapes，
@@ -197,7 +197,7 @@ name 检查 terminal 是否存在。
 | `set_pin_properties` 移动 pin | 本版不支持；`dbMoveFig` 可用，留作扩展 |
 | label 索引 | 坐标容差 0.001；`label_kind` 参与消歧，`pin_name` 另外要求 `pin/label` |
 | `rename_pin` 同步 | 不联动：必须显式 `dbRenameNet` + 手工改 pin-name label（已测） |
-| `schEditPinOrder` | 真机生效，`pin_order` 与 `port_order`/`term_order` 一致 |
+| `schEditPinOrder` | 真机生效：`pin_order`（`schGetPinOrder`）与 `port_order` 一致；`term_order`（`cv~>termOrder`）是 legacy raw 属性，**不同步**，可能为空/陈旧，不得当权威顺序 |
 | `schCreateSymbolLabel` | `"pin name"`/`"instance label"`/`"logical label"` 可用；`"device label"` 在 symbol 里返回 nil（文档与实测不符） |
 | `read.shapes` 覆盖 | 已覆盖 line/rect/polygon/ellipse + 兜底 objType（path/arc/inst/textDisplay 等） |
 | 截图 | symbol 窗口真机出图；空 symbol 窗口出 1 色黑图（无内容时的正常表现），有内容窗口出 7 色真实图 |

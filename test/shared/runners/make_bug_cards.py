@@ -26,6 +26,30 @@ BUGS_DIR = ROOT / "test" / "reports" / "bugs"
 
 #: 未关闭条目。状态只允许：待设计修 / 待测试侧 / 待归属 / 待决策 / 观察
 OPEN = [
+    {
+        "id": "P-116",
+        "layer": "spec↔真机一致性（上层 symbol 包）· orders 读回口径",
+        "slug": "symbol-term-order-not-synced",
+        "title": "spec `3-symbol.md:200` 称 `schEditPinOrder` 后 `pin_order` 与 `port_order`/`term_order` 一致；真机实测 `term_order`（`cv~>termOrder` legacy raw）不同步（空/陈旧）",
+        "level": "P3（文档与真机不一致：按 spec 断言的测试必红；调用方可能把 term_order 当权威顺序）",
+        "owner": "spec 侧（已裁决：改 spec 文字，不改实现）",
+        "status": "待测试侧",
+        "where": "spec `spec/design-concepts/上层/3-symbol.md:35`（orders 字段）与 `:200`（真机结论表）；实现 `src/pyapi/packages/symbol.py:1133`（读 `cv~>termOrder`）/ `:698-711`（写 `schEditPinOrder`）",
+        "symptom": "2026-09-30 真机（vblog）两格对照：`schemtest/symfinal` → pin_order=port_order=`[IN,OUT,BI]`，term_order=`[OUT,IN,BI]`（陈旧不一致）；"
+                   "`schemtest/sym_e2e`（本包 `set_pin_order` 写过）→ pin/port=`[OUT,IN]`，term_order=`[]`（根本没写）。"
+                   "`schGetPinOrder`/`portOrder` 会被 `schEditPinOrder` 更新，`termOrder` 不会。",
+        "repro": "PYTHONPATH=src python test/live/packages/symbol_e2e_tests.py  # 最后一条 ORDERS-TERM（P-116 红钉）\n"
+                 "或直接 `virtuoso.symbol.read(library=schemtest, cell=symfinal, view=symbol, focus=[orders])` 比对三键",
+        "evidence": "`test/artifacts/evidence/round9/symbol-p116.txt`（套件其余 9 条 PASS，仅红钉 FAIL，含两格实测值）",
+        "accept": "① spec 与真机口径一致（改文字或改实现，二选一）；② TB `ORDERS-TERM` 按裁决转绿（若改 spec，则降级为“term_order 存在且为 list”）；"
+                  "③ 不允许 term_order 静默给出与 pin_order 不同的旧值却对外宣称一致。",
+        "next": "**spec owner 已裁决（2026-09-30，用户）：走①改文字，不改实现**——`3-symbol.md:35/:200` 已改为“`term_order` 是 legacy raw、可能为空/陈旧、不得当权威顺序”；"
+                "实现保持官方 `schEditPinOrder`（写 `pin_order`/`port_order`），不写 `cv~>termOrder`。"
+                "待测试侧把 TB `ORDERS-TERM` 降级为“`term_order` 存在且为 list（允许与 `pin_order` 不同）”后把本卡移入已关闭。",
+        "reported": "2026-09-30（测试/root：补 symbol orders 三键值级断言时发现）",
+        "updated": "2026-09-30 18:45（spec 侧裁决并落地：改文字不改实现，转测试侧）",
+    },
+
 
     {
         "id": "C10",
@@ -56,8 +80,8 @@ OPEN = [
         "slug": "maestro-write-history-rename-chain-handle-error",
         "title": "`maestro.write_history` 连续 rename（A→B，再 B→A）第二跳报 `ASSEMBLER-2404 Cannot find a setup database entry for handle`",
         "level": "P3（重命名链不可用：`maestro_e2e_tests.HISTORY-01` 因此稳定红）",
-        "owner": "设计侧（已修：maestro 包会话/SDB handle 生命周期）",
-        "status": "待测试侧",
+        "owner": "设计侧（按**完整套件**复现：maestro 包会话/SDB handle 生命周期；隔离路径已修但整链仍红）",
+        "status": "待设计修",
         "where": "`src/pyapi/packages/maestro.py`（`write_history` 的 rename 分支与 SDB handle 复用；`_open_session` 会话内 handle 在重命名后失效）",
         "symptom": "隔离复现（round9，vblog，21:5x）：`rename(Interactive.8 → e2e_renamed)` **ok=True**；紧接着 "
                    "`rename(e2e_renamed → Interactive.8)` → `(\"error\" 0 t nil (\"*Error* error: Cannot find a setup database entry for handle 118109.\" nil))`。"
@@ -69,9 +93,13 @@ OPEN = [
         "accept": "① rename 链（含目标名已存在、重命名回原名）必须成功或给出**点名冲突**的结构化拒绝（对照：重名 rename 已有清晰文案）；"
                   "② 不得报 SDB handle 错误；③ `maestro_e2e_tests.py` HISTORY-01 转绿。",
         "next": "**设计侧已修 `2610668` + `50e6576`（2026-09-30 12:47）**：`_open_session` 校验 `maeOpenSetup` 返回会话可活跃、失效则关闭重开，rename 链按本次创建路径收尾。"
-                "真机证据 `test/artifacts/evidence/verify-fix-r10/c09-maestro-history-green.json`（HISTORY-01 HTTP 全链通过）。待测试侧复跑 `maestro_e2e_tests.py` HISTORY-01 后把本卡移入已关闭。",
+                "真机证据 `test/artifacts/evidence/verify-fix-r10/c09-maestro-history-green.json`（HISTORY-01 隔离路径 HTTP 全链通过）。"
+                "**测试侧复跑（2026-09-30 22:1x，HEAD=9d24708）**：完整套件仍红 —— `maestro_e2e_tests.py --transport http` 在 `_case_write_history` 报 "
+                "`Cannot find a setup database entry for handle 52134`（前序用例全部 PASS 后失败），证据 "
+                "`test/artifacts/evidence/round9/maestro-c09-verify2.txt`。"
+                "分歧点=**套件内前序用例留下的会话/handle 状态**（隔离 probe 绿、整链红）→ 请设计按完整套件复现定位；修好后 HISTORY-01 转绿即销卡。",
         "reported": "2026-09-29（round9 门禁复跑 + root 隔离复现）",
-        "updated": "2026-09-30 18:20（设计侧已修 + 真机绿证据，转测试侧收口）",
+        "updated": "2026-09-30 22:20（测试侧复跑：隔离路径已绿，完整套件 HISTORY-01 仍红，退回设计复现）",
     },
 
     {
@@ -95,7 +123,8 @@ OPEN = [
                     "页面契约测试 `test/offline/unit/test_registration_page.py::test_personal_page_combines_query_and_update`（要求 personal Authorization 且禁止 enhanced 回退）。",
         "accept": "① spec 补字段级权限矩阵，明确 personal token 只能访问本人、哪些字段普通修改、哪些字段必须 `enhanced_token`；"
                   "② server 提供 personal-token-only-own-user 的查询/更新语义，并在 update 接入 `enhanced_token`（只校验、不落盘、不回显）；"
-                  "③ 个人页无需管理员 token 即可查询/修改自己的 registry；④ 负例：个人 token 访问他人条目必须拒绝。",
+                  "③ 个人页用本人 token 可查询自己 entry（剔除保密字段）并改自助权限=编辑字段，含只读/保密字段的修改需 `enhanced_token`（仅管理员 token）；④ 负例：个人 token 访问他人条目必须拒绝。",
+        "extra": "讨论决策（2026-09-30）：字段级授权以中层配置文档 §2 自助权限列为唯一口径——编辑=本人可改；只读=本人只可读不可改、personal+enhanced_token（仅管理员）可改；保密=本人不可读、任何 personal 路径不可写（仅管理员 Authorization）。个人 token 走 Authorization Bearer；本人读 /api/user/<user> 剔除保密字段；读他人 403；DELETE 保持纯管理员；mode.default 已入 update 白名单（只读档）。",
         "next": "spec owner 先拍板权限矩阵与 self 端点形状；后端按 spec 实现。前端已移除管理员 Authorization 回退，仍在 401 时显式点名该缺口。",
         "reported": "2026-09-30（个人管理页真机查询 401，root 复核 spec 与实现）",
         "updated": "2026-09-30（新立；前端停止用管理员凭据代偿）",
@@ -529,11 +558,29 @@ OPEN = [
 #: 这里做过滤而不是删掉 OPEN 里的条目，是为了保留卡片正文作为归档（谁修的、判据是什么）。
 CLOSED_IDS = {
     "C06", "C10", "P-086", "P-106", "P-107", "P-108", "P-110", "P-111", "P-112", "P-115",
+    "P-109", "P-114",
 }
 OPEN = [bug for bug in OPEN if bug["id"] not in CLOSED_IDS]
 
 #: 本轮明确闭环（保留记录，避免「消失了没人知道为什么」）
 CLOSED_RECENT = [
+    ("P-109", "maestro 7 个写键无公开读回面（readback:none）",
+     "设计侧 `d3b0845` 在 `read_config` 暴露 corner `enabled/enabled_tests/disabled_tests/models` 与 test "
+     "`job_policy.{simulation,netlisting}`。测试侧独立复跑：`maestro_nested_keys_e2e_tests.py` **10/10 绿**，"
+     "NKM-02/03/05 全部按**值级**读回（enabled=false/true、enabled_tests/disabled_tests、"
+     "models[].{file,section}、simulation policy maxJobs=2）；证据 "
+     "`test/artifacts/evidence/round9/maestro-nested-keys-p109-verify.json`。"),
+    ("P-114", "`place_pin` 的 `power_sens`/`ground_sens`/四属性组合报 ok 但零对象（静默 no-op）",
+     "设计侧 `09af55c`（不静默不猜 + 对象存在性校验）。测试侧独立复跑：`schematic_e2e_tests.py` **11/11 绿**，"
+     "PIN-OPT 按新口径值级断言 —— power/ground sens 引用已存在 terminal 时建出 PSENS（connectivity 读回）、"
+     "引用不存在 terminal 结构化失败（`power_sens/ground_sens terminal not found`）、"
+     "`off_sheet=true` 无可用 master 时结构化拒绝（不再 `nth`/不再静默 no-op）；证据 "
+     "`test/artifacts/evidence/round9/schematic-p114-verify.json`。"),
+    ("P-086·D", "投递超时把实例永久置忙（dirty 后不恢复：直连 `SKILL channel busy`，只能重启 CIW）",
+     "**已修** `97baf13`：delivered-timeout 后由 probe 收齐迟到帧自动恢复。测试侧回归钉 "
+     "`test/live/transport/delivered_timeout_recovery_tb.py` **5/5 绿**（独立 disposable destb2/64601）："
+     "投递超时快速失败 → 不重启 CIW → 下一条请求在有界时间内成功（自动 probe idle 清 dirty）→ 再等一拍仍可用；"
+     "证据 `test/artifacts/evidence/round9/delivered-timeout-recovery.json`。"),
     ("C06", "CIW `print` 输出不 flush / 不落同一请求 `CDSlog`（行缓冲未提交）",
      "**已修** `c8bbe8c`（行终止符提交 CIW 输出）。测试侧复跑：`skill_log_semantics_e2e_tests` "
      "**12/12 全绿**（A/B/C/D/E + 攻击扩展 F/G/H/I/J/K：多次 print、循环 print、600B 无换行长行、"
