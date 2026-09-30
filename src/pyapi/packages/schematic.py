@@ -81,6 +81,12 @@ def _q(value: Any) -> str:
     return basic.q(str(value))
 
 
+_PIN_SIG_TYPES = {
+    "analog", "clock", "ground", "power", "reset", "scan",
+    "signal", "tieHi", "tieLo", "tieOff",
+}
+
+
 def _unquote(value: str) -> str:
     return (value or "").replace('\\"', '"').strip('"')
 
@@ -681,17 +687,30 @@ let((vbInst vbCcd vbParamVals vbP vbProp)
         return f'let((vbObj) vbObj = car(setof(x vbSchemCv~>shapes {pred})) unless(vbObj error("label not found")) {body})'
     if op == "place_pin":
         _pos = _pos_of(cmd)
+        off_sheet = "t" if cmd.get("off_sheet") else "nil"
         body = (
             f'schCreatePin(vbSchemCv nil {_q(cmd["name"])} '
-            f'{_q(cmd.get("direction", "inputOutput"))} nil '
+            f'{_q(cmd.get("direction", "inputOutput"))} {off_sheet} '
             f'{_pos[0]:g}:{_pos[1]:g} {_q(cmd.get("orient", "R0"))}'
         )
-        if any(k in cmd for k in ("off_sheet", "power_sens", "ground_sens", "sig_type")):
-            body += ' t' if cmd.get("off_sheet") else ' nil'
-            body += f' {_q(cmd["power_sens"])}' if "power_sens" in cmd else ' nil'
-            body += f' {_q(cmd["ground_sens"])}' if "ground_sens" in cmd else ' nil'
-            if "sig_type" in cmd:
-                body += f' {_q(cmd["sig_type"])}'
+        # schCreatePin 的 offSheet 是第 5 个**必选**实参；power/ground/sigType
+        # 才是尾部可选实参。可选参数按位置传，缺前面的项时补 nil。
+        if "power_sens" in cmd:
+            body += f' {_q(cmd["power_sens"])}'
+        elif "ground_sens" in cmd or "sig_type" in cmd:
+            body += " nil"
+        if "ground_sens" in cmd:
+            body += f' {_q(cmd["ground_sens"])}'
+        elif "sig_type" in cmd:
+            body += " nil"
+        if "sig_type" in cmd and cmd["sig_type"] is not None:
+            sig_type = _require_text(cmd["sig_type"], "command.sig_type")
+            if sig_type not in _PIN_SIG_TYPES:
+                raise ValueError(
+                    "command.sig_type must be one of "
+                    + ", ".join(sorted(_PIN_SIG_TYPES))
+                )
+            body += f' {_q(sig_type)}'
         body += ')'
         return body
     if op in ("delete_pin", "rename_pin", "set_pin_properties"):
