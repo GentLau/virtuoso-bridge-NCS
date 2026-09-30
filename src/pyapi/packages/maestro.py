@@ -1538,6 +1538,110 @@ class Package(ResultPackage):
         except Exception as exc:  # noqa: BLE001 - close is best-effort
             steps.append(_step("close_session", False, str(exc)))
 
+    def _read_corner_metadata(
+        self,
+        session: str,
+        sdb_expr: str,
+        corners: list[str],
+        tests: list[str],
+        token: str,
+        timeout: int | float | None,
+    ) -> dict[str, dict[str, Any]]:
+        """Read corner enabled/tests/models via the axl* setup-DB APIs."""
+        metadata: dict[str, dict[str, Any]] = {}
+        for corner in corners:
+            try:
+                raw = self._q(
+                    "let((c models out rest h names m file section test dis) "
+                    f"c = axlGetCorner({sdb_expr} {q(corner)}) "
+                    "out = nil "
+                    "when(c && c != 0 "
+                    "  models = axlGetModels(c) "
+                    "  rest = models "
+                    "  while(rest "
+                    "    h = car(rest) "
+                    "    names = cadr(rest) "
+                    "    rest = cddr(rest) "
+                    "    when(h && h != 0 && names "
+                    "      foreach(nm names "
+                    "        m = axlGetModel(c nm) "
+                    "        when(m && m != 0 "
+                    "          out = cons(list(nm axlGetModelFile(m) "
+                    "            axlGetModelSection(m) axlGetModelTest(m)) out))))) "
+                    "  dis = axlGetCornerDisabledTests(c)) "
+                    "list(if(c && c != 0 t nil) "
+                    "     if(c && c != 0 axlGetEnabled(c) nil) "
+                    "     if(dis cadr(dis) nil) reverse(out)))",
+                    token,
+                    timeout,
+                )
+                parsed = parse_sexpr(raw.strip())
+                if not isinstance(parsed, list) or len(parsed) < 4:
+                    raise RuntimeError("could not parse corner metadata")
+                exists = parse_bool(parsed[0]) is True
+                enabled = parse_bool(parsed[1]) if exists else None
+                if exists and enabled is None:
+                    # axlGetEnabled(corner) returns nil for a disabled corner.
+                    enabled = False
+                disabled = [str(item) for item in _as_list(parsed[2])] if exists else []
+                models: list[dict[str, Any]] = []
+                for item in _as_list(parsed[3]) if exists else []:
+                    if isinstance(item, list) and len(item) >= 4:
+                        models.append({
+                            "name": _skill_atom_value(item[0]),
+                            "file": _skill_atom_value(item[1]),
+                            "section": _skill_atom_value(item[2]),
+                            "test": _skill_atom_value(item[3]),
+                        })
+                metadata[corner] = {
+                    "enabled": enabled,
+                    "enabled_tests": (
+                        [test for test in tests if test not in disabled]
+                        if exists else []
+                    ),
+                    "disabled_tests": disabled,
+                    "models": models,
+                }
+            except Exception:  # noqa: BLE001 - optional readback
+                metadata[corner] = {
+                    "enabled": None,
+                    "enabled_tests": [],
+                    "disabled_tests": [],
+                    "models": [],
+                }
+        return metadata
+
+    def _read_job_policies(
+        self,
+        session: str,
+        tests: list[str],
+        token: str,
+        timeout: int | float | None,
+    ) -> dict[str, dict[str, Any]]:
+        """Read the effective simulation/netlisting policy attached to each test."""
+        policies: dict[str, dict[str, Any]] = {}
+        for test in tests:
+            per_test: dict[str, Any] = {}
+            for job_type in ("simulation", "netlisting"):
+                try:
+                    raw = self._q(
+                        f"maeGetJobPolicy(?testName {q(test)} "
+                        f"?jobType {q(job_type)}{_session_kw(session)})",
+                        token,
+                        timeout,
+                    )
+                    parsed = parse_sexpr(raw.strip())
+                    props: dict[str, Any] = {}
+                    if isinstance(parsed, list) and parsed:
+                        items = parsed[1:] if parsed[0] is None else parsed
+                        for index in range(0, len(items) - 1, 2):
+                            props[str(items[index])] = _skill_atom_value(items[index + 1])
+                    per_test[job_type] = props or None
+                except Exception:  # noqa: BLE001 - optional readback
+                    per_test[job_type] = None
+            policies[test] = per_test
+        return policies
+
     # -- read_config -----------------------------------------------------------
 
     def read_config(self, request: ReadConfigRequest) -> Result:
@@ -1820,6 +1924,12 @@ class Package(ResultPackage):
                     corner_variables[corner] = {}
             steps.append(_step("corner_variables", True, corner_variables))
 
+            corner_metadata = self._read_corner_metadata(
+                session, sdb_expr, corners, tests,
+                request.token, request.timeout,
+            )
+            steps.append(_step("corner_metadata", True, corner_metadata))
+
             parameters: dict[str, Any] = {}
             if request.include_parameters and parameter_names:
                 parameters_expr = (
@@ -1893,6 +2003,11 @@ class Package(ResultPackage):
                         }
             steps.append(_step("specs", True, specs))
 
+            job_policies = self._read_job_policies(
+                session, tests, request.token, request.timeout,
+            )
+            steps.append(_step("job_policies", True, job_policies))
+
             current_history = self._current_history(
                 session, request.token, request.timeout,
             )
@@ -1903,6 +2018,9 @@ class Package(ResultPackage):
                     "outputs": outputs.get(test_name, []),
                     "env_options": env_options.get(test_name, {}),
                     "sim_options": sim_options.get(test_name, {}),
+                    "job_policy": job_policies.get(
+                        test_name, {"simulation": None, "netlisting": None},
+                    ),
                 }
                 for test_name in tests
             }
@@ -1910,6 +2028,10 @@ class Package(ResultPackage):
                 corner: {
                     "variables": corner_variables.get(corner, {}),
                     "parameters": corner_parameters.get(corner, {}),
+                    "enabled": corner_metadata.get(corner, {}).get("enabled"),
+                    "enabled_tests": corner_metadata.get(corner, {}).get("enabled_tests", []),
+                    "disabled_tests": corner_metadata.get(corner, {}).get("disabled_tests", []),
+                    "models": corner_metadata.get(corner, {}).get("models", []),
                 }
                 for corner in corners
             }

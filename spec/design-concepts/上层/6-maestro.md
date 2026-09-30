@@ -46,17 +46,27 @@ maestro 包覆盖 ADE Assembler / Explorer 的**配置、结果、导出、历�
     "<test>": {
       "variables": {},
       "analyses": {},
-      "outputs": [],
-      "env_options": {},
-      "sim_options": {}
-    }
+       "outputs": [],
+       "env_options": {},
+       "sim_options": {},
+       "job_policy": {
+         "simulation": {"name": "…", "…": "…"} | null,
+         "netlisting": {"name": "…", "…": "…"} | null
+       }
+     }
   },
   "variables": {},
   "parameters": {},
   "corners": {
     "<corner>": {
       "variables": {},
-      "parameters": {}
+       "parameters": {},
+       "enabled": true | false | null,
+       "enabled_tests": [],
+       "disabled_tests": [],
+       "models": [
+         {"name": "…", "file": "…", "section": "…", "test": "…"}
+       ]
     }
   },
   "run_options": {
@@ -72,11 +82,14 @@ maestro 包覆盖 ADE Assembler / Explorer 的**配置、结果、导出、历�
 |---|---|---|
 | 全局变量 / 参数 | `variables` / `parameters` | `maeGetVar` / `maeGetParameter` |
 | test 列表与 test 级配置 | `tests.<name>.{variables,analyses,outputs,env_options,sim_options}` | `axlGetTests` / `maeGetTestOutputs` / `maeGetEnvOption` / `maeGetSimOption` |
-| corner 列表与 corner 级配置 | `corners.<name>.{variables,parameters}` | `axlGetCorners` / `axlGetVars` / `axlGetParameters` |
+| corner 列表与 corner 级配置 | `corners.<name>.{variables,parameters,enabled,enabled_tests,disabled_tests,models}` | `axlGetCorners` / `axlGetVars` / `axlGetParameters` / `axlGetEnabled` / `axlGetCornerDisabledTests` / `axlGetModels`+`axlGetModel*` |
+| test 的 job policy | `tests.<name>.job_policy.{simulation,netlisting}` | `maeGetJobPolicy(?testName … ?jobType …)` DPL |
 | run options | `run_options.<mode>.<option>` | `axlGetRunOption` + `axlGetRunOptionValue`（17 项清单由包内固定，`axlGetRunOptions` 用于核对） |
 | 运行状态 | `run_mode` / `job_control_mode` / `current_history` | `maeGetCurrentRunMode` / `maeGetJobControlMode` / `axlGetCurrentHistory` |
 
 - output 的 spec 直接挂在 `tests.<test>.outputs[].spec`，不再单列 `specs` 扁平表。
+- `job_type` / `test_name` 是 job policy 的**选择器**；读回的是所选 test/job type 下的有效 policy 属性（含 `name`），不是选择器字符串本身。
+- `policy` 内的属性名按 ADE job policy DPL 原名透传（大小写敏感，如 `maxjobs`/`runtimeout`）。
 - `run_options` 按 run mode 分组；本版只读 `"Monte Carlo Sampling"`（17 项），未设置过返回 `null`。
   普通 `"Single Run, Sweeps and Corners"` 没有 run-option 集合；`Sampling` / `Global Optimization` /
   `Local Optimization` 各有自己的选项，本版不实现。

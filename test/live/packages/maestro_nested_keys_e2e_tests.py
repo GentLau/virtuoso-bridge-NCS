@@ -156,22 +156,29 @@ def run_suite(transport: HttpTransport) -> tuple[list[tuple[str, str]], dict[str
             f"全局变量未落盘：{cfg.get('variables')}"
 
     def case_enabled_and_test_gates() -> None:
-        """`enabled` / `enable_tests` / `disable_tests`：只证接受 + 不破坏可读状态。"""
+        """`enabled` / `enable_tests` / `disable_tests`：corner 元数据值级读回。"""
         _write(transport, [
             {"op": "set_corner", "name": "nkm_c_off", "enabled": False},
             {"op": "set_corner", "name": "nkm_c_gate_on", "enable_tests": [TEST]},
             {"op": "set_corner", "name": "nkm_c_gate_off", "disable_tests": [TEST]},
         ])
         cfg = _read_config(transport)
-        corners = sorted((cfg.get("corners") or {}).keys())
+        corners = cfg.get("corners") or {}
         evidence["cases"]["enabled_and_test_gates"] = {
-            "corners": corners, "readback": "corner 名可读；enabled/enable_tests/disable_tests 无公开读回字段",
+            "corners": corners,
+            "readback": "enabled/enabled_tests/disabled_tests 均从 axlGetEnabled/axlGetCornerDisabledTests 读回",
         }
         for name in ("nkm_c_off", "nkm_c_gate_on", "nkm_c_gate_off"):
             assert name in corners, f"{name} 未出现在 read_config.corners：{corners}"
+        assert corners["nkm_c_off"]["enabled"] is False, \
+            f"nkm_c_off.enabled 未读回 False：{corners['nkm_c_off']}"
+        assert TEST in (corners["nkm_c_gate_on"].get("enabled_tests") or []), \
+            f"enable_tests 未读回：{corners['nkm_c_gate_on']}"
+        assert TEST in (corners["nkm_c_gate_off"].get("disabled_tests") or []), \
+            f"disable_tests 未读回：{corners['nkm_c_gate_off']}"
 
     def case_setup_corner_model() -> None:
-        """`model_file` / `model_section`（+ corner 变量）：变量值级读回，model 字段无公开读回。"""
+        """`model_file` / `model_section`：corner.models 值级读回。"""
         _write(transport, [
             {"op": "setup_corner", "name": "nkm_c_model", "model_file": MODEL_FILE,
              "model_section": "ss_25", "variables": {"NKM_CV": "0.9"}},
@@ -180,18 +187,24 @@ def run_suite(transport: HttpTransport) -> tuple[list[tuple[str, str]], dict[str
         corner = (cfg.get("corners") or {}).get("nkm_c_model") or {}
         evidence["cases"]["setup_corner_model"] = {
             "corner": corner, "model_file": MODEL_FILE, "model_section": "ss_25",
-            "readback": "corner 变量可读；model_file/model_section 无公开读回字段",
+            "readback": "corner.models[].{file,section} 从 axlGetModel* 读回",
         }
         assert corner, "setup_corner 未创建 corner"
         assert (corner.get("variables") or {}).get("NKM_CV") == "0.9", \
             f"corner 变量未落盘：{corner.get('variables')}"
+        models = corner.get("models") or []
+        assert any(
+            str(model.get("file")) == MODEL_FILE
+            and str(model.get("section")) == "ss_25"
+            for model in models
+        ), f"model_file/model_section 未读回：{models}"
 
     def case_type_name_type_value_alias() -> None:
         """`type_name` / `type_value`（set_var 的别名）：corner 变量值级读回。
 
         注：`set_parameter` 的 `name` 必须是 **Library/Cell/View/Instance/Property 五段层次路径**
-        （见 NKM-08 负例），其正例需要一个真实存在的层次器件参数名；本轮只覆盖其**名称契约**，
-        正例留作残留（见报告）。
+        （见 NKM-08 负例）；正例已由 `maestro_e2e_tests.py::WRITE-04` 使用
+        `maestro_tb/rc_probe/schematic/R0/r` 做值级覆盖（P-111）。
         """
         _write(transport, [
             {"op": "set_var", "name": "NKM_TYPEVAR", "value": "2.25",
@@ -220,17 +233,23 @@ def run_suite(transport: HttpTransport) -> tuple[list[tuple[str, str]], dict[str
             f"拒绝原因不是名称契约：{message!r}"
 
     def case_job_policy_job_type() -> None:
-        """`job_type` / `test_name`（set_job_policy）：只证接受（job policy 无公开读回）。"""
+        """`job_type` / `test_name`：有效 job policy 属性值级读回。"""
         _write(transport, [
-            {"op": "set_job_policy", "test_name": TEST, "job_type": "LSCS",
-             "policy": {"maxJobs": 2}},
+            {"op": "set_job_policy", "test_name": TEST, "job_type": "simulation",
+             "policy": {"maxjobs": 2}},
         ])
         cfg = _read_config(transport)
+        policy = ((cfg.get("tests") or {}).get(TEST) or {}).get("job_policy") or {}
         evidence["cases"]["job_policy_job_type"] = {
             "job_control_mode": cfg.get("job_control_mode"),
-            "readback": "set_job_policy 的 policy/job_type 不在公开 schema；只证写入被接受",
+            "job_policy": policy,
+            "readback": "test/jobType 是选择器；读回的是所选 test/job type 下的有效 policy DPL",
         }
         assert TEST in (cfg.get("tests") or {}), "job policy 写入后 test 丢失（破坏状态）"
+        sim_policy = (policy.get("simulation") or {})
+        assert sim_policy, f"simulation job policy 未读回：{policy}"
+        assert int(sim_policy.get("maxjobs") or 0) == 2, \
+            f"job_type/test_name 选择的 policy 未反映 maxJobs=2：{sim_policy}"
 
     def case_spec_name() -> None:
         """`spec_name`（delete_spec）→ outputs[].spec 值级读回（先添加再删除）。"""
@@ -283,11 +302,11 @@ def run_suite(transport: HttpTransport) -> tuple[list[tuple[str, str]], dict[str
 
     run("NKM-ENV 环境检查（1+2 + 三库可见）", case_env)
     run("NKM-01 建专属 setup（set_test + add_output + 全局变量落盘）", case_build)
-    run("NKM-02 enabled / enable_tests / disable_tests（接受 + corner 可读）",
+    run("NKM-02 enabled / enable_tests / disable_tests（值级读回）",
         case_enabled_and_test_gates)
-    run("NKM-03 setup_corner model_file/model_section（corner 变量值级）", case_setup_corner_model)
+    run("NKM-03 setup_corner model_file/model_section（models 值级读回）", case_setup_corner_model)
     run("NKM-04 type_name/type_value 别名（set_var → corner 变量值级）", case_type_name_type_value_alias)
-    run("NKM-05 job_type/test_name（set_job_policy 接受性）", case_job_policy_job_type)
+    run("NKM-05 job_type/test_name（有效 job policy 值级读回）", case_job_policy_job_type)
     run("NKM-06 spec_name（delete_spec → outputs[].spec 值级）", case_spec_name)
     run("NKM-07a load_corners CSV 正例（corner 名值级读回）", case_load_corners_positive)
     run("NKM-07b load_corners 负例（本地文件缺失必须失败）", case_load_corners_negative)
