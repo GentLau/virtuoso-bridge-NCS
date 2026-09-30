@@ -63,69 +63,46 @@ _MAX_REQUEST_BYTES = 16 * 1024 * 1024
 
 
 # ---------------------------------------------------------------------------
-# Personal self-service field matrix (spec: 中层配置文档 §2「自助权限」列)
+# Personal self-service authorization (spec: 控制面 v42 §3 / 配置文档 §2)
+#
+# 两条**黑名单**（命中即拦；未命中的字段交给结构校验裁决）：
+#   * _SELF_SECRET_FIELDS   —— 保密：personal 一律不可写（仅管理员路径）
+#   * _SELF_READONLY_FIELDS —— 只读：personal 需 enhanced_token(=管理员)
+# 其余字段按「编辑」直改；未知字段不在这里拦，由注册表结构校验 400。
 # ---------------------------------------------------------------------------
-_SELF_EDIT = "edit"
-_SELF_READONLY = "readonly"
-_SELF_SECRET = "secret"
-
-#: 保密字段：personal token 既不可读（self 视图剔除）也不可写（仅管理员路径）。
-_SSH_SECRET_FIELDS = frozenset({"key_dir", "key"})
-_ROLE_SECRET_FIELDS = frozenset({"key_dir", "key"})
-#: 只读字段：self 可读，写入需 enhanced_token=管理员 token（控制面 v42 §3）。
-_ROLE_READONLY_FIELDS = frozenset({
+_SELF_SECRET_FIELDS = frozenset({"key_dir", "key"})
+_SELF_READONLY_FIELDS = frozenset({
     "mode", "max_sessions", "expected_fingerprint",
     "daemon_port", "local_port", "expected_hostname", "expected_user",
 })
 
 
-def self_access_level(path: tuple[str, ...]) -> str:
-    """One registry field path -> personal self-service level.
-
-    Owner of the classification is ``中层配置文档 §2``.  Unknown paths and
-    whole-object replacement paths fail closed to ``secret`` so a self patch
-    can never clear a container that carries credentials.
-    """
-    if not path:
-        return _SELF_SECRET
-    head = path[0]
-    if head == "ssh":
-        if len(path) == 1:
-            return _SELF_SECRET
-        if path[1] == "default":
-            if len(path) == 2:
-                return _SELF_SECRET
-            return _SELF_SECRET if path[2] in _SSH_SECRET_FIELDS else _SELF_EDIT
-        return _SELF_EDIT  # backend / control_master / tool_override.*
-    if head == "roles":
-        if len(path) < 3:
-            return _SELF_SECRET
-        field = path[2]
-        if field in _ROLE_SECRET_FIELDS:
-            return _SELF_SECRET
-        if field in _ROLE_READONLY_FIELDS:
-            return _SELF_READONLY
-        return _SELF_EDIT  # role edit field or user group
-    if head in ("mode", "runtime"):
-        return _SELF_READONLY
-    if head in ("root", "cdslog"):
-        return _SELF_EDIT
-    return _SELF_SECRET
-
-
-def self_patch_levels(fields: dict) -> set[str]:
-    """Set of self-service levels touched by a (nested) update patch."""
-    levels: set[str] = set()
+def self_patch_blacklist(fields: dict) -> tuple[bool, bool]:
+    """(touches_secret, touches_readonly) for one personal update patch."""
+    secret = readonly = False
 
     def walk(node, path: tuple[str, ...]) -> None:
+        nonlocal secret, readonly
         if isinstance(node, dict):
             for key, value in node.items():
                 walk(value, path + (str(key),))
             return
-        levels.add(self_access_level(path))
+        if path[:1] == ("roles",) and len(path) >= 3:
+            field = path[2]
+        elif path[:2] == ("ssh", "default") and len(path) >= 3:
+            field = path[2]
+        elif path[:1] in (("mode",), ("runtime",)):
+            readonly = True
+            return
+        else:
+            return
+        if field in _SELF_SECRET_FIELDS:
+            secret = True
+        elif field in _SELF_READONLY_FIELDS:
+            readonly = True
 
     walk(fields, ())
-    return levels
+    return secret, readonly
 
 
 class _InvalidContentLength(ValueError):
@@ -302,13 +279,13 @@ class RegistrationHandler(BaseHTTPRequestHandler):
         if isinstance(ssh, dict):
             default = ssh.get("default")
             if isinstance(default, dict):
-                for key in _SSH_SECRET_FIELDS:
+                for key in _SELF_SECRET_FIELDS:
                     default.pop(key, None)
         roles = data.get("roles")
         if isinstance(roles, dict):
             for role in roles.values():
                 if isinstance(role, dict):
-                    for key in _ROLE_SECRET_FIELDS:
+                    for key in _SELF_SECRET_FIELDS:
                         role.pop(key, None)
         return data
 
@@ -864,29 +841,24 @@ class RegistrationHandler(BaseHTTPRequestHandler):
         ):
             self._send_json(401, {"error": "invalid enhanced_token"})
             return
-        # 多用户与注册 v42 / §5: 白名单字段为 mode.default / ssh.* /
-        # root.default / role.* / runtime.* / cdslog.* / expected_*；token、
-        # registered_at、未声明字段与扁平别名一律拒绝（扁平别名不属公共协议）。
-        if "token" in fields:
-            self._send_json(400, {"error": "token must not be provided in update body"})
-            return
-        allowed = {"mode", "ssh", "root", "roles", "runtime", "cdslog"}
-        unknown = set(fields) - allowed
-        if unknown:
-            self._send_json(
-                400,
-                {"error": "invalid update", "detail": f"unknown fields: {sorted(unknown)}"},
-            )
-            return
+        # 多用户与注册 v43 / §5: 字段范围是黑名单——除 token/registered_at 外
+        # 均可提交；未知字段与扁平别名不预列白名单，交给结构校验拒绝。
+        for blocked in ("token", "registered_at"):
+            if blocked in fields:
+                self._send_json(
+                    400,
+                    {"error": f"{blocked} must not be provided in update body"},
+                )
+                return
         if personal:
-            levels = self_patch_levels(fields)
-            if _SELF_SECRET in levels:
+            secret_hit, readonly_hit = self_patch_blacklist(fields)
+            if secret_hit:
                 self._send_json(403, {
                     "error": "forbidden",
                     "detail": "secret fields require admin authorization",
                 })
                 return
-            if _SELF_READONLY in levels and not enhanced_present:
+            if readonly_hit and not enhanced_present:
                 self._send_json(403, {
                     "error": "enhanced_token required for read-only fields",
                 })

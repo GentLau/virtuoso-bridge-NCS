@@ -1284,22 +1284,38 @@ class TestRegistrationServer(unittest.TestCase):
 
     # -- C11 个人自助（控制面 v42 §3 / 配置文档 §2 自助权限） ----------------
 
-    def test_self_access_matrix_levels(self):
-        from register.server import self_patch_levels
+    def test_self_patch_blacklist_matrix(self):
+        from register.server import self_patch_blacklist
 
         self.assertEqual(
-            self_patch_levels({"cdslog": {"log_level": "error"}}), {"edit"})
+            self_patch_blacklist({"cdslog": {"log_level": "error"}}),
+            (False, False))
         self.assertEqual(
-            self_patch_levels({"runtime": {"thread_pool_size": 8}}), {"readonly"})
+            self_patch_blacklist({"runtime": {"thread_pool_size": 8}}),
+            (False, True))
         self.assertEqual(
-            self_patch_levels({"mode": {"default": "local"}}), {"readonly"})
+            self_patch_blacklist({"mode": {"default": "local"}}),
+            (False, True))
         self.assertEqual(
-            self_patch_levels({"ssh": {"default": {"key": "k"}}}), {"secret"})
+            self_patch_blacklist({"ssh": {"default": {"key": "k"}}}),
+            (True, False))
         self.assertEqual(
-            self_patch_levels({"roles": {"daemon": None}}), {"secret"})
+            self_patch_blacklist({"roles": {"daemon": {"key_dir": "x"}}}),
+            (True, False))
         self.assertEqual(
-            self_patch_levels({"roles": {"command": {"calibre": {"bin": "/x"}}}}),
-            {"edit"})
+            self_patch_blacklist({"roles": {"daemon": None}}), (False, False))
+        self.assertEqual(
+            self_patch_blacklist({"roles": {"command": {"calibre": {"bin": "/x"}}}}),
+            (False, False))
+
+    def test_self_update_unknown_field_is_structural_400(self):
+        """黑名单：未知字段不在自助闸门拦，交给结构校验 400。"""
+        self._register_full_local("selfu", "tok-self-u")
+        status, raw = self.srv.request(
+            "POST", "/api/user/selfu/update",
+            {"not_a_registry_field": 1},
+            {"Authorization": "Bearer tok-self-u"})
+        self.assertEqual(status, 400, raw)
 
     def test_self_get_own_entry_redacts_secret_fields(self):
         self._register_full_remote("selfa", "tok-self-a")
