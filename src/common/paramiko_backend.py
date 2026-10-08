@@ -817,7 +817,9 @@ class ParamikoSessionBackend:
             raise ValueError(
                 "Paramiko backend requires recorded host keys; "
                 f"StrictHostKeyChecking={raw_strict_host_key_checking!r} is not "
-                f"supported for host {host!r} (supported: yes/ask/true)"
+                f"supported for host {host!r} (supported: yes/ask/true). "
+                "Set StrictHostKeyChecking=yes/ask in the ssh config for this "
+                "host, or choose ssh_backend=openssh."
             )
         revoked_host_keys = str(
             lookup.get("revokedhostkeys") or "none"

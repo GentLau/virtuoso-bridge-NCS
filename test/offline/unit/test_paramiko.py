@@ -155,6 +155,26 @@ class TestConstructionValidation(unittest.TestCase):
                 ssh_cmd="ssh", connect_timeout=5, max_sessions=0,
             )
 
+    def test_accept_new_rejection_points_to_a_way_out(self):
+        """P-120 验收②：拒绝 accept-new 时必须指路（改 ssh config 或换 openssh）。"""
+        cfg = Path(tempfile.mkdtemp(prefix="vb-")) / "config"
+        cfg.write_text(
+            "Host h\n"
+            "  HostName real.example.com\n"
+            "  StrictHostKeyChecking accept-new\n",
+            encoding="utf-8",
+        )
+        with self.assertRaises(ValueError) as ctx:
+            ParamikoSessionBackend(
+                host="h", user=None, jump_host=None, jump_user=None,
+                ssh_key_path=None, ssh_config_path=cfg,
+                ssh_cmd="ssh", connect_timeout=5, max_sessions=3,
+            )
+        message = str(ctx.exception)
+        self.assertIn("accept-new", message)
+        self.assertIn("openssh", message.lower(),
+                      "拒绝 accept-new 的错误必须告诉用户可以换 openssh 后端")
+
 
 class TestPureClassHelpers(unittest.TestCase):
     def test_transport_is_ready(self):

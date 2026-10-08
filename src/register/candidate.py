@@ -33,6 +33,10 @@ class CandidateRole:
     credential_key: str | None
     expected_fingerprint: str | None
     max_sessions: int
+    backend: str | None
+    control_master: str | None
+    tool_override: dict[str, str] | None
+    connect_timeout: float | None
 
 
 @dataclass(frozen=True)
@@ -66,6 +70,8 @@ def _resolve_role(entry: UserEntry, name: str, user: str) -> CandidateRole:
             jump_user=None, proxy=None, root=root, key=None,
             credential_dir=None, credential_key=None,
             expected_fingerprint=None, max_sessions=role.max_sessions,
+            backend=None, control_master=None, tool_override=None,
+            connect_timeout=None,
         )
     dflt = entry.ssh.default
     host = role.host or dflt.host
@@ -85,6 +91,10 @@ def _resolve_role(entry: UserEntry, name: str, user: str) -> CandidateRole:
         credential_key=credential[1] if credential else None,
         expected_fingerprint=role.expected_fingerprint,
         max_sessions=role.max_sessions,
+        backend=entry.ssh.backend,
+        control_master=entry.ssh.control_master,
+        tool_override=dict(entry.ssh.tool_override) if entry.ssh.tool_override else None,
+        connect_timeout=entry.runtime.connect_timeout,
     )
 
 

@@ -7,7 +7,9 @@ flow can abort without writing anything to the registry.
 
 from __future__ import annotations
 
+import base64
 import getpass
+import hashlib
 import os
 import shlex
 import socket
@@ -63,11 +65,12 @@ def _no_window_kwargs() -> dict:
     }
 
 
-def _ssh_config_hostname(host: str) -> str | None:
+def _ssh_config_hostname(host: str, ssh_cmd: str | None = None) -> str | None:
     """Resolve a host alias through the local ssh config (``ssh -G``)."""
     try:
         out = subprocess.run(
-            ["ssh", "-G", host], capture_output=True, text=True, timeout=10,
+            [ssh_cmd or "ssh", "-G", host], capture_output=True, text=True,
+            timeout=10,
         **_no_window_kwargs()
         ).stdout
     except (OSError, subprocess.TimeoutExpired):
@@ -78,11 +81,12 @@ def _ssh_config_hostname(host: str) -> str | None:
     return None
 
 
-def ssh_port_is_22(host: str) -> bool:
+def ssh_port_is_22(host: str, ssh_cmd: str | None = None) -> bool:
     """Resolve an SSH alias and enforce the spec's fixed port-22 rule."""
     try:
         out = subprocess.run(
-            ["ssh", "-G", host], capture_output=True, text=True, timeout=10,
+            [ssh_cmd or "ssh", "-G", host], capture_output=True, text=True,
+            timeout=10,
             **_no_window_kwargs()
         ).stdout
     except (OSError, subprocess.TimeoutExpired):
@@ -94,6 +98,28 @@ def ssh_port_is_22(host: str) -> bool:
             except (IndexError, ValueError):
                 return False
     return True
+
+
+def _fingerprint_from_blob(blob: bytes) -> str:
+    digest = hashlib.sha256(blob).digest()
+    return "SHA256:" + base64.b64encode(digest).decode("ascii").rstrip("=")
+
+
+def _fingerprint_from_line_blob(lines: list[str]) -> str | None:
+    """Hash the key blob of a host-prefixed line directly (no ssh-keygen)."""
+    for line in lines:
+        parts = line.split()
+        if len(parts) < 3:
+            continue
+        encoded = parts[2]
+        padded = encoded + "=" * (-len(encoded) % 4)
+        try:
+            blob = base64.b64decode(padded, validate=True)
+        except (ValueError, TypeError):
+            continue
+        if blob:
+            return _fingerprint_from_blob(blob)
+    return None
 
 
 def _fingerprint_from_key_lines(lines: list[str]) -> str | None:
@@ -108,14 +134,61 @@ def _fingerprint_from_key_lines(lines: list[str]) -> str | None:
             ["ssh-keygen", "-lf", str(tmp_path)], capture_output=True, text=True,
             timeout=10, **_no_window_kwargs(),
         )
-        return fp.stdout.strip().split()[1] if fp.stdout.strip() else None
+        fields = fp.stdout.strip().split()
+        if len(fields) >= 2:
+            return fields[1]
     except (OSError, subprocess.TimeoutExpired):
-        return None
+        pass
     finally:
         if tmp_path is not None:
             try:
                 tmp_path.unlink()
             except OSError:
+                pass
+    # 没有 ssh-keygen（或输出不可解析）时直接对 key blob 取 SHA256——
+    # 与 ``ssh-keygen -lf`` 的 SHA256 指纹定义一致。
+    return _fingerprint_from_line_blob(lines)
+
+
+def _fingerprint_from_known_hosts(host: str, port: int = 22) -> str | None:
+    """known_hosts fallback via paramiko when ssh-keygen is unavailable."""
+    try:
+        import paramiko
+    except ImportError:
+        return None
+    lookup = host if port == 22 else f"[{host}]:{port}"
+    for name in ("known_hosts", "known_hosts2"):
+        path = Path.home() / ".ssh" / name
+        if not path.is_file():
+            continue
+        try:
+            found = paramiko.HostKeys(str(path)).lookup(lookup)
+        except (OSError, ValueError, paramiko.SSHException):
+            continue
+        if found:
+            for key in found.values():
+                return _fingerprint_from_blob(key.asbytes())
+    return None
+
+
+def _scan_paramiko_fingerprint(host: str, port: int) -> str | None:
+    """Fetch the host key with paramiko when ssh-keyscan is unavailable."""
+    try:
+        import paramiko
+    except ImportError:
+        return None
+    transport = None
+    try:
+        transport = paramiko.Transport((host, int(port)))
+        transport.start_client(timeout=10)
+        return _fingerprint_from_blob(transport.get_remote_server_key().asbytes())
+    except (OSError, ValueError, paramiko.SSHException):
+        return None
+    finally:
+        if transport is not None:
+            try:
+                transport.close()
+            except Exception:
                 pass
 
 
@@ -128,15 +201,21 @@ def scan_host_key_fingerprint(host: str, port: int = 22) -> str | None:
             **_no_window_kwargs(),
         ).stdout
     except (OSError, subprocess.TimeoutExpired):
-        return None
+        return _scan_paramiko_fingerprint(host, port)
     key_lines = [
         line for line in found.splitlines()
         if "ssh-" in line and not line.startswith("#")
     ]
-    return _fingerprint_from_key_lines(key_lines) if key_lines else None
+    if key_lines:
+        fingerprint = _fingerprint_from_key_lines(key_lines)
+        if fingerprint:
+            return fingerprint
+    return _scan_paramiko_fingerprint(host, port)
 
 
-def host_key_fingerprint(host: str, port: int = 22) -> str | None:
+def host_key_fingerprint(
+    host: str, port: int = 22, ssh_cmd: str | None = None
+) -> str | None:
     """Fingerprint for the target host from ``known_hosts`` only.
 
     No TOFU: a fingerprint may only come from an already recorded and
@@ -144,7 +223,7 @@ def host_key_fingerprint(host: str, port: int = 22) -> str | None:
     ask the user to establish trust out-of-band first.
     """
     candidates = [host]
-    resolved = _ssh_config_hostname(host)
+    resolved = _ssh_config_hostname(host, ssh_cmd=ssh_cmd)
     if resolved and resolved != host:
         candidates.append(resolved)
 
@@ -164,6 +243,10 @@ def host_key_fingerprint(host: str, port: int = 22) -> str | None:
             fp = _fingerprint_from_key_lines(key_lines)
             if fp:
                 return fp
+    for candidate in candidates:
+        fp = _fingerprint_from_known_hosts(candidate, port)
+        if fp:
+            return fp
     return None
 
 def remote_hostname(runner: SSHRunner) -> str:

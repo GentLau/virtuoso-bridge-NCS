@@ -43,8 +43,8 @@ from common.registry import (
     Ssh,
     SshDefaults,
     UserEntry,
-    endpoint_key,
 )
+from common.ssh_credentials import credential_path
 from register.candidate import (
     CandidateRole,
     fingerprint_conflicts_candidate,
@@ -207,7 +207,10 @@ def host_key_refresh_patch(
                 raise RegistrationProbeError(
                     f"role {name} is remote but host is unresolved"
                 )
-            probed[group] = probes.host_key_fingerprint(new_role.host)
+            probed[group] = probes.host_key_fingerprint(
+                new_role.host,
+                ssh_cmd=(candidate.ssh.tool_override or {}).get("ssh"),
+            )
         fingerprint = probed[group]
         if fingerprint is None:
             if name == "spectre":
@@ -454,15 +457,22 @@ def _apply_policies(request: RegistrationRequest, entry: UserEntry) -> None:
         entry.cdslog.log_max_bytes = request.log_max_bytes
 
 
-def _new_runner(role: CandidateRole, token: str) -> SSHRunner:
+def _new_runner(
+    role: CandidateRole, token: str, *, max_sessions: int | None = None
+) -> SSHRunner:
     """One SSH session per target for the whole registration.
 
     Registration runs 20+ small probes; paying a fresh SSH handshake for each
     of them is what made a real (Windows → jump → wsl) registration take
-    minutes.  The runner therefore keeps one login shell per endpoint and
-    multiplexes nothing: ``control_master="disable"`` (OpenSSH multiplexing is
-    unavailable on Windows and useless here) + ``persistent_shell=True``.
+    minutes.  The runner therefore keeps one login shell per endpoint
+    (``persistent_shell=True``).  Every policy the apply stage accepted
+    (backend / control_master / tool_override / credential / connect_timeout /
+    work_dir) is resolved once into ``CandidateRole`` and passed through here
+    so the probe cannot silently diverge from the submitted configuration.
     """
+    ssh_key_path = None
+    if role.credential_dir and role.credential_key:
+        ssh_key_path = credential_path(role.credential_dir, role.credential_key)
     return SSHRunner(
         host=role.host,
         user=role.user,
@@ -470,8 +480,20 @@ def _new_runner(role: CandidateRole, token: str) -> SSHRunner:
         jump_user=role.jump_user,
         proxy_url=role.proxy,
         control_identity=token,
-        control_master="disable",
+        control_master=role.control_master or "auto",
         persistent_shell=True,
+        backend=role.backend or "paramiko",
+        tool_override=role.tool_override,
+        ssh_key_path=ssh_key_path,
+        max_sessions=(
+            max_sessions if max_sessions is not None else role.max_sessions
+        ),
+        connect_timeout=(
+            float(role.connect_timeout) if role.connect_timeout is not None else 30
+        ),
+        # ``~`` roots are expanded by the probe before they may become the
+        # remote helper temp dir; never pass the literal tilde to the target.
+        work_dir=role.root if role.root.startswith("/") else None,
     )
 
 
@@ -642,11 +664,24 @@ def _probe(
         setattr(exc, "probe_results", list(probe_results.values()))
 
     current_role: str | None = None
-    runners: dict[str, SSHRunner] = {}
+    runners: dict[tuple, SSHRunner] = {}
     role_runners: dict[str, SSHRunner] = {}
     budget = StepBudget("step 3 (probe)")   # same mechanism as step 5
     reserved_ports = set(reserved_ports or ())
     reserved_local_ports = set(reserved_local_ports or ())
+
+    # 路由设计 §4：连接复用要求“同 endpoint + 同解析后凭据”；共享 runner 的
+    # max_sessions 取该组所有 role 的最小值（sshd 的 MaxSessions 按连接计）。
+    endpoint_limits: dict[tuple, int] = {}
+    for _name in _ALL_ROLES:
+        _role = targets.role(_name)
+        if _role.mode != "remote" or not _role.key:
+            continue
+        _group = _role_group(_role)
+        endpoint_limits[_group] = min(
+            endpoint_limits.get(_group, _role.max_sessions), _role.max_sessions
+        )
+    ssh_override = (entry.ssh.tool_override or {}).get("ssh")
 
     def close_all():
         seen_ids: set[int] = set()
@@ -696,27 +731,33 @@ def _probe(
                             message=None,
                         )
                     continue
-                if not probes.ssh_port_is_22(role.host):
+                if not probes.ssh_port_is_22(role.host, ssh_cmd=ssh_override):
                     raise RegistrationProbeError(
                         f"role {name} SSH target must resolve to port 22: {role.host}"
                     )
-                if role.jump_host and not probes.ssh_port_is_22(role.jump_host):
+                if role.jump_host and not probes.ssh_port_is_22(
+                    role.jump_host, ssh_cmd=ssh_override
+                ):
                     raise RegistrationProbeError(
                         f"role {name} jump host must resolve to port 22: {role.jump_host}"
                     )
-                endpoint = endpoint_key(role.host, role.user, role.jump_host,
-                                        role.jump_user, role.proxy)
-                runner = runners.get(endpoint)
+                group = _role_group(role)
+                runner = runners.get(group)
                 if runner is None:
-                    # first role on this endpoint: pay the handshake once
-                    runner = _new_runner(role, token)
-                    runners[endpoint] = runner
+                    # first role on this endpoint+credential: pay the handshake once
+                    runner = _new_runner(
+                        role, token,
+                        max_sessions=endpoint_limits.get(group, role.max_sessions),
+                    )
+                    runners[group] = runner
                     if not runner.test_connection(budget.remaining(15.0)):
                         raise RegistrationProbeError(
                             f"ssh unreachable for {name} role: {role.host}"
                         )
                 role_runners[name] = runner
-                fp = probes.host_key_fingerprint(role.host)
+                fp = probes.host_key_fingerprint(
+                    role.host, ssh_cmd=ssh_override
+                )
                 explicit_fp = getattr(request.roles, name).expected_fingerprint
                 if fp is None and explicit_fp:
                     fp = probes.scan_host_key_fingerprint(role.host)
@@ -1172,7 +1213,10 @@ def test_connectivity(entry: UserEntry, user: str) -> ConnectivityReport:
             expected = getattr(entry.roles, name).expected_fingerprint
             if role.mode != "remote" or not expected:
                 continue
-            current = probes.host_key_fingerprint(role.host)
+            current = probes.host_key_fingerprint(
+                role.host,
+                ssh_cmd=(entry.ssh.tool_override or {}).get("ssh"),
+            )
             if current != expected:
                 message = (
                     f"{name} role host key mismatch for {role.host}: "

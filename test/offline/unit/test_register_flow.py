@@ -1163,6 +1163,7 @@ class _P120ProbeHarness(unittest.TestCase):
         from register import probe_user
 
         with mock.patch("register.flow.SSHRunner") as runner, \
+             mock.patch("register.probe.ssh_port_is_22", return_value=True) as port_check, \
              mock.patch("register.probe.host_key_fingerprint", return_value="fp"), \
              mock.patch("register.probe.remote_hostname", return_value="host-a"), \
              mock.patch("register.probe.remote_user", return_value="alice"), \
@@ -1174,6 +1175,7 @@ class _P120ProbeHarness(unittest.TestCase):
             runner.return_value.test_connection.return_value = True
             runner.return_value.run_command.side_effect = _probe_run
             probe_user(request, token="tok")
+        self.port_check = port_check
         return runner
 
     @staticmethod
@@ -1217,6 +1219,15 @@ class TestP120ProbeRunnerWiring(_P120ProbeHarness):
             self.assertEqual(call.kwargs.get("tool_override"), override,
                              "probe runner 未使用 apply 的 ssh.tool_override")
 
+    def test_flow_passes_tool_override_ssh_to_port_check(self):
+        self._run_probe(
+            self._request(ssh_tool_override={"ssh": "/opt/custom/ssh"}))
+        self.assertTrue(self.port_check.called, "flow 未执行 22 端口校验")
+        for call in self.port_check.call_args_list:
+            self.assertEqual(
+                call.kwargs.get("ssh_cmd"), "/opt/custom/ssh",
+                "flow 未把 ssh.tool_override.ssh 交给端口校验")
+
     def test_runner_receives_apply_credential(self):
         from common.ssh_credentials import credential_path
 
@@ -1239,7 +1250,19 @@ class TestP120ProbeRunnerWiring(_P120ProbeHarness):
                              "probe runner 未使用 runtime.connect_timeout")
 
     def test_runner_receives_absolute_role_root_as_work_dir(self):
-        runner = self._run_probe(self._request(root={"default": "/srv/vb/u"}))
+        # 每个 role 各占一个 endpoint，才能观察到各自的 work_dir；同 endpoint
+        # 的 role 共用一条 runner（见 TestP120EndpointSharing），只有建连的
+        # 那个 role 的 root 会成为该连接的 work_dir。
+        roles = {name: {"max_sessions": 3, "host": f"h-{name}"}
+                 for name in _P120_ROLES}
+        roles["daemon"].update({"daemon_port": 65081, "local_port": 65082})
+        request = RegistrationRequest(
+            mode="remote", user="u", token="tok",
+            ssh={"default": {"host": "h", "user": "a",
+                             "key_dir": _KEY_DIR, "key": _KEY}},
+            roles=roles, root={"default": "/srv/vb/u"},
+        )
+        runner = self._run_probe(request)
         expected = {f"/srv/vb/u/{name}" for name in _P120_ROLES}
         actual = {call.kwargs.get("work_dir") for call in runner.call_args_list}
         self.assertEqual(actual, expected,
@@ -1291,6 +1314,24 @@ class TestP120EndpointSharing(_P120ProbeHarness):
         self.assertEqual(runner.call_args.kwargs.get("max_sessions"), 2,
                          "共享 runner 的 max_sessions 应取同 endpoint 的最小值")
 
+    def test_same_endpoint_different_credential_does_not_share_runner(self):
+        """路由设计 §4：同 endpoint 但解析后凭据不同 → 不共用连接。"""
+        roles = {name: {"max_sessions": 3, "key_dir": _KEY_DIR, "key": _KEY}
+                 for name in _P120_ROLES}
+        roles["command"].update({"key": "other_ed25519"})
+        roles["daemon"].update({"daemon_port": 65081, "local_port": 65082})
+        request = RegistrationRequest(
+            mode="remote", user="u", token="tok",
+            ssh={"default": {"host": "h", "user": "a",
+                             "key_dir": _KEY_DIR, "key": _KEY}},
+            roles=roles,
+        )
+        runner = self._run_probe(request)
+        self.assertEqual(runner.call_count, 2,
+                         "同 endpoint 凭据不同必须各建一条 runner（路由设计 §4）")
+        paths = {call.kwargs.get("ssh_key_path") for call in runner.call_args_list}
+        self.assertEqual(len(paths), 2, f"两条 runner 的凭据应不同: {paths}")
+
 
 class TestP120OpenSshCliIndependence(unittest.TestCase):
     """P-120 红钉：host-key/config 辅助探测不得静默依赖系统 OpenSSH CLI。"""
@@ -1312,23 +1353,29 @@ class TestP120OpenSshCliIndependence(unittest.TestCase):
                          ["/opt/custom/ssh", "-G", "h"])
 
     def test_host_key_fingerprint_falls_back_to_paramiko_without_ssh_keygen(self):
+        import base64
+        import hashlib
+        import struct
         from register import probe
 
-        pub_text = (Path(_KEY_DIR) / f"{_KEY}.pub").read_text(
-            encoding="utf-8").strip()
+        # 结构合法的 ed25519 公钥 blob（paramiko.HostKeys 需要能解析它）
+        blob = (struct.pack(">I", 11) + b"ssh-ed25519"
+                + struct.pack(">I", 32) + b"\x01" * 32)
+        pub_line = "ssh-ed25519 " + base64.b64encode(blob).decode("ascii")
         with tempfile.TemporaryDirectory(prefix="vb-p120-home-") as home:
             ssh_dir = Path(home) / ".ssh"
             ssh_dir.mkdir()
             (ssh_dir / "known_hosts").write_text(
-                f"host-a {pub_text}\n", encoding="utf-8")
+                f"host-a {pub_line}\n", encoding="utf-8")
             with mock.patch(
                 "register.probe.subprocess.run",
                 side_effect=FileNotFoundError("no OpenSSH CLI"),
             ), mock.patch("register.probe.Path.home", return_value=Path(home)):
                 fp = probe.host_key_fingerprint("host-a")
-        self.assertIsNotNone(
-            fp, "known_hosts 有记录时，缺 ssh-keygen 也应能读出指纹")
-        self.assertTrue(str(fp).startswith("SHA256:"))
+        expected = "SHA256:" + base64.b64encode(
+            hashlib.sha256(blob).digest()).decode("ascii").rstrip("=")
+        self.assertEqual(
+            fp, expected, "known_hosts 有记录时，缺 ssh-keygen 也应读出指纹")
 
     def test_scan_host_key_fingerprint_falls_back_to_paramiko_without_ssh_keyscan(self):
         import base64
