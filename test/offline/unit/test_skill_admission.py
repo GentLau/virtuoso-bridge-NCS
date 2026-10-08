@@ -250,7 +250,8 @@ class TestSkillClientOutcome(unittest.TestCase):
             _result, delivery = self.client.execute_skill_checked("1+1")
         self.assertEqual(delivery, "delivered_unknown")
 
-    def test_busy_response_is_delivered_unknown(self):
+    def test_busy_response_is_not_delivered(self):
+        """P-126：busy = daemon 明确未执行，可安全重试，不是结果未知。"""
         with mock.patch.object(
             self.client, "_round_trip",
             return_value=self._response(
@@ -259,7 +260,7 @@ class TestSkillClientOutcome(unittest.TestCase):
             ),
         ):
             _result, delivery = self.client.execute_skill_checked("1+1")
-        self.assertEqual(delivery, "delivered_unknown")
+        self.assertEqual(delivery, "not_delivered")
 
     def test_timeout_status_is_delivered_unknown(self):
         with mock.patch.object(

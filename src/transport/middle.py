@@ -471,12 +471,14 @@ class _LocalCommandSession:
                 kind="timeout",
             )
         if eof:
-            proc_rc = self._proc.poll() if self._proc is not None else None
+            # shell 在 rc/marker 之前退出：命令结果未知，不能把 proc_rc
+            # 当真实退出码（四层整体架构与接口 §4.4）。
             self._close_locked()
             return CommandResult(
-                returncode=proc_rc if proc_rc is not None else 255,
+                returncode=255,
                 stdout=out,
-                stderr=err or "local shell exited",
+                stderr=f"{_VB_UNKNOWN_EFFECT}{err or 'local shell exited'}",
+                kind="unknown-effect",
             )
         return CommandResult(returncode=rc, stdout=out, stderr=err)
 

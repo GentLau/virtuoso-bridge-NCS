@@ -117,7 +117,12 @@ class SkillClient:
                 elapsed = time.monotonic() - start
                 if not raw or raw[0] not in (STX, NAK):
                     return self._parse_response(raw, elapsed), "delivered_unknown"
-                if self._response_status(raw) in ("busy", "timeout"):
+                status = self._response_status(raw)
+                if status == "busy":
+                    # daemon 读到请求后直接 NAK busy、未触碰 Virtuoso：
+                    # 本次请求确定未执行，可安全重试（不标记结果未知）。
+                    return self._parse_response(raw, elapsed), "not_delivered"
+                if status == "timeout":
                     return self._parse_response(raw, elapsed), "delivered_unknown"
                 return self._parse_response(raw, elapsed), "completed"
             except _DeliveredRequestFailure:

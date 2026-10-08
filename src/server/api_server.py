@@ -53,6 +53,9 @@ BUSY_ERROR = "server thread pool exceeded (max {limit} in-flight), please retry"
 #: Restart drain window (顶层补充 v27 §3): total drain budget for restart.
 DRAIN_TIMEOUT = 30.0
 
+#: 请求体上限，与控制面同口径（顶层 §3：16 MiB，超限 413）。
+_MAX_REQUEST_BYTES = 16 * 1024 * 1024
+
 #: Supervised mode event channel (父进程通过 stdout 读 VB-EVENT 行).
 EVENT_PREFIX = "VB-EVENT "
 
@@ -88,20 +91,24 @@ class ApiHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
-    def _read_json(self) -> tuple[bool, Any]:
+    def _read_json(self) -> tuple[int, Any]:
+        """Return ``(status, payload)``: 200 = ok, 400 = bad, 413 = too large."""
         try:
             length = int(self.headers.get("Content-Length", "0") or "0")
         except (TypeError, ValueError):
-            return False, None
+            return 400, None
         if length < 0:
-            return False, None
+            return 400, None
+        # 超限直接拒绝，不按声明的长度读取 body（与注册面同口径）
+        if length > _MAX_REQUEST_BYTES:
+            return 413, None
         raw = self.rfile.read(length) if length > 0 else b""
         if not raw:
-            return False, None
+            return 400, None
         try:
-            return True, loads_strict(raw.decode("utf-8"))
+            return 200, loads_strict(raw.decode("utf-8"))
         except (UnicodeDecodeError, ValueError, RecursionError):
-            return False, None
+            return 400, None
 
     def _drain_request_body(self, limit: int = 1_048_576) -> None:
         """Consume a bounded request body before closing the connection."""
@@ -167,8 +174,15 @@ class ApiHandler(BaseHTTPRequestHandler):
                 return
             self._send(404, {"ok": False, "error": "not found"})
             return
-        ok, payload = self._read_json()
-        if not ok:
+        status, payload = self._read_json()
+        if status == 413:
+            self._send(
+                413,
+                {"ok": False, "error": "request body too large"},
+                close=True,
+            )
+            return
+        if status != 200:
             self._send(
                 400,
                 {"ok": False, "error": "invalid JSON body"},
