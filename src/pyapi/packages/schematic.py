@@ -13,6 +13,7 @@ import posixpath
 from common.paths import artifact_dir
 from pyapi.models import Middle, skill_log_kwargs, ResultBase, ResultPackage
 from pyapi.packages import basic
+from pyapi.packages import _screenshot
 from pyapi.packages._common import _require_text, _require_timeout, _step
 
 
@@ -1071,58 +1072,30 @@ class ScreenshotResult(ResultBase):
 
 
 def _ensure_window_skill(request: ScreenshotRequest) -> str:
-    return (
-        "let((vbW vbOpened) vbOpened = nil "
-        "vbW = car(setof(x hiGetWindowList() x~>cellView && "
-        f"x~>cellView~>libName == {_q(request.library)} && "
-        f"x~>cellView~>cellName == {_q(request.cell)} && "
-        f"x~>cellView~>viewName == {_q(request.view)})) "
-        "unless(vbW progn(vbW = geOpen(?lib "
-        f"{_q(request.library)} ?cell {_q(request.cell)} "
-        f'?view {_q(request.view)} ?viewType "schematic" ?mode "r") '
-        'vbOpened = t)) '
-        'if(vbW if(vbOpened "opened" "existing") '
-        'error("window not found")))'
+    return _screenshot.ensure_window_skill(
+        request,
+        view_type_expr='"schematic"',
+        not_found_message="window not found",
     )
 
 
 def _close_window_skill(request: ScreenshotRequest) -> str:
-    return (
-        "let((vbW) vbW = car(setof(x hiGetWindowList() x~>cellView && "
-        f"x~>cellView~>libName == {_q(request.library)} && "
-        f"x~>cellView~>cellName == {_q(request.cell)} && "
-        f"x~>cellView~>viewName == {_q(request.view)})) "
-        "when(vbW hiCloseWindow(vbW)) t)"
-    )
+    return _screenshot.close_window_skill(request)
 
 
 def _screenshot_skill(request: ScreenshotRequest, remote_path: str) -> str:
-    if request.window_id is not None:
-        target_expr = f"window({int(request.window_id)})"
-    else:
-        target_expr = (
-            f'let((vbTmp) vbTmp = car(setof(x hiGetWindowList() '
-            f'x~>cellView && x~>cellView~>libName == {_q(request.library)} '
-            f'&& x~>cellView~>cellName == {_q(request.cell)} '
-            f'&& x~>cellView~>viewName == {_q(request.view)})) '
-            f'unless(vbTmp progn(vbTmp = geOpen(?lib {_q(request.library)} ?cell {_q(request.cell)} '
-            f'?view {_q(request.view)} ?viewType "schematic" ?mode "r") vbOpened = t)) vbTmp)'
-        )
-    top = "t" if request.toplevel else "nil"
-    central = "t" if request.central_widget else "nil"
-    leave = "t" if request.leave_open else "nil"
-    zoom_step = ""
-    if request.region is not None:
-        x1, y1, x2, y2 = _region_of(request.region, "region")
-        zoom_step = f'hiZoomIn(vbW list({x1:g}:{y1:g} {x2:g}:{y2:g})) '
-    return (
-        f'let((vbW vbRc vbOpened) vbOpened = nil vbW = {target_expr} '
-        'unless(vbW error("window not found")) '
-        f'{zoom_step}'
-        f'vbRc = hiWindowSaveImage(?target vbW ?path {_q(remote_path)} '
-        f'?format "png" ?toplevel {top} ?centralWidget {central}) '
-        f'unless({leave} when(vbOpened hiCloseWindow(vbW))) '
-        'if(vbRc "saved" "capture-failed"))'
+    region = (
+        _region_of(request.region, "region")
+        if request.region is not None else None
+    )
+    return _screenshot.screenshot_skill(
+        request,
+        remote_path,
+        region=region,
+        not_found_message="window not found",
+        view_type_expr='"schematic"',
+        window_id_style="window_call",
+        zoom_style="pair",
     )
 
 OPERATIONS = (

@@ -21,6 +21,7 @@ from typing import Any
 from common.paths import artifact_dir
 from pyapi.models import Middle, VirtuosoResult, skill_log_kwargs, ResultBase, ResultPackage
 from pyapi.packages import basic
+from pyapi.packages import _screenshot
 from pyapi.packages._common import (
     _require_bool,
     _require_text,
@@ -1125,64 +1126,25 @@ let((vbCv vbResult vbCollected vbShape vbTerm vbPin vbFig vbBBox vbPoints vbXY v
 
 def _ensure_window_skill(request: ScreenshotRequest) -> str:
     """Open the symbol window in a separate SKILL call (P-105 screenshot parity)."""
-    return (
-        "let((vbW vbOpened) vbOpened = nil "
-        "vbW = car(setof(x hiGetWindowList() x~>cellView && "
-        f"x~>cellView~>libName == {basic.q(request.library)} && "
-        f"x~>cellView~>cellName == {basic.q(request.cell)} && "
-        f"x~>cellView~>viewName == {basic.q(request.view)})) "
-        "unless(vbW progn(vbW = geOpen(?lib "
-        f"{basic.q(request.library)} ?cell {basic.q(request.cell)} "
-        f"?view {basic.q(request.view)} ?viewType {basic.q(request.view_type)} "
-        '?mode "r") vbOpened = t)) '
-        'if(vbW if(vbOpened "opened" "existing") '
-        'error("symbol window not found")))'
+    return _screenshot.ensure_window_skill(
+        request,
+        view_type_expr=basic.q(request.view_type),
+        not_found_message="symbol window not found",
     )
 
 
 def _close_window_skill(request: ScreenshotRequest) -> str:
-    return (
-        "let((vbW) vbW = car(setof(x hiGetWindowList() x~>cellView && "
-        f"x~>cellView~>libName == {basic.q(request.library)} && "
-        f"x~>cellView~>cellName == {basic.q(request.cell)} && "
-        f"x~>cellView~>viewName == {basic.q(request.view)})) "
-        "when(vbW hiCloseWindow(vbW)) t)"
-    )
+    return _screenshot.close_window_skill(request)
 
 
 def _screenshot_skill(request: ScreenshotRequest, region: tuple[float, float, float, float] | None, remote_path: str) -> str:
-    if request.window_id is not None:
-        target = (
-            "let((vbW) foreach(w hiGetWindowList() "
-            f"when(w~>windowNum == {int(request.window_id)} vbW = w)) vbW)"
-        )
-    else:
-        target = (
-            "let((vbTmp) vbTmp = car(setof(x hiGetWindowList() "
-            "x~>cellView && "
-            f"x~>cellView~>libName == {basic.q(request.library)} && "
-            f"x~>cellView~>cellName == {basic.q(request.cell)} && "
-            f"x~>cellView~>viewName == {basic.q(request.view)})) "
-            "unless(vbTmp progn(vbTmp = geOpen(?lib "
-            f"{basic.q(request.library)} ?cell {basic.q(request.cell)} "
-            f"?view {basic.q(request.view)} ?viewType {basic.q(request.view_type)} "
-            '?mode "r") vbOpened = t)) vbTmp)'
-        )
-    zoom = ""
-    if region is not None:
-        x0, y0, x1, y1 = region
-        zoom = f"hiZoomIn(vbW list({x0:g}:{y0:g} {x1:g}:{y1:g})) "
-    return (
-        "let((vbW vbRc vbOpened) "
-        "vbOpened = nil "
-        f"vbW = {target} "
-        'unless(vbW error("symbol window not found")) '
-        f"{zoom}"
-        f"vbRc = hiWindowSaveImage(?target vbW ?path {basic.q(remote_path)} "
-        f"?format \"png\" ?toplevel {'t' if request.toplevel else 'nil'} "
-        f"?centralWidget {'t' if request.central_widget else 'nil'}) "
-        f"unless({'t' if request.leave_open else 'nil'} when(vbOpened hiCloseWindow(vbW))) "
-        'if(vbRc "saved" "capture-failed"))'
+    return _screenshot.screenshot_skill(
+        request,
+        remote_path,
+        region=region,
+        not_found_message="symbol window not found",
+        view_type_expr=basic.q(request.view_type),
+        zoom_style="pair",
     )
 
 
