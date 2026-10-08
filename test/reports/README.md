@@ -25,7 +25,7 @@
 | [问题登记.md](问题登记.md) | **历史台账（2026-10-08 停更）**：仅作考古，不再作为权威口径 |
 | [coverage-pack/](coverage-pack/) | 覆盖率证据包：`summary.json`、`modules.md`、逐行/分支 TSV、自动分类规则 |
 | [两项目全链-验收清单.md](两项目全链-验收清单.md) | "两个完整可用项目"（SerDes RX / ADC SAR）逐阶段判据、当前阻塞与跑法 |
-| [internal/](internal/) | 内部资料（环境 Runbook / 测试架构 / 报告与证据）+ 已合并旧文档快照 |
+| [internal/](internal/) | 内部资料（环境 Runbook / 测试架构 / 报告与证据）+ 已合并旧文档快照；含 [CIW-daemon 停止语义调查](internal/CIW-daemon停止语义-调查-2026-10-08.md)（当前口径锚点） |
 
 > 2026-09-28 清理：**48 份**过时报告已删除（重复的逐轮 BUG 清单、`coverage-gaps-*` 与覆盖率旧版本、
 > `TB注释头-补全草案`、`docs精简分析`、合并过的细节清单等）。

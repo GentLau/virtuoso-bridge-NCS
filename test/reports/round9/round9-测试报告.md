@@ -291,6 +291,8 @@
 | **P-109** maestro 7 个写键 readback:none | `maestro_nested_keys_e2e_tests` **10/10 绿**：NKM-02/03/05 按**值级**读回 `enabled`/`enabled_tests`/`disabled_tests`/`models[].{file,section}`/`job_policy.simulation`（maxJobs=2） | `evidence/round9/maestro-nested-keys-p109-verify.json` |
 | **P-114** `place_pin` 可选属性静默 no-op | `schematic_e2e_tests` **11/11 绿**：power/ground sens 引用已存在 terminal → 建出 `PSENS`（connectivity 值级）；引用不存在 terminal → 结构化失败；`off_sheet` 无可用 master → 结构化拒绝（不再 `nth`、不再静默 no-op） | `evidence/round9/schematic-p114-verify.json` |
 | **P-086·D** 投递超时把实例永久置忙 | 新增回归钉 `delivered_timeout_recovery_tb` **5/5 绿**（独立 disposable destb2/64601）：超时快速失败 → **不重启 CIW** → 自动 probe idle 恢复 → 再等一拍仍可用；修复 `97baf13` | `evidence/round9/delivered-timeout-recovery.json` |
+| **C11** 个人自助权限（个人 token + enhanced_token） | 后端 v42 实现后，测试侧在**一次性实例**上独立复验同一权限矩阵：`control_plane_write_tb` **12/12 绿**（CPW-05..08：self 读 200 / 他人 403 / self 视图不泄露 `key/key_dir` / 普通字段值级落盘 / 只读需 enhanced[无→403、他人 token→401、admin→200] / 保密字段 403 / 个人 DELETE 401 / 被拒改动零落盘） | `evidence/round9/control-plane-write-tb-c11.json` |
+| **P-116** symbol `term_order` 口径 | spec 定稿 `b4036d0`（term_order = `cv~>termOrder` legacy raw，可能空/陈旧；pin_order/port_order 才是权威）；TB 从红钉降级为「pin==port 强断言 + term 存在且为 list」：`symbol_e2e_tests` **10/10 绿**（三键真实值入证据） | `evidence/round9/symbol-p116-fixed.txt` |
 
 ### 8.2 本轮新增 TB / 补断言
 
@@ -307,9 +309,11 @@
 
 | 卡片 | 现状 | 去向 |
 |---|---|---|
-| **C09** maestro rename 链 | 完整套件复跑：**前 22 条全 PASS**，`HISTORY-01` 仍报 `Cannot find a setup database entry for handle 162851`（前两轮 83816/118109）→ 隔离路径绿、整链红 | 退回设计侧：按**完整套件**复现（套件内前序用例留下的会话状态是分歧点）；证据 `evidence/round9/maestro-c09-verify2.txt` |
-| **C11** 个人自助权限模型 | `/api/user/*` 仍 admin-only、`enhanced_token` 未接入 update；spec 与实现彼此一致但缺"个人 token 自助"能力 | 待 spec owner 拍板权限矩阵 |
-| **P-116**（新立）symbol `term_order` | spec `3-symbol.md:200` 称 `schEditPinOrder` 后 `pin_order` 与 `term_order` 一致；真机：`symfinal` term=`[OUT,IN,BI]`（陈旧）、`sym_e2e` term=`[]`（没写） | spec 侧二选一（改文字 / 实现同步）；红钉在套件最后一条 |
+| **C09** maestro rename 链 | 完整套件复跑：**前 22 条全 PASS**，`HISTORY-01` 仍报 `Cannot find a setup database entry for handle 162851`（前两轮 83816/118109）→ 隔离路径绿、整链红；复跑期间还把 CIW 挂成 `Library Select` 模态（按 Runbook §10.10 重启恢复） | 退回设计侧：按**完整套件**复现（套件内前序用例留下的会话状态是分歧点）；证据 `evidence/round9/maestro-c09-verify2.txt` |
+| **P-117**（新立）`calibre.export.items` 的 `pdb_dir` | spec §4.5 列了 `pdb_dir`（且 §4.4 写明既有 PEX 产物可经 `export` 读取），实现未提供 → `400 unknown export item: pdb_dir`；`all_small`/`summary`/`results_db`/`netlist`/`log` 均可用 | spec 侧二选一（删条目 / 实现补上）；TB `EXPORT-04 按现状钉住`（不阻塞门禁） |
+| **P-118**（新立）maestro netlisting job policy | `set_job_policy(job_type="netlisting")` 在**目标 test 没有 netlisting policy** 时 **ok=true 但零效果**（`read_config.job_policy.netlisting` 恒 `null`；同 cell 的 simulation 分支可正常落盘）——静默 no-op | 设计侧修（缺 policy 时应创建或结构化失败）；红钉 `NKM-09` 在 `maestro_nested_keys_e2e_tests` 最后一条 |
+
+> 红钉 runner 现在含 2 条：`python test/shared/runners/run_redpins.py`（c09 / p118）。
 
 ### 8.4 证据与待跑
 

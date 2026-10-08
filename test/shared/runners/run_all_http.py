@@ -52,6 +52,9 @@ SUITES = [
     "step_details_e2e_tests.py",            # C1 契约：成功省略 steps / 失败保留 steps
     "layout_geometry_classification_e2e_tests.py",  # 几何非法/非法 LPP 的可归因失败分类
     "gui_e2e_tests.py",                     # X11 窗口面：list_windows/send_key/auto_dismiss/screenshot
+    # 2026-10-08 归档的 bug 回归钉（四步流程：钉红→修复→转绿→进全量；无参脚本，忽略 --transport）
+    "gui_screenshot_cleanup_p125_tb.py",    # P-125：gui.screenshot 远端暂存必须清理
+    "veriloga_view_gate_p129_tb.py",        # P-129：veriloga 缺失 view 必须结构化拒绝
     # maestro 放最后：P-086/P-095 的模态框会把 CIW 卡死，若排在前面会让后面的套件
     # （尤其 calibre 的 getWorkingDir/export_cdl）连带失败——2026-09-29 gate 实测。
     "maestro_e2e_tests.py",
@@ -66,7 +69,7 @@ SUITES = [
 #: （`--kind layout|symbol` 手动指定，P-105 回归后 SC-06 应转绿）。
 SUITE_ARGS = {
     "screenshot_params_e2e_tests.py": [
-        "--token", "vb-vbuser2", "--lib", "serdes_rx", "--cell", "rx_top",
+        "--token", "vb-vbuser4", "--lib", "serdes_rx", "--cell", "rx_top",
         "--view", "schematic", "--kind", "schematic",
     ],
 }

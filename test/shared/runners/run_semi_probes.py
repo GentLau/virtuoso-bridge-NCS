@@ -33,8 +33,9 @@ DEFAULT_OUT = ROOT / "test" / "artifacts" / "evidence" / "semi-probes.json"
 
 WORK_VBLOG = "test/artifacts/env/log-vblog"
 TOKEN_VBLOG = "vb-vblog"
-TOKEN_USER1 = "vb-vbuser1"
-TOKEN_USER2 = "vb-vbuser2"
+# 跨用户场景专用账号（2026-10-08：vbuser1/2 已移交开发，测试侧用 vbuser3/4）
+TOKEN_USER1 = "vb-vbuser3"
+TOKEN_USER2 = "vb-vbuser4"
 
 
 def _pdk_token() -> str:

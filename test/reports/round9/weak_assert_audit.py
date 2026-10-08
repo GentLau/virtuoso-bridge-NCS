@@ -98,7 +98,12 @@ class CaseCollector(ast.NodeVisitor):
                                  "text": text[:160], "line": lineno})
 
     def visit_Assert(self, node: ast.Assert) -> None:  # noqa: N802
-        self._record(classify_condition(_txt(node.test)), _txt(node.test), node.lineno, "assert")
+        # 记录里带上断言消息：`assert not missing, f"...CDSlog..."` 这类"消息里有 log"的
+        # 断言此前被 T2 误报为"读了日志但没断言"（圆9 已人工核实 2 条误报）。
+        text = _txt(node.test)
+        if node.msg is not None:
+            text = f"{text}  # {_txt(node.msg)}"
+        self._record(classify_condition(_txt(node.test)), text, node.lineno, "assert")
         self.generic_visit(node)
 
     def visit_Raise(self, node: ast.Raise) -> None:  # noqa: N802

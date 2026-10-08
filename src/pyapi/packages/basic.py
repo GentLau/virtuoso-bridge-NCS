@@ -10,11 +10,16 @@ token 每次调用原样透传。
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-import math
 from pathlib import Path
 from typing import Any
 
 from pyapi.models import Middle, skill_log_kwargs, ResultBase, ResultPackage
+from pyapi.packages._common import (
+    _require_bool,
+    _require_text,
+    _require_timeout,
+    _require_token,
+)
 
 #: spec 上层 §4.2：包级自描述（操作名, 方法名, Request, Result）
 OPERATION_NAMES = (
@@ -99,36 +104,6 @@ class SpectreRequest:
     cmd: str
     timeout: int | None = None
     step_details: bool = False
-
-
-def _require_token(token: Any) -> str:
-    if not isinstance(token, str) or not token:
-        raise ValueError("token must be a non-empty string")
-    return token
-
-
-def _require_text(value: Any, name: str) -> str:
-    if not isinstance(value, str) or not value:
-        raise ValueError(f"{name} must be a non-empty string")
-    return value
-
-
-def _require_timeout(timeout: Any) -> None:
-    if timeout is None:
-        return
-    if (
-        isinstance(timeout, bool)
-        or not isinstance(timeout, (int, float))
-        or not math.isfinite(timeout)
-        or timeout <= 0
-    ):
-        raise ValueError("timeout must be a positive finite number or None")
-
-
-def _require_bool(value: Any, name: str) -> bool:
-    if not isinstance(value, bool):
-        raise ValueError(f"{name} must be a boolean")
-    return value
 
 
 def _command_error(name: str, returncode: int, stderr: str) -> str | None:
@@ -448,9 +423,3 @@ def _unescape_skill_string(value: str) -> str:
     return "".join(chars)
 
 
-def _collect_strings(value):
-    if isinstance(value, str):
-        return [value]
-    if isinstance(value, list):
-        return [item for entry in value for item in _collect_strings(entry)]
-    return []

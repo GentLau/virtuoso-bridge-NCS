@@ -13,29 +13,27 @@
 3. **刷新方式**：改 `test/shared/runners/make_bug_cards.py` 的 `OPEN` / `CLOSED_RECENT` 段，
    然后 `python test/shared/runners/make_bug_cards.py`（幂等；`--check` 只校验不写盘）。
 
-## 1. 未关闭（14 条）
+### 四步流程（新 bug 一律照此办理）
+
+1. **建 bug TB 钉红**：放对应层（`test/offline` / `test/semi` / `test/live`），先证明当前代码下**红**；
+   离线钉用 `pytest.mark.xfail(strict=True)`，真机钉登记 `test/shared/runners/run_redpins.py`。
+2. **修复**（设计侧改代码 / spec）。
+3. **同一支 TB 转绿**：只许加强断言，不许为绿放宽；用第 1 步那支 TB 复跑通过。
+4. **归档**：卡片移入 [已关闭-近期.md](已关闭-近期.md)，写明**用了哪支 TB**（路径）+ 证据；
+   该 TB 自此**进入全量测试**，后续全量测试都会带上它。
+
+> 本流程自 2026-10-08 起生效；之前的卡既往不咎。
+
+## 1. 未关闭（1 条）
 
 | ID | 层 | 级别 | 归属 | 状态 | 一句话 | 卡片 |
 |---|---|---|---|---|---|---|
 | **P-130** | 全仓（架构治理 · 非缺陷改进汇总） | 改进（非缺陷；由外部静态审查提出，测试侧抽查复核） | 设计侧（排期执行；重构以行为不变为约束） | 观察 | 【改进汇总】重复实现收敛 / 死代码清理 / 排障日志与小项清理（非缺陷，不阻塞功能） | [P-130-improvement-backlog-refactor-deadcode.md](P-130-improvement-backlog-refactor-deadcode.md) |
-| **P-129** | 上层（veriloga 包）· `write`/`set_source` 前置门 · 与 verilog 同族漂移 | P2（同族包行为漂移；「静默 ok」成立范围待半真机复现定性） | 设计侧（对齐 `verilog._view_exists` 前置门与错误提示；建议抽共享 text-view 前置） | 待测试侧 | `veriloga.write` 缺 view 存在性门（`verilog.write` 有）：缺失/脏残留 view 下 `set_source` 的返回语义与磁盘结果未对齐——脏残留目录时可能静默写出无 `master.tag` 的孤儿文件 | [P-129-veriloga-missing-view-exists-gate.md](P-129-veriloga-missing-view-exists-gate.md) |
-| **P-128** | 上层包（schematic/gui/verilog/maestro）· command/gui 角色命令拼接 | P3（正确性/健壮性；非越权——token 本可 `basic.command.run`，但证明拼接口径不统一） | 设计侧（统一 `shlex.quote`/强制封装，替换四处） | 待设计修 | 上层包 shell 引用不一致：cell/路径/window_id 含特殊字符时静默出错（4 处站点：单引号内拼 cell、`re.escape` 不转义单引号、window_id 未校验进双引号、路径裸拼） | [P-128-shell-quoting-inconsistency-packages.md](P-128-shell-quoting-inconsistency-packages.md) |
-| **P-127** | 上层包 ↔ 中层 role 拓扑 · spec §5.6 口径边界（split-host） | P2（合法配置下的静默错误；需口径裁决） | 设计侧+spec 侧（二选一裁决：包内把同路径读/写/清理收敛到同一 role；或在注册/文档固定可见性要求并在注册期校验） | 待决策 | 跨 role 可见性缺口：文本视图/截图在 split-host（file/command 与 daemon/gui 不同机）合法配置下静默错位——上传成功但 daemon 读不到、清理在错误主机执行不报错 | [P-127-cross-role-path-visibility-split-host.md](P-127-cross-role-path-visibility-split-host.md) |
-| **P-126** | 中层 `skill_client` ↔ 底层 daemon 协议语义（busy/dirty） | P3（语义错位+多余等待；busy 本属可安全重试的 not_delivered） | 设计侧（`busy`→`not_delivered`；如需可在 spec 侧明确 busy/dirty 语义） | 待设计修 | daemon `busy`（确定未执行）被归类为 `delivered_unknown`：token 被误标 dirty，后续请求被迫先走 probe 轮询 | [P-126-daemon-busy-classified-delivered-unknown.md](P-126-daemon-busy-classified-delivered-unknown.md) |
-| **P-125** | 上层 gui 包 · 截图流水线（第 4 份实现） | P3（远端资源无界残留；口径不一致） | 设计侧（对齐 P-091 口径：下载成功后清理远端暂存；清理失败不改变业务结果） | 待设计修 | `gui.screenshot` 下载后不清理远端暂存 `.ppm`（schematic/symbol/layout 三包均已按 P-091 口径「下载后清理」） | [P-125-gui-screenshot-missing-remote-cleanup.md](P-125-gui-screenshot-missing-remote-cleanup.md) |
-| **P-124** | 上层包并发 · 本地暂存/缓存（verilog/veriloga/skillref） | P2（并发静默错误：内容错位/读失败） | 设计侧（缓存/暂存路径按 token/cell/请求唯一化，或只读共享+进程内锁） | 待设计修 | 并发共享本地暂存路径互相覆盖：verilog/veriloga 固定主文件名同目录缓存（可能把 A 的内容上传给 B）；skillref 每请求 rmtree 同一 doc_root 暂存目录（删掉他人正在读的文件） | [P-124-concurrent-staging-cache-collision.md](P-124-concurrent-staging-cache-collision.md) |
-| **P-123** | 顶层 · 业务面 HTTP 入口（api_server） | P2（暴露面/线程与内存 DoS；默认 127.0.0.1 降险但 `--host` 可暴露） | 设计侧（`_read_json` 加与注册面一致的 16 MiB 上限；建议抽共享 helper，超限结构化 4xx） | 待设计修 | 业务面 `POST /api/operation` 无请求体上限：按声明 `Content-Length` 直接读取（控制面同位置有 16 MiB 上限） | [P-123-api-server-no-body-limit.md](P-123-api-server-no-body-limit.md) |
-| **P-122** | 中层 · 本地命令会话（`_LocalCommandSession`） | P2（静默错误语义：把结果未知读成真实退出码/成功） | 设计侧（eof 且未收到 rc/marker 时返回 `kind="unknown-effect"`，至少 `transport`，与远端对齐） | 待设计修 | 本地 shell 中途退出（EOF）被当作命令正常完成：`kind` 缺省为 `command`、`returncode` 用 `proc_rc`（可能为 0），违反「结果未知」合同（远端同类路径已走 UnknownEffectError） | [P-122-local-shell-eof-masks-unknown-effect.md](P-122-local-shell-eof-masks-unknown-effect.md) |
-| **P-121** | spec↔真机一致性（上层 schematic 包）· `place_pin.sig_type` 读回 | P3（文档缺口：按 spec 值域做「写值==读回」断言会误判；调用方需知道映射） | spec 侧（**口径已定**：不改实现，在 `2-schematic.md` 的 `sig_type` 值域处补一句 DB 归一化说明——`power` 读回为 `supply`，读回按 DB 词汇） | 待设计修 | `place_pin(sig_type="power")` 写入成功，但 `read(connectivity).nets[...].sigType` 读回 `"supply"`（其余 9 个取值原样回读）——spec 未写明该 DB 归一化 | [P-121-place-pin-power-sigtype-reads-supply.md](P-121-place-pin-power-sigtype-reads-supply.md) |
-| **P-120** | 注册流程（register/flow）· SSH 后端选择与 ssh-config 兼容性 | P3（一致性缺陷：apply 收 `ssh_backend` 但 probe 不用 → 用户按文档选 openssh 也无法绕过 paramiko 的限制；`accept-new` 的 env 要求本身已在 `test/docs/环境与场景.md:110` 写明） | 设计侧（`register/flow.py::_new_runner` 透传 `ssh_backend`/`tool_override`；accept-new 的错误文案可加一句「改 ssh config 为 yes/ask 或换 openssh 后端」） | 待设计修 | 注册 probe **忽略** apply 里的 `ssh_backend`（永远 paramiko）；而 paramiko 又拒绝 `StrictHostKeyChecking=accept-new` → 用户即使选了 openssh 后端，只要 ssh config 是 accept-new 就注册不了 | [P-120-register-probe-ignores-ssh-backend-accept-new.md](P-120-register-probe-ignores-ssh-backend-accept-new.md) |
-| **P-119** | 中层/底层 · 日志通道（CDS.log 字节窗口） | P3（观察/口径：用户日志里出现桥产生的空行；半真机 probe 的"文件窗口==delta"契约因此失效） | spec 侧（**口径已定**：不改实现，改 spec —— 把「桥自身 flush 行不计入 delta、可被过滤」写进日志 spec §8） | 待设计修 | 每次经桥的请求都会在 CDS.log 多写一条空 `\o ` 行（桥"交互等价换行"的副作用），不计入返回的 `CDSlog` delta | [P-119-cdslog-bridge-flush-blank-line.md](P-119-cdslog-bridge-flush-blank-line.md) |
-| **P-118** | 上层（maestro 包）· `set_job_policy` 的 `job_type=netlisting` 分支 | P2（静默 no-op：调用方以为 netlisting job policy 已生效；与 P-114/C10 同族） | 设计侧（`maestro.set_job_policy` 的 netlisting 分支：`maeGetJobPolicy` 返回 nil 时应创建/或结构化失败，不得静默成功） | 待设计修 | `set_job_policy(job_type="netlisting")` 在未设置过该 policy 的 test 上报 **ok=true 但零效果**（`read_config.job_policy.netlisting` 恒 `null`）——静默 no-op | [P-118-maestro-netlisting-job-policy-silent-noop.md](P-118-maestro-netlisting-job-policy-silent-noop.md) |
-| **P-117** | spec↔实现一致性（上层 calibre 包）· `export.items` 枚举 | P3（文档与实现不一致：按 spec 调用必失败；既有 PEX 产物的导出路径不可达） | 设计侧（已裁定：补实现，但本版只做**预留接口**；spec 侧同步一句预留说明） | 待设计修 | spec `12-calibre.md` §4.5 的 `export.items` 列了 `pdb_dir`，实现未提供（`unknown export item: pdb_dir`）；而 §4.4 又写明既有 PEX 产物可由 `export` 读取 | [P-117-calibre-export-pdb-dir-missing.md](P-117-calibre-export-pdb-dir-missing.md) |
 
 > 优先级口径：**P1** = Linux 侧资源/安全或核心指标链路断（P-056、P-053）；
 > **P2** = 真实设计流会给出错的/空的结果，且多数**静默**；**P3/观察** = 非阻塞但建议顺手修。
 
-## 2. 本轮/近期已关闭（101 条）
+## 2. 本轮/近期已关闭（115 条）
 
 完整列表与关闭依据见 [已关闭-近期.md](已关闭-近期.md)（唯一出口，本 README 不重复）。
 

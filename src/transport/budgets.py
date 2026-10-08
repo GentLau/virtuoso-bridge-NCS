@@ -43,13 +43,11 @@ class _Lease:
 
 
 class TokenBudgets:
-    """Thread, token-wide channel, and endpoint channel counters for one token."""
+    """Token-wide channel and endpoint channel counters for one token."""
 
-    def __init__(self, *, thread_pool_size: int, channel_budget: int) -> None:
-        self.thread_pool_size = int(thread_pool_size)
+    def __init__(self, *, channel_budget: int) -> None:
         self.channel_budget = int(channel_budget)
         self._lock = threading.Lock()
-        self._threads = 0
         self._channels = 0
         self._endpoint_limits: dict[str, int] = {}
         self._per_endpoint: dict[str, int] = {}
@@ -66,25 +64,6 @@ class TokenBudgets:
     def endpoint_limit(self, endpoint_key: str) -> int:
         with self._lock:
             return self._endpoint_limits.get(endpoint_key, 10)
-
-    # -- thread budget ------------------------------------------------------
-    def try_acquire_thread(self) -> bool:
-        with self._lock:
-            if self._threads >= self.thread_pool_size:
-                return False
-            self._threads += 1
-            return True
-
-    def release_thread(self) -> None:
-        with self._lock:
-            if self._threads <= 0:
-                raise RuntimeError("thread budget released without a lease")
-            self._threads -= 1
-
-    @property
-    def threads_in_use(self) -> int:
-        with self._lock:
-            return self._threads
 
     # -- channel budgets ----------------------------------------------------
     def try_acquire_channel(

@@ -20,6 +20,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from pyapi.models import Middle, ResultBase, ResultPackage
+from pyapi.packages._common import _require_text, _require_timeout, _step
 
 # 通过 ctypes 调 libX11/libXtst 注入一次按键（enter/escape）。
 _SEND_KEY_SCRIPT = r'''
@@ -134,20 +135,6 @@ with open(out, "wb") as fh:
     fh.write(("P6\n%d %d\n255\n" % (w, h)).encode())
     fh.write(bytes(buf))
 '''
-
-
-def _require_text(value: Any, name: str) -> None:
-    if not isinstance(value, str) or not value:
-        raise ValueError(f"{name} must be a non-empty string")
-
-
-def _require_timeout(timeout: Any) -> None:
-    if timeout is not None and (not isinstance(timeout, (int, float)) or timeout <= 0):
-        raise ValueError("timeout must be a positive number or None")
-
-
-def _step(name: str, ok: bool, detail: Any) -> dict[str, Any]:
-    return {"name": name, "ok": ok, "detail": detail}
 
 
 _WIN_LINE = re.compile(

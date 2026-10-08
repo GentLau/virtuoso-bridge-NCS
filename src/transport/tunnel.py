@@ -111,7 +111,6 @@ class RemoteClient:
         self._runner_lock = threading.Lock()
         self._serial_lock = threading.Lock()
         self.budgets = TokenBudgets(
-            thread_pool_size=entry.runtime.thread_pool_size,
             channel_budget=entry.runtime.channel_budget,
         )
         for role_name in ("gui", "daemon", "command", "file", "spectre"):
@@ -656,40 +655,5 @@ class RemoteClient:
             path.unlink(missing_ok=True)
         except OSError:
             pass
-
-    def _verify(
-        self, remote_path: str, local_bytes: bytes, deadline: float | None = None
-    ) -> CommandResult:
-        """Verify the remote digest on a one-shot channel.
-
-        The digest check must not sit behind the token's persistent command
-        shell: a long-running command there would turn every file transfer
-        into a timeout (observed as ``channel budget``/timeout noise under
-        load).  A one-shot call is never multiplexed through that shell.
-        """
-        local_sha = hashlib.sha256(local_bytes).hexdigest()
-        budget = 60.0
-        if deadline is not None:
-            budget = max(0.0, min(budget, deadline - time.monotonic()))
-            if budget <= 0.0:
-                return CommandResult(
-                    returncode=124, stdout="",
-                    stderr="digest verification skipped: request deadline exhausted",
-                    kind="timeout",
-                )
-        check = self._one_shot_runner(self.targets.file).run_one_shot(
-            f"sha256sum {shlex.quote(remote_path)}", timeout=budget
-        )
-        if check.returncode != 0:
-            return check
-        remote_sha = check.stdout.strip().split()[0] if check.stdout.strip() else ""
-        if remote_sha != local_sha:
-            return CommandResult(
-                returncode=1, stdout="",
-                stderr=f"sha256 mismatch: local={local_sha} remote={remote_sha}",
-                kind="checksum",
-            )
-        return CommandResult(returncode=0, stdout=remote_path, stderr="")
-
 
 __all__ = ["RemoteClient", "remote_root_path"]

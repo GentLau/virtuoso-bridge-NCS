@@ -284,12 +284,10 @@ class CdsLog(BaseModel):
 
 
 class UserEntry(BaseModel):
-    model_config = ConfigDict(validate_assignment=True)
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
 
     token: str = Field(min_length=1, max_length=64, pattern=r"^[A-Za-z0-9._-]+$")
     # mode.default is required; a bare string is accepted as shorthand.
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
-
     mode: ModeConfig | Literal["local", "remote"]
     ssh: Ssh = Field(default_factory=Ssh)
     root: RootConfig = Field(default_factory=RootConfig)

@@ -18,7 +18,6 @@
 from __future__ import annotations
 
 import hashlib
-import math
 import shlex
 import shutil
 import threading
@@ -30,6 +29,12 @@ from typing import Any
 
 from common.paths import temp_dir
 from pyapi.models import ExecutionStatus, Middle, ResultBase, ResultPackage
+from pyapi.packages._common import (
+    _require_bool,
+    _require_nonblank_text as _require_text,
+    _require_timeout,
+    _require_token,
+)
 from pyapi.packages import _skillref_docs as docs
 
 #: spec 上层 §4.2：包级自描述
@@ -126,18 +131,6 @@ class InfoResult(ResultBase):
 
 
 # ------------------------------------------------------------------ 校验器 --
-def _require_token(token: Any) -> str:
-    if not isinstance(token, str) or not token:
-        raise ValueError("token must be a non-empty string")
-    return token
-
-
-def _require_text(value: Any, name: str) -> str:
-    if not isinstance(value, str) or not value.strip():
-        raise ValueError(f"{name} must be a non-empty string")
-    return value
-
-
 def _require_text_or_none(value: Any, name: str) -> None:
     if value is None:
         return
@@ -168,23 +161,6 @@ def _require_under(value: Any) -> None:
 def _require_int_range(value: Any, name: str, low: int, high: int) -> None:
     if isinstance(value, bool) or not isinstance(value, int) or not low <= value <= high:
         raise ValueError(f"{name} must be an integer in [{low}, {high}]")
-
-
-def _require_bool(value: Any, name: str) -> None:
-    if not isinstance(value, bool):
-        raise ValueError(f"{name} must be a boolean")
-
-
-def _require_timeout(value: Any) -> None:
-    if value is None:
-        return
-    if (
-        isinstance(value, bool)
-        or not isinstance(value, (int, float))
-        or not math.isfinite(value)
-        or value <= 0
-    ):
-        raise ValueError("timeout must be a positive finite number or None")
 
 
 # ------------------------------------------------------------ 配置表快照 --
@@ -426,8 +402,6 @@ class Package(ResultPackage):
             result.error = f"source 必须是 local 或 remote，收到 {resolved.source!r}"
             steps.append({"name": "resolve-source", "ok": False, "detail": result.error})
             return None
-        if not Path(resolved.doc_root).is_absolute() and _looks_like_windows_path(resolved.doc_root):
-            pass  # Windows 绝对路径（C:\...）在非 Windows 上 Path 判定不同，这里放行
         if resolved.source == require_token_for and not resolved.doc_token:
             result.error = (
                 "remote 模式需要查询代理账号：请在 config.json 的 "
@@ -747,10 +721,6 @@ def _posix_join(*parts: str) -> str:
     head = parts[0]
     prefix = "/" if head.startswith("/") else ""
     return prefix + "/".join(cleaned)
-
-
-def _looks_like_windows_path(path: str) -> bool:
-    return len(path) > 2 and path[1] == ":" and path[2] in ("\\", "/")
 
 
 def _body_grep_command(

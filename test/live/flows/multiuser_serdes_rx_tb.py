@@ -7,10 +7,10 @@
 
 场景（两个**真实 OS 用户**，共享一个库，走 8127 业务面）：
 
-  1. A（vbuser1）在 `/project/libs/serdes_rx` 建库（挂 tsmcN65 工艺）；
+  1. A（vbuser3）在 `/project/libs/serdes_rx` 建库（挂 tsmcN65 工艺）；
   2. A 建三个 schematic：`rx_fe`（4 个 PDK 器件 + 6 引脚）、`clk_buf`（反相器 + 4 引脚）、`rx_top`（实例化 rx_fe + 引脚）；
   3. A 给出 `rx_fe` / `clk_buf` 的 symbol；
-  4. **B（vbuser2）读 A 的库**（跨用户可见性）→ 在 `rx_top` 里补一个 `clk_buf` 实例并保存（**跨用户改单**）；
+  4. **B（vbuser4）读 A 的库**（跨用户可见性）→ 在 `rx_top` 里补一个 `clk_buf` 实例并保存（**跨用户改单**）；
   5. A **回读** `rx_top`，断言能看到 B 加上去的实例（双向可见）；
   6. B 跑 `check_and_save`；A 再读 `rx_fe` 设备数做终检。
 
@@ -21,7 +21,7 @@
 
     PYTHONPATH=src python test/live/flows/multiuser_serdes_rx_tb.py \
         --work-dir test/artifacts/env/log-vblog \
-        --token-a vb-vbuser1 --token-b vb-vbuser2 \
+        --token-a vb-vbuser3 --token-b vb-vbuser4 \
         --base http://127.0.0.1:8127/api/operation \
         --out test/artifacts/evidence/round5-serdes-rx.json
 """
@@ -64,8 +64,8 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--base", default="http://127.0.0.1:8127/api/operation")
     parser.add_argument("--work-dir", default="test/artifacts/env/log-vblog")
-    parser.add_argument("--token-a", default="vb-vbuser1")
-    parser.add_argument("--token-b", default="vb-vbuser2")
+    parser.add_argument("--token-a", default="vb-vbuser3")
+    parser.add_argument("--token-b", default="vb-vbuser4")
     parser.add_argument("--lib", default="serdes_rx")
     parser.add_argument("--lib-path", default="/project/libs/serdes_rx")
     parser.add_argument("--tech", default="tsmcN65")

@@ -8,7 +8,7 @@
 与 `test/live/stress/layout_multiuser_lock_tb.py` 的区别：
 
 * 那条用的是 `vb-vblog` / `vb-s11`（**同一个 OS 账号**、两个 daemon），考的是锁语义；
-* 本条用 `vb-vbuser1` / `vb-vbuser2`（**两个真实 OS 用户**、不同 home/工程/daemon），
+* 本条用 `vb-vbuser3` / `vb-vbuser4`（**两个真实 OS 用户**、不同 home/工程/daemon），
   除了锁语义还断言**内容**：A 写 → A 读到的形状数 → B 在 A 结束后读到的形状数 →
   B 写 → A 回读必须看到 B 的新形状（用户 2026-09-23 明确要求"一个用户操作完了，
   另一个用户再操作，理论上应该能操作"）。
@@ -155,8 +155,8 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--work-dir", required=True)
     parser.add_argument("--base", default="http://127.0.0.1:8127/api/operation")
-    parser.add_argument("--token-a", default="vb-vbuser1")
-    parser.add_argument("--token-b", default="vb-vbuser2")
+    parser.add_argument("--token-a", default="vb-vbuser3")
+    parser.add_argument("--token-b", default="vb-vbuser4")
     parser.add_argument("--lib", default="adc_sar")
     parser.add_argument("--lib-path", default="/project/libs/adc_sar")
     parser.add_argument("--cell", default="mu2_handoff",

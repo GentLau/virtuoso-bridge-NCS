@@ -813,6 +813,41 @@ class PackageTests(unittest.TestCase):
             self.assertFalse(result.ok)
             self.assertIn("nothing downloaded", result.error or "")
 
+    def test_export_pdb_dir_is_reserved_not_downloaded(self):
+        """P-117 回归：`pdb_dir` 预留语义——ok=true + 结构化点名 + 零下载。"""
+        with tempfile.TemporaryDirectory(prefix="vb-cal-") as tmp:
+            out = Path(tmp) / "pdb"
+            result = Package(FakeMiddle()).export(ExportRequest(
+                token=TOKEN, job_id="drc_lay_e2e", kind="drc",
+                items=("pdb_dir",), local_dir=str(out),
+            ))
+            self.assertTrue(result.ok, result.error)
+            reserved = [e for e in result.value["reserved"]
+                        if e.get("item") == "pdb_dir"]
+            self.assertEqual(len(reserved), 1, result.value)
+            self.assertEqual(reserved[0].get("status"), "reserved")
+            self.assertFalse(result.value["downloaded"],
+                             "预留项不应产生下载条目")
+            self.assertEqual(list(out.iterdir()), [],
+                             "预留项不应落任何文件")
+
+    def test_export_pdb_dir_does_not_block_summary(self):
+        """P-117 回归：预留项不影响同请求其它 item（summary 仍下到）。"""
+        with tempfile.TemporaryDirectory(prefix="vb-cal-") as tmp:
+            result = Package(FakeMiddle()).export(ExportRequest(
+                token=TOKEN, job_id="drc_lay_e2e", kind="drc",
+                items=("summary", "pdb_dir"), local_dir=str(Path(tmp) / "out"),
+            ))
+            self.assertTrue(result.ok, result.error)
+            self.assertTrue(
+                any(d.get("item") == "summary"
+                    for d in result.value["downloaded"]),
+                result.value,
+            )
+            reserved = [e for e in result.value["reserved"]
+                        if e.get("item") == "pdb_dir"]
+            self.assertEqual(len(reserved), 1, result.value)
+
     def test_validation(self):
         with self.assertRaises(ValueError):
             RunRequest(token=TOKEN, gds="g", top="t", deck="d", turbo=0)

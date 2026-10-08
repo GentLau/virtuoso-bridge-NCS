@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=====================
-# 作者: 设计/Codex
-# 最后改动: 2026-09-28 12:04
+# 作者: 测试/root
+# 最后改动: 2026-09-30 21:45
 # 依赖: 无
 # =====================================================================
 # 六步流程（按 test/docs/写TB规范.md §1–§6）：
@@ -217,11 +217,17 @@ def case_increment_bytes(env: Env) -> dict:
         returned = (result.log or "").encode("utf-8")
         data = env.log_bytes()
         offset = data.find(returned) if returned else -1
+        window = data[before:after]
+        # 2026-09-30 P-119：C06 修复后，桥为**交互等价换行**（提交 CIW 行缓冲）会在
+        # CDS.log 里多写一条空 `\o ` 行（4 字节），不计入返回 delta。这里**精确**
+        # 允许这一种尾随形态（而不是放宽成"子串即可"），其它多出来的字节仍然判红。
+        bridge_flush_line = bool(returned) and window == returned + b"\\o \n"
         attempts.append({
             "returned_bytes": len(returned),
             "file_growth": after - before,
             "contiguous_slice": offset >= 0,
-            "window_identical": bool(returned) and returned == data[before:after],
+            "window_identical": bool(returned) and returned == window,
+            "bridge_flush_line": bridge_flush_line,
         })
         if not returned:
             continue
@@ -234,7 +240,7 @@ def case_increment_bytes(env: Env) -> dict:
             raise ProbeFailure(
                 f"window did not contain the injected marker: {returned[:120]!r}"
             )
-        if not attempts[-1]["window_identical"]:
+        if not attempts[-1]["window_identical"] and not bridge_flush_line:
             # a contiguous sub-slice is not the contract: the delta must be
             # exactly the file interval produced by this request.  Retry while
             # the CIW's asynchronous log flush catches up.
@@ -242,7 +248,10 @@ def case_increment_bytes(env: Env) -> dict:
         return {
             "bytes": len(returned),
             "file_offset": offset,
-            "window_identical": True,
+            "window_identical": attempts[-1]["window_identical"],
+            "bridge_flush_line": bridge_flush_line,
+            "note": ("P-119：窗口 = 返回 delta + 桥自身 flush 空行 `\\o `" if bridge_flush_line
+                     else "窗口与返回 delta 完全一致"),
             "attempts": attempts,
         }
     raise ProbeFailure(

@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=====================
 # 作者: 测试/root
-# 最后改动: 2026-09-28 21:40
+# 最后改动: 2026-09-30 21:45
 # 依赖: 无
 # =====================================================================
 """GDS 导出后同会话 SKILL 是否仍可用（P-075 回归探针）。
@@ -94,13 +94,20 @@ def main(argv: list[str] | None = None) -> int:
     file_root = f"{args.file_root.rstrip('/')}/gds_skill"
     call(args.token, "basic.command.run", cmd=f"mkdir -p {file_root}", timeout=120)
     lib_path = f"{file_root}/{args.lib}"
+    # 复跑幂等（2026-09-30 修）：上一轮的探针库/视图还在时 `lib.create` 会报
+    # `libraryExists`（不匹配旧的 "already" 容差 → 假红）。先尽力删掉自己的库，
+    # 再建；创建步骤仍容忍 `*Exists`（只针对本探针自己的固定库名）。
+    call(args.token, "virtuoso.cellview.lib.delete", timeout=180, library=args.lib)
     created = call(args.token, "virtuoso.cellview.lib.create", timeout=300,
                    library=args.lib, path=lib_path, technology_library=args.tech)
-    record("lib-create", bool(created.get("ok")) or "already" in str(created.get("error")),
+    record("lib-create", bool(created.get("ok"))
+           or "already" in str(created.get("error"))
+           or "Exists" in str(created.get("error")),
            created.get("error"))
     view = call(args.token, "virtuoso.cellview.view.create", timeout=180,
                 library=args.lib, cell=args.cell, view="layout", view_type="maskLayout")
-    record("layout-view-create", bool(view.get("ok")), view.get("error"))
+    record("layout-view-create", bool(view.get("ok"))
+           or "Exists" in str(view.get("error")), view.get("error"))
     wrote = call(args.token, "virtuoso.layout.write", timeout=600, library=args.lib,
                  cell=args.cell, view="layout",
                  commands=[{"op": "place_rect", "layer": "M1", "purpose": "drawing",

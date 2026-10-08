@@ -43,6 +43,32 @@ EXCLUDE_DIRS = ("reports", "artifacts", "plans", "docs", "shared/archive", "shar
 ENVELOPE = ("ok", "error", "value", "result", "steps", "CDSlog", "warnings", "errors")
 ASSERT_HINT = re.compile(r"assert|_check\(|check_true|check\(|_expect|fail\(", re.IGNORECASE)
 
+#: 已知"非行内断言"形态：(op, field) → 人工核对过的证据指针。
+#: 这些字段的**判据真实存在**，但写法（多行 assert / checks 字典 + for 循环）扫描器
+#: 认不出来。每条都必须写清 file:行，便于复核；不要再往这里塞"没把握"的条目。
+KNOWN_ASSERTED: dict[tuple[str, str], str] = {
+    ("virtuoso.maestro.read_history", "points_done"):
+        "test/live/packages/maestro_mc_e2e_tests.py:561-576 checks 字典逐字段断言（=points_total）",
+    ("virtuoso.maestro.read_history", "points_total"):
+        "test/live/packages/maestro_mc_e2e_tests.py:553-557 + 561-576",
+    ("virtuoso.maestro.read_history", "tests_done"):
+        "test/live/packages/maestro_mc_e2e_tests.py:564 同 checks 循环（=tests_total）",
+    ("virtuoso.maestro.read_history", "tests_total"):
+        "test/live/packages/maestro_mc_e2e_tests.py:561-576 checks 循环",
+    ("virtuoso.maestro.read_history", "corners_done"):
+        "test/live/packages/maestro_mc_e2e_tests.py:565 同 checks 循环（=corners_total）",
+    ("virtuoso.maestro.read_history", "corners_total"):
+        "test/live/packages/maestro_mc_e2e_tests.py:561-576 checks 循环",
+    ("virtuoso.maestro.read_history", "overwrite_target"):
+        "test/live/packages/maestro_mc_e2e_tests.py:567 同 checks 循环（==history）",
+    ("virtuoso.maestro.read_config", "models"):
+        "test/live/packages/maestro_nested_keys_e2e_tests.py::NKM-03 多行 assert any(model.file/section)",
+    ("virtuoso.maestro.read_config", "job_policy"):
+        "test/live/packages/maestro_nested_keys_e2e_tests.py::NKM-05/NKM-09 断言 policy['simulation']/['netlisting']",
+    ("virtuoso.maestro.read_config", "netlisting"):
+        "test/live/packages/maestro_nested_keys_e2e_tests.py::NKM-09（P-118 红钉）显式读并断言 netlisting",
+}
+
 
 def iter_test_files() -> list[Path]:
     files: list[Path] = []
@@ -156,6 +182,10 @@ def main(argv: list[str] | None = None) -> int:
                         (asserted if ASSERT_HINT.search(line) else read_only).append(
                             f"{path.relative_to(ROOT).as_posix()}:{line.strip()[:80]}")
                 status = "asserted" if asserted else ("read_only" if read_only else "absent")
+                known = KNOWN_ASSERTED.get((op, field))
+                if known and status != "asserted":
+                    status = "asserted"
+                    asserted = [f"<known-non-inline> {known}"]
                 in_evidence = bool(evidence_text) and (literal in evidence_text
                                                        or f"'{field}'" in evidence_text)
                 rows.append({

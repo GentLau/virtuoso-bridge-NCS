@@ -69,18 +69,22 @@ OPEN = [
         "id": "P-129",
         "layer": "上层（veriloga 包）· `write`/`set_source` 前置门 · 与 verilog 同族漂移",
         "slug": "veriloga-missing-view-exists-gate",
-        "title": "`veriloga.write` 缺 view 存在性门（`verilog.write` 有）：缺失/脏残留 view 下 `set_source` 的返回语义与磁盘结果未对齐——脏残留目录时可能静默写出无 `master.tag` 的孤儿文件",
-        "level": "P2（同族包行为漂移；「静默 ok」成立范围待半真机复现定性）",
+        "title": "`veriloga.write` 的 `set_source` 对不存在 view 不设门（`verilog` 同场景结构化拒绝）：会静默**隐式创建 view**（只落 `veriloga.va`、无 `master.tag`），随后 `check_and_save` 报 `stringToSymbol` 隐晦错误——写入说成功、下游炸",
+        "level": "P2（同族包行为相反 + 隐式创建绕过 `ensure_view`；真机多点攻击已复现）",
         "owner": "设计侧（对齐 `verilog._view_exists` 前置门与错误提示；建议抽共享 text-view 前置）",
-        "status": "待测试侧",
+        "status": "待设计修",
         "where": "`src/pyapi/packages/veriloga.py:358-397`（`write` 无 `_view_exists`，直接 `_set_source`）；对照 `src/pyapi/packages/verilog.py:374-394`（`view_ready` 前置报错）与 `:441`（`_view_exists` 定义）",
-        "symptom": "对不存在/脏残留的 Verilog-A view 调 `set_source`：verilog 明确提示先 `ensure_view`；veriloga 无此门——新鲜缺失多数以 scp/mv 错误收场（文案不友好），而「目录存在但无 master.tag」的脏残留会写出孤儿 `veriloga.va` 且可能 ok=true。",
-        "repro": "半真机（vblog）：① 对完全不存在 view 的 cell 执行 `set_source`；② 手工制造残留（建 view 目录、不放 master.tag）再执行 → 对比返回语义与磁盘文件。",
-        "evidence": "静态核实（2026-10-08，测试/root）：veriloga 全文无 `_view_exists`；verilog 有门+友好文案；上传链路为 `scp 旁路 stage + mv 安装`（`tunnel.py:40-58`、`:509-540`），目录缺失时 mv 失败、目录存在时静默落盘。",
-        "accept": "① veriloga 与 verilog 同门同文案；② 两种前置场景（缺失目录/脏残留）均不得静默成功，返回与磁盘一致；③ TB 覆盖两条路径后转设计修。",
-        "next": "测试侧先跑半真机复现定性（两条路径），据实回填本卡后转设计侧对齐门。",
+        "symptom": "真机（vblog，2026-10-08）多点攻击：对全新 cell 的缺失 view 调 `set_source` → **ok=true**；`ddGetObj` 由 nil→t（view 被隐式创建）；磁盘只有 `veriloga.va`、**无 `master.tag`**；`read` 可读；随后 `check_and_save` 失败（`stringToSymbol: argument #1 should be a string`）。同一场景 `verilog.write` 结构化拒绝并点名 `ensure_view`。",
+        "repro": "`PYTHONPATH=src python test/live/packages/veriloga_view_gate_p129_tb.py`（真机 7 路攻击：写/读回/DB 前后/落盘/master.tag/patch/check_and_save + verilog 对照）。",
+        "evidence": "静态核实（2026-10-08）：veriloga 全文无 `_view_exists`；verilog 有门+友好文案。"
+                    "**真机复现（2026-10-08 15:20，vblog）**：`db_view_before=nil` → `write ok=true` → `db_view_after=t`；`files_listing=[veriloga.va]`、`master_tag=ABSENT`；`check_and_save` 失败 `stringToSymbol...`；对照组 verilog 报 `view ... not found; call ensure_view first` —— `test/artifacts/evidence/redpins/p129-veriloga-view-gate.json`。",
+        "accept": "① veriloga 与 verilog 同门同文案（缺失 view 的 `set_source`/`patch_source` 必须结构化失败）；② 不得绕过 `ensure_view` 隐式创建；若确要支持隐式创建，须先改 spec 并保证 `master.tag`/模板与 `check_and_save` 全链可用；③ 真机红钉转绿。",
+        "next": "真机多点攻击已完成（静默隐式创建 + 缺 master.tag + 下游 check_and_save 失败全部实锤）；等设计对齐门与文案，红钉转绿即销卡。",
         "reported": "2026-10-08（外部静态审查 A1）",
-        "updated": "2026-10-08（测试侧建卡）",
+        "updated": "2026-10-08 15:20（真机多点攻击复现；红钉已挂）",
+        "extra": "## 红钉（2026-10-08）\n\n"
+                 "* 真机红钉：`test/live/packages/veriloga_view_gate_p129_tb.py`（`run_redpins` key `p129-veriloga-view-gate`）；7 路攻击判定：未拒绝 / 隐式创建 / 缺 master.tag / check_and_save 失败 / patch 行为 / verilog 对照。\n"
+                 "* 运行：`python test/shared/runners/run_redpins.py --only p129-veriloga-view-gate`；证据 `test/artifacts/evidence/redpins/p129-veriloga-view-gate.json`。",
     },
 
     {
@@ -96,27 +100,12 @@ OPEN = [
         "repro": "对四处分别构造含特殊字符的输入（cell 名带 `'`、路径带空格/`$()`、window_id 带 `$(...)`）→ 对比期望命令与实际执行；建议补离线命令拼接断言 + 半真机各一发。",
         "evidence": "静态核实（2026-10-08）四处站点逐条比对；`screenshot` 的 target 白名单为正确对照。",
         "accept": "① 四处统一引用（含单引号/空格/`$(` 用例）；② 正常名称回归不变；③ 后续新增拼接走统一 helper（可并入 P-130 治理项）。",
-        "next": "等设计修；测试侧补特殊字符用例（离线+半真机各 1 条）。",
+        "next": "等设计修；3 个可离线站点已挂红钉，schematic 站点随修复补验。",
         "reported": "2026-10-08（外部静态审查 A9）",
         "updated": "2026-10-08（测试侧建卡）",
-    },
-
-    {
-        "id": "P-127",
-        "layer": "上层包 ↔ 中层 role 拓扑 · spec §5.6 口径边界（split-host）",
-        "slug": "cross-role-path-visibility-split-host",
-        "title": "跨 role 可见性缺口：文本视图/截图在 split-host（file/command 与 daemon/gui 不同机）合法配置下静默错位——上传成功但 daemon 读不到、清理在错误主机执行不报错",
-        "level": "P2（合法配置下的静默错误；需口径裁决）",
-        "owner": "设计侧+spec 侧（二选一裁决：包内把同路径读/写/清理收敛到同一 role；或在注册/文档固定可见性要求并在注册期校验）",
-        "status": "待决策",
-        "where": "`src/pyapi/packages/verilog.py:186-216` / `veriloga.py:159-190`（SKILL 在 daemon 侧解析 `ddGetObjReadPath`，文件却走 file 角色上传/下载）；截图四包（`schematic.py:940-944`、`symbol.py:978-985`、`layout.py:1477-1487`、`gui.py:421-425`）写 gui/daemon root、用 command 角色 mkdir/rm；spec `spec/design-concepts/总览/1-四层整体架构与接口.md` §5.6（「bridge 不要求 role 共享目录；跨 role 传文件由调用方保证」）",
-        "symptom": "file/command 与 daemon/gui 不同机时：文本视图上传「成功」但 daemon 侧路径不可见/是旧内容；截图 `rm` 落在 command 主机、删不到 gui 主机文件且 `rm -f` 不报错 → 残留；若 file 角色看不到 gui 产物，下载失败但错误指向不明。",
-        "repro": "常驻环境 fork：daemon→wsl-gent、file→本地 wsl、command→另一台 → 跑 text-view `set_source` 与截图各一发，观察落点与返回；TB 待补（multi-role 组已有 role-split 骨架可扩展）。",
-        "evidence": "静态核实 + spec §5.6 原文（2026-10-08）。",
-        "accept": "① 裁决落地（包内同 role 闭环 or 注册期校验）；② split-host 至少覆盖文本视图与截图各一条 TB；③ 不可见时结构化错误（VB-PATH-NOT-VISIBLE 或明确提示），不静默错位。",
-        "next": "请用户/spec owner 裁决路线（测试侧建议：包内同 role 闭环优先，注册期校验兜底）；裁决后测试侧补 split-host TB。",
-        "reported": "2026-10-08（外部静态审查 A8）",
-        "updated": "2026-10-08（测试侧建卡）",
+        "extra": "## 红钉（2026-10-08）\n\n"
+                 "* 离线红钉：`test/offline/unit/test_p128_shell_quoting_sites.py`（3 条 strict xfail：gui.send_key / verilog.import grep / maestro.find，且 gui 覆盖 send+verify 全部命令）；实测红因：window_id 未字面引用、grep 单引号逃逸无法按 POSIX 解析、history_dir 未引用。\n"
+                 "* schematic 站点（screenshot 文件名）随修复补验；运行：`python -m pytest test/offline/unit/test_p128_shell_quoting_sites.py -rx`（当前 3 xfailed）。",
     },
 
     {
@@ -132,9 +121,12 @@ OPEN = [
         "repro": "半真机（vblog）：先构造 daemon dirty（发长 SKILL 触发超时）→ 再发一条 → 收 busy → 观察客户端置 dirty 及下一请求的 probe 等待；TB 待补（transport 协议组）。",
         "evidence": "静态核实（2026-10-08）：daemon busy 分支未执行即拒绝；客户端映射 delivered_unknown；middle 据此置 dirty 并让后续请求探测等待。",
         "accept": "① busy 单列 not_delivered（不置 dirty、不误报结果未知）；② timeout 等真 unknown 路径行为不变；③ 协议 TB 断言：busy 后下一请求直接发送/快速返回。",
-        "next": "等设计修；测试侧补 busy 协议 TB（可复用现有 dirty/probe TB 骨架）。",
+        "next": "等设计修；离线红钉已挂（busy → not_delivered），并带 timeout 负向守卫防过度修复。",
         "reported": "2026-10-08（外部静态审查 A4）",
         "updated": "2026-10-08（测试侧建卡）",
+        "extra": "## 红钉（2026-10-08）\n\n"
+                 "* 离线红钉：`test/offline/unit/test_p126_skill_busy_delivery.py`（busy 1 条 strict xfail + timeout 负向守卫 1 条）；实测红因：busy 帧 → `delivery=delivered_unknown`。\n"
+                 "* 运行：`python -m pytest test/offline/unit/test_p126_skill_busy_delivery.py -rx`（当前 1 xfailed / 2 passed）。",
     },
 
     {
@@ -148,11 +140,16 @@ OPEN = [
         "where": "`src/pyapi/packages/gui.py:421-441`（capture→download→return，无 rm）；对照 `src/pyapi/packages/schematic.py:1001-1007`（finally 中 `rm -f`，注释注明 P-091 口径）",
         "symptom": "每次 gui 截图在 GUI 角色 `<root>/screenshots/` 残留一个 `.ppm`，长期运行无界增长；三包与 gui 包行为不一致。",
         "repro": "常驻环境对 vblog 连续调用 `gui.screenshot` N 次 → 远端 `screenshots/` 文件数递增；TB 待补（并入现有截图 TB 组断言）。",
-        "evidence": "静态核实（2026-10-08）：三包有清理、gui 无。",
+        "evidence": "静态核实（2026-10-08）：三包有清理、gui 无。"
+                    "**真机红钉（2026-10-08 15:18，vblog）**：连拍 3 张后远端新增 3 个 `shot-<ms>.ppm` 残留（每张都泄漏）——"
+                    "`test/artifacts/evidence/redpins/p125-gui-shot-cleanup.json`。",
         "accept": "① gui 下载成功后清理远端暂存（失败重试不误删）；② TB 断言：成功后远端无同名暂存、本地产物在；③ 清理失败不影响返回（与三包一致）。",
-        "next": "等设计修；测试侧在截图 TB 组补 gui 断言。",
+        "next": "等设计修（对齐 P-091 口径）；真机红钉已挂（连拍 3 张全泄漏），修好后 `run_redpins` 报 UNEXPECTED-GREEN 即销钉。",
         "reported": "2026-10-08（外部静态审查 A2）",
         "updated": "2026-10-08（测试侧建卡）",
+        "extra": "## 红钉（2026-10-08）\n\n"
+                 "* 真机红钉：`test/live/packages/gui_screenshot_cleanup_p125_tb.py`（`run_redpins` key `p125-gui-shot-cleanup`）；连拍 3 张 → 3 个残留（无界增长）。\n"
+                 "* 运行：`python test/shared/runners/run_redpins.py --only p125-gui-shot-cleanup`。",
     },
 
     {
@@ -168,9 +165,12 @@ OPEN = [
         "repro": "半真机/离线：并发两条 `verilog.write(set_source)`（不同 cell、同名 view）→ 校验交叉污染；skillref 两路并发搜索同 doc_root。TB 待补（并发组）。",
         "evidence": "静态核实（2026-10-08）：路径构造共享 + 固定主文件名；skillref stage 命名与每请求清理。",
         "accept": "① 暂存/缓存路径唯一化（或锁/只读共享）；② 新增并发 TB 证明互不干扰；③ 串行行为不变。",
-        "next": "等设计修；测试侧补并发 TB（两路并发×2 场景）。",
+        "next": "等设计修；verilog/veriloga 半已挂离线红钉（含确定性串台实证）；skillref 半等「请求身份」方案后补钉。",
         "reported": "2026-10-08（外部静态审查 A7）",
         "updated": "2026-10-08（测试侧建卡）",
+        "extra": "## 红钉（2026-10-08）\n\n"
+                 "* 离线红钉（verilog/veriloga 半）：`test/offline/unit/test_p124_staging_path_uniqueness.py`（3 条 strict xfail）；实测红因：不同 cell 暂存到同一本地文件，且**并发阅读台实证**——A 返回了 B 的内容（`content:/srv/a/cellB/...`）。\n"
+                 "* skillref 半（同一 doc_root 每请求 rmtree）：等设计定「请求身份」形状（per-request stage 目录或进程锁）后补行为级 TB——TODO 留本卡，不计已覆盖。",
     },
 
     {
@@ -186,9 +186,12 @@ OPEN = [
         "repro": "常驻环境：向业务面发声明超大 Content-Length 的 POST（或慢速发送）→ 观察线程占用与超时行为；TB 待补（server 组）。",
         "evidence": "静态核实（2026-10-08）：业务面无 _MAX、控制面有；读取路径 `rfile.read(length)`。",
         "accept": "① 业务面与注册面同口径上限（或共享 helper）；② 超限结构化 4xx，不静默断连；③ 正常体积请求回归不变。",
-        "next": "等设计修；测试侧补超大 body 与慢速 body 两条用例（可离线）。",
+        "next": "等设计修；离线红钉已挂（超大 Content-Length 必须在读取前 4xx）。",
         "reported": "2026-10-08（外部静态审查 A6）",
         "updated": "2026-10-08（测试侧建卡）",
+        "extra": "## 红钉（2026-10-08）\n\n"
+                 "* 离线红钉：`test/offline/unit/test_p123_api_body_limit.py`（strict xfail + 1 条控制组正常用例）；实测红因：声明 17 MiB 后服务端 6s 内无响应（在等 body）。\n"
+                 "* 运行：`python -m pytest test/offline/unit/test_p123_api_body_limit.py -rx`（当前 1 xfailed / 1 passed）。",
     },
 
     {
@@ -204,9 +207,12 @@ OPEN = [
         "repro": "离线/半真机：本地模式执行长命令（如 `sleep 5`）中途 kill 本地 shell → 检查返回 kind/rc；TB 待补（transport 本地组）。",
         "evidence": "静态核实（2026-10-08）：eof 分支无 kind；CommandResult 默认 `command`；远端同类场景结构化 unknown-effect。",
         "accept": "① eof 且无 rc/marker ⇒ kind != `command`；② 本地 shell 死亡路径 TB 覆盖；③ 正常完成路径行为不变。",
-        "next": "等设计修；测试侧补本地 shell 死亡 TB（1 条即可，配正常路径回归）。",
+        "next": "等设计修；离线红钉已挂并实测红因（eof 后 `kind=command, rc=0`）。",
         "reported": "2026-10-08（外部静态审查 A3）",
         "updated": "2026-10-08（测试侧建卡）",
+        "extra": "## 红钉（2026-10-08）\n\n"
+                 "* 离线红钉：`test/offline/unit/test_p122_local_shell_eof.py`（strict xfail）；实测红因：kill 本地 shell 后返回 `kind=command, rc=0`（结果未知被读成成功）。\n"
+                 "* 运行：`python -m pytest test/offline/unit/test_p122_local_shell_eof.py -rx`（当前 1 xfailed）；修复后 XPASS 转红 → 删除 xfail 标记。",
     },
 
     {
@@ -970,11 +976,44 @@ OPEN = [
 CLOSED_IDS = {
     "C06", "C10", "C11", "P-086", "P-106", "P-107", "P-108", "P-110", "P-111", "P-112", "P-115",
     "P-109", "P-114", "C07", "P-116", "C09",
+    # 2026-10-08 修复批次（四步流程归档：钉红→修复→同 TB 转绿；证据见 CLOSED_RECENT）
+    "P-117", "P-118", "P-119", "P-120", "P-121", "P-122", "P-123", "P-124", "P-125", "P-126",
+    "P-128", "P-129", "P-131",
 }
 OPEN = [bug for bug in OPEN if bug["id"] not in CLOSED_IDS]
 
 #: 本轮明确闭环（保留记录，避免「消失了没人知道为什么」）
 CLOSED_RECENT = [
+    ("P-127", "跨 role 可见性：split-host 下文本视图/截图可能静默错位（外部审查 A8）",
+     "**用户裁定（2026-10-08）：不是缺陷、不处理**——按 spec《四层整体架构 §5.6》「bridge 只按用户给定的 role 目标投送指令/文件，"
+     "不判断 role 之间是否同机、同账号或共享路径；跨 role 传文件由调用方保证」：role 不统一的可见性由用户负责，"
+     "桥只做忠实投送，role 只决定中层通道投送到何处。测试侧按裁决撤卡、不挂红钉（原拟 split-host 钉子作废）。"),
+    ("P-117", "calibre `export.items` 的 `pdb_dir` 与 spec 不一致（实现缺项）",
+     "**d90113e 修**：`pdb_dir` 改预留项——请求层接受、`value.reserved` 结构化点名、零下载、不影响同请求其它 item；spec §4.4/§4.5 同步。测试侧复跑 `test/offline/unit/test_calibre_package.py` 新增 2 条回归（预留零下载 / 不挡 summary）全绿；真机 `calibre_e2e_tests.py::EXPORT-04` 已改新口径（常驻环境无 Calibre，真机待全量带跑）。"),
+    ("P-118", "maestro `set_job_policy(netlisting)` 静默 no-op",
+     "**58540d8 修**：spec 定稿三原子（create/attach/delete，attach 覆盖挂载与回退），实现按新模型落盘。测试侧真机整链复跑 `maestro_nested_keys_e2e_tests.py` **11/11 PASS**（NKM-05/09 值级读回）——证据 `test/artifacts/evidence/round9/maestro-nested-keys-p118-close2.json`。"),
+    ("P-119", "CDS.log 桥 flush 空行不计入 delta（spec 口径缺失）",
+     "**spec 回填**：`底层/6-日志返回设计标准.md:136` 落「桥自身 flush 空行不计入 delta、可过滤、不参与分级/预算」；实现不动（C06 flush 行为保持）。半真机 probe 判据已同口径。"),
+    ("P-120", "注册 probe 忽略 `ssh_backend`（accept-new 场景注册失败）",
+     "**b2fbbe9 修**（方案 B：CandidateRole 透传 backend/tool_override/connect_timeout/凭据 + accept-new 指路）。测试侧真机判别复跑（w4-gent，2026-10-08）：openssh+accept-new → step3 probe 200 通过（`test/artifacts/evidence/verify-p120/openssh-accept-new-regression.json`）；paramiko+accept-new → 结构化拒绝并指路（`paramiko-accept-new-regression.json`）；离线 `test_register_flow`/`test_paramiko`/`test_probe` 全绿。"),
+    ("P-121", "`place_pin(sig_type=power)` 读回 supply 未写明（spec 缺口）",
+     "**31d8ecf 修（spec）**：`上层/2-schematic.md:74-76` 补 `power→supply` DB 归一化说明（读回按 DB 词汇、`supply` 非合法入参）。TB 早已按映射值级断言，随全量继续跑。"),
+    ("P-122", "本地 shell EOF 被当命令正常完成（kind 合同违反）",
+     "**abf4eaa 修**：eof 分支 `kind=unknown-effect`、rc=255、stderr 前缀 `VB-UNKNOWN-EFFECT:`。测试侧复跑 `test/offline/unit/test_p122_local_shell_eof.py`（taskkill /T 真杀整棵树）全绿。"),
+    ("P-123", "业务面 HTTP 无请求体上限",
+     "**abf4eaa 修**：16 MiB 上限、超限在读取前结构化 413。测试侧复跑 `test/offline/unit/test_p123_api_body_limit.py`（含控制组）全绿。"),
+    ("P-124", "并发暂存互踩（verilog/veriloga/skillref）",
+     "**d90113e 修**：verilog/veriloga 暂存按完整远端路径哈希唯一化；skillref 改线程槽位请求级目录。测试侧复跑 `test/offline/unit/test_p124_staging_path_uniqueness.py` 3/3 全绿（含并发阅读台实证）。"),
+    ("P-125", "`gui.screenshot` 不清理远端暂存",
+     "**d90113e 修**：下载成功后清理远端暂存。测试侧真机复跑 `test/live/packages/gui_screenshot_cleanup_p125_tb.py` rc=0（连拍 3 张零残留）；`run_redpins` 报 UNEXPECTED-GREEN 后销钉；该 TB 已接入 `run_all_http.py` 全量。"),
+    ("P-126", "daemon busy 被归类 delivered_unknown",
+     "**abf4eaa 修**：busy→not_delivered、timeout 保持 delivered_unknown。测试侧复跑 `test/offline/unit/test_p126_skill_busy_delivery.py`（含负向守卫）全绿。"),
+    ("P-128", "上层包 shell 引用不一致（4 站点）",
+     "**d90113e 修**：schematic/gui/verilog/maestro 四处统一引用。测试侧复跑 `test/offline/unit/test_p128_shell_quoting_sites.py` 3/3 全绿。"),
+    ("P-129", "veriloga `set_source` 缺 view 存在性门（静默隐式创建）",
+     "**d90113e 修**：对齐 verilog 的存在性门与文案。测试侧真机复跑 `test/live/packages/veriloga_view_gate_p129_tb.py` rc=0（7 路攻击全过：拒绝 + 无孤儿 + 无隐式创建）；`run_redpins` 报 UNEXPECTED-GREEN 后销钉；该 TB 已接入 `run_all_http.py` 全量。"),
+    ("P-131", "paramiko 后端隐式依赖 `ssh -G`（无 OpenSSH CLI 不可用）",
+     "**628c813 修**：缺 OpenSSH CLI 时回退纯 Python config 解析（`paramiko_backend.lookup_ssh_config`）；注册 probe 同等回退。测试侧复跑 `test_paramiko.py`/`test_probe.py` 新增无 CLI 用例全绿。"),
     ("C09", "`maestro.write_history` rename 链撞只读/陈旧 Maestro session → `Cannot find a setup database entry for handle`",
      "**设计侧二修 `f6befbb`（2026-09-30 19:26）**：根因是 `maeOpenSetup` 在 view 已被别的 session 以 edit 打开时返回 "
      "**read-only** session（或弹 `ASSEMBLER-8127` 模态）；旧代码把无窗口后台 session 一律当可写 → rename 在只读 session 上以 stale SDB handle 报错。"
@@ -1392,6 +1431,17 @@ def render_readme() -> str:
    关闭时**不删卡片**：移到 [已关闭-近期.md](已关闭-近期.md) 并写一句「凭什么关的」（证据路径）。
 3. **刷新方式**：改 `test/shared/runners/make_bug_cards.py` 的 `OPEN` / `CLOSED_RECENT` 段，
    然后 `python test/shared/runners/make_bug_cards.py`（幂等；`--check` 只校验不写盘）。
+
+### 四步流程（新 bug 一律照此办理）
+
+1. **建 bug TB 钉红**：放对应层（`test/offline` / `test/semi` / `test/live`），先证明当前代码下**红**；
+   离线钉用 `pytest.mark.xfail(strict=True)`，真机钉登记 `test/shared/runners/run_redpins.py`。
+2. **修复**（设计侧改代码 / spec）。
+3. **同一支 TB 转绿**：只许加强断言，不许为绿放宽；用第 1 步那支 TB 复跑通过。
+4. **归档**：卡片移入 [已关闭-近期.md](已关闭-近期.md)，写明**用了哪支 TB**（路径）+ 证据；
+   该 TB 自此**进入全量测试**，后续全量测试都会带上它。
+
+> 本流程自 2026-10-08 起生效；之前的卡既往不咎。
 
 ## 1. 未关闭（{len(OPEN)} 条）
 

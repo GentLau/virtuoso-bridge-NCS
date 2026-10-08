@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
 # 作者: 测试/root
-# 最后改动: 2026-09-30 21:45
+# 最后改动: 2026-10-08 16:31
 # 依赖: 常驻 vblog（业务面 8127, token vb-vblog）+ wsl-gent 上的 Calibre/PDK 环境
 # =======================================================================
 # 六步流程（test/docs/写TB规范.md §1）：
@@ -476,27 +476,32 @@ def _case_export_all_small(transport) -> None:
 
 
 def _case_export_pdb_dir(transport) -> None:
-    """EXPORT-04（P-117 记录）：spec §4.5 的 `items` 列了 `pdb_dir`，实现未提供。
+    """EXPORT-04（P-117 回归）：`pdb_dir` 预留项——请求层接受、结构化点名
+    `reserved`、不产生下载条目，且不影响同请求其它 item（summary 仍要下到）。
 
-    现状：请求层结构化拒绝 `unknown export item: pdb_dir`。
-    **决策已定（2026-10-08，见卡片尾部）**：补实现，但只做「预留接口」——
-    请求层接受 `pdb_dir`、预留语义结构化点名、且不影响同请求其它 item
-    （`items=["summary","pdb_dir"]` 仍要下到 summary 且 sha256 一致）；PEX 真正恢复后再升级为
-    pdb 目录的值级落地断言。
-
-    → 本用例目前断言的是"实现未落地前的现状"。**哪天它变红（不再 400），就是设计已落地预留接口**，
-    按卡片尾部的决策把这里改成预留语义断言即可。
+    预留语义（spec 12-calibre §4.5）：本版无 PEX 产物可导；`reserved` 必须
+    点名，不得静默成功、也不得当成"下到了 0 个文件"。
     """
     run_dir = _exported.get("run_dir")
     _check(run_dir, "EXPORT-04 依赖 LVS-02 的 run_dir，但 LVS-02 未产出")
     response = transport.call({
         "operation": "calibre.export", "token": TOKEN, "run_dir": run_dir,
-        "items": ["pdb_dir"], "local_dir": str(EXPORT_DIR / "pdb_dir"),
+        "items": ["summary", "pdb_dir"], "local_dir": str(EXPORT_DIR / "pdb_dir"),
     })
-    _check(not response.get("ok"), f"pdb_dir 现状应被拒绝（P-117）: {str(response)[:200]}")
-    _check("unknown export item: pdb_dir" in str(response.get("error") or ""),
-           f"拒绝原因应点名 pdb_dir（P-117）: {response}")
-    _check(not (EXPORT_DIR / "pdb_dir").exists(), "被拒绝的 export 不得落盘")
+    _check(response.get("ok"), f"预留 pdb_dir 不应再被拒绝（P-117）: {str(response)[:200]}")
+    value = response.get("value") or {}
+    reserved = value.get("reserved") or []
+    _check(any(e.get("item") == "pdb_dir" and e.get("status") == "reserved"
+               for e in reserved),
+           f"pdb_dir 必须结构化点名 reserved（P-117）: {value}")
+    downloaded = value.get("downloaded") or []
+    _check(any(d.get("item") == "summary" for d in downloaded),
+           f"预留项不得影响同请求其它 item（summary 未下到）: {value}")
+    _check(not any(d.get("item") == "pdb_dir" for d in downloaded),
+           f"pdb_dir 不得产生下载条目（P-117）: {value}")
+    for entry in downloaded:
+        _check(Path(str(entry.get("local"))).is_file(),
+               f"下载条目未落盘: {entry}")
 
 
 def _case_lvs(transport) -> None:
@@ -547,7 +552,7 @@ def run_suite(transport, only: str = "") -> list[tuple[str, str]]:
         ("EXPORT-01 export local_dir + 下载值级读回", lambda: _case_export(transport)),
         ("EXPORT-02 未知 item 零落盘", lambda: _case_export_negative(transport)),
         ("EXPORT-03 all_small 展开值级", lambda: _case_export_all_small(transport)),
-        ("EXPORT-04 pdb_dir 现状（P-117 记录）", lambda: _case_export_pdb_dir(transport)),
+        ("EXPORT-04 pdb_dir 预留语义（P-117 回归）", lambda: _case_export_pdb_dir(transport)),
     ]
     for name, func in cases:
         if only and only.lower() not in name.lower():

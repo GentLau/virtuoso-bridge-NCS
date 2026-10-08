@@ -28,6 +28,11 @@ from typing import Any
 from common.paths import artifact_dir
 from pyapi.models import ExecutionStatus, Middle, skill_log_kwargs, ResultBase, ResultPackage
 from pyapi.packages import _calibre_util as cu
+from pyapi.packages._common import (
+    _require_bool,
+    _require_nonblank_text as _require_text,
+    _require_token,
+)
 
 OPERATION_NAMES = (
     "calibre.check_env",
@@ -263,29 +268,12 @@ class Result(ResultBase):
 
 
 # -------------------------------------------------------------------- 校验器 --
-def _require_token(token: Any) -> str:
-    if not isinstance(token, str) or not token:
-        raise ValueError("token must be a non-empty string")
-    return token
-
-
-def _require_text(value: Any, name: str) -> str:
-    if not isinstance(value, str) or not value.strip():
-        raise ValueError(f"{name} must be a non-empty string")
-    return value
-
-
 def _opt_text(value: Any, name: str) -> None:
     if value is None:
         return
     _require_text(value, name)
     if "\x00" in value:
         raise ValueError(f"{name} must not contain NUL")
-
-
-def _require_bool(value: Any, name: str) -> None:
-    if not isinstance(value, bool):
-        raise ValueError(f"{name} must be a boolean")
 
 
 def _opt_timeout(value: Any) -> None:
@@ -443,7 +431,8 @@ class Package(ResultPackage):
         }
 
     def pex(self, request: RunRequest) -> Result:
-        # PEX 调试受限，本版不提供；保留下方 _run("pex") 相关实现供后续恢复。
+        # PEX 调试受限，本版不提供（spec 12-calibre §4.4）；保留下方 _run("pex")
+        # 相关实现供后续恢复——export 侧 pdb_dir 已按 P-117 预留口径点名。
         return Result(
             False,
             [{"name": "pex_unsupported", "ok": False,

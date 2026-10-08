@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
-# 作者: 设计/上层开发
-# 最后改动: 2026-09-29 13:40
+# 作者: 测试/root
+# 最后改动: 2026-09-30 21:45
 # 依赖: 真机 vblog token（schemtest/lay_e2e 布局）
 # =======================================================================
 """P-082/P-085 direct 复验：region 只收对角两点，且 depth>0 能真下钻。
@@ -58,12 +58,25 @@ record("① 四元组 region 被拒（点名 pos0/pos1）",
 
 # ② depth 0 vs 1（两点 region）。先放一个 master 实例，否则没有层级可下钻
 #    （深度下钻的判据本身要求"实例的图形被带出来"）。
+# 夹具自足（2026-09-30 修）：`lay_master` 会被别的 layout 套件清理掉 → 复跑时
+# `place_instance` 报 `*Error* instance not created`（假红）。先确保 master 存在且有图形。
+call("virtuoso.cellview.view.create", library=LIB, cell="lay_master",
+     view=VIEW, view_type="maskLayout")
+call("basic.skill.execute", skill_code="ddUpdateLibList() t")
+call("virtuoso.layout.write", library=LIB, cell="lay_master", view=VIEW,
+     commands=[{"op": "place_rect", "layer": "y0", "purpose": "drawing",
+                "bbox": [[0.0, 0.0], [1.0, 1.0]]}])
 placed = call("virtuoso.layout.write", library=LIB, cell=CELL, view=VIEW,
               commands=[{"op": "place_instance", "master_lib": LIB,
                          "master_cell": "lay_master", "master_view": VIEW,
                          "name": "P085_I1", "pos": [3.0, 3.0], "orient": "R0"}])
-record("② 前置：放置 master 实例", placed.get("ok") is True,
-       {"error": placed.get("error")})
+# 复跑幂等（2026-09-30 修）：实例名固定 `P085_I1`，上一轮留下的实例会让
+# `dbCreateInstByMasterName` 报 "Instance with name ... already exists"（假红）。
+# 这不是产品缺陷 —— 同名实例本就不可重复创建；已有实例直接复用即可。
+_placed_detail = json.dumps(placed.get("steps") or placed, ensure_ascii=False)
+_reused = "already exists" in _placed_detail
+record("② 前置：放置 master 实例", placed.get("ok") is True or _reused,
+       {"error": placed.get("error"), "reused_existing": _reused})
 
 
 def read(depth: int) -> dict:

@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
 # 作者: 测试/root
-# 最后改动: 2026-09-30 21:40
+# 最后改动: 2026-09-30 21:45
 # 依赖: test/artifacts/admin-token.txt（gitignored）
 # =======================================================================
 # 六步流程（test/docs/写TB规范.md §1）：
@@ -50,6 +50,7 @@ from common.registry import UserEntry, load_registry  # noqa: E402
 from register.candidate import validate_entry_shape  # noqa: E402
 
 USER = "cpw_user"
+OTHER = "cpw_other"
 STAMP = time.strftime("%m%d%H%M%S")
 
 # fixture 条目：**remote 形状**（与真实注册流程落盘的结构一致 —— 显式凭据 +
@@ -71,10 +72,14 @@ class Http:
         self.last_headers: dict[str, str] = {}
 
     def call(self, method: str, path: str, body: Any = None, *, admin: bool = True,
+             token: str | None = None,
              timeout: float = 30.0) -> tuple[int, dict[str, Any]]:
         headers = {"Content-Type": "application/json"}
-        headers["Authorization"] = (f"Bearer {self.admin_token}" if admin
-                                    else "Bearer not-the-admin-token")
+        if token is not None:
+            headers["Authorization"] = f"Bearer {token}"      # 个人 token 自助通道
+        else:
+            headers["Authorization"] = (f"Bearer {self.admin_token}" if admin
+                                        else "Bearer not-the-admin-token")
         payload = None if body is None else json.dumps(body, ensure_ascii=False).encode("utf-8")
         request = urllib.request.Request(f"{self.base}{path}", data=payload,
                                          headers=headers, method=method)
@@ -110,6 +115,7 @@ def main(argv: list[str] | None = None) -> int:
     evidence: dict[str, Any] = {"work_dir": str(work_dir), "port": port, "cases": {}}
     server: subprocess.Popen | None = None
     user_token = f"cpw-token-{STAMP}"
+    other_token = f"cpw-other-token-{STAMP}"
 
     def run(name: str, func) -> Any:
         try:
@@ -157,6 +163,10 @@ def main(argv: list[str] | None = None) -> int:
         shape_errors = validate_entry_shape(entry, USER, require_root_default_null=False)
         assert not shape_errors, f"fixture 未通过 runtime 形状校验: {shape_errors}"
         registry.register(USER, entry)
+        # 第二个 fixture 用户：验证"个人 token 只能碰自己"（C11 自助权限矩阵）。
+        other = entry.model_copy(deep=True)
+        other.token = other_token
+        registry.register(OTHER, other)
         assert registry_path().is_file(), f"fixture registry 未落盘: {registry_path()}"
 
         env = dict(os.environ, PYTHONPATH=str(SRC))
@@ -201,6 +211,78 @@ def main(argv: list[str] | None = None) -> int:
         assert '"thread_pool_size": 3' in blob, f"update 未生效（值级）: {blob[:200]}"
         assert user_token not in blob, "用户详情不得回显 token"
         evidence["cases"]["update_user"] = {"detail": blob[:200]}
+
+    def case_personal_read() -> None:
+        """C11 自助矩阵①：个人 token 只能读自己（自己 200 / 他人 403 / admin 200）。"""
+        status, detail = http.call("GET", f"/api/user/{USER}", token=user_token)
+        assert status == 200, f"个人 token 读自己应 200: {status} {detail}"
+        blob = json.dumps(detail, ensure_ascii=False)
+        assert user_token not in blob, "self 视图不得回显 token"
+        assert '"key_dir"' not in blob and '"key":' not in blob, \
+            f"self 视图不得回显保密字段（key/key_dir）: {blob[:200]}"
+        status, body = http.call("GET", f"/api/user/{OTHER}", token=user_token)
+        assert status == 403 and body.get("detail"), \
+            f"个人 token 读他人应 403（带 detail）: {status} {body}"
+        status, body = http.call("GET", f"/api/user/{OTHER}")
+        assert status == 200, f"admin 读他人应 200: {status} {body}"
+        evidence["cases"]["personal_read"] = {"other_status": 403, "admin_status": 200}
+
+    def case_personal_plain_update() -> None:
+        """C11 自助矩阵②：个人 token 可改**普通字段**（cdslog），值级读回 + 落盘。"""
+        status, body = http.call("POST", f"/api/user/{USER}/update",
+                                 {"cdslog": {"log_level": "warn"}}, token=user_token)
+        assert status == 200, f"个人 token 改普通字段应 200: {status} {body}"
+        status, detail = http.call("GET", f"/api/user/{USER}", token=user_token)
+        cdslog = ((detail.get("entry") or {}).get("cdslog") or {})
+        assert cdslog.get("log_level") == "warn", f"cdslog 未按值生效: {cdslog}"
+        on_disk = json.loads(registry_path().read_text(encoding="utf-8"))
+        assert on_disk[USER]["cdslog"]["log_level"] == "warn", "普通字段未落盘（值级）"
+        evidence["cases"]["personal_plain_update"] = {"cdslog": cdslog}
+
+    def case_personal_readonly_needs_enhanced() -> None:
+        """C11 自助矩阵③：只读字段（runtime.*）需 enhanced_token=管理员；
+        用**其它用户的 token** 作为 enhanced_token 必须 401。"""
+        status, body = http.call("POST", f"/api/user/{USER}/update",
+                                 {"runtime": {"thread_pool_size": 5}}, token=user_token)
+        assert status == 403 and "enhanced_token" in str(body.get("error")), \
+            f"无 enhanced 改 runtime 应 403: {status} {body}"
+        status, body = http.call("POST", f"/api/user/{USER}/update",
+                                 {"runtime": {"thread_pool_size": 5},
+                                  "enhanced_token": other_token}, token=user_token)
+        assert status == 401 and body.get("error") == "invalid enhanced_token", \
+            f"enhanced_token 用他人 token 应 401: {status} {body}"
+        status, body = http.call("POST", f"/api/user/{USER}/update",
+                                 {"runtime": {"thread_pool_size": 5},
+                                  "enhanced_token": http.admin_token}, token=user_token)
+        assert status == 200, f"enhanced=admin 应 200: {status} {body}"
+        status, detail = http.call("GET", f"/api/user/{USER}", token=user_token)
+        runtime = ((detail.get("entry") or {}).get("runtime") or {})
+        assert runtime.get("thread_pool_size") == 5, f"runtime 未按值生效: {runtime}"
+        evidence["cases"]["personal_readonly_needs_enhanced"] = {
+            "without_enhanced": 403, "other_token_as_enhanced": 401, "with_admin": 200,
+        }
+
+    def case_personal_secret_and_delete_forbidden() -> None:
+        """C11 自助矩阵④：保密字段（role.key）一律 403；个人 token 不得 DELETE。"""
+        status, body = http.call("POST", f"/api/user/{USER}/update",
+                                 {"roles": {"gui": {"key": "stolen_key"}}},
+                                 token=user_token)
+        assert status == 403 and "secret" in str(body.get("detail")), \
+            f"个人 token 改保密字段应 403: {status} {body}"
+        status, body = http.call("POST", f"/api/user/{USER}/update",
+                                 {"ssh": {"default": {"key_dir": "/tmp/stolen"}}},
+                                 token=user_token)
+        assert status == 403, f"个人 token 改 ssh.default.key_dir 应 403: {status} {body}"
+        status, body = http.call("DELETE", f"/api/user/{USER}", token=user_token)
+        assert status == 401, f"个人 token DELETE 应 401（delete 仍管理员专属）: {status} {body}"
+        status, detail = http.call("GET", f"/api/user/{USER}", token=user_token)
+        assert status == 200, f"被拒绝的改密不得影响条目可读性: {status}"
+        on_disk = json.loads(registry_path().read_text(encoding="utf-8"))
+        assert on_disk[USER]["ssh"]["default"]["key_dir"] != "/tmp/stolen", \
+            "被拒绝的保密字段改动不得落盘"
+        evidence["cases"]["personal_secret_and_delete_forbidden"] = {
+            "role_key": 403, "ssh_key_dir": 403, "delete": 401,
+        }
 
     def case_put_config() -> None:
         marker = f"cpw-{STAMP}"
@@ -316,9 +398,17 @@ def main(argv: list[str] | None = None) -> int:
     run("CPW-03 update 迁移（显式指纹路径值级读回）", case_endpoint_reenroll)
     run("CPW-04 update 拒绝（未知 endpoint 零落盘 + 原值保持）",
         case_endpoint_untrusted_rejected)
-    run("CPW-05 PUT config（GET 一致 + 落盘一致）", case_put_config)
-    run("CPW-06 负例（404/400×3/401×3）", case_negative)
-    run("CPW-07 delete（removed=true + 列表消失 + 详情 404）", case_delete_user)
+    # C11：个人自助权限矩阵（v42 实现）——测试侧独立验证
+    run("CPW-05 个人 token 读自己 200 / 他人 403 / admin 200（self 视图不泄露 key）",
+        case_personal_read)
+    run("CPW-06 个人 token 改普通字段（cdslog 值级 + 落盘）", case_personal_plain_update)
+    run("CPW-07 只读字段需 enhanced（无→403 / 他人 token→401 / admin→200）",
+        case_personal_readonly_needs_enhanced)
+    run("CPW-08 保密字段 403 + 个人 token 不得 DELETE（零落盘）",
+        case_personal_secret_and_delete_forbidden)
+    run("CPW-09 PUT config（GET 一致 + 落盘一致）", case_put_config)
+    run("CPW-10 管理面负例（404/400×3/401×3）", case_negative)
+    run("CPW-11 delete（removed=true + 列表消失 + 详情 404）", case_delete_user)
 
     if server is not None:
         server.terminate()

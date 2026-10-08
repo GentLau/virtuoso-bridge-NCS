@@ -185,6 +185,8 @@ class TestRegistrationPageContract(unittest.TestCase):
         self.assertIn("'Authorization': 'Bearer ' + credentials.personal", self.html)
         self.assertNotIn("'Authorization': 'Bearer ' + credentials.enhanced", self.html)
         self.assertNotIn("增强凭据兼容模式", self.html)
+        self.assertIn("function inspectPersonalPatch(patch)", self.html)
+        self.assertIn("key / key_dir 属于管理员字段", self.html)
 
     def test_admin_page_is_system_scoped(self):
         """管理员页只管理系统配置和进程，不承载逐用户参数编辑。"""
@@ -194,13 +196,13 @@ class TestRegistrationPageContract(unittest.TestCase):
         self.assertIn("'/api/process/' + action", self.html)
         self.assertNotIn('id="adminEditBtn"', self.html)
 
-    def test_personal_page_discloses_current_backend_permission_gap(self):
-        """真实 server 目前仍要求管理员 Authorization，页面必须显式披露。"""
-        self.assertIn("<code>/api/user/*</code> 仍强制管理员 Authorization", self.html)
-        self.assertIn("<code>enhanced_token</code> 也尚未接入 update", self.html)
-        self.assertIn("当前页不会回退到管理员 token", self.html)
+    def test_personal_page_encodes_v42_field_level_boundaries(self):
+        """个人页必须披露只读字段、保密字段和删除的管理员边界。"""
+        self.assertIn("只读字段", self.html)
+        self.assertIn("DELETE /api/user/&lt;user&gt;", self.html)
+        self.assertIn("仍要求管理员 Authorization", self.html)
         self.assertIn("function renderPersonalFailure(error, action)", self.html)
-        self.assertIn("后端契约缺口", self.html)
+        self.assertIn("管理员字段", self.html)
 
 
 if __name__ == "__main__":

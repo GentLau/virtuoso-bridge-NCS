@@ -18,7 +18,7 @@
 用法::
 
     PYTHONPATH=src python test/live/flows/adc_sar_flow_tb.py \
-        --work-dir test/artifacts/env/log-vblog --token-a vb-vbuser1 --token-b vb-vbuser2 \
+        --work-dir test/artifacts/env/log-vblog --token-a vb-vbuser3 --token-b vb-vbuser4 \
         --out test/artifacts/evidence/round5-adc-sar.json
 """
 from __future__ import annotations
@@ -42,8 +42,8 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--base", default="http://127.0.0.1:8127/api/operation")
     parser.add_argument("--work-dir", default="test/artifacts/env/log-vblog")
-    parser.add_argument("--token-a", default="vb-vbuser1")
-    parser.add_argument("--token-b", default="vb-vbuser2")
+    parser.add_argument("--token-a", default="vb-vbuser3")
+    parser.add_argument("--token-b", default="vb-vbuser4")
     parser.add_argument("--lib", default="adc_sar")
     parser.add_argument("--lib-path", default="/project/libs/adc_sar")
     parser.add_argument("--tech", default="tsmcN65")

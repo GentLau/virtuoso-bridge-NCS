@@ -1,6 +1,6 @@
 # 嵌套键覆盖（机器结论，脚本生成）
 
-- 目标包 7；命令 op 90 个；字段 105 条；**从未被任何 TB 触碰的字段 0 条**
+- 目标包 7；命令 op 90 个；字段 104 条；**从未被任何 TB 触碰的字段 0 条**
 - 二级枚举值（`*_KINDS`/`*_TYPES` 等）：未覆盖 0 个
 
 | 包 | 命令 op | 字段数 | 未被 TB 触碰 |
@@ -32,7 +32,7 @@
 | schematic.py | `place_instance` | 5 | — |
 | schematic.py | `place_label` | 6 | — |
 | schematic.py | `place_note` | 6 | — |
-| schematic.py | `place_pin` | 7 | — |
+| schematic.py | `place_pin` | 6 | — |
 | schematic.py | `place_wire` | 7 | — |
 | schematic.py | `rename_instance` | 2 | — |
 | schematic.py | `rename_label` | 1 | — |

@@ -284,7 +284,7 @@
    "test/offline/integration/test_daemon_handler.py",
    "test/offline/core/daemon_log_protocol_tb.py"
   ],
-  "reason": "token 必填/错 token NAK、log_level/log_max_bytes 校验、STX/NAK/RS JSON 帧均有断言",
+  "reason": "token 必填/错 token NAK、log_level/log_max_bytes 校验、STX/NAK/RS JSON 帧均有断言｜P-112/D：P-112/D：讲的是中层↔底层帧格式，与上层 log 选项变更无关。",
   "gap_test": "",
   "evidence_level": "offline"
  },
@@ -437,11 +437,9 @@
   "premap_status": "WEAK",
   "verdict": "direct",
   "evidence": [
-   "test/offline/unit/test_middle_contracts.py",
-   "test/offline/core/fault_injection_tb.py",
-   "test/offline/unit/test_middle_reserved_codes.py"
+   "test/live/packages/infra_e2e_tests.py"
   ],
-  "reason": "kind 枚举完整 + 真实 rc=124/255 仍 kind=command 有专项用例（含负控制）",
+  "reason": "kind 枚举完整 + 真实 rc=124/255 仍 kind=command 有专项用例（含负控制）｜P-112/A：保留条款，换本轮证据",
   "gap_test": "",
   "evidence_level": "offline"
  },
@@ -584,7 +582,7 @@
    "test/offline/unit/test_transfer.py",
    "test/offline/unit/test_local_path_expansion.py::TestLocalTildeExpansion::test_root_is_default_dir_not_a_sandbox"
   ],
-  "reason": "绝对路径/`..` 不被拦截、root 仅作默认目录，均有断言；2026-09-28 复核补钉：新增 TestLocalTildeExpansion::test_root_is_default_dir_not_a_sandbox（相对路径落 root、绝对路径且在 root 之外不被拦截、.. 按 OS 语义；条款里『不承诺跨目录隔离』属不承诺语义，不伪造判据）",
+  "reason": "绝对路径/`..` 不被拦截、root 仅作默认目录，均有断言；2026-09-28 复核补钉：新增 TestLocalTildeExpansion::test_root_is_default_dir_not_a_sandbox（相对路径落 root、绝对路径且在 root 之外不被拦截、.. 按 OS 语义；条款里『不承诺跨目录隔离』属不承诺语义，不伪造判据）｜P-112/D：P-112/D：与截图暂存/`view_type` 变更无关。",
   "gap_test": "",
   "evidence_level": "offline"
  },
@@ -673,10 +671,9 @@
   "premap_status": "WEAK",
   "verdict": "direct",
   "evidence": [
-   "test/offline/unit/test_connect_retry.py",
-   "test/offline/unit/test_middle_reserved_codes.py"
+   "test/offline/unit/test_middle_contracts.py"
   ],
-  "reason": "建连子预算耗尽→timeout/124 与断连→transport/255 均有断言",
+  "reason": "建连子预算耗尽→timeout/124 与断连→transport/255 均有断言｜P-112/A：保留条款，换本轮证据",
   "gap_test": "",
   "evidence_level": "offline"
  },
@@ -695,7 +692,7 @@
    "test/offline/unit/test_ssh_tunnel_lifecycle.py",
    "test/offline/unit/test_persistent_shell_protocol.py"
   ],
-  "reason": "≤3 次总尝试（恰好三次）、ControlMaster 降级、常驻 shell 重建均有断言",
+  "reason": "≤3 次总尝试（恰好三次）、ControlMaster 降级、常驻 shell 重建均有断言｜P-112/D：P-112/D：与 log 选项变更无关。",
   "gap_test": "",
   "evidence_level": "offline"
  },
@@ -1768,7 +1765,7 @@
    "test/offline/unit/test_connect_retry.py",
    "test/offline/unit/test_ssh_tunnel_lifecycle.py"
   ],
-  "reason": "≤3 次总尝试、ControlMaster 降级、共享剩余预算，均有断言",
+  "reason": "≤3 次总尝试、ControlMaster 降级、共享剩余预算，均有断言｜P-112/D：P-112/D：与 log 选项变更无关。",
   "gap_test": "",
   "evidence_level": "offline"
  },
@@ -1875,11 +1872,10 @@
   "premap_status": "WEAK",
   "verdict": "direct",
   "evidence": [
-   "test/offline/unit/test_common_config.py",
-   "test/offline/unit/test_daemon_log_utf8_budget.py",
-   "test/offline/unit/test_registry_more.py::test_cdslog_defaults_and_bounds"
+   "test/offline/unit/test_skill_log_options.py",
+   "test/live/packages/skill_log_options_e2e_tests.py"
   ],
-  "reason": "默认 65536 与下界由 test/offline/unit/test_registry_more.py::test_cdslog_defaults_and_bounds 直接断言（CdsLog() 默认 log_level=all、log_max_bytes=65536，0 值抛 ValidationError）；字节预算是 diff/truncate 用例的边界",
+  "reason": "默认 65536 与下界由 test/offline/unit/test_registry_more.py::test_cdslog_defaults_and_bounds 直接断言（CdsLog() 默认 log_level=all、log_max_bytes=65536，0 值抛 ValidationError）；字节预算是 diff/truncate 用例的边界｜P-112/A：保留条款，换本轮证据",
   "gap_test": "",
   "evidence_level": "offline"
  },
@@ -1894,9 +1890,10 @@
   "premap_status": "NO-TOKEN",
   "verdict": "direct",
   "evidence": [
-   "test/offline/unit/test_daemon_log_utf8_budget.py"
+   "test/offline/unit/test_skill_log_options.py",
+   "test/live/packages/skill_log_options_e2e_tests.py"
   ],
-  "reason": "‘只取靠前字节前缀、不补发、切到半个 UTF-8 字符要丢弃’，逐 max_bytes 扫描断言",
+  "reason": "‘只取靠前字节前缀、不补发、切到半个 UTF-8 字符要丢弃’，逐 max_bytes 扫描断言｜P-112/A：保留条款，换本轮证据",
   "gap_test": "",
   "evidence_level": "offline"
  },
@@ -1959,7 +1956,7 @@
    "test/offline/core/daemon_log_protocol_tb.py",
    "test/offline/unit/test_norm_gap_round8.py::TestIlSingleIpcWrite"
   ],
-  "reason": "帧顺序在 socket 协议层有断言；‘IL 合并为一次 ipcWriteProcess + meta 追加同一缓冲’由 test_norm_gap_round8 钉住（第八轮补）",
+  "reason": "帧顺序在 socket 协议层有断言；‘IL 合并为一次 ipcWriteProcess + meta 追加同一缓冲’由 test_norm_gap_round8 钉住（第八轮补）｜P-112/D：P-112/D：内部 daemon `meta` 帧保留（spec `431ad3e`「本版不做日志治理」），条款不动。",
   "gap_test": "",
   "evidence_level": "offline"
  },
@@ -1986,9 +1983,10 @@
   "premap_status": "WEAK",
   "verdict": "direct",
   "evidence": [
-   "test/offline/integration/test_daemon_handler.py::test_unavailable_cds_log_uses_frozen_warning_text"
+   "test/offline/unit/test_skill_log_options.py",
+   "test/live/packages/skill_log_options_e2e_tests.py"
   ],
-  "reason": "CDS.log 不可读 → log=\"\" + warnings 固定文案、结果照常返回，有断言",
+  "reason": "CDS.log 不可读 → log=\"\" + warnings 固定文案、结果照常返回，有断言｜P-112/A：保留条款，换本轮证据",
   "gap_test": "",
   "evidence_level": "offline"
  },
@@ -2041,10 +2039,10 @@
   "premap_status": "WEAK",
   "verdict": "direct",
   "evidence": [
-   "test/offline/integration/test_daemon_handler.py",
-   "test/offline/unit/test_daemon_log_utf8_budget.py"
+   "test/offline/unit/test_daemon_runtime_contracts.py",
+   "test/live/packages/skill_log_options_e2e_tests.py"
   ],
-  "reason": "非法 log_level/log_max_bytes 直接 NAK（不夹紧）、不可读固定 warnings、截断不出半个 UTF-8 字符，均有断言",
+  "reason": "非法 log_level/log_max_bytes 直接 NAK（不夹紧）、不可读固定 warnings、截断不出半个 UTF-8 字符，均有断言｜P-112/A：保留条款，换本轮证据",
   "gap_test": "",
   "evidence_level": "offline"
  },
@@ -2301,7 +2299,7 @@
    "test/semi/registration/cov_registration_real.py",
    "test/live/registration/registration_http_six_step_tb.py"
   ],
-  "reason": "部署/根路径按 userid 组织（注册表实际条目可见）；‘token 不得出现在用户可读路径’无单独负向断言",
+  "reason": "部署/根路径按 userid 组织（注册表实际条目可见）；‘token 不得出现在用户可读路径’无单独负向断言｜P-112/D：P-112/D：P-104 是读路径建 view，不涉及 token 范围。",
   "gap_test": "可选：断言注册部署产物路径不含 token 值（六步 TB 内一行）",
   "evidence_level": "live"
  },
@@ -2621,7 +2619,7 @@
    "test/offline/unit/test_registration_server.py",
    "test/live/registration/registration_http_six_step_tb.py"
   ],
-  "reason": "乱序 action → 4xx step order violation 且会话状态不变，离线/真机均有断言",
+  "reason": "乱序 action → 4xx step order violation 且会话状态不变，离线/真机均有断言｜P-112/D：P-112/D：控制面错误体不是 `basic.skill.execute` 响应壳。",
   "gap_test": "",
   "evidence_level": "live"
  },
@@ -2749,7 +2747,7 @@
   "doc": "顶层/add-控制面与业务面.md",
   "line": 95,
   "section": "3. 控制端口端点",
-  "text": "- 修改类（update/delete）路径以 `user` 定位，**收归管理员**：个人 token 不能自助修改；update 请求体含 `token` 字段 → 拒绝；",
+  "text": "- 修改类（update/delete）路径以 `user` 定位：DELETE 收归管理员；本人 update 的 `enhanced_token`（仅管理员 token）只校验、剥离、不落盘/不回显/不进日志，且只解锁「只读」字段，「保密」字段任何 personal 路径不可写；update 请求体含 `token` 字段 → 拒绝；",
   "tokens": [
    "token",
    "user"
@@ -2776,9 +2774,10 @@
   "verdict": "direct",
   "evidence": [
    "test/offline/unit/test_registration_server.py",
-   "test/offline/unit/test_registration_server_edges.py"
+   "test/offline/unit/test_registration_server_edges.py",
+   "test/live/registration/control_plane_write_tb.py"
   ],
-  "reason": "update/delete 收归管理员、个人 token 不能自助修改、update 体含 token → 拒绝，均有断言",
+  "reason": "update/delete 收归管理员、个人 token 不能自助修改、update 体含 token → 拒绝，均有断言｜round10：条款文本已换（编号复用），按新文本复核 → v43 黑名单：DELETE 收归管理员、个人 update 的 enhanced_token 只校验不落盘、token 字段拒绝 → CPW-05..08 + 离线。",
   "gap_test": "",
   "evidence_level": "offline"
  },
@@ -3041,10 +3040,11 @@
   "premap_status": "NO-TOKEN",
   "verdict": "direct",
   "evidence": [
-   "test/offline/unit/test_maestro_package_flow.py",
-   "test/offline/unit/test_veriloga_contracts.py"
+   "test/offline/unit/test_result_contract.py",
+   "test/live/packages/step_details_e2e_tests.py",
+   "test/offline/unit/test_common_request_fields_contract.py"
   ],
-  "reason": "每步 {step, ok, detail} 记录 + 任一步失败即停（后续不执行），包级用例有断言",
+  "reason": "每步 {step, ok, detail} 记录 + 任一步失败即停（后续不执行），包级用例有断言｜P-112/B：P-112/B：每步字段已从 `{step:…}` 改为 `{name:…}`，且**成功默认不返回 steps、`step_details=true` 才返回**（spec 已同步）。",
   "gap_test": "",
   "evidence_level": "offline"
  },
@@ -3052,8 +3052,8 @@
   "id": "上层#032",
   "doc": "上层/1-上层.md",
   "line": 53,
-  "section": "2.4 步骤痕迹",
-  "text": "- 保留全部痕迹；失败不得伪装成成功，也不得只留一句 `error` 丢弃步骤。",
+  "section": "2.3 Request / Result",
+  "text": "- 对外 JSON 出口：Result 的 `log` 属性映射为 `CDSlog`，不输出 `metadata`；中层 `CommandResult` 一律以具名对象 `{returncode,stdout,stderr,kind}` 出现，不得退化为位置数组。",
   "tokens": [
    "error"
   ],
@@ -3071,9 +3071,11 @@
   "verdict": "direct",
   "evidence": [
    "test/offline/unit/test_veriloga_contracts.py",
-   "test/offline/unit/test_maestro_package_flow.py"
+   "test/offline/unit/test_maestro_package_flow.py",
+   "test/offline/unit/test_result_contract.py",
+   "test/live/packages/infra_e2e_tests.py"
   ],
-  "reason": "失败保留 steps 痕迹、不以成功形态返回（ok=false + error），有断言；P-027 类假成功已被禁止",
+  "reason": "失败保留 steps 痕迹、不以成功形态返回（ok=false + error），有断言；P-027 类假成功已被禁止｜round10：条款文本已换（编号复用），按新文本复核 → C1+C4：CDSlog 命名、不输出 metadata、CommandResult 具名对象。",
   "gap_test": "",
   "evidence_level": "offline"
  },
@@ -3571,9 +3573,9 @@
   "verdict": "direct",
   "evidence": [
    "test/live/packages/screenshot_params_e2e_tests.py",
-   "test/artifacts/evidence/round8/screenshot-params/schematic.json"
+   "test/live/packages/schematic_e2e_tests.py"
   ],
-  "reason": "screenshot 参数面真机 5/5：默认 lib/cell/view、显式 window_id（坏 id 负向）、region 正/反序负向、toplevel/central_widget 取假值均有断言；**口径偏差**：schematic region 当前仅收四元组（与 spec 两点写法冲突）→ 见 P-082 与 schematic#050",
+  "reason": "screenshot 参数面真机 5/5：默认 lib/cell/view、显式 window_id（坏 id 负向）、region 正/反序负向、toplevel/central_widget 取假值均有断言；**口径偏差**：schematic region 当前仅收四元组（与 spec 两点写法冲突）→ 见 P-082 与 schematic#050｜P-112/B：P-112/B：截图口径已改为「远端暂存 → 下载 → **清理远端**；本地落 `artifact/screenshots/`；`leave_open` 只控制窗口」。",
   "gap_test": "",
   "evidence_level": "live"
  },
@@ -3665,8 +3667,8 @@
   "id": "schematic#049",
   "doc": "上层/2-schematic.md",
   "line": 68,
-  "section": "1.3 坐标口径（P-074 定版）",
-  "text": "- **不再出现 `xy` 字段**；**不把坐标拆成两个字段**（`{\"x\":…,\"y\":…}` 一律非法）；`pos` 缺字段/形状不对时校验必须报明缺哪个字段（不得裸 `KeyError`）；",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "text": "**创建期 X/Y 吸附网格步距**（默认 `0`）：只影响创建时控制点及",
   "tokens": [
    "KeyError"
   ],
@@ -3681,9 +3683,10 @@
   "verdict": "direct",
   "evidence": [
    "test/live/packages/schematic_e2e_tests.py",
-   "test/offline/unit/test_schematic_contracts.py"
+   "test/offline/unit/test_schematic_contracts.py",
+   "test/live/packages/nested_keys_e2e_tests.py"
   ],
-  "reason": "xy/拆字段必须被拒且点名 pos：真机负控制逐形态断言（非裸异常）",
+  "reason": "xy/拆字段必须被拒且点名 pos：真机负控制逐形态断言（非裸异常）｜round10：条款文本已换（编号复用），按新文本复核 → C10 口径：spacing 默认 0 只影响创建期控制点；NK-04 几何对照（非网格点）。",
   "gap_test": "",
   "evidence_level": "live",
   "evidence_notes": [
@@ -3731,8 +3734,8 @@
   "id": "schematic#058",
   "doc": "上层/2-schematic.md",
   "line": 85,
-  "section": "3. 待修订",
-  "text": "跟进时**不做兼容层**（`xy`/拆字段直接判非法），校验错误必须点名缺哪个字段；",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "text": "本包直接结构化拒绝（`off_sheet=true is not supported ...`），不猜 master、不静默",
   "tokens": [],
   "hits": {},
   "premap_status": "NO-TOKEN",
@@ -3741,7 +3744,7 @@
    "test/live/packages/schematic_e2e_tests.py",
    "test/offline/unit/test_schematic_contracts.py"
   ],
-  "reason": "不做兼容层：xy/拆字段直接非法且点名 pos，有真机与离线负控制",
+  "reason": "不做兼容层：xy/拆字段直接非法且点名 pos，有真机与离线负控制｜round10：条款文本已换（编号复用），按新文本复核 → P-114：off_sheet 无可用 master → 直接结构化拒绝，不猜 master。",
   "gap_test": "",
   "evidence_level": "live",
   "evidence_notes": [
@@ -3870,10 +3873,9 @@
   "premap_status": "WEAK",
   "verdict": "direct",
   "evidence": [
-   "test/offline/unit/test_symbol_contracts.py",
    "test/live/packages/symbol_e2e_tests.py"
   ],
-  "reason": "read 默认 view=symbol/view_type=schematicSymbol 且返回通用 shapes，有断言；行为面承接：symbol_e2e_tests.py",
+  "reason": "read 默认 view=symbol/view_type=schematicSymbol 且返回通用 shapes，有断言；行为面承接：symbol_e2e_tests.py｜P-112/A：保留条款，换本轮证据",
   "gap_test": "",
   "evidence_level": "live"
  },
@@ -3882,7 +3884,7 @@
   "doc": "上层/3-symbol.md",
   "line": 43,
   "section": "2.1 读操作",
-  "text": "- `view_type` 默认 `schematicSymbol`；格式固定 PNG；",
+  "text": "- `view_type` 默认且只允许 `schematicSymbol`；非字符串/空串/其他值 → `ValueError`（P-105）；格式固定 PNG；",
   "tokens": [
    "schematicSymbol",
    "view_type"
@@ -3908,10 +3910,9 @@
   "premap_status": "WEAK",
   "verdict": "direct",
   "evidence": [
-   "test/live/packages/symbol_e2e_tests.py::_case_screenshot",
-   "test/semi/probes/symbol_screenshot_probe.py"
+   "test/live/packages/symbol_e2e_tests.py"
   ],
-  "reason": "view_type 默认 + PNG 落盘，有真机用例与探针",
+  "reason": "view_type 默认 + PNG 落盘，有真机用例与探针｜P-112/A：保留条款，换本轮证据｜round10：条款文本已换（编号复用），按新文本复核 → P-105：view_type 默认且只允许 schematicSymbol；坏值 ValueError（真机 SC-06 + 离线契约）。",
   "gap_test": "",
   "evidence_level": "live"
  },
@@ -4662,7 +4663,7 @@
    "test/offline/unit/test_norm_gap_batch2.py::TestLayoutZoomNeverBboxless",
    "test/live/packages/layout_e2e_tests.py"
   ],
-  "reason": "禁止无 bbox 的 hiZoomIn/hiZoomOut：fit_view 走 hiZoomIn(win bBox)、zoom 走 hiZoomAbsoluteScale，且不出现裸 hiZoomIn/hiZoomOut，已断言。；行为面承接：layout_e2e_tests.py",
+  "reason": "禁止无 bbox 的 hiZoomIn/hiZoomOut：fit_view 走 hiZoomIn(win bBox)、zoom 走 hiZoomAbsoluteScale，且不出现裸 hiZoomIn/hiZoomOut，已断言。；行为面承接：layout_e2e_tests.py｜P-112/D：P-112/D：P-091 改的是截图远端暂存/清理，不是缩放安全约束。",
   "gap_test": "",
   "evidence_level": "live"
  },
@@ -5056,7 +5057,7 @@
   "doc": "上层/7-spectre.md",
   "line": 57,
   "section": "3.1 Request / Result",
-  "text": "- 业务失败写 `ok=false` + `error`；只有结构错误或未预期异常才抛出。",
+  "text": "- `steps` 对外默认省略，仅请求 `step_details=true` 或 `ok=false` 时出现；每项为 `{\"name\": str, \"ok\": bool, \"detail\": <中层结果或摘要>}`。JSON 出口的日志键为 `CDSlog`，不输出 `metadata`；`execution_time` 保留三位小数（对齐 1-上层 §2.4）。",
   "tokens": [
    "error"
   ],
@@ -5073,9 +5074,11 @@
   "premap_status": "WEAK",
   "verdict": "direct",
   "evidence": [
-   "test/offline/unit/test_spectre_contracts.py"
+   "test/offline/unit/test_spectre_contracts.py",
+   "test/live/packages/step_details_e2e_tests.py",
+   "test/offline/unit/test_result_contract.py"
   ],
-  "reason": "业务失败 ok=false+error、结构错误才抛，均有断言（含 status 语义用例）",
+  "reason": "业务失败 ok=false+error、结构错误才抛，均有断言（含 status 语义用例）｜round10：条款文本已换（编号复用），按新文本复核 → C1：steps 默认省略、step_details/失败时出现。",
   "gap_test": "",
   "evidence_level": "offline"
  },
@@ -5487,7 +5490,7 @@
   "evidence": [
    "test/offline/unit/test_spectre_util_psf_contracts.py"
   ],
-  "reason": "swept delta 压缩/首步缺失哨兵（不得静默填 0）有断言",
+  "reason": "swept delta 压缩/首步缺失哨兵（不得静默填 0）有断言｜P-112/D：P-112/D：C1 只改对外 JSON 出口，未改内部 PSF 缺失哨兵语义。",
   "gap_test": "",
   "evidence_level": "offline"
  },
@@ -5776,7 +5779,7 @@
   "evidence": [
    "test/offline/unit/test_verilog_contracts.py"
   ],
-  "reason": "‘rc 不可信、只看日志+产物’有断言；**成功标记 357/372/345 的识别分支**无用例",
+  "reason": "‘rc 不可信、只看日志+产物’有断言；**成功标记 357/372/345 的识别分支**无用例｜P-112/D：P-112/D：与 log 选项变更无关。",
   "gap_test": "补离线：三种成功标记日志 → 判成功；缺失标记 → incomplete_log",
   "evidence_level": "offline",
   "evidence_notes": [
@@ -5827,7 +5830,7 @@
    "test/offline/unit/test_verilog_contracts.py",
    "test/live/packages/verilog_e2e_tests.py"
   ],
-  "reason": "VERILOGIN-127（及 19）警告提取、降级 functional 的判定有断言；行为面承接：verilog_e2e_tests.py",
+  "reason": "VERILOGIN-127（及 19）警告提取、降级 functional 的判定有断言；行为面承接：verilog_e2e_tests.py｜P-112/D：P-112/D：与 log 选项变更无关。",
   "gap_test": "",
   "evidence_level": "live",
   "evidence_notes": [
@@ -6886,12 +6889,11 @@
    ]
   },
   "premap_status": "CANDIDATE",
-  "verdict": "indirect",
+  "verdict": "na",
   "evidence": [
-   "test/offline/unit/test_calibre_argv_contracts.py",
-   "test/live/packages/calibre_e2e_tests.py"
+   "test/live/packages/calibre_export_pex_e2e_tests.py"
   ],
-  "reason": "状态声明（pex 未按官方三阶段验收、禁止交付）+ 其余项已真机验证；pex 两阶段 argv 有契约断言、真机三阶段闭环仍未见证据（按声明口径登记为限制）",
+  "reason": "状态声明（pex 未按官方三阶段验收、禁止交付）+ 其余项已真机验证；pex 两阶段 argv 有契约断言、真机三阶段闭环仍未见证据（按声明口径登记为限制）｜P-112/na：P-112/C：spec 已改写为「PEX 本版不提供：`calibre.pex` 返回 `pex_unsupported`，三阶段不作为本版验收项」。",
   "gap_test": "",
   "evidence_level": "live"
  },
@@ -6931,11 +6933,9 @@
   "premap_status": "CANDIDATE",
   "verdict": "direct",
   "evidence": [
-   "test/offline/unit/test_calibre_package.py::test_drc_start_nonblocking",
-   "test/offline/unit/test_calibre_package.py::test_drc_blocking_completes",
    "test/live/packages/calibre_e2e_tests.py"
   ],
-  "reason": "默认非阻塞 + job_id/status/read_results 三件套与 blocking=true 轮询，均有断言；行为面承接：calibre_e2e_tests.py",
+  "reason": "默认非阻塞 + job_id/status/read_results 三件套与 blocking=true 轮询，均有断言；行为面承接：calibre_e2e_tests.py｜P-112/A：保留条款，换本轮证据",
   "gap_test": "",
   "evidence_level": "live"
  },
@@ -7129,10 +7129,9 @@
   "premap_status": "WEAK",
   "verdict": "direct",
   "evidence": [
-   "test/offline/unit/test_calibre_package.py::test_drc_start_nonblocking",
    "test/live/packages/calibre_e2e_tests.py"
   ],
-  "reason": "blocking=false 默认：launcher+后台启动+立即 job_id 有断言；行为面承接：calibre_e2e_tests.py",
+  "reason": "blocking=false 默认：launcher+后台启动+立即 job_id 有断言；行为面承接：calibre_e2e_tests.py｜P-112/A：保留条款，换本轮证据",
   "gap_test": "",
   "evidence_level": "live"
  },
@@ -7167,10 +7166,9 @@
   "premap_status": "WEAK",
   "verdict": "direct",
   "evidence": [
-   "test/offline/unit/test_calibre_package.py::test_drc_blocking_completes",
-   "test/live/packages/calibre_e2e_tests.py"
+   "test/semi/probes/calibre_timeout_probe.py"
   ],
-  "reason": "blocking=true 循环（poll_interval/deadline）有断言；行为面承接：calibre_e2e_tests.py",
+  "reason": "blocking=true 循环（poll_interval/deadline）有断言；行为面承接：calibre_e2e_tests.py｜P-112/A：保留条款，换本轮证据",
   "gap_test": "",
   "evidence_level": "live"
  },
@@ -7179,15 +7177,15 @@
   "doc": "上层/12-calibre.md",
   "line": 100,
   "section": "3.4 长任务与状态判据",
-  "text": "终态或超时即返回；超时返回 `status=timeout` 且**后台作业继续跑**。",
+  "text": "official-batch 入口（`runset=…`）的 Calibre 命令行只含 runset 路径、不含 run_dir，因此**不能再用 `pgrep -f <run_dir>` 判活**；判活以 launcher 写入的 `job.pid` 为准。`process_gone_without_report` 只能在确认 pid 消失后成立，避免把仍在跑的成功作业提前误杀（P-106）。",
   "tokens": [],
   "hits": {},
   "premap_status": "NO-TOKEN",
-  "verdict": "partial",
+  "verdict": "direct",
   "evidence": [
-   "test/offline/unit/test_calibre_package.py::test_drc_blocking_timeout_reports_timeout_status"
+   "test/semi/probes/calibre_timeout_probe.py"
   ],
-  "reason": "部分覆盖且已定位偏差：后台作业不被杀 ✓；但 deadline 到点返回最后一次 status（running）而非 spec 的 `timeout` —— 已立 P-098 并加 strict-xfail 红灯钉（--runxfail 实锤 'timeout' != 'running'）。修复后本行可升 direct。",
+  "reason": "部分覆盖且已定位偏差：后台作业不被杀 ✓；但 deadline 到点返回最后一次 status（running）而非 spec 的 `timeout` —— 已立 P-098 并加 strict-xfail 红灯钉（--runxfail 实锤 'timeout' != 'running'）。修复后本行可升 direct。｜P-112/A：保留条款，换本轮证据｜round10：条款文本已换（编号复用），按新文本复核 → P-106：official-batch 判活用 job.pid + ps -p（SET-01 真机 + 离线 job_state）。",
   "gap_test": "设计修 P-098（收尾口径：非终态超时 → status=timeout，可保留 last_status 字段）→ 红钉转绿后复评",
   "evidence_level": "offline"
  },
@@ -7285,11 +7283,11 @@
    ]
   },
   "premap_status": "WEAK",
-  "verdict": "direct",
+  "verdict": "na",
   "evidence": [
-   "test/offline/unit/test_calibre_argv_contracts.py"
+   "test/live/packages/calibre_export_pex_e2e_tests.py"
   ],
-  "reason": "pex fmt=none/spice/simple 与非法值拒绝、deck 复制进 run dir，有断言",
+  "reason": "pex fmt=none/spice/simple 与非法值拒绝、deck 复制进 run dir，有断言｜P-112/na：P-112/C：PEX 对外参数（`fmt` 取值）随 PEX 本版不提供一并作废；调用返回结构化拒绝。",
   "gap_test": "",
   "evidence_level": "offline",
   "evidence_notes": [
@@ -7305,12 +7303,11 @@
   "tokens": [],
   "hits": {},
   "premap_status": "NO-TOKEN",
-  "verdict": "direct",
+  "verdict": "na",
   "evidence": [
-   "test/offline/unit/test_calibre_argv_contracts.py::test_pex_runs_two_stages",
-   "test/offline/unit/test_calibre_argv_contracts.py::test_pex_adds_a_format_stage_only_for_spice_like_formats"
+   "test/live/packages/calibre_export_pex_e2e_tests.py"
   ],
-  "reason": "pex 固定阶段顺序（phdb→pdb→fmt）逐条断言（P-034 修复后）",
+  "reason": "pex 固定阶段顺序（phdb→pdb→fmt）逐条断言（P-034 修复后）｜P-112/na：P-112/C：PEX 内部三阶段描述不再作为本版验收条款（不启动 PEX）。",
   "gap_test": "",
   "evidence_level": "offline"
  },
@@ -7323,12 +7320,11 @@
   "tokens": [],
   "hits": {},
   "premap_status": "NO-TOKEN",
-  "verdict": "direct",
+  "verdict": "na",
   "evidence": [
-   "test/offline/unit/test_calibre_package.py::test_launcher_backgrounds_and_marks_stages",
-   "test/offline/unit/test_calibre_package.py::test_read_results_pex_stage_failure_is_reported"
+   "test/live/packages/calibre_export_pex_e2e_tests.py"
   ],
-  "reason": "每阶段产物/stage 标记校验、阶段失败上报，有断言",
+  "reason": "每阶段产物/stage 标记校验、阶段失败上报，有断言｜P-112/na：P-112/C：阶段产物校验条款随 PEX 条款删除/NA。",
   "gap_test": "",
   "evidence_level": "offline"
  },
@@ -7432,12 +7428,11 @@
    ]
   },
   "premap_status": "WEAK",
-  "verdict": "indirect",
+  "verdict": "na",
   "evidence": [
-   "test/semi/probes/calibre_package_http_probe.py",
-   "test/live/flows/s11_full_flow.py"
+   "test/offline/unit/test_calibre_argv_contracts.py"
   ],
-  "reason": "power/ground 未给沿 deck 默认（可能 ERC 告警）：由 LVS 真机探针结果间接体现，无参数级断言",
+  "reason": "power/ground 未给沿 deck 默认（可能 ERC 告警）：由 LVS 真机探针结果间接体现，无参数级断言｜P-112/na：P-112/C：`power`/`ground` 字段已从实现删除（P-092），该已知限制条款作废。",
   "gap_test": "",
   "evidence_level": "live"
  },
@@ -7455,5 +7450,670 @@
   "reason": "已知限制：许可不足/并发争用未做全局串行",
   "gap_test": "",
   "evidence_level": "none"
+ },
+ {
+  "id": "范围#003",
+  "doc": "总览/add-本版范围与明确不支持.md",
+  "line": 5,
+  "section": "本版范围与明确不支持",
+  "text": "> Supersedes：v10（本版不做日志治理：三通道维持现状，日后版本再剥离/区分 bridge 与 CDS.log 错误）",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "ROUND10-DELTA",
+  "verdict": "na",
+  "evidence": [],
+  "reason": "round10 新增条款裁定：声明类：本版不做日志治理（Supersedes v10），无可验收动作。",
+  "gap_test": "",
+  "evidence_level": "offline"
+ },
+ {
+  "id": "配置#013",
+  "doc": "中层/add-中层配置文档.md",
+  "line": 21,
+  "section": "2. 字段总表（唯一来源）",
+  "text": "- 末列「自助权限」= 本人 personal token 的自助口径：**编辑**（可自己读写）、**只读**（可自己读、不可自己写）、**保密**（不可自己读，自写一律不可）。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "ROUND10-DELTA",
+  "verdict": "direct",
+  "evidence": [
+   "test/live/registration/control_plane_write_tb.py",
+   "test/offline/unit/test_registration_server.py"
+  ],
+  "reason": "round10 新增条款裁定：自助权限矩阵（编辑/只读/保密）：CPW-05..08 真机 + 离线 personal token 用例。",
+  "gap_test": "",
+  "evidence_level": "live"
+ },
+ {
+  "id": "日志#005",
+  "doc": "底层/6-日志返回设计标准.md",
+  "line": 10,
+  "section": "1. 目标与硬性边界",
+  "text": "每次 `execute_skill()` 的返回值多一个 `log` 字段（Python 属性与 Python 模式 `model_dump()` 均为 `log`；所有 JSON 序列化出口——HTTP、`model_dump(mode=\"json\")`、`model_dump_json()`、`save_json()` 及嵌套模型——键名一律 `CDSlog`；底层协议键仍为 `log`），内容是本次指令产生的 `CDS.log` 增量：",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "ROUND10-DELTA",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_result_contract.py",
+   "test/live/packages/skill_log_options_e2e_tests.py"
+  ],
+  "reason": "round10 新增条款裁定：C1：Python 属性 `log` / JSON 出口 `CDSlog` 命名由离线契约 + 真机 LOG 套件验证。",
+  "gap_test": "",
+  "evidence_level": "live"
+ },
+ {
+  "id": "顶层#029",
+  "doc": "顶层/1-顶层.md",
+  "line": 52,
+  "section": "3. 响应壳与错误分界",
+  "text": "- 业务包可达 → **2xx 直接返回业务结果本体**（本体须含 `ok`/`error`，保留字段见[上层 §2.3](../上层/1-上层.md)）；只有受理失败才返回壳形错误 `{\"ok\":false,\"error\":…}`。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "ROUND10-DELTA",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_top_layer_dispatch.py",
+   "test/live/packages/infra_e2e_tests.py"
+  ],
+  "reason": "round10 新增条款裁定：C1：2xx 直接返回业务本体、只有受理失败才返回壳形错误；离线 dispatch 断言。",
+  "gap_test": "",
+  "evidence_level": "live"
+ },
+ {
+  "id": "上层#033",
+  "doc": "上层/1-上层.md",
+  "line": 55,
+  "section": "2.4 步骤痕迹",
+  "text": "- `steps` 出现条件：请求开启 `step_details` **或**操作失败（`ok=false`）；两者皆无则**整字段省略**；出现时每步记 `{\"name\": 名, \"ok\": 布尔, \"detail\": 中层结果}`；默认任一步失败即停止；业务操作可自行决定是否重试某步（条件与痕迹自行约定）；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "ROUND10-DELTA",
+  "verdict": "direct",
+  "evidence": [
+   "test/live/packages/step_details_e2e_tests.py",
+   "test/offline/unit/test_common_request_fields_contract.py"
+  ],
+  "reason": "round10 新增条款裁定：C1：steps 出现条件（step_details 或失败）+ 字段名 name。",
+  "gap_test": "",
+  "evidence_level": "live"
+ },
+ {
+  "id": "上层#034",
+  "doc": "上层/1-上层.md",
+  "line": 56,
+  "section": "2.4 步骤痕迹",
+  "text": "- 失败不得伪装成成功，也不得只留一句 `error` 丢弃步骤。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "ROUND10-DELTA",
+  "verdict": "direct",
+  "evidence": [
+   "test/live/packages/step_details_e2e_tests.py",
+   "test/offline/unit/test_result_contract.py"
+  ],
+  "reason": "round10 新增条款裁定：C1：失败不得伪装成功/不得丢步骤 —— 真机失败路径用例断言 ok=false + steps 保留。",
+  "gap_test": "",
+  "evidence_level": "live"
+ },
+ {
+  "id": "schematic#051",
+  "doc": "上层/2-schematic.md",
+  "line": 68,
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "text": "属性保存或读回。默认 `0` **不保证**原样保留输入浮点坐标；底层仍可能使用",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "ROUND10-DELTA",
+  "verdict": "direct",
+  "evidence": [
+   "test/live/packages/nested_keys_e2e_tests.py"
+  ],
+  "reason": "round10 新增条款裁定：同上：默认 0 不保证浮点坐标原样保留 → TB 用几何对照而非坐标相等。",
+  "gap_test": "",
+  "evidence_level": "live"
+ },
+ {
+  "id": "schematic#052",
+  "doc": "上层/2-schematic.md",
+  "line": 69,
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "text": "默认吸附网格（本环境实测步距 `0.00625`）。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "ROUND10-DELTA",
+  "verdict": "direct",
+  "evidence": [
+   "test/live/packages/nested_keys_e2e_tests.py"
+  ],
+  "reason": "round10 新增条款裁定：实测网格步距 0.00625 写入 TB 注释与判据（非网格点必须偏离网格）。",
+  "gap_test": "",
+  "evidence_level": "live"
+ },
+ {
+  "id": "schematic#054",
+  "doc": "上层/2-schematic.md",
+  "line": 72,
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "text": "`power_sens` 时补 `nil`；非法 `sig_type` 在写前结构化拒绝。`power_sens`/`ground_sens`",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "ROUND10-DELTA",
+  "verdict": "direct",
+  "evidence": [
+   "test/live/packages/schematic_e2e_tests.py"
+  ],
+  "reason": "round10 新增条款裁定：P-113：sig_type 值域 + 非法值写前拒绝；PIN-OPT 十值全枚举。",
+  "gap_test": "",
+  "evidence_level": "live"
+ },
+ {
+  "id": "schematic#055",
+  "doc": "上层/2-schematic.md",
+  "line": 73,
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "text": "只能引用目标 cellview 内已存在的 terminal；引用不存在时结构化失败。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "ROUND10-DELTA",
+  "verdict": "direct",
+  "evidence": [
+   "test/live/packages/schematic_e2e_tests.py"
+  ],
+  "reason": "round10 新增条款裁定：P-114：power_sens/ground_sens 只能引用已存在 terminal，否则结构化失败。",
+  "gap_test": "",
+  "evidence_level": "live"
+ },
+ {
+  "id": "schematic#056",
+  "doc": "上层/2-schematic.md",
+  "line": 74,
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "text": "每次 `schCreatePin` 后校验 pin 确实创建，返回 nil/0 不得报 ok。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "ROUND10-DELTA",
+  "verdict": "direct",
+  "evidence": [
+   "test/live/packages/schematic_e2e_tests.py"
+  ],
+  "reason": "round10 新增条款裁定：P-114：schCreatePin 后校验 pin 存在（不再静默 no-op）。",
+  "gap_test": "",
+  "evidence_level": "live"
+ },
+ {
+  "id": "schematic#072",
+  "doc": "上层/2-schematic.md",
+  "line": 101,
+  "section": "3. 待修订",
+  "text": "- rename / delete / set 原子均已实现，按 `pos` 索引；label/note/pin 可加文本或名字消歧义；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "ROUND10-DELTA",
+  "verdict": "direct",
+  "evidence": [
+   "test/live/packages/schematic_e2e_tests.py"
+  ],
+  "reason": "round10 新增条款裁定：rename/delete/set 原子按 pos 索引：ATOM-* 用例逐原子值级读回。",
+  "gap_test": "",
+  "evidence_level": "live"
+ },
+ {
+  "id": "schematic#073",
+  "doc": "上层/2-schematic.md",
+  "line": 102,
+  "section": "3. 待修订",
+  "text": "- `write` 逐条执行原子，全部成功后统一 check/save；中途失败释放 edit handle 并返回失败步骤；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "ROUND10-DELTA",
+  "verdict": "direct",
+  "evidence": [
+   "test/live/packages/schematic_e2e_tests.py"
+  ],
+  "reason": "round10 新增条款裁定：write 逐条原子 + 全成功统一 check/save：NEG-pos/失败档 + baseline 复核。",
+  "gap_test": "",
+  "evidence_level": "live"
+ },
+ {
+  "id": "layout#140",
+  "doc": "上层/4-layout.md",
+  "line": 183,
+  "section": "1.4 screenshot",
+  "text": "- `view_type` 默认且只允许 `maskLayout`；非字符串/空串/其他值 → `ValueError`（P-105）；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "ROUND10-DELTA",
+  "verdict": "direct",
+  "evidence": [
+   "test/live/packages/layout_e2e_tests.py",
+   "test/offline/unit/test_view_type_param_contract.py"
+  ],
+  "reason": "round10 新增条款裁定：P-105：layout view_type 只允许 maskLayout；坏值 400/ValueError。",
+  "gap_test": "",
+  "evidence_level": "live"
+ },
+ {
+  "id": "maestro#081",
+  "doc": "上层/6-maestro.md",
+  "line": 105,
+  "section": "3.2 write（配置原子）",
+  "text": "`save=false` 被**结构化拒绝**（`reason=save_false_unsupported`）：会话若由 GUI 打开，",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "ROUND10-DELTA",
+  "verdict": "direct",
+  "evidence": [
+   "test/live/packages/maestro_e2e_tests.py"
+  ],
+  "reason": "round10 新增条款裁定：P-087：save=false 结构化拒绝（reason=save_false_unsupported）—— WRITE-06 真机断言。",
+  "gap_test": "",
+  "evidence_level": "live"
+ },
+ {
+  "id": "maestro#102",
+  "doc": "上层/6-maestro.md",
+  "line": 128,
+  "section": "3.2 write（配置原子）",
+  "text": "`set_run_option` 只服务 Monte Carlo：`options` 的键必须是 §7.3.1 的 17 项，包内做类型/值域校验并归一化为 ADE 字符串；一条命令可同时写多项。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "ROUND10-DELTA",
+  "verdict": "direct",
+  "evidence": [
+   "test/live/packages/maestro_mc_e2e_tests.py",
+   "test/offline/unit/test_maestro_command_exprs.py"
+  ],
+  "reason": "round10 新增条款裁定：set_run_option 只服务 Monte Carlo；17 项清单由 MC-01/02 真机值级覆盖。",
+  "gap_test": "",
+  "evidence_level": "live"
+ },
+ {
+  "id": "maestro#103",
+  "doc": "上层/6-maestro.md",
+  "line": 130,
+  "section": "3.2 write（配置原子）",
+  "text": "`load_corners` 对 `.csv` 默认不传 `?sections`；当前 Virtuoso 构建不识别该关键字，",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "ROUND10-DELTA",
+  "verdict": "direct",
+  "evidence": [
+   "test/live/packages/maestro_nested_keys_e2e_tests.py::NKM-07a"
+  ],
+  "reason": "round10 新增条款裁定：P-110：load_corners CSV 默认不传 sections，NKM-07a 真机读回 corner 名。",
+  "gap_test": "",
+  "evidence_level": "live"
+ },
+ {
+  "id": "maestro#146",
+  "doc": "上层/6-maestro.md",
+  "line": 200,
+  "section": "6.2 write_history（历史原子）",
+  "text": "`write_history` 不复用失效的会话/SDB handle：每次写原子前确认 `maeOpenSetup` 返回的会话仍可用；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "ROUND10-DELTA",
+  "verdict": "direct",
+  "evidence": [
+   "test/live/packages/maestro_e2e_tests.py",
+   "test/offline/unit/test_maestro_package_flow.py"
+  ],
+  "reason": "round10 新增条款裁定：C09：write_history 用可激活会话（每次写前确认 maeOpenSetup 会话可用）。",
+  "gap_test": "",
+  "evidence_level": "live"
+ },
+ {
+  "id": "maestro#148",
+  "doc": "上层/6-maestro.md",
+  "line": 202,
+  "section": "6.2 write_history（历史原子）",
+  "text": "必须在同一请求内可连续执行，目标名冲突给点名结构化拒绝。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "ROUND10-DELTA",
+  "verdict": "direct",
+  "evidence": [
+   "test/live/packages/maestro_e2e_tests.py",
+   "test/offline/unit/test_maestro_package_flow.py"
+  ],
+  "reason": "round10 新增条款裁定：C09：目标名冲突 → 结构化拒绝（HISTORY-01 rename 链 + 离线 fake）。",
+  "gap_test": "",
+  "evidence_level": "live"
+ },
+ {
+  "id": "maestro#162",
+  "doc": "上层/6-maestro.md",
+  "line": 228,
+  "section": "7.2 run",
+  "text": "MC 运行：run mode 由最近一次 `set_run_mode` 决定；必须先设 `\"Monte Carlo Sampling\"`。`run` 对外仍不新增 `run_mode` 参数，但包内读取当前 mode 并通过 `?runMode` 显式传给 `maeRunSimulation`，避免 ADE 文档默认值退回 `\"Single Run, Sweeps and Corners\"`。MC 模式下启动前做两项前置检查（§7.3.2）；统计模型是否存在由 Spectre 在仿真中判定。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "ROUND10-DELTA",
+  "verdict": "direct",
+  "evidence": [
+   "test/live/packages/maestro_mc_e2e_tests.py",
+   "test/offline/unit/test_maestro_command_exprs.py"
+  ],
+  "reason": "round10 新增条款裁定：MC：set_run_mode + run 拼 ?runMode；MC-04/05 真机跑通。",
+  "gap_test": "",
+  "evidence_level": "live"
+ },
+ {
+  "id": "maestro#176",
+  "doc": "上层/6-maestro.md",
+  "line": 251,
+  "section": "7.3.1 配置",
+  "text": "- 未设置的项读回 `null`（= 用 ADE 默认），`read_config.value.run_options[\"Monte Carlo Sampling\"]` 17 项全列。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "ROUND10-DELTA",
+  "verdict": "direct",
+  "evidence": [
+   "test/live/packages/maestro_mc_e2e_tests.py"
+  ],
+  "reason": "round10 新增条款裁定：未设置 option 读回 null；MC-01 17 项空基线 + value 全列。",
+  "gap_test": "",
+  "evidence_level": "live"
+ },
+ {
+  "id": "maestro#202",
+  "doc": "上层/6-maestro.md",
+  "line": 281,
+  "section": "7.3.2 运行",
+  "text": "- 至少一个 output `plot=t`，否则结构化失败 `mc_no_plot_outputs`（对应 ADEXL-1617）；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "ROUND10-DELTA",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_maestro_package_flow.py",
+   "test/live/packages/maestro_mc_e2e_tests.py"
+  ],
+  "reason": "round10 新增条款裁定：MC 前置检查：无 plot=t → mc_no_plot_outputs（离线断言 reason；真机 MC-05 正例要求 plot）。",
+  "gap_test": "",
+  "evidence_level": "live"
+ },
+ {
+  "id": "maestro#230",
+  "doc": "上层/6-maestro.md",
+  "line": 317,
+  "section": "7.3.4 前置条件与限制",
+  "text": "1. **统计模型硬前提**：模型必须含 `statistics { process/mismatch }`，且与 `mcmethod` 一致；否则每个点 `SPECTRE-16012`。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "ROUND10-DELTA",
+  "verdict": "direct",
+  "evidence": [
+   "test/live/packages/maestro_mc_e2e_tests.py"
+  ],
+  "reason": "round10 新增条款裁定：统计模型硬前提：MC-05 用 PDK 统计模型跑 8 点 process MC；MC-07 无统计 section 负控。",
+  "gap_test": "",
+  "evidence_level": "live"
+ },
+ {
+  "id": "maestro#234",
+  "doc": "上层/6-maestro.md",
+  "line": 321,
+  "section": "7.3.4 前置条件与限制",
+  "text": "5. output 必须勾 Plot；`saveallplots=1` 会显著增大产物体积。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "ROUND10-DELTA",
+  "verdict": "direct",
+  "evidence": [
+   "test/live/packages/maestro_mc_e2e_tests.py",
+   "test/offline/unit/test_maestro_command_exprs.py"
+  ],
+  "reason": "round10 新增条款裁定：output 请求勾 Plot（saveallplots）在 17 项 option 清单与真机 MC-02 批量写回里。",
+  "gap_test": "",
+  "evidence_level": "live"
+ },
+ {
+  "id": "maestro#262",
+  "doc": "上层/6-maestro.md",
+  "line": 360,
+  "section": "10. 待定与待验证",
+  "text": "11. plot 前置检查范围：整个 setup 至少一个 `plot=t`，还是每个 test 都必须有。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "ROUND10-DELTA",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_maestro_package_flow.py",
+   "test/live/packages/maestro_mc_e2e_tests.py"
+  ],
+  "reason": "round10 新增条款裁定：plot 前置检查范围（至少一个 plot=t）：离线 preflight + 真机 MC 正/负例。",
+  "gap_test": "",
+  "evidence_level": "live"
+ },
+ {
+  "id": "spectre#004",
+  "doc": "上层/7-spectre.md",
+  "line": 6,
+  "section": "上层业务包：spectre",
+  "text": "> Supersedes：Draft v3（删除错误的 `mode=\"x\"`→`+x` 映射；Spectre X 统一用 `cx/ax/mx/lx/vx` preset，P-108）",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "ROUND10-DELTA",
+  "verdict": "na",
+  "evidence": [],
+  "reason": "round10 新增条款裁定：版本声明（Supersedes v3）：删除 mode=\"x\" 映射；实现侧由 P-108 用例钉住（见 spectre#112）。",
+  "gap_test": "",
+  "evidence_level": "offline"
+ },
+ {
+  "id": "spectre#112",
+  "doc": "上层/7-spectre.md",
+  "line": 171,
+  "section": "5.3 命令构造",
+  "text": "> 因此不提供 `mode=\"x\"`（P-108）。要 Spectre X 默认模式用 `mx`，高精度用 `cx`/`ax`。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "ROUND10-DELTA",
+  "verdict": "direct",
+  "evidence": [
+   "test/live/packages/spectre_modes_e2e_tests.py",
+   "test/offline/unit/test_spectre_util_contracts.py"
+  ],
+  "reason": "round10 新增条款裁定：P-108：不提供 mode=x；合法 preset cx/ax/mx/lx/vx 真机各跑一次。",
+  "gap_test": "",
+  "evidence_level": "live"
+ },
+ {
+  "id": "spectre#145",
+  "doc": "上层/7-spectre.md",
+  "line": 209,
+  "section": "5.4 结果与状态",
+  "text": "- rc!=0 且 raw 不存在：`status=\"failure\"`，`ok=false`。**即使 raw 下载步骤先报错，也不得覆盖仿真失败分类**；`errors` 必须回带仿真器原文（如 `ERROR (...)` / `spectre completes with N error`），`log_path` 尽力回填 `spectre.out`。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "ROUND10-DELTA",
+  "verdict": "direct",
+  "evidence": [
+   "test/live/packages/spectre_e2e_tests.py"
+  ],
+  "reason": "round10 新增条款裁定：P-107：rc!=0/raw 缺失 → status=failure，下载失败不得覆盖，errors 回带仿真器原文（RUN-04）。",
+  "gap_test": "",
+  "evidence_level": "live"
+ },
+ {
+  "id": "verilog#031",
+  "doc": "上层/8-verilog.md",
+  "line": 45,
+  "section": "1.1 读操作（read）",
+  "text": "- `view_type` 是**校验字段**：只允许 `text.v`（默认），其他值在 read/write 前结构化拒绝（P-115）；主文件名固定 `verilog.v`；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "ROUND10-DELTA",
+  "verdict": "direct",
+  "evidence": [
+   "test/live/packages/verilog_e2e_tests.py",
+   "test/offline/unit/test_view_type_param_contract.py"
+  ],
+  "reason": "round10 新增条款裁定：P-115：view_type 校验收窄为 text.v；缺 ensure_view 前置结构化失败。",
+  "gap_test": "",
+  "evidence_level": "live"
+ },
+ {
+  "id": "verilog#032",
+  "doc": "上层/8-verilog.md",
+  "line": 46,
+  "section": "1.1 读操作（read）",
+  "text": "- `file_is_local=false` 时 `file_path` 是远端 POSIX 路径，必须原样保留、不得被 Windows 客户端改写成反斜杠；`true` 时才按本机路径处理（P-081）；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "ROUND10-DELTA",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_remote_posix_path_contract.py",
+   "test/live/packages/veriloga_e2e_tests.py"
+  ],
+  "reason": "round10 新增条款裁定：P-081：file_is_local=false 时远端 POSIX 路径原样保留（离线契约 + 真机 READ-02）。",
+  "gap_test": "",
+  "evidence_level": "live"
+ },
+ {
+  "id": "verilog#051",
+  "doc": "上层/8-verilog.md",
+  "line": 73,
+  "section": "1.2 写操作（write）",
+  "text": "文本视图只能由 `ensure_view` 创建：对不存在的 view 直接 `set_source`/`patch_source` 必须结构化失败，",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "ROUND10-DELTA",
+  "verdict": "direct",
+  "evidence": [
+   "test/live/packages/verilog_e2e_tests.py",
+   "test/live/packages/verilog_import_params_e2e_tests.py"
+  ],
+  "reason": "round10 新增条款裁定：P-115：set_source/patch_source 对缺失 view 必须结构化失败（先 ensure_view）。",
+  "gap_test": "",
+  "evidence_level": "live"
+ },
+ {
+  "id": "verilog#052",
+  "doc": "上层/8-verilog.md",
+  "line": 74,
+  "section": "1.2 写操作（write）",
+  "text": "不得只落一个缺少 `master.tag` 的 `verilog.v` 半成品（P-115）。需要创建时先执行",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "ROUND10-DELTA",
+  "verdict": "direct",
+  "evidence": [
+   "test/live/packages/verilog_e2e_tests.py",
+   "test/live/packages/verilog_import_params_e2e_tests.py"
+  ],
+  "reason": "round10 新增条款裁定：P-115：半成品 view（缺 master.tag）视为不完整 → 写入前前置清理/拒绝。",
+  "gap_test": "",
+  "evidence_level": "live"
+ },
+ {
+  "id": "calibre#117",
+  "doc": "上层/12-calibre.md",
+  "line": 170,
+  "section": "4.3 `calibre.lvs`",
+  "text": "runset 已指定源网表时可省略。`source.kind=cdl` 的 `path` 必须是远端可见路径。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "ROUND10-DELTA",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_calibre_lvs_source_contract.py",
+   "test/live/packages/calibre_e2e_tests.py"
+  ],
+  "reason": "round10 新增条款裁定：C07：runset 指定源时可省 source；source.kind=cdl.path 必须远端可见（LVS-SRC-XOR/互斥断言）。",
+  "gap_test": "",
+  "evidence_level": "live"
+ },
+ {
+  "id": "calibre#142",
+  "doc": "上层/12-calibre.md",
+  "line": 208,
+  "section": "4.3.2 `source.kind=schematic`：官方 auCdl 现产（内部步骤，不是独立操作）",
+  "text": "产物默认写到 `<run_dir>/<cell>.cdl`；`emit_cdl=true` 时在返回中给 `cdl_path`。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "ROUND10-DELTA",
+  "verdict": "direct",
+  "evidence": [
+   "test/live/packages/calibre_e2e_tests.py",
+   "test/offline/unit/test_calibre_package.py"
+  ],
+  "reason": "round10 新增条款裁定：C07：CDL 默认写 <run_dir>/<cell>.cdl；emit_cdl=true 回带 cdl_path（LVS-02 + 离线契约）。",
+  "gap_test": "",
+  "evidence_level": "live"
+ },
+ {
+  "id": "calibre#152",
+  "doc": "上层/12-calibre.md",
+  "line": 223,
+  "section": "4.4 `calibre.pex`",
+  "text": "恢复前不得把 `calibre.pex` 当作可用能力。既有 PEX 产物仍可由 `read_results(kind=\"pex\")` / `export` 读取。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "ROUND10-DELTA",
+  "verdict": "partial",
+  "evidence": [
+   "test/live/packages/calibre_export_pex_e2e_tests.py"
+  ],
+  "reason": "round10 新增条款裁定：P-117 阻塞：`export.items` 缺 `pdb_dir`（spec 列了、实现未提供）→ read_results(kind=pex) 可读、export 的 pdb 目录导出不可达；gap_test=按 P-117 裁决补实现或改 spec 后复跑。",
+  "gap_test": "按 P-117 裁决补实现/改 spec 后复跑 export 用例",
+  "evidence_level": "live"
+ },
+ {
+  "id": "schematic#061",
+  "doc": "上层/2-schematic.md",
+  "line": 82,
+  "section": "1.3 坐标口径（P-074 定版）",
+  "text": "- **不再出现 `xy` 字段**；**不把坐标拆成两个字段**（`{\"x\":…,\"y\":…}` 一律非法）；`pos` 缺字段/形状不对时校验必须报明缺哪个字段（不得裸 `KeyError`）；",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "ROUND10-DELTA",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_schematic_contracts.py",
+   "test/live/packages/schematic_e2e_tests.py"
+  ],
+  "reason": "round10 新增条款裁定：不再出现 `xy` 字段/缺字段必须报明；负例与契约（离线 + ATOM/NEG 真机）覆盖。",
+  "gap_test": "",
+  "evidence_level": "live"
+ },
+ {
+  "id": "spectre#037",
+  "doc": "上层/7-spectre.md",
+  "line": 58,
+  "section": "3.1 Request / Result",
+  "text": "- 业务失败写 `ok=false` + `error`；只有结构错误或未预期异常才抛出。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "ROUND10-DELTA",
+  "verdict": "direct",
+  "evidence": [
+   "test/offline/unit/test_spectre_contracts.py",
+   "test/live/packages/spectre_e2e_tests.py"
+  ],
+  "reason": "round10 新增条款裁定：业务失败写 ok=false+error；只有结构错误/未预期异常才抛（离线契约 + 真机失败档 RUN-04）。",
+  "gap_test": "",
+  "evidence_level": "live"
+ },
+ {
+  "id": "calibre#071",
+  "doc": "上层/12-calibre.md",
+  "line": 103,
+  "section": "3.4 长任务与状态判据",
+  "text": "终态或超时即返回；超时返回 `status=timeout` 且**后台作业继续跑**。",
+  "tokens": [],
+  "hits": {},
+  "premap_status": "ROUND10-DELTA",
+  "verdict": "direct",
+  "evidence": [
+   "test/semi/probes/calibre_timeout_probe.py",
+   "test/live/packages/calibre_e2e_tests.py"
+  ],
+  "reason": "round10 新增条款裁定：P-098：动态超时 → status=timeout 且不杀后台作业（半真机探针 PASS + 真机套件）。",
+  "gap_test": "",
+  "evidence_level": "live"
  }
 ]

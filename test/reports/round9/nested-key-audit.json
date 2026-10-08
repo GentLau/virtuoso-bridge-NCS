@@ -3,9 +3,9 @@
  "caveat": "字面量出现≠断言语义；只用于找『从未被任何 TB 触碰过的嵌套键』",
  "totals": {
   "command_ops": 90,
-  "fields": 105,
+  "fields": 104,
   "uncovered_fields": 0,
-  "enum_values": 23,
+  "enum_values": 32,
   "uncovered_enum_values": 0
  },
  "uncovered_field_list": [],
@@ -510,6 +510,7 @@
       "field": "font",
       "covered": true,
       "tb_files": [
+       "test/live/packages/schematic_e2e_tests.py",
        "test/offline/unit/test_nested_command_keys_contract.py",
        "test/offline/unit/test_schematic_contracts.py"
       ]
@@ -529,6 +530,7 @@
       "field": "justify",
       "covered": true,
       "tb_files": [
+       "test/live/packages/schematic_e2e_tests.py",
        "test/live/packages/symbol_e2e_tests.py",
        "test/offline/unit/test_nested_command_keys_contract.py",
        "test/offline/unit/test_schematic_contracts.py",
@@ -1380,6 +1382,7 @@
       "field": "alias",
       "covered": true,
       "tb_files": [
+       "test/live/packages/schematic_e2e_tests.py",
        "test/offline/unit/test_paramiko.py",
        "test/offline/unit/test_probe.py",
        "test/offline/unit/test_schematic_contracts.py"
@@ -1389,6 +1392,7 @@
       "field": "font",
       "covered": true,
       "tb_files": [
+       "test/live/packages/schematic_e2e_tests.py",
        "test/offline/unit/test_nested_command_keys_contract.py",
        "test/offline/unit/test_schematic_contracts.py"
       ]
@@ -1408,6 +1412,7 @@
       "field": "justify",
       "covered": true,
       "tb_files": [
+       "test/live/packages/schematic_e2e_tests.py",
        "test/live/packages/symbol_e2e_tests.py",
        "test/offline/unit/test_nested_command_keys_contract.py",
        "test/offline/unit/test_schematic_contracts.py",
@@ -1445,6 +1450,7 @@
       "field": "font",
       "covered": true,
       "tb_files": [
+       "test/live/packages/schematic_e2e_tests.py",
        "test/offline/unit/test_nested_command_keys_contract.py",
        "test/offline/unit/test_schematic_contracts.py"
       ]
@@ -1464,6 +1470,7 @@
       "field": "justify",
       "covered": true,
       "tb_files": [
+       "test/live/packages/schematic_e2e_tests.py",
        "test/live/packages/symbol_e2e_tests.py",
        "test/offline/unit/test_nested_command_keys_contract.py",
        "test/offline/unit/test_schematic_contracts.py",
@@ -1523,6 +1530,7 @@
       "field": "ground_sens",
       "covered": true,
       "tb_files": [
+       "test/live/packages/schematic_e2e_tests.py",
        "test/offline/unit/test_schematic_contracts.py"
       ]
      },
@@ -1535,13 +1543,6 @@
        "test/live/flows/lvs_from_schematic_tb.py",
        "test/live/flows/multihop_jump_tb.py",
        "test/live/flows/multiuser_layout_handoff_tb.py"
-      ]
-     },
-     {
-      "field": "off_sheet",
-      "covered": true,
-      "tb_files": [
-       "test/offline/unit/test_schematic_contracts.py"
       ]
      },
      {
@@ -1559,6 +1560,7 @@
       "field": "power_sens",
       "covered": true,
       "tb_files": [
+       "test/live/packages/schematic_e2e_tests.py",
        "test/offline/unit/test_schematic_contracts.py"
       ]
      },
@@ -1566,6 +1568,7 @@
       "field": "sig_type",
       "covered": true,
       "tb_files": [
+       "test/live/packages/schematic_e2e_tests.py",
        "test/offline/unit/test_schematic_contracts.py"
       ]
      }
@@ -1588,17 +1591,18 @@
       "field": "entry",
       "covered": true,
       "tb_files": [
+       "test/live/packages/nested_keys_e2e_tests.py",
        "test/live/packages/skillref_e2e_tests.py",
+       "test/live/registration/control_plane_write_tb.py",
        "test/live/registration/registration_hostkey_rotation_tb.py",
-       "test/live/registration/registration_http_six_step_tb.py",
-       "test/live/registration/registration_py27_tb.py",
-       "test/live/registration/registration_real_ciw_tb.py"
+       "test/live/registration/registration_http_six_step_tb.py"
       ]
      },
      {
       "field": "line_style",
       "covered": true,
       "tb_files": [
+       "test/live/packages/schematic_e2e_tests.py",
        "test/offline/unit/test_schematic_contracts.py",
        "test/semi/probes/schematic_wire_style_probe.py"
       ]
@@ -1607,6 +1611,7 @@
       "field": "route",
       "covered": true,
       "tb_files": [
+       "test/live/packages/nested_keys_e2e_tests.py",
        "test/offline/unit/test_registration_mock_server.py",
        "test/semi/probes/schematic_wire_style_probe.py"
       ]
@@ -1776,6 +1781,7 @@
       "field": "font",
       "covered": true,
       "tb_files": [
+       "test/live/packages/schematic_e2e_tests.py",
        "test/offline/unit/test_nested_command_keys_contract.py",
        "test/offline/unit/test_schematic_contracts.py"
       ]
@@ -1795,6 +1801,7 @@
       "field": "justify",
       "covered": true,
       "tb_files": [
+       "test/live/packages/schematic_e2e_tests.py",
        "test/live/packages/symbol_e2e_tests.py",
        "test/offline/unit/test_nested_command_keys_contract.py",
        "test/offline/unit/test_schematic_contracts.py",
@@ -1851,6 +1858,7 @@
       "field": "line_style",
       "covered": true,
       "tb_files": [
+       "test/live/packages/schematic_e2e_tests.py",
        "test/offline/unit/test_schematic_contracts.py",
        "test/semi/probes/schematic_wire_style_probe.py"
       ]
@@ -2074,6 +2082,7 @@
       "field": "font",
       "covered": true,
       "tb_files": [
+       "test/live/packages/schematic_e2e_tests.py",
        "test/offline/unit/test_nested_command_keys_contract.py",
        "test/offline/unit/test_schematic_contracts.py"
       ]
@@ -2093,6 +2102,7 @@
       "field": "justify",
       "covered": true,
       "tb_files": [
+       "test/live/packages/schematic_e2e_tests.py",
        "test/live/packages/symbol_e2e_tests.py",
        "test/offline/unit/test_nested_command_keys_contract.py",
        "test/offline/unit/test_schematic_contracts.py",
@@ -4365,7 +4375,7 @@
        "test/live/flows/project_flow_tb.py",
        "test/live/flows/s11_postsim_compare.py",
        "test/live/flows/serdes_rx_flow_tb.py",
-       "test/live/packages/maestro_e2e_tests.py"
+       "test/live/packages/calibre_e2e_tests.py"
       ]
      },
      {
@@ -4526,12 +4536,97 @@
     }
    ]
   },
+  "schematic.py": {
+   "_PIN_SIG_TYPES": [
+    {
+     "value": "analog",
+     "covered": true,
+     "tb_files": [
+      "test/live/packages/schematic_e2e_tests.py"
+     ]
+    },
+    {
+     "value": "clock",
+     "covered": true,
+     "tb_files": [
+      "test/live/packages/schematic_e2e_tests.py"
+     ]
+    },
+    {
+     "value": "ground",
+     "covered": true,
+     "tb_files": [
+      "test/live/packages/calibre_params_e2e_tests.py",
+      "test/live/packages/schematic_e2e_tests.py",
+      "test/offline/unit/test_common_request_fields_contract.py"
+     ]
+    },
+    {
+     "value": "power",
+     "covered": true,
+     "tb_files": [
+      "test/live/packages/calibre_params_e2e_tests.py",
+      "test/live/packages/schematic_e2e_tests.py",
+      "test/offline/unit/test_common_request_fields_contract.py"
+     ]
+    },
+    {
+     "value": "reset",
+     "covered": true,
+     "tb_files": [
+      "test/live/e2e/test_business_remote_live.py",
+      "test/live/packages/schematic_e2e_tests.py",
+      "test/offline/frontend/registration_mock_server.py",
+      "test/offline/unit/test_registration_mock_server.py"
+     ]
+    },
+    {
+     "value": "scan",
+     "covered": true,
+     "tb_files": [
+      "test/live/packages/schematic_e2e_tests.py"
+     ]
+    },
+    {
+     "value": "signal",
+     "covered": true,
+     "tb_files": [
+      "test/live/flows/design_iterate_tb.py",
+      "test/live/flows/project_flow_tb.py",
+      "test/live/flows/serdes_rx_flow_tb.py",
+      "test/live/packages/schematic_e2e_tests.py"
+     ]
+    },
+    {
+     "value": "tieHi",
+     "covered": true,
+     "tb_files": [
+      "test/live/packages/schematic_e2e_tests.py"
+     ]
+    },
+    {
+     "value": "tieLo",
+     "covered": true,
+     "tb_files": [
+      "test/live/packages/schematic_e2e_tests.py"
+     ]
+    },
+    {
+     "value": "tieOff",
+     "covered": true,
+     "tb_files": [
+      "test/live/packages/schematic_e2e_tests.py"
+     ]
+    }
+   ]
+  },
   "spectre.py": {
    "_MODES": [
     {
      "value": "aps",
      "covered": true,
      "tb_files": [
+      "test/live/packages/spectre_modes_e2e_tests.py",
       "test/offline/unit/test_nested_command_keys_contract.py",
       "test/offline/unit/test_spectre_contracts.py"
      ]
@@ -4540,6 +4635,7 @@
      "value": "ax",
      "covered": true,
      "tb_files": [
+      "test/live/packages/spectre_modes_e2e_tests.py",
       "test/offline/unit/test_nested_command_keys_contract.py"
      ]
     },
@@ -4547,6 +4643,7 @@
      "value": "cx",
      "covered": true,
      "tb_files": [
+      "test/live/packages/spectre_modes_e2e_tests.py",
       "test/offline/unit/test_nested_command_keys_contract.py"
      ]
     },
@@ -4554,6 +4651,7 @@
      "value": "lx",
      "covered": true,
      "tb_files": [
+      "test/live/packages/spectre_modes_e2e_tests.py",
       "test/offline/unit/test_nested_command_keys_contract.py"
      ]
     },
@@ -4561,6 +4659,7 @@
      "value": "mx",
      "covered": true,
      "tb_files": [
+      "test/live/packages/spectre_modes_e2e_tests.py",
       "test/offline/unit/test_nested_command_keys_contract.py"
      ]
     },
@@ -4571,24 +4670,15 @@
       "test/live/flows/project_flow_tb.py",
       "test/live/flows/s11_postsim_compare.py",
       "test/live/flows/scale_100_tb.py",
-      "test/live/packages/maestro_e2e_tests.py"
+      "test/live/packages/infra_e2e_tests.py"
      ]
     },
     {
      "value": "vx",
      "covered": true,
      "tb_files": [
+      "test/live/packages/spectre_modes_e2e_tests.py",
       "test/offline/unit/test_nested_command_keys_contract.py"
-     ]
-    },
-    {
-     "value": "x",
-     "covered": true,
-     "tb_files": [
-      "test/live/flows/design_iterate_tb.py",
-      "test/live/flows/serdes_rx_flow_tb.py",
-      "test/live/packages/maestro_e2e_tests.py",
-      "test/live/packages/schematic_e2e_tests.py"
      ]
     }
    ]

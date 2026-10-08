@@ -252,7 +252,7 @@
   "kind": "table-row",
   "section": "4.5 结果与错误合同（本版冻结）",
   "line": 280,
-  "text": "| 正常 | `status=success`、`output`、`log` | `kind=command`、`returncode=命令自身退出码`、`stdout/stderr` |",
+  "text": "| 正常 | `status=success`、`output`、`CDSlog`（JSON 对外；Python 属性 `log`） | `kind=command`、`returncode=命令自身退出码`、`stdout/stderr` |",
   "doc": "总览/1-四层整体架构与接口.md"
  },
  {
@@ -544,6 +544,14 @@
   "doc": "总览/1-四层整体架构与接口.md"
  },
  {
+  "id": "范围#003",
+  "kind": "clause",
+  "section": "本版范围与明确不支持",
+  "line": 5,
+  "text": "> Supersedes：v10（本版不做日志治理：三通道维持现状，日后版本再剥离/区分 bridge 与 CDS.log 错误）",
+  "doc": "总览/add-本版范围与明确不支持.md"
+ },
+ {
   "id": "范围#004",
   "kind": "clause",
   "section": "本版范围与明确不支持",
@@ -674,56 +682,64 @@
  {
   "id": "范围#023",
   "kind": "table-row",
-  "section": "2.4 文件",
-  "line": 42,
-  "text": "| # | 不支持 | 本版口径 |",
+  "section": "2.3 日志",
+  "line": 39,
+  "text": "| 11 | 日志治理（bridge 错误与 CDS.log 错误的剥离/区分） | 本版不做：维持现状——`errors[]`（SKILL/NAK）、`warnings[]`（传输层提示）、CDS.log 增量三条通道按现行口径各自返回，不新增治理、不解析/归并/重写；**日后版本**再剥离并区分 bridge 自身错误与 CDS.log（含工具输出）错误，明确各自的结构化出口与归属 |",
   "doc": "总览/add-本版范围与明确不支持.md"
  },
  {
-  "id": "范围#025",
+  "id": "范围#024",
   "kind": "table-row",
   "section": "2.4 文件",
-  "line": 44,
-  "text": "| 11 | 文件空间安全沙箱 | `role.<name>.root` 只是各 role 的默认工作目录约定，不拦截 `..`/任意绝对路径；隔离依赖 OS 账号权限 |",
+  "line": 43,
+  "text": "| # | 不支持 | 本版口径 |",
   "doc": "总览/add-本版范围与明确不支持.md"
  },
  {
   "id": "范围#026",
   "kind": "table-row",
-  "section": "2.5 daemon 生命周期",
-  "line": 48,
-  "text": "| # | 不支持 | 本版口径 |",
+  "section": "2.4 文件",
+  "line": 45,
+  "text": "| 12 | 文件空间安全沙箱 | `role.<name>.root` 只是各 role 的默认工作目录约定，不拦截 `..`/任意绝对路径；隔离依赖 OS 账号权限 |",
   "doc": "总览/add-本版范围与明确不支持.md"
  },
  {
-  "id": "范围#028",
+  "id": "范围#027",
   "kind": "table-row",
   "section": "2.5 daemon 生命周期",
-  "line": 50,
-  "text": "| 12 | 跨机启动 daemon 的协议（mpsserver / 远程 launcher 等） | 本版不实现；当前 daemon 是 CIW 的本地 `ipcBeginProcess` 子进程，启动方式与运行账号由站点拓扑决定，bridge 只忠实投送与连接、不参与也不校验 |",
+  "line": 49,
+  "text": "| # | 不支持 | 本版口径 |",
   "doc": "总览/add-本版范围与明确不支持.md"
  },
  {
   "id": "范围#029",
   "kind": "table-row",
+  "section": "2.5 daemon 生命周期",
+  "line": 51,
+  "text": "| 13 | 跨机启动 daemon 的协议（mpsserver / 远程 launcher 等） | 本版不实现；当前 daemon 是 CIW 的本地 `ipcBeginProcess` 子进程，启动方式与运行账号由站点拓扑决定，bridge 只忠实投送与连接、不参与也不校验 |",
+  "doc": "总览/add-本版范围与明确不支持.md"
+ },
+ {
+  "id": "范围#030",
+  "kind": "table-row",
   "section": "2.6 顶层附加能力",
-  "line": 54,
+  "line": 55,
   "text": "| # | 不支持 | 本版口径 |",
   "doc": "总览/add-本版范围与明确不支持.md"
  },
  {
-  "id": "范围#031",
+  "id": "范围#032",
   "kind": "table-row",
   "section": "2.6 顶层附加能力",
-  "line": 56,
-  "text": "| 13 | 顶层任务等待池（挂起监督） | 本版不实现，作为下一代想法；长任务由上层业务包自行同步等待，或由调用方分次查询；顶层收到未定义的 `pending` 声明按未知字段处理 |",
+  "line": 57,
+  "text": "| 14 | 顶层任务等待池（挂起监督） | 本版不实现，作为下一代想法；长任务由上层业务包自行同步等待，或由调用方分次查询；顶层收到未定义的 `pending` 声明按未知字段处理 |",
   "doc": "总览/add-本版范围与明确不支持.md"
  },
  {
-  "id": "范围#032",
+  "id": "范围#033",
   "kind": "clause",
   "section": "3. 与相关文档的关系",
-  "line": 60,
+  "line": 61,
   "text": "- 每项对应的“该怎么做”由各自 Normative 文档定义：接口见[四层整体架构与接口](1-四层整体架构与接口.md)，路由见[路由设计](../中层/3-路由设计.md)，注册见[多用户与注册](../其他/1-多用户与注册.md)，并发见[并发设计](../中层/2-并发设计.md)，日志见[日志返回设计标准](../底层/6-日志返回设计标准.md)，字段见[中层配置文档](../中层/add-中层配置文档.md)。",
   "doc": "总览/add-本版范围与明确不支持.md"
  },
@@ -761,410 +777,410 @@
  },
  {
   "id": "配置#013",
-  "kind": "table-row",
-  "section": "2.1 通用",
-  "line": 23,
-  "text": "| 字段 | 作用 | 类型 | 默认/必填 |",
+  "kind": "clause",
+  "section": "2. 字段总表（唯一来源）",
+  "line": 21,
+  "text": "- 末列「自助权限」= 本人 personal token 的自助口径：**编辑**（可自己读写）、**只读**（可自己读、不可自己写）、**保密**（不可自己读，自写一律不可）。",
   "doc": "中层/add-中层配置文档.md"
  },
  {
-  "id": "配置#015",
+  "id": "配置#014",
   "kind": "table-row",
   "section": "2.1 通用",
   "line": 25,
-  "text": "| `token` | 每次调用携带的寻址与授权参数；每用户唯一、终生不变（格式见 §5，生命周期见[多用户与注册 §1](../其他/1-多用户与注册.md)） | 配置 | 注册生成（未提交则自动生成） |",
+  "text": "| 字段 | 作用 | 类型 | 默认/必填 | 自助权限 |",
   "doc": "中层/add-中层配置文档.md"
  },
  {
   "id": "配置#016",
   "kind": "table-row",
   "section": "2.1 通用",
-  "line": 26,
-  "text": "| `user` | 人类可读 id + 路径名，非安全凭证 | 配置 | 必填（格式见 §5） |",
+  "line": 27,
+  "text": "| `token` | 每次调用携带的寻址与授权参数；每用户唯一、终生不变（格式见 §5，生命周期见[多用户与注册 §1](../其他/1-多用户与注册.md)） | 配置 | 注册生成（未提交则自动生成） | 保密 |",
   "doc": "中层/add-中层配置文档.md"
  },
  {
   "id": "配置#017",
   "kind": "table-row",
-  "section": "2.2 策略",
-  "line": 30,
-  "text": "| 字段 | 作用 | 类型 | 默认/必填 |",
+  "section": "2.1 通用",
+  "line": 28,
+  "text": "| `user` | 人类可读 id + 路径名，非安全凭证 | 配置 | 必填（格式见 §5） | 只读 |",
   "doc": "中层/add-中层配置文档.md"
  },
  {
-  "id": "配置#019",
+  "id": "配置#018",
   "kind": "table-row",
   "section": "2.2 策略",
   "line": 32,
-  "text": "| `ssh.backend` | SSH 后端 openssh / paramiko；默认 paramiko：同一业务连接上多 channel 复用；Skill 隧道由外部 OpenSSH `ssh -N -L` 承载 | 配置 | 默认 `paramiko` |",
+  "text": "| 字段 | 作用 | 类型 | 默认/必填 | 自助权限 |",
   "doc": "中层/add-中层配置文档.md"
  },
  {
   "id": "配置#020",
   "kind": "table-row",
   "section": "2.2 策略",
-  "line": 33,
-  "text": "| `ssh.control_master` | openssh 后端的复用策略 auto/force/disable；复用边界是 token，跨 token 不共享；paramiko 不适用 | 配置 | 默认 `auto` |",
+  "line": 34,
+  "text": "| `ssh.backend` | SSH 后端 openssh / paramiko；默认 paramiko：同一业务连接上多 channel 复用；Skill 隧道由外部 OpenSSH `ssh -N -L` 承载 | 配置 | 默认 `paramiko` | 编辑 |",
   "doc": "中层/add-中层配置文档.md"
  },
  {
   "id": "配置#021",
   "kind": "table-row",
   "section": "2.2 策略",
-  "line": 34,
-  "text": "| `ssh.tool_override` | 可选 ssh/scp/tar 工具路径覆盖 | 配置 | 可选 |",
+  "line": 35,
+  "text": "| `ssh.control_master` | openssh 后端的复用策略 auto/force/disable；复用边界是 token，跨 token 不共享；paramiko 不适用 | 配置 | 默认 `auto` | 编辑 |",
   "doc": "中层/add-中层配置文档.md"
  },
  {
   "id": "配置#022",
   "kind": "table-row",
   "section": "2.2 策略",
-  "line": 35,
-  "text": "| `runtime.thread_pool_size` | 线程预算：在途请求上限（任何未完成动作占位）；超限语义见[并发设计 §2](2-并发设计.md) | 配置 | 默认 `32` |",
+  "line": 36,
+  "text": "| `ssh.tool_override` | 可选 ssh/scp/tar 工具路径覆盖 | 配置 | 可选 | 编辑 |",
   "doc": "中层/add-中层配置文档.md"
  },
  {
   "id": "配置#023",
   "kind": "table-row",
   "section": "2.2 策略",
-  "line": 36,
-  "text": "| `runtime.channel_budget` | 最大通道数：token 内所有 endpoint 已打开 SSH 通道总数；超限语义见[并发设计 §2](2-并发设计.md) | 配置 | 默认 `10` |",
+  "line": 37,
+  "text": "| `runtime.thread_pool_size` | 线程预算：在途请求上限（任何未完成动作占位）；超限语义见[并发设计 §2](2-并发设计.md) | 配置 | 默认 `32` | 只读 |",
   "doc": "中层/add-中层配置文档.md"
  },
  {
   "id": "配置#024",
   "kind": "table-row",
   "section": "2.2 策略",
-  "line": 37,
-  "text": "| `runtime.connect_timeout` | 连接建立超时（各步 deadline 的子预算，见[四层整体架构与接口 §5.8](../总览/1-四层整体架构与接口.md)） | 配置 | 默认 `15` 秒 |",
+  "line": 38,
+  "text": "| `runtime.channel_budget` | 最大通道数：token 内所有 endpoint 已打开 SSH 通道总数；超限语义见[并发设计 §2](2-并发设计.md) | 配置 | 默认 `10` | 只读 |",
   "doc": "中层/add-中层配置文档.md"
  },
  {
   "id": "配置#025",
   "kind": "table-row",
   "section": "2.2 策略",
-  "line": 38,
-  "text": "| `cdslog.log_level` | 返回日志级别 off/all/warn/error；off 从 IL 源头不读不注入；业务接口可显式覆盖 | 配置 | 默认 `all` |",
+  "line": 39,
+  "text": "| `runtime.connect_timeout` | 连接建立超时（各步 deadline 的子预算，见[四层整体架构与接口 §5.8](../总览/1-四层整体架构与接口.md)） | 配置 | 默认 `15` 秒 | 只读 |",
   "doc": "中层/add-中层配置文档.md"
  },
  {
   "id": "配置#026",
   "kind": "table-row",
   "section": "2.2 策略",
-  "line": 39,
-  "text": "| `cdslog.log_max_bytes` | 单次日志内联长度上限，超限自动降级（规则见[日志返回设计标准 §5](../底层/6-日志返回设计标准.md)）；业务接口可显式覆盖 | 配置 | 默认 `65536` |",
+  "line": 40,
+  "text": "| `cdslog.log_level` | 返回日志级别 off/all/warn/error；off 从 IL 源头不读不注入；业务接口可显式覆盖 | 配置 | 默认 `all` | 编辑 |",
   "doc": "中层/add-中层配置文档.md"
  },
  {
   "id": "配置#027",
-  "kind": "clause",
-  "section": "2.3 各 role 公共字段",
-  "line": 43,
-  "text": "五个 role（`gui / daemon / command / file / spectre`）各有下列公共字段。role 的职责、接口对应与连接复用见[路由设计 §2–§4](3-路由设计.md)，本文只定义字段与默认值。",
+  "kind": "table-row",
+  "section": "2.2 策略",
+  "line": 41,
+  "text": "| `cdslog.log_max_bytes` | 单次日志内联长度上限，超限自动降级（规则见[日志返回设计标准 §5](../底层/6-日志返回设计标准.md)）；业务接口可显式覆盖 | 配置 | 默认 `65536` | 编辑 |",
   "doc": "中层/add-中层配置文档.md"
  },
  {
   "id": "配置#028",
-  "kind": "table-row",
+  "kind": "clause",
   "section": "2.3 各 role 公共字段",
   "line": 45,
-  "text": "| 字段 | 作用 | 类型 | 默认/必填 |",
+  "text": "五个 role（`gui / daemon / command / file / spectre`）各有下列公共字段。role 的职责、接口对应与连接复用见[路由设计 §2–§4](3-路由设计.md)，本文只定义字段与默认值。",
   "doc": "中层/add-中层配置文档.md"
  },
  {
-  "id": "配置#030",
+  "id": "配置#029",
   "kind": "table-row",
   "section": "2.3 各 role 公共字段",
   "line": 47,
-  "text": "| `role.<name>.mode` | 投送方式：`local` = 中层就在该 role 目标主机上直接本地执行、不经 SSH（声明需管理权限，见[多用户与注册 §2](../其他/1-多用户与注册.md)）；`remote` = 经 SSH 投送；不同 role 可混合 | 配置 | 回退 `mode.default` |",
+  "text": "| 字段 | 作用 | 类型 | 默认/必填 | 自助权限 |",
   "doc": "中层/add-中层配置文档.md"
  },
  {
   "id": "配置#031",
   "kind": "table-row",
   "section": "2.3 各 role 公共字段",
-  "line": 48,
-  "text": "| `role.<name>.host/user/jump_host/jump_user/proxy` | 该 role 登录主机/账号/跳板/代理；`local` role 提交即参数错误 | 配置 | 回退 §2.5 全局默认（remote 需可解析） |",
+  "line": 49,
+  "text": "| `role.<name>.mode` | 投送方式：`local` = 中层就在该 role 目标主机上直接本地执行、不经 SSH（声明需管理权限，见[多用户与注册 §2](../其他/1-多用户与注册.md)）；`remote` = 经 SSH 投送；不同 role 可混合 | 配置 | 回退 `mode.default` | 只读 |",
   "doc": "中层/add-中层配置文档.md"
  },
  {
   "id": "配置#032",
   "kind": "table-row",
   "section": "2.3 各 role 公共字段",
-  "line": 49,
-  "text": "| `role.<name>.key_dir/key` | 该 role 的 SSH 凭据目录/文件名，位于客户端侧（remote 使用；`local` role 不适用） | 配置 | 回退 §2.5 全局默认 |",
+  "line": 50,
+  "text": "| `role.<name>.host/user/jump_host/jump_user/proxy` | 该 role 登录主机/账号/跳板/代理；`local` role 提交即参数错误 | 配置 | 回退 §2.5 全局默认（remote 需可解析） | 编辑 |",
   "doc": "中层/add-中层配置文档.md"
  },
  {
   "id": "配置#033",
   "kind": "table-row",
   "section": "2.3 各 role 公共字段",
-  "line": 50,
-  "text": "| `role.<name>.root` | 该 role 文件根；申请期缺省 `root.default/<role>`，探测后为最终绝对路径 | 配置 | 可选（探测写回，见 §6.2） |",
+  "line": 51,
+  "text": "| `role.<name>.key_dir/key` | 该 role 的 SSH 凭据目录/文件名，位于客户端侧（remote 使用；`local` role 不适用） | 配置 | 回退 §2.5 全局默认 | 保密 |",
   "doc": "中层/add-中层配置文档.md"
  },
  {
   "id": "配置#034",
   "kind": "table-row",
   "section": "2.3 各 role 公共字段",
-  "line": 51,
-  "text": "| `role.<name>.max_sessions` | 该 role 解析到的 endpoint 的并发通道上限（配置在 role、生效在 endpoint；多 role 同 endpoint 取最小值；`local` 不适用） | 配置 | 默认 `10` |",
+  "line": 52,
+  "text": "| `role.<name>.root` | 该 role 文件根；申请期缺省 `root.default/<role>`，探测后为最终绝对路径 | 配置 | 可选（探测写回，见 §6.2） | 编辑 |",
   "doc": "中层/add-中层配置文档.md"
  },
  {
   "id": "配置#035",
   "kind": "table-row",
   "section": "2.3 各 role 公共字段",
-  "line": 52,
-  "text": "| `role.<name>.expected_fingerprint` | 该 role endpoint 的 host-key 指纹比对基准（业务 role 必检；spectre 例外，见 §3）；`mode=local` 无 endpoint，省略或为 `null` | 校验 | 探测写入 |",
+  "line": 53,
+  "text": "| `role.<name>.max_sessions` | 该 role 解析到的 endpoint 的并发通道上限（配置在 role、生效在 endpoint；多 role 同 endpoint 取最小值；`local` 不适用） | 配置 | 默认 `10` | 只读 |",
   "doc": "中层/add-中层配置文档.md"
  },
  {
   "id": "配置#036",
-  "kind": "clause",
+  "kind": "table-row",
   "section": "2.3 各 role 公共字段",
   "line": 54,
-  "text": "- 各 role 可携带**用户组** `role.<name>.<组名>`（如 `role.command.calibre`）：值必须是对象且仅含标量字段；中层只做结构约束，**不校验语义、不探测**，注册原样落盘、`query` 原样返回，含义由上层业务包约定；组名不得与本节/§2.4 固定字段重名（字符集与大小限制见 §5）。",
+  "text": "| `role.<name>.expected_fingerprint` | 该 role endpoint 的 host-key 指纹比对基准（业务 role 必检；spectre 例外，见 §3）；`mode=local` 无 endpoint，省略或为 `null` | 校验 | 探测写入 | 只读 |",
   "doc": "中层/add-中层配置文档.md"
  },
  {
   "id": "配置#037",
-  "kind": "table-row",
-  "section": "2.4 role 特有字段",
-  "line": 58,
-  "text": "| 字段 | 作用 | 类型 | 默认/必填 |",
+  "kind": "clause",
+  "section": "2.3 各 role 公共字段",
+  "line": 56,
+  "text": "- 各 role 可携带**用户组** `role.<name>.<组名>`（如 `role.command.calibre`）：值必须是对象且仅含标量字段；中层只做结构约束，**不校验语义、不探测**，注册原样落盘、`query` 原样返回，含义由上层业务包约定；组名不得与本节/§2.4 固定字段重名（字符集与大小限制见 §5）；自助权限 = 编辑。",
   "doc": "中层/add-中层配置文档.md"
  },
  {
-  "id": "配置#039",
+  "id": "配置#038",
   "kind": "table-row",
   "section": "2.4 role 特有字段",
   "line": 60,
-  "text": "| `role.daemon.daemon_port` | daemon 监听端口，每用户分配不冲突 | 配置 | 缺省分配（见 §6.4） |",
+  "text": "| 字段 | 作用 | 类型 | 默认/必填 | 自助权限 |",
   "doc": "中层/add-中层配置文档.md"
  },
  {
   "id": "配置#040",
   "kind": "table-row",
   "section": "2.4 role 特有字段",
-  "line": 61,
-  "text": "| `role.daemon.local_port` | `remote` 时是隧道本地端口；`local` 时直连端口，必须 `= daemon_port` | 配置 | 缺省分配 |",
+  "line": 62,
+  "text": "| `role.daemon.daemon_port` | daemon 监听端口，每用户分配不冲突 | 配置 | 缺省分配（见 §6.4） | 只读 |",
   "doc": "中层/add-中层配置文档.md"
  },
  {
   "id": "配置#041",
   "kind": "table-row",
   "section": "2.4 role 特有字段",
-  "line": 62,
-  "text": "| `role.daemon.python` | daemon role 上的 python 解释器（部署/启动 daemon 消费；`local` 时即本机 python） | 环境 | 显式→校验，缺省→探测；失败=注册失败 |",
+  "line": 63,
+  "text": "| `role.daemon.local_port` | `remote` 时是隧道本地端口；`local` 时直连端口，必须 `= daemon_port` | 配置 | 缺省分配 | 只读 |",
   "doc": "中层/add-中层配置文档.md"
  },
  {
   "id": "配置#042",
   "kind": "table-row",
   "section": "2.4 role 特有字段",
-  "line": 63,
-  "text": "| `role.daemon.expected_hostname` | daemon 主机名比对基准 | 校验 | 探测写入 |",
+  "line": 64,
+  "text": "| `role.daemon.python` | daemon role 上的 python 解释器（部署/启动 daemon 消费；`local` 时即本机 python） | 环境 | 显式→校验，缺省→探测；失败=注册失败 | 编辑 |",
   "doc": "中层/add-中层配置文档.md"
  },
  {
   "id": "配置#043",
   "kind": "table-row",
   "section": "2.4 role 特有字段",
-  "line": 64,
-  "text": "| `role.daemon.expected_user` | daemon 进程账号比对基准 | 校验 | 探测写入 |",
+  "line": 65,
+  "text": "| `role.daemon.expected_hostname` | daemon 主机名比对基准 | 校验 | 探测写入 | 只读 |",
   "doc": "中层/add-中层配置文档.md"
  },
  {
   "id": "配置#044",
   "kind": "table-row",
   "section": "2.4 role 特有字段",
-  "line": 65,
-  "text": "| `role.spectre.bin` | spectre 可执行文件（显式→校验，缺省→探测；失败仅 warning） | 环境 | 可选 |",
+  "line": 66,
+  "text": "| `role.daemon.expected_user` | daemon 进程账号比对基准 | 校验 | 探测写入 | 只读 |",
   "doc": "中层/add-中层配置文档.md"
  },
  {
   "id": "配置#045",
   "kind": "table-row",
   "section": "2.4 role 特有字段",
-  "line": 66,
-  "text": "| `role.gui.display` | gui role 的 X server（`DISPLAY` 值，每用户单值）；经只读查询 `query` 返回，供上层拼 X11 命令（见[四层整体架构与接口 §4.2](../总览/1-四层整体架构与接口.md)） | 环境 | 显式→校验；缺省→探测写回，失败留空（见 §3） |",
+  "line": 67,
+  "text": "| `role.spectre.bin` | spectre 可执行文件（显式→校验，缺省→探测；失败仅 warning） | 环境 | 可选 | 编辑 |",
   "doc": "中层/add-中层配置文档.md"
  },
  {
   "id": "配置#046",
   "kind": "table-row",
-  "section": "2.5 全局默认与字段回退",
-  "line": 70,
-  "text": "| 字段 | 作用 | 类型 | 默认/必填 |",
+  "section": "2.4 role 特有字段",
+  "line": 68,
+  "text": "| `role.gui.display` | gui role 的 X server（`DISPLAY` 值，每用户单值）；经只读查询 `query` 返回，供上层拼 X11 命令（见[四层整体架构与接口 §4.2](../总览/1-四层整体架构与接口.md)） | 环境 | 显式→校验；缺省→探测写回，失败留空（见 §3） | 编辑 |",
   "doc": "中层/add-中层配置文档.md"
  },
  {
-  "id": "配置#048",
+  "id": "配置#047",
   "kind": "table-row",
   "section": "2.5 全局默认与字段回退",
   "line": 72,
-  "text": "| `mode.default` | 各 role 缺省 mode（local/remote） | 配置 | **必填，无默认** |",
+  "text": "| 字段 | 作用 | 类型 | 默认/必填 | 自助权限 |",
   "doc": "中层/add-中层配置文档.md"
  },
  {
   "id": "配置#049",
   "kind": "table-row",
   "section": "2.5 全局默认与字段回退",
-  "line": 73,
-  "text": "| `ssh.default.host/user` | 各 role 缺省登录主机/账号 | 配置 | 存在未在 role 级提供的 remote role 时必填 |",
+  "line": 74,
+  "text": "| `mode.default` | 各 role 缺省 mode（local/remote） | 配置 | **必填，无默认** | 只读 |",
   "doc": "中层/add-中层配置文档.md"
  },
  {
   "id": "配置#050",
   "kind": "table-row",
   "section": "2.5 全局默认与字段回退",
-  "line": 74,
-  "text": "| `ssh.default.jump_host/jump_user/proxy` | 各 role 缺省跳板/代理 | 配置 | 可选 |",
+  "line": 75,
+  "text": "| `ssh.default.host/user` | 各 role 缺省登录主机/账号 | 配置 | 存在未在 role 级提供的 remote role 时必填 | 编辑 |",
   "doc": "中层/add-中层配置文档.md"
  },
  {
   "id": "配置#051",
   "kind": "table-row",
   "section": "2.5 全局默认与字段回退",
-  "line": 75,
-  "text": "| `ssh.default.key_dir/key` | 各 role 缺省 SSH 凭据目录/文件名，位于客户端侧；`key_dir` 缺省 = 客户端 `~/.ssh` | 配置 | `key_dir` 可选；存在 remote role 时 `key` 必填 |",
+  "line": 76,
+  "text": "| `ssh.default.jump_host/jump_user/proxy` | 各 role 缺省跳板/代理 | 配置 | 可选 | 编辑 |",
   "doc": "中层/add-中层配置文档.md"
  },
  {
   "id": "配置#052",
   "kind": "table-row",
   "section": "2.5 全局默认与字段回退",
-  "line": 76,
-  "text": "| `root.default` | 各 role 文件根的申请期基准；探测后写回各 `role.*.root`，运行期不依赖本字段 | 配置 | 默认 `~/.virtuoso-bridge/<userid>`（持久化 `null`） |",
+  "line": 77,
+  "text": "| `ssh.default.key_dir/key` | 各 role 缺省 SSH 凭据目录/文件名，位于客户端侧；`key_dir` 缺省 = 客户端 `~/.ssh` | 配置 | `key_dir` 可选；存在 remote role 时 `key` 必填 | 保密 |",
   "doc": "中层/add-中层配置文档.md"
  },
  {
   "id": "配置#053",
-  "kind": "clause",
+  "kind": "table-row",
   "section": "2.5 全局默认与字段回退",
   "line": 78,
+  "text": "| `root.default` | 各 role 文件根的申请期基准；探测后写回各 `role.*.root`，运行期不依赖本字段 | 配置 | 默认 `~/.virtuoso-bridge/<userid>`（持久化 `null`） | 编辑 |",
+  "doc": "中层/add-中层配置文档.md"
+ },
+ {
+  "id": "配置#054",
+  "kind": "clause",
+  "section": "2.5 全局默认与字段回退",
+  "line": 80,
   "text": "- 回退是**逐字段**的：role 有值用自己的，否则回退对应全局默认；`null`/空串 = 未提供；",
   "doc": "中层/add-中层配置文档.md"
  },
  {
-  "id": "配置#056",
+  "id": "配置#057",
   "kind": "clause",
   "section": "2.6 固定目录结构（非配置项）",
-  "line": 84,
+  "line": 86,
   "text": "- 本地工作目录不是注册字段（启动时传入，不传用实现默认）；子结构固定 `registry.json / config.json / temp/ / log/ / artifact/`，启动时自动创建（`config.json` 见[顶层补充 §5](../顶层/add-控制面与业务面.md)）；",
   "doc": "中层/add-中层配置文档.md"
  },
  {
-  "id": "配置#058",
-  "kind": "table-row",
-  "section": "3. 三类处理规则",
-  "line": 89,
-  "text": "| 类型 | 规则 |",
-  "doc": "中层/add-中层配置文档.md"
- },
- {
-  "id": "配置#060",
+  "id": "配置#059",
   "kind": "table-row",
   "section": "3. 三类处理规则",
   "line": 91,
-  "text": "| 配置 | 用户提供；只做格式/范围/查重校验，失败拒绝；无自动探测 |",
+  "text": "| 类型 | 规则 |",
   "doc": "中层/add-中层配置文档.md"
  },
  {
   "id": "配置#061",
   "kind": "table-row",
   "section": "3. 三类处理规则",
-  "line": 92,
-  "text": "| 环境 | 默认自动探测；用户显式提供时校验，不可用报告并拒绝。例外：spectre（失败级别与提交态见[多用户与注册 §4.1](../其他/1-多用户与注册.md)）与 `role.gui.display`（缺省探测失败仅留空 + WARNING，显式不可达仍拒绝） |",
+  "line": 93,
+  "text": "| 配置 | 用户提供；只做格式/范围/查重校验，失败拒绝；无自动探测 |",
   "doc": "中层/add-中层配置文档.md"
  },
  {
   "id": "配置#062",
   "kind": "table-row",
   "section": "3. 三类处理规则",
-  "line": 93,
-  "text": "| 校验 | 探测写入各 role 的 `expected_*`，只用于比对、不参与业务；在注册探测时比对，**运行期不强制比对**。唯一例外：业务 role 的 host-key 指纹不匹配 = ERROR（含机器重装未确认），见[多用户与注册 §3.2/§5](../其他/1-多用户与注册.md) |",
+  "line": 94,
+  "text": "| 环境 | 默认自动探测；用户显式提供时校验，不可用报告并拒绝。例外：spectre（失败级别与提交态见[多用户与注册 §4.1](../其他/1-多用户与注册.md)）与 `role.gui.display`（缺省探测失败仅留空 + WARNING，显式不可达仍拒绝） |",
   "doc": "中层/add-中层配置文档.md"
  },
  {
   "id": "配置#063",
-  "kind": "clause",
+  "kind": "table-row",
   "section": "3. 三类处理规则",
   "line": 95,
+  "text": "| 校验 | 探测写入各 role 的 `expected_*`，只用于比对、不参与业务；在注册探测时比对，**运行期不强制比对**。唯一例外：业务 role 的 host-key 指纹不匹配 = ERROR（含机器重装未确认），见[多用户与注册 §3.2/§5](../其他/1-多用户与注册.md) |",
+  "doc": "中层/add-中层配置文档.md"
+ },
+ {
+  "id": "配置#064",
+  "kind": "clause",
+  "section": "3. 三类处理规则",
+  "line": 97,
   "text": "探测动作本身（何时探测、逐 role 探测矩阵、失败级别）见[多用户与注册 §4](../其他/1-多用户与注册.md)，本文只定义字段类型规则。`root` 不是探测发现的环境值，而是按 §2.5 与[多用户与注册 §4.2](../其他/1-多用户与注册.md)的默认算法推导、探测期写回绝对路径，其类型为**配置**。",
   "doc": "中层/add-中层配置文档.md"
  },
  {
-  "id": "配置#065",
+  "id": "配置#066",
   "kind": "clause",
   "section": "4. 必填小结",
-  "line": 100,
+  "line": 102,
   "text": "- 条件必填：每个 remote role 必须可解析出目标（role 级 `host/user` 或 `ssh.default.*`）与凭据（role 级 `key_dir/key` 或 `ssh.default.key_dir/key`）；",
   "doc": "中层/add-中层配置文档.md"
  },
  {
-  "id": "配置#068",
-  "kind": "clause",
-  "section": "5. 输入校验与首信任",
-  "line": 106,
-  "text": "- `user` 格式 `^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$`；禁止 `/`、`\\`、`..`、绝对路径；Windows 大小写不敏感查重；拒绝保留设备名（CON/PRN/AUX/NUL/COM1–9/LPT1–9 及带扩展名）与结尾 `.`/空格；",
-  "doc": "中层/add-中层配置文档.md"
- },
- {
-  "id": "配置#070",
+  "id": "配置#069",
   "kind": "clause",
   "section": "5. 输入校验与首信任",
   "line": 108,
-  "text": "- `local` role 显式提交 `host/user/jump_host/jump_user/proxy` 或 `key_dir/key` → 参数错误；",
+  "text": "- `user` 格式 `^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$`；禁止 `/`、`\\`、`..`、绝对路径；Windows 大小写不敏感查重；拒绝保留设备名（CON/PRN/AUX/NUL/COM1–9/LPT1–9 及带扩展名）与结尾 `.`/空格；",
   "doc": "中层/add-中层配置文档.md"
  },
  {
   "id": "配置#071",
   "kind": "clause",
   "section": "5. 输入校验与首信任",
-  "line": 109,
-  "text": "- remote role 必须解析出凭据（`key_dir`+`key`），否则拒绝；`key` 只允许文件名、不含目录成分；凭据按**公钥指纹**查重，已被其他条目登记 → 需**任一**已登记持有者的 token 或管理员凭据，否则拒绝（复用规则见[多用户与注册 §3](../其他/1-多用户与注册.md)）；",
+  "line": 110,
+  "text": "- `local` role 显式提交 `host/user/jump_host/jump_user/proxy` 或 `key_dir/key` → 参数错误；",
   "doc": "中层/add-中层配置文档.md"
  },
  {
   "id": "配置#072",
   "kind": "clause",
   "section": "5. 输入校验与首信任",
-  "line": 110,
-  "text": "- `role.gui.display` 只接受 X display 形式（如 `:11`、`localhost:10.0`、`unix/:0`），禁止空白、引号、`$`、反引号、`;` 等 shell 元字符（防注入）；",
+  "line": 111,
+  "text": "- remote role 必须解析出凭据（`key_dir`+`key`），否则拒绝；`key` 只允许文件名、不含目录成分；凭据按**公钥指纹**查重，已被其他条目登记 → 需**任一**已登记持有者的 token 或管理员凭据，否则拒绝（复用规则见[多用户与注册 §3](../其他/1-多用户与注册.md)）；",
   "doc": "中层/add-中层配置文档.md"
  },
  {
   "id": "配置#073",
   "kind": "clause",
   "section": "5. 输入校验与首信任",
-  "line": 111,
+  "line": 112,
+  "text": "- `role.gui.display` 只接受 X display 形式（如 `:11`、`localhost:10.0`、`unix/:0`），禁止空白、引号、`$`、反引号、`;` 等 shell 元字符（防注入）；",
+  "doc": "中层/add-中层配置文档.md"
+ },
+ {
+  "id": "配置#074",
+  "kind": "clause",
+  "section": "5. 输入校验与首信任",
+  "line": 113,
   "text": "- 未知字段拒绝（`extra=forbid`）；各 role 的用户组例外：组名 `^[a-z][a-z0-9_-]{0,63}$`、不与固定字段重名，值为对象、字段值仅 JSON 标量且不含 NUL，每 role 用户组总大小 ≤ 16 KiB；语义由上层业务包约定；空串视为未提供；",
   "doc": "中层/add-中层配置文档.md"
  },
  {
-  "id": "配置#075",
+  "id": "配置#076",
   "kind": "clause",
   "section": "5. 输入校验与首信任",
-  "line": 113,
+  "line": 115,
   "text": "- registry 持久化 UTF-8、权限 `0600`、tmp + 原子替换。",
   "doc": "中层/add-中层配置文档.md"
  },
  {
-  "id": "配置#103",
+  "id": "配置#104",
   "kind": "clause",
   "section": "6.2 提交 schema 与写回口径",
-  "line": 150,
+  "line": 152,
   "text": "- 何时探测、何时写回、唯一写盘点见[多用户与注册 §3/§4](../其他/1-多用户与注册.md)；本节只约定提交后的字段形态；",
-  "doc": "中层/add-中层配置文档.md"
- },
- {
-  "id": "配置#107",
-  "kind": "clause",
-  "section": "6.4 端口 reservation（内存候选，唯一口径）",
-  "line": 160,
-  "text": "**唯一性作用域**：`token`/`user` 全局；`daemon_port` 同一 daemon 目标主机（`mode=local` 时即本机）；`local_port` 本机。",
   "doc": "中层/add-中层配置文档.md"
  },
  {
@@ -1172,15 +1188,15 @@
   "kind": "clause",
   "section": "6.4 端口 reservation（内存候选，唯一口径）",
   "line": 162,
-  "text": "**联合端口**：`mode=local` 时 `daemon_port` 与 `local_port` 是同一个候选端口——任一缺省由同一值生成并同步写入，显式双值必须相等。",
+  "text": "**唯一性作用域**：`token`/`user` 全局；`daemon_port` 同一 daemon 目标主机（`mode=local` 时即本机）；`local_port` 本机。",
   "doc": "中层/add-中层配置文档.md"
  },
  {
-  "id": "配置#111",
+  "id": "配置#109",
   "kind": "clause",
   "section": "6.4 端口 reservation（内存候选，唯一口径）",
-  "line": 168,
-  "text": "**并发**：注册为低并发流程，由注册服务进程内协调；不设跨进程租约与宽限回收。",
+  "line": 164,
+  "text": "**联合端口**：`mode=local` 时 `daemon_port` 与 `local_port` 是同一个候选端口——任一缺省由同一值生成并同步写入，显式双值必须相等。",
   "doc": "中层/add-中层配置文档.md"
  },
  {
@@ -1188,86 +1204,94 @@
   "kind": "clause",
   "section": "6.4 端口 reservation（内存候选，唯一口径）",
   "line": 170,
+  "text": "**并发**：注册为低并发流程，由注册服务进程内协调；不设跨进程租约与宽限回收。",
+  "doc": "中层/add-中层配置文档.md"
+ },
+ {
+  "id": "配置#113",
+  "kind": "clause",
+  "section": "6.4 端口 reservation（内存候选，唯一口径）",
+  "line": 172,
   "text": "**分配算法**：具体算法与端口范围为实现自由度，合同只要求候选唯一且空闲。",
   "doc": "中层/add-中层配置文档.md"
  },
  {
-  "id": "配置#118",
+  "id": "配置#119",
   "kind": "clause",
   "section": "6.5 endpoint canonical key",
-  "line": 180,
+  "line": 182,
   "text": "- 两条独立规则：① 字符串规范化决定“是否同一 endpoint”（`Server-A`、`server-a.` 同 endpoint，指纹必须一致）；② 不做名称解析（不查 DNS、不把 alias 与真实 hostname 合并）；`~/.ssh/config` 只用于 transport 解析与 22 端口校验，canonical key 只按规范化输入字符串计算；",
   "doc": "中层/add-中层配置文档.md"
  },
  {
-  "id": "配置#120",
+  "id": "配置#121",
   "kind": "clause",
   "section": "6.5 endpoint canonical key",
-  "line": 182,
+  "line": 184,
   "text": "- 测试向量（必须逐条可测）：",
   "doc": "中层/add-中层配置文档.md"
  },
  {
-  "id": "配置#121",
-  "kind": "table-row",
-  "section": "6.5 endpoint canonical key",
-  "line": 184,
-  "text": "| # | host | user | jump_host | jump_user | proxy | key 尾段（前加 `v1:`） |",
-  "doc": "中层/add-中层配置文档.md"
- },
- {
-  "id": "配置#123",
+  "id": "配置#122",
   "kind": "table-row",
   "section": "6.5 endpoint canonical key",
   "line": 186,
-  "text": "| 1 | `server-a` | `ssh-user` | — | — | — | `8c6325e8a41f89a4c29d81eb66db201c4414d33f87702607d23d43a1baf94b0b` |",
+  "text": "| # | host | user | jump_host | jump_user | proxy | key 尾段（前加 `v1:`） |",
   "doc": "中层/add-中层配置文档.md"
  },
  {
   "id": "配置#124",
   "kind": "table-row",
   "section": "6.5 endpoint canonical key",
-  "line": 187,
-  "text": "| 2 | ` Server-A. ` | `ssh-user` | — | — | — | 与 #1 相同 |",
+  "line": 188,
+  "text": "| 1 | `server-a` | `ssh-user` | — | — | — | `8c6325e8a41f89a4c29d81eb66db201c4414d33f87702607d23d43a1baf94b0b` |",
   "doc": "中层/add-中层配置文档.md"
  },
  {
   "id": "配置#125",
   "kind": "table-row",
   "section": "6.5 endpoint canonical key",
-  "line": 188,
-  "text": "| 3 | `server-a` | `SSH-User` | — | — | — | `40701d25d46c873daea45c841226ee0d6d6939209630d5f57459e55c98c2733b` |",
+  "line": 189,
+  "text": "| 2 | ` Server-A. ` | `ssh-user` | — | — | — | 与 #1 相同 |",
   "doc": "中层/add-中层配置文档.md"
  },
  {
   "id": "配置#126",
   "kind": "table-row",
   "section": "6.5 endpoint canonical key",
-  "line": 189,
-  "text": "| 4 | `[::1]` | `u` | — | — | — | `0bd185aaa4fa1ce6bd5cbeea0a86f061567a632f3ad6bf6f5a8f36b79556526b` |",
+  "line": 190,
+  "text": "| 3 | `server-a` | `SSH-User` | — | — | — | `40701d25d46c873daea45c841226ee0d6d6939209630d5f57459e55c98c2733b` |",
   "doc": "中层/add-中层配置文档.md"
  },
  {
   "id": "配置#127",
   "kind": "table-row",
   "section": "6.5 endpoint canonical key",
-  "line": 190,
-  "text": "| 5 | `server-a` | `u` | `bastion` | `jump-user` | — | `178df3e331df40f8d01408ff226fd22e6be04d8033db187f06bc64a5c3512391` |",
+  "line": 191,
+  "text": "| 4 | `[::1]` | `u` | — | — | — | `0bd185aaa4fa1ce6bd5cbeea0a86f061567a632f3ad6bf6f5a8f36b79556526b` |",
   "doc": "中层/add-中层配置文档.md"
  },
  {
   "id": "配置#128",
   "kind": "table-row",
   "section": "6.5 endpoint canonical key",
-  "line": 191,
+  "line": 192,
+  "text": "| 5 | `server-a` | `u` | `bastion` | `jump-user` | — | `178df3e331df40f8d01408ff226fd22e6be04d8033db187f06bc64a5c3512391` |",
+  "doc": "中层/add-中层配置文档.md"
+ },
+ {
+  "id": "配置#129",
+  "kind": "table-row",
+  "section": "6.5 endpoint canonical key",
+  "line": 193,
   "text": "| 6 | `server-a` | `u` | — | — | `socks5://Proxy:1080` | `f410f0afc8f618e5230416eb191fa6fcdd5c8313828c2e4c4348eed8cfb33630` |",
   "doc": "中层/add-中层配置文档.md"
  },
  {
-  "id": "配置#130",
+  "id": "配置#131",
   "kind": "clause",
   "section": "6.5 endpoint canonical key",
-  "line": 194,
+  "line": 196,
   "text": "- 约束：SSH 端口固定 22（注册期校验目标/jump 解析端口，非 22 拒绝）；proxy 固定 `socks5://host:port`；jump 的 known_hosts 由系统 SSH 配置提供；不接受自定义 known_hosts 路径。",
   "doc": "中层/add-中层配置文档.md"
  },
@@ -1556,7 +1580,7 @@
   "kind": "table-row",
   "section": "5. 注册表生命周期与运维",
   "line": 93,
-  "text": "| `user update` | 路径以 user 定位、经管理权限校验后（端点口径见[顶层补充 §2](../顶层/add-控制面与业务面.md)），白名单字段（`ssh.*`、`root.default`、`role.*`、`runtime.*`、`cdslog.*`、`expected_*`，以及各 role 用户组）→ 整体校验 → 原子覆盖；`token`/`registered_at`/其余未声明字段一律拒绝，扁平别名不属公共协议；用户组结构规则与注册同口径，请求中出现的组整体替换该组、值为 `null` 删除该组、未出现的组保留；更新 `root.default` 不影响已提交 `role.root`；成功后触发重新导入并关闭该 token 缓存连接 |",
+  "text": "| `user update` | 路径以 user 定位，授权为管理权限或本人 personal token（本人只可改自助权限=编辑字段；含只读字段 → 需 `enhanced_token`=仅管理员；保密字段仅管理权限；端点口径见[顶层补充 §2/§3](../顶层/add-控制面与业务面.md)），字段范围 = 除 `token`/`registered_at` 外的全部注册表字段（含各 role 用户组），各字段按[配置文档 §2](../中层/add-中层配置文档.md)自助权限列分级；整体校验 → 原子覆盖；未知非用户组字段与扁平别名一律拒绝；用户组结构规则与注册同口径，请求中出现的组整体替换该组、值为 `null` 删除该组、未出现的组保留；更新 `root.default` 不影响已提交 `role.root`；成功后触发重新导入并关闭该 token 缓存连接 |",
   "doc": "其他/1-多用户与注册.md"
  },
  {
@@ -2104,6 +2128,14 @@
   "doc": "底层/6-日志返回设计标准.md"
  },
  {
+  "id": "日志#005",
+  "kind": "clause",
+  "section": "1. 目标与硬性边界",
+  "line": 10,
+  "text": "每次 `execute_skill()` 的返回值多一个 `log` 字段（Python 属性与 Python 模式 `model_dump()` 均为 `log`；所有 JSON 序列化出口——HTTP、`model_dump(mode=\"json\")`、`model_dump_json()`、`save_json()` 及嵌套模型——键名一律 `CDSlog`；底层协议键仍为 `log`），内容是本次指令产生的 `CDS.log` 增量：",
+  "doc": "底层/6-日志返回设计标准.md"
+ },
+ {
   "id": "日志#009",
   "kind": "clause",
   "section": "1. 目标与硬性边界",
@@ -2280,74 +2312,82 @@
   "doc": "顶层/1-顶层.md"
  },
  {
+  "id": "顶层#029",
+  "kind": "clause",
+  "section": "3. 响应壳与错误分界",
+  "line": 52,
+  "text": "- 业务包可达 → **2xx 直接返回业务结果本体**（本体须含 `ok`/`error`，保留字段见[上层 §2.3](../上层/1-上层.md)）；只有受理失败才返回壳形错误 `{\"ok\":false,\"error\":…}`。",
+  "doc": "顶层/1-顶层.md"
+ },
+ {
+  "id": "顶层#030",
+  "kind": "table-row",
+  "section": "3. 响应壳与错误分界",
+  "line": 54,
+  "text": "| 情形 | HTTP | 响应体 |",
+  "doc": "顶层/1-顶层.md"
+ },
+ {
+  "id": "顶层#032",
+  "kind": "table-row",
+  "section": "3. 响应壳与错误分界",
+  "line": 56,
+  "text": "| 非法 JSON、缺 `operation`/`token`、token 类型错 | 4xx | 壳形错误 |",
+  "doc": "顶层/1-顶层.md"
+ },
+ {
   "id": "顶层#033",
   "kind": "table-row",
   "section": "3. 响应壳与错误分界",
+  "line": 57,
+  "text": "| 未知 `operation` | 4xx | 壳形错误 |",
+  "doc": "顶层/1-顶层.md"
+ },
+ {
+  "id": "顶层#034",
+  "kind": "table-row",
+  "section": "3. 响应壳与错误分界",
   "line": 58,
-  "text": "| 情形 | HTTP | 响应体 |",
+  "text": "| Request 构造失败（类型/必填/范围） | 4xx | 壳形错误 |",
   "doc": "顶层/1-顶层.md"
  },
  {
   "id": "顶层#035",
   "kind": "table-row",
   "section": "3. 响应壳与错误分界",
-  "line": 60,
-  "text": "| 非法 JSON、缺 `operation`/`token`、token 类型错 | 4xx | `ok=false`、`error` |",
+  "line": 59,
+  "text": "| 业务运行期失败 | 2xx | 业务结果本体（`ok=false`） |",
   "doc": "顶层/1-顶层.md"
  },
  {
   "id": "顶层#036",
   "kind": "table-row",
   "section": "3. 响应壳与错误分界",
-  "line": 61,
-  "text": "| 未知 `operation` | 4xx | `ok=false`、`error` |",
-  "doc": "顶层/1-顶层.md"
- },
- {
-  "id": "顶层#037",
-  "kind": "table-row",
-  "section": "3. 响应壳与错误分界",
-  "line": 62,
-  "text": "| Request 构造失败（类型/必填/范围） | 4xx | `ok=false`、`error` |",
-  "doc": "顶层/1-顶层.md"
- },
- {
-  "id": "顶层#038",
-  "kind": "table-row",
-  "section": "3. 响应壳与错误分界",
-  "line": 63,
-  "text": "| 业务运行期失败 | 2xx | `ok=false`、`error`、`data` 含步骤痕迹 |",
+  "line": 60,
+  "text": "| 业务操作未预期异常 | 5xx | 壳形错误；不带调用栈 |",
   "doc": "顶层/1-顶层.md"
  },
  {
   "id": "顶层#039",
-  "kind": "table-row",
-  "section": "3. 响应壳与错误分界",
-  "line": 64,
-  "text": "| 业务操作未预期异常 | 5xx | `ok=false`、`error`；不带调用栈 |",
-  "doc": "顶层/1-顶层.md"
- },
- {
-  "id": "顶层#042",
   "kind": "clause",
   "section": "3. 响应壳与错误分界",
-  "line": 68,
+  "line": 64,
   "text": "- 未预期异常必须被顶层捕获：单请求失败不影响其它请求，不终止服务。",
   "doc": "顶层/1-顶层.md"
  },
  {
-  "id": "顶层#050",
+  "id": "顶层#047",
   "kind": "clause",
   "section": "5. 与其它文档的索引",
-  "line": 82,
+  "line": 78,
   "text": "- 分层职责、依赖方向、五业务接口与错误总则：[四层整体架构与接口](../总览/1-四层整体架构与接口.md) §3/§4；",
   "doc": "顶层/1-顶层.md"
  },
  {
-  "id": "顶层#051",
+  "id": "顶层#048",
   "kind": "clause",
   "section": "5. 与其它文档的索引",
-  "line": 83,
+  "line": 79,
   "text": "- 并发与限流：[并发设计](../中层/2-并发设计.md)；",
   "doc": "顶层/1-顶层.md"
  },
@@ -2604,7 +2644,7 @@
   "kind": "table-row",
   "section": "3. 控制端口端点",
   "line": 72,
-  "text": "| GET | `/api/user/<user>` | 读取用户条目（响应脱敏 token） | 管理权限 |",
+  "text": "| GET | `/api/user/<user>` | 读取用户条目（响应脱敏 token） | 管理权限；或本人 personal token（读本人、剔除保密字段；读他人 403） |",
   "doc": "顶层/add-控制面与业务面.md"
  },
  {
@@ -2612,7 +2652,7 @@
   "kind": "table-row",
   "section": "3. 控制端口端点",
   "line": 73,
-  "text": "| POST | `/api/user/<user>/update` | 修改条目（白名单字段） | 管理权限 |",
+  "text": "| POST | `/api/user/<user>/update` | 修改条目（除 `token`/`registered_at` 外的注册表字段） | 管理权限；或本人 personal token（编辑字段直改；只读字段需 `enhanced_token`；保密字段仅管理权限） |",
   "doc": "顶层/add-控制面与业务面.md"
  },
  {
@@ -2684,7 +2724,7 @@
   "kind": "clause",
   "section": "3. 控制端口端点",
   "line": 95,
-  "text": "- 修改类（update/delete）路径以 `user` 定位，**收归管理员**：个人 token 不能自助修改；update 请求体含 `token` 字段 → 拒绝；",
+  "text": "- 修改类（update/delete）路径以 `user` 定位：DELETE 收归管理员；本人 update 的 `enhanced_token`（仅管理员 token）只校验、剥离、不落盘/不回显/不进日志，且只解锁「只读」字段，「保密」字段任何 personal 路径不可写；update 请求体含 `token` 字段 → 拒绝；",
   "doc": "顶层/add-控制面与业务面.md"
  },
  {
@@ -2898,88 +2938,104 @@
  {
   "id": "上层#031",
   "kind": "clause",
-  "section": "2.4 步骤痕迹",
-  "line": 52,
-  "text": "- 每步记 `{\"step\": 名, \"ok\": 布尔, \"detail\": 中层结果}`；默认任一步失败即停止；业务操作可自行决定是否重试某步（条件与痕迹自行约定）；",
+  "section": "2.3 Request / Result",
+  "line": 50,
+  "text": "- 各包 Result 统一自公共基类；`ok`/`error`/`steps` 为保留字段、业务字段不得占用；所有 Request 的公共可选字段含 `step_details`（见 §2.4）、`log_level`、`log_max_bytes`（后两者仅对 Skill / 中间调用有意义，未给时由中层注册表默认决定）；执行时长（`execution_time`）统一保留三位小数；",
   "doc": "上层/1-上层.md"
  },
  {
   "id": "上层#032",
   "kind": "clause",
+  "section": "2.3 Request / Result",
+  "line": 51,
+  "text": "- 对外 JSON 出口：Result 的 `log` 属性映射为 `CDSlog`，不输出 `metadata`；中层 `CommandResult` 一律以具名对象 `{returncode,stdout,stderr,kind}` 出现，不得退化为位置数组。",
+  "doc": "上层/1-上层.md"
+ },
+ {
+  "id": "上层#033",
+  "kind": "clause",
   "section": "2.4 步骤痕迹",
-  "line": 53,
-  "text": "- 保留全部痕迹；失败不得伪装成成功，也不得只留一句 `error` 丢弃步骤。",
+  "line": 55,
+  "text": "- `steps` 出现条件：请求开启 `step_details` **或**操作失败（`ok=false`）；两者皆无则**整字段省略**；出现时每步记 `{\"name\": 名, \"ok\": 布尔, \"detail\": 中层结果}`；默认任一步失败即停止；业务操作可自行决定是否重试某步（条件与痕迹自行约定）；",
   "doc": "上层/1-上层.md"
  },
  {
-  "id": "上层#042",
+  "id": "上层#034",
   "kind": "clause",
-  "section": "3.3 校验与错误",
-  "line": 74,
-  "text": "- 领域校验失败是业务失败，写成 `Result(ok=false)`，**不得抛异常表达**；",
-  "doc": "上层/1-上层.md"
- },
- {
-  "id": "上层#043",
-  "kind": "clause",
-  "section": "3.3 校验与错误",
-  "line": 75,
-  "text": "- 下层结构化失败按错误总则处置：校验和不一致不忽略；重试策略由业务操作自行决断；中层只做传输层透明重试（见[并发设计 §4](../中层/2-并发设计.md)）；",
+  "section": "2.4 步骤痕迹",
+  "line": 56,
+  "text": "- 失败不得伪装成成功，也不得只留一句 `error` 丢弃步骤。",
   "doc": "上层/1-上层.md"
  },
  {
   "id": "上层#044",
   "kind": "clause",
   "section": "3.3 校验与错误",
-  "line": 76,
-  "text": "- 失败类别枚举的唯一 owner 见[四层整体架构与接口 §4.5](../总览/1-四层整体架构与接口.md)，本文不复制。",
+  "line": 77,
+  "text": "- 领域校验失败是业务失败，写成 `Result(ok=false)`，**不得抛异常表达**；",
   "doc": "上层/1-上层.md"
  },
  {
   "id": "上层#045",
   "kind": "clause",
-  "section": "4.1 显式注册",
-  "line": 82,
-  "text": "- **插件的登记单元是业务包，条目落在业务操作级**：`{业务操作名: (业务包类, 方法名, Request 模型)}`；注册表结构与重复登记错误由[顶层 §2.1](../顶层/1-顶层.md)唯一 owner；",
+  "section": "3.3 校验与错误",
+  "line": 78,
+  "text": "- 下层结构化失败按错误总则处置：校验和不一致不忽略；重试策略由业务操作自行决断；中层只做传输层透明重试（见[并发设计 §4](../中层/2-并发设计.md)）；",
+  "doc": "上层/1-上层.md"
+ },
+ {
+  "id": "上层#046",
+  "kind": "clause",
+  "section": "3.3 校验与错误",
+  "line": 79,
+  "text": "- 失败类别枚举的唯一 owner 见[四层整体架构与接口 §4.5](../总览/1-四层整体架构与接口.md)，本文不复制。",
   "doc": "上层/1-上层.md"
  },
  {
   "id": "上层#047",
-  "kind": "table-row",
-  "section": "4.2 命名与自描述",
-  "line": 87,
-  "text": "| 项 | 约定 |",
+  "kind": "clause",
+  "section": "4.1 显式注册",
+  "line": 85,
+  "text": "- **插件的登记单元是业务包，条目落在业务操作级**：`{业务操作名: (业务包类, 方法名, Request 模型)}`；注册表结构与重复登记错误由[顶层 §2.1](../顶层/1-顶层.md)唯一 owner；",
   "doc": "上层/1-上层.md"
  },
  {
   "id": "上层#049",
   "kind": "table-row",
   "section": "4.2 命名与自描述",
-  "line": 89,
+  "line": 90,
+  "text": "| 项 | 约定 |",
+  "doc": "上层/1-上层.md"
+ },
+ {
+  "id": "上层#051",
+  "kind": "table-row",
+  "section": "4.2 命名与自描述",
+  "line": 92,
   "text": "| 业务操作名 | 点分英文分段（领域.对象.动作）；发布后不改名 |",
   "doc": "上层/1-上层.md"
  },
  {
-  "id": "上层#050",
+  "id": "上层#052",
   "kind": "table-row",
   "section": "4.2 命名与自描述",
-  "line": 90,
+  "line": 93,
   "text": "| 自描述 | 每个业务包导出：`Package` 类 + 每个业务操作的 `(操作名, 方法名, Request, Result)`；自描述是包级元数据，顶层注册表值仍为 §2.1 三元组（不含 Result） |",
   "doc": "上层/1-上层.md"
  },
  {
-  "id": "上层#063",
+  "id": "上层#065",
   "kind": "clause",
   "section": "7. 与其它文档的索引",
-  "line": 115,
+  "line": 118,
   "text": "- 五业务接口签名与错误总则：[四层整体架构与接口 §4](../总览/1-四层整体架构与接口.md)；",
   "doc": "上层/1-上层.md"
  },
  {
-  "id": "上层#066",
+  "id": "上层#068",
   "kind": "clause",
   "section": "7. 与其它文档的索引",
-  "line": 118,
+  "line": 121,
   "text": "- 排队、预算与 deadline：[并发设计](../中层/2-并发设计.md)；",
   "doc": "上层/1-上层.md"
  },
@@ -3060,7 +3116,7 @@
   "kind": "clause",
   "section": "1.1 读操作（不改变业务服务器状态）",
   "line": 27,
-  "text": "- `screenshot`：目标默认 `lib/cell/view`，可选 `window_id`；可选 `region=[pos0, pos1]`（user units，截前 `hiZoomIn(window, bBox)` 把区域填满窗口）；`toplevel` / `centralWidget` 暴露；`leave_open` 默认关窗；格式固定 PNG；远端存 daemon role root 的 screenshots/；本地存客户端工作目录 artifact/screenshots/。",
+  "text": "- `screenshot`：目标默认 `lib/cell/view`，可选 `window_id`；可选 `region=[pos0, pos1]`（user units，截前 `hiZoomIn(window, bBox)` 把区域填满窗口）；`toplevel` / `centralWidget` 暴露；`leave_open` 默认关窗；格式固定 PNG；远端**暂存**于 daemon role root 的 screenshots/，下载后清理；留存位置是客户端工作目录 artifact/screenshots/（P-091 三包统一口径）。",
   "doc": "上层/2-schematic.md"
  },
  {
@@ -3164,7 +3220,7 @@
   "kind": "table-row",
   "section": "1.2 写操作（改变业务服务器状态）",
   "line": 49,
-  "text": "| place_wire | —（新建） | `points: [pos, …]`（≥2 点）；可选 `entry/route/width/color/line_style`（传了才拼，不传用底层默认） |",
+  "text": "| place_wire | —（新建） | `points: [pos, …]`（≥2 点）；可选 `entry/route/width/color/line_style`（传了才拼，不传用底层默认）；可选 `x_spacing/y_spacing`（创建期 X/Y 吸附网格，默认 0；不是 wire-to-wire spacing，不落 DB） |",
   "doc": "上层/2-schematic.md"
  },
  {
@@ -3220,7 +3276,7 @@
   "kind": "table-row",
   "section": "1.2 写操作（改变业务服务器状态）",
   "line": 56,
-  "text": "| place_pin | —（新建） | `name, pos`；可选 `direction/orient/off_sheet/power_sens/ground_sens/sig_type`（不传用默认/不拼） |",
+  "text": "| place_pin | —（新建） | `name, pos`；`direction`/`orient`；`off_sheet`（`schCreatePin` 第 5 个必选实参）；可选 `power_sens`/`ground_sens`（必须是目标 cellview 内已存在的 terminal 名）、`sig_type` ∈ `analog/clock/ground/power/reset/scan/signal/tieHi/tieLo/tieOff` |",
   "doc": "上层/2-schematic.md"
  },
  {
@@ -3280,50 +3336,114 @@
   "doc": "上层/2-schematic.md"
  },
  {
-  "id": "schematic#048",
-  "kind": "clause",
-  "section": "1.3 坐标口径（P-074 定版）",
-  "line": 67,
-  "text": "- **单点坐标一律一个字段 `pos`**，值是两元素数组 `[x, y]`（user units）：索引（delete/rename/set_*）、新建（place_*）、读回（read 的实例/端子/label/pin/note）**同一口径**；",
-  "doc": "上层/2-schematic.md"
- },
- {
   "id": "schematic#049",
   "kind": "clause",
-  "section": "1.3 坐标口径（P-074 定版）",
-  "line": 68,
-  "text": "- **不再出现 `xy` 字段**；**不把坐标拆成两个字段**（`{\"x\":…,\"y\":…}` 一律非法）；`pos` 缺字段/形状不对时校验必须报明缺哪个字段（不得裸 `KeyError`）；",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 66,
+  "text": "**创建期 X/Y 吸附网格步距**（默认 `0`）：只影响创建时控制点及",
   "doc": "上层/2-schematic.md"
  },
  {
-  "id": "schematic#050",
+  "id": "schematic#051",
   "kind": "clause",
-  "section": "1.3 坐标口径（P-074 定版）",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 68,
+  "text": "属性保存或读回。默认 `0` **不保证**原样保留输入浮点坐标；底层仍可能使用",
+  "doc": "上层/2-schematic.md"
+ },
+ {
+  "id": "schematic#052",
+  "kind": "clause",
+  "section": "1.2 写操作（改变业务服务器状态）",
   "line": 69,
-  "text": "- 多点：`points: [pos, …]`；区域/矩形：`region` / `bbox` 一律**对角两点** `[pos0, pos1]`（read 与 write 同形，**不再用四元组**）；",
+  "text": "默认吸附网格（本环境实测步距 `0.00625`）。",
+  "doc": "上层/2-schematic.md"
+ },
+ {
+  "id": "schematic#054",
+  "kind": "clause",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 72,
+  "text": "`power_sens` 时补 `nil`；非法 `sig_type` 在写前结构化拒绝。`power_sens`/`ground_sens`",
+  "doc": "上层/2-schematic.md"
+ },
+ {
+  "id": "schematic#055",
+  "kind": "clause",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 73,
+  "text": "只能引用目标 cellview 内已存在的 terminal；引用不存在时结构化失败。",
+  "doc": "上层/2-schematic.md"
+ },
+ {
+  "id": "schematic#056",
+  "kind": "clause",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 74,
+  "text": "每次 `schCreatePin` 后校验 pin 确实创建，返回 nil/0 不得报 ok。",
   "doc": "上层/2-schematic.md"
  },
  {
   "id": "schematic#058",
   "kind": "clause",
-  "section": "3. 待修订",
-  "line": 85,
-  "text": "跟进时**不做兼容层**（`xy`/拆字段直接判非法），校验错误必须点名缺哪个字段；",
+  "section": "1.2 写操作（改变业务服务器状态）",
+  "line": 76,
+  "text": "本包直接结构化拒绝（`off_sheet=true is not supported ...`），不猜 master、不静默",
   "doc": "上层/2-schematic.md"
  },
  {
-  "id": "schematic#059",
+  "id": "schematic#060",
+  "kind": "clause",
+  "section": "1.3 坐标口径（P-074 定版）",
+  "line": 81,
+  "text": "- **单点坐标一律一个字段 `pos`**，值是两元素数组 `[x, y]`（user units）：索引（delete/rename/set_*）、新建（place_*）、读回（read 的实例/端子/label/pin/note）**同一口径**；",
+  "doc": "上层/2-schematic.md"
+ },
+ {
+  "id": "schematic#061",
+  "kind": "clause",
+  "section": "1.3 坐标口径（P-074 定版）",
+  "line": 82,
+  "text": "- **不再出现 `xy` 字段**；**不把坐标拆成两个字段**（`{\"x\":…,\"y\":…}` 一律非法）；`pos` 缺字段/形状不对时校验必须报明缺哪个字段（不得裸 `KeyError`）；",
+  "doc": "上层/2-schematic.md"
+ },
+ {
+  "id": "schematic#062",
+  "kind": "clause",
+  "section": "1.3 坐标口径（P-074 定版）",
+  "line": 83,
+  "text": "- 多点：`points: [pos, …]`；区域/矩形：`region` / `bbox` 一律**对角两点** `[pos0, pos1]`（read 与 write 同形，**不再用四元组**）；",
+  "doc": "上层/2-schematic.md"
+ },
+ {
+  "id": "schematic#069",
   "kind": "clause",
   "section": "3. 待修订",
-  "line": 86,
+  "line": 98,
   "text": "- 唯一 name 索引只有 instance；wire=line segment 列表（无 name），label/note/pin 均按 `pos` 索引（可加 text/name 消歧义）；",
   "doc": "上层/2-schematic.md"
  },
  {
-  "id": "schematic#066",
+  "id": "schematic#072",
   "kind": "clause",
   "section": "3. 待修订",
-  "line": 93,
+  "line": 101,
+  "text": "- rename / delete / set 原子均已实现，按 `pos` 索引；label/note/pin 可加文本或名字消歧义；",
+  "doc": "上层/2-schematic.md"
+ },
+ {
+  "id": "schematic#073",
+  "kind": "clause",
+  "section": "3. 待修订",
+  "line": 102,
+  "text": "- `write` 逐条执行原子，全部成功后统一 check/save；中途失败释放 edit handle 并返回失败步骤；",
+  "doc": "上层/2-schematic.md"
+ },
+ {
+  "id": "schematic#074",
+  "kind": "clause",
+  "section": "3. 待修订",
+  "line": 103,
   "text": "- `check_and_save` 供显式补一次校验保存；读写目标都必须带 `view`，默认 `\"schematic\"`，不假设只有这个视图名。",
   "doc": "上层/2-schematic.md"
  },
@@ -3404,7 +3524,7 @@
   "kind": "table-row",
   "section": "2.1 读操作",
   "line": 35,
-  "text": "| `orders` | `pin_order`（权威，`schGetPinOrder`）；`port_order` / `term_order` raw（兼容旧 reader） |",
+  "text": "| `orders` | `pin_order`（权威，`schGetPinOrder`）；`port_order`（原生属性，随 `set_pin_order` 同步）；`term_order`（`cv~>termOrder` legacy raw，可能为空/陈旧，不得当权威顺序） |",
   "doc": "上层/3-symbol.md"
  },
  {
@@ -3428,7 +3548,7 @@
   "kind": "clause",
   "section": "2.1 读操作",
   "line": 43,
-  "text": "- `view_type` 默认 `schematicSymbol`；格式固定 PNG；",
+  "text": "- `view_type` 默认且只允许 `schematicSymbol`；非字符串/空串/其他值 → `ValueError`（P-105）；格式固定 PNG；",
   "doc": "上层/3-symbol.md"
  },
  {
@@ -3876,7 +3996,7 @@
   "kind": "table-row",
   "section": "4. 真机结论（已闭环）",
   "line": 200,
-  "text": "| `schEditPinOrder` | 真机生效，`pin_order` 与 `port_order`/`term_order` 一致 |",
+  "text": "| `schEditPinOrder` | 真机生效：`pin_order`（`schGetPinOrder`）与 `port_order` 一致；`term_order`（`cv~>termOrder`）是 legacy raw 属性，**不同步**，可能为空/陈旧，不得当权威顺序 |",
   "doc": "上层/3-symbol.md"
  },
  {
@@ -4332,7 +4452,7 @@
   "kind": "table-row",
   "section": "1.3 gds（导入 / 导出收拢为一个操作）",
   "line": 122,
-  "text": "| `layer_map` | layer map 文件（export 映射 OA LPP→stream 层号；import 用 `-layerMap` 把 stream 层号映射回 OA）。缺省时导出会走自动 mapping（层号不确定），导入在本环境会直接失败（`XSTRM-74`） |",
+  "text": "| `file_is_local` | 默认 `true`：`file_path` 是本机路径。export 时 `false` 表示发布到远端 `file_path`（自动建父目录、POSIX 路径原样保留、不拍平）；import 时 `false` 表示直接使用远端文件，不上传 |",
   "doc": "上层/4-layout.md"
  },
  {
@@ -4340,7 +4460,7 @@
   "kind": "table-row",
   "section": "1.3 gds（导入 / 导出收拢为一个操作）",
   "line": 123,
-  "text": "| `ref_lib_file` | 仅 import：参考库清单（`-refLibList`），可选 |",
+  "text": "| `layer_map` | layer map 文件（export 映射 OA LPP→stream 层号；import 用 `-layerMap` 把 stream 层号映射回 OA）。缺省时导出会走自动 mapping（层号不确定），导入在本环境会直接失败（`XSTRM-74`） |",
   "doc": "上层/4-layout.md"
  },
  {
@@ -4348,7 +4468,7 @@
   "kind": "table-row",
   "section": "1.3 gds（导入 / 导出收拢为一个操作）",
   "line": 124,
-  "text": "| `tech_lib` | import 必填：目标库绑定/对齐的技术库（`-attachTechFileOfLib`） |",
+  "text": "| `ref_lib_file` | 仅 import：参考库清单（`-refLibList`），可选 |",
   "doc": "上层/4-layout.md"
  },
  {
@@ -4356,7 +4476,7 @@
   "kind": "table-row",
   "section": "1.3 gds（导入 / 导出收拢为一个操作）",
   "line": 125,
-  "text": "| `log_path` | export 默认 `<output stem>.xstream.log`；import 默认远端工作目录 `strmIn.log` |",
+  "text": "| `tech_lib` | import 必填：目标库绑定/对齐的技术库（`-attachTechFileOfLib`） |",
   "doc": "上层/4-layout.md"
  },
  {
@@ -4364,7 +4484,7 @@
   "kind": "table-row",
   "section": "1.3 gds（导入 / 导出收拢为一个操作）",
   "line": 126,
-  "text": "| `timeout` / `poll_interval` | export 默认 300s / 0.5s；import 默认 600s / 3s |",
+  "text": "| `log_path` | export 默认 `<output stem>.xstream.log`；import 默认远端工作目录 `strmIn.log` |",
   "doc": "上层/4-layout.md"
  },
  {
@@ -4372,31 +4492,31 @@
   "kind": "table-row",
   "section": "1.3 gds（导入 / 导出收拢为一个操作）",
   "line": 127,
+  "text": "| `timeout` / `poll_interval` | export 默认 300s / 0.5s；import 默认 600s / 3s |",
+  "doc": "上层/4-layout.md"
+ },
+ {
+  "id": "layout#097",
+  "kind": "table-row",
+  "section": "1.3 gds（导入 / 导出收拢为一个操作）",
+  "line": 128,
   "text": "| `cleanup_policy` | 仅 export：`success`（默认）/ `always` / `never` |",
   "doc": "上层/4-layout.md"
  },
  {
-  "id": "layout#120",
+  "id": "layout#121",
   "kind": "clause",
   "section": "1.3 gds（导入 / 导出收拢为一个操作）",
-  "line": 155,
+  "line": 156,
   "text": "`XSTRM-234` + `Translation completed` 才算完成；**完成前不得读目标 cellview**（会读到旧版 stale bbox）；",
   "doc": "上层/4-layout.md"
  },
  {
-  "id": "layout#130",
+  "id": "layout#131",
   "kind": "table-row",
   "section": "1.4 screenshot",
-  "line": 171,
+  "line": 172,
   "text": "| 参数 | 说明 |",
-  "doc": "上层/4-layout.md"
- },
- {
-  "id": "layout#132",
-  "kind": "table-row",
-  "section": "1.4 screenshot",
-  "line": 173,
-  "text": "| `lib / cell / view` | 默认目标；用于在窗口列表里按 `w~>cellView` 的 lib/cell/view 匹配已开窗口 |",
   "doc": "上层/4-layout.md"
  },
  {
@@ -4404,7 +4524,7 @@
   "kind": "table-row",
   "section": "1.4 screenshot",
   "line": 174,
-  "text": "| `window_id` | 可选显式目标；**显式给了坏 id 直接业务失败，不做 X11/display 回退** |",
+  "text": "| `lib / cell / view` | 默认目标；用于在窗口列表里按 `w~>cellView` 的 lib/cell/view 匹配已开窗口 |",
   "doc": "上层/4-layout.md"
  },
  {
@@ -4412,7 +4532,7 @@
   "kind": "table-row",
   "section": "1.4 screenshot",
   "line": 175,
-  "text": "| `region` | `[pos0, pos1]`（user units）；截前 `hiZoomIn(window bbox)` 把区域填满窗口 |",
+  "text": "| `window_id` | 可选显式目标；**显式给了坏 id 直接业务失败，不做 X11/display 回退** |",
   "doc": "上层/4-layout.md"
  },
  {
@@ -4420,7 +4540,7 @@
   "kind": "table-row",
   "section": "1.4 screenshot",
   "line": 176,
-  "text": "| `toplevel` / `central_widget` | 透传给 `hiWindowSaveImage` |",
+  "text": "| `region` | `[pos0, pos1]`（user units）；截前 `hiZoomIn(window bbox)` 把区域填满窗口 |",
   "doc": "上层/4-layout.md"
  },
  {
@@ -4428,23 +4548,31 @@
   "kind": "table-row",
   "section": "1.4 screenshot",
   "line": 177,
+  "text": "| `toplevel` / `central_widget` | 透传给 `hiWindowSaveImage` |",
+  "doc": "上层/4-layout.md"
+ },
+ {
+  "id": "layout#137",
+  "kind": "table-row",
+  "section": "1.4 screenshot",
+  "line": 178,
   "text": "| `leave_open` | 默认 `false`；只关闭本操作自己打开的窗口，不动别人已开的窗口 |",
   "doc": "上层/4-layout.md"
  },
  {
-  "id": "layout#139",
+  "id": "layout#140",
   "kind": "clause",
   "section": "1.4 screenshot",
-  "line": 182,
-  "text": "- **禁止不带 bbox 的 `hiZoomIn`/`hiZoomOut`**（会进交互橡皮筋并卡死 SKILL 通道）；",
+  "line": 183,
+  "text": "- `view_type` 默认且只允许 `maskLayout`；非字符串/空串/其他值 → `ValueError`（P-105）；",
   "doc": "上层/4-layout.md"
  },
  {
-  "id": "layout#143",
-  "kind": "table-row",
-  "section": "1.5 display（展示，不落数据）",
-  "line": 190,
-  "text": "| 原子 | 底层 | 说明 |",
+  "id": "layout#141",
+  "kind": "clause",
+  "section": "1.4 screenshot",
+  "line": 184,
+  "text": "- **禁止不带 bbox 的 `hiZoomIn`/`hiZoomOut`**（会进交互橡皮筋并卡死 SKILL 通道）；",
   "doc": "上层/4-layout.md"
  },
  {
@@ -4452,15 +4580,7 @@
   "kind": "table-row",
   "section": "1.5 display（展示，不落数据）",
   "line": 192,
-  "text": "| `set_layers_visible` | `leSetLayerVisible(lpp t/nil tf)` | 指定 LPP 显示/隐藏 |",
-  "doc": "上层/4-layout.md"
- },
- {
-  "id": "layout#146",
-  "kind": "table-row",
-  "section": "1.5 display（展示，不落数据）",
-  "line": 193,
-  "text": "| `show_only_layers` | `leSetAllLayerVisible(nil tf)` + 逐个显示 | 只显示指定 LPP |",
+  "text": "| 原子 | 底层 | 说明 |",
   "doc": "上层/4-layout.md"
  },
  {
@@ -4468,7 +4588,7 @@
   "kind": "table-row",
   "section": "1.5 display（展示，不落数据）",
   "line": 194,
-  "text": "| `set_entry_layer` | `leSetEntryLayer(lpp tf)` | 录入层（LSW 当前层） |",
+  "text": "| `set_layers_visible` | `leSetLayerVisible(lpp t/nil tf)` | 指定 LPP 显示/隐藏 |",
   "doc": "上层/4-layout.md"
  },
  {
@@ -4476,15 +4596,23 @@
   "kind": "table-row",
   "section": "1.5 display（展示，不落数据）",
   "line": 195,
-  "text": "| `fit_view` / `zoom` | `hiZoomAbsoluteScale(w n)` / `hiZoomIn(w bbox)` | 需窗口；显式 `window_id` |",
+  "text": "| `show_only_layers` | `leSetAllLayerVisible(nil tf)` + 逐个显示 | 只显示指定 LPP |",
   "doc": "上层/4-layout.md"
  },
  {
-  "id": "layout#152",
+  "id": "layout#149",
   "kind": "table-row",
-  "section": "2. 归属（不在本包）",
-  "line": 204,
-  "text": "| 能力 | 归属 |",
+  "section": "1.5 display（展示，不落数据）",
+  "line": 196,
+  "text": "| `set_entry_layer` | `leSetEntryLayer(lpp tf)` | 录入层（LSW 当前层） |",
+  "doc": "上层/4-layout.md"
+ },
+ {
+  "id": "layout#150",
+  "kind": "table-row",
+  "section": "1.5 display（展示，不落数据）",
+  "line": 197,
+  "text": "| `fit_view` / `zoom` | `hiZoomAbsoluteScale(w n)` / `hiZoomIn(w bbox)` | 需窗口；显式 `window_id` |",
   "doc": "上层/4-layout.md"
  },
  {
@@ -4492,15 +4620,7 @@
   "kind": "table-row",
   "section": "2. 归属（不在本包）",
   "line": 206,
-  "text": "| view create/replace/delete/rename、cell delete | cellview |",
-  "doc": "上层/4-layout.md"
- },
- {
-  "id": "layout#155",
-  "kind": "table-row",
-  "section": "2. 归属（不在本包）",
-  "line": 207,
-  "text": "| 结构 Verilog 导入 `ihdl`、PG label、标签后处理流水线 | digital-import |",
+  "text": "| 能力 | 归属 |",
   "doc": "上层/4-layout.md"
  },
  {
@@ -4508,7 +4628,7 @@
   "kind": "table-row",
   "section": "2. 归属（不在本包）",
   "line": 208,
-  "text": "| 截图机制（窗口解析、抓屏、下载） | gui 机制 + layout 领域封装 |",
+  "text": "| view create/replace/delete/rename、cell delete | cellview |",
   "doc": "上层/4-layout.md"
  },
  {
@@ -4516,31 +4636,39 @@
   "kind": "table-row",
   "section": "2. 归属（不在本包）",
   "line": 209,
-  "text": "| selection / highlight / LSW 交互 | 不进业务 API |",
+  "text": "| 结构 Verilog 导入 `ihdl`、PG label、标签后处理流水线 | digital-import |",
   "doc": "上层/4-layout.md"
  },
  {
   "id": "layout#158",
+  "kind": "table-row",
+  "section": "2. 归属（不在本包）",
+  "line": 210,
+  "text": "| 截图机制（窗口解析、抓屏、下载） | gui 机制 + layout 领域封装 |",
+  "doc": "上层/4-layout.md"
+ },
+ {
+  "id": "layout#159",
+  "kind": "table-row",
+  "section": "2. 归属（不在本包）",
+  "line": 211,
+  "text": "| selection / highlight / LSW 交互 | 不进业务 API |",
+  "doc": "上层/4-layout.md"
+ },
+ {
+  "id": "layout#160",
   "kind": "clause",
   "section": "3. 不在本版",
-  "line": 213,
+  "line": 215,
   "text": "- 路由抽象（多层/总线）与 `clear_routing`：调用方用几何原子组合；",
   "doc": "上层/4-layout.md"
  },
  {
-  "id": "layout#163",
+  "id": "layout#165",
   "kind": "clause",
   "section": "3. 不在本版",
-  "line": 218,
+  "line": 220,
   "text": "- 并发写。",
-  "doc": "上层/4-layout.md"
- },
- {
-  "id": "layout#164",
-  "kind": "table-row",
-  "section": "4. 决策记录（2026-09-21）",
-  "line": 222,
-  "text": "| # | 决策 |",
   "doc": "上层/4-layout.md"
  },
  {
@@ -4548,15 +4676,7 @@
   "kind": "table-row",
   "section": "4. 决策记录（2026-09-21）",
   "line": 224,
-  "text": "| 1 | `display` 作为 layout 的展示子操作（底层 `le*` SKILL，不需要 GUI 也能改可见性） |",
-  "doc": "上层/4-layout.md"
- },
- {
-  "id": "layout#167",
-  "kind": "table-row",
-  "section": "4. 决策记录（2026-09-21）",
-  "line": 225,
-  "text": "| 2 | `export_gds` 放 layout 包（旧公开面即 `client.layout.export_gds`） |",
+  "text": "| # | 决策 |",
   "doc": "上层/4-layout.md"
  },
  {
@@ -4564,7 +4684,7 @@
   "kind": "table-row",
   "section": "4. 决策记录（2026-09-21）",
   "line": 226,
-  "text": "| 3 | GDS 导出的 `reason` 收敛为 §1.3 的 9 个值，不沿用旧 13 值枚举 |",
+  "text": "| 1 | `display` 作为 layout 的展示子操作（底层 `le*` SKILL，不需要 GUI 也能改可见性） |",
   "doc": "上层/4-layout.md"
  },
  {
@@ -4572,7 +4692,7 @@
   "kind": "table-row",
   "section": "4. 决策记录（2026-09-21）",
   "line": 227,
-  "text": "| 4 | via 本版实现，但标注 techfile-gated；真机验收需带 PDK 的环境 |",
+  "text": "| 2 | `export_gds` 放 layout 包（旧公开面即 `client.layout.export_gds`） |",
   "doc": "上层/4-layout.md"
  },
  {
@@ -4580,7 +4700,7 @@
   "kind": "table-row",
   "section": "4. 决策记录（2026-09-21）",
   "line": 228,
-  "text": "| 5 | region 查询本版做；`depth>0` 只走 `dbShapeQuery` 路径，不展开完整层级树 |",
+  "text": "| 3 | GDS 导出的 `reason` 收敛为 §1.3 的 9 个值，不沿用旧 13 值枚举 |",
   "doc": "上层/4-layout.md"
  },
  {
@@ -4588,7 +4708,7 @@
   "kind": "table-row",
   "section": "4. 决策记录（2026-09-21）",
   "line": 229,
-  "text": "| 6 | `strict_lpp` 默认 `false`（轻校验），严格模式可选 |",
+  "text": "| 4 | via 本版实现，但标注 techfile-gated；真机验收需带 PDK 的环境 |",
   "doc": "上层/4-layout.md"
  },
  {
@@ -4596,7 +4716,7 @@
   "kind": "table-row",
   "section": "4. 决策记录（2026-09-21）",
   "line": 230,
-  "text": "| 7 | 旧 `route_multilayer`/`route_bus`/`clear_routing` 降级为调用方组合；`set_visibility` 进 `display`；`select_delete`/`delete_cell` 不进 API（cell 删除归 cellview） |",
+  "text": "| 5 | region 查询本版做；`depth>0` 只走 `dbShapeQuery` 路径，不展开完整层级树 |",
   "doc": "上层/4-layout.md"
  },
  {
@@ -4604,7 +4724,7 @@
   "kind": "table-row",
   "section": "4. 决策记录（2026-09-21）",
   "line": 231,
-  "text": "| 8 | **GDS 导入与导出都归本包**，收拢为一个 `gds` 操作（`action=export\\|import`）；digital-import 只保留 `ihdl` / PG label / 标签后处理 |",
+  "text": "| 6 | `strict_lpp` 默认 `false`（轻校验），严格模式可选 |",
   "doc": "上层/4-layout.md"
  },
  {
@@ -4612,7 +4732,7 @@
   "kind": "table-row",
   "section": "4. 决策记录（2026-09-21）",
   "line": 232,
-  "text": "| 9 | 截图口径**参考 schematic + maestro**：cellView 匹配窗口 → `geOpen` 兜底、`window_id` 显式则坏 id 直接失败、`region` 用 `hiZoomIn(bbox)`、`toplevel/central_widget` 透传、PNG 落 role root `screenshots/` 与本地 `artifact/screenshots/`、无 X11 回退 |",
+  "text": "| 7 | 旧 `route_multilayer`/`route_bus`/`clear_routing` 降级为调用方组合；`set_visibility` 进 `display`；`select_delete`/`delete_cell` 不进 API（cell 删除归 cellview） |",
   "doc": "上层/4-layout.md"
  },
  {
@@ -4620,7 +4740,7 @@
   "kind": "table-row",
   "section": "4. 决策记录（2026-09-21）",
   "line": 233,
-  "text": "| 10 | `gds` 的参数按 vendor 选项拆开：`layer_map`（导出/导入的层映射）与 `ref_lib_file`（仅导入 `-refLibList`）；导入选 cell 用 `-topCell` |",
+  "text": "| 8 | **GDS 导入与导出都归本包**，收拢为一个 `gds` 操作（`action=export\\|import`）；digital-import 只保留 `ihdl` / PG label / 标签后处理 |",
   "doc": "上层/4-layout.md"
  },
  {
@@ -4628,23 +4748,23 @@
   "kind": "table-row",
   "section": "4. 决策记录（2026-09-21）",
   "line": 234,
+  "text": "| 9 | 截图口径**参考 schematic + maestro**：cellView 匹配窗口 → `geOpen` 兜底、`window_id` 显式则坏 id 直接失败、`region` 用 `hiZoomIn(bbox)`、`toplevel/central_widget` 透传、PNG **暂存** role root `screenshots/`（下载后清理）与本地 `artifact/screenshots/`、无 X11 回退 |",
+  "doc": "上层/4-layout.md"
+ },
+ {
+  "id": "layout#177",
+  "kind": "table-row",
+  "section": "4. 决策记录（2026-09-21）",
+  "line": 235,
+  "text": "| 10 | `gds` 的参数按 vendor 选项拆开：`layer_map`（导出/导入的层映射）与 `ref_lib_file`（仅导入 `-refLibList`）；导入选 cell 用 `-topCell` |",
+  "doc": "上层/4-layout.md"
+ },
+ {
+  "id": "layout#178",
+  "kind": "table-row",
+  "section": "4. 决策记录（2026-09-21）",
+  "line": 236,
   "text": "| 11 | 索引容差由 0.001 收敛为 **0.0005**（半个 dbu）；via 索引改为 `pos + orient`（viaDef/name 不可回读） |",
-  "doc": "上层/4-layout.md"
- },
- {
-  "id": "layout#179",
-  "kind": "clause",
-  "section": "5. 真机事实（IC6.1.8，2026-09-21 实测）",
-  "line": 240,
-  "text": "3. `dbCreateXxx` 失败分两类：**非法 LPP → 抛 SKILL 硬错误**；**几何非法 → nil + WARNING** →",
-  "doc": "上层/4-layout.md"
- },
- {
-  "id": "layout#180",
-  "kind": "clause",
-  "section": "5. 真机事实（IC6.1.8，2026-09-21 实测）",
-  "line": 241,
-  "text": "上层既要判返回值也要能收错误；`pos` 写 **point**（`7:8`），`bBox`/`points` 写 list；",
   "doc": "上层/4-layout.md"
  },
  {
@@ -4652,54 +4772,70 @@
   "kind": "clause",
   "section": "5. 真机事实（IC6.1.8，2026-09-21 实测）",
   "line": 242,
+  "text": "3. `dbCreateXxx` 失败分两类：**非法 LPP → 抛 SKILL 硬错误**；**几何非法 → nil + WARNING** →",
+  "doc": "上层/4-layout.md"
+ },
+ {
+  "id": "layout#182",
+  "kind": "clause",
+  "section": "5. 真机事实（IC6.1.8，2026-09-21 实测）",
+  "line": 243,
+  "text": "上层既要判返回值也要能收错误；`pos` 写 **point**（`7:8`），`bBox`/`points` 写 list；",
+  "doc": "上层/4-layout.md"
+ },
+ {
+  "id": "layout#183",
+  "kind": "clause",
+  "section": "5. 真机事实（IC6.1.8，2026-09-21 实测）",
+  "line": 244,
   "text": "4. **`dbClose` 不落盘**：必须显式 `dbSave` 后再 `dbClose`；未保存的 cellview 留在会话里会污染导出",
   "doc": "上层/4-layout.md"
  },
  {
-  "id": "layout#184",
+  "id": "layout#186",
   "kind": "clause",
   "section": "5. 真机事实（IC6.1.8，2026-09-21 实测）",
-  "line": 245,
+  "line": 247,
   "text": "6. 区域/层级查询显式给 level（`dbShapeQuery(cv lpp bbox 0 32)`）；3 参数默认形式会下探一层 instance",
   "doc": "上层/4-layout.md"
  },
  {
-  "id": "layout#185",
+  "id": "layout#187",
   "kind": "clause",
   "section": "5. 真机事实（IC6.1.8，2026-09-21 实测）",
-  "line": 246,
+  "line": 248,
   "text": "但**不含 via 生成图形**，不要依赖默认；",
   "doc": "上层/4-layout.md"
  },
  {
-  "id": "layout#189",
+  "id": "layout#191",
   "kind": "clause",
   "section": "5. 真机事实（IC6.1.8，2026-09-21 实测）",
-  "line": 250,
+  "line": 252,
   "text": "9. via 的 `~>viaDef` / `~>name` **不可读**（都是 nil）⇒ 只能按 `pos + orient` 索引；",
   "doc": "上层/4-layout.md"
  },
  {
-  "id": "layout#196",
+  "id": "layout#198",
   "kind": "clause",
   "section": "5. 真机事实（IC6.1.8，2026-09-21 实测）",
-  "line": 257,
+  "line": 259,
   "text": "**不能**用来判断 `dbCreate*` 是否接受某 LPP（真机已验证 `(\"y0\" \"pin\")` 不在列表里但可建）；",
   "doc": "上层/4-layout.md"
  },
  {
-  "id": "layout#199",
+  "id": "layout#201",
   "kind": "clause",
   "section": "5. 真机事实（IC6.1.8，2026-09-21 实测）",
-  "line": 260,
+  "line": 262,
   "text": "与 SKILL 侧会话的在内存库表**不是**同一份 ⇒ 会话 run 目录的 `cds.lib` 是唯一权威解析入口；",
   "doc": "上层/4-layout.md"
  },
  {
-  "id": "layout#202",
+  "id": "layout#204",
   "kind": "clause",
   "section": "5. 真机事实（IC6.1.8，2026-09-21 实测）",
-  "line": 263,
+  "line": 265,
   "text": "同会话后续 SKILL 调用全部超时（P-075）。批处理路径从根上避开，别再走窗体。",
   "doc": "上层/4-layout.md"
  },
@@ -4916,15 +5052,7 @@
   "kind": "clause",
   "section": "上层业务包：maestro",
   "line": 5,
-  "text": "> 状态：Draft（操作与原子已成形；参数细节待逐项定稿；暂未纳入 README 治理）",
-  "doc": "上层/6-maestro.md"
- },
- {
-  "id": "maestro#004",
-  "kind": "clause",
-  "section": "上层业务包：maestro",
-  "line": 6,
-  "text": "> Supersedes：Draft v3（补全历史类读写与全部操作/原子的实现底层；去掉 history 复制）",
+  "text": "> 状态：Draft（操作与原子已成形；read_config 改为 tests/corners 嵌套结构；Monte Carlo 口径见 §7.3，待评审项见 §10）",
   "doc": "上层/6-maestro.md"
  },
  {
@@ -4940,7 +5068,7 @@
   "kind": "table-row",
   "section": "2. 操作总表",
   "line": 19,
-  "text": "| 配置类 | `read_config` | 读当前配置（变量、参数、tests、corners、specs） | S |",
+  "text": "| 配置类 | `read_config` | 按 test/corner 嵌套读当前配置（含 `outputs[].spec`、run options） | S |",
   "doc": "上层/6-maestro.md"
  },
  {
@@ -4948,7 +5076,7 @@
   "kind": "table-row",
   "section": "2. 操作总表",
   "line": 20,
-  "text": "| 配置类 | `write` | 通用写，`commands[]` 里的配置原子 | S |",
+  "text": "| 配置类 | `write` | 通用写，`commands[]` 里的配置原子（含 MC run option） | S |",
   "doc": "上层/6-maestro.md"
  },
  {
@@ -4964,7 +5092,7 @@
   "kind": "table-row",
   "section": "2. 操作总表",
   "line": 22,
-  "text": "| 结果类 | `read_results` | 读结果点、spec 状态、yield；读单条波形 | S+D |",
+  "text": "| 结果类 | `read_results` | 读结果点、spec 状态、yield、MC 统计；读单条波形 | S+D |",
   "doc": "上层/6-maestro.md"
  },
  {
@@ -5004,7 +5132,7 @@
   "kind": "table-row",
   "section": "2. 操作总表",
   "line": 27,
-  "text": "| 仿真类 | `run` | 启动仿真；`blocking` 决定是否等到完成（默认非阻塞） | S+C |",
+  "text": "| 仿真类 | `run` | 启动仿真；MC 先设 mode/run option 再 run；`blocking` 决定是否等到完成（默认非阻塞） | S+C |",
   "doc": "上层/6-maestro.md"
  },
  {
@@ -5016,587 +5144,867 @@
   "doc": "上层/6-maestro.md"
  },
  {
-  "id": "maestro#022",
+  "id": "maestro#065",
   "kind": "table-row",
   "section": "3.1 read_config",
-  "line": 38,
-  "text": "| 返回项 | 底层 |",
-  "doc": "上层/6-maestro.md"
- },
- {
-  "id": "maestro#024",
-  "kind": "table-row",
-  "section": "3.1 read_config",
-  "line": 40,
-  "text": "| 变量表 | `maeGetVar` / `axlGetVars` |",
-  "doc": "上层/6-maestro.md"
- },
- {
-  "id": "maestro#025",
-  "kind": "table-row",
-  "section": "3.1 read_config",
-  "line": 41,
-  "text": "| 参数表 | `maeGetParameter` |",
-  "doc": "上层/6-maestro.md"
- },
- {
-  "id": "maestro#026",
-  "kind": "table-row",
-  "section": "3.1 read_config",
-  "line": 42,
-  "text": "| tests | `axlGetTests` |",
-  "doc": "上层/6-maestro.md"
- },
- {
-  "id": "maestro#027",
-  "kind": "table-row",
-  "section": "3.1 read_config",
-  "line": 43,
-  "text": "| corners | `axlGetCorners`、`axlGetCornersForATest` |",
-  "doc": "上层/6-maestro.md"
- },
- {
-  "id": "maestro#028",
-  "kind": "table-row",
-  "section": "3.1 read_config",
-  "line": 44,
-  "text": "| specs | `axlGetSpecs` |",
-  "doc": "上层/6-maestro.md"
- },
- {
-  "id": "maestro#029",
-  "kind": "table-row",
-  "section": "3.1 read_config",
-  "line": 45,
-  "text": "| analyses / outputs 列表 | **待定**：未找到现成枚举函数，需用 `maeGetTestSession` 逐 test 取 |",
-  "doc": "上层/6-maestro.md"
- },
- {
-  "id": "maestro#030",
-  "kind": "clause",
-  "section": "3.2 write（配置原子）",
-  "line": 49,
-  "text": "每个原子 = `op` + **索引**（动哪个）+ 附加参数。整批在一个后台会话内顺序执行，末尾统一保存。",
-  "doc": "上层/6-maestro.md"
- },
- {
-  "id": "maestro#031",
-  "kind": "table-row",
-  "section": "3.2 write（配置原子）",
-  "line": 51,
-  "text": "| 分组 | 原子 | 索引 | 附加参数 | 底层 |",
-  "doc": "上层/6-maestro.md"
- },
- {
-  "id": "maestro#033",
-  "kind": "table-row",
-  "section": "3.2 write（配置原子）",
-  "line": 53,
-  "text": "| 器件 | set_test | test | lib / cell / view / simulator | `maeCreateTest` |",
-  "doc": "上层/6-maestro.md"
- },
- {
-  "id": "maestro#034",
-  "kind": "table-row",
-  "section": "3.2 write（配置原子）",
-  "line": 54,
-  "text": "| 器件 | set_design | test | lib / cell / view | `maeSetDesign` |",
-  "doc": "上层/6-maestro.md"
- },
- {
-  "id": "maestro#035",
-  "kind": "table-row",
-  "section": "3.2 write（配置原子）",
-  "line": 55,
-  "text": "| 分析 | set_analysis | test | analysis / enable / options | `maeSetAnalysis` |",
-  "doc": "上层/6-maestro.md"
- },
- {
-  "id": "maestro#036",
-  "kind": "table-row",
-  "section": "3.2 write（配置原子）",
-  "line": 56,
-  "text": "| 变量 | set_var | name | value / scope（global、test、corner） | `maeSetVar`（`?typeName`/`?typeValue`） |",
-  "doc": "上层/6-maestro.md"
- },
- {
-  "id": "maestro#037",
-  "kind": "table-row",
-  "section": "3.2 write（配置原子）",
-  "line": 57,
-  "text": "| 变量 | delete_var | name | test? | `axlRemoveElement(axlGetVar(...))` |",
-  "doc": "上层/6-maestro.md"
- },
- {
-  "id": "maestro#038",
-  "kind": "table-row",
-  "section": "3.2 write（配置原子）",
-  "line": 58,
-  "text": "| 变量 | set_parameter | name | value / scope | `maeSetParameter` |",
-  "doc": "上层/6-maestro.md"
- },
- {
-  "id": "maestro#039",
-  "kind": "table-row",
-  "section": "3.2 write（配置原子）",
-  "line": 59,
-  "text": "| 环境 | set_env_option | test | options | `maeSetEnvOption` |",
-  "doc": "上层/6-maestro.md"
- },
- {
-  "id": "maestro#040",
-  "kind": "table-row",
-  "section": "3.2 write（配置原子）",
-  "line": 60,
-  "text": "| 环境 | set_sim_option | test | options | `maeSetSimOption` |",
-  "doc": "上层/6-maestro.md"
- },
- {
-  "id": "maestro#041",
-  "kind": "table-row",
-  "section": "3.2 write（配置原子）",
-  "line": 61,
-  "text": "| corner | set_corner | name | disable_tests? | `maeSetCorner` |",
-  "doc": "上层/6-maestro.md"
- },
- {
-  "id": "maestro#042",
-  "kind": "table-row",
-  "section": "3.2 write（配置原子）",
-  "line": 62,
-  "text": "| corner | setup_corner | name | model_file / model_section / variables | `maeSetCorner` + `maeSetVar(corner)` + `axlGetCorner`/`axlPutModel`/`axlSetModelFile`/`axlSetModelSection` |",
-  "doc": "上层/6-maestro.md"
- },
- {
-  "id": "maestro#043",
-  "kind": "table-row",
-  "section": "3.2 write（配置原子）",
-  "line": 63,
-  "text": "| corner | load_corners | —（文件导入） | filepath / sections / operation | `maeLoadCorners`（CSV 先经 File 接口上传） |",
-  "doc": "上层/6-maestro.md"
- },
- {
-  "id": "maestro#044",
-  "kind": "table-row",
-  "section": "3.2 write（配置原子）",
-  "line": 64,
-  "text": "| 运行 | set_run_mode | —（会话级） | run_mode | `maeSetCurrentRunMode` |",
-  "doc": "上层/6-maestro.md"
- },
- {
-  "id": "maestro#045",
-  "kind": "table-row",
-  "section": "3.2 write（配置原子）",
-  "line": 65,
-  "text": "| 运行 | set_job_control_mode | —（会话级） | mode | `maeSetJobControlMode` |",
-  "doc": "上层/6-maestro.md"
- },
- {
-  "id": "maestro#046",
-  "kind": "table-row",
-  "section": "3.2 write（配置原子）",
-  "line": 66,
-  "text": "| 运行 | set_job_policy | test? | policy / job_type | `maeSetJobPolicy` |",
-  "doc": "上层/6-maestro.md"
- },
- {
-  "id": "maestro#047",
-  "kind": "table-row",
-  "section": "3.2 write（配置原子）",
-  "line": 67,
-  "text": "| 运行 | set_simulator_mode | test | mode | `asiSetHighPerformanceOptionVal`（内部映射 `'uniMode` / `'spectreXPreset`） |",
-  "doc": "上层/6-maestro.md"
- },
- {
-  "id": "maestro#048",
-  "kind": "table-row",
-  "section": "4.1 write（结果原子）",
-  "line": 73,
-  "text": "| 原子 | 索引 | 附加参数 | 底层 |",
-  "doc": "上层/6-maestro.md"
- },
- {
-  "id": "maestro#050",
-  "kind": "table-row",
-  "section": "4.1 write（结果原子）",
-  "line": 75,
-  "text": "| add_output | test | name / output_type / signal_name / expr | `maeAddOutput` |",
-  "doc": "上层/6-maestro.md"
- },
- {
-  "id": "maestro#051",
-  "kind": "table-row",
-  "section": "4.1 write（结果原子）",
-  "line": 76,
-  "text": "| set_spec | test | name / lt / gt | `maeSetSpec` |",
-  "doc": "上层/6-maestro.md"
- },
- {
-  "id": "maestro#052",
-  "kind": "table-row",
-  "section": "4.2 read_results",
-  "line": 80,
-  "text": "| 能力 | 底层 |",
-  "doc": "上层/6-maestro.md"
- },
- {
-  "id": "maestro#054",
-  "kind": "table-row",
-  "section": "4.2 read_results",
-  "line": 82,
-  "text": "| 读全部点、spec 状态、yield | `maeExportOutputView` 导 Detail CSV → 下载 → 解析 |",
-  "doc": "上层/6-maestro.md"
- },
- {
-  "id": "maestro#055",
-  "kind": "table-row",
-  "section": "4.2 read_results",
-  "line": 83,
-  "text": "| 读单条波形 | `maeOpenResults` → `openResults` → `selectResults` → `ocnPrint` → 下载文本 |",
-  "doc": "上层/6-maestro.md"
- },
- {
-  "id": "maestro#056",
-  "kind": "table-row",
-  "section": "4.2 read_results",
   "line": 84,
-  "text": "| 结果目录/最新 history 定位 | `asiGetResultsDir` + 旧代码的 mtime / 自然排序规则 |",
-  "doc": "上层/6-maestro.md"
- },
- {
-  "id": "maestro#058",
-  "kind": "table-row",
-  "section": "5. 导出类",
-  "line": 90,
-  "text": "| kind | 产物 | 底层 |",
-  "doc": "上层/6-maestro.md"
- },
- {
-  "id": "maestro#060",
-  "kind": "table-row",
-  "section": "5. 导出类",
-  "line": 92,
-  "text": "| netlist | 指定 corner 的网表 | `maeCreateNetlistForCorner` |",
-  "doc": "上层/6-maestro.md"
- },
- {
-  "id": "maestro#061",
-  "kind": "table-row",
-  "section": "5. 导出类",
-  "line": 93,
-  "text": "| script | 等价 OCEAN 脚本 | `maeWriteScript` |",
-  "doc": "上层/6-maestro.md"
- },
- {
-  "id": "maestro#062",
-  "kind": "table-row",
-  "section": "5. 导出类",
-  "line": 94,
-  "text": "| outputs_csv | outputs 表 CSV | `maeExportOutputView` |",
-  "doc": "上层/6-maestro.md"
- },
- {
-  "id": "maestro#063",
-  "kind": "table-row",
-  "section": "5. 导出类",
-  "line": 95,
-  "text": "| snapshot | 全量快照包（sdb / active.state / 过滤 XML / 按点 netlist 与 PSF） | 快照模板 + `find`/`tar` 打包 |",
-  "doc": "上层/6-maestro.md"
- },
- {
-  "id": "maestro#064",
-  "kind": "table-row",
-  "section": "5. 导出类",
-  "line": 96,
-  "text": "| screenshot | Maestro 窗口 PNG | `hiWindowSaveImage`（窗口按 `cellView~>viewName` 定位） |",
+  "text": "| 数据 | 返回位置 | 底层 |",
   "doc": "上层/6-maestro.md"
  },
  {
   "id": "maestro#067",
   "kind": "table-row",
-  "section": "6.1 read_history",
-  "line": 106,
-  "text": "| 返回项 | 底层 |",
+  "section": "3.1 read_config",
+  "line": 86,
+  "text": "| 全局变量 / 参数 | `variables` / `parameters` | `maeGetVar` / `maeGetParameter` |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#068",
+  "kind": "table-row",
+  "section": "3.1 read_config",
+  "line": 87,
+  "text": "| test 列表与 test 级配置 | `tests.<name>.{variables,analyses,outputs,env_options,sim_options}` | `axlGetTests` / `maeGetTestOutputs` / `maeGetEnvOption` / `maeGetSimOption` |",
   "doc": "上层/6-maestro.md"
  },
  {
   "id": "maestro#069",
   "kind": "table-row",
-  "section": "6.1 read_history",
-  "line": 108,
-  "text": "| 全部 history 名称 | `axlGetHistory` |",
+  "section": "3.1 read_config",
+  "line": 88,
+  "text": "| corner 列表与 corner 级配置 | `corners.<name>.{variables,parameters,enabled,enabled_tests,disabled_tests,models}` | `axlGetCorners` / `axlGetVars` / `axlGetParameters` / `axlGetEnabled` / `axlGetCornerDisabledTests` / `axlGetModels`+`axlGetModel*` |",
   "doc": "上层/6-maestro.md"
  },
  {
   "id": "maestro#070",
   "kind": "table-row",
-  "section": "6.1 read_history",
-  "line": 109,
-  "text": "| 每个 history 的完成情况（running / done / failed） | `axlGetRunStatus` 逐条查询 |",
+  "section": "3.1 read_config",
+  "line": 89,
+  "text": "| test 的 job policy | `tests.<name>.job_policy.{simulation,netlisting}` | `maeGetJobPolicy(?testName … ?jobType …)` DPL |",
   "doc": "上层/6-maestro.md"
  },
  {
   "id": "maestro#071",
   "kind": "table-row",
-  "section": "6.1 read_history",
-  "line": 110,
-  "text": "| 当前 history / 最新 history | `axlGetCurrentHistory`；旧代码的 mtime 排序 / 自然排序规则 |",
+  "section": "3.1 read_config",
+  "line": 90,
+  "text": "| run options | `run_options.<mode>.<option>` | `axlGetRunOption` + `axlGetRunOptionValue`（17 项清单由包内固定，`axlGetRunOptions` 用于核对） |",
   "doc": "上层/6-maestro.md"
  },
  {
-  "id": "maestro#073",
+  "id": "maestro#072",
   "kind": "table-row",
-  "section": "6.1 read_history",
-  "line": 114,
-  "text": "| 返回项 | 底层 |",
-  "doc": "上层/6-maestro.md"
- },
- {
-  "id": "maestro#075",
-  "kind": "table-row",
-  "section": "6.1 read_history",
-  "line": 116,
-  "text": "| 进度（完成的点 / 测试 / corner 数） | `axlGetRunStatus`（指定 history） |",
-  "doc": "上层/6-maestro.md"
- },
- {
-  "id": "maestro#076",
-  "kind": "table-row",
-  "section": "6.1 read_history",
-  "line": 117,
-  "text": "| 锁状态 | `axlGetHistoryLock` / `maeGetHistoryLockFlag`（0–4 五种状态） |",
-  "doc": "上层/6-maestro.md"
- },
- {
-  "id": "maestro#077",
-  "kind": "table-row",
-  "section": "6.1 read_history",
-  "line": 118,
-  "text": "| 结果目录 | `axlGetResultsLocation` 等路径查询 |",
-  "doc": "上层/6-maestro.md"
- },
- {
-  "id": "maestro#078",
-  "kind": "table-row",
-  "section": "6.1 read_history",
-  "line": 119,
-  "text": "| 覆盖式运行目标 | `axlGetOverwriteHistoryName` |",
+  "section": "3.1 read_config",
+  "line": 91,
+  "text": "| 运行状态 | `run_mode` / `job_control_mode` / `current_history` | `maeGetCurrentRunMode` / `maeGetJobControlMode` / `axlGetCurrentHistory` |",
   "doc": "上层/6-maestro.md"
  },
  {
   "id": "maestro#079",
-  "kind": "table-row",
-  "section": "6.2 write_history（历史原子）",
-  "line": 123,
-  "text": "| 原子 | 索引 | 附加参数 | 底层 |",
+  "kind": "clause",
+  "section": "3.2 write（配置原子）",
+  "line": 102,
+  "text": "每个原子 = `op` + **索引**（动哪个）+ 附加参数。整批在一个后台会话内顺序执行，末尾统一保存。",
   "doc": "上层/6-maestro.md"
  },
  {
   "id": "maestro#081",
-  "kind": "table-row",
-  "section": "6.2 write_history（历史原子）",
-  "line": 125,
-  "text": "| delete | history | — | Assembler：`axlRemoveElement(axlGetHistoryEntry(sdb, name))`；Explorer：`maeDeleteExplorerHistory(session, name)` |",
-  "doc": "上层/6-maestro.md"
- },
- {
-  "id": "maestro#082",
-  "kind": "table-row",
-  "section": "6.2 write_history（历史原子）",
-  "line": 126,
-  "text": "| delete_results | history | keep_netlist? / keep_quick_plot? | `maeDeleteSimulationData`（对应 GUI 三档）；备选 `axlRemoveSimulationResults` |",
-  "doc": "上层/6-maestro.md"
- },
- {
-  "id": "maestro#083",
-  "kind": "table-row",
-  "section": "6.2 write_history（历史原子）",
-  "line": 127,
-  "text": "| rename | history | new_name | `axlSetHistoryName(handle, new_name)` |",
+  "kind": "clause",
+  "section": "3.2 write（配置原子）",
+  "line": 105,
+  "text": "`save=false` 被**结构化拒绝**（`reason=save_false_unsupported`）：会话若由 GUI 打开，",
   "doc": "上层/6-maestro.md"
  },
  {
   "id": "maestro#084",
   "kind": "table-row",
-  "section": "6.2 write_history（历史原子）",
-  "line": 128,
-  "text": "| lock / unlock | history | — | `maeSetHistoryLock` / `axlSetHistoryLock` |",
+  "section": "3.2 write（配置原子）",
+  "line": 109,
+  "text": "| 分组 | 原子 | 索引 | 附加参数 | 底层 |",
   "doc": "上层/6-maestro.md"
  },
  {
   "id": "maestro#086",
   "kind": "table-row",
-  "section": "7.1 open_gui / close_gui",
-  "line": 136,
-  "text": "| 操作 | 底层 |",
+  "section": "3.2 write（配置原子）",
+  "line": 111,
+  "text": "| 器件 | set_test | test | lib / cell / view / simulator | `maeCreateTest` |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#087",
+  "kind": "table-row",
+  "section": "3.2 write（配置原子）",
+  "line": 112,
+  "text": "| 器件 | set_design | test | lib / cell / view | `maeSetDesign` |",
   "doc": "上层/6-maestro.md"
  },
  {
   "id": "maestro#088",
   "kind": "table-row",
-  "section": "7.1 open_gui / close_gui",
-  "line": 138,
-  "text": "| open_gui | 窗口探测 → 关闭只读副本 → `deOpenCellView(..., \"a\")` → 找到并复用可编辑会话 |",
+  "section": "3.2 write（配置原子）",
+  "line": 113,
+  "text": "| 分析 | set_analysis | test | analysis / enable / options | `maeSetAnalysis` |",
   "doc": "上层/6-maestro.md"
  },
  {
   "id": "maestro#089",
   "kind": "table-row",
-  "section": "7.1 open_gui / close_gui",
-  "line": 139,
-  "text": "| close_gui | 探测窗口 mode/已修改 → Reading 先 `maeMakeEditable` → `maeSaveSetup` → `hiCloseWindow` → `dbPurge` 释放编辑锁；**固定保存，不提供丢弃** |",
+  "section": "3.2 write（配置原子）",
+  "line": 114,
+  "text": "| 变量 | set_var | name | value / scope（global、test、corner） | `maeSetVar`（`?typeName`/`?typeValue`） |",
   "doc": "上层/6-maestro.md"
  },
  {
   "id": "maestro#090",
   "kind": "table-row",
-  "section": "7.2 run",
-  "line": 143,
-  "text": "| 参数 | 说明 |",
+  "section": "3.2 write（配置原子）",
+  "line": 115,
+  "text": "| 变量 | delete_var | name | test? | `axlRemoveElement(axlGetVar(...))` |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#091",
+  "kind": "table-row",
+  "section": "3.2 write（配置原子）",
+  "line": 116,
+  "text": "| 变量 | set_parameter | name | value / scope | `maeSetParameter` |",
   "doc": "上层/6-maestro.md"
  },
  {
   "id": "maestro#092",
   "kind": "table-row",
-  "section": "7.2 run",
-  "line": 145,
-  "text": "| `blocking` | 是否阻塞到仿真结束；**默认 `false`**（立即返回 history 名） |",
+  "section": "3.2 write（配置原子）",
+  "line": 117,
+  "text": "| 环境 | set_env_option | test | options | `maeSetEnvOption` |",
   "doc": "上层/6-maestro.md"
  },
  {
   "id": "maestro#093",
   "kind": "table-row",
-  "section": "7.2 run",
-  "line": 147,
-  "text": "| 模式 | 行为 | 底层 |",
+  "section": "3.2 write（配置原子）",
+  "line": 118,
+  "text": "| 环境 | set_sim_option | test | options | `maeSetSimOption` |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#094",
+  "kind": "table-row",
+  "section": "3.2 write（配置原子）",
+  "line": 119,
+  "text": "| corner | set_corner | name | disable_tests? | `maeSetCorner` |",
   "doc": "上层/6-maestro.md"
  },
  {
   "id": "maestro#095",
   "kind": "table-row",
-  "section": "7.2 run",
-  "line": 149,
-  "text": "| 非阻塞（默认） | 启动后立即返回 history 名，调用方之后用 `read_history` 查进度 | `maeRunSimulation` |",
+  "section": "3.2 write（配置原子）",
+  "line": 120,
+  "text": "| corner | setup_corner | name | model_file / model_section / variables | `maeSetCorner` + `maeSetVar(corner)` + `axlGetCorner`/`axlPutModel`/`axlSetModelFile`/`axlSetModelSection` |",
   "doc": "上层/6-maestro.md"
  },
  {
   "id": "maestro#096",
   "kind": "table-row",
-  "section": "7.2 run",
-  "line": 150,
-  "text": "| 阻塞（`blocking=true`） | 启动后在包内等到终态，返回 history 名 + 终态 | `maeRunSimulation` + 包内轮询 |",
+  "section": "3.2 write（配置原子）",
+  "line": 121,
+  "text": "| corner | load_corners | —（文件导入） | filepath / operation / sections? | `maeLoadCorners`（CSV 先经 File 接口上传；`sections` 只对 `.sdb` 显式透传） |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#097",
+  "kind": "table-row",
+  "section": "3.2 write（配置原子）",
+  "line": 122,
+  "text": "| 运行 | set_run_mode | —（会话级） | run_mode | `maeSetCurrentRunMode` |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#098",
+  "kind": "table-row",
+  "section": "3.2 write（配置原子）",
+  "line": 123,
+  "text": "| 运行 | set_run_option | —（固定 MC mode） | options（dict） | `axlPutRunOption` + `axlSetRunOptionValue` |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#099",
+  "kind": "table-row",
+  "section": "3.2 write（配置原子）",
+  "line": 124,
+  "text": "| 运行 | set_job_control_mode | —（会话级） | mode | `maeSetJobControlMode` |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#100",
+  "kind": "table-row",
+  "section": "3.2 write（配置原子）",
+  "line": 125,
+  "text": "| 运行 | set_job_policy | test? | policy / job_type | `maeSetJobPolicy` |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#101",
+  "kind": "table-row",
+  "section": "3.2 write（配置原子）",
+  "line": 126,
+  "text": "| 运行 | set_simulator_mode | test | mode | `asiSetHighPerformanceOptionVal`（内部映射 `'uniMode` / `'spectreXPreset`） |",
   "doc": "上层/6-maestro.md"
  },
  {
   "id": "maestro#102",
-  "kind": "table-row",
-  "section": "8. 展示类",
-  "line": 164,
-  "text": "| 操作 | 底层 |",
+  "kind": "clause",
+  "section": "3.2 write（配置原子）",
+  "line": 128,
+  "text": "`set_run_option` 只服务 Monte Carlo：`options` 的键必须是 §7.3.1 的 17 项，包内做类型/值域校验并归一化为 ADE 字符串；一条命令可同时写多项。",
   "doc": "上层/6-maestro.md"
  },
  {
-  "id": "maestro#104",
-  "kind": "table-row",
-  "section": "8. 展示类",
-  "line": 166,
-  "text": "| open_waveform_gui | `maeOpenSetup(?mode \"r\")` → `maeOpenResults(?history)` → `awvCreatePlotWindow` → `awvPlotWaveform(?expr signals)`；会话保持打开供窗口引用 |",
+  "id": "maestro#103",
+  "kind": "clause",
+  "section": "3.2 write（配置原子）",
+  "line": 130,
+  "text": "`load_corners` 对 `.csv` 默认不传 `?sections`；当前 Virtuoso 构建不识别该关键字，",
   "doc": "上层/6-maestro.md"
  },
  {
   "id": "maestro#105",
   "kind": "table-row",
-  "section": "8. 展示类",
-  "line": 167,
-  "text": "| close_waveform_gui | `hiCloseWindow` + `maeCloseSession(?forceClose t)`，关闭后校验窗口与会话列表 |",
+  "section": "4.1 write（结果原子）",
+  "line": 137,
+  "text": "| 原子 | 索引 | 附加参数 | 底层 |",
   "doc": "上层/6-maestro.md"
  },
  {
-  "id": "maestro#106",
+  "id": "maestro#107",
   "kind": "table-row",
-  "section": "9. 内部中间节点（不对外）",
-  "line": 171,
-  "text": "| 节点 | 底层 | 被谁使用 |",
+  "section": "4.1 write（结果原子）",
+  "line": 139,
+  "text": "| add_output | test | name / output_type / signal_name / expr | `maeAddOutput` |",
   "doc": "上层/6-maestro.md"
  },
  {
   "id": "maestro#108",
   "kind": "table-row",
-  "section": "9. 内部中间节点（不对外）",
-  "line": 173,
-  "text": "| 后台会话 open / save / close | `maeOpenSetup` / `maeSaveSetup` / `maeCloseSession` | write、read_config、read_results、export、write_history |",
+  "section": "4.1 write（结果原子）",
+  "line": 140,
+  "text": "| set_spec | test | name / lt / gt | `maeSetSpec` |",
   "doc": "上层/6-maestro.md"
  },
  {
   "id": "maestro#109",
   "kind": "table-row",
-  "section": "9. 内部中间节点（不对外）",
-  "line": 174,
-  "text": "| 确保 maestro view 存在 | `maeOpenSetup` + `maeSaveSetup` | write、open_gui（对外不暴露） |",
-  "doc": "上层/6-maestro.md"
- },
- {
-  "id": "maestro#110",
-  "kind": "table-row",
-  "section": "9. 内部中间节点（不对外）",
-  "line": 175,
-  "text": "| 窗口状态探测（mode / 已修改） | `hiGetCurrentWindow` + 标题解析 + `davSession` | close_gui |",
+  "section": "4.2 read_results",
+  "line": 144,
+  "text": "| 能力 | 底层 |",
   "doc": "上层/6-maestro.md"
  },
  {
   "id": "maestro#111",
   "kind": "table-row",
-  "section": "9. 内部中间节点（不对外）",
-  "line": 176,
-  "text": "| Detail CSV 中间导出 | `maeExportOutputView` | read_results、export(outputs_csv) |",
+  "section": "4.2 read_results",
+  "line": 146,
+  "text": "| 读全部点、spec 状态、yield | `maeExportOutputView` 导 Detail CSV → 下载 → 解析 |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#112",
+  "kind": "table-row",
+  "section": "4.2 read_results",
+  "line": 147,
+  "text": "| MC per-output 统计（Yield/Min/Target/Max/Mean/Std Dev/Cpk/Errors） | `maeExportOutputView ?view \"Yield\"` → 下载 → 解析（§7.3.3） |",
   "doc": "上层/6-maestro.md"
  },
  {
   "id": "maestro#113",
-  "kind": "clause",
-  "section": "10. 待定与待验证",
-  "line": 182,
-  "text": "1. 会话级原子的索引（`set_run_mode` / `set_job_control_mode` 现按\"当前会话\"处理）；",
+  "kind": "table-row",
+  "section": "4.2 read_results",
+  "line": 148,
+  "text": "| 读单条波形 | `maeOpenResults` → `openResults` → `selectResults` → `ocnPrint` → 下载文本 |",
   "doc": "上层/6-maestro.md"
  },
  {
-  "id": "maestro#115",
-  "kind": "clause",
-  "section": "10. 待定与待验证",
-  "line": 184,
-  "text": "3. analyses / outputs 的枚举函数；",
+  "id": "maestro#114",
+  "kind": "table-row",
+  "section": "4.2 read_results",
+  "line": 149,
+  "text": "| 结果目录/最新 history 定位 | `asiGetResultsDir` + 旧代码的 mtime / 自然排序规则 |",
   "doc": "上层/6-maestro.md"
  },
  {
   "id": "maestro#118",
+  "kind": "table-row",
+  "section": "5. 导出类",
+  "line": 158,
+  "text": "| kind | 产物 | 底层 |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#120",
+  "kind": "table-row",
+  "section": "5. 导出类",
+  "line": 160,
+  "text": "| netlist | 指定 corner 的网表 | `maeCreateNetlistForCorner` |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#121",
+  "kind": "table-row",
+  "section": "5. 导出类",
+  "line": 161,
+  "text": "| script | 等价 OCEAN 脚本 | `maeWriteScript` |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#122",
+  "kind": "table-row",
+  "section": "5. 导出类",
+  "line": 162,
+  "text": "| outputs_csv | outputs 表 CSV | `maeExportOutputView` |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#123",
+  "kind": "table-row",
+  "section": "5. 导出类",
+  "line": 163,
+  "text": "| snapshot | 全量快照包（sdb / active.state / 过滤 XML / 按点 netlist 与 PSF） | 快照模板 + `find`/`tar` 打包 |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#124",
+  "kind": "table-row",
+  "section": "5. 导出类",
+  "line": 164,
+  "text": "| screenshot | Maestro 窗口 PNG | `hiWindowSaveImage`（窗口按 `cellView~>viewName` 定位） |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#127",
+  "kind": "table-row",
+  "section": "6.1 read_history",
+  "line": 174,
+  "text": "| 返回项 | 底层 |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#129",
+  "kind": "table-row",
+  "section": "6.1 read_history",
+  "line": 176,
+  "text": "| 全部 history 名称 | `axlGetHistory` |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#130",
+  "kind": "table-row",
+  "section": "6.1 read_history",
+  "line": 177,
+  "text": "| 每个 history 的完成情况（running / done / failed） | `axlGetRunStatus` 逐条查询 |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#131",
+  "kind": "table-row",
+  "section": "6.1 read_history",
+  "line": 178,
+  "text": "| 当前 history / 最新 history | `axlGetCurrentHistory`；旧代码的 mtime 排序 / 自然排序规则 |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#133",
+  "kind": "table-row",
+  "section": "6.1 read_history",
+  "line": 182,
+  "text": "| 返回项 | 底层 |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#135",
+  "kind": "table-row",
+  "section": "6.1 read_history",
+  "line": 184,
+  "text": "| 进度（完成的点 / 测试 / corner 数） | `axlGetRunStatus`（指定 history） |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#136",
+  "kind": "table-row",
+  "section": "6.1 read_history",
+  "line": 185,
+  "text": "| 锁状态 | `axlGetHistoryLock` / `maeGetHistoryLockFlag`（0–4 五种状态） |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#137",
+  "kind": "table-row",
+  "section": "6.1 read_history",
+  "line": 186,
+  "text": "| 结果目录 | `axlGetResultsLocation` 等路径查询 |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#138",
+  "kind": "table-row",
+  "section": "6.1 read_history",
+  "line": 187,
+  "text": "| 覆盖式运行目标 | `axlGetOverwriteHistoryName` |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#139",
+  "kind": "table-row",
+  "section": "6.2 write_history（历史原子）",
+  "line": 191,
+  "text": "| 原子 | 索引 | 附加参数 | 底层 |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#141",
+  "kind": "table-row",
+  "section": "6.2 write_history（历史原子）",
+  "line": 193,
+  "text": "| delete | history | — | Assembler：`axlRemoveElement(axlGetHistoryEntry(sdb, name))`；Explorer：`maeDeleteExplorerHistory(session, name)` |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#142",
+  "kind": "table-row",
+  "section": "6.2 write_history（历史原子）",
+  "line": 194,
+  "text": "| delete_results | history | keep_netlist? / keep_quick_plot? | `maeDeleteSimulationData`（对应 GUI 三档）；备选 `axlRemoveSimulationResults` |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#143",
+  "kind": "table-row",
+  "section": "6.2 write_history（历史原子）",
+  "line": 195,
+  "text": "| rename | history | new_name | `axlSetHistoryName(handle, new_name)` |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#144",
+  "kind": "table-row",
+  "section": "6.2 write_history（历史原子）",
+  "line": 196,
+  "text": "| lock / unlock | history | — | `maeSetHistoryLock` / `axlSetHistoryLock` |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#146",
+  "kind": "clause",
+  "section": "6.2 write_history（历史原子）",
+  "line": 200,
+  "text": "`write_history` 不复用失效的会话/SDB handle：每次写原子前确认 `maeOpenSetup` 返回的会话仍可用；",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#148",
+  "kind": "clause",
+  "section": "6.2 write_history（历史原子）",
+  "line": 202,
+  "text": "必须在同一请求内可连续执行，目标名冲突给点名结构化拒绝。",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#149",
+  "kind": "table-row",
+  "section": "7.1 open_gui / close_gui",
+  "line": 208,
+  "text": "| 操作 | 底层 |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#151",
+  "kind": "table-row",
+  "section": "7.1 open_gui / close_gui",
+  "line": 210,
+  "text": "| open_gui | 窗口探测 → 关闭只读副本 → `deOpenCellView(..., \"a\")` → 找到并复用可编辑会话 |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#152",
+  "kind": "table-row",
+  "section": "7.1 open_gui / close_gui",
+  "line": 211,
+  "text": "| close_gui | 探测窗口 mode/已修改 → Reading 先 `maeMakeEditable` → `maeSaveSetup` → `hiCloseWindow` → `dbPurge` 释放编辑锁；**固定保存，不提供丢弃** |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#153",
+  "kind": "table-row",
+  "section": "7.2 run",
+  "line": 215,
+  "text": "| 参数 | 说明 |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#155",
+  "kind": "table-row",
+  "section": "7.2 run",
+  "line": 217,
+  "text": "| `blocking` | 是否阻塞到仿真结束；**默认 `false`**（立即返回 history 名） |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#156",
+  "kind": "table-row",
+  "section": "7.2 run",
+  "line": 219,
+  "text": "| 模式 | 行为 | 底层 |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#158",
+  "kind": "table-row",
+  "section": "7.2 run",
+  "line": 221,
+  "text": "| 非阻塞（默认） | 启动后立即返回 history 名，调用方之后用 `read_history` 查进度 | `maeRunSimulation` |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#159",
+  "kind": "table-row",
+  "section": "7.2 run",
+  "line": 222,
+  "text": "| 阻塞（`blocking=true`） | 启动后在包内等到终态，返回 history 名 + 终态 | `maeRunSimulation` + 包内轮询 |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#162",
+  "kind": "clause",
+  "section": "7.2 run",
+  "line": 228,
+  "text": "MC 运行：run mode 由最近一次 `set_run_mode` 决定；必须先设 `\"Monte Carlo Sampling\"`。`run` 对外仍不新增 `run_mode` 参数，但包内读取当前 mode 并通过 `?runMode` 显式传给 `maeRunSimulation`，避免 ADE 文档默认值退回 `\"Single Run, Sweeps and Corners\"`。MC 模式下启动前做两项前置检查（§7.3.2）；统计模型是否存在由 Spectre 在仿真中判定。",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#176",
+  "kind": "clause",
+  "section": "7.3.1 配置",
+  "line": 251,
+  "text": "- 未设置的项读回 `null`（= 用 ADE 默认），`read_config.value.run_options[\"Monte Carlo Sampling\"]` 17 项全列。",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#180",
+  "kind": "table-row",
+  "section": "7.3.1 配置",
+  "line": 256,
+  "text": "| 选项 | 含义 | 包内接受值 | 证据 |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#182",
+  "kind": "table-row",
+  "section": "7.3.1 配置",
+  "line": 258,
+  "text": "| `mcmethod` | process / mismatch / all | `process`/`mismatch`/`all`/`global`（`global` 为 OCEAN 别名） | 活体可写 + 文档 |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#183",
+  "kind": "table-row",
+  "section": "7.3.1 配置",
+  "line": 259,
+  "text": "| `mcnumpoints` | 固定采样点数 | 正整数 | 活体 + 文档 |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#184",
+  "kind": "table-row",
+  "section": "7.3.1 配置",
+  "line": 260,
+  "text": "| `mcnumbins` | LHS 分箱数 | 非负整数或 `\"\"`（自动） | 文档 |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#185",
+  "kind": "table-row",
+  "section": "7.3.1 配置",
+  "line": 261,
+  "text": "| `samplingmode` | 采样算法 | `random`/`standard`/`orthogonal`/`lhs`/`lds` | 文档；`lhs` 活体 |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#186",
+  "kind": "table-row",
+  "section": "7.3.1 配置",
+  "line": 262,
+  "text": "| `montecarloseed` | 随机种子 | 非负整数 | 文档 |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#187",
+  "kind": "table-row",
+  "section": "7.3.1 配置",
+  "line": 263,
+  "text": "| `mcstartingrunnumber` | 起始迭代号 | 正整数 | 文档 |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#188",
+  "kind": "table-row",
+  "section": "7.3.1 配置",
+  "line": 264,
+  "text": "| `dutsummary` | mismatch 实例范围 | 字符串（格式原样透传） | 活体可写；值域未验证 |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#189",
+  "kind": "table-row",
+  "section": "7.3.1 配置",
+  "line": 265,
+  "text": "| `ignoreflag` | 排除 `dutsummary` 实例 | 0/1 | 文档 |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#190",
+  "kind": "table-row",
+  "section": "7.3.1 配置",
+  "line": 266,
+  "text": "| `mcreferencepoint` | 使用 reference point | 0/1 | 文档 |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#191",
+  "kind": "table-row",
+  "section": "7.3.1 配置",
+  "line": 267,
+  "text": "| `donominal` | 先跑 nominal | 0/1 | 文档 |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#192",
+  "kind": "table-row",
+  "section": "7.3.1 配置",
+  "line": 268,
+  "text": "| `saveprocess` | 保存 process 数据 | 0/1 | 文档 |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#193",
+  "kind": "table-row",
+  "section": "7.3.1 配置",
+  "line": 269,
+  "text": "| `savemismatch` | 保存 mismatch 数据 | 0/1 | 文档 |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#194",
+  "kind": "table-row",
+  "section": "7.3.1 配置",
+  "line": 270,
+  "text": "| `saveallplots` | 保存每次迭代 PSF | 0/1 | 文档 |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#195",
+  "kind": "table-row",
+  "section": "7.3.1 配置",
+  "line": 271,
+  "text": "| `mcStopEarly` | 启用 auto-stop | `t`/`nil`（0/1 亦可） | 活体可写；类型未完全确认 |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#196",
+  "kind": "table-row",
+  "section": "7.3.1 配置",
+  "line": 272,
+  "text": "| `mcStopMethod` | auto-stop 方法 | 字符串（值域未验证，原样透传） | 文档 |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#197",
+  "kind": "table-row",
+  "section": "7.3.1 配置",
+  "line": 273,
+  "text": "| `mcYieldTarget` | 目标良率/σ | >0 数值 | 文档；百分比/σ 编码未验证 |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#198",
+  "kind": "table-row",
+  "section": "7.3.1 配置",
+  "line": 274,
+  "text": "| `mcYieldAlphaLimit` | 置信度/概率 | (0,100) 数值 | 文档；alpha/概率编码未验证 |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#202",
+  "kind": "clause",
+  "section": "7.3.2 运行",
+  "line": 281,
+  "text": "- 至少一个 output `plot=t`，否则结构化失败 `mc_no_plot_outputs`（对应 ADEXL-1617）；",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#230",
+  "kind": "clause",
+  "section": "7.3.4 前置条件与限制",
+  "line": 317,
+  "text": "1. **统计模型硬前提**：模型必须含 `statistics { process/mismatch }`，且与 `mcmethod` 一致；否则每个点 `SPECTRE-16012`。",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#234",
+  "kind": "clause",
+  "section": "7.3.4 前置条件与限制",
+  "line": 321,
+  "text": "5. output 必须勾 Plot；`saveallplots=1` 会显著增大产物体积。",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#237",
+  "kind": "table-row",
+  "section": "8. 展示类",
+  "line": 328,
+  "text": "| 操作 | 底层 |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#239",
+  "kind": "table-row",
+  "section": "8. 展示类",
+  "line": 330,
+  "text": "| open_waveform_gui | `maeOpenSetup(?mode \"r\")` → `maeOpenResults(?history)` → `awvCreatePlotWindow` → `awvPlotWaveform(?expr signals)`；会话保持打开供窗口引用 |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#240",
+  "kind": "table-row",
+  "section": "8. 展示类",
+  "line": 331,
+  "text": "| close_waveform_gui | `hiCloseWindow` + `maeCloseSession(?forceClose t)`，关闭后校验窗口与会话列表 |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#241",
+  "kind": "table-row",
+  "section": "9. 内部中间节点（不对外）",
+  "line": 335,
+  "text": "| 节点 | 底层 | 被谁使用 |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#243",
+  "kind": "table-row",
+  "section": "9. 内部中间节点（不对外）",
+  "line": 337,
+  "text": "| 后台会话 open / save / close | `maeOpenSetup` / `maeSaveSetup` / `maeCloseSession` | write、read_config、read_results、export、write_history |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#244",
+  "kind": "table-row",
+  "section": "9. 内部中间节点（不对外）",
+  "line": 338,
+  "text": "| **读路径不得产生写副作用** | 只读操作（read_config / read_results / export / read_history）开会话一律 `?mode \"r\"`；写操作沿用官方默认 `\"a\"` | 全部 |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#245",
+  "kind": "table-row",
+  "section": "9. 内部中间节点（不对外）",
+  "line": 339,
+  "text": "| **陈旧/他人写锁不弹模态** | 开会话前检查 cellview 目录的 `*.cdslck`：属主进程已死或非本实例 → **结构化失败**（点名锁文件/属主/pid）；本实例自己的锁 → 正常复用会话 | 全部 |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#246",
+  "kind": "table-row",
+  "section": "9. 内部中间节点（不对外）",
+  "line": 340,
+  "text": "| 确保 maestro view 存在 | `maeOpenSetup` + `maeSaveSetup` | write、open_gui（对外不暴露） |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#247",
+  "kind": "table-row",
+  "section": "9. 内部中间节点（不对外）",
+  "line": 341,
+  "text": "| 窗口状态探测（mode / 已修改） | `hiGetCurrentWindow` + 标题解析 + `davSession` | close_gui |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#248",
+  "kind": "table-row",
+  "section": "9. 内部中间节点（不对外）",
+  "line": 342,
+  "text": "| Detail CSV 中间导出 | `maeExportOutputView` | read_results、export(outputs_csv) |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#249",
+  "kind": "table-row",
+  "section": "9. 内部中间节点（不对外）",
+  "line": 343,
+  "text": "| MC run option 读写 | `axlGetRunOption` / `axlGetRunOptionValue` / `axlPutRunOption` / `axlSetRunOptionValue` | write、read_config |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#250",
+  "kind": "table-row",
+  "section": "9. 内部中间节点（不对外）",
+  "line": 344,
+  "text": "| MC Yield CSV 中间导出 | `maeExportOutputView ?view \"Yield\"` | read_results |",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#252",
   "kind": "clause",
   "section": "10. 待定与待验证",
-  "line": 187,
+  "line": 350,
+  "text": "1. 会话级原子的索引（`set_run_mode` / `set_job_control_mode` 现按\"当前会话\"处理）；",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#254",
+  "kind": "clause",
+  "section": "10. 待定与待验证",
+  "line": 352,
+  "text": "3. analyses / outputs 的枚举函数；",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#257",
+  "kind": "clause",
+  "section": "10. 待定与待验证",
+  "line": 355,
   "text": "6. 各原子的参数与默认值逐项定稿。",
   "doc": "上层/6-maestro.md"
  },
  {
-  "id": "maestro#119",
+  "id": "maestro#262",
   "kind": "clause",
   "section": "10. 待定与待验证",
-  "line": 189,
+  "line": 360,
+  "text": "11. plot 前置检查范围：整个 setup 至少一个 `plot=t`，还是每个 test 都必须有。",
+  "doc": "上层/6-maestro.md"
+ },
+ {
+  "id": "maestro#263",
+  "kind": "clause",
+  "section": "10. 待定与待验证",
+  "line": 362,
   "text": "待真机验证（写 spec 定稿前必须闭环）：",
   "doc": "上层/6-maestro.md"
  },
  {
-  "id": "spectre#017",
-  "kind": "table-row",
-  "section": "2. 操作总表",
-  "line": 27,
-  "text": "| 类别 | 操作名 | 说明 | 接口 |",
+  "id": "spectre#004",
+  "kind": "clause",
+  "section": "上层业务包：spectre",
+  "line": 6,
+  "text": "> Supersedes：Draft v3（删除错误的 `mode=\"x\"`→`+x` 映射；Spectre X 统一用 `cx/ax/mx/lx/vx` preset，P-108）",
   "doc": "上层/7-spectre.md"
  },
  {
-  "id": "spectre#019",
+  "id": "spectre#018",
   "kind": "table-row",
   "section": "2. 操作总表",
-  "line": 29,
-  "text": "| 环境 | `spectre.check_license` | 查 Spectre 二进制/版本/license | Sp+C |",
+  "line": 28,
+  "text": "| 类别 | 操作名 | 说明 | 接口 |",
   "doc": "上层/7-spectre.md"
  },
  {
@@ -5604,7 +6012,7 @@
   "kind": "table-row",
   "section": "2. 操作总表",
   "line": 30,
-  "text": "| 仿真 | `spectre.run` | 执行一个或多个独立仿真任务；`tasks[]` | U+Sp+D |",
+  "text": "| 环境 | `spectre.check_license` | 查 Spectre 二进制/版本/license | Sp+C |",
   "doc": "上层/7-spectre.md"
  },
  {
@@ -5612,7 +6020,7 @@
   "kind": "table-row",
   "section": "2. 操作总表",
   "line": 31,
-  "text": "| 结果 | `spectre.read_results` | 读/解析 PSF ASCII；自动识别 single/raw/sweep | D |",
+  "text": "| 仿真 | `spectre.run` | 执行一个或多个独立仿真任务；`tasks[]` | U+Sp+D |",
   "doc": "上层/7-spectre.md"
  },
  {
@@ -5620,7 +6028,7 @@
   "kind": "table-row",
   "section": "2. 操作总表",
   "line": 32,
-  "text": "| 结果 | `spectre.measure` | 在已解析数据上算 delay/bandwidth/noise 等 | — |",
+  "text": "| 结果 | `spectre.read_results` | 读/解析 PSF ASCII；自动识别 single/raw/sweep | D |",
   "doc": "上层/7-spectre.md"
  },
  {
@@ -5628,14 +6036,22 @@
   "kind": "table-row",
   "section": "2. 操作总表",
   "line": 33,
+  "text": "| 结果 | `spectre.measure` | 在已解析数据上算 delay/bandwidth/noise 等 | — |",
+  "doc": "上层/7-spectre.md"
+ },
+ {
+  "id": "spectre#024",
+  "kind": "table-row",
+  "section": "2. 操作总表",
+  "line": 34,
   "text": "| 结果 | `spectre.export` | 已解析结果导出 CSV/JSON | — |",
   "doc": "上层/7-spectre.md"
  },
  {
-  "id": "spectre#033",
+  "id": "spectre#034",
   "kind": "clause",
   "section": "3.1 Request / Result",
-  "line": 54,
+  "line": 55,
   "text": "- 每个 Request 必须有 `token: str`，可选 `timeout`；结构校验失败抛 `ValueError`/`TypeError`。",
   "doc": "上层/7-spectre.md"
  },
@@ -5644,15 +6060,15 @@
   "kind": "clause",
   "section": "3.1 Request / Result",
   "line": 57,
-  "text": "- 业务失败写 `ok=false` + `error`；只有结构错误或未预期异常才抛出。",
+  "text": "- `steps` 对外默认省略，仅请求 `step_details=true` 或 `ok=false` 时出现；每项为 `{\"name\": str, \"ok\": bool, \"detail\": <中层结果或摘要>}`。JSON 出口的日志键为 `CDSlog`，不输出 `metadata`；`execution_time` 保留三位小数（对齐 1-上层 §2.4）。",
   "doc": "上层/7-spectre.md"
  },
  {
-  "id": "spectre#040",
+  "id": "spectre#037",
   "kind": "clause",
-  "section": "3.2 路径与 job",
-  "line": 64,
-  "text": "- `run` 的 `job` 必须是安全名：`[A-Za-z0-9][A-Za-z0-9._-]*`，不得含 `/`、`\\`、`..`。",
+  "section": "3.1 Request / Result",
+  "line": 58,
+  "text": "- 业务失败写 `ok=false` + `error`；只有结构错误或未预期异常才抛出。",
   "doc": "上层/7-spectre.md"
  },
  {
@@ -5660,23 +6076,23 @@
   "kind": "clause",
   "section": "3.2 路径与 job",
   "line": 65,
+  "text": "- `run` 的 `job` 必须是安全名：`[A-Za-z0-9][A-Za-z0-9._-]*`，不得含 `/`、`\\`、`..`。",
+  "doc": "上层/7-spectre.md"
+ },
+ {
+  "id": "spectre#042",
+  "kind": "clause",
+  "section": "3.2 路径与 job",
+  "line": 66,
   "text": "- 包不生成 API 事后不可重建的随机路径；同一 `job` 必须能确定地定位同一组运行目录。",
   "doc": "上层/7-spectre.md"
  },
  {
-  "id": "spectre#055",
+  "id": "spectre#056",
   "kind": "table-row",
   "section": "5.1 Request",
-  "line": 99,
+  "line": 100,
   "text": "| 字段 | 类型 | 默认 | 说明 |",
-  "doc": "上层/7-spectre.md"
- },
- {
-  "id": "spectre#057",
-  "kind": "table-row",
-  "section": "5.1 Request",
-  "line": 101,
-  "text": "| `token` | str | — | 必填 |",
   "doc": "上层/7-spectre.md"
  },
  {
@@ -5684,7 +6100,7 @@
   "kind": "table-row",
   "section": "5.1 Request",
   "line": 102,
-  "text": "| `tasks` | list[Task] | — | 一个或多个仿真任务；单仿真也写单元素列表 |",
+  "text": "| `token` | str | — | 必填 |",
   "doc": "上层/7-spectre.md"
  },
  {
@@ -5692,7 +6108,7 @@
   "kind": "table-row",
   "section": "5.1 Request",
   "line": 103,
-  "text": "| `max_workers` | int | 4 | 上层并发上限，≥1 |",
+  "text": "| `tasks` | list[Task] | — | 一个或多个仿真任务；单仿真也写单元素列表 |",
   "doc": "上层/7-spectre.md"
  },
  {
@@ -5700,7 +6116,7 @@
   "kind": "table-row",
   "section": "5.1 Request",
   "line": 104,
-  "text": "| `mode` | str | `\"spectre\"` | 批次默认 mode；task 可覆盖 |",
+  "text": "| `max_workers` | int | 4 | 上层并发上限，≥1 |",
   "doc": "上层/7-spectre.md"
  },
  {
@@ -5708,7 +6124,7 @@
   "kind": "table-row",
   "section": "5.1 Request",
   "line": 105,
-  "text": "| `spectre_args` | list[str] | `[]` | 批次默认额外 Spectre CLI flag |",
+  "text": "| `mode` | str | `\"spectre\"` | 批次默认 mode；task 可覆盖 |",
   "doc": "上层/7-spectre.md"
  },
  {
@@ -5716,7 +6132,7 @@
   "kind": "table-row",
   "section": "5.1 Request",
   "line": 106,
-  "text": "| `spectre_bin` | str \\| None | `None` | 覆盖二进制/命令前缀；缺省用 query bin，再退化为 `spectre` |",
+  "text": "| `spectre_args` | list[str] | `[]` | 批次默认额外 Spectre CLI flag |",
   "doc": "上层/7-spectre.md"
  },
  {
@@ -5724,7 +6140,7 @@
   "kind": "table-row",
   "section": "5.1 Request",
   "line": 107,
-  "text": "| `parse` | str | `\"auto\"` | `auto`=下载后自动解析；`none`=只下载不解析 |",
+  "text": "| `spectre_bin` | str \\| None | `None` | 覆盖二进制/命令前缀；缺省用 query bin，再退化为 `spectre` |",
   "doc": "上层/7-spectre.md"
  },
  {
@@ -5732,7 +6148,7 @@
   "kind": "table-row",
   "section": "5.1 Request",
   "line": 108,
-  "text": "| `download` | bool | `True` | 是否把 raw/log 下载到调用方 |",
+  "text": "| `parse` | str | `\"auto\"` | `auto`=下载后自动解析；`none`=只下载不解析 |",
   "doc": "上层/7-spectre.md"
  },
  {
@@ -5740,7 +6156,7 @@
   "kind": "table-row",
   "section": "5.1 Request",
   "line": 109,
-  "text": "| `output_root` | str \\| None | `None` | 调用方输出根；各 task 用 `<output_root>/<job>`；缺省 `artifact_dir(\"spectre\", job)` |",
+  "text": "| `download` | bool | `True` | 是否把 raw/log 下载到调用方 |",
   "doc": "上层/7-spectre.md"
  },
  {
@@ -5748,7 +6164,7 @@
   "kind": "table-row",
   "section": "5.1 Request",
   "line": 110,
-  "text": "| `keep_run_dir` | bool | `False` | 是否保留 role 侧 run_dir |",
+  "text": "| `output_root` | str \\| None | `None` | 调用方输出根；各 task 用 `<output_root>/<job>`；缺省 `artifact_dir(\"spectre\", job)` |",
   "doc": "上层/7-spectre.md"
  },
  {
@@ -5756,23 +6172,23 @@
   "kind": "table-row",
   "section": "5.1 Request",
   "line": 111,
+  "text": "| `keep_run_dir` | bool | `False` | 是否保留 role 侧 run_dir |",
+  "doc": "上层/7-spectre.md"
+ },
+ {
+  "id": "spectre#068",
+  "kind": "table-row",
+  "section": "5.1 Request",
+  "line": 112,
   "text": "| `timeout` | int \\| None | `None` | 单次中层调用 deadline |",
   "doc": "上层/7-spectre.md"
  },
  {
-  "id": "spectre#069",
+  "id": "spectre#070",
   "kind": "table-row",
   "section": "5.1 Request",
-  "line": 115,
+  "line": 116,
   "text": "| 字段 | 类型 | 默认 | 说明 |",
-  "doc": "上层/7-spectre.md"
- },
- {
-  "id": "spectre#071",
-  "kind": "table-row",
-  "section": "5.1 Request",
-  "line": 117,
-  "text": "| `job` | str | — | 安全名；决定 role 侧与调用方侧运行目录；批次内唯一 |",
   "doc": "上层/7-spectre.md"
  },
  {
@@ -5780,7 +6196,7 @@
   "kind": "table-row",
   "section": "5.1 Request",
   "line": 118,
-  "text": "| `netlist` | str | — | 调用方 netlist 文件；U 上传到 run_dir |",
+  "text": "| `job` | str | — | 安全名；决定 role 侧与调用方侧运行目录；批次内唯一 |",
   "doc": "上层/7-spectre.md"
  },
  {
@@ -5788,7 +6204,7 @@
   "kind": "table-row",
   "section": "5.1 Request",
   "line": 119,
-  "text": "| `include_files` | list[str] | `[]` | 调用方 include 文件；按 basename 上传到 run_dir |",
+  "text": "| `netlist` | str | — | 调用方 netlist 文件；U 上传到 run_dir |",
   "doc": "上层/7-spectre.md"
  },
  {
@@ -5796,7 +6212,7 @@
   "kind": "table-row",
   "section": "5.1 Request",
   "line": 120,
-  "text": "| `mode` | str \\| None | `None` | 为 None 时继承批次默认 |",
+  "text": "| `include_files` | list[str] | `[]` | 调用方 include 文件；按 basename 上传到 run_dir |",
   "doc": "上层/7-spectre.md"
  },
  {
@@ -5804,15 +6220,15 @@
   "kind": "table-row",
   "section": "5.1 Request",
   "line": 121,
-  "text": "| `spectre_args` | list[str] \\| None | `None` | 为 None 时继承批次默认；提供时覆盖 |",
+  "text": "| `mode` | str \\| None | `None` | 为 None 时继承批次默认 |",
   "doc": "上层/7-spectre.md"
  },
  {
-  "id": "spectre#077",
-  "kind": "clause",
+  "id": "spectre#076",
+  "kind": "table-row",
   "section": "5.1 Request",
-  "line": 125,
-  "text": "- `tasks` 非空；job 唯一且为安全名；`max_workers ≥ 1`。",
+  "line": 122,
+  "text": "| `spectre_args` | list[str] \\| None | `None` | 为 None 时继承批次默认；提供时覆盖 |",
   "doc": "上层/7-spectre.md"
  },
  {
@@ -5820,23 +6236,23 @@
   "kind": "clause",
   "section": "5.1 Request",
   "line": 126,
+  "text": "- `tasks` 非空；job 唯一且为安全名；`max_workers ≥ 1`。",
+  "doc": "上层/7-spectre.md"
+ },
+ {
+  "id": "spectre#079",
+  "kind": "clause",
+  "section": "5.1 Request",
+  "line": 127,
   "text": "- `parse=\"auto\"` 时 `download` 必须为 true；`parse=\"none\"` 时必须 `keep_run_dir=true`，否则后续无法再用 `read_results` 定位 role 侧结果。",
   "doc": "上层/7-spectre.md"
  },
  {
-  "id": "spectre#083",
+  "id": "spectre#084",
   "kind": "clause",
   "section": "5.2 执行链路（每个 task）",
-  "line": 135,
+  "line": 136,
   "text": "3. 上传 netlist 为 `<run_dir>/<netlist basename>`；上传 include 文件到同一目录。netlist 与 include 的 basename 必须唯一、不得冲突。",
-  "doc": "上层/7-spectre.md"
- },
- {
-  "id": "spectre#092",
-  "kind": "clause",
-  "section": "5.2 执行链路（每个 task）",
-  "line": 146,
-  "text": "- 包内用受 `max_workers` 限制的并发执行所有 task；所有 task 都等待结束，任一失败不取消其余 task。",
   "doc": "上层/7-spectre.md"
  },
  {
@@ -5844,7 +6260,7 @@
   "kind": "clause",
   "section": "5.2 执行链路（每个 task）",
   "line": 147,
-  "text": "- 结果按 `tasks` 顺序返回。",
+  "text": "- 包内用受 `max_workers` 限制的并发执行所有 task；所有 task 都等待结束，任一失败不取消其余 task。",
   "doc": "上层/7-spectre.md"
  },
  {
@@ -5852,15 +6268,15 @@
   "kind": "clause",
   "section": "5.2 执行链路（每个 task）",
   "line": 148,
-  "text": "- 中层的 token/channel/thread 预算仍可能拒绝某次调用；被拒绝的 task 记失败，不自动重试。",
+  "text": "- 结果按 `tasks` 顺序返回。",
   "doc": "上层/7-spectre.md"
  },
  {
-  "id": "spectre#097",
+  "id": "spectre#095",
   "kind": "clause",
-  "section": "5.3 命令构造",
-  "line": 154,
-  "text": "- 默认参数（已存在则不重复）：`-64`、`+escchars`、`+log <run_dir>/spectre.out`、`-format psfascii`、`-raw <run_dir>/<stem>.raw`、`+lqtimeout 900`、`-maxw 5`、`-maxn 5`、`+logstatus`。",
+  "section": "5.2 执行链路（每个 task）",
+  "line": 149,
+  "text": "- 中层的 token/channel/thread 预算仍可能拒绝某次调用；被拒绝的 task 记失败，不自动重试。",
   "doc": "上层/7-spectre.md"
  },
  {
@@ -5868,23 +6284,23 @@
   "kind": "clause",
   "section": "5.3 命令构造",
   "line": 155,
+  "text": "- 默认参数（已存在则不重复）：`-64`、`+escchars`、`+log <run_dir>/spectre.out`、`-format psfascii`、`-raw <run_dir>/<stem>.raw`、`+lqtimeout 900`、`-maxw 5`、`-maxn 5`、`+logstatus`。",
+  "doc": "上层/7-spectre.md"
+ },
+ {
+  "id": "spectre#099",
+  "kind": "clause",
+  "section": "5.3 命令构造",
+  "line": 156,
   "text": "- 参数顺序：task 的 `spectre_args` 后接 mode 映射参数。",
   "doc": "上层/7-spectre.md"
  },
  {
-  "id": "spectre#101",
+  "id": "spectre#102",
   "kind": "table-row",
   "section": "5.3 命令构造",
-  "line": 159,
+  "line": 160,
   "text": "| mode | 参数 |",
-  "doc": "上层/7-spectre.md"
- },
- {
-  "id": "spectre#103",
-  "kind": "table-row",
-  "section": "5.3 命令构造",
-  "line": 161,
-  "text": "| `spectre` | 无 |",
   "doc": "上层/7-spectre.md"
  },
  {
@@ -5892,7 +6308,7 @@
   "kind": "table-row",
   "section": "5.3 命令构造",
   "line": 162,
-  "text": "| `aps` | `+aps` |",
+  "text": "| `spectre` | 无 |",
   "doc": "上层/7-spectre.md"
  },
  {
@@ -5900,7 +6316,7 @@
   "kind": "table-row",
   "section": "5.3 命令构造",
   "line": 163,
-  "text": "| `x` | `+x` |",
+  "text": "| `aps` | `+aps` |",
   "doc": "上层/7-spectre.md"
  },
  {
@@ -5944,466 +6360,482 @@
   "doc": "上层/7-spectre.md"
  },
  {
-  "id": "spectre#144",
+  "id": "spectre#112",
+  "kind": "clause",
+  "section": "5.3 命令构造",
+  "line": 171,
+  "text": "> 因此不提供 `mode=\"x\"`（P-108）。要 Spectre X 默认模式用 `mx`，高精度用 `cx`/`ax`。",
+  "doc": "上层/7-spectre.md"
+ },
+ {
+  "id": "spectre#145",
   "kind": "clause",
   "section": "5.4 结果与状态",
-  "line": 207,
-  "text": "- raw 已下载但解析失败：`status=\"partial\"`，`ok=false`，保留解析错误和已下载文件。",
+  "line": 209,
+  "text": "- rc!=0 且 raw 不存在：`status=\"failure\"`，`ok=false`。**即使 raw 下载步骤先报错，也不得覆盖仿真失败分类**；`errors` 必须回带仿真器原文（如 `ERROR (...)` / `spectre completes with N error`），`log_path` 尽力回填 `spectre.out`。",
   "doc": "上层/7-spectre.md"
  },
  {
   "id": "spectre#146",
   "kind": "clause",
   "section": "5.4 结果与状态",
-  "line": 209,
-  "text": "- 终止失败标记至少包括：`error reading`、`read-in failed`、license error、明确 convergence failure、`spectre terminated prematurely due to fatal error`、`ERROR (`、segmentation/core dump。",
+  "line": 210,
+  "text": "- raw 已下载但解析失败：`status=\"partial\"`，`ok=false`，保留解析错误和已下载文件。",
   "doc": "上层/7-spectre.md"
  },
  {
-  "id": "spectre#147",
-  "kind": "table-row",
-  "section": "6.1 Request",
-  "line": 215,
-  "text": "| 字段 | 类型 | 默认 | 说明 |",
+  "id": "spectre#148",
+  "kind": "clause",
+  "section": "5.4 结果与状态",
+  "line": 212,
+  "text": "- 终止失败标记至少包括：`error reading`、`read-in failed`、license error、明确 convergence failure、`spectre terminated prematurely due to fatal error`、`ERROR (`、segmentation/core dump。",
   "doc": "上层/7-spectre.md"
  },
  {
   "id": "spectre#149",
   "kind": "table-row",
   "section": "6.1 Request",
-  "line": 217,
-  "text": "| `token` | str | — | 必填 |",
-  "doc": "上层/7-spectre.md"
- },
- {
-  "id": "spectre#150",
-  "kind": "table-row",
-  "section": "6.1 Request",
   "line": 218,
-  "text": "| `source` | str | — | role 文件或目录路径；相对 `file` role 根，绝对路径直通 |",
+  "text": "| 字段 | 类型 | 默认 | 说明 |",
   "doc": "上层/7-spectre.md"
  },
  {
   "id": "spectre#151",
   "kind": "table-row",
   "section": "6.1 Request",
-  "line": 219,
-  "text": "| `analysis` | str | `\"all\"` | `raw` 时的分析选择：`all`/`tran`/`dc`/`ac`/`info` |",
+  "line": 220,
+  "text": "| `token` | str | — | 必填 |",
   "doc": "上层/7-spectre.md"
  },
  {
   "id": "spectre#152",
   "kind": "table-row",
   "section": "6.1 Request",
-  "line": 220,
-  "text": "| `output_dir` | str \\| None | `None` | 调用方下载目录；缺省 `artifact_dir(\"spectre\", \"results\", <source basename>)` |",
+  "line": 221,
+  "text": "| `source` | str | — | role 文件或目录路径；相对 `file` role 根，绝对路径直通 |",
   "doc": "上层/7-spectre.md"
  },
  {
   "id": "spectre#153",
   "kind": "table-row",
   "section": "6.1 Request",
-  "line": 221,
-  "text": "| `timeout` | int \\| None | `None` | 单次中层调用 deadline |",
+  "line": 222,
+  "text": "| `analysis` | str | `\"all\"` | `raw` 时的分析选择：`all`/`tran`/`dc`/`ac`/`info` |",
   "doc": "上层/7-spectre.md"
  },
  {
   "id": "spectre#154",
   "kind": "table-row",
-  "section": "6.2 自动识别",
-  "line": 225,
-  "text": "| source | 自动判定 | 行为 |",
+  "section": "6.1 Request",
+  "line": 223,
+  "text": "| `output_dir` | str \\| None | `None` | 调用方下载目录；缺省 `artifact_dir(\"spectre\", \"results\", <source basename>)` |",
+  "doc": "上层/7-spectre.md"
+ },
+ {
+  "id": "spectre#155",
+  "kind": "table-row",
+  "section": "6.1 Request",
+  "line": 224,
+  "text": "| `timeout` | int \\| None | `None` | 单次中层调用 deadline |",
   "doc": "上层/7-spectre.md"
  },
  {
   "id": "spectre#156",
   "kind": "table-row",
   "section": "6.2 自动识别",
-  "line": 227,
-  "text": "| 单个 PSF ASCII 文件 | `single` | D 下载 → 解析 HEADER/TYPE/SWEEP/TRACE/VALUE |",
-  "doc": "上层/7-spectre.md"
- },
- {
-  "id": "spectre#157",
-  "kind": "table-row",
-  "section": "6.2 自动识别",
   "line": 228,
-  "text": "| 目录，含合法 classic/flat sweep 布局 | `sweep` | D 递归下载 → 建点索引 |",
+  "text": "| source | 自动判定 | 行为 |",
   "doc": "上层/7-spectre.md"
  },
  {
   "id": "spectre#158",
   "kind": "table-row",
   "section": "6.2 自动识别",
-  "line": 229,
-  "text": "| 其他目录 | `raw` | D 递归下载 → 按 `analysis` 合并 tran/dc/ac/info |",
+  "line": 230,
+  "text": "| 单个 PSF ASCII 文件 | `single` | D 下载 → 解析 HEADER/TYPE/SWEEP/TRACE/VALUE |",
   "doc": "上层/7-spectre.md"
  },
  {
-  "id": "spectre#189",
+  "id": "spectre#159",
   "kind": "table-row",
-  "section": "7. `spectre.measure`",
-  "line": 272,
-  "text": "| type | 必填 | 可选 | 返回 |",
+  "section": "6.2 自动识别",
+  "line": 231,
+  "text": "| 目录，含合法 classic/flat sweep 布局 | `sweep` | D 递归下载 → 建点索引 |",
+  "doc": "上层/7-spectre.md"
+ },
+ {
+  "id": "spectre#160",
+  "kind": "table-row",
+  "section": "6.2 自动识别",
+  "line": 232,
+  "text": "| 其他目录 | `raw` | D 递归下载 → 按 `analysis` 合并 tran/dc/ac/info |",
   "doc": "上层/7-spectre.md"
  },
  {
   "id": "spectre#191",
   "kind": "table-row",
   "section": "7. `spectre.measure`",
-  "line": 274,
-  "text": "| `threshold_crossing` | `signal, threshold` | `direction=rise`, `edge=1`, `start`, `stop` | time |",
-  "doc": "上层/7-spectre.md"
- },
- {
-  "id": "spectre#192",
-  "kind": "table-row",
-  "section": "7. `spectre.measure`",
   "line": 275,
-  "text": "| `delay` | `from_signal, to_signal, threshold` | `direction=rise`, `start`, `stop` | Δtime |",
+  "text": "| type | 必填 | 可选 | 返回 |",
   "doc": "上层/7-spectre.md"
  },
  {
   "id": "spectre#193",
   "kind": "table-row",
   "section": "7. `spectre.measure`",
-  "line": 276,
-  "text": "| `min`/`max`/`mean`/`rms` | `signal` | `start`, `stop` | scalar |",
+  "line": 277,
+  "text": "| `threshold_crossing` | `signal, threshold` | `direction=rise`, `edge=1`, `start`, `stop` | time |",
   "doc": "上层/7-spectre.md"
  },
  {
   "id": "spectre#194",
   "kind": "table-row",
   "section": "7. `spectre.measure`",
-  "line": 277,
-  "text": "| `ac_magnitude` | `signal, frequency` | `scale=db/linear` | magnitude |",
+  "line": 278,
+  "text": "| `delay` | `from_signal, to_signal, threshold` | `direction=rise`, `start`, `stop` | Δtime |",
   "doc": "上层/7-spectre.md"
  },
  {
   "id": "spectre#195",
   "kind": "table-row",
   "section": "7. `spectre.measure`",
-  "line": 278,
-  "text": "| `bandwidth` | `signal` | `drop_db=3`, `reference=dc/max` | Hz |",
+  "line": 279,
+  "text": "| `min`/`max`/`mean`/`rms` | `signal` | `start`, `stop` | scalar |",
   "doc": "上层/7-spectre.md"
  },
  {
   "id": "spectre#196",
   "kind": "table-row",
   "section": "7. `spectre.measure`",
-  "line": 279,
-  "text": "| `noise_integral` | `signal` | `start`, `stop` | integral |",
+  "line": 280,
+  "text": "| `ac_magnitude` | `signal, frequency` | `scale=db/linear` | magnitude |",
   "doc": "上层/7-spectre.md"
  },
  {
   "id": "spectre#197",
-  "kind": "clause",
+  "kind": "table-row",
   "section": "7. `spectre.measure`",
   "line": 281,
+  "text": "| `bandwidth` | `signal` | `drop_db=3`, `reference=dc/max` | Hz |",
+  "doc": "上层/7-spectre.md"
+ },
+ {
+  "id": "spectre#198",
+  "kind": "table-row",
+  "section": "7. `spectre.measure`",
+  "line": 282,
+  "text": "| `noise_integral` | `signal` | `start`, `stop` | integral |",
+  "doc": "上层/7-spectre.md"
+ },
+ {
+  "id": "spectre#199",
+  "kind": "clause",
+  "section": "7. `spectre.measure`",
+  "line": 284,
   "text": "- `noise_integral` 需要数据中含频率轴（默认 `freq`）；`ac_magnitude`/`bandwidth` 只适用于 AC 复数数据。",
   "doc": "上层/7-spectre.md"
  },
  {
-  "id": "spectre#202",
+  "id": "spectre#205",
   "kind": "clause",
   "section": "8. `spectre.export`",
-  "line": 290,
+  "line": 294,
   "text": "- CSV：按 columns（缺省取 data 中 list 值的顺序，`time`/`freq`/`sweep_var` 优先）写出矩形表；复数按 `<signal>.re`/`<signal>.im` 展开；缺失值留空。",
-  "doc": "上层/7-spectre.md"
- },
- {
-  "id": "spectre#205",
-  "kind": "table-row",
-  "section": "9. 内部中间节点（不对外）",
-  "line": 296,
-  "text": "| 节点 | 作用 |",
-  "doc": "上层/7-spectre.md"
- },
- {
-  "id": "spectre#207",
-  "kind": "table-row",
-  "section": "9. 内部中间节点（不对外）",
-  "line": 298,
-  "text": "| run 目录/命令构造 | job 校验、run_dir、upload、`-64/+escchars/+log/-raw/+logstatus`、mode 映射 |",
   "doc": "上层/7-spectre.md"
  },
  {
   "id": "spectre#208",
   "kind": "table-row",
   "section": "9. 内部中间节点（不对外）",
-  "line": 299,
-  "text": "| 结果分类器 | rc、fatal marker、收敛失败、license 失败、partial/failure/error |",
-  "doc": "上层/7-spectre.md"
- },
- {
-  "id": "spectre#209",
-  "kind": "table-row",
-  "section": "9. 内部中间节点（不对外）",
   "line": 300,
-  "text": "| PSF ASCII 解析 | HEADER/TYPE/SWEEP/TRACE/VALUE/END；delta 压缩；AC 复数；STRUCT OP 展平 |",
+  "text": "| 节点 | 作用 |",
   "doc": "上层/7-spectre.md"
  },
  {
   "id": "spectre#210",
   "kind": "table-row",
   "section": "9. 内部中间节点（不对外）",
-  "line": 301,
-  "text": "| raw 目录分析发现 | tran/dc/ac/info 文件候选与合并 |",
+  "line": 302,
+  "text": "| run 目录/命令构造 | job 校验、run_dir、upload、`-64/+escchars/+log/-raw/+logstatus`、mode 映射 |",
   "doc": "上层/7-spectre.md"
  },
  {
   "id": "spectre#211",
   "kind": "table-row",
   "section": "9. 内部中间节点（不对外）",
-  "line": 302,
-  "text": "| sweep 布局归一化 | classic `<raw>/sw*.sweep*/N/...` 与 X/LX flat `<raw>/sw*-NNN_*` |",
+  "line": 303,
+  "text": "| 结果分类器 | rc、fatal marker、收敛失败、license 失败、partial/failure/error |",
   "doc": "上层/7-spectre.md"
  },
  {
   "id": "spectre#212",
   "kind": "table-row",
   "section": "9. 内部中间节点（不对外）",
-  "line": 303,
-  "text": "| CSV/JSON 写出 | 矩形表、复数 re/im、列顺序、精度 |",
+  "line": 304,
+  "text": "| PSF ASCII 解析 | HEADER/TYPE/SWEEP/TRACE/VALUE/END；delta 压缩；AC 复数；STRUCT OP 展平 |",
+  "doc": "上层/7-spectre.md"
+ },
+ {
+  "id": "spectre#213",
+  "kind": "table-row",
+  "section": "9. 内部中间节点（不对外）",
+  "line": 305,
+  "text": "| raw 目录分析发现 | tran/dc/ac/info 文件候选与合并 |",
   "doc": "上层/7-spectre.md"
  },
  {
   "id": "spectre#214",
-  "kind": "clause",
+  "kind": "table-row",
   "section": "9. 内部中间节点（不对外）",
-  "line": 307,
-  "text": "- swept 数据支持 delta 压缩：后续 step 缺省信号沿用前值；首个 step 未出现信号**内部**用缺失哨兵（实现取 `None`；**不得静默填 0**），",
+  "line": 306,
+  "text": "| sweep 布局归一化 | classic `<raw>/sw*.sweep*/N/...` 与 X/LX flat `<raw>/sw*-NNN_*` |",
   "doc": "上层/7-spectre.md"
  },
  {
   "id": "spectre#215",
-  "kind": "clause",
+  "kind": "table-row",
   "section": "9. 内部中间节点（不对外）",
-  "line": 308,
-  "text": "**对外 `value.data` 一律转成 `null`/省略**（保持 JSON-safe）。边界唯一出口是 `psf_external()`：",
-  "doc": "上层/7-spectre.md"
- },
- {
-  "id": "spectre#216",
-  "kind": "clause",
-  "section": "9. 内部中间节点（不对外）",
-  "line": 309,
-  "text": "缺失哨兵与任何非有限值（`NaN`/`±Inf`）都在那里收敛成 `null`，其余路径不得自行定义对外表示。",
+  "line": 307,
+  "text": "| CSV/JSON 写出 | 矩形表、复数 re/im、列顺序、精度 |",
   "doc": "上层/7-spectre.md"
  },
  {
   "id": "spectre#217",
   "kind": "clause",
   "section": "9. 内部中间节点（不对外）",
-  "line": 310,
+  "line": 311,
+  "text": "- swept 数据支持 delta 压缩：后续 step 缺省信号沿用前值；首个 step 未出现信号**内部**用缺失哨兵（实现取 `None`；**不得静默填 0**），",
+  "doc": "上层/7-spectre.md"
+ },
+ {
+  "id": "spectre#218",
+  "kind": "clause",
+  "section": "9. 内部中间节点（不对外）",
+  "line": 312,
+  "text": "**对外 `value.data` 一律转成 `null`/省略**（保持 JSON-safe）。边界唯一出口是 `psf_external()`：",
+  "doc": "上层/7-spectre.md"
+ },
+ {
+  "id": "spectre#219",
+  "kind": "clause",
+  "section": "9. 内部中间节点（不对外）",
+  "line": 313,
+  "text": "缺失哨兵与任何非有限值（`NaN`/`±Inf`）都在那里收敛成 `null`，其余路径不得自行定义对外表示。",
+  "doc": "上层/7-spectre.md"
+ },
+ {
+  "id": "spectre#220",
+  "kind": "clause",
+  "section": "9. 内部中间节点（不对外）",
+  "line": 314,
   "text": "- AC 复数相量不得被破坏；对外 `value.data` 必须 JSON-safe：复数向量用 `{\"re\": [...], \"im\": [...]}`，单值用 `{\"re\": ..., \"im\": ...}`。",
-  "doc": "上层/7-spectre.md"
- },
- {
-  "id": "spectre#221",
-  "kind": "table-row",
-  "section": "10. 旧功能覆盖映射",
-  "line": 317,
-  "text": "| 旧实现 | 新操作/说明 |",
-  "doc": "上层/7-spectre.md"
- },
- {
-  "id": "spectre#223",
-  "kind": "table-row",
-  "section": "10. 旧功能覆盖映射",
-  "line": 319,
-  "text": "| `SpectreSimulator.run_simulation` | `run(tasks=[<一个 task>])`；等价单仿真 |",
   "doc": "上层/7-spectre.md"
  },
  {
   "id": "spectre#224",
   "kind": "table-row",
   "section": "10. 旧功能覆盖映射",
-  "line": 320,
-  "text": "| `SpectreSimulator.run_parallel` | `run(tasks=[...], max_workers=N)` |",
-  "doc": "上层/7-spectre.md"
- },
- {
-  "id": "spectre#225",
-  "kind": "table-row",
-  "section": "10. 旧功能覆盖映射",
   "line": 321,
-  "text": "| `parallel_pool` 增量 Future | 不在本版；分多次 `run` 实现 |",
+  "text": "| 旧实现 | 新操作/说明 |",
   "doc": "上层/7-spectre.md"
  },
  {
   "id": "spectre#226",
   "kind": "table-row",
   "section": "10. 旧功能覆盖映射",
-  "line": 322,
-  "text": "| `SpectreSimulator.check_license` | `check_license` |",
+  "line": 323,
+  "text": "| `SpectreSimulator.run_simulation` | `run(tasks=[<一个 task>])`；等价单仿真 |",
   "doc": "上层/7-spectre.md"
  },
  {
   "id": "spectre#227",
   "kind": "table-row",
   "section": "10. 旧功能覆盖映射",
-  "line": 323,
-  "text": "| `parse_spectre_psf_ascii` | `read_results(source=<单个 PSF 文件>)` |",
+  "line": 324,
+  "text": "| `SpectreSimulator.run_parallel` | `run(tasks=[...], max_workers=N)` |",
   "doc": "上层/7-spectre.md"
  },
  {
   "id": "spectre#228",
   "kind": "table-row",
   "section": "10. 旧功能覆盖映射",
-  "line": 324,
-  "text": "| `parse_psf_ascii_directory` | `read_results(source=<raw 目录>)` |",
+  "line": 325,
+  "text": "| `parallel_pool` 增量 Future | 不在本版；分多次 `run` 实现 |",
   "doc": "上层/7-spectre.md"
  },
  {
   "id": "spectre#229",
   "kind": "table-row",
   "section": "10. 旧功能覆盖映射",
-  "line": 325,
-  "text": "| `parse_sweep_psf_directory` | `read_results(source=<sweep 目录>)`（自动识别 sweep） |",
+  "line": 326,
+  "text": "| `SpectreSimulator.check_license` | `check_license` |",
   "doc": "上层/7-spectre.md"
  },
  {
   "id": "spectre#230",
   "kind": "table-row",
   "section": "10. 旧功能覆盖映射",
-  "line": 326,
-  "text": "| `psf.py` 的 scalar/vector/frequency_hz | 内部解析/度量工具，不单独暴露业务操作 |",
+  "line": 327,
+  "text": "| `parse_spectre_psf_ascii` | `read_results(source=<单个 PSF 文件>)` |",
   "doc": "上层/7-spectre.md"
  },
  {
   "id": "spectre#231",
   "kind": "table-row",
   "section": "10. 旧功能覆盖映射",
-  "line": 327,
-  "text": "| examples 传播延迟计算 | `measure(metrics=[{type:\"delay\",...}])` |",
+  "line": 328,
+  "text": "| `parse_psf_ascii_directory` | `read_results(source=<raw 目录>)` |",
   "doc": "上层/7-spectre.md"
  },
  {
   "id": "spectre#232",
   "kind": "table-row",
   "section": "10. 旧功能覆盖映射",
-  "line": 328,
-  "text": "| examples `_result_io.py` | `export(format=\"csv\")` / `export(format=\"json\")` |",
+  "line": 329,
+  "text": "| `parse_sweep_psf_directory` | `read_results(source=<sweep 目录>)`（自动识别 sweep） |",
   "doc": "上层/7-spectre.md"
  },
  {
   "id": "spectre#233",
   "kind": "table-row",
   "section": "10. 旧功能覆盖映射",
-  "line": 329,
-  "text": "| `spectre_mode_args` | `run.mode` 映射表 |",
+  "line": 330,
+  "text": "| `psf.py` 的 scalar/vector/frequency_hz | 内部解析/度量工具，不单独暴露业务操作 |",
   "doc": "上层/7-spectre.md"
  },
  {
   "id": "spectre#234",
   "kind": "table-row",
   "section": "10. 旧功能覆盖映射",
-  "line": 330,
-  "text": "| `include_files` / `spectre_args` | `run.tasks[].include_files` / `run.spectre_args` |",
+  "line": 331,
+  "text": "| examples 传播延迟计算 | `measure(metrics=[{type:\"delay\",...}])` |",
   "doc": "上层/7-spectre.md"
  },
  {
   "id": "spectre#235",
   "kind": "table-row",
   "section": "10. 旧功能覆盖映射",
-  "line": 331,
-  "text": "| `output_format=\"psfascii\"` | 固定 `psfascii` |",
+  "line": 332,
+  "text": "| examples `_result_io.py` | `export(format=\"csv\")` / `export(format=\"json\")` |",
   "doc": "上层/7-spectre.md"
  },
  {
   "id": "spectre#236",
   "kind": "table-row",
   "section": "10. 旧功能覆盖映射",
-  "line": 332,
-  "text": "| `work_dir` | `run.output_root` |",
+  "line": 333,
+  "text": "| `spectre_mode_args` | `run.mode` 映射表 |",
   "doc": "上层/7-spectre.md"
  },
  {
   "id": "spectre#237",
   "kind": "table-row",
   "section": "10. 旧功能覆盖映射",
-  "line": 333,
-  "text": "| `keep_remote_files` | `run.keep_run_dir` |",
+  "line": 334,
+  "text": "| `include_files` / `spectre_args` | `run.tasks[].include_files` / `run.spectre_args` |",
   "doc": "上层/7-spectre.md"
  },
  {
   "id": "spectre#238",
   "kind": "table-row",
   "section": "10. 旧功能覆盖映射",
-  "line": 334,
+  "line": 335,
+  "text": "| `output_format=\"psfascii\"` | 固定 `psfascii` |",
+  "doc": "上层/7-spectre.md"
+ },
+ {
+  "id": "spectre#239",
+  "kind": "table-row",
+  "section": "10. 旧功能覆盖映射",
+  "line": 336,
+  "text": "| `work_dir` | `run.output_root` |",
+  "doc": "上层/7-spectre.md"
+ },
+ {
+  "id": "spectre#240",
+  "kind": "table-row",
+  "section": "10. 旧功能覆盖映射",
+  "line": 337,
+  "text": "| `keep_remote_files` | `run.keep_run_dir` |",
+  "doc": "上层/7-spectre.md"
+ },
+ {
+  "id": "spectre#241",
+  "kind": "table-row",
+  "section": "10. 旧功能覆盖映射",
+  "line": 338,
   "text": "| `SpectreSimulator.from_env` / `local` / `profile` | 不在包内；由 token 路由 + `query` 决定 target role |",
-  "doc": "上层/7-spectre.md"
- },
- {
-  "id": "spectre#252",
-  "kind": "table-row",
-  "section": "13. 决策记录（2026-09-21）",
-  "line": 357,
-  "text": "| # | 决策 |",
-  "doc": "上层/7-spectre.md"
- },
- {
-  "id": "spectre#254",
-  "kind": "table-row",
-  "section": "13. 决策记录（2026-09-21）",
-  "line": 359,
-  "text": "| 1 | 按 schematic/maestro 的领域操作组织：对外收敛为 `check_license`/`run`/`read_results`/`measure`/`export` 五个操作。 |",
   "doc": "上层/7-spectre.md"
  },
  {
   "id": "spectre#255",
   "kind": "table-row",
   "section": "13. 决策记录（2026-09-21）",
-  "line": 360,
-  "text": "| 2 | `run` 用 `tasks[]` 统一单仿真与固定批次；不单独暴露 `run_batch`。 |",
-  "doc": "上层/7-spectre.md"
- },
- {
-  "id": "spectre#256",
-  "kind": "table-row",
-  "section": "13. 决策记录（2026-09-21）",
   "line": 361,
-  "text": "| 3 | `read_results` 自动识别单文件、raw 目录、参数扫描；请求层不暴露 `kind`，只在响应中回写识别结果。 |",
+  "text": "| # | 决策 |",
   "doc": "上层/7-spectre.md"
  },
  {
   "id": "spectre#257",
   "kind": "table-row",
   "section": "13. 决策记录（2026-09-21）",
-  "line": 362,
-  "text": "| 4 | `measure` 与 `export` 分别纯 Python 计算/落盘，不接触 PSF 解析内部。 |",
+  "line": 363,
+  "text": "| 1 | 按 schematic/maestro 的领域操作组织：对外收敛为 `check_license`/`run`/`read_results`/`measure`/`export` 五个操作。 |",
   "doc": "上层/7-spectre.md"
  },
  {
   "id": "spectre#258",
   "kind": "table-row",
   "section": "13. 决策记录（2026-09-21）",
-  "line": 363,
-  "text": "| 5 | 不引入本地/远程模式分支；全部操作只依赖 token + 五业务接口 + `query`；多 server/profile 用不同 token。 |",
+  "line": 364,
+  "text": "| 2 | `run` 用 `tasks[]` 统一单仿真与固定批次；不单独暴露 `run_batch`。 |",
   "doc": "上层/7-spectre.md"
  },
  {
   "id": "spectre#259",
   "kind": "table-row",
   "section": "13. 决策记录（2026-09-21）",
-  "line": 364,
-  "text": "| 6 | `run` 的文件布局统一建在 `spectre.root` 下；U/D 用绝对路径跨 role 访问，要求该 root 在 file role 与 spectre 主机均可见。 |",
+  "line": 365,
+  "text": "| 3 | `read_results` 自动识别单文件、raw 目录、参数扫描；请求层不暴露 `kind`，只在响应中回写识别结果。 |",
   "doc": "上层/7-spectre.md"
  },
  {
   "id": "spectre#260",
   "kind": "table-row",
   "section": "13. 决策记录（2026-09-21）",
-  "line": 365,
-  "text": "| 7 | 只支持 PSF ASCII；复数在对外 `value.data` 统一为 `{re, im}` JSON-safe 表示。 |",
+  "line": 366,
+  "text": "| 4 | `measure` 与 `export` 分别纯 Python 计算/落盘，不接触 PSF 解析内部。 |",
   "doc": "上层/7-spectre.md"
  },
  {
   "id": "spectre#261",
   "kind": "table-row",
   "section": "13. 决策记录（2026-09-21）",
-  "line": 366,
+  "line": 367,
+  "text": "| 5 | 不引入本地/远程模式分支；全部操作只依赖 token + 五业务接口 + `query`；多 server/profile 用不同 token。 |",
+  "doc": "上层/7-spectre.md"
+ },
+ {
+  "id": "spectre#262",
+  "kind": "table-row",
+  "section": "13. 决策记录（2026-09-21）",
+  "line": 368,
+  "text": "| 6 | `run` 的文件布局统一建在 `spectre.root` 下；U/D 用绝对路径跨 role 访问，要求该 root 在 file role 与 spectre 主机均可见。 |",
+  "doc": "上层/7-spectre.md"
+ },
+ {
+  "id": "spectre#263",
+  "kind": "table-row",
+  "section": "13. 决策记录（2026-09-21）",
+  "line": 369,
+  "text": "| 7 | 只支持 PSF ASCII；复数在对外 `value.data` 统一为 `{re, im}` JSON-safe 表示。 |",
+  "doc": "上层/7-spectre.md"
+ },
+ {
+  "id": "spectre#264",
+  "kind": "table-row",
+  "section": "13. 决策记录（2026-09-21）",
+  "line": 370,
   "text": "| 8 | 不提供 `-param` 注入；参数化由调用方生成多个 netlist。 |",
   "doc": "上层/7-spectre.md"
  },
@@ -6488,19 +6920,27 @@
   "doc": "上层/8-verilog.md"
  },
  {
-  "id": "verilog#033",
-  "kind": "table-row",
+  "id": "verilog#031",
+  "kind": "clause",
   "section": "1.1 读操作（read）",
-  "line": 48,
-  "text": "| focus | 返回 |",
+  "line": 45,
+  "text": "- `view_type` 是**校验字段**：只允许 `text.v`（默认），其他值在 read/write 前结构化拒绝（P-115）；主文件名固定 `verilog.v`；",
   "doc": "上层/8-verilog.md"
  },
  {
-  "id": "verilog#035",
+  "id": "verilog#032",
+  "kind": "clause",
+  "section": "1.1 读操作（read）",
+  "line": 46,
+  "text": "- `file_is_local=false` 时 `file_path` 是远端 POSIX 路径，必须原样保留、不得被 Windows 客户端改写成反斜杠；`true` 时才按本机路径处理（P-081）；",
+  "doc": "上层/8-verilog.md"
+ },
+ {
+  "id": "verilog#034",
   "kind": "table-row",
   "section": "1.1 读操作（read）",
-  "line": 50,
-  "text": "| `source` | `text / path / size / sha256 / lines` |",
+  "line": 49,
+  "text": "| focus | 返回 |",
   "doc": "上层/8-verilog.md"
  },
  {
@@ -6508,7 +6948,7 @@
   "kind": "table-row",
   "section": "1.1 读操作（read）",
   "line": 51,
-  "text": "| `views` | 该 cell 的视图清单：`name / viewType / dataType / 文件`（用 `ddMapGetFileViewType`/`ddMapGetFileDataType` 判定） |",
+  "text": "| `source` | `text / path / size / sha256 / lines` |",
   "doc": "上层/8-verilog.md"
  },
  {
@@ -6516,47 +6956,47 @@
   "kind": "table-row",
   "section": "1.1 读操作（read）",
   "line": 52,
+  "text": "| `views` | 该 cell 的视图清单：`name / viewType / dataType / 文件`（用 `ddMapGetFileViewType`/`ddMapGetFileDataType` 判定） |",
+  "doc": "上层/8-verilog.md"
+ },
+ {
+  "id": "verilog#038",
+  "kind": "table-row",
+  "section": "1.1 读操作（read）",
+  "line": 53,
   "text": "| `diagnostics` | 最近一次 `import` 的 `log_path / status / error_count / errors[]` |",
   "doc": "上层/8-verilog.md"
  },
  {
-  "id": "verilog#040",
+  "id": "verilog#041",
   "kind": "table-row",
   "section": "1.2 写操作（write）",
-  "line": 59,
+  "line": 60,
   "text": "| 操作名 | 说明 | 步骤摘要 | 接口 |",
   "doc": "上层/8-verilog.md"
  },
  {
-  "id": "verilog#042",
+  "id": "verilog#043",
   "kind": "table-row",
   "section": "1.2 写操作（write）",
-  "line": 61,
+  "line": 62,
   "text": "| write | 通用写：`lib/cell/view + commands[]` | 读现状 → 逐原子改文本 → 覆盖写 | S+U |",
   "doc": "上层/8-verilog.md"
  },
  {
-  "id": "verilog#043",
+  "id": "verilog#044",
   "kind": "clause",
   "section": "1.2 写操作（write）",
-  "line": 63,
+  "line": 64,
   "text": "`write.commands` 每项 = `{\"op\": 原子名, ...参数}`；**非事务**，失败响应带 `commands applied: k/n`。",
   "doc": "上层/8-verilog.md"
  },
  {
-  "id": "verilog#044",
+  "id": "verilog#045",
   "kind": "table-row",
   "section": "1.2 写操作（write）",
-  "line": 65,
+  "line": 66,
   "text": "| 对象 | 原子名 | 索引（动哪个） | 附加参数 |",
-  "doc": "上层/8-verilog.md"
- },
- {
-  "id": "verilog#046",
-  "kind": "table-row",
-  "section": "1.2 写操作（write）",
-  "line": 67,
-  "text": "| 代码 | `set_source` | 目标 view 或 file | `text`；可选 `expected_sha256`（不符则失败） |",
   "doc": "上层/8-verilog.md"
  },
  {
@@ -6564,7 +7004,7 @@
   "kind": "table-row",
   "section": "1.2 写操作（write）",
   "line": 68,
-  "text": "| 代码 | `patch_source` | 目标 view 或 file | `edits[]`：`{old_text,new_text}` 或 `{start_line,end_line,new_text}`；匹配不唯一默认失败（可 `all=true`） |",
+  "text": "| 代码 | `set_source` | 目标 view 或 file | `text`；可选 `expected_sha256`（不符则失败） |",
   "doc": "上层/8-verilog.md"
  },
  {
@@ -6572,7 +7012,7 @@
   "kind": "table-row",
   "section": "1.2 写操作（write）",
   "line": 69,
-  "text": "| 文本视图 | `ensure_view` | `{library, cell, view}` | `view_type`（`text.v`）、可选 `create_if_missing=true`；内部写 `master.tag` + 主文件模板 |",
+  "text": "| 代码 | `patch_source` | 目标 view 或 file | `edits[]`：`{old_text,new_text}` 或 `{start_line,end_line,new_text}`；匹配不唯一默认失败（可 `all=true`） |",
   "doc": "上层/8-verilog.md"
  },
  {
@@ -6580,6 +7020,14 @@
   "kind": "table-row",
   "section": "1.2 写操作（write）",
   "line": 70,
+  "text": "| 文本视图 | `ensure_view` | `{library, cell, view}` | `view_type`（`text.v`）、可选 `create_if_missing=true`；内部写 `master.tag` + 主文件模板 |",
+  "doc": "上层/8-verilog.md"
+ },
+ {
+  "id": "verilog#050",
+  "kind": "table-row",
+  "section": "1.2 写操作（write）",
+  "line": 71,
   "text": "| 文本视图 | `delete_view` | `{library, cell, view}` | —（`ddDeleteObj`，先确认无编辑器窗口/`*.cdslck`） |",
   "doc": "上层/8-verilog.md"
  },
@@ -6588,286 +7036,310 @@
   "kind": "clause",
   "section": "1.2 写操作（write）",
   "line": 73,
-  "text": "结构校验走 `import`（见 §1.3）。有 `*.cdslck`（编辑器开着）时禁止外部写。",
+  "text": "文本视图只能由 `ensure_view` 创建：对不存在的 view 直接 `set_source`/`patch_source` 必须结构化失败，",
   "doc": "上层/8-verilog.md"
  },
  {
   "id": "verilog#052",
-  "kind": "table-row",
-  "section": "1.3 导入（import）",
-  "line": 77,
-  "text": "| 参数 | 说明 |",
-  "doc": "上层/8-verilog.md"
- },
- {
-  "id": "verilog#054",
-  "kind": "table-row",
-  "section": "1.3 导入（import）",
-  "line": 79,
-  "text": "| `file_path` + `file_is_local` | 源码文件（本机→上传；远端→直接用） |",
+  "kind": "clause",
+  "section": "1.2 写操作（write）",
+  "line": 74,
+  "text": "不得只落一个缺少 `master.tag` 的 `verilog.v` 半成品（P-115）。需要创建时先执行",
   "doc": "上层/8-verilog.md"
  },
  {
   "id": "verilog#055",
-  "kind": "table-row",
-  "section": "1.3 导入（import）",
-  "line": 80,
-  "text": "| `library` / `cell` | 目标库与顶层 cell（**显式给**，不用文件名推导） |",
+  "kind": "clause",
+  "section": "1.2 写操作（write）",
+  "line": 78,
+  "text": "结构校验走 `import`（见 §1.3）。有 `*.cdslck`（编辑器开着）时禁止外部写。",
   "doc": "上层/8-verilog.md"
  },
  {
   "id": "verilog#056",
   "kind": "table-row",
   "section": "1.3 导入（import）",
-  "line": 81,
-  "text": "| `schematic_view` / `functional_view` / `symbol_view` | 产出视图名（默认 schematic/functional/symbol） |",
-  "doc": "上层/8-verilog.md"
- },
- {
-  "id": "verilog#057",
-  "kind": "table-row",
-  "section": "1.3 导入（import）",
   "line": 82,
-  "text": "| `overwrite` | 映射 `import_if_exists` / `overwrite_symbol` |",
+  "text": "| 参数 | 说明 |",
   "doc": "上层/8-verilog.md"
  },
  {
   "id": "verilog#058",
   "kind": "table-row",
   "section": "1.3 导入（import）",
-  "line": 83,
-  "text": "| `timeout` / `poll_interval` | 轮询预算 |",
+  "line": 84,
+  "text": "| `file_path` + `file_is_local` | 源码文件（本机→上传；远端→直接用） |",
+  "doc": "上层/8-verilog.md"
+ },
+ {
+  "id": "verilog#059",
+  "kind": "table-row",
+  "section": "1.3 导入（import）",
+  "line": 85,
+  "text": "| `library` / `cell` | 目标库与顶层 cell（**显式给**，不用文件名推导） |",
   "doc": "上层/8-verilog.md"
  },
  {
   "id": "verilog#060",
-  "kind": "clause",
+  "kind": "table-row",
   "section": "1.3 导入（import）",
   "line": 86,
-  "text": "（ihdl 会往里追加 `DEFINE`，不能给共享/全局那份）；",
+  "text": "| `schematic_view` / `functional_view` / `symbol_view` | 产出视图名（默认 schematic/functional/symbol） |",
+  "doc": "上层/8-verilog.md"
+ },
+ {
+  "id": "verilog#061",
+  "kind": "table-row",
+  "section": "1.3 导入（import）",
+  "line": 87,
+  "text": "| `overwrite` | 映射 `import_if_exists` / `overwrite_symbol`；`false` 命中已存在 cell 时**跳过且不改写**，返回 `reason=\"skipped_existing\"` + `skipped=true` + `cells=[]`（P-101 口径） |",
   "doc": "上层/8-verilog.md"
  },
  {
   "id": "verilog#062",
-  "kind": "clause",
+  "kind": "table-row",
   "section": "1.3 导入（import）",
   "line": 88,
-  "text": "`structural_views`（1=schematic / 2=netlist / 4=functional / 5=schematic+functional / 6=netlist+functional，**默认 4**）、",
+  "text": "| `cell` 与 `library` | 目标库 + **源码里的模块名**（ihdl 无 dest-cell 参数，实测 `dest_cell_name` → VERILOGIN-8）；源码里没有该模块时**写之前**结构化拒绝 `reason=\"cell_not_in_source\"`（P-100 口径） |",
+  "doc": "上层/8-verilog.md"
+ },
+ {
+  "id": "verilog#063",
+  "kind": "table-row",
+  "section": "1.3 导入（import）",
+  "line": 89,
+  "text": "| `timeout` / `poll_interval` | 轮询预算 |",
   "doc": "上层/8-verilog.md"
  },
  {
   "id": "verilog#065",
   "kind": "clause",
   "section": "1.3 导入（import）",
-  "line": 91,
+  "line": 92,
+  "text": "（ihdl 会往里追加 `DEFINE`，不能给共享/全局那份）；",
+  "doc": "上层/8-verilog.md"
+ },
+ {
+  "id": "verilog#067",
+  "kind": "clause",
+  "section": "1.3 导入（import）",
+  "line": 94,
+  "text": "`structural_views`（1=schematic / 2=netlist / 4=functional / 5=schematic+functional / 6=netlist+functional，**默认 4**）、",
+  "doc": "上层/8-verilog.md"
+ },
+ {
+  "id": "verilog#070",
+  "kind": "clause",
+  "section": "1.3 导入（import）",
+  "line": 97,
   "text": "3. 执行（**必须带 LD_LIBRARY_PATH 前缀**，否则缺 `libsasl2.so.2`、rc=127）：",
   "doc": "上层/8-verilog.md"
  },
  {
-  "id": "verilog#071",
+  "id": "verilog#076",
   "kind": "clause",
   "section": "1.3 导入（import）",
-  "line": 97,
+  "line": 103,
   "text": "6. **返回码不可信**（语法错误也 rc=0）：只用日志 + 产物判成败。",
   "doc": "上层/8-verilog.md"
  },
  {
-  "id": "verilog#072",
+  "id": "verilog#077",
   "kind": "clause",
   "section": "1.3 导入（import）",
-  "line": 99,
+  "line": 105,
   "text": "`functional` 视图 = `verilog.v` 文本 + `netlist.oa`，是 AMS/仿真网表要消费的形态，默认就够；",
-  "doc": "上层/8-verilog.md"
- },
- {
-  "id": "verilog#074",
-  "kind": "table-row",
-  "section": "1.4 导出（export）",
-  "line": 104,
-  "text": "| 参数 | 说明 |",
-  "doc": "上层/8-verilog.md"
- },
- {
-  "id": "verilog#076",
-  "kind": "table-row",
-  "section": "1.4 导出（export）",
-  "line": 106,
-  "text": "| `library / cell / view` | 要导出的 OA 视图（默认 `schematic`） |",
-  "doc": "上层/8-verilog.md"
- },
- {
-  "id": "verilog#077",
-  "kind": "table-row",
-  "section": "1.4 导出（export）",
-  "line": 107,
-  "text": "| `output_path` | 本机目标 `.v` 路径 |",
-  "doc": "上层/8-verilog.md"
- },
- {
-  "id": "verilog#078",
-  "kind": "table-row",
-  "section": "1.4 导出（export）",
-  "line": 108,
-  "text": "| `recursive` | 是否连层级一起导出（`-recursive`） |",
   "doc": "上层/8-verilog.md"
  },
  {
   "id": "verilog#079",
   "kind": "table-row",
   "section": "1.4 导出（export）",
-  "line": 109,
+  "line": 110,
+  "text": "| 参数 | 说明 |",
+  "doc": "上层/8-verilog.md"
+ },
+ {
+  "id": "verilog#081",
+  "kind": "table-row",
+  "section": "1.4 导出（export）",
+  "line": 112,
+  "text": "| `library / cell / view` | 要导出的 OA 视图（默认 `schematic`） |",
+  "doc": "上层/8-verilog.md"
+ },
+ {
+  "id": "verilog#082",
+  "kind": "table-row",
+  "section": "1.4 导出（export）",
+  "line": 113,
+  "text": "| `output_path` | 本机目标 `.v` 路径 |",
+  "doc": "上层/8-verilog.md"
+ },
+ {
+  "id": "verilog#083",
+  "kind": "table-row",
+  "section": "1.4 导出（export）",
+  "line": 114,
+  "text": "| `recursive` | 是否连层级一起导出（`-recursive`） |",
+  "doc": "上层/8-verilog.md"
+ },
+ {
+  "id": "verilog#084",
+  "kind": "table-row",
+  "section": "1.4 导出（export）",
+  "line": 115,
   "text": "| `timeout` | 单次命令 deadline |",
-  "doc": "上层/8-verilog.md"
- },
- {
-  "id": "verilog#086",
-  "kind": "table-row",
-  "section": "2. 归属（不在本包）",
-  "line": 122,
-  "text": "| 能力 | 归属 |",
-  "doc": "上层/8-verilog.md"
- },
- {
-  "id": "verilog#088",
-  "kind": "table-row",
-  "section": "2. 归属（不在本包）",
-  "line": 124,
-  "text": "| view CRUD（OA 视图，如 schematic/symbol） | cellview |",
-  "doc": "上层/8-verilog.md"
- },
- {
-  "id": "verilog#089",
-  "kind": "table-row",
-  "section": "2. 归属（不在本包）",
-  "line": 125,
-  "text": "| 文本视图（`text.v`）的建立与覆盖 | **本包例外**（cellview 建不了文本视图） |",
-  "doc": "上层/8-verilog.md"
- },
- {
-  "id": "verilog#090",
-  "kind": "table-row",
-  "section": "2. 归属（不在本包）",
-  "line": 126,
-  "text": "| VerilogA（`text.veriloga`） | veriloga 包 |",
   "doc": "上层/8-verilog.md"
  },
  {
   "id": "verilog#091",
   "kind": "table-row",
   "section": "2. 归属（不在本包）",
-  "line": 127,
-  "text": "| GDS 导入/导出 | layout（`layout.gds`） |",
-  "doc": "上层/8-verilog.md"
- },
- {
-  "id": "verilog#092",
-  "kind": "table-row",
-  "section": "2. 归属（不在本包）",
   "line": 128,
-  "text": "| 结构 connectivity / 端口 / 参数读回 | schematic（`schematic.read`） |",
+  "text": "| 能力 | 归属 |",
   "doc": "上层/8-verilog.md"
  },
  {
   "id": "verilog#093",
   "kind": "table-row",
   "section": "2. 归属（不在本包）",
-  "line": 129,
-  "text": "| 仿真编译 | spectre 包 |",
+  "line": 130,
+  "text": "| view CRUD（OA 视图，如 schematic/symbol） | cellview |",
+  "doc": "上层/8-verilog.md"
+ },
+ {
+  "id": "verilog#094",
+  "kind": "table-row",
+  "section": "2. 归属（不在本包）",
+  "line": 131,
+  "text": "| 文本视图（`text.v`）的建立与覆盖 | **本包例外**（cellview 建不了文本视图） |",
+  "doc": "上层/8-verilog.md"
+ },
+ {
+  "id": "verilog#095",
+  "kind": "table-row",
+  "section": "2. 归属（不在本包）",
+  "line": 132,
+  "text": "| VerilogA（`text.veriloga`） | veriloga 包 |",
+  "doc": "上层/8-verilog.md"
+ },
+ {
+  "id": "verilog#096",
+  "kind": "table-row",
+  "section": "2. 归属（不在本包）",
+  "line": 133,
+  "text": "| GDS 导入/导出 | layout（`layout.gds`） |",
   "doc": "上层/8-verilog.md"
  },
  {
   "id": "verilog#097",
+  "kind": "table-row",
+  "section": "2. 归属（不在本包）",
+  "line": 134,
+  "text": "| 结构 connectivity / 端口 / 参数读回 | schematic（`schematic.read`） |",
+  "doc": "上层/8-verilog.md"
+ },
+ {
+  "id": "verilog#098",
+  "kind": "table-row",
+  "section": "2. 归属（不在本包）",
+  "line": 135,
+  "text": "| 仿真编译 | spectre 包 |",
+  "doc": "上层/8-verilog.md"
+ },
+ {
+  "id": "verilog#102",
   "kind": "clause",
   "section": "3. 不在本版",
-  "line": 136,
+  "line": 142,
   "text": "- 并发写同一 cell。",
   "doc": "上层/8-verilog.md"
  },
  {
-  "id": "verilog#099",
+  "id": "verilog#104",
   "kind": "clause",
   "section": "4. 真机事实（IC6.1.8，2026-09-21 实测）",
-  "line": 141,
+  "line": 147,
   "text": "2. `ihdl` 是 ksh 包装器：裸跑缺 `libsasl2.so.2`（rc=127），必须带",
   "doc": "上层/8-verilog.md"
  },
  {
-  "id": "verilog#101",
+  "id": "verilog#106",
   "kind": "clause",
   "section": "4. 真机事实（IC6.1.8，2026-09-21 实测）",
-  "line": 143,
+  "line": 149,
   "text": "3. `ihdl` **返回码不可信**：语法错误、参考库缺失、降级导入都是 rc=0；成功看 `357/372/345`，",
-  "doc": "上层/8-verilog.md"
- },
- {
-  "id": "verilog#103",
-  "kind": "clause",
-  "section": "4. 真机事实（IC6.1.8，2026-09-21 实测）",
-  "line": 145,
-  "text": "4. `ihdl` 会向 `-cdslib` 指定的文件**追加 DEFINE**（目标库未注册时还在 cwd 建同名库目录）→ 必须用按次副本；",
   "doc": "上层/8-verilog.md"
  },
  {
   "id": "verilog#108",
   "kind": "clause",
   "section": "4. 真机事实（IC6.1.8，2026-09-21 实测）",
-  "line": 150,
-  "text": "否则 `VERILOGIN-127` 拒绝并降级 functional；",
-  "doc": "上层/8-verilog.md"
- },
- {
-  "id": "verilog#111",
-  "kind": "table-row",
-  "section": "5. 决策记录（2026-09-21，已确认）",
-  "line": 156,
-  "text": "| # | 决策 |",
+  "line": 151,
+  "text": "4. `ihdl` 会向 `-cdslib` 指定的文件**追加 DEFINE**（目标库未注册时还在 cwd 建同名库目录）→ 必须用按次副本；",
   "doc": "上层/8-verilog.md"
  },
  {
   "id": "verilog#113",
-  "kind": "table-row",
-  "section": "5. 决策记录（2026-09-21，已确认）",
-  "line": 158,
-  "text": "| 1 | 包名 `verilog` / `8-verilog.md`，operation 前缀 `virtuoso.verilog.*` |",
-  "doc": "上层/8-verilog.md"
- },
- {
-  "id": "verilog#114",
-  "kind": "table-row",
-  "section": "5. 决策记录（2026-09-21，已确认）",
-  "line": 159,
-  "text": "| 2 | VerilogA 拆出为独立包 `veriloga`（`11-veriloga.md`），本包只管结构 Verilog |",
-  "doc": "上层/8-verilog.md"
- },
- {
-  "id": "verilog#115",
-  "kind": "table-row",
-  "section": "5. 决策记录（2026-09-21，已确认）",
-  "line": 160,
-  "text": "| 3 | 结构装码 = `import`（ihdl）；`structural_views` 默认 `4`（functional only），schematic 显式可选 |",
+  "kind": "clause",
+  "section": "4. 真机事实（IC6.1.8，2026-09-21 实测）",
+  "line": 156,
+  "text": "否则 `VERILOGIN-127` 拒绝并降级 functional；",
   "doc": "上层/8-verilog.md"
  },
  {
   "id": "verilog#116",
   "kind": "table-row",
   "section": "5. 决策记录（2026-09-21，已确认）",
-  "line": 161,
-  "text": "| 4 | 文本视图装码 = `write`（只落盘）；不提供 `check_and_save`（Virtuoso 无 Verilog 解析器） |",
-  "doc": "上层/8-verilog.md"
- },
- {
-  "id": "verilog#117",
-  "kind": "table-row",
-  "section": "5. 决策记录（2026-09-21，已确认）",
   "line": 162,
-  "text": "| 5 | `export` 对 `ipin/opin` 噪声行原样导出 + warning，不静默改写 |",
+  "text": "| # | 决策 |",
   "doc": "上层/8-verilog.md"
  },
  {
   "id": "verilog#118",
   "kind": "table-row",
   "section": "5. 决策记录（2026-09-21，已确认）",
-  "line": 163,
+  "line": 164,
+  "text": "| 1 | 包名 `verilog` / `8-verilog.md`，operation 前缀 `virtuoso.verilog.*` |",
+  "doc": "上层/8-verilog.md"
+ },
+ {
+  "id": "verilog#119",
+  "kind": "table-row",
+  "section": "5. 决策记录（2026-09-21，已确认）",
+  "line": 165,
+  "text": "| 2 | VerilogA 拆出为独立包 `veriloga`（`11-veriloga.md`），本包只管结构 Verilog |",
+  "doc": "上层/8-verilog.md"
+ },
+ {
+  "id": "verilog#120",
+  "kind": "table-row",
+  "section": "5. 决策记录（2026-09-21，已确认）",
+  "line": 166,
+  "text": "| 3 | 结构装码 = `import`（ihdl）；`structural_views` 默认 `4`（functional only），schematic 显式可选 |",
+  "doc": "上层/8-verilog.md"
+ },
+ {
+  "id": "verilog#121",
+  "kind": "table-row",
+  "section": "5. 决策记录（2026-09-21，已确认）",
+  "line": 167,
+  "text": "| 4 | 文本视图装码 = `write`（只落盘）；不提供 `check_and_save`（Virtuoso 无 Verilog 解析器） |",
+  "doc": "上层/8-verilog.md"
+ },
+ {
+  "id": "verilog#122",
+  "kind": "table-row",
+  "section": "5. 决策记录（2026-09-21，已确认）",
+  "line": 168,
+  "text": "| 5 | `export` 对 `ipin/opin` 噪声行原样导出 + warning，不静默改写 |",
+  "doc": "上层/8-verilog.md"
+ },
+ {
+  "id": "verilog#123",
+  "kind": "table-row",
+  "section": "5. 决策记录（2026-09-21，已确认）",
+  "line": 169,
   "text": "| 6 | 不提供 open/close 等 GUI 展示操作 |",
   "doc": "上层/8-verilog.md"
  },
@@ -7980,15 +8452,23 @@
   "kind": "table-row",
   "section": "1. 业务操作",
   "line": 30,
-  "text": "| 持久化产物 | `check_and_save` 后生成 `veriloga/netlist.oa` + `veriloga/data.dm`，并更新 cell CDF 的 `viewInfo` |",
+  "text": "| `view_type` 口径 | **兼容/校验字段**（默认 `text.veriloga`）：read/write/check_and_save 只校验\"非空字符串\"，不参与寻址；主文件名固定 `veriloga.va`（P-080 定稿） |",
   "doc": "上层/11-veriloga.md"
  },
  {
-  "id": "veriloga#026",
+  "id": "veriloga#021",
   "kind": "table-row",
-  "section": "1.1 读操作（read）",
-  "line": 41,
-  "text": "| 操作名 | 说明 | 步骤摘要 | 接口 |",
+  "section": "1. 业务操作",
+  "line": 31,
+  "text": "| 远端路径口径 | `file_is_local=false` 时 `file_path` 是远端 POSIX 路径，必须原样保留、不得被 Windows 客户端改写成反斜杠；`true` 时才按本机路径处理（P-081） |",
+  "doc": "上层/11-veriloga.md"
+ },
+ {
+  "id": "veriloga#022",
+  "kind": "table-row",
+  "section": "1. 业务操作",
+  "line": 32,
+  "text": "| 持久化产物 | `check_and_save` 后生成 `veriloga/netlist.oa` + `veriloga/data.dm`，并更新 cell CDF 的 `viewInfo` |",
   "doc": "上层/11-veriloga.md"
  },
  {
@@ -7996,15 +8476,15 @@
   "kind": "table-row",
   "section": "1.1 读操作（read）",
   "line": 43,
-  "text": "| read | `focus` 可选、可组合；不填=全部 | 定位源码路径 → 读文本/端口/视图/诊断 | S+D |",
+  "text": "| 操作名 | 说明 | 步骤摘要 | 接口 |",
   "doc": "上层/11-veriloga.md"
  },
  {
-  "id": "veriloga#033",
+  "id": "veriloga#030",
   "kind": "table-row",
   "section": "1.1 读操作（read）",
-  "line": 50,
-  "text": "| focus | 返回 |",
+  "line": 45,
+  "text": "| read | `focus` 可选、可组合；不填=全部 | 定位源码路径 → 读文本/端口/视图/诊断 | S+D |",
   "doc": "上层/11-veriloga.md"
  },
  {
@@ -8012,15 +8492,7 @@
   "kind": "table-row",
   "section": "1.1 读操作（read）",
   "line": 52,
-  "text": "| `source` | `text / path / size / sha256 / lines` |",
-  "doc": "上层/11-veriloga.md"
- },
- {
-  "id": "veriloga#036",
-  "kind": "table-row",
-  "section": "1.1 读操作（read）",
-  "line": 53,
-  "text": "| `ports` | 端口表 `name / direction / width`（`ahdlToPinList`；AHDL 上下文未加载时返回 `unsupported` 并说明） |",
+  "text": "| focus | 返回 |",
   "doc": "上层/11-veriloga.md"
  },
  {
@@ -8028,7 +8500,7 @@
   "kind": "table-row",
   "section": "1.1 读操作（read）",
   "line": 54,
-  "text": "| `views` | 该 cell 的视图清单（用 `ddMapGetFileViewType`/`ddMapGetFileDataType` 判定） |",
+  "text": "| `source` | `text / path / size / sha256 / lines` |",
   "doc": "上层/11-veriloga.md"
  },
  {
@@ -8036,23 +8508,31 @@
   "kind": "table-row",
   "section": "1.1 读操作（read）",
   "line": 55,
+  "text": "| `ports` | 端口表 `name / direction / width`（`ahdlToPinList`；AHDL 上下文未加载时返回 `unsupported` 并说明） |",
+  "doc": "上层/11-veriloga.md"
+ },
+ {
+  "id": "veriloga#039",
+  "kind": "table-row",
+  "section": "1.1 读操作（read）",
+  "line": 56,
+  "text": "| `views` | 该 cell 的视图清单（用 `ddMapGetFileViewType`/`ddMapGetFileDataType` 判定） |",
+  "doc": "上层/11-veriloga.md"
+ },
+ {
+  "id": "veriloga#040",
+  "kind": "table-row",
+  "section": "1.1 读操作（read）",
+  "line": 57,
   "text": "| `diagnostics` | 最近一次 `check_and_save` 的 `err_log / status / error_count / errors[]` |",
   "doc": "上层/11-veriloga.md"
  },
  {
-  "id": "veriloga#041",
+  "id": "veriloga#043",
   "kind": "clause",
   "section": "1.1 读操作（read）",
-  "line": 59,
+  "line": 61,
   "text": "- `read` 纯只读：不得调用 `ahdlUpdateViewInfo` 等会改缓存/视图状态的函数。",
-  "doc": "上层/11-veriloga.md"
- },
- {
-  "id": "veriloga#042",
-  "kind": "table-row",
-  "section": "1.2 写操作（write）",
-  "line": 63,
-  "text": "| 操作名 | 说明 | 步骤摘要 | 接口 |",
   "doc": "上层/11-veriloga.md"
  },
  {
@@ -8060,23 +8540,23 @@
   "kind": "table-row",
   "section": "1.2 写操作（write）",
   "line": 65,
-  "text": "| write | 通用写：`lib/cell/view + commands[]` | 读现状 → 逐原子改文本 → 覆盖写 | S+U |",
-  "doc": "上层/11-veriloga.md"
- },
- {
-  "id": "veriloga#045",
-  "kind": "clause",
-  "section": "1.2 写操作（write）",
-  "line": 67,
-  "text": "`write.commands` 每项 = `{\"op\": 原子名, ...参数}`；**非事务**，失败响应带 `commands applied: k/n`。",
+  "text": "| 操作名 | 说明 | 步骤摘要 | 接口 |",
   "doc": "上层/11-veriloga.md"
  },
  {
   "id": "veriloga#046",
   "kind": "table-row",
   "section": "1.2 写操作（write）",
+  "line": 67,
+  "text": "| write | 通用写：`lib/cell/view + commands[]` | 读现状 → 逐原子改文本 → 覆盖写 | S+U |",
+  "doc": "上层/11-veriloga.md"
+ },
+ {
+  "id": "veriloga#047",
+  "kind": "clause",
+  "section": "1.2 写操作（write）",
   "line": 69,
-  "text": "| 对象 | 原子名 | 索引（动哪个） | 附加参数 |",
+  "text": "`write.commands` 每项 = `{\"op\": 原子名, ...参数}`；**非事务**，失败响应带 `commands applied: k/n`。",
   "doc": "上层/11-veriloga.md"
  },
  {
@@ -8084,15 +8564,7 @@
   "kind": "table-row",
   "section": "1.2 写操作（write）",
   "line": 71,
-  "text": "| 代码 | `set_source` | 目标 view 或 file | `text`；可选 `expected_sha256`（不符则失败） |",
-  "doc": "上层/11-veriloga.md"
- },
- {
-  "id": "veriloga#049",
-  "kind": "table-row",
-  "section": "1.2 写操作（write）",
-  "line": 72,
-  "text": "| 代码 | `patch_source` | 目标 view 或 file | `edits[]`：`{old_text,new_text}` 或 `{start_line,end_line,new_text}`；匹配不唯一默认失败（可 `all=true`） |",
+  "text": "| 对象 | 原子名 | 索引（动哪个） | 附加参数 |",
   "doc": "上层/11-veriloga.md"
  },
  {
@@ -8100,7 +8572,7 @@
   "kind": "table-row",
   "section": "1.2 写操作（write）",
   "line": 73,
-  "text": "| 文本视图 | `ensure_view` | `{library, cell, view=\"veriloga\"}` | `view_type=\"text.veriloga\"`、可选 `create_if_missing=true`；内部写 `master.tag` + 主文件模板 |",
+  "text": "| 代码 | `set_source` | 目标 view 或 file | `text`；可选 `expected_sha256`（不符则失败） |",
   "doc": "上层/11-veriloga.md"
  },
  {
@@ -8108,15 +8580,23 @@
   "kind": "table-row",
   "section": "1.2 写操作（write）",
   "line": 74,
-  "text": "| 文本视图 | `delete_view` | `{library, cell, view=\"veriloga\"}` | —（`ddDeleteObj`，先确认无编辑器窗口/`*.cdslck`） |",
+  "text": "| 代码 | `patch_source` | 目标 view 或 file | `edits[]`：`{old_text,new_text}` 或 `{start_line,end_line,new_text}`；匹配不唯一默认失败（可 `all=true`） |",
+  "doc": "上层/11-veriloga.md"
+ },
+ {
+  "id": "veriloga#052",
+  "kind": "table-row",
+  "section": "1.2 写操作（write）",
+  "line": 75,
+  "text": "| 文本视图 | `ensure_view` | `{library, cell, view=\"veriloga\"}` | `view_type=\"text.veriloga\"`、可选 `create_if_missing=true`；内部写 `master.tag` + 主文件模板 |",
   "doc": "上层/11-veriloga.md"
  },
  {
   "id": "veriloga#053",
-  "kind": "clause",
+  "kind": "table-row",
   "section": "1.2 写操作（write）",
-  "line": 78,
-  "text": "1. 写临时文件 → 校验读回 → 原子替换 `veriloga.va`；",
+  "line": 76,
+  "text": "| 文本视图 | `delete_view` | `{library, cell, view=\"veriloga\"}` | —（`ddDeleteObj`，先确认无编辑器窗口/`*.cdslck`） |",
   "doc": "上层/11-veriloga.md"
  },
  {
@@ -8124,7 +8604,7 @@
   "kind": "clause",
   "section": "1.2 写操作（write）",
   "line": 80,
-  "text": "（`master.tag` = `-- Master.tag File, Rev:1.0\\nveriloga.va\\n`；模块名必须与 cell 名一致）；",
+  "text": "1. 写临时文件 → 校验读回 → 原子替换 `veriloga.va`；",
   "doc": "上层/11-veriloga.md"
  },
  {
@@ -8132,15 +8612,15 @@
   "kind": "clause",
   "section": "1.2 写操作（write）",
   "line": 82,
-  "text": "4. 有 `*.cdslck`（编辑器开着）时禁止外部写：报失败并提示关闭编辑器，不自动关别人的窗口。",
+  "text": "（`master.tag` = `-- Master.tag File, Rev:1.0\\nveriloga.va\\n`；模块名必须与 cell 名一致）；",
   "doc": "上层/11-veriloga.md"
  },
  {
-  "id": "veriloga#058",
-  "kind": "table-row",
-  "section": "1.3 检查与保存（check_and_save）",
-  "line": 86,
-  "text": "| 操作名 | 说明 | 步骤摘要 | 接口 |",
+  "id": "veriloga#059",
+  "kind": "clause",
+  "section": "1.2 写操作（write）",
+  "line": 84,
+  "text": "4. 有 `*.cdslck`（编辑器开着）时禁止外部写：报失败并提示关闭编辑器，不自动关别人的窗口。",
   "doc": "上层/11-veriloga.md"
  },
  {
@@ -8148,39 +8628,39 @@
   "kind": "table-row",
   "section": "1.3 检查与保存（check_and_save）",
   "line": 88,
+  "text": "| 操作名 | 说明 | 步骤摘要 | 接口 |",
+  "doc": "上层/11-veriloga.md"
+ },
+ {
+  "id": "veriloga#062",
+  "kind": "table-row",
+  "section": "1.3 检查与保存（check_and_save）",
+  "line": 90,
   "text": "| check_and_save | GUI \"Check and Save\" 的 headless 等价序列 | `VerAParseModule` 检查 → `ahdlUpdateViewInfo` 保存/刷新 CDF | S+C |",
-  "doc": "上层/11-veriloga.md"
- },
- {
-  "id": "veriloga#067",
-  "kind": "clause",
-  "section": "1.3 检查与保存（check_and_save）",
-  "line": 96,
-  "text": "4. 前置：AHDL 上下文必须已加载（`loadContext(\"<IC618>/.../ahdlSck.cxt\")`，见 §4）；",
-  "doc": "上层/11-veriloga.md"
- },
- {
-  "id": "veriloga#068",
-  "kind": "clause",
-  "section": "1.3 检查与保存（check_and_save）",
-  "line": 97,
-  "text": "5. **不用** `ahdlCheckModule` / `ahdlSaveFile` / `ahdlEdit`（编辑器 GUI 内部包装，错误或缺 symbol 会弹模态阻塞 CIW）。",
   "doc": "上层/11-veriloga.md"
  },
  {
   "id": "veriloga#069",
   "kind": "clause",
   "section": "1.3 检查与保存（check_and_save）",
-  "line": 99,
-  "text": "真机结论：上述序列与 GUI Check and Save 的落盘形态**逐文件一致**，唯一差别是不含 GUI 弹窗生成的 `symbol` 视图；",
+  "line": 98,
+  "text": "4. 前置：AHDL 上下文必须已加载（`loadContext(\"<IC618>/.../ahdlSck.cxt\")`，见 §4）；",
   "doc": "上层/11-veriloga.md"
  },
  {
-  "id": "veriloga#072",
-  "kind": "table-row",
-  "section": "2. 归属（不在本包）",
-  "line": 106,
-  "text": "| 能力 | 归属 |",
+  "id": "veriloga#070",
+  "kind": "clause",
+  "section": "1.3 检查与保存（check_and_save）",
+  "line": 99,
+  "text": "5. **不用** `ahdlCheckModule` / `ahdlSaveFile` / `ahdlEdit`（编辑器 GUI 内部包装，错误或缺 symbol 会弹模态阻塞 CIW）。",
+  "doc": "上层/11-veriloga.md"
+ },
+ {
+  "id": "veriloga#071",
+  "kind": "clause",
+  "section": "1.3 检查与保存（check_and_save）",
+  "line": 101,
+  "text": "真机结论：上述序列与 GUI Check and Save 的落盘形态**逐文件一致**，唯一差别是不含 GUI 弹窗生成的 `symbol` 视图；",
   "doc": "上层/11-veriloga.md"
  },
  {
@@ -8188,15 +8668,7 @@
   "kind": "table-row",
   "section": "2. 归属（不在本包）",
   "line": 108,
-  "text": "| view CRUD（OA 视图） | cellview |",
-  "doc": "上层/11-veriloga.md"
- },
- {
-  "id": "veriloga#075",
-  "kind": "table-row",
-  "section": "2. 归属（不在本包）",
-  "line": 109,
-  "text": "| 文本视图（`text.veriloga`）的建立与覆盖 | **本包例外**（cellview 建不了） |",
+  "text": "| 能力 | 归属 |",
   "doc": "上层/11-veriloga.md"
  },
  {
@@ -8204,7 +8676,7 @@
   "kind": "table-row",
   "section": "2. 归属（不在本包）",
   "line": 110,
-  "text": "| symbol 生成 | symbol（`ahdlToPinList` 的 ports + `schPinListToSymbol`，待 spike；`ahdlSymbolGen` 禁用） |",
+  "text": "| view CRUD（OA 视图） | cellview |",
   "doc": "上层/11-veriloga.md"
  },
  {
@@ -8212,7 +8684,7 @@
   "kind": "table-row",
   "section": "2. 归属（不在本包）",
   "line": 111,
-  "text": "| 编译 / 仿真 / `ahdlSimDB` 缓存 | spectre 包 |",
+  "text": "| 文本视图（`text.veriloga`）的建立与覆盖 | **本包例外**（cellview 建不了） |",
   "doc": "上层/11-veriloga.md"
  },
  {
@@ -8220,7 +8692,7 @@
   "kind": "table-row",
   "section": "2. 归属（不在本包）",
   "line": 112,
-  "text": "| 结构 Verilog | verilog 包 |",
+  "text": "| symbol 生成 | symbol（`ahdlToPinList` 的 ports + `schPinListToSymbol`，待 spike；`ahdlSymbolGen` 禁用） |",
   "doc": "上层/11-veriloga.md"
  },
  {
@@ -8228,23 +8700,31 @@
   "kind": "table-row",
   "section": "2. 归属（不在本包）",
   "line": 113,
-  "text": "| GDS 导入/导出 | layout（`layout.gds`） |",
+  "text": "| 编译 / 仿真 / `ahdlSimDB` 缓存 | spectre 包 |",
   "doc": "上层/11-veriloga.md"
  },
  {
-  "id": "veriloga#083",
-  "kind": "clause",
-  "section": "3. 不在本版",
-  "line": 120,
-  "text": "- 并发写同一 cell。",
+  "id": "veriloga#080",
+  "kind": "table-row",
+  "section": "2. 归属（不在本包）",
+  "line": 114,
+  "text": "| 结构 Verilog | verilog 包 |",
+  "doc": "上层/11-veriloga.md"
+ },
+ {
+  "id": "veriloga#081",
+  "kind": "table-row",
+  "section": "2. 归属（不在本包）",
+  "line": 115,
+  "text": "| GDS 导入/导出 | layout（`layout.gds`） |",
   "doc": "上层/11-veriloga.md"
  },
  {
   "id": "veriloga#085",
   "kind": "clause",
-  "section": "4. 真机事实（IC6.1.8，2026-09-21 实测）",
-  "line": 125,
-  "text": "`dbOpenCellViewByType(..., \"veriloga\"/\"text.veriloga\", \"w\")` **恒 nil** → 必须走文件路径；",
+  "section": "3. 不在本版",
+  "line": 122,
+  "text": "- 并发写同一 cell。",
   "doc": "上层/11-veriloga.md"
  },
  {
@@ -8252,15 +8732,7 @@
   "kind": "clause",
   "section": "4. 真机事实（IC6.1.8，2026-09-21 实测）",
   "line": 127,
-  "text": "3. 读源码用 `infile`/`gets` 或直接读文件；**`lineread` 不能读 `.va`**；",
-  "doc": "上层/11-veriloga.md"
- },
- {
-  "id": "veriloga#088",
-  "kind": "clause",
-  "section": "4. 真机事实（IC6.1.8，2026-09-21 实测）",
-  "line": 128,
-  "text": "4. `ahdlCompile*` 不存在；编译只能由 Spectre（`ahdlcmi`）完成，缓存 `<netlist>.ahdlSimDB/<srcHash>.*.ahdlcmi/`；",
+  "text": "`dbOpenCellViewByType(..., \"veriloga\"/\"text.veriloga\", \"w\")` **恒 nil** → 必须走文件路径；",
   "doc": "上层/11-veriloga.md"
  },
  {
@@ -8268,15 +8740,23 @@
   "kind": "clause",
   "section": "4. 真机事实（IC6.1.8，2026-09-21 实测）",
   "line": 129,
-  "text": "5. AHDL 上下文（`ahdlSck.cxt`）默认未加载；**冷启动 `loadContext(\"<IC618>/tools.lnx86/dfII/etc/context/ahdlSck.cxt\")`",
+  "text": "3. 读源码用 `infile`/`gets` 或直接读文件；**`lineread` 不能读 `.va`**；",
   "doc": "上层/11-veriloga.md"
  },
  {
-  "id": "veriloga#092",
+  "id": "veriloga#090",
   "kind": "clause",
   "section": "4. 真机事实（IC6.1.8，2026-09-21 实测）",
-  "line": 132,
-  "text": "7. 编辑器打开时产生 `veriloga.va.cdslck` 锁 → 外部写文件失效，必须先关编辑器；",
+  "line": 130,
+  "text": "4. `ahdlCompile*` 不存在；编译只能由 Spectre（`ahdlcmi`）完成，缓存 `<netlist>.ahdlSimDB/<srcHash>.*.ahdlcmi/`；",
+  "doc": "上层/11-veriloga.md"
+ },
+ {
+  "id": "veriloga#091",
+  "kind": "clause",
+  "section": "4. 真机事实（IC6.1.8，2026-09-21 实测）",
+  "line": 131,
+  "text": "5. AHDL 上下文（`ahdlSck.cxt`）默认未加载；**冷启动 `loadContext(\"<IC618>/tools.lnx86/dfII/etc/context/ahdlSck.cxt\")`",
   "doc": "上层/11-veriloga.md"
  },
  {
@@ -8284,15 +8764,7 @@
   "kind": "clause",
   "section": "4. 真机事实（IC6.1.8，2026-09-21 实测）",
   "line": 134,
-  "text": "9. **headless 的 Check and Save 已真机闭环**：写文件 → `VerAParseModule`（错误进 errFile）→",
-  "doc": "上层/11-veriloga.md"
- },
- {
-  "id": "veriloga#095",
-  "kind": "clause",
-  "section": "4. 真机事实（IC6.1.8，2026-09-21 实测）",
-  "line": 135,
-  "text": "`ahdlUpdateViewInfo`（CDF + `netlist.oa`/`data.dm`），与 GUI 保存逐文件一致，唯一差别是无 `symbol` 视图；",
+  "text": "7. 编辑器打开时产生 `veriloga.va.cdslck` 锁 → 外部写文件失效，必须先关编辑器；",
   "doc": "上层/11-veriloga.md"
  },
  {
@@ -8300,15 +8772,23 @@
   "kind": "clause",
   "section": "4. 真机事实（IC6.1.8，2026-09-21 实测）",
   "line": 136,
-  "text": "10. **不要用** `ahdlCheckModule`（错误弹 `QverilogaErr` 阻塞）、`ahdlSaveFile`（缺 symbol 弹模态）、",
+  "text": "9. **headless 的 Check and Save 已真机闭环**：写文件 → `VerAParseModule`（错误进 errFile）→",
+  "doc": "上层/11-veriloga.md"
+ },
+ {
+  "id": "veriloga#097",
+  "kind": "clause",
+  "section": "4. 真机事实（IC6.1.8，2026-09-21 实测）",
+  "line": 137,
+  "text": "`ahdlUpdateViewInfo`（CDF + `netlist.oa`/`data.dm`），与 GUI 保存逐文件一致，唯一差别是无 `symbol` 视图；",
   "doc": "上层/11-veriloga.md"
  },
  {
   "id": "veriloga#098",
-  "kind": "table-row",
-  "section": "5. 决策记录（2026-09-21，已确认）",
-  "line": 141,
-  "text": "| # | 决策 |",
+  "kind": "clause",
+  "section": "4. 真机事实（IC6.1.8，2026-09-21 实测）",
+  "line": 138,
+  "text": "10. **不要用** `ahdlCheckModule`（错误弹 `QverilogaErr` 阻塞）、`ahdlSaveFile`（缺 symbol 弹模态）、",
   "doc": "上层/11-veriloga.md"
  },
  {
@@ -8316,15 +8796,7 @@
   "kind": "table-row",
   "section": "5. 决策记录（2026-09-21，已确认）",
   "line": 143,
-  "text": "| 1 | 包名 `veriloga` / `11-veriloga.md`，operation 前缀 `virtuoso.veriloga.*` |",
-  "doc": "上层/11-veriloga.md"
- },
- {
-  "id": "veriloga#101",
-  "kind": "table-row",
-  "section": "5. 决策记录（2026-09-21，已确认）",
-  "line": 144,
-  "text": "| 2 | 装码 = `write` + `check_and_save`，不提供 import |",
+  "text": "| # | 决策 |",
   "doc": "上层/11-veriloga.md"
  },
  {
@@ -8332,7 +8804,7 @@
   "kind": "table-row",
   "section": "5. 决策记录（2026-09-21，已确认）",
   "line": 145,
-  "text": "| 3 | `check_and_save` = `VerAParseModule` + `ahdlUpdateViewInfo`；AHDL 上下文冷加载用 `loadContext` 全路径 |",
+  "text": "| 1 | 包名 `veriloga` / `11-veriloga.md`，operation 前缀 `virtuoso.veriloga.*` |",
   "doc": "上层/11-veriloga.md"
  },
  {
@@ -8340,7 +8812,7 @@
   "kind": "table-row",
   "section": "5. 决策记录（2026-09-21，已确认）",
   "line": 146,
-  "text": "| 4 | `write` 允许创建文本视图（`ensure_view`）——view CRUD 归属的显式例外 |",
+  "text": "| 2 | 装码 = `write` + `check_and_save`，不提供 import |",
   "doc": "上层/11-veriloga.md"
  },
  {
@@ -8348,7 +8820,7 @@
   "kind": "table-row",
   "section": "5. 决策记录（2026-09-21，已确认）",
   "line": 147,
-  "text": "| 5 | 端口方向以 `.va` 的 module 声明为准（默认 `inputOutput`），调用方不重复传方向 |",
+  "text": "| 3 | `check_and_save` = `VerAParseModule` + `ahdlUpdateViewInfo`；AHDL 上下文冷加载用 `loadContext` 全路径 |",
   "doc": "上层/11-veriloga.md"
  },
  {
@@ -8356,7 +8828,7 @@
   "kind": "table-row",
   "section": "5. 决策记录（2026-09-21，已确认）",
   "line": 148,
-  "text": "| 6 | 不独立暴露 `reparse`/`ahdlUpdateViewInfo`，合并进 `check_and_save` |",
+  "text": "| 4 | `write` 允许创建文本视图（`ensure_view`）——view CRUD 归属的显式例外 |",
   "doc": "上层/11-veriloga.md"
  },
  {
@@ -8364,55 +8836,55 @@
   "kind": "table-row",
   "section": "5. 决策记录（2026-09-21，已确认）",
   "line": 149,
-  "text": "| 7 | symbol 生成不在本包；需要时走 symbol 包（待 spike），`ahdlSymbolGen` 禁用 |",
+  "text": "| 5 | 端口方向以 `.va` 的 module 声明为准（默认 `inputOutput`），调用方不重复传方向 |",
   "doc": "上层/11-veriloga.md"
  },
  {
   "id": "veriloga#107",
+  "kind": "table-row",
+  "section": "5. 决策记录（2026-09-21，已确认）",
+  "line": 150,
+  "text": "| 6 | 不独立暴露 `reparse`/`ahdlUpdateViewInfo`，合并进 `check_and_save` |",
+  "doc": "上层/11-veriloga.md"
+ },
+ {
+  "id": "veriloga#108",
+  "kind": "table-row",
+  "section": "5. 决策记录（2026-09-21，已确认）",
+  "line": 151,
+  "text": "| 7 | symbol 生成不在本包；需要时走 symbol 包（待 spike），`ahdlSymbolGen` 禁用 |",
+  "doc": "上层/11-veriloga.md"
+ },
+ {
+  "id": "veriloga#109",
   "kind": "clause",
   "section": "6. 待验证（实现前需 spike）",
-  "line": 153,
+  "line": 155,
   "text": "1. `schPinListToSymbol` 用 `ahdlToPinList` 的 ports 生成 symbol 的可行性（端口顺序/方向）。",
   "doc": "上层/11-veriloga.md"
  },
  {
-  "id": "calibre#005",
-  "kind": "clause",
-  "section": "上层业务包：calibre",
-  "line": 7,
-  "text": "> **`calibre.pex` 未按官方三阶段验收，禁止用于交付/签核**；DRC/LVS/`export_cdl`/set 直驱已真机验证。",
-  "doc": "上层/12-calibre.md"
- },
- {
-  "id": "calibre#011",
+  "id": "calibre#012",
   "kind": "clause",
   "section": "1. 总述",
-  "line": 18,
-  "text": "2. **默认非阻塞 + 三件套**：run 类操作默认立即返回 `job_id`（Calibre 动辄几十分钟），用 `calibre.status` 看进度、`calibre.read_results` 拿结构化结论；需要阻塞时用 `blocking=true`（包内轮询，形态同 maestro）；",
-  "doc": "上层/12-calibre.md"
- },
- {
-  "id": "calibre#014",
-  "kind": "clause",
-  "section": "1. 总述",
-  "line": 21,
-  "text": "5. **失败可定位**：错误带 `kind`、工具原文片段、run dir 路径；`unknown-effect` 一律不自动重试。",
+  "line": 19,
+  "text": "2. **默认非阻塞 + 两件套**：run 类操作默认立即返回 `job_id`（Calibre 动辄几十分钟），用 `calibre.status` 看进度、`calibre.read_results` 拿结构化结论；需要阻塞时用 `blocking=true`（包内轮询，形态同 maestro）；",
   "doc": "上层/12-calibre.md"
  },
  {
   "id": "calibre#015",
-  "kind": "table-row",
-  "section": "2. 业务操作",
-  "line": 25,
-  "text": "| 操作名 | 说明 | 步骤摘要 | 接口 |",
+  "kind": "clause",
+  "section": "1. 总述",
+  "line": 22,
+  "text": "5. **失败可定位**：错误带 `kind`、工具原文片段、run dir 路径；`unknown-effect` 一律不自动重试。",
   "doc": "上层/12-calibre.md"
  },
  {
-  "id": "calibre#017",
+  "id": "calibre#016",
   "kind": "table-row",
   "section": "2. 业务操作",
-  "line": 27,
-  "text": "| `calibre.check_env` | 环境体检：二进制/版本/许可/PDK deck 可见性 | C（`which`/`-version`/最小探测） | C |",
+  "line": 26,
+  "text": "| 操作名 | 说明 | 步骤摘要 | 接口 |",
   "doc": "上层/12-calibre.md"
  },
  {
@@ -8420,7 +8892,7 @@
   "kind": "table-row",
   "section": "2. 业务操作",
   "line": 28,
-  "text": "| `calibre.drc` | 启动 DRC | stage deck → 改写占位符 → 后台启动 | C(+U) |",
+  "text": "| `calibre.check_env` | 环境体检：二进制/版本/许可/PDK deck 可见性 | C（`which`/`-version`/最小探测） | C |",
   "doc": "上层/12-calibre.md"
  },
  {
@@ -8428,7 +8900,7 @@
   "kind": "table-row",
   "section": "2. 业务操作",
   "line": 29,
-  "text": "| `calibre.lvs` | 启动 LVS（版图 vs CDL） | 同上 + 源网表 | C(+U) |",
+  "text": "| `calibre.drc` | 启动 DRC | stage deck → 改写占位符 → 后台启动 | C(+U) |",
   "doc": "上层/12-calibre.md"
  },
  {
@@ -8436,7 +8908,7 @@
   "kind": "table-row",
   "section": "2. 业务操作",
   "line": 30,
-  "text": "| `calibre.pex` | 启动 PEX（`-xrc -phdb → -pdb → fmt`） | 三阶段串联，逐阶段校验产物 | C(+U) |",
+  "text": "| `calibre.lvs` | 启动 LVS（版图 vs 源网表；源网表可为已有 CDL 或 schematic 现产） | 同上 + 源网表 | C+S(+U) |",
   "doc": "上层/12-calibre.md"
  },
  {
@@ -8444,7 +8916,7 @@
   "kind": "table-row",
   "section": "2. 业务操作",
   "line": 31,
-  "text": "| `calibre.status` | 只读查询：作业状态与进度 | 读 `job.json` + 进程 + 日志尾 + 产物 | C |",
+  "text": "| `calibre.pex` | **本版不提供**：调用返回 `pex_unsupported`，不执行远程动作 | 直接结构化失败 | — |",
   "doc": "上层/12-calibre.md"
  },
  {
@@ -8452,7 +8924,7 @@
   "kind": "table-row",
   "section": "2. 业务操作",
   "line": 32,
-  "text": "| `calibre.read_results` | 解析结果（DRC/LVS/PEX） | 读报告 → 结构化摘要 | D + 纯 Python |",
+  "text": "| `calibre.status` | 只读查询：作业状态与进度 | 读 `job.json` + 进程 + 日志尾 + 产物 | C |",
   "doc": "上层/12-calibre.md"
  },
  {
@@ -8460,7 +8932,7 @@
   "kind": "table-row",
   "section": "2. 业务操作",
   "line": 33,
-  "text": "| `calibre.export` | 按名下载产物 | report / 结果库 / 网表 / pdb 目录 / 日志尾 | D |",
+  "text": "| `calibre.read_results` | 解析结果（DRC/LVS/PEX） | 读报告 → 结构化摘要 | D + 纯 Python |",
   "doc": "上层/12-calibre.md"
  },
  {
@@ -8468,63 +8940,55 @@
   "kind": "table-row",
   "section": "2. 业务操作",
   "line": 34,
-  "text": "| `calibre.export_cdl` | 从 schematic 导出 LVS 源网表（CDL），走 Virtuoso 官方 auCdl 机制 | 解析 cds.lib → 生成 `si.env`/`.simrc` → `si -batch -command netlist` → 校验产物 | S+C(+U) |",
+  "text": "| `calibre.export` | 按名下载产物 | report / 结果库 / 网表 / pdb 目录 / 日志尾 | D |",
   "doc": "上层/12-calibre.md"
  },
  {
-  "id": "calibre#031",
+  "id": "calibre#032",
   "kind": "clause",
   "section": "3.1 作业与 run dir（确定性、可重建）",
-  "line": 47,
+  "line": 48,
   "text": "`job_id` 默认 `<kind>_<top>`（如 `drc_inv2`），请求可显式指定；",
   "doc": "上层/12-calibre.md"
  },
  {
-  "id": "calibre#054",
+  "id": "calibre#055",
   "kind": "clause",
   "section": "3.3 环境与许可",
-  "line": 80,
+  "line": 81,
   "text": "取值顺序：**请求显式 `calibre_bin`** > `query().roles[\"command\"].calibre.bin`；",
   "doc": "上层/12-calibre.md"
  },
  {
-  "id": "calibre#057",
+  "id": "calibre#058",
   "kind": "clause",
   "section": "3.3 环境与许可",
-  "line": 83,
+  "line": 84,
   "text": "- 包内启动器固定先 `ulimit -n 65536`（Calibre 对 fd 上限敏感，实测默认 1024 会告警）；",
-  "doc": "上层/12-calibre.md"
- },
- {
-  "id": "calibre#059",
-  "kind": "clause",
-  "section": "3.3 环境与许可",
-  "line": 85,
-  "text": "许可问题由工具日志暴露，`read_results`/`status` 负责把 `license` 相关错误单独归类为 `license`（可重试）。",
   "doc": "上层/12-calibre.md"
  },
  {
   "id": "calibre#060",
   "kind": "clause",
+  "section": "3.3 环境与许可",
+  "line": 86,
+  "text": "许可问题由工具日志暴露，`read_results`/`status` 负责把 `license` 相关错误单独归类为 `license`（可重试）。",
+  "doc": "上层/12-calibre.md"
+ },
+ {
+  "id": "calibre#061",
+  "kind": "clause",
   "section": "3.4 长任务与状态判据",
-  "line": 89,
+  "line": 90,
   "text": "run 类操作默认 `blocking=false`：写 launcher、后台启动、立刻返回 `job_id`。",
   "doc": "上层/12-calibre.md"
  },
  {
-  "id": "calibre#062",
+  "id": "calibre#063",
   "kind": "table-row",
   "section": "3.4 长任务与状态判据",
-  "line": 92,
+  "line": 93,
   "text": "| 判据 | 含义 |",
-  "doc": "上层/12-calibre.md"
- },
- {
-  "id": "calibre#064",
-  "kind": "table-row",
-  "section": "3.4 长任务与状态判据",
-  "line": 94,
-  "text": "| `job.json` 存在 + `pgrep -f <run_dir>` 命中 | `running` |",
   "doc": "上层/12-calibre.md"
  },
  {
@@ -8532,7 +8996,7 @@
   "kind": "table-row",
   "section": "3.4 长任务与状态判据",
   "line": 95,
-  "text": "| 日志尾出现完成标记（DRC: `CALIBRE::DRC-H COMPLETED`；LVS: `LVS completed`；PEX: `COMPLETED`） | `completed` |",
+  "text": "| `job.json` 存在 + `job.pid` 对应进程仍活（`ps -p <pid>`） | `running` |",
   "doc": "上层/12-calibre.md"
  },
  {
@@ -8540,7 +9004,7 @@
   "kind": "table-row",
   "section": "3.4 长任务与状态判据",
   "line": 96,
-  "text": "| 进程消失且无完成标记，或日志含 `FATAL ERROR`/`ERROR (OSSHNL-` | `failed`（区分 `license` / `input` / `unknown`） |",
+  "text": "| 日志尾出现完成标记（DRC: `CALIBRE::DRC-H COMPLETED` / `TOTAL RESULTS GENERATED`；LVS: `LVS completed` / `CALIBRE::LVS/xRC COMPLETED` / `LVS run finished with exit code 0`） | `completed` |",
   "doc": "上层/12-calibre.md"
  },
  {
@@ -8548,15 +9012,15 @@
   "kind": "table-row",
   "section": "3.4 长任务与状态判据",
   "line": 97,
-  "text": "| 进程消失、无产物、无日志尾 | `unknown`（**不自动重试**） |",
+  "text": "| 已确认 `job.pid` 消失且无完成标记，或日志含 `FATAL ERROR`/`ERROR (OSSHNL-` | `failed`（区分 `license` / `input` / `process_gone_without_report` / `unknown`） |",
   "doc": "上层/12-calibre.md"
  },
  {
   "id": "calibre#068",
-  "kind": "clause",
+  "kind": "table-row",
   "section": "3.4 长任务与状态判据",
-  "line": 99,
-  "text": "`blocking=true` 时包内循环：`deadline = now + timeout`，按 `poll_interval`（默认 5 s）调 `status`，",
+  "line": 98,
+  "text": "| 进程消失、无产物、无日志尾 | `unknown`（**不自动重试**） |",
   "doc": "上层/12-calibre.md"
  },
  {
@@ -8564,486 +9028,470 @@
   "kind": "clause",
   "section": "3.4 长任务与状态判据",
   "line": 100,
-  "text": "终态或超时即返回；超时返回 `status=timeout` 且**后台作业继续跑**。",
+  "text": "official-batch 入口（`runset=…`）的 Calibre 命令行只含 runset 路径、不含 run_dir，因此**不能再用 `pgrep -f <run_dir>` 判活**；判活以 launcher 写入的 `job.pid` 为准。`process_gone_without_report` 只能在确认 pid 消失后成立，避免把仍在跑的成功作业提前误杀（P-106）。",
+  "doc": "上层/12-calibre.md"
+ },
+ {
+  "id": "calibre#070",
+  "kind": "clause",
+  "section": "3.4 长任务与状态判据",
+  "line": 102,
+  "text": "`blocking=true` 时包内循环：`deadline = now + timeout`，按 `poll_interval`（默认 5 s）调 `status`，",
   "doc": "上层/12-calibre.md"
  },
  {
   "id": "calibre#071",
-  "kind": "table-row",
-  "section": "3.5 结果解析（`read_results`）",
-  "line": 106,
-  "text": "| 字段 | 内容 |",
+  "kind": "clause",
+  "section": "3.4 长任务与状态判据",
+  "line": 103,
+  "text": "终态或超时即返回；超时返回 `status=timeout` 且**后台作业继续跑**。",
   "doc": "上层/12-calibre.md"
  },
  {
   "id": "calibre#073",
   "kind": "table-row",
   "section": "3.5 结果解析（`read_results`）",
-  "line": 108,
-  "text": "| `kind` | `drc` / `lvs` / `pex` |",
-  "doc": "上层/12-calibre.md"
- },
- {
-  "id": "calibre#074",
-  "kind": "table-row",
-  "section": "3.5 结果解析（`read_results`）",
   "line": 109,
-  "text": "| `summary` | DRC：`{total_results, rules_checked, by_rule:{规则名:条数}, first_offenders:[…]}`；LVS：`{status: correct/incorrect/not_compared/unknown, counts:{对象:layout 数, *_source:source 数}, differences:[…]}`；PEX：`{errors, warnings, netlist_files, pdb_dirs}` |",
+  "text": "| 字段 | 内容 |",
   "doc": "上层/12-calibre.md"
  },
  {
   "id": "calibre#075",
   "kind": "table-row",
   "section": "3.5 结果解析（`read_results`）",
-  "line": 110,
-  "text": "| `first_offenders` | DRC：前 `limit` 条 `{rule, cell, bbox, count}`（来自 `DRC_RES.db`，layer 不含）；LVS 差异点在 `summary.differences` |",
+  "line": 111,
+  "text": "| `kind` | `drc` / `lvs` / `pex` |",
   "doc": "上层/12-calibre.md"
  },
  {
   "id": "calibre#076",
   "kind": "table-row",
   "section": "3.5 结果解析（`read_results`）",
-  "line": 111,
-  "text": "| `log_tail` | 有界日志尾（默认 40 行） |",
+  "line": 112,
+  "text": "| `summary` | DRC：`{total_results, rules_checked, by_rule:{规则名:条数}, first_offenders:[…]}`；LVS：`{status: correct/incorrect/not_compared/unknown, counts:{对象:layout 数, *_source:source 数}, differences:[…]}`；PEX：`{errors, warnings, netlist_files, pdb_dirs}`（仅读取既有产物；本版不启动） |",
   "doc": "上层/12-calibre.md"
  },
  {
   "id": "calibre#077",
   "kind": "table-row",
   "section": "3.5 结果解析（`read_results`）",
-  "line": 112,
-  "text": "| `artifacts` | 已产出的关键文件清单（名 + 字节数 + mtime） |",
+  "line": 113,
+  "text": "| `first_offenders` | DRC：前 `limit` 条 `{rule, cell, bbox, count}`（来自 `DRC_RES.db`，layer 不含）；LVS 差异点在 `summary.differences` |",
   "doc": "上层/12-calibre.md"
  },
  {
   "id": "calibre#078",
   "kind": "table-row",
-  "section": "4.1 `calibre.check_env`",
-  "line": 118,
-  "text": "| 参数 | 必填 | 说明 |",
+  "section": "3.5 结果解析（`read_results`）",
+  "line": 114,
+  "text": "| `log_tail` | 有界日志尾（默认 40 行） |",
+  "doc": "上层/12-calibre.md"
+ },
+ {
+  "id": "calibre#079",
+  "kind": "table-row",
+  "section": "3.5 结果解析（`read_results`）",
+  "line": 115,
+  "text": "| `artifacts` | 已产出的关键文件清单（名 + 字节数 + mtime） |",
   "doc": "上层/12-calibre.md"
  },
  {
   "id": "calibre#080",
   "kind": "table-row",
   "section": "4.1 `calibre.check_env`",
-  "line": 120,
-  "text": "| `token` | 是 | 原样透传 |",
-  "doc": "上层/12-calibre.md"
- },
- {
-  "id": "calibre#081",
-  "kind": "table-row",
-  "section": "4.1 `calibre.check_env`",
   "line": 121,
-  "text": "| `calibre_bin` | 否 | 默认 `calibre` |",
+  "text": "| 参数 | 必填 | 说明 |",
   "doc": "上层/12-calibre.md"
  },
  {
   "id": "calibre#082",
   "kind": "table-row",
   "section": "4.1 `calibre.check_env`",
-  "line": 122,
-  "text": "| `deck` | 否 | 给了就顺带检查 deck 与同目录 `DFM/` 是否可见 |",
+  "line": 123,
+  "text": "| `token` | 是 | 原样透传 |",
   "doc": "上层/12-calibre.md"
  },
  {
   "id": "calibre#083",
   "kind": "table-row",
   "section": "4.1 `calibre.check_env`",
-  "line": 123,
-  "text": "| `timeout` | 否 | 默认 30 s |",
+  "line": 124,
+  "text": "| `calibre_bin` | 否 | 默认 `calibre` |",
+  "doc": "上层/12-calibre.md"
+ },
+ {
+  "id": "calibre#084",
+  "kind": "table-row",
+  "section": "4.1 `calibre.check_env`",
+  "line": 125,
+  "text": "| `deck` | 否 | 给了就顺带检查 deck 与同目录 `DFM/` 是否可见 |",
   "doc": "上层/12-calibre.md"
  },
  {
   "id": "calibre#085",
   "kind": "table-row",
-  "section": "4.2 `calibre.drc`",
-  "line": 129,
-  "text": "| 参数 | 必填 | 默认 | 说明 |",
+  "section": "4.1 `calibre.check_env`",
+  "line": 126,
+  "text": "| `timeout` | 否 | 默认 30 s |",
   "doc": "上层/12-calibre.md"
  },
  {
   "id": "calibre#087",
   "kind": "table-row",
   "section": "4.2 `calibre.drc`",
-  "line": 131,
-  "text": "| `deck` | 是 | — | DRC deck 路径 |",
-  "doc": "上层/12-calibre.md"
- },
- {
-  "id": "calibre#088",
-  "kind": "table-row",
-  "section": "4.2 `calibre.drc`",
   "line": 132,
-  "text": "| `gds` | 条件 | — | 版图 GDS 路径（可用 `virtuoso.layout.gds` 产出）；**只有 deck 里出现 `\"GDSFILENAME\"`/`\"lvs_top.gds\"` 等占位符时才必填** |",
+  "text": "| 参数 | 必填 | 默认 | 说明 |",
   "doc": "上层/12-calibre.md"
  },
  {
   "id": "calibre#089",
   "kind": "table-row",
   "section": "4.2 `calibre.drc`",
-  "line": 133,
-  "text": "| `top` | 条件 | — | 顶层 cell 名；同上（`\"TOPCELLNAME\"`/`\"lvs_top\"`） |",
+  "line": 134,
+  "text": "| `deck` | 是 | — | DRC deck 路径 |",
   "doc": "上层/12-calibre.md"
  },
  {
   "id": "calibre#090",
   "kind": "table-row",
   "section": "4.2 `calibre.drc`",
-  "line": 134,
-  "text": "| `job_id` / `run_dir` | 否 | `<kind>_<top>` / role 根下 | 见 §3.1 |",
+  "line": 135,
+  "text": "| `gds` | 条件 | — | 版图 GDS 路径（可用 `virtuoso.layout.gds` 产出）；**只有 deck 里出现 `\"GDSFILENAME\"`/`\"lvs_top.gds\"` 等占位符时才必填** |",
   "doc": "上层/12-calibre.md"
  },
  {
   "id": "calibre#091",
   "kind": "table-row",
   "section": "4.2 `calibre.drc`",
-  "line": 135,
-  "text": "| `turbo` | 否 | 4 | 传给 `-turbo` |",
+  "line": 136,
+  "text": "| `top` | 条件 | — | 顶层 cell 名；同上（`\"TOPCELLNAME\"`/`\"lvs_top\"`） |",
   "doc": "上层/12-calibre.md"
  },
  {
   "id": "calibre#092",
   "kind": "table-row",
   "section": "4.2 `calibre.drc`",
-  "line": 136,
-  "text": "| `hier` | 否 | true | `-hier` |",
+  "line": 137,
+  "text": "| `job_id` / `run_dir` | 否 | `<kind>_<top>` / role 根下 | 见 §3.1 |",
   "doc": "上层/12-calibre.md"
  },
  {
   "id": "calibre#093",
   "kind": "table-row",
   "section": "4.2 `calibre.drc`",
-  "line": 137,
-  "text": "| `blocking` / `poll_interval` / `timeout` | 否 | false / 5 / 3600 | 见 §3.4 |",
+  "line": 138,
+  "text": "| `turbo` | 否 | 4 | `hier=true` 时传给 `-turbo`；flat 模式不追加（P-093，Calibre 不接受 flat + `-turbo`） |",
   "doc": "上层/12-calibre.md"
  },
  {
   "id": "calibre#094",
   "kind": "table-row",
   "section": "4.2 `calibre.drc`",
-  "line": 138,
-  "text": "| `params` | 否 | — | 无 set 时的取数口：键=**SVRF 语句头**（含空格），值=整条语句，原位改写 deck |",
+  "line": 139,
+  "text": "| `hier` | 否 | true | `-hier` |",
   "doc": "上层/12-calibre.md"
  },
  {
   "id": "calibre#095",
   "kind": "table-row",
   "section": "4.2 `calibre.drc`",
-  "line": 139,
-  "text": "| `runset` | 否 | — | 远端 Calibre Interactive set（`.lvs`/`.drc`/`.pex`）：**走官方批处理入口**，参数全交给 Calibre |",
+  "line": 140,
+  "text": "| `blocking` / `poll_interval` / `timeout` | 否 | false / 5 / 3600 | 见 §3.4 |",
   "doc": "上层/12-calibre.md"
  },
  {
   "id": "calibre#096",
-  "kind": "clause",
+  "kind": "table-row",
   "section": "4.2 `calibre.drc`",
   "line": 141,
+  "text": "| `params` | 否 | — | 无 set 时的取数口：键=**SVRF 语句头**（含空格），值=整条语句，原位改写 deck |",
+  "doc": "上层/12-calibre.md"
+ },
+ {
+  "id": "calibre#097",
+  "kind": "table-row",
+  "section": "4.2 `calibre.drc`",
+  "line": 142,
+  "text": "| `runset` | 否 | — | 远端 Calibre Interactive set（`.lvs`/`.drc`）：**走官方批处理入口**，参数全交给 Calibre；PEX 本版不提供启动 |",
+  "doc": "上层/12-calibre.md"
+ },
+ {
+  "id": "calibre#098",
+  "kind": "clause",
+  "section": "4.2 `calibre.drc`",
+  "line": 144,
   "text": "**参数一律用官方机制带**（两条路，互斥）：",
   "doc": "上层/12-calibre.md"
  },
  {
-  "id": "calibre#120",
-  "kind": "clause",
-  "section": "4.3.1 直接喂 Calibre Interactive 的 set（现场形态，官方批处理）",
-  "line": 176,
-  "text": "（先默认名，再 `job.json.report_file`，最后在 run dir 内扫描 `*.report/*.rep`），与 set 是否改名无关。",
+  "id": "calibre#111",
+  "kind": "table-row",
+  "section": "4.3 `calibre.lvs`",
+  "line": 163,
+  "text": "| 参数 | 必填 | 默认 | 说明 |",
   "doc": "上层/12-calibre.md"
  },
  {
-  "id": "calibre#123",
-  "kind": "clause",
-  "section": "4.3.1 直接喂 Calibre Interactive 的 set（现场形态，官方批处理）",
-  "line": 181,
-  "text": "> 边界：set 只携带**参数**，不携带数据——它引用的 layout / 源网表 / hcell 文件必须已存在于远端；",
+  "id": "calibre#113",
+  "kind": "table-row",
+  "section": "4.3 `calibre.lvs`",
+  "line": 165,
+  "text": "| `source` | 条件 | — | LVS 源网表：`{\"kind\":\"cdl\",\"path\":\"…\"}` 直接用已有 CDL；`{\"kind\":\"schematic\",\"library\":\"…\",\"cell\":\"…\",\"view\":\"schematic\"}` 由本包在本次 run dir 内用官方 auCdl 链路现产 CDL 后比对 |",
   "doc": "上层/12-calibre.md"
  },
  {
-  "id": "calibre#127",
+  "id": "calibre#114",
+  "kind": "table-row",
+  "section": "4.3 `calibre.lvs`",
+  "line": 166,
+  "text": "| `emit_cdl` | 否 | false | `source.kind=schematic` 时，额外在返回里给出 `cdl_path`；CDL 本体始终在 run dir，可用 `calibre.export` 的 `netlist` 项取出 |",
+  "doc": "上层/12-calibre.md"
+ },
+ {
+  "id": "calibre#115",
+  "kind": "table-row",
+  "section": "4.3 `calibre.lvs`",
+  "line": 167,
+  "text": "| `cds_lib` | 否 | CIW `getWorkingDir()/cds.lib` | 仅 `source.kind=schematic`：显式指定 `cds.lib`，显式优先 |",
+  "doc": "上层/12-calibre.md"
+ },
+ {
+  "id": "calibre#117",
   "kind": "clause",
-  "section": "4.4 `calibre.pex`",
-  "line": 188,
-  "text": "包会把它复制进 PEX 的 run dir）；`fmt` 可选 `none`/`spice`/`simple`（默认 `none`，即只到 `-pdb`）。",
+  "section": "4.3 `calibre.lvs`",
+  "line": 170,
+  "text": "runset 已指定源网表时可省略。`source.kind=cdl` 的 `path` 必须是远端可见路径。",
   "doc": "上层/12-calibre.md"
  },
  {
   "id": "calibre#128",
   "kind": "clause",
-  "section": "4.4 `calibre.pex`",
-  "line": 189,
-  "text": "内部固定顺序：`-xrc -phdb` → `-xrc -pdb -rc <deck>` →（可选）`-xrc -fmt -<fmt>`，",
+  "section": "4.3.1 直接喂 Calibre Interactive 的 set（现场形态，官方批处理）",
+  "line": 187,
+  "text": "（先默认名，再 `job.json.report_file`，最后在 run dir 内扫描 `*.report/*.rep`），与 set 是否改名无关。",
   "doc": "上层/12-calibre.md"
  },
  {
-  "id": "calibre#129",
+  "id": "calibre#131",
   "kind": "clause",
-  "section": "4.4 `calibre.pex`",
-  "line": 190,
-  "text": "**每个阶段校验产物存在**才进入下一阶段（phdb 必须是 xRC 类型，见可行性报告 §2）。",
+  "section": "4.3.1 直接喂 Calibre Interactive 的 set（现场形态，官方批处理）",
+  "line": 192,
+  "text": "> 边界：set 只携带**参数**，不携带数据——它引用的 layout / 源网表 / hcell 文件必须已存在于远端；",
   "doc": "上层/12-calibre.md"
  },
  {
-  "id": "calibre#132",
-  "kind": "table-row",
-  "section": "4.5 `calibre.status` / `calibre.read_results` / `calibre.export`",
-  "line": 197,
-  "text": "| 操作 | 关键参数 |",
-  "doc": "上层/12-calibre.md"
- },
- {
-  "id": "calibre#134",
-  "kind": "table-row",
-  "section": "4.5 `calibre.status` / `calibre.read_results` / `calibre.export`",
-  "line": 199,
-  "text": "| `status` | `job_id` 或 `run_dir`；`timeout` |",
-  "doc": "上层/12-calibre.md"
- },
- {
-  "id": "calibre#135",
-  "kind": "table-row",
-  "section": "4.5 `calibre.status` / `calibre.read_results` / `calibre.export`",
-  "line": 200,
-  "text": "| `read_results` | `job_id`/`run_dir`；`kind`（可自动探测）；`limit`（默认 20）；`log_lines`（默认 40） |",
-  "doc": "上层/12-calibre.md"
- },
- {
-  "id": "calibre#136",
-  "kind": "table-row",
-  "section": "4.5 `calibre.status` / `calibre.read_results` / `calibre.export`",
-  "line": 201,
-  "text": "| `export` | `job_id`/`run_dir`；`items`（`summary`/`results_db`/`netlist`/`pdb_dir`/`log`/`all_small`）；`local_dir`（默认 `artifact_dir()/calibre/`） |",
-  "doc": "上层/12-calibre.md"
- },
- {
-  "id": "calibre#140",
-  "kind": "table-row",
-  "section": "4.6 `calibre.export_cdl`（LVS 源网表，官方 auCdl）",
-  "line": 209,
-  "text": "| 参数 | 必填 | 默认 | 说明 |",
-  "doc": "上层/12-calibre.md"
- },
- {
-  "id": "calibre#142",
-  "kind": "table-row",
-  "section": "4.6 `calibre.export_cdl`（LVS 源网表，官方 auCdl）",
-  "line": 211,
-  "text": "| `library` / `cell` | 是 | — | 要导出的 schematic 所在单元 |",
-  "doc": "上层/12-calibre.md"
- },
- {
-  "id": "calibre#143",
-  "kind": "table-row",
-  "section": "4.6 `calibre.export_cdl`（LVS 源网表，官方 auCdl）",
-  "line": 212,
-  "text": "| `view` | 否 | `schematic` | 起始视图 |",
-  "doc": "上层/12-calibre.md"
- },
- {
-  "id": "calibre#144",
-  "kind": "table-row",
-  "section": "4.6 `calibre.export_cdl`（LVS 源网表，官方 auCdl）",
-  "line": 213,
-  "text": "| `netlist_name` | 否 | `<cell>.cdl` | 产物文件名（写入 run dir） |",
-  "doc": "上层/12-calibre.md"
- },
- {
-  "id": "calibre#145",
-  "kind": "table-row",
-  "section": "4.6 `calibre.export_cdl`（LVS 源网表，官方 auCdl）",
-  "line": 214,
-  "text": "| `run_dir` | 否 | `<command root>/calibre/cdl_<cell>` | 导出工作目录 |",
-  "doc": "上层/12-calibre.md"
- },
- {
-  "id": "calibre#146",
-  "kind": "table-row",
-  "section": "4.6 `calibre.export_cdl`（LVS 源网表，官方 auCdl）",
-  "line": 215,
-  "text": "| `cds_lib` | 否 | CIW `getWorkingDir()/cds.lib` | cds.lib 路径；显式给出优先 |",
-  "doc": "上层/12-calibre.md"
- },
- {
-  "id": "calibre#147",
-  "kind": "table-row",
-  "section": "4.6 `calibre.export_cdl`（LVS 源网表，官方 auCdl）",
-  "line": 216,
-  "text": "| `timeout` | 否 | 600 | si 超时 |",
-  "doc": "上层/12-calibre.md"
- },
- {
-  "id": "calibre#151",
+  "id": "calibre#139",
   "kind": "clause",
-  "section": "4.6 `calibre.export_cdl`（LVS 源网表，官方 auCdl）",
-  "line": 222,
+  "section": "4.3.2 `source.kind=schematic`：官方 auCdl 现产（内部步骤，不是独立操作）",
+  "line": 204,
   "text": "**`checkCAPPERI=nil`**——IC618 auCdl batch 的默认值缺口，缺失即 `OSSHNL-411`）与一致的 `.simrc`；",
   "doc": "上层/12-calibre.md"
  },
  {
-  "id": "calibre#160",
+  "id": "calibre#142",
+  "kind": "clause",
+  "section": "4.3.2 `source.kind=schematic`：官方 auCdl 现产（内部步骤，不是独立操作）",
+  "line": 208,
+  "text": "产物默认写到 `<run_dir>/<cell>.cdl`；`emit_cdl=true` 时在返回中给 `cdl_path`。",
+  "doc": "上层/12-calibre.md"
+ },
+ {
+  "id": "calibre#152",
+  "kind": "clause",
+  "section": "4.4 `calibre.pex`",
+  "line": 223,
+  "text": "恢复前不得把 `calibre.pex` 当作可用能力。既有 PEX 产物仍可由 `read_results(kind=\"pex\")` / `export` 读取。",
+  "doc": "上层/12-calibre.md"
+ },
+ {
+  "id": "calibre#153",
+  "kind": "table-row",
+  "section": "4.5 `calibre.status` / `calibre.read_results` / `calibre.export`",
+  "line": 227,
+  "text": "| 操作 | 关键参数 |",
+  "doc": "上层/12-calibre.md"
+ },
+ {
+  "id": "calibre#155",
+  "kind": "table-row",
+  "section": "4.5 `calibre.status` / `calibre.read_results` / `calibre.export`",
+  "line": 229,
+  "text": "| `status` | `job_id` 或 `run_dir`；`timeout` |",
+  "doc": "上层/12-calibre.md"
+ },
+ {
+  "id": "calibre#156",
+  "kind": "table-row",
+  "section": "4.5 `calibre.status` / `calibre.read_results` / `calibre.export`",
+  "line": 230,
+  "text": "| `read_results` | `job_id`/`run_dir`；`kind`（可自动探测）；`limit`（默认 20）；`log_lines`（默认 40） |",
+  "doc": "上层/12-calibre.md"
+ },
+ {
+  "id": "calibre#157",
+  "kind": "table-row",
+  "section": "4.5 `calibre.status` / `calibre.read_results` / `calibre.export`",
+  "line": 231,
+  "text": "| `export` | `job_id`/`run_dir`；`items`（`summary`/`results_db`/`netlist`/`pdb_dir`/`log`/`all_small`）；`local_dir`（默认 `artifact_dir()/calibre/`） |",
+  "doc": "上层/12-calibre.md"
+ },
+ {
+  "id": "calibre#162",
   "kind": "clause",
   "section": "5. 不做与本版限制",
-  "line": 235,
+  "line": 239,
   "text": "5. 不做并发调度：同一 token 建议串行跑 PDR；许可争用表现为工具报错，由调用方决定重试。",
   "doc": "上层/12-calibre.md"
  },
  {
-  "id": "calibre#171",
+  "id": "calibre#174",
   "kind": "clause",
   "section": "7. 已知限制",
-  "line": 252,
+  "line": 257,
   "text": "2. 大设计的 `svdb`/`*.pdb` 可能很大：`export` 默认只取小文件，目录需显式点名；",
   "doc": "上层/12-calibre.md"
  },
  {
-  "id": "calibre#172",
+  "id": "calibre#175",
   "kind": "clause",
   "section": "7. 已知限制",
-  "line": 253,
-  "text": "3. `power`/`ground` 未给时沿用 deck 默认（可能触发 ERC 告警，见可行性报告 §2 的 LVS 实测）；",
-  "doc": "上层/12-calibre.md"
- },
- {
-  "id": "calibre#173",
-  "kind": "clause",
-  "section": "7. 已知限制",
-  "line": 254,
-  "text": "4. 许可不足、并发争用未做全局串行（§5.5）。",
-  "doc": "上层/12-calibre.md"
- },
- {
-  "id": "calibre#176",
-  "kind": "table-row",
-  "section": "8. 验收",
-  "line": 261,
-  "text": "| 组 | 用例 |",
+  "line": 258,
+  "text": "3. 许可不足、并发争用未做全局串行（§5.5）。",
   "doc": "上层/12-calibre.md"
  },
  {
   "id": "calibre#178",
   "kind": "table-row",
   "section": "8. 验收",
-  "line": 263,
-  "text": "| env | `check_env` 返回路径/版本；deck 不可见时报 `deck_ok=false` 并给原因 |",
-  "doc": "上层/12-calibre.md"
- },
- {
-  "id": "calibre#179",
-  "kind": "table-row",
-  "section": "8. 验收",
-  "line": 264,
-  "text": "| EXPORT | `export_cdl` 产出**含 `.SUBCKT` + 器件行**的 CDL（只出端口壳即失败）；`netlist_name` 只能是纯文件名 |",
+  "line": 265,
+  "text": "| 组 | 用例 |",
   "doc": "上层/12-calibre.md"
  },
  {
   "id": "calibre#180",
   "kind": "table-row",
   "section": "8. 验收",
-  "line": 265,
-  "text": "| DRC | 小 GDS（`lay_e2e.gds` 顶层 `lay_e2e`）跑通：`status=completed`、`read_results` 给 rules_checked/结果计数；对照可行性报告基线（1737 规则 / 36 结果） |",
+  "line": 267,
+  "text": "| env | `check_env` 返回路径/版本；deck 不可见时报 `deck_ok=false` 并给原因 |",
   "doc": "上层/12-calibre.md"
  },
  {
   "id": "calibre#181",
   "kind": "table-row",
   "section": "8. 验收",
-  "line": 266,
-  "text": "| LVS | `ctle.gds`+`ctle.cdl`：`status=completed`、`summary.status ∈ {match, incorrect}`、产物含 `svdb/*.phdb` |",
+  "line": 268,
+  "text": "| LVS 源 | `source.kind=cdl` 直接用已有 CDL；`source.kind=schematic` 走官方 auCdl 现产含 `.SUBCKT` + 器件行的 CDL（只出端口壳即失败） |",
   "doc": "上层/12-calibre.md"
  },
  {
   "id": "calibre#182",
   "kind": "table-row",
   "section": "8. 验收",
-  "line": 267,
-  "text": "| LVS 闭环 | `export_cdl` 的 CDL 直接喂 LVS（`CMP_LIB/inv2` + `inv2.gds`）；`VB_CALIBRE_REQUIRE_LVS_VERDICT=1` 时要求 `correct` |",
+  "line": 269,
+  "text": "| DRC | 小 GDS（`lay_e2e.gds` 顶层 `lay_e2e`）跑通：`status=completed`、`read_results` 给 rules_checked/结果计数；对照可行性报告基线（1737 规则 / 36 结果） |",
   "doc": "上层/12-calibre.md"
  },
  {
   "id": "calibre#183",
   "kind": "table-row",
   "section": "8. 验收",
-  "line": 268,
-  "text": "| PEX | 同组输入跑到 `-pdb`：`svdb/*.pdb/` 存在、`summary.errors==0`；`fmt=spice` 时产出网表 |",
+  "line": 270,
+  "text": "| LVS | `ctle.gds` + `source.kind=cdl`（`ctle.cdl`）：`status=completed`、`summary.status ∈ {match, incorrect}`、产物含 `svdb/*.phdb` |",
   "doc": "上层/12-calibre.md"
  },
  {
   "id": "calibre#184",
   "kind": "table-row",
   "section": "8. 验收",
-  "line": 269,
-  "text": "| 三件套 | `blocking=true` 与 `blocking=false`+`status` 轮询两种用法结果一致 |",
+  "line": 271,
+  "text": "| LVS 闭环 | `source.kind=schematic`（`CMP_LIB/inv2` + `inv2.gds`）；`VB_CALIBRE_REQUIRE_LVS_VERDICT=1` 时要求 `correct`，`emit_cdl=true` 时返回 `cdl_path` |",
   "doc": "上层/12-calibre.md"
  },
  {
   "id": "calibre#185",
   "kind": "table-row",
   "section": "8. 验收",
-  "line": 270,
-  "text": "| 失败 | deck 路径不存在 → 明确失败；GDS 顶层名错 → 工具原文回带；不给 token → 400 |",
+  "line": 272,
+  "text": "| PEX | 本版不提供：`calibre.pex` 返回 `ok=false`、`value.reason=pex_unsupported`，且不建 run dir、不调用任何远程接口 |",
   "doc": "上层/12-calibre.md"
  },
  {
   "id": "calibre#186",
   "kind": "table-row",
   "section": "8. 验收",
-  "line": 271,
-  "text": "| 参数面 | deck 无占位符（自包含）时 `gds/top/cdl` 可省；deck 引用 `\"lvs_top.cdl\"` 而没给 `cdl` → 明确失败 |",
+  "line": 273,
+  "text": "| 三件套 | `blocking=true` 与 `blocking=false`+`status` 轮询两种用法结果一致 |",
   "doc": "上层/12-calibre.md"
  },
  {
   "id": "calibre#187",
   "kind": "table-row",
-  "section": "9. 证据索引",
+  "section": "8. 验收",
+  "line": 274,
+  "text": "| 失败 | deck 路径不存在 → 明确失败；GDS 顶层名错 → 工具原文回带；不给 token → 400 |",
+  "doc": "上层/12-calibre.md"
+ },
+ {
+  "id": "calibre#188",
+  "kind": "table-row",
+  "section": "8. 验收",
   "line": 275,
-  "text": "| 证据 | 位置 |",
+  "text": "| 参数面 | deck 无占位符（自包含）时 `gds/top/source` 可省；deck 引用 `\"lvs_top.cdl\"` 而没给 `source` → 明确失败 |",
   "doc": "上层/12-calibre.md"
  },
  {
   "id": "calibre#189",
   "kind": "table-row",
   "section": "9. 证据索引",
-  "line": 277,
-  "text": "| 可行性报告（DRC/LVS/PEX 实跑、CDL 调查、新用户 calprobe 会话） | `spec/research/calibre/02-可行性报告.md` |",
-  "doc": "上层/12-calibre.md"
- },
- {
-  "id": "calibre#190",
-  "kind": "table-row",
-  "section": "9. 证据索引",
-  "line": 278,
-  "text": "| Calibre 环境探针 | `test/semi/probes/calibre_env_probe.py` |",
+  "line": 279,
+  "text": "| 证据 | 位置 |",
   "doc": "上层/12-calibre.md"
  },
  {
   "id": "calibre#191",
   "kind": "table-row",
   "section": "9. 证据索引",
-  "line": 279,
-  "text": "| CDL 批处理探针（si.env/.simrc 生成） | `test/semi/probes/calibre_cdl_probe.py` |",
+  "line": 281,
+  "text": "| 可行性报告（DRC/LVS/PEX 实跑、CDL 调查、新用户 calprobe 会话） | `spec/research/calibre/02-可行性报告.md` |",
   "doc": "上层/12-calibre.md"
  },
  {
   "id": "calibre#192",
   "kind": "table-row",
   "section": "9. 证据索引",
-  "line": 280,
-  "text": "| auCdl 导出机制调查（官方链路、runset/control-file 实测） | `spec/research/calibre/03-网表导出机制调查报告.md`（§8/§9） |",
+  "line": 282,
+  "text": "| Calibre 环境探针 | `test/semi/probes/calibre_env_probe.py` |",
   "doc": "上层/12-calibre.md"
  },
  {
   "id": "calibre#193",
   "kind": "table-row",
   "section": "9. 证据索引",
-  "line": 281,
-  "text": "| 实跑现场（远端） | `/home/Gent/project/vblog/calibre_probe/{drc_run,lvs_run,rcx_run}/` |",
+  "line": 283,
+  "text": "| CDL 批处理探针（si.env/.simrc 生成） | `test/semi/probes/calibre_cdl_probe.py` |",
   "doc": "上层/12-calibre.md"
  },
  {
   "id": "calibre#194",
   "kind": "table-row",
   "section": "9. 证据索引",
-  "line": 282,
+  "line": 284,
+  "text": "| auCdl 导出机制调查（官方链路、runset/control-file 实测） | `spec/research/calibre/03-网表导出机制调查报告.md`（§8/§9） |",
+  "doc": "上层/12-calibre.md"
+ },
+ {
+  "id": "calibre#195",
+  "kind": "table-row",
+  "section": "9. 证据索引",
+  "line": 285,
+  "text": "| 实跑现场（远端） | `/home/Gent/project/vblog/calibre_probe/{drc_run,lvs_run,rcx_run}/` |",
+  "doc": "上层/12-calibre.md"
+ },
+ {
+  "id": "calibre#196",
+  "kind": "table-row",
+  "section": "9. 证据索引",
+  "line": 286,
   "text": "| 新注册用户与独立 env | `/home/Gent/project/calprobe/`（`calprobe`，见可行性报告 §3.4） |",
   "doc": "上层/12-calibre.md"
  }

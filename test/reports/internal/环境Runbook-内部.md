@@ -29,7 +29,8 @@
 | glis-desktop | Windows（Tailscale） | `ljt03`，默认密钥 | 中转机 | 仅作跳板；不作为测试靶机 |
 | wsl-gent | AlmaLinux-8（WSL2，内核 6.6.114.1） | `Gent`，`id_ed25519` | **真实 Virtuoso 靶机** | 真机五接口、注册 1–4 步、CDS.log 增量、业务包 E2E |
 | w1-gent | AlmaLinux 8.10（Python 3.9） | `dev`，`lab_ed25519` | lab 靶机 | fake Virtuoso 宿主（`/opt/fake/virtuoso`） |
-| vbuser1 / vbuser2 | wsl-gent 上的**普通用户**（uid 1001/1002，cadshare 组） | 本机密钥，`ssh -o User=vbuser1 wsl-gent` | 真多用户靶机 | S13：各自 headless Virtuoso（Xvfb :100/:101）+ 各自 daemon 65401/65402；与 Gent 共享 `/project/libs`（umask 0002 + setgid，组内可互改） |
+| vbuser1 / vbuser2 | wsl-gent 普通用户（uid 1001/1002，cadshare 组） | 本机密钥 | **开发日常环境**（2026-10-08 移交） | 各 2 个万能实例：65401/65411（Xvfb :110/:112）、65402/65412（Xvfb :103/:113）；注册表 `test/artifacts/env/daily-vbuser1` / `daily-vbuser2`，业务面 8133 / 8135 |
+| vbuser3 / vbuser4 | wsl-gent 普通用户（uid 1003/1004，cadshare 组；经 root 通道建号） | 本机密钥（镜像 vbuser1 的 3 把授权钥） | **测试侧跨用户靶机**（2026-10-08 建） | 各 2 个万能实例：65403/65413（Xvfb :114/:115）、65404/65414（Xvfb :116/:117）；注册在常驻注册表（log-vblog），经 8127 跑 S13/S14 |
 | w2-gent | Ubuntu 22.04（Python 3.10） | `dev`，`lab_ed25519` | lab 靶机 | 备用客户端 / 通用 Linux 资源 |
 | w3-gent | Ubuntu 22.04 | `dev`，`lab_ed25519` | lab 靶机 + 跳板 | 备选客户端；另有 `w3-socks`（DynamicForward 1080） |
 | w4-gent | Ubuntu 22.04 | `dev`，`lab_ed25519` | lab 靶机 | python2 兼容垫片宿主 |
@@ -201,15 +202,20 @@ wsl.exe -l -v
 ② 业务面：`python -m server.api_server --port 8131 --work-dir test/artifacts/env/multihop`（改过注册表必须重启）；
 ③ 自检：`PYTHONPATH=src python test/live/flows/multihop_jump_tb.py --work-dir test/artifacts/env/multihop --base http://127.0.0.1:8131/api/operation`，期望 11/11。
 
-**多用户实例（vbuser1/vbuser2）重启**：
+**多用户实例（vbuser1–4 系列）重启**：
 
 ```bash
-scp test/shared/runners/bringup_user.sh vbuser1@wsl-gent:~/
-ssh -o User=vbuser1 wsl-gent 'bash ~/bringup_user.sh vbuser1 65401'   # vbuser2 同理 -> 65402
+# 副实例 / 新实例：固定 display、独立目录、独立 cds.lib 拷贝（2026-10-08 起标准）
+scp test/shared/runners/bringup_instance.sh vbuser1@wsl-gent:~
+ssh -o User=vbuser1 wsl-gent 'bash ~/bringup_instance.sh vbuser1b 65411 :112'
+# vbuser2b -> 65412 :113；vbuser3 -> 65403 :114；vbuser3b -> 65413 :115；vbuser4 -> 65404 :116；vbuser4b -> 65414 :117
 ```
 
-脚本会重写 `setup/virtuoso_setup.il` 与 `run/{cds.lib,.cdsinit}`，然后用 `xvfb-run` 起 headless Virtuoso；
-自检：`ss -ltn | grep 6540`、以及用注册表 `test/artifacts/env/multi-user-real/`（业务面 8129）跑 `1+1`。
+口径（2026-10-08 实测，详见 [CIW-daemon 停止语义调查](CIW-daemon停止语义-调查-2026-10-08.md)）：
+`RBStop()` 停 daemon 留 CIW；杀 CIW 则 IPC 子进程树（daemon + cdsServIpc wrapper）在 ~0.2–5s 内
+被连带清理、端口释放——**不存在长期占端口的孤儿 daemon**。两个坑：① 必须以目标账号身份 kill
+（跨账号 kill 被 EPERM 静默拒绝）；② kill 后要等端口释放再继续（毫秒级检查会撞 teardown 窗口）。
+`bringup_instance.sh` 已按此实现。自检：`ss -ltn | grep 654`、daemon_ping 期望 `OK '2'`。
 
 另：注册表里的 `local_port` 必须**逐用户唯一**（本轮实测 vblog/vbs11 都写 65201 → 第二个用户恒返回
 `invalid token`，因为它命中的是别人的隧道）。修法：`local_port` 取与该用户 daemon 端口不同的空闲值。
@@ -260,7 +266,7 @@ wsl-gent 上还有 vbe2e / vbmu2 / vbmu3 三台非日常 CIW + 一个 65082 孤�
 | 1 | `restore_vbs11_calprobe.sh`（Gent 身份，用 vblog 的 1016092 继承 Cadence 环境，`:11` display） | 65200 / 65122 重新 LISTEN；`env_check` 对 `vb-s11` 与 PDK token 均通过（`lib-tsmcN65` 可见） |
 | 2 | `restore_user_instance.sh vbuser1 65401` / `vbuser2 65402`（各自身份；先杀旧 `-cdslib ./cds.lib` 的 virtuoso，再 `bringup_user.sh`） | 65401 / 65402 重新 LISTEN；两个 token 的 `env_check` 通过且都能看到共享库 `serdes_rx` |
 | 3 | 客户端停 8128 / 8129 / 8131（按 PID 精确停） | 只剩日常业务面 **8127** |
-| 4 | `cleanup_gent_extras.sh`（精确 pkill：65082 孤儿、vbmu2/3、(65210/65211)、vbe2e） | wsl-gent 只剩日常 5 个真实实例的 virtuoso；6xxxx 监听 = 65081/65121/65122/65200/65401/65402 |
+| 4 | `cleanup_gent_extras.sh`（精确 pkill：65082 孤儿、vbmu2/3、(65210/65211)、vbe2e） | wsl-gent 只剩日常 11 个真实实例（vblog/vbs11/calprobe/vbuser1/1b/2/2b/3/3b/4/4b）+ destb1(64600) + fake(65081)；6xxxx 监听 = 64600/65081/65121/65122/65200/65401/65402/65403/65404/65411/65412/65413/65414 |
 | 5 | w1 上 `kill 7152 7151 7148`（hopfake） | 65203 消失，65201/65202（vbfake1/2）保留 |
 
 **最终自检**：`resident_env_check.py` → `remote 实例 8/8 通；skip 1`，`/health OK`，**rc=0**；

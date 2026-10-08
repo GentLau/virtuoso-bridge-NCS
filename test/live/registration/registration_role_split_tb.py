@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=====================
-# 作者: 设计/Codex
-# 最后改动: 2026-09-28 20:58
+# 作者: 测试/root
+# 最后改动: 2026-09-30 21:45
 # 依赖: 无
 # =====================================================================
 # 六步流程（按 test/docs/写TB规范.md §1–§6）：
@@ -43,6 +43,18 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 SRC = ROOT / "src"
+
+
+def _admin_token() -> str:
+    """管理员 token（`test/artifacts/admin-token.txt`，gitignored；缺则返回空串）。
+
+    仅用于 apply 的 `enhanced_token` —— 复跑时"凭据复用"需要它（spec §1）。
+    """
+    path = ROOT / "test" / "artifacts" / "admin-token.txt"
+    try:
+        return path.read_text(encoding="utf-8").strip()
+    except OSError:
+        return ""
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 _FIXTURES = ROOT / "test" / "shared" / "fixtures"
@@ -265,6 +277,11 @@ def main(argv: list[str] | None = None) -> int:
     try:
         payload = {
             "action": "apply", "user": user, "mode": "remote", "token": token,
+            # 复跑幂等（P-0xx 教训）：本 TB 的 work-dir 是自有的，但上一次跑留下的用户
+            # 用的是**同一把 SSH key** → 触发"凭据复用需 enhanced_token"（spec §1）。
+            # 这里显式带上管理员 token 表示"我知道这是共享凭据"；没有该文件时留空，
+            # 由 TB 自然报错（不静默降级）。
+            "enhanced_token": _admin_token(),
             "ssh": {"default": {"host": args.ws_host, "user": args.ws_user,
                                 "key_dir": args.ws_key_dir, "key": args.ws_key}},
             "root": {"default": None},

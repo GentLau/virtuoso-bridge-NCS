@@ -178,7 +178,7 @@
    - 会话必须是**注册流程产生**的（探测 → 部署 → CIW load → 双冒烟 → commit 落注册表），不许临时手搓 daemon 顶替。
 2. **远端必须是真实业务栈**：真 Virtuoso + 真实 PDK（tsmcN65 等）+ 真实设计库
    （`/project/libs/{serdes_rx,adc_sar}`）+ 真实工具链（Spectre / Calibre DRC·LVS / XStream GDS）；
-   多用户场景用真实 OS 用户（`vbuser1`/`vbuser2`/Gent），要求共享库与跨用户回读。
+   多用户场景用真实 OS 用户（`vbuser3`/`vbuser4`/Gent），要求共享库与跨用户回读。
 
 **跑前自检（缺一不可）**：`resident_env_check.py` 远端实例通 + `/health OK`；控制面
 `GET /api/process/status`（带 admin token）→ `state: ready`；目标 token 的 `env_check.py --require-lib …` 退出码 0。

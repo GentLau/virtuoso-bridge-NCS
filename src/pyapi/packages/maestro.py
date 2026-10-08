@@ -36,6 +36,7 @@ from typing import Any
 from common.paths import artifact_dir
 from pyapi.models import Middle, VirtuosoResult, skill_log_kwargs, ResultBase, ResultPackage
 from pyapi.packages import gui as gui_pkg
+from pyapi.packages._common import _require_text, _require_timeout, _step
 from pyapi.packages.basic import parse_sexpr, q
 from pyapi.packages._maestro_util import (
     MC_RUN_MODE,
@@ -236,21 +237,6 @@ class CloseWaveformRequest:
 # ---------------------------------------------------------------------------
 # Small validation / formatting helpers
 # ---------------------------------------------------------------------------
-
-def _step(name: str, ok: bool, detail: Any) -> dict[str, Any]:
-    return {"name": name, "ok": ok, "detail": detail}
-
-
-def _require_text(value: Any, name: str) -> str:
-    if not isinstance(value, str) or not value:
-        raise ValueError(f"{name} must be a non-empty string")
-    return value
-
-
-def _require_timeout(value: Any) -> None:
-    if value is not None and (not isinstance(value, (int, float)) or value <= 0):
-        raise ValueError("timeout must be a positive number or None")
-
 
 def _require_history_name(value: Any, name: str = "history") -> str:
     text = _require_text(value, name)

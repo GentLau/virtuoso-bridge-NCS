@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=====================
 # 作者: 测试/root
-# 最后改动: 2026-09-29 20:22
+# 最后改动: 2026-10-08 12:20
 # 依赖: 无
 # =====================================================================
 # 六步流程（按 test/docs/写TB规范.md §1–§6）：
@@ -220,15 +220,31 @@ class LocalFakeDaemon:
         self._thread.join(timeout=5)
 
 
+def ssh_identity_args(key_path: str | None) -> list[str]:
+    """``-i`` for TB-owned ssh/scp calls, mirroring the apply credential.
+
+    The registration probe authenticates with exactly the credential declared
+    in the apply payload.  A raw-host / credential-isolated run therefore only
+    reaches step 4 if this TB's own ssh/scp calls use the same key instead of
+    falling back to the ambient ssh config.  ``None`` keeps the old behaviour
+    for callers that rely on the host alias (e.g. the host-key rotation TB).
+    """
+    return ["-i", key_path] if key_path else []
+
+
 class FakeDaemon:
     """Protocol-compatible daemon on the target host (started via ssh)."""
 
     def __init__(
         self, host: str, port: int, token_prefix: str, remote_root: str,
+        *, ssh_key: str | None = None, ssh_user: str | None = None,
     ) -> None:
         self.host = host
+        # 裸主机（无 ssh config 别名）下 ssh 会用本机用户名；显式带上目标用户
+        self.target = f"{ssh_user}@{host}" if ssh_user else host
         self.port = port
         self.token_prefix = token_prefix
+        self.ssh_key = ssh_key
         self._proc: subprocess.Popen | None = None
         self.tag = uuid.uuid4().hex[:8]
         self.remote_dir = f"{remote_root.rstrip('/')}/tmp/tb-six-{self.tag}"
@@ -239,7 +255,12 @@ class FakeDaemon:
 
     def _ssh(self, command: str, timeout: int = 120) -> subprocess.CompletedProcess:
         return subprocess.run(
-            ["ssh", self.host, command], capture_output=True, text=True,
+            # 控制通道显式关 ssh 复用（round10：编排里连续跑时，陈旧 ControlPath
+            # 会让一条 `ss -tln | grep -c` 卡满 20s → FakeDaemon.start 假红）。
+            ["ssh", "-o", "BatchMode=yes", "-o", "ControlMaster=no",
+             "-o", "ControlPath=none", *ssh_identity_args(self.ssh_key),
+             self.target, command],
+            capture_output=True, text=True,
             timeout=timeout, **no_window(),
         )
 
@@ -252,7 +273,8 @@ class FakeDaemon:
         self._ssh(f"mkdir -p {self.remote_dir}")
         source = ROOT / "test" / "shared" / "fixtures" / "fake_daemon_host.py"
         copied = subprocess.run(
-            ["scp", str(source), f"{self.host}:{self.remote_dir}/fake_daemon_host.py"],
+            ["scp", *ssh_identity_args(self.ssh_key), str(source),
+             f"{self.target}:{self.remote_dir}/fake_daemon_host.py"],
             capture_output=True, text=True, timeout=120, **no_window(),
         )
         if copied.returncode != 0:
@@ -262,13 +284,17 @@ class FakeDaemon:
             f"--base-port {self.port} --count 1 --token-prefix {self.token_prefix}"
         )
         self._proc = subprocess.Popen(
-            ["ssh", self.host, remote_cmd],
+            ["ssh", *ssh_identity_args(self.ssh_key), self.target, remote_cmd],
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
             **no_window(),
         )
         deadline = time.monotonic() + 30
         while time.monotonic() < deadline:
-            probe = self._ssh(f"ss -tln | grep -c ':{self.port} '", timeout=20)
+            try:
+                probe = self._ssh(f"ss -tln | grep -c ':{self.port} '", timeout=20)
+            except subprocess.TimeoutExpired:
+                time.sleep(0.5)   # 单次抖动按"还没监听"处理，继续轮询
+                continue
             if probe.stdout.strip().endswith("1"):
                 return
             time.sleep(0.5)
@@ -294,7 +320,8 @@ class FakeDaemon:
 
 def request_payload(
     user: str, token: str, host: str, ssh_user: str, root: str, port: int,
-    *, local: bool = False,
+    *, local: bool = False, key_dir: str = "~/.ssh", key: str = "id_ed25519",
+    ssh_backend: str = "",
 ) -> dict:
     if local:
         return {
@@ -313,10 +340,11 @@ def request_payload(
         "user": user,
         "token": token,
         "mode": "remote",
+        **({"ssh_backend": ssh_backend} if ssh_backend else {}),
         "ssh": {"default": {
             "host": host, "user": ssh_user,
             # 客户端侧凭据（spec r18+）：默认身份 key + 同名 .pub 供指纹查重
-            "key_dir": "~/.ssh", "key": "id_ed25519",
+            "key_dir": key_dir, "key": key,
         }},
         "root": {"default": root},
         "roles": {
@@ -342,6 +370,14 @@ def main() -> int:
     parser.add_argument("--daemon-port", type=int, default=0,
                         help="0 = auto-select (local mode only)")
     parser.add_argument("--root", default="")
+    parser.add_argument("--key-dir", default="~/.ssh",
+                        help="客户端私钥目录（remote 模式的 ssh.default.key_dir）")
+    parser.add_argument("--key", default="id_ed25519",
+                        help="客户端私钥文件名（remote 模式的 ssh.default.key）")
+    parser.add_argument("--ssh-backend", choices=("", "paramiko", "openssh"),
+                        default="",
+                        help="显式给 apply 的 ssh_backend（空=不传，走默认 paramiko）；"
+                             "P-120 复现/回归用")
     parser.add_argument(
         "--local-mode",
         action="store_true",
@@ -354,6 +390,13 @@ def main() -> int:
     )
     parser.add_argument("--token", default="")
     args = parser.parse_args()
+
+    # TB 自有的 ssh/scp 辅助调用必须与申请里的凭据一致，否则裸主机/凭据
+    # 隔离场景会在第 3 步（产品 probe 用对了 key）之后、第 4 步自检处失败。
+    ssh_key = (
+        str(Path(args.key_dir).expanduser() / args.key) if args.key else None
+    )
+    ssh_target = f"{args.ssh_user}@{args.host}" if args.ssh_user else args.host
 
     work_dir = Path(args.work_dir).resolve()
     work_dir.mkdir(parents=True, exist_ok=True)
@@ -381,6 +424,7 @@ def main() -> int:
         remote_root = args.root or f"/home/{args.ssh_user}/.virtuoso-bridge/{args.user}"
         daemon = FakeDaemon(
             args.host, args.daemon_port, prefix, remote_root=remote_root,
+            ssh_key=ssh_key, ssh_user=args.ssh_user,
         )
         token = args.token or daemon.token
         port = args.daemon_port
@@ -417,7 +461,9 @@ def main() -> int:
         # -- step 1: apply（命令端点，返回会话 token）-------------------------
         apply_body = {"action": "apply", "user": args.user,
                       **request_payload(args.user, token, args.host, args.ssh_user,
-                                        root, port, local=args.local_mode)}
+                                        root, port, local=args.local_mode,
+                                        key_dir=args.key_dir, key=args.key,
+                                        ssh_backend=args.ssh_backend)}
         apply_body.pop("user", None)
         apply_body["user"] = args.user
         status, body = http.call("POST", "/api/register", apply_body)
@@ -582,7 +628,7 @@ def main() -> int:
             probe_detail = f"setup={setup_path} daemon_root={daemon_root}"
         else:
             probe = subprocess.run(
-                ["ssh", args.host,
+                ["ssh", *ssh_identity_args(ssh_key), ssh_target,
                  f"test -f {shlex.quote(setup_path)} && "
                  f"test -d {shlex.quote(daemon_root + '/ramic')} && "
                  f"test -d {shlex.quote(daemon_root + '/setup')} && "
@@ -692,8 +738,26 @@ def main() -> int:
                                  {"mode": {"default": "remote"}}, headers=ADMIN_HEADERS)
         steps.append({"action": "update-rejects-mode", "status": status,
                       "detail": body.get("detail")})
-        if status != 400 or "mode" not in json.dumps(body):
-            raise ProbeFailure(f"mode must not be updatable: {body}")
+        # spec v43（2026-09-30 起）把 update 字段范围改成"除 token/registered_at 外全部 registry
+        # 字段"，`mode` 因此**可以提交**，但要过整体形状校验：local 用户只把 mode 改成 remote、
+        # roles 仍缺 host/user → 必须 400 点名 unresolved，且**零部分落盘**。
+        if status != 400 or "unresolved" not in json.dumps(body):
+            raise ProbeFailure(
+                f"mode 改 remote 而 roles 缺 host 必须结构化拒绝: {body}")
+        status, after = http.call("GET", f"/api/user/{args.user}",
+                                  headers=ADMIN_HEADERS)
+        still = ((after.get("entry") or {}).get("mode") or {}).get("default")
+        steps.append({"action": "mode-not-partially-applied", "mode": still})
+        if status != 200 or still != "local":
+            raise ProbeFailure(f"被拒绝的 mode 改动不得部分落盘: {after}")
+
+        # 硬禁区：token / registered_at 一律 400（spec v43 §5）。
+        for blocked in ("token", "registered_at"):
+            status, body = http.call("POST", f"/api/user/{args.user}/update",
+                                     {blocked: "x"}, headers=ADMIN_HEADERS)
+            steps.append({"action": f"update-rejects-{blocked}", "status": status})
+            if status != 400 or blocked not in json.dumps(body):
+                raise ProbeFailure(f"{blocked} 必须被拒绝: {body}")
 
         status, body = http.call("DELETE", f"/api/user/{args.user}",
                                  headers=ADMIN_HEADERS)
@@ -715,7 +779,9 @@ def main() -> int:
         bad_body = {"action": "apply", "user": bad_user,
                     **request_payload(bad_user, token + "-x", args.host,
                                       args.ssh_user, root, bad_port,
-                                      local=args.local_mode)}
+                                      local=args.local_mode,
+                                      key_dir=args.key_dir, key=args.key,
+                                      ssh_backend=args.ssh_backend)}
         bad_body["user"] = bad_user
         status, body = http.call("POST", "/api/register", bad_body)
         if status != 200 or body.get("stage") != "applied":
@@ -785,7 +851,8 @@ def main() -> int:
         deadline = time.monotonic() + 10
         while time.monotonic() < deadline:
             probe = subprocess.run(
-                ["ssh", args.host, f"ss -ltn | grep -c ':{port} '"],
+                ["ssh", *ssh_identity_args(ssh_key), ssh_target,
+                 f"ss -ltn | grep -c ':{port} '"],
                 capture_output=True, text=True, timeout=20, **no_window(),
             )
             if (probe.stdout or "").strip() == "0":

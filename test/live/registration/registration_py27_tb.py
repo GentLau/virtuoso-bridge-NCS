@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=====================
 # 作者: 测试/root
-# 最后改动: 2026-09-28 20:40
+# 最后改动: 2026-09-30 21:55
 # 依赖: 无
 # =====================================================================
 # 六步流程（按 test/docs/写TB规范.md §1–§6）：
@@ -149,7 +149,9 @@ class Http:
 
 def ssh(host: str, command: str, timeout: float = 60.0) -> subprocess.CompletedProcess:
     return subprocess.run(
-        ["ssh", "-o", "BatchMode=yes", host, command],
+        # 控制通道不复用 ssh master socket（陈旧 ControlPath 会卡 20s → 假红，round10 实测）。
+        ["ssh", "-o", "BatchMode=yes", "-o", "ControlMaster=no",
+         "-o", "ControlPath=none", host, command],
         capture_output=True, text=True, timeout=timeout, **no_window(),
     )
 
@@ -216,7 +218,12 @@ class RemotePy27Daemon:
         )
         deadline = time.monotonic() + 30
         while time.monotonic() < deadline:
-            probe = ssh(self.host, f"ss -ltn | grep -c ':{self.port} '", timeout=20)
+            # 单次 ssh 抖动按"还没监听"处理（round10：编排里连续跑会偶发卡 20s）。
+            try:
+                probe = ssh(self.host, f"ss -ltn | grep -c ':{self.port} '", timeout=20)
+            except subprocess.TimeoutExpired:
+                time.sleep(0.5)
+                continue
             if (probe.stdout or "").strip() == "1":
                 return
             time.sleep(0.4)

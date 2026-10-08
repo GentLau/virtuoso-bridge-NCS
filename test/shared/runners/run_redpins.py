@@ -34,18 +34,12 @@ OUT = ROOT / "test" / "artifacts" / "evidence" / "redpins"
 #: 红钉清单：key → (TB 路径, 期望"红"的判据说明, 追加参数, 预期失败行正则)
 #: 2026-09-30 更新：C06 已修（套件 12/12 绿）→ 移除；加入当前两条真机红钉。
 REDPINS: dict[str, tuple[str, str, list[str], str]] = {
-    "c09-maestro-history": (
-        "test/live/packages/maestro_e2e_tests.py",
-        "C09：完整套件内 `write_history` rename 链报 SDB handle 错误（隔离路径已绿、整链仍红）",
-        ["--transport", "http"],
-        r"FAIL\s+HISTORY-01",
-    ),
-    "p116-symbol-orders": (
-        "test/live/packages/symbol_e2e_tests.py",
-        "P-116：spec 3-symbol.md:200 称 pin_order 与 term_order 一致；真机 term_order 未随 schEditPinOrder 同步",
-        ["--transport", "http"],
-        r"FAIL\s+ORDERS-TERM",
-    ),
+    # 2026-09-30 round10：c09 钉已随设计修复（f6befbb）+ 测试侧整链复跑 rc=0 关闭 → 移除。
+    # 2026-10-08：p118 钉已转绿（NKM-09 PASS；maestro_e2e 整链全绿）→ 移除。
+    # 2026-10-08：p125/p129 钉随 d90113e 修复 + 测试侧真机复跑 rc=0（UNEXPECTED-GREEN 确认）→ 移除；
+    #             两条 TB 保留为普通真机回归（gui_screenshot_cleanup_p125_tb / veriloga_view_gate_p129_tb）。
+    # 当前**无真机红钉**。
+    # 新增红钉时把 (TB 路径, 判据说明, 追加参数, 预期失败行正则) 加回这里。
 }
 
 

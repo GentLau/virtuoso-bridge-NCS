@@ -90,7 +90,11 @@ class Http:
 
 def ssh(host: str, command: str, timeout: float = 60.0) -> subprocess.CompletedProcess:
     return subprocess.run(
-        ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10", host, command],
+        # 2026-09-30（round10）：TB 的控制通道显式**关掉 ssh 复用**。用户 ssh config 里
+        # `ControlMaster auto` 留下的陈旧 socket 会让新的 ssh 调用卡到 20s 超时
+        # （实测：注册全量编排里 `ss -ltn | grep -c` 都超时，逐条单跑却全绿）。
+        ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10",
+         "-o", "ControlMaster=no", "-o", "ControlPath=none", host, command],
         capture_output=True, text=True, timeout=timeout, **no_window(),
     )
 
@@ -140,7 +144,14 @@ def wait_local_port(port: int, timeout: float = 20.0, host: str = "127.0.0.1") -
 def wait_remote_port(host: str, port: int, timeout: float = 30.0) -> bool:
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
-        probe = ssh(host, f"ss -ltn | grep -c ':{port} '", timeout=20)
+        # 2026-09-30（round10）：编排里连续跑注册 TB 时，偶发单次 ssh 卡满 20s
+        # （逐条单跑不复现；同机 sshd 短时排队）。单次超时按"还没监听"处理并继续
+        # 轮询，不把一次抖动当成 TB 失败。
+        try:
+            probe = ssh(host, f"ss -ltn | grep -c ':{port} '", timeout=20)
+        except subprocess.TimeoutExpired:
+            time.sleep(0.5)
+            continue
         if (probe.stdout or "").strip() == "1":
             return True
         time.sleep(0.4)

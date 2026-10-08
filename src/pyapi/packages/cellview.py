@@ -9,21 +9,7 @@ from typing import Any
 
 from pyapi.models import Middle, skill_log_kwargs, ResultBase, ResultPackage
 from pyapi.packages import basic
-
-
-def _step(name: str, ok: bool, detail: Any) -> dict[str, Any]:
-    return {"name": name, "ok": ok, "detail": detail}
-
-
-def _require_text(value: Any, name: str) -> str:
-    if not isinstance(value, str) or not value:
-        raise ValueError(f"{name} must be a non-empty string")
-    return value
-
-
-def _require_timeout(timeout: Any) -> None:
-    if timeout is not None and (not isinstance(timeout, (int, float)) or timeout <= 0):
-        raise ValueError("timeout must be a positive number or None")
+from pyapi.packages._common import _require_text, _require_timeout, _step
 
 
 @dataclass

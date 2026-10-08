@@ -35,13 +35,16 @@
 | 表 C `calibre.export.local_dir` | ✅ **已补**：`EXPORT-01` 值级（`local_dir` 按请求生效 + `downloaded[].bytes` + summary 文件 **sha256 == 远端** + netlist `svdb/` 落地）；`EXPORT-02` 未知 item **请求层拒绝且零落盘** | `evidence/round9/calibre-c07-r11c.txt` |
 | 表 C `calibre.export_cdl.netlist_name` | ✅ **行移除**：独立 op `calibre.export_cdl` 已按 spec 折进 `calibre.lvs(source=…)`（C07，设计 `62575c6`） | 同上（12/12） |
 | 表 C `maestro.read_config.sim` | ✅ **已补**：`CONFIG-01` 带 `step_details=true`，断言 `options` 步的 `env`/`sim` 与公开 `tests.*.env_options/sim_options` **逐值一致** | `evidence/round9/maestro-c09-verify2.txt` |
-| 表 C `symbol.read.term_order` | ⚠ **立卡 P-116**：spec `3-symbol.md:200` 说 `schEditPinOrder` 后 `pin_order`/`port_order`/`term_order` 一致；真机 term_order 未同步（空/陈旧）→ 红钉放套件最后一条 | `evidence/round9/symbol-p116.txt`、`reports/bugs/P-116-*.md` |
+| 表 C `symbol.read.term_order` | ✅ **已归位**：spec 定稿（`b4036d0`）term_order = legacy raw（可能空/陈旧，不当权威）；TB 降级为「pin==port 强断言 + term 存在且为 list」，`symbol_e2e_tests` **10/10 绿** | `evidence/round9/symbol-p116-fixed.txt` |
 | 参数缺口：`log_level` / `log_max_bytes` 非法档（原只有 L0） | ✅ **已补**：`LOG-08` 5 个非法值经业务面结构化拒绝 + **零副作用**验证 | `evidence/round9/skill-log-options-log08.txt`（9/9 绿） |
 | spec §8 calibre LVS 验收行（`ctle.gds`+`ctle.cdl`，此前 TB 只跑 inv2） | ✅ **已补**：`LVS-CTLE`（强结论 + `svdb/*.phdb` 目录结构 + `db/` 子目录） | `evidence/round9/calibre-c07-r11c.txt` |
 | T3 未解析调用点 101/102 | ✅ **人工复核完**：A 段 19 条**全部**是解析器局限（测试私有 op `tb.*`/`test.*`、辅助函数形参、循环变量），无真缺口；B 段 80 条为管道行 | `test/artifacts/tmp/a_list.txt`（逐条上下文） |
 | 日志 §8.7 非法值/`unavailable` | ✅ 端到端（LOG-08）；§8.4 第 3 档（error 增量仍超限 → 截断说明行）**E2E 不可达**（SKILL 产不出 `\e` 前缀行），保持 L0 覆盖并在 TB 注释里写明 | `skill_log_options_e2e_tests.py` 头注 |
 | 控制面写通道（非业务通道也要成体系 TB） | ✅ 新增 `control_plane_write_tb.py` **8/8**（update/config/delete 值级 + 未知 endpoint 零落盘 + 负例） | `evidence/round9/control-plane-write-tb.json` |
 | P-086 家族：投递超时永久置忙 | ✅ 修复 `97baf13` + 新增回归钉 **5/5 绿**（disposable，不重启 CIW 自恢复） | `evidence/round9/delivered-timeout-recovery.json` |
+| C11 个人自助权限（v42） | ✅ **测试侧独立验证**：写通道 TB 扩到 **12/12 绿**（个人 token 自助矩阵：self/他人/普通字段/只读需 enhanced/保密 403/个人 delete 401/零落盘） | `evidence/round9/control-plane-write-tb-c11.json` |
+| P-117：`calibre.export.items` 缺 `pdb_dir`（spec §4.5 有、实现无） | ⚠ 新立卡 + TB `EXPORT-03/04`（`all_small` 展开值级 + `pdb_dir` 现状结构化拒绝） | `evidence/round9/calibre-c07-r11e.txt`（14/14） |
+| P-118：maestro `job_type=netlisting` 静默 no-op | ⚠ 新立卡 + 红钉 `NKM-09`（对照组 simulation 正常落盘；netlisting 报 ok 但读回恒 null） | `evidence/round9/maestro-nkm-p118.txt`、`maestro-netlisting-policy-probe.txt` |
 
 ## 0. 达标判定摘要
 

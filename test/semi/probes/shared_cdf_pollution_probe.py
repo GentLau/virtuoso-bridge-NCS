@@ -11,7 +11,7 @@
 PDK 器件）的默认值。本探针把影响面测清楚：
 
 1. 改前/改后读 cell 级 CDF 默认值（analogLib/res.r、tsmcN65/nch_25.w/l）；
-2. 另一个会话（--peer-token，默认 vbuser1，共享同一 /project 库）读同一 cell 的默认值
+2. 另一个会话（--peer-token，默认 vbuser3，共享同一 /project 库）读同一 cell 的默认值
    → 判断是"同会话内存态"还是"跨会话/跨用户可见"；
 3. 结束前还原并复查。
 
@@ -43,7 +43,7 @@ if hasattr(sys.stdout, "reconfigure"):
 
 API = "http://127.0.0.1:8127/api/operation"
 DEFAULT_TOKEN = "d6af595b342647b58ec63ca6"
-DEFAULT_PEER = "vb-vbuser1"
+DEFAULT_PEER = "vb-vbuser3"
 LIB, CELL = "SRX65", "cdf_probe"
 
 

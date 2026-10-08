@@ -2525,10 +2525,10 @@ button,input,select {
         <div class="panel-body">
           <div class="field compact"><label for="personalUserInput">用户名</label><input id="personalUserInput" maxlength="64" placeholder="例如 alice" autocomplete="username" spellcheck="false"></div>
           <div class="field compact"><label for="personalTokenInput">个人 Token <span class="required" aria-hidden="true">*</span></label><input id="personalTokenInput" type="password" maxlength="64" autocomplete="off" spellcheck="false" placeholder="本人的注册表 token"><p class="field-help">作为 <code>Authorization: Bearer</code>，后端据此确认“只能读写自己”。</p></div>
-          <div class="field compact"><label for="personalEnhancedInput">增强凭据 <span class="optional">保存/删除必填</span></label><input id="personalEnhancedInput" type="password" maxlength="64" autocomplete="off" spellcheck="false" placeholder="管理员 token 或任一已登记持有者 token"><p class="field-help">修改或删除个人注册表时放入请求体 <code>enhanced_token</code>。页面不会把它改作 Authorization，也不会自动回退到管理员端点。</p></div>
+          <div class="field compact"><label for="personalEnhancedInput">增强凭据 <span class="optional">管理员 token</span></label><input id="personalEnhancedInput" type="password" maxlength="64" autocomplete="off" spellcheck="false" placeholder="只读字段需要：管理员 token"><p class="field-help">编辑普通字段可不填；修改 <code>mode</code>、runtime、端口、max_sessions、expected_* 等只读字段时必须填写管理员 token，后端会作为 <code>enhanced_token</code> 校验。</p></div>
           <button id="personalConnectBtn" class="btn btn-primary" type="button" style="width:100%">查询我的注册表配置</button>
-          <div id="personalAuthState" class="notice" role="status">尚未查询。请输入用户名和个人 Token；保存或删除时再填增强凭据。</div>
-          <div class="scope-note" style="margin-top:14px"><strong>页面职责矩阵：</strong><br>个人 Token：确认本人身份并限定只能访问自己的条目。<br>增强凭据：随修改/删除请求提交 <code>enhanced_token</code>，用于受保护变更。<br>仅管理员：全局配置文件、业务进程 reload/restart。<br><b>当前后端缺陷：</b><code>/api/user/*</code> 仍强制管理员 Authorization，<code>enhanced_token</code> 也尚未接入 update；个人自助请求会被 401 拒绝。</div>
+          <div id="personalAuthState" class="notice" role="status">尚未查询。请输入用户名和个人 Token。</div>
+          <div class="scope-note" style="margin-top:14px"><strong>页面职责矩阵（控制面 v42）：</strong><br>个人 Token：只能访问自己的条目。<br>普通字段：可直接修改，例如 host/user/root、cdslog 和用户组。<br>只读字段：<code>mode</code>、runtime、端口、max_sessions、expected_* 需要 <code>enhanced_token</code>（仅管理员 token）。<br>凭据字段：<code>key/key_dir</code> 个人视图隐藏且个人不可修改。<br>删除：<code>DELETE /api/user/&lt;user&gt;</code> 仍仅管理员。</div>
         </div>
       </section>
       <section class="card management-panel">
@@ -2547,9 +2547,9 @@ button,input,select {
           </div>
           <div id="personalDiffBox" class="diff-box" hidden><h3>待保存变更</h3><div id="personalDiffList" class="diff-list"></div></div>
           <div id="personalDangerZone" class="danger-zone" hidden>
-            <strong>删除我的注册条目</strong>
-            <p>删除后本机解绑，但远端 daemon 可能仍接受旧 token，直到执行 <code>RBStop()</code> 并清理部署。该操作只在后端授权通过时生效。</p>
-            <button id="personalDeleteBtn" class="btn btn-danger" type="button">删除我的条目</button>
+            <strong>删除仍收归管理员</strong>
+            <p>个人自助契约只覆盖查询和修改；<code>DELETE /api/user/&lt;user&gt;</code> 仍要求管理员 Authorization。个人页不会代提管理员凭据。</p>
+            <button id="personalDeleteBtn" class="btn btn-danger" type="button" disabled>个人页不提供删除</button>
           </div>
         </div>
       </aside>
@@ -2851,8 +2851,8 @@ function renderEntryDetail(target, entry, user) {
   appendKv(defaultsGrid, 'ssh.default.jump_host', ssh.jump_host, true);
   appendKv(defaultsGrid, 'ssh.default.jump_user', ssh.jump_user, true);
   appendKv(defaultsGrid, 'ssh.default.proxy', ssh.proxy, true);
-  appendKv(defaultsGrid, 'ssh.default.key_dir', ssh.key_dir, true);
-  appendKv(defaultsGrid, 'ssh.default.key', ssh.key, true);
+  appendKv(defaultsGrid, 'ssh.default.key_dir', ssh.key_dir === undefined ? '个人视图隐藏' : ssh.key_dir, true);
+  appendKv(defaultsGrid, 'ssh.default.key', ssh.key === undefined ? '个人视图隐藏' : ssh.key, true);
   appendKv(defaultsGrid, 'root.default', entry.root && entry.root.default, true);
   defaults.appendChild(defaultsGrid);
   body.appendChild(defaults);
@@ -3011,9 +3011,7 @@ function renderEntryEditor(target, entry) {
     ['ssh.default.user', 'ssh.default.user', sshDefault.user],
     ['ssh.default.jump_host', 'ssh.default.jump_host', sshDefault.jump_host],
     ['ssh.default.jump_user', 'ssh.default.jump_user', sshDefault.jump_user],
-    ['ssh.default.proxy', 'ssh.default.proxy', sshDefault.proxy],
-    ['ssh.default.key_dir', 'ssh.default.key_dir', sshDefault.key_dir],
-    ['ssh.default.key', 'ssh.default.key', sshDefault.key]
+    ['ssh.default.proxy', 'ssh.default.proxy', sshDefault.proxy]
   ].forEach(function(item) {
     addEditorField(basicsBody, {
       path: item[0],
@@ -3042,8 +3040,6 @@ function renderEntryEditor(target, entry) {
       ['jump_host', role.jump_host],
       ['jump_user', role.jump_user],
       ['proxy', role.proxy],
-      ['key_dir', role.key_dir],
-      ['key', role.key],
       ['root', role.root],
       ['max_sessions', role.max_sessions]
     ].forEach(function(item) {
@@ -3357,9 +3353,8 @@ function renderPersonalFailure(error, action) {
     wrapper = make('div'),
     icon = make('div', 'empty-state-icon', '!'),
     title = make('strong', '', '无法' + action + '个人注册表条目'),
-    message = make('p', '', error.status === 401
-      ? '后端权限层拒绝了个人 token。当前 server 尚未实现个人自助查询/修改契约；页面没有改走管理员凭据，也没有用其他用户的数据填充。'
-      : errorMessages(error).join('；')),
+    message = make('p', '', personalErrorMessage(error, action) +
+      ' 页面没有改走管理员凭据，也没有用其他用户的数据填充。'),
     meta = make('div', 'error-meta'),
     details = make('details', 'raw-error'),
     raw = {
@@ -3396,7 +3391,7 @@ function renderPersonalEntry(entry, user) {
   byId('personalSaveBtn').hidden = true;
   byId('personalRefreshBtn').disabled = false;
   byId('personalEditBtn').disabled = false;
-  byId('personalDeleteBtn').disabled = false;
+  byId('personalDeleteBtn').disabled = true;
   renderEntryDetail(byId('personalDetail'), entry, user)
 }
 
@@ -3444,6 +3439,59 @@ function personalCredentials() {
   return {
     personal: byId('personalTokenInput').value.trim(),
     enhanced: byId('personalEnhancedInput').value.trim()
+  }
+}
+
+function personalErrorMessage(error, action) {
+  const data = error.data || {},
+    detail = Array.isArray(data.detail) ? data.detail.join('；') : String(data.detail || '');
+  if (error.status === 401) {
+    if (detail.indexOf('invalid enhanced_token') >= 0) {
+      return '增强凭据无效：只读字段要求管理员 token，已登记用户 token 不算增强凭据。'
+    }
+    return '个人 Token 无效或未登记（401）。请确认登录的是本人 token。'
+  }
+  if (error.status === 403) {
+    if (detail.indexOf('secret fields') >= 0) {
+      return '凭据字段 key / key_dir 只能由管理员修改，个人自助接口明确拒绝。'
+    }
+    if (detail.indexOf('enhanced_token required') >= 0) {
+      return '本次修改包含只读字段（mode / runtime / 端口 / max_sessions / expected_*），需要管理员增强凭据。'
+    }
+    if (detail.indexOf('own entry') >= 0) {
+      return '个人 token 只能访问自己的注册表条目，不能查询或修改其他用户。'
+    }
+  }
+  return data.error || error.message || ('个人注册表' + action + '失败')
+}
+
+function inspectPersonalPatch(patch) {
+  const secretFields = ['key', 'key_dir'],
+    readonlyFields = ['mode', 'max_sessions', 'expected_fingerprint',
+      'daemon_port', 'local_port', 'expected_hostname', 'expected_user'];
+  let secret = false,
+    readonly = false;
+  function walk(node, path) {
+    if (!isPlainObject(node)) return;
+    Object.keys(node).forEach(function(key) {
+      const nextPath = path.concat([key]),
+        value = node[key];
+      if (isPlainObject(value)) {
+        walk(value, nextPath);
+        return
+      }
+      const underRole = nextPath[0] === 'roles' && nextPath.length >= 3,
+        underSsh = nextPath[0] === 'ssh' && nextPath[1] === 'default' && nextPath.length >= 3,
+        field = underRole || underSsh ? nextPath[2] : null;
+      if (field && secretFields.indexOf(field) >= 0) secret = true;
+      if (field && readonlyFields.indexOf(field) >= 0) readonly = true;
+      if (nextPath[0] === 'mode' || nextPath[0] === 'runtime') readonly = true
+    })
+  }
+  walk(patch || {}, []);
+  return {
+    secret: secret,
+    readonly: readonly
   }
 }
 
@@ -3495,9 +3543,7 @@ async function personalLoadEntry() {
     renderPersonalEntry(data.entry, data.user || user);
     renderPersonalStatus('已读取 ' + user + ' 的注册表条目。查询模式：' + result.mode + '。', 'success')
   } catch (error) {
-    const message = error.status === 401
-      ? '后端拒绝了该凭据（401）。当前规范中 update/query 端点要求管理员权限，个人 token 不能自助调用。'
-      : errorMessages(error).join('；');
+    const message = personalErrorMessage(error, '查询');
     renderPersonalStatus(message, 'danger');
     renderPersonalFailure(error, '查询');
     toast(message, 'error')
@@ -3513,8 +3559,15 @@ async function personalSaveChanges() {
   personalPreviewChanges();
   const user = byId('personalUserInput').value.trim();
   if (!user || !Object.keys(PERSONAL_PATCH).length) return;
-  if (!personalCredentials().enhanced) {
-    renderPersonalStatus('保存个人注册表变更需要增强凭据。当前页不会回退到管理员 token。', 'danger');
+  const patchRisk = inspectPersonalPatch(PERSONAL_PATCH),
+    credentials = personalCredentials();
+  if (patchRisk.secret) {
+    renderPersonalStatus('key / key_dir 属于管理员字段，个人页不能提交。', 'danger');
+    toast('凭据字段个人不可修改', 'error');
+    return
+  }
+  if (patchRisk.readonly && !credentials.enhanced) {
+    renderPersonalStatus('本次修改包含只读字段，需要管理员增强凭据。', 'danger');
     byId('personalEnhancedInput').focus();
     return
   }
@@ -3530,9 +3583,7 @@ async function personalSaveChanges() {
     renderPersonalStatus('个人配置已保存并触发业务运行时重载。保存模式：' + result.mode + '。', 'success');
     toast('个人配置已保存')
   } catch (error) {
-    const message = error.status === 401
-      ? '保存被拒绝（401）：当前后端只接受管理员权限。个人 token + enhanced_token 的自助 update 尚未在当前服务器实现。'
-      : errorMessages(error).join('；');
+    const message = personalErrorMessage(error, '保存');
     renderPersonalStatus(message, 'danger');
     toast(message, 'error')
   } finally {
@@ -3542,39 +3593,8 @@ async function personalSaveChanges() {
 }
 
 async function personalDeleteEntry() {
-  const user = byId('personalUserInput').value.trim();
-  if (!user || !PERSONAL_ORIGINAL || PERSONAL_BUSY) return;
-  if (!personalCredentials().enhanced) {
-    renderPersonalStatus('删除个人注册表条目前需要增强凭据。当前页不会回退到管理员 token。', 'danger');
-    byId('personalEnhancedInput').focus();
-    return
-  }
-  if (!window.confirm('确认删除用户“' + user + '”的注册条目？\n\n本机解绑不等于远端吊销。')) return;
-  PERSONAL_BUSY = true;
-  renderPersonalStatus('正在删除 ' + user + '…');
-  try {
-    const result = await personalRequest('/api/user/' + encodeURIComponent(user), {
-      method: 'DELETE'
-    }, {});
-    PERSONAL_LAST_MODE = result.mode;
-    PERSONAL_ORIGINAL = null;
-    byId('personalDetail').hidden = true;
-    byId('personalEditor').hidden = true;
-    byId('personalEmpty').hidden = false;
-    byId('personalDangerZone').hidden = true;
-    byId('personalRefreshBtn').disabled = true;
-    byId('personalEditBtn').disabled = true;
-    renderPersonalStatus('用户“' + user + '”已从本机注册表移除。', 'success');
-    toast('注册条目已删除')
-  } catch (error) {
-    const message = error.status === 401
-      ? '删除被拒绝（401）：当前后端要求管理员权限。'
-      : errorMessages(error).join('；');
-    renderPersonalStatus(message, 'danger');
-    toast(message, 'error')
-  } finally {
-    PERSONAL_BUSY = false
-  }
+  renderPersonalStatus('DELETE /api/user/<user> 仍收归管理员，个人页不提供删除。', 'danger');
+  toast('删除仍仅管理员', 'error')
 }
 
 function renderAdminStatus(message, tone) {

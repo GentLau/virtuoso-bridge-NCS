@@ -386,7 +386,9 @@ class TestPackageGenerate(unittest.TestCase):
                 middle = FakeMiddle()
                 with self.assertRaises(ValueError) as ctx:
                     _generate(middle, timeout=bad)
-                self.assertIn("timeout must be a positive number", str(ctx.exception))
+                # P-130：_require_timeout 收敛到公共实现（严格口径，拒绝
+                # bool/inf/nan），文案统一为 "positive finite number"。
+                self.assertIn("timeout must be a positive", str(ctx.exception))
                 self.assertEqual(middle.calls, [])
 
     def test_skill_side_failure_envelope_surfaces_as_result_error(self):

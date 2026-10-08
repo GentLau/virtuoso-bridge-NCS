@@ -41,7 +41,7 @@ class FakeRunner:
 
 class TestEndpointBudgets(unittest.TestCase):
     def test_same_endpoint_uses_min_max_sessions(self):
-        budgets = TokenBudgets(thread_pool_size=32, channel_budget=10)
+        budgets = TokenBudgets(channel_budget=10)
         key = "v1:shared"
         budgets.set_endpoint_limit(key, 8)
         budgets.set_endpoint_limit(key, 3)
@@ -54,7 +54,7 @@ class TestEndpointBudgets(unittest.TestCase):
             lease.release()
 
     def test_token_budget_is_across_endpoints(self):
-        budgets = TokenBudgets(thread_pool_size=32, channel_budget=2)
+        budgets = TokenBudgets(channel_budget=2)
         budgets.set_endpoint_limit("a", 10)
         budgets.set_endpoint_limit("b", 10)
         first = budgets.try_acquire_channel(endpoint_key="a")
@@ -66,21 +66,15 @@ class TestEndpointBudgets(unittest.TestCase):
         first.release()
         second.release()
 
-    def test_thread_budget_and_idempotent_release(self):
-        budgets = TokenBudgets(thread_pool_size=1, channel_budget=1)
-        self.assertTrue(budgets.try_acquire_thread())
-        self.assertFalse(budgets.try_acquire_thread())
-        budgets.release_thread()
-        self.assertEqual(budgets.threads_in_use, 0)
-        with self.assertRaises(RuntimeError):
-            budgets.release_thread()
+    def test_idempotent_channel_release(self):
+        budgets = TokenBudgets(channel_budget=1)
         lease = budgets.try_acquire_channel(endpoint_key="e", role_max_sessions=2)
         self.assertEqual(budgets.channels_in_use_for("e"), 1)
         lease.release(); lease.release()
         self.assertEqual(budgets.channels_in_use_for("e"), 0)
 
     def test_release_without_lease_is_error(self):
-        budgets = TokenBudgets(thread_pool_size=1, channel_budget=1)
+        budgets = TokenBudgets(channel_budget=1)
         with self.assertRaises(RuntimeError):
             budgets._release_channel("missing")
 

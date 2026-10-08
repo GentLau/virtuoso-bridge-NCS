@@ -187,9 +187,9 @@
 
 ### `virtuoso.cellview.lib.delete`
 
-- [GAP] `log_level` (str | None, required=False) — op_tb_files=2
-- [GAP] `log_max_bytes` (int | None, required=False) — op_tb_files=2
-- [GAP] `step_details` (bool, required=False) — op_tb_files=2
+- [GAP] `log_level` (str | None, required=False) — op_tb_files=3
+- [GAP] `log_max_bytes` (int | None, required=False) — op_tb_files=3
+- [GAP] `step_details` (bool, required=False) — op_tb_files=3
 
 ### `virtuoso.cellview.lib.get`
 
@@ -217,9 +217,9 @@
 
 ### `virtuoso.cellview.view.create`
 
-- [GAP] `log_level` (str | None, required=False) — op_tb_files=9
-- [GAP] `log_max_bytes` (int | None, required=False) — op_tb_files=9
-- [GAP] `step_details` (bool, required=False) — op_tb_files=9
+- [GAP] `log_level` (str | None, required=False) — op_tb_files=10
+- [GAP] `log_max_bytes` (int | None, required=False) — op_tb_files=10
+- [GAP] `step_details` (bool, required=False) — op_tb_files=10
 
 ### `virtuoso.cellview.view.delete`
 

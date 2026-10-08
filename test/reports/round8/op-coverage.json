@@ -106,6 +106,7 @@
    "test/offline/core/api_server_tb.py",
    "test/semi/probes/_maestro_tb.py",
    "test/semi/probes/gds_then_skill_probe.py",
+   "test/semi/probes/layout_depth_region_direct_probe.py",
    "test/semi/probes/maestro_p095_overwrite_wedge_probe.py",
    "test/semi/probes/maestro_p096_write_lock_probe.py",
    "test/semi/probes/shared_cdf_pollution_probe.py",
@@ -114,7 +115,7 @@
    "test/shared/runners/skill_eval.py",
    "test/shared/runners/skill_query.py"
   ],
-  "call_sites": 283
+  "call_sites": 285
  },
  "basic.spectre.run": {
   "package": "basic.py",
@@ -153,7 +154,7 @@
    "test/live/packages/calibre_e2e_tests.py",
    "test/live/packages/calibre_export_pex_e2e_tests.py"
   ],
-  "call_sites": 10
+  "call_sites": 13
  },
  "calibre.lvs": {
   "package": "calibre.py",
@@ -406,6 +407,7 @@
    "test/shared/fixtures/registration_tb_support.py",
    "test/shared/runners/build_op_param_matrix.py",
    "test/shared/runners/build_output_field_matrix.py",
+   "test/shared/runners/case_profile_audit.py",
    "test/shared/runners/check_skip_reasons.py",
    "test/shared/runners/classify_uncovered.py",
    "test/shared/runners/env_check.py",
@@ -419,7 +421,7 @@
    "test/shared/runners/run_core_multi.py",
    "test/shared/runners/run_semi_probes.py"
   ],
-  "call_sites": 104
+  "call_sites": 105
  },
  "label": {
   "package": "(atomic)",
@@ -603,6 +605,7 @@
    "test/shared/runners/audit_spec_matrix_evidence.py",
    "test/shared/runners/build_op_param_matrix.py",
    "test/shared/runners/build_output_field_matrix.py",
+   "test/shared/runners/case_profile_audit.py",
    "test/shared/runners/check_skip_reasons.py",
    "test/shared/runners/check_spec_op_drift.py",
    "test/shared/runners/check_tb_headers.py",
@@ -626,7 +629,7 @@
    "test/shared/runners/triage_spec_clauses.py",
    "test/shared/runners/verify_spec_matrix_evidence.py"
   ],
-  "call_sites": 151
+  "call_sites": 152
  },
  "mosaic": {
   "package": "(atomic)",
@@ -888,6 +891,7 @@
    "test/shared/runners/audit_spec_matrix_evidence.py",
    "test/shared/runners/build_op_param_matrix.py",
    "test/shared/runners/build_output_field_matrix.py",
+   "test/shared/runners/case_profile_audit.py",
    "test/shared/runners/check_skip_reasons.py",
    "test/shared/runners/check_spec_op_drift.py",
    "test/shared/runners/check_tb_headers.py",
@@ -921,7 +925,7 @@
    "test/shared/runners/triage_spec_clauses.py",
    "test/shared/runners/verify_spec_matrix_evidence.py"
   ],
-  "call_sites": 281
+  "call_sites": 282
  },
  "place_instance": {
   "package": "(atomic)",
@@ -999,9 +1003,10 @@
    "test/offline/unit/test_nested_command_keys_contract.py",
    "test/offline/unit/test_schematic_contracts.py",
    "test/semi/probes/schematic_wire_style_probe.py",
+   "test/shared/runners/audit_atom_coverage.py",
    "test/shared/runners/make_bug_cards.py"
   ],
-  "call_sites": 6
+  "call_sites": 7
  },
  "polygon": {
   "package": "(atomic)",
@@ -1217,6 +1222,7 @@
    "test/shared/runners/audit_spec_matrix_evidence.py",
    "test/shared/runners/build_op_param_matrix.py",
    "test/shared/runners/build_output_field_matrix.py",
+   "test/shared/runners/case_profile_audit.py",
    "test/shared/runners/check_skip_reasons.py",
    "test/shared/runners/check_spec_op_drift.py",
    "test/shared/runners/check_tb_headers.py",
@@ -1247,7 +1253,7 @@
    "test/shared/runners/triage_spec_clauses.py",
    "test/shared/runners/verify_spec_matrix_evidence.py"
   ],
-  "call_sites": 229
+  "call_sites": 230
  },
  "rect": {
   "package": "(atomic)",
@@ -1661,9 +1667,10 @@
   "package": "cellview.py",
   "files": [
    "test/live/flows/project_flow_tb.py",
-   "test/live/packages/cellview_e2e_tests.py"
+   "test/live/packages/cellview_e2e_tests.py",
+   "test/semi/probes/gds_then_skill_probe.py"
   ],
-  "call_sites": 6
+  "call_sites": 8
  },
  "virtuoso.cellview.lib.get": {
   "package": "cellview.py",
@@ -1707,9 +1714,10 @@
    "test/live/packages/layout_geometry_classification_e2e_tests.py",
    "test/live/packages/nested_keys_e2e_tests.py",
    "test/semi/probes/gds_then_skill_probe.py",
+   "test/semi/probes/layout_depth_region_direct_probe.py",
    "test/semi/probes/shared_cdf_pollution_probe.py"
   ],
-  "call_sites": 37
+  "call_sites": 38
  },
  "virtuoso.cellview.view.delete": {
   "package": "cellview.py",
@@ -1833,7 +1841,7 @@
    "test/semi/probes/layout_lock_ownership_probe.py",
    "test/semi/probes/layout_p044_second_write_probe.py"
   ],
-  "call_sites": 54
+  "call_sites": 55
  },
  "virtuoso.maestro.close_gui": {
   "package": "maestro.py",
@@ -1935,7 +1943,7 @@
    "test/live/packages/maestro_view_param_e2e_tests.py",
    "test/semi/probes/maestro_delete_var_all_probe.py"
   ],
-  "call_sites": 51
+  "call_sites": 52
  },
  "virtuoso.maestro.write_history": {
   "package": "maestro.py",
@@ -1973,7 +1981,7 @@
    "test/semi/probes/shared_cdf_pollution_probe.py",
    "test/semi/probes/twouser_same_view_probe.py"
   ],
-  "call_sites": 84
+  "call_sites": 86
  },
  "virtuoso.schematic.screenshot": {
   "package": "schematic.py",
@@ -1997,7 +2005,7 @@
    "test/semi/probes/shared_cdf_pollution_probe.py",
    "test/semi/probes/twouser_same_view_probe.py"
   ],
-  "call_sites": 72
+  "call_sites": 73
  },
  "virtuoso.skillref.info": {
   "package": "skillref.py",
@@ -2292,6 +2300,7 @@
    "test/shared/runners/audit_spec_matrix_evidence.py",
    "test/shared/runners/build_op_param_matrix.py",
    "test/shared/runners/build_output_field_matrix.py",
+   "test/shared/runners/case_profile_audit.py",
    "test/shared/runners/check_skip_reasons.py",
    "test/shared/runners/check_spec_op_drift.py",
    "test/shared/runners/check_tb_headers.py",
@@ -2319,6 +2328,6 @@
    "test/shared/runners/triage_spec_clauses.py",
    "test/shared/runners/verify_spec_matrix_evidence.py"
   ],
-  "call_sites": 199
+  "call_sites": 200
  }
 }

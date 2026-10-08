@@ -341,34 +341,6 @@ class TestRemoteClientEdges(unittest.TestCase):
         self.assertEqual(res.kind, "checksum")
         self.assertEqual(target.read_bytes(), b"old")
 
-    def test_verify_command_failure_propagates(self):
-        entry = make_entry()
-        from unittest import mock
-        with mock.patch("transport.tunnel.SSHRunner", FakeRunner):
-            client = RemoteClient(entry, resolve(entry), "alice")
-            # one-shot channels (digest check) reuse the role runner here
-            client._one_shot_runner = client._runner
-            client.file_runner.run_one_shot = lambda *a, **k: CommandResult(
-                returncode=1, stdout="", stderr="sha boom",
-            )
-            res = client._verify("/remote/p.bin", b"abc")
-        self.assertIn("sha boom", res.stderr)
-
-    def test_verify_mismatch(self):
-        entry = make_entry()
-        from unittest import mock
-        with mock.patch("transport.tunnel.SSHRunner", FakeRunner):
-            client = RemoteClient(entry, resolve(entry), "alice")
-            # one-shot channels (digest check) reuse the role runner here
-            client._one_shot_runner = client._runner
-            client.file_runner.run_one_shot = lambda *a, **k: CommandResult(
-                returncode=0, stdout="deadbeef  /remote/p.bin", stderr="",
-            )
-            res = client._verify("/remote/p.bin", b"abc")
-        self.assertEqual(res.returncode, 1)
-        self.assertIn("sha256 mismatch", res.stderr)
-
-
 class TestRemoteClientRecursiveUpload(unittest.TestCase):
     def setUp(self):
         FakeRunner.instances.clear()

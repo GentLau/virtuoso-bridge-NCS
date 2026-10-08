@@ -21,6 +21,12 @@ from typing import Any
 from common.paths import artifact_dir
 from pyapi.models import Middle, VirtuosoResult, skill_log_kwargs, ResultBase, ResultPackage
 from pyapi.packages import basic
+from pyapi.packages._common import (
+    _require_bool,
+    _require_nonblank_text as _require_text,
+    _require_timeout,
+    _step,
+)
 
 
 LAYOUT_VIEW_TYPE = "maskLayout"
@@ -138,27 +144,6 @@ class DisplayRequest:
 # ---------------------------------------------------------------------------
 # Validation / formatting helpers
 # ---------------------------------------------------------------------------
-
-def _step(name: str, ok: bool, detail: Any) -> dict[str, Any]:
-    return {"name": name, "ok": ok, "detail": detail}
-
-
-def _require_text(value: Any, name: str) -> str:
-    if not isinstance(value, str) or not value.strip():
-        raise ValueError(f"{name} must be a non-empty string")
-    return value
-
-
-def _require_timeout(value: Any) -> None:
-    if value is not None and (not isinstance(value, (int, float)) or value <= 0):
-        raise ValueError("timeout must be a positive number or None")
-
-
-def _require_bool(value: Any, name: str) -> bool:
-    if not isinstance(value, bool):
-        raise ValueError(f"{name} must be a boolean")
-    return value
-
 
 def _number(value: Any, name: str) -> float:
     if isinstance(value, bool) or not isinstance(value, (int, float)):

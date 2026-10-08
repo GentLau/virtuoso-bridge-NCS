@@ -63,7 +63,8 @@ class TestBusinessLocalLive(unittest.TestCase):
         if os.name == "nt":
             raise unittest.SkipTest("local live tests must run on the Virtuoso host")
         cls.users_n = int(os.environ.get("VB_LOCAL_USERS", "4"))
-        port_base = int(os.environ.get("VB_LOCAL_PORT_BASE", "65401"))
+        # 654xx 是常驻真机实例端口；local 模式 TB 用 655xx，避免撞到 vbuser* 实例。
+        port_base = int(os.environ.get("VB_LOCAL_PORT_BASE", "65501"))
         cls.wd = work_root()
         registry = load_registry(registry_path())
 

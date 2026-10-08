@@ -1,4 +1,4 @@
-# 日常环境恢复 · lab 四台保活 + labns 服务拉起（Windows 侧入口）
+﻿# 日常环境恢复 · lab 四台保活 + labns 服务拉起（Windows 侧入口）
 #
 # 用途：本机的 w1-gent..w4-gent 是 **WSL distro**；WSL 会把空闲 distro 停掉，
 # distro 一停，它的 labns / veth / sshd 全部消失 → Windows 直接表现为

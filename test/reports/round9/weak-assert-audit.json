@@ -2,16 +2,16 @@
  "method": "AST：断言点=assert / raise AssertionError（挂外层 if）/ self.assert* / _check|_expect|... helper 首参",
  "caveat": "强度是静态启发式；medium/weak 需人工复核，报告只把弱断言当线索",
  "totals": {
-  "strong": 4212,
-  "weak": 1223,
-  "medium": 495
+  "strong": 4487,
+  "weak": 1289,
+  "medium": 586
  },
  "weak_only_cases": [
   {
    "file": "test/live/packages/screenshot_params_e2e_tests.py",
    "case": "case_window",
    "weak": 9,
-   "sample": "opened.get('local_path')"
+   "sample": "opened.get('local_path')  # f'leave_open 截图无产物: {opened}'"
   },
   {
    "file": "test/live/packages/screenshot_params_e2e_tests.py",
@@ -116,12 +116,6 @@
    "sample": "t"
   },
   {
-   "file": "test/live/packages/cellview_e2e_tests.py",
-   "case": "_case_negative",
-   "weak": 2,
-   "sample": "transport"
-  },
-  {
    "file": "test/live/packages/maestro_e2e_tests.py",
    "case": "_case_gui_lifecycle",
    "weak": 2,
@@ -134,16 +128,16 @@
    "sample": "bool(opened.get('window'))"
   },
   {
-   "file": "test/live/packages/skillref_e2e_tests.py",
-   "case": "_case_errors",
+   "file": "test/live/transport/delivered_timeout_recovery_tb.py",
+   "case": "case_recovery_without_restart",
    "weak": 2,
-   "sample": "not response.get('ok')"
+   "sample": "server is not None  # '前置未完成'"
   },
   {
-   "file": "test/live/packages/spectre_params_e2e_tests.py",
-   "case": "case_measure_bad_source",
+   "file": "test/live/transport/delivered_timeout_recovery_tb.py",
+   "case": "case_still_usable",
    "weak": 2,
-   "sample": "transport"
+   "sample": "server is not None  # '前置未完成'"
   },
   {
    "file": "test/offline/unit/test_api_server_main.py",
@@ -356,40 +350,22 @@
    "sample": "t"
   },
   {
-   "file": "test/live/packages/nested_keys_e2e_tests.py",
+   "file": "test/live/packages/maestro_nested_keys_e2e_tests.py",
+   "case": "case_load_corners_negative",
+   "weak": 1,
+   "sample": "response.get('ok') is not True  # 'load_corners 对不存在的本地文件竟返回成功'"
+  },
+  {
+   "file": "test/live/packages/spectre_modes_e2e_tests.py",
    "case": "case_env",
    "weak": 1,
-   "sample": "response.get('ok') is True"
-  },
-  {
-   "file": "test/live/packages/schematic_e2e_tests.py",
-   "case": "_case_check_and_save",
-   "weak": 1,
-   "sample": "bool(data.get('ok'))"
-  },
-  {
-   "file": "test/live/packages/spectre_e2e_tests.py",
-   "case": "_case_failure",
-   "weak": 1,
-   "sample": "not response.get('ok')"
+   "sample": "response.get('ok') is True  # f\"业务面探活失败: {response.get('error')}\""
   },
   {
    "file": "test/live/packages/step_details_e2e_tests.py",
    "case": "case_env",
    "weak": 1,
-   "sample": "response.get('ok') is True"
-  },
-  {
-   "file": "test/live/packages/symbol_e2e_tests.py",
-   "case": "_case_missing_view",
-   "weak": 1,
-   "sample": "not response.get('ok')"
-  },
-  {
-   "file": "test/live/packages/veriloga_e2e_tests.py",
-   "case": "_case_delete",
-   "weak": 1,
-   "sample": "not response.get('ok')"
+   "sample": "response.get('ok') is True  # f\"环境探活失败: {response.get('error')}\""
   },
   {
    "file": "test/live/registration/registration_role_split_tb.py",
@@ -402,6 +378,12 @@
    "case": "main",
    "weak": 1,
    "sample": "args.base_port"
+  },
+  {
+   "file": "test/live/transport/delivered_timeout_recovery_tb.py",
+   "case": "case_middle_baseline",
+   "weak": 1,
+   "sample": "baseline.ok  # f'middle 基线失败: {baseline.errors}'"
   },
   {
    "file": "test/offline/unit/test_daemon_import_contract.py",
@@ -752,10 +734,7 @@
    "sample": "result.ok, bool"
   }
  ],
- "log_read_but_unasserted": [
-  "test/live/packages/skill_log_semantics_e2e_tests.py:case_f_multi_print_same_request",
-  "test/live/packages/skill_log_semantics_e2e_tests.py:case_h_loop_print"
- ],
+ "log_read_but_unasserted": [],
  "files": {
   "test/offline/core/api_server_tb.py": {
    "counts": {
@@ -907,8 +886,8 @@
   },
   "test/offline/unit/test_calibre_package.py": {
    "counts": {
-    "weak": 36,
-    "strong": 124,
+    "weak": 31,
+    "strong": 105,
     "medium": 5
    },
    "weak_only": [
@@ -1027,7 +1006,7 @@
   },
   "test/offline/unit/test_daemon_parity.py": {
    "counts": {
-    "strong": 31,
+    "strong": 34,
     "weak": 4
    },
    "weak_only": [],
@@ -1035,8 +1014,8 @@
   },
   "test/offline/unit/test_daemon_runtime_contracts.py": {
    "counts": {
-    "weak": 27,
-    "strong": 87,
+    "weak": 32,
+    "strong": 117,
     "medium": 1
    },
    "weak_only": [
@@ -1122,7 +1101,7 @@
   },
   "test/offline/unit/test_log_no_fetch.py": {
    "counts": {
-    "strong": 10,
+    "strong": 22,
     "weak": 1
    },
    "weak_only": [],
@@ -1157,9 +1136,9 @@
   },
   "test/offline/unit/test_maestro_package_flow.py": {
    "counts": {
-    "weak": 29,
-    "strong": 33,
-    "medium": 1
+    "weak": 33,
+    "strong": 42,
+    "medium": 2
    },
    "weak_only": [
     "test_close_gui_without_window_is_clean_noop",
@@ -1275,6 +1254,14 @@
    "weak_only": [
     "test_whole_result_is_strictly_serialisable"
    ],
+   "log_unasserted": []
+  },
+  "test/offline/unit/test_packaging_entrypoints.py": {
+   "counts": {
+    "strong": 9,
+    "medium": 1
+   },
+   "weak_only": [],
    "log_unasserted": []
   },
   "test/offline/unit/test_paramiko.py": {
@@ -1417,8 +1404,8 @@
   },
   "test/offline/unit/test_registration_mock_server.py": {
    "counts": {
-    "strong": 118,
-    "weak": 10,
+    "strong": 135,
+    "weak": 11,
     "medium": 1
    },
    "weak_only": [],
@@ -1426,7 +1413,7 @@
   },
   "test/offline/unit/test_registration_page.py": {
    "counts": {
-    "strong": 49
+    "strong": 74
    },
    "weak_only": [],
    "log_unasserted": []
@@ -1441,7 +1428,7 @@
   },
   "test/offline/unit/test_registration_server.py": {
    "counts": {
-    "strong": 220,
+    "strong": 256,
     "weak": 18,
     "medium": 5
    },
@@ -1537,7 +1524,7 @@
   "test/offline/unit/test_schematic_contracts.py": {
    "counts": {
     "weak": 24,
-    "strong": 118,
+    "strong": 120,
     "medium": 3
    },
    "weak_only": [
@@ -1575,8 +1562,8 @@
   },
   "test/offline/unit/test_skill_admission.py": {
    "counts": {
-    "strong": 13,
-    "weak": 1
+    "strong": 27,
+    "weak": 4
    },
    "weak_only": [
     "test_gate_is_released_after_completion"
@@ -1870,8 +1857,8 @@
   },
   "test/offline/unit/test_verilog_contracts.py": {
    "counts": {
-    "strong": 76,
-    "weak": 33,
+    "strong": 80,
+    "weak": 35,
     "medium": 1
    },
    "weak_only": [],
@@ -1970,11 +1957,6 @@
    "weak_only": [],
    "log_unasserted": []
   },
-  "test/semi/probes/daemon_internal_error_path_probe.py": {
-   "counts": {},
-   "weak_only": [],
-   "log_unasserted": []
-  },
   "test/semi/probes/docs_search_probe.py": {
    "counts": {
     "weak": 1
@@ -2027,16 +2009,6 @@
    "weak_only": [],
    "log_unasserted": []
   },
-  "test/semi/probes/maestro_batch2_verify_probe.py": {
-   "counts": {},
-   "weak_only": [],
-   "log_unasserted": []
-  },
-  "test/semi/probes/maestro_bugfix_batch_probe.py": {
-   "counts": {},
-   "weak_only": [],
-   "log_unasserted": []
-  },
   "test/semi/probes/maestro_delete_var_all_probe.py": {
    "counts": {},
    "weak_only": [],
@@ -2070,7 +2042,9 @@
    "log_unasserted": []
   },
   "test/semi/probes/maestro_p095_overwrite_wedge_probe.py": {
-   "counts": {},
+   "counts": {
+    "weak": 1
+   },
    "weak_only": [],
    "log_unasserted": []
   },
@@ -2104,11 +2078,6 @@
    "weak_only": [],
    "log_unasserted": []
   },
-  "test/semi/probes/p076_spectre_run_hang_probe.py": {
-   "counts": {},
-   "weak_only": [],
-   "log_unasserted": []
-  },
   "test/semi/probes/paramiko_ssh_config_true_probe.py": {
    "counts": {},
    "weak_only": [],
@@ -2123,6 +2092,15 @@
   },
   "test/semi/probes/py27_handler_probe.py": {
    "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/semi/probes/py27_remote_runtime_probe.py": {
+   "counts": {
+    "medium": 4,
+    "strong": 5,
+    "weak": 1
+   },
    "weak_only": [],
    "log_unasserted": []
   },
@@ -2165,11 +2143,6 @@
    "weak_only": [],
    "log_unasserted": []
   },
-  "test/semi/probes/spectre_channel_map_probe.py": {
-   "counts": {},
-   "weak_only": [],
-   "log_unasserted": []
-  },
   "test/semi/probes/symbol_generate_hierarchy_handle_probe.py": {
    "counts": {
     "medium": 1
@@ -2202,11 +2175,6 @@
    "log_unasserted": []
   },
   "test/semi/probes/twouser_same_view_probe.py": {
-   "counts": {},
-   "weak_only": [],
-   "log_unasserted": []
-  },
-  "test/semi/probes/verilog_cell_and_views_direct_probe.py": {
    "counts": {},
    "weak_only": [],
    "log_unasserted": []
@@ -2372,9 +2340,9 @@
   },
   "test/live/packages/calibre_e2e_tests.py": {
    "counts": {
-    "medium": 16,
-    "weak": 19,
-    "strong": 17
+    "medium": 32,
+    "weak": 31,
+    "strong": 26
    },
    "weak_only": [],
    "log_unasserted": []
@@ -2400,12 +2368,10 @@
   "test/live/packages/cellview_e2e_tests.py": {
    "counts": {
     "medium": 4,
-    "weak": 5,
-    "strong": 27
+    "weak": 13,
+    "strong": 32
    },
-   "weak_only": [
-    "_case_negative"
-   ],
+   "weak_only": [],
    "log_unasserted": []
   },
   "test/live/packages/gui_e2e_tests.py": {
@@ -2419,9 +2385,9 @@
   },
   "test/live/packages/infra_e2e_tests.py": {
    "counts": {
-    "medium": 9,
-    "weak": 5,
-    "strong": 21
+    "medium": 11,
+    "weak": 9,
+    "strong": 24
    },
    "weak_only": [],
    "log_unasserted": []
@@ -2446,9 +2412,9 @@
   },
   "test/live/packages/maestro_e2e_tests.py": {
    "counts": {
-    "weak": 28,
-    "medium": 33,
-    "strong": 70
+    "weak": 30,
+    "medium": 36,
+    "strong": 77
    },
    "weak_only": [
     "_case_gui_lifecycle",
@@ -2460,18 +2426,20 @@
    "counts": {
     "weak": 13,
     "strong": 14,
-    "medium": 10
+    "medium": 12
    },
    "weak_only": [],
    "log_unasserted": []
   },
   "test/live/packages/maestro_nested_keys_e2e_tests.py": {
    "counts": {
-    "weak": 8,
-    "strong": 4,
-    "medium": 8
+    "weak": 13,
+    "strong": 9,
+    "medium": 10
    },
-   "weak_only": [],
+   "weak_only": [
+    "case_load_corners_negative"
+   ],
    "log_unasserted": []
   },
   "test/live/packages/maestro_view_param_e2e_tests.py": {
@@ -2488,23 +2456,19 @@
   "test/live/packages/nested_keys_e2e_tests.py": {
    "counts": {
     "weak": 9,
-    "medium": 7,
-    "strong": 1
+    "medium": 9,
+    "strong": 3
    },
-   "weak_only": [
-    "case_env"
-   ],
+   "weak_only": [],
    "log_unasserted": []
   },
   "test/live/packages/schematic_e2e_tests.py": {
    "counts": {
-    "medium": 5,
-    "weak": 8,
-    "strong": 45
+    "medium": 10,
+    "weak": 9,
+    "strong": 68
    },
-   "weak_only": [
-    "_case_check_and_save"
-   ],
+   "weak_only": [],
    "log_unasserted": []
   },
   "test/live/packages/screenshot_params_e2e_tests.py": {
@@ -2523,19 +2487,17 @@
   },
   "test/live/packages/skillref_e2e_tests.py": {
    "counts": {
-    "medium": 13,
+    "medium": 16,
     "weak": 7,
     "strong": 22
    },
-   "weak_only": [
-    "_case_errors"
-   ],
+   "weak_only": [],
    "log_unasserted": []
   },
   "test/live/packages/skill_log_options_e2e_tests.py": {
    "counts": {
-    "weak": 10,
-    "medium": 13,
+    "weak": 11,
+    "medium": 15,
     "strong": 2
    },
    "weak_only": [],
@@ -2549,19 +2511,26 @@
    },
    "weak_only": [],
    "log_unasserted": [
-    "_cdslog",
-    "case_f_multi_print_same_request",
-    "case_h_loop_print"
+    "_cdslog"
    ]
   },
   "test/live/packages/spectre_e2e_tests.py": {
    "counts": {
-    "medium": 5,
-    "weak": 11,
-    "strong": 10
+    "medium": 12,
+    "weak": 12,
+    "strong": 19
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/live/packages/spectre_modes_e2e_tests.py": {
+   "counts": {
+    "weak": 3,
+    "strong": 6,
+    "medium": 2
    },
    "weak_only": [
-    "_case_failure"
+    "case_env"
    ],
    "log_unasserted": []
   },
@@ -2569,11 +2538,9 @@
    "counts": {
     "weak": 10,
     "strong": 10,
-    "medium": 5
+    "medium": 7
    },
-   "weak_only": [
-    "case_measure_bad_source"
-   ],
+   "weak_only": [],
    "log_unasserted": []
   },
   "test/live/packages/spectre_pvt_e2e_tests.py": {
@@ -2596,30 +2563,26 @@
   },
   "test/live/packages/symbol_e2e_tests.py": {
    "counts": {
-    "medium": 9,
-    "weak": 9,
-    "strong": 32
+    "medium": 14,
+    "weak": 13,
+    "strong": 37
    },
-   "weak_only": [
-    "_case_missing_view"
-   ],
+   "weak_only": [],
    "log_unasserted": []
   },
   "test/live/packages/veriloga_e2e_tests.py": {
    "counts": {
-    "medium": 9,
+    "medium": 11,
     "weak": 6,
     "strong": 8
    },
-   "weak_only": [
-    "_case_delete"
-   ],
+   "weak_only": [],
    "log_unasserted": []
   },
   "test/live/packages/verilog_e2e_tests.py": {
    "counts": {
-    "medium": 6,
-    "weak": 4,
+    "medium": 8,
+    "weak": 6,
     "strong": 9
    },
    "weak_only": [],
@@ -2634,6 +2597,24 @@
    "weak_only": [
     "case_result_views_red_pin"
    ],
+   "log_unasserted": []
+  },
+  "test/live/registration/control_plane_tb.py": {
+   "counts": {
+    "strong": 27,
+    "weak": 6,
+    "medium": 13
+   },
+   "weak_only": [],
+   "log_unasserted": []
+  },
+  "test/live/registration/control_plane_write_tb.py": {
+   "counts": {
+    "weak": 3,
+    "medium": 12,
+    "strong": 34
+   },
+   "weak_only": [],
    "log_unasserted": []
   },
   "test/live/registration/registration_hostkey_rotation_tb.py": {
@@ -2693,10 +2674,38 @@
    ],
    "log_unasserted": []
   },
+  "test/live/transport/c06_flush_probe.py": {
+   "counts": {},
+   "weak_only": [],
+   "log_unasserted": []
+  },
   "test/live/transport/cov_remote_real.py": {
    "counts": {},
    "weak_only": [],
    "log_unasserted": []
+  },
+  "test/live/transport/delivered_timeout_recovery_tb.py": {
+   "counts": {
+    "strong": 3,
+    "medium": 2,
+    "weak": 8
+   },
+   "weak_only": [
+    "case_middle_baseline",
+    "case_recovery_without_restart",
+    "case_still_usable"
+   ],
+   "log_unasserted": []
+  },
+  "test/live/transport/disposable_ciw_c06_p086_tb.py": {
+   "counts": {
+    "weak": 1,
+    "medium": 3
+   },
+   "weak_only": [],
+   "log_unasserted": [
+    "_cdslog_increment"
+   ]
   },
   "test/live/manual/business_console/serve.py": {
    "counts": {},
