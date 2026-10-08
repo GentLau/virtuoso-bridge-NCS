@@ -48,7 +48,6 @@ test/
 ├── shared/           跨级共享，不属于任何一级
 │   ├── fixtures/     夹具：fake daemon、Windows no-window、压测客户端
 │   ├── runners/      便利 runner / 编排脚本（可临时失修，不是契约）
-│   ├── standards/    规范指针（真源在 docs/）
 │   └── archive/      历史资产（非准出，不作为送审证据）
 ├── docs/             规范：只有三份（README / 写TB规范 / 环境与场景）
 ├── reports/          报告与台账

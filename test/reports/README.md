@@ -30,11 +30,11 @@
 | [round6-修复验证报告.md](round6-修复验证报告.md) | 第六轮逐条红转绿结论（P-052…P-072） |
 | [round5-Linux客户端矩阵.md](round5-Linux客户端矩阵.md)、[round5-顶层API面复核.md](round5-顶层API面复核.md)、[round5-真实场景-补充.md](round5-真实场景-补充.md)、[第五轮-真实场景-SerDesRX.md](第五轮-真实场景-SerDesRX.md) | 第五轮保留件：Linux 交互矩阵 / 顶层 API 复核 / 多用户场景补充 / SerDes RX 场景 |
 | [internal/](internal/) | 内部资料（环境 Runbook / 测试架构 / 报告与证据）+ 已合并旧文档快照 |
-| [bug-payloads/](bug-payloads/) | 上报 bug 的请求/响应负载（个别卡片引用） |
 
 > 2026-09-28 清理：**48 份**过时报告已删除（重复的逐轮 BUG 清单、`coverage-gaps-*` 与覆盖率旧版本、
 > `TB注释头-补全草案`、`docs精简分析`、合并过的细节清单等）。
 > 2026-10-08 再清理：round7 及更早的交付报告/送修清单/旧覆盖率口径/一次性审计共 **11 份**。
+> 同日第二批：无引用的 round8/round9 中间稿、`bug-payloads/`、旧归档快照与首批一次性脚本共 **54 份**。
 > 需要找回：`git log --diff-filter=D -- test/reports`。
 
 ## 2. 覆盖率口径
