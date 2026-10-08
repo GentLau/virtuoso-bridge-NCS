@@ -17,7 +17,7 @@
 
 | ID | 层 | 级别 | 归属 | 状态 | 一句话 | 卡片 |
 |---|---|---|---|---|---|---|
-| **P-121** | spec↔真机一致性（上层 schematic 包）· `place_pin.sig_type` 读回 | P3（文档缺口：按 spec 值域做「写值==读回」断言会误判；调用方需知道映射） | spec 侧（在 `2-schematic.md` 的 `sig_type` 值域处补一句：DB 会把 `power` 归一化为 `supply`，读回按 DB 词汇；或由实现/文档给出映射表） | 待决策 | `place_pin(sig_type="power")` 写入成功，但 `read(connectivity).nets[...].sigType` 读回 `"supply"`（其余 9 个取值原样回读）——spec 未写明该 DB 归一化 | [P-121-place-pin-power-sigtype-reads-supply.md](P-121-place-pin-power-sigtype-reads-supply.md) |
+| **P-121** | spec↔真机一致性（上层 schematic 包）· `place_pin.sig_type` 读回 | P3（文档缺口：按 spec 值域做「写值==读回」断言会误判；调用方需知道映射） | spec 侧（**口径已定**：不改实现，在 `2-schematic.md` 的 `sig_type` 值域处补一句 DB 归一化说明——`power` 读回为 `supply`，读回按 DB 词汇） | 待设计修 | `place_pin(sig_type="power")` 写入成功，但 `read(connectivity).nets[...].sigType` 读回 `"supply"`（其余 9 个取值原样回读）——spec 未写明该 DB 归一化 | [P-121-place-pin-power-sigtype-reads-supply.md](P-121-place-pin-power-sigtype-reads-supply.md) |
 | **P-120** | 注册流程（register/flow）· SSH 后端选择与 ssh-config 兼容性 | P3（一致性缺陷：apply 收 `ssh_backend` 但 probe 不用 → 用户按文档选 openssh 也无法绕过 paramiko 的限制；`accept-new` 的 env 要求本身已在 `test/docs/环境与场景.md:110` 写明） | 设计侧（`register/flow.py::_new_runner` 透传 `ssh_backend`/`tool_override`；accept-new 的错误文案可加一句「改 ssh config 为 yes/ask 或换 openssh 后端」） | 待设计修 | 注册 probe **忽略** apply 里的 `ssh_backend`（永远 paramiko）；而 paramiko 又拒绝 `StrictHostKeyChecking=accept-new` → 用户即使选了 openssh 后端，只要 ssh config 是 accept-new 就注册不了 | [P-120-register-probe-ignores-ssh-backend-accept-new.md](P-120-register-probe-ignores-ssh-backend-accept-new.md) |
 | **P-119** | 中层/底层 · 日志通道（CDS.log 字节窗口） | P3（观察/口径：用户日志里出现桥产生的空行；半真机 probe 的"文件窗口==delta"契约因此失效） | spec 侧（**口径已定**：不改实现，改 spec —— 把「桥自身 flush 行不计入 delta、可被过滤」写进日志 spec §8） | 待设计修 | 每次经桥的请求都会在 CDS.log 多写一条空 `\o ` 行（桥"交互等价换行"的副作用），不计入返回的 `CDSlog` delta | [P-119-cdslog-bridge-flush-blank-line.md](P-119-cdslog-bridge-flush-blank-line.md) |
 | **P-118** | 上层（maestro 包）· `set_job_policy` 的 `job_type=netlisting` 分支 | P2（静默 no-op：调用方以为 netlisting job policy 已生效；与 P-114/C10 同族） | 设计侧（`maestro.set_job_policy` 的 netlisting 分支：`maeGetJobPolicy` 返回 nil 时应创建/或结构化失败，不得静默成功） | 待设计修 | `set_job_policy(job_type="netlisting")` 在未设置过该 policy 的 test 上报 **ok=true 但零效果**（`read_config.job_policy.netlisting` 恒 `null`）——静默 no-op | [P-118-maestro-netlisting-job-policy-silent-noop.md](P-118-maestro-netlisting-job-policy-silent-noop.md) |
@@ -57,9 +57,8 @@
 ## 4. 关联文件
 
 - 历史台账（2026-10-08 停更，仅供考古）：[问题登记.md](../问题登记.md)
-- 最新一轮送修：[上层](../round7-缺陷清单-上层.md)、[其他](../round7-缺陷清单-其他.md)
-- Spec 覆盖矩阵（哪些要求被测到）：[round7-spec覆盖矩阵.md](../round7-spec覆盖矩阵.md)
-- 覆盖率与缺口：[coverage-pack/](../coverage-pack/)、[覆盖度缺口.md](../覆盖度缺口.md)
-- 覆盖率补强要求（**给设计侧的清单**）：[覆盖率补强要求-给设计侧.md](../覆盖率补强要求-给设计侧.md)
+- 已关闭记录的修复验证：[round6-修复验证报告.md](../round6-修复验证报告.md)
+- 覆盖率证据包：[coverage-pack/](../coverage-pack/)
+- 最新一轮过程资产：[round10/](../round10/)
 - 两个完整项目的验收清单：[两项目全链-验收清单.md](../两项目全链-验收清单.md)
 - 新增卡片模板：[_模板.md](_模板.md)

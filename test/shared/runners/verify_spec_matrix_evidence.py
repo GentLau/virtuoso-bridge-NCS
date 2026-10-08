@@ -10,8 +10,8 @@
 用法::
 
     python test/shared/runners/verify_spec_matrix_evidence.py \
-        --matrix test/reports/round7-spec覆盖矩阵.md \
-        --junit test/artifacts/evidence/round7/offline2.xml
+        --matrix test/reports/round10/spec-matrix-r10.md \
+        --junit test/artifacts/evidence/<run-id>/offline.xml
 """
 from __future__ import annotations
 
@@ -47,8 +47,9 @@ def module_of(test_path: str) -> str:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--matrix", default="test/reports/round7-spec覆盖矩阵.md")
-    parser.add_argument("--junit", default="test/artifacts/evidence/round7/offline2.xml")
+    parser.add_argument("--matrix", required=True,
+                        help="当前轮的 spec 覆盖矩阵（无默认：旧轮矩阵已清理）")
+    parser.add_argument("--junit", required=True, help="本轮离线 JUnit XML")
     parser.add_argument("--md", action="store_true",
                         help="输出可直接贴进矩阵的 Markdown 表（只列离线证据本轮全绿的行）")
     parser.add_argument("--append-to-matrix", action="store_true",
@@ -113,9 +114,10 @@ def main(argv: list[str] | None = None) -> int:
             "## 14. 本轮离线复跑核对（机器生成，可复现）",
             "",
             "> 口径：矩阵里标 `🟡 历史已验` 的行，只要它引用的 `test/offline/**` 证据在本轮离线套件里"
-            "跑过且全绿，就不属于「只靠历史证据」。下表把这类行挑出来；数据源 "
-            "`round5-main/offline-final.xml`（**1686 项 / failures=11 / skipped=6**；junit 头的 `tests=2335` "
-            "是 pytest 9.1.1 计入 subTest 的膨胀属性，别当用例数引用——见独立复核 D5）。",
+            "跑过且全绿，就不属于「只靠历史证据」。下表把这类行挑出来；数据源=本次 `--junit` 指向的"
+            " XML（round10：`test/artifacts/evidence/round10/offline-r10.xml`，**2800 项 / failures=0 / "
+            "errors=0 / skipped=8**；junit 头的 `tests` 属性在 pytest 9 里会计入 subTest 而偏大，"
+            "别直接当用例数引用）。",
             "> 最后一列是该行**还引用了几份真机/半真机文件**——那些部分仍按原状态，"
             "**不要**因为离线绿就当成全链已验。",
             "> 复现：`python test/shared/runners/verify_spec_matrix_evidence.py --md`",

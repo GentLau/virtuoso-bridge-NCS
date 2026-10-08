@@ -33,8 +33,8 @@ OPEN = [
         "slug": "place-pin-power-sigtype-reads-supply",
         "title": "`place_pin(sig_type=\"power\")` 写入成功，但 `read(connectivity).nets[...].sigType` 读回 `\"supply\"`（其余 9 个取值原样回读）——spec 未写明该 DB 归一化",
         "level": "P3（文档缺口：按 spec 值域做「写值==读回」断言会误判；调用方需知道映射）",
-        "owner": "spec 侧（在 `2-schematic.md` 的 `sig_type` 值域处补一句：DB 会把 `power` 归一化为 `supply`，读回按 DB 词汇；或由实现/文档给出映射表）",
-        "status": "待决策",
+        "owner": "spec 侧（**口径已定**：不改实现，在 `2-schematic.md` 的 `sig_type` 值域处补一句 DB 归一化说明——`power` 读回为 `supply`，读回按 DB 词汇）",
+        "status": "待设计修",
         "where": "spec `spec/design-concepts/上层/2-schematic.md`（`place_pin` 参数表 `sig_type`）；实现 `src/pyapi/packages/schematic.py:85-88`（10 值集合）与 `:727-728`（直接透传给 `schCreatePin`）",
         "symptom": "真机（vblog，2026-09-30）：10 值一次性写入同一 schematic（各建一个 pin）后 `read(focus=connectivity)`："
                    "analog/clock/ground/reset/scan/signal/tieHi/tieLo/tieOff **原样回读**，`power` → **`supply`**（Virtuoso DB 归一化）。",
@@ -44,7 +44,14 @@ OPEN = [
         "accept": "① spec 写明 `power→supply` 归一化（或实现侧给出映射/别名）；② TB 断言与 spec 一致（当前＝按映射断言，并记录写值）；③ 不得出现「值域里有 power、读回永远拿不到 power 却无人知晓」的隐性契约。",
         "next": "等 spec owner 补一句；TB 已钉住映射（不阻塞）。",
         "reported": "2026-09-30（round10 补 `sig_type` 10 值全枚举时发现）",
-        "updated": "2026-09-30 21:20（新立）",
+        "updated": "2026-10-08 14:17（用户裁定：改 spec 补映射说明，不改实现）",
+        "extra": "## 决策（2026-10-08，用户裁定）\n\n"
+                 "**改 spec，不改实现**：`power` 是 DB 对电源类端子的词汇归一化（读回为 `supply`）；输入值域不变（`supply` 不是合法入参），不做反向映射（会把显式写法与 DB 词汇搅在一起）。\n\n"
+                 "1. 在 `spec/design-concepts/上层/2-schematic.md` 的 `place_pin` `sig_type` 处增补（建议原文，spec owner 可直接采用）：\n\n"
+                 "   > `sig_type` 写入后按 Virtuoso DB 词汇读回：`power` 会被 DB 归一化为 `supply`（其余取值原样）。\n"
+                 "   > `read(focus=connectivity)` 的 `nets[...].sigType` 以 DB 词汇为准；读回可能出现 `supply`，但 `supply` 不是合法入参。\n\n"
+                 "2. 测试侧判据（保持现状，已实现）：`PIN-OPT` 十值枚举按 `power→supply` 映射断言并记录写值；其余九值严格「写值==读回」。\n"
+                 "3. 收口流程：spec 回填后测试侧复核 TB 断言与 spec 一致 → 销卡。",
     },
 
     {
@@ -101,7 +108,37 @@ OPEN = [
                  "* 静态根因（两条独立证据）：`register/flow.py::_new_runner()` 构造 `SSHRunner(...)` **不传 `backend=`**"
                  "（默认 paramiko）；`flow.py` 里 `ssh_backend` 只被 `_apply_policies()` 写进**候选 entry**，probe 从不读它。\n"
                  "* 本轮为跑这条复现，给 `registration_http_six_step_tb.py` 增加了 `--key-dir/--key/--ssh-backend` 三个参数\n"
-                 "（默认值保持原行为 `~/.ssh` + `id_ed25519`、不传 `ssh_backend`），修好后可直接做四组合回归。",
+                 "（默认值保持原行为 `~/.ssh` + `id_ed25519`、不传 `ssh_backend`），修好后可直接做四组合回归。\n\n"
+                 "## 深入调查（2026-10-08 补充，静态代码审计）\n"
+                 "\n"
+                 "### 根因扩展：`_new_runner` 漏传的不止 backend\n"
+                 "\n"
+                 "`_new_runner`（`flow.py:457-475`）是 probe 阶段唯一的 `SSHRunner` 构造点，只传 8 个连接端点字段（host/user/jump_host/jump_user/proxy_url/control_identity/control_master/persistent_shell），**漏传 5 个 SSH 策略/凭据字段**，导致 apply 阶段配置的策略在 probe 阶段全部不生效：\n"
+                 "\n"
+                 "| 字段 | apply 阶段写入 | `_new_runner` 传了吗 | 影响 |\n"
+                 "|---|---|---|---|\n"
+                 "| `backend` | `entry.ssh.backend` | ❌ | probe 永远 paramiko（**本卡本体**） |\n"
+                 "| `tool_override` | `entry.ssh.tool_override` | ❌ | 工具命令覆盖不生效 |\n"
+                 "| **`ssh_key_path`（credential）** | `CandidateRole.credential_dir/key`（`resolve_credential` 解析） | ❌ | **probe 用默认 key，不用 apply 指定凭据** ← 最严重 |\n"
+                 "| `max_sessions` | `CandidateRole.max_sessions` | ❌ | probe 用默认 10 |\n"
+                 "| `connect_timeout` | `entry.runtime.connect_timeout` | ❌ | probe 用默认 30s |\n"
+                 "\n"
+                 "### 最严重的是 credential 这条\n"
+                 "\n"
+                 "`CandidateRole` 有 `credential_dir/credential_key`（`candidate.py:34-35`，从 `resolve_credential(role.key_dir, role.key, …)` 解析），`credential_path(key_dir, key)` 能转 `Path`。但 `_new_runner` 没传 `ssh_key_path` → probe 用系统默认 key（`~/.ssh/id_rsa` 或 ssh config 的 IdentityFile），而非 apply 指定的 key。**等于 probe 验证的是\"默认 key 能连\"，不是\"用户指定的 key 能连\"**——比 backend 更隐蔽：backend 会在 accept-new 时报错暴露，credential 用错 key 可能静默地\"验证了错误的凭据\"。\n"
+                 "\n"
+                 "### 定性\n"
+                 "\n"
+                 "这 5 个是**同一类**：`_new_runner` 只取 role 的\"连接端点\"字段，漏取\"SSH 策略与凭据\"字段。其中 backend/tool_override/credential/connect_timeout 是\"apply 明确收了、probe 没用\"的实现遗漏；max_sessions 是 CandidateRole 有字段但没接线；`control_master` 是唯一**故意**的（注释：Windows 上 OpenSSH multiplexing 不可用，硬编码 `\"disable\"` 正确）。\n"
+                 "\n"
+                 "## 决策（修复方向：方案 B）\n"
+                 "\n"
+                 "**把 `backend`/`tool_override`/`connect_timeout` 解析进 `CandidateRole`**（与 credential/max_sessions 一样从 entry 提取），`_new_runner` 只吃 role、从 role 读全部 SSH 策略/凭据——避免调用点逐个传参、以后再加字段又漏。\n"
+                 "\n"
+                 "候选改动（示意，不改代码）：\n"
+                 "\n"
+                 "- `CandidateRole` 增加 `backend` / `tool_override` / `connect_timeout` 字段，`resolve_candidate` 从 `entry.ssh.backend` / `entry.ssh.tool_override` / `entry.runtime.connect_timeout` 提取；\n"
+                 "- `_new_runner` 从 role 读这些字段，加上 `credential_path(role.credential_dir, role.credential_key)`、`role.max_sessions`，一并传给 `SSHRunner`。",
     },
 
     {
@@ -1197,10 +1234,9 @@ def render_readme() -> str:
 ## 4. 关联文件
 
 - 历史台账（2026-10-08 停更，仅供考古）：[问题登记.md](../问题登记.md)
-- 最新一轮送修：[上层](../round7-缺陷清单-上层.md)、[其他](../round7-缺陷清单-其他.md)
-- Spec 覆盖矩阵（哪些要求被测到）：[round7-spec覆盖矩阵.md](../round7-spec覆盖矩阵.md)
-- 覆盖率与缺口：[coverage-pack/](../coverage-pack/)、[覆盖度缺口.md](../覆盖度缺口.md)
-- 覆盖率补强要求（**给设计侧的清单**）：[覆盖率补强要求-给设计侧.md](../覆盖率补强要求-给设计侧.md)
+- 已关闭记录的修复验证：[round6-修复验证报告.md](../round6-修复验证报告.md)
+- 覆盖率证据包：[coverage-pack/](../coverage-pack/)
+- 最新一轮过程资产：[round10/](../round10/)
 - 两个完整项目的验收清单：[两项目全链-验收清单.md](../两项目全链-验收清单.md)
 - 新增卡片模板：[_模板.md](_模板.md)
 """
