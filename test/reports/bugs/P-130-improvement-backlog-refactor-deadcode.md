@@ -32,7 +32,24 @@
 
 排期执行；测试侧在每项重构后跑对应层回归并在本卡尾部记录进度。
 
+## 我层复核与拒绝项（2026-10-08，中+底层）
 
+**已清理（随 `5a80392` 入库）**：`tunnel._verify`（含 2 条专用单测）、`budgets.py` 的 thread 预算家族（`try_acquire_thread`/`release_thread`/`threads_in_use`/`thread_pool_size`）、`basic._collect_strings`、`common/registry.UserEntry` 重复 `model_config`。全量离线回归绿；8135 重启后 env_check + 五接口冒烟绿。
+
+以下条目经复核**拒绝/无需修改**（本轮不改）：
+
+1. **传输暂存/安装×4 → 已收敛，无重复可删**：单一实现在 `common/transfer.py`，`paramiko_backend`/`middle`/`ssh` 均走它；`tunnel._install_stage_command` 是 OpenSSH 后端「远端 shell mv」机制，与本地安装不是同一实现，不合并。
+2. **分块 sha256×3 → 实为 2 份本地 + 1 份远端查询**：`middle._sha256_file` 与 `tunnel._sha256_local` 仅「到期异常类型」不同（`_DeadlineExceeded` vs `subprocess.TimeoutExpired`），合并需引入异常转换参数，为合并而加抽象、净收益低；`_remote_sha256` 是远端 `sha256sum` 查询，不同类。保留现状。
+3. **kind 映射×3 → 条目不成立**：`paramiko_backend.py` 无 kind 映射（它返回 rc/stdout/stderr，由 `ssh.py::_result_from_rc` 统一映射）；实际只有两处且输入不同（远端文本→kind vs 异常→kind）。卡内行号/条数过期，划掉。
+4. **`register/models.py` vs `common/registry.py` → 有意分层**：请求模型允许缺省/扩展（未定稿输入），注册表模型 required/forbid（已校验产物）；合并会破坏边界。不合并。
+5. **`register/candidate.py` vs `transport/roles.py` → 本版不做**：注册期（未定稿、相对 root、凭据可未解析）与运行期（已校验注册表）契约不同；P-120 的漂移教训已由该轮修复吸收（该接的线接全）。合并属设计级重构、风险大于收益；若未来再出现同源漂移，再单独立项。
+6. **`middle.py` except LookupError → 复核不成立**：`_entry()` 只做 `registry.by_token()`（内部全 `.get`），`LookupError` 只可能是「unknown token」本意；except 只包 `_entry()`，不吞内部异常。
+7. **`server/dispatch.py` traceback 日志 → 不加**：spec §3.3 的 `(TypeError, ValueError)→400` 行为正确，未观察到排障盲区；属可选增强、非缺陷，保持现状。
+8. **`flow._token_ok` / `flow.py:1475` 冗余 except / `paths.py:102` 注释 → 非问题或已不存在**：`_token_ok` 是仅用一次的命名 helper（风格非 bug）；1475 冗余 except 与 paths 注释在当前代码已不存在。划掉。
+
+**待用户/spec 决策（唯一残留）**：`ssh.control_master="force"` 与 `"auto"` 当前完全等价（同一条件表达式），spec 只列取值未定义 force 语义 → 需裁决：① 删掉 `force`（spec + `registry.py`/`register/models.py` 枚举 + `ssh.py` 分支）；② 或 spec 定义 force 的强制语义。未裁决前不动。
+
+非我层或有意为之（不列为本层残留）：截图流水线×4（上层包，P-125 在跟）、py2/py3 daemon 双份（有意为之）。
 ---
 
 > 本卡片是当前跟踪视图；已关闭记录见 [已关闭-近期.md](已关闭-近期.md)。
