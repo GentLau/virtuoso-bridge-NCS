@@ -1,9 +1,9 @@
 # 中层配置文档
 
-> 版本：Draft v45
-> 日期：2026-09-30
+> 版本：Draft v46
+> 日期：2026-10-08
 > 状态：Normative（字段目录、默认值、探测写回、注册表 schema、reservation 与 endpoint key 的唯一规范源）
-> Supersedes：Draft v44（字段总表增加「自助权限」列）
+> Supersedes：Draft v45（`ssh.control_master` 枚举收窄为 `auto/disable`）
 > 定位：本文是[多用户与注册](../其他/1-多用户与注册.md)的**字段与 schema 详细补充**——六步状态机与授权归[多用户与注册](../其他/1-多用户与注册.md)；本文是字段与必填清单 owner（§4），并提供默认值、探测写回、注册表 schema、reservation 与 endpoint key。
 
 ## 1. 总述
@@ -32,7 +32,7 @@
 | 字段 | 作用 | 类型 | 默认/必填 | 自助权限 |
 |---|---|---|---|---|
 | `ssh.backend` | SSH 后端 openssh / paramiko；默认 paramiko：同一业务连接上多 channel 复用；Skill 隧道由外部 OpenSSH `ssh -N -L` 承载 | 配置 | 默认 `paramiko` | 编辑 |
-| `ssh.control_master` | openssh 后端的复用策略 auto/force/disable；复用边界是 token，跨 token 不共享；paramiko 不适用 | 配置 | 默认 `auto` | 编辑 |
+| `ssh.control_master` | openssh 后端的复用策略 auto/disable；复用边界是 token，跨 token 不共享；paramiko 不适用 | 配置 | 默认 `auto` | 编辑 |
 | `ssh.tool_override` | 可选 ssh/scp/tar 工具路径覆盖 | 配置 | 可选 | 编辑 |
 | `runtime.thread_pool_size` | 线程预算：在途请求上限（任何未完成动作占位）；超限语义见[并发设计 §2](2-并发设计.md) | 配置 | 默认 `32` | 只读 |
 | `runtime.channel_budget` | 最大通道数：token 内所有 endpoint 已打开 SSH 通道总数；超限语义见[并发设计 §2](2-并发设计.md) | 配置 | 默认 `10` | 只读 |
