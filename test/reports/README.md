@@ -22,13 +22,9 @@
 | [round10/](round10/) | **最近一轮**过程资产：测试报告、spec 矩阵审计、live 证据时效、case profile 审计 |
 | [round9/](round9/) | 第九轮过程资产：原子覆盖、弱断言审计、log 语义、spec 矩阵等 |
 | [round8/](round8/) | 第八轮过程资产：spec 覆盖矩阵、参数矩阵、norm / review 记录 |
-| [round8-测试报告.md](round8-测试报告.md) | 第八轮交付主报告（定稿；`round8/` 内旧副件已删） |
 | [问题登记.md](问题登记.md) | **历史台账（2026-10-08 停更）**：仅作考古，不再作为权威口径 |
 | [coverage-pack/](coverage-pack/) | 覆盖率证据包：`summary.json`、`modules.md`、逐行/分支 TSV、自动分类规则 |
 | [两项目全链-验收清单.md](两项目全链-验收清单.md) | "两个完整可用项目"（SerDes RX / ADC SAR）逐阶段判据、当前阻塞与跑法 |
-| [路径专项-2026-09-22.md](路径专项-2026-09-22.md)、[路径专项-代码合规-2026-09-22.md](路径专项-代码合规-2026-09-22.md) | 路径审计首轮与**纯代码口径**复审（判定以后者为准） |
-| [round6-修复验证报告.md](round6-修复验证报告.md) | 第六轮逐条红转绿结论（P-052…P-072） |
-| [round5-Linux客户端矩阵.md](round5-Linux客户端矩阵.md)、[round5-顶层API面复核.md](round5-顶层API面复核.md)、[round5-真实场景-补充.md](round5-真实场景-补充.md)、[第五轮-真实场景-SerDesRX.md](第五轮-真实场景-SerDesRX.md) | 第五轮保留件：Linux 交互矩阵 / 顶层 API 复核 / 多用户场景补充 / SerDes RX 场景 |
 | [internal/](internal/) | 内部资料（环境 Runbook / 测试架构 / 报告与证据）+ 已合并旧文档快照 |
 
 > 2026-09-28 清理：**48 份**过时报告已删除（重复的逐轮 BUG 清单、`coverage-gaps-*` 与覆盖率旧版本、
