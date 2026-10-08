@@ -32,7 +32,7 @@ class TestRegistryMore(unittest.TestCase):
 
     @unittest.skipIf(os.name == "nt", "POSIX file mode semantics only")
     def test_registry_file_mode_is_0600(self):
-        """配置文档 §5：registry 持久化权限 0600（第八轮 g1 补测；src/registry.py:423 有实现，此前无用例）。"""
+        """配置文档 §5：registry 持久化权限 0600（第八轮 g1 补测；src/common/registry.py:423 有实现，此前无用例）。"""
         reg = load_registry(registry_path())
         reg.register("alice", UserEntry(token="tok-1", mode="remote"))
         mode = stat.S_IMODE(registry_path().stat().st_mode)

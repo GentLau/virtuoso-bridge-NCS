@@ -1,139 +1,38 @@
-# `test/reports/bugs/` —— 未关闭缺陷的唯一跟踪视图
+# `test/reports/bugs/` —— 缺陷跟踪唯一视图
 
-> 维护者：测试工程师（我）｜最近刷新：2026-09-29
-> **这个目录回答一个问题：现在还有哪些 bug 没关、谁在等谁、修好的判据是什么。**
+> 维护者：测试工程师（我）｜最近刷新：2026-10-08
+> **这个目录回答两个问题：现在还有哪些 bug 没关（§1 + 逐条卡片）；关掉的是什么理由（[已关闭-近期.md](已关闭-近期.md)）。**
 
 ## 0. 三条规矩（动这里之前先看）
 
-1. **权威事实在台账**：[问题登记.md](../问题登记.md)。本目录不重复分析，只做「未关闭项」的卡片与索引；
-   送修视图（逐条 file:line / 复现 / 验收）在 [round7-缺陷清单-上层.md](../round7-缺陷清单-上层.md) 与
-   [round7-缺陷清单-其他.md](../round7-缺陷清单-其他.md)。
+1. **当前事实源就是本目录**：未关闭项在 §1（逐条卡片），已关闭记录在
+   [已关闭-近期.md](已关闭-近期.md)。历史台账 [问题登记.md](../问题登记.md) 自 2026-10-08 起停更，
+   仅作存档；两份口径冲突时以本目录为准。
 2. **状态只能从这五个里选**：`待设计修` / `待测试侧` / `待归属` / `待决策` / `观察`。
    关闭时**不删卡片**：移到 [已关闭-近期.md](已关闭-近期.md) 并写一句「凭什么关的」（证据路径）。
 3. **刷新方式**：改 `test/shared/runners/make_bug_cards.py` 的 `OPEN` / `CLOSED_RECENT` 段，
    然后 `python test/shared/runners/make_bug_cards.py`（幂等；`--check` 只校验不写盘）。
 
-## 1. 未关闭（3 条）
+## 1. 未关闭（5 条）
 
 | ID | 层 | 级别 | 归属 | 状态 | 一句话 | 卡片 |
 |---|---|---|---|---|---|---|
+| **P-121** | spec↔真机一致性（上层 schematic 包）· `place_pin.sig_type` 读回 | P3（文档缺口：按 spec 值域做「写值==读回」断言会误判；调用方需知道映射） | spec 侧（在 `2-schematic.md` 的 `sig_type` 值域处补一句：DB 会把 `power` 归一化为 `supply`，读回按 DB 词汇；或由实现/文档给出映射表） | 待决策 | `place_pin(sig_type="power")` 写入成功，但 `read(connectivity).nets[...].sigType` 读回 `"supply"`（其余 9 个取值原样回读）——spec 未写明该 DB 归一化 | [P-121-place-pin-power-sigtype-reads-supply.md](P-121-place-pin-power-sigtype-reads-supply.md) |
+| **P-120** | 注册流程（register/flow）· SSH 后端选择与 ssh-config 兼容性 | P3（一致性缺陷：apply 收 `ssh_backend` 但 probe 不用 → 用户按文档选 openssh 也无法绕过 paramiko 的限制；`accept-new` 的 env 要求本身已在 `test/docs/环境与场景.md:110` 写明） | 设计侧（`register/flow.py::_new_runner` 透传 `ssh_backend`/`tool_override`；accept-new 的错误文案可加一句「改 ssh config 为 yes/ask 或换 openssh 后端」） | 待设计修 | 注册 probe **忽略** apply 里的 `ssh_backend`（永远 paramiko）；而 paramiko 又拒绝 `StrictHostKeyChecking=accept-new` → 用户即使选了 openssh 后端，只要 ssh config 是 accept-new 就注册不了 | [P-120-register-probe-ignores-ssh-backend-accept-new.md](P-120-register-probe-ignores-ssh-backend-accept-new.md) |
+| **P-119** | 中层/底层 · 日志通道（CDS.log 字节窗口） | P3（观察/口径：用户日志里出现桥产生的空行；半真机 probe 的"文件窗口==delta"契约因此失效） | spec 侧（**口径已定**：不改实现，改 spec —— 把「桥自身 flush 行不计入 delta、可被过滤」写进日志 spec §8） | 待设计修 | 每次经桥的请求都会在 CDS.log 多写一条空 `\o ` 行（桥"交互等价换行"的副作用），不计入返回的 `CDSlog` delta | [P-119-cdslog-bridge-flush-blank-line.md](P-119-cdslog-bridge-flush-blank-line.md) |
 | **P-118** | 上层（maestro 包）· `set_job_policy` 的 `job_type=netlisting` 分支 | P2（静默 no-op：调用方以为 netlisting job policy 已生效；与 P-114/C10 同族） | 设计侧（`maestro.set_job_policy` 的 netlisting 分支：`maeGetJobPolicy` 返回 nil 时应创建/或结构化失败，不得静默成功） | 待设计修 | `set_job_policy(job_type="netlisting")` 在未设置过该 policy 的 test 上报 **ok=true 但零效果**（`read_config.job_policy.netlisting` 恒 `null`）——静默 no-op | [P-118-maestro-netlisting-job-policy-silent-noop.md](P-118-maestro-netlisting-job-policy-silent-noop.md) |
-| **P-117** | spec↔实现一致性（上层 calibre 包）· `export.items` 枚举 | P3（文档与实现不一致：按 spec 调用必失败；既有 PEX 产物的导出路径不可达） | spec 侧（二选一：删/改 §4.5 的 `pdb_dir`；或由实现补上 pdb 目录导出） | 待决策 | spec `12-calibre.md` §4.5 的 `export.items` 列了 `pdb_dir`，实现未提供（`unknown export item: pdb_dir`）；而 §4.4 又写明既有 PEX 产物可由 `export` 读取 | [P-117-calibre-export-pdb-dir-missing.md](P-117-calibre-export-pdb-dir-missing.md) |
-| **C09** | 上层（maestro 包）· write_history rename 链 | P3（重命名链不可用：`maestro_e2e_tests.HISTORY-01` 因此稳定红） | 设计侧（已修：maestro 包 session 选择 + 只读冲突处理） | 待测试侧 | `maestro.write_history` rename 链撞只读/陈旧的 Maestro session → `Cannot find a setup database entry for handle`（已修：复用 editable session + 只读冲突结构化拒绝） | [C09-maestro-write-history-rename-chain-handle-error.md](C09-maestro-write-history-rename-chain-handle-error.md) |
+| **P-117** | spec↔实现一致性（上层 calibre 包）· `export.items` 枚举 | P3（文档与实现不一致：按 spec 调用必失败；既有 PEX 产物的导出路径不可达） | 设计侧（已裁定：补实现，但本版只做**预留接口**；spec 侧同步一句预留说明） | 待设计修 | spec `12-calibre.md` §4.5 的 `export.items` 列了 `pdb_dir`，实现未提供（`unknown export item: pdb_dir`）；而 §4.4 又写明既有 PEX 产物可由 `export` 读取 | [P-117-calibre-export-pdb-dir-missing.md](P-117-calibre-export-pdb-dir-missing.md) |
 
 > 优先级口径：**P1** = Linux 侧资源/安全或核心指标链路断（P-056、P-053）；
 > **P2** = 真实设计流会给出错的/空的结果，且多数**静默**；**P3/观察** = 非阻塞但建议顺手修。
 
-## 2. 本轮/近期已关闭（100 条，保留记录）
+## 2. 本轮/近期已关闭（101 条）
 
-| ID | 事项 | 关闭依据（证据） |
-|---|---|---|
-| P-116 | spec 3-symbol.md:200 称 `schEditPinOrder` 后 pin_order 与 term_order 一致（真机不符） | **spec 侧定稿 `b4036d0`**：`pin_order`（schGetPinOrder）与 `port_order` 权威且一致；`term_order`（`cv~>termOrder`）是 **legacy raw**，可能为空/陈旧，不得当权威；实现不写它。测试侧按定稿把 TB 从红钉降级为「pin==port 强断言 + term_order 存在且为 list」，`symbol_e2e_tests.py` **10/10 绿**（三键真实值入证据）；红钉从 `run_redpins.py` 移除。证据 `test/artifacts/evidence/round9/symbol-p116-fixed.txt`。 |
-| C11 | 个人 token 无法自助查询/修改自己的注册表条目（enhanced_token 未接入 update） | **后端已按控制面 v42 实现**：GET/update 采用 self-or-admin 授权，个人 token 只能访问本人；`_redacted_self` 对个人视图隐藏 `key/key_dir`；`self_patch_blacklist` 区分 secret/readonly；readonly 字段需 `enhanced_token`，且只接受管理员 token。临时隔离实例 `8144/8147` 实测：GET 本人 200、GET 他人 403、cdslog 普通更新 200、runtime 无 enhanced 403、runtime + admin enhanced 200、secret 字段 403。前端已同步适配：普通字段可直接改，只读字段要求管理员 token，`key/key_dir` 不再进个人表单，delete 明确保持管理员专属。**测试侧独立验证（2026-10-01）**：`test/live/registration/control_plane_write_tb.py` **12/12 绿** —— CPW-05..08 在**一次性实例**上逐条重跑同一矩阵（self 视图不泄露 key/key_dir、他人 403、普通字段值级落盘、只读需 enhanced[无→403 / 他人 token→401 / admin→200]、保密字段 403、个人 DELETE 401、被拒改动零落盘）；证据 `test/artifacts/evidence/round9/control-plane-write-tb-c11.json`。 |
-| C07 | spec 把 `calibre.export_cdl` 折进 `calibre.lvs` 的 `source` 参数（独立 op 已删） | 设计侧实现 `62575c6` 后，**测试侧真机整链复跑**：`calibre_e2e_tests.py` **12/12 绿** —— `LVS-02 source.kind=schematic`（auCdl 在 run dir 内现产，含 `.SUBCKT`+器件行）、`LVS-03 source.kind=cdl` 复用内产 CDL、**新增 `LVS-CTLE`（spec §8 的 `ctle.gds`+`ctle.cdl` 行，强结论 + `svdb/*.phdb`（目录）结构）**、`PARAM-01`/`SET-01` 官方批处理、`LVS-SRC-XOR`（`source` 与旧 `cdl=` 互斥，请求层拒绝）、`EXPORT-01/02`（`local_dir` 值级 + sha256 + 零落盘）；LVS-01 用旧 CDL 仍只到 `not_compared`（P-069 家族残留，TB 如实 WARN 不假装跑通）。证据 `test/artifacts/evidence/round9/calibre-c07-r11c.txt`。 |
-| P-109 | maestro 7 个写键无公开读回面（readback:none） | 设计侧 `d3b0845` 在 `read_config` 暴露 corner `enabled/enabled_tests/disabled_tests/models` 与 test `job_policy.{simulation,netlisting}`。测试侧独立复跑：`maestro_nested_keys_e2e_tests.py` **10/10 绿**，NKM-02/03/05 全部按**值级**读回（enabled=false/true、enabled_tests/disabled_tests、models[].{file,section}、simulation policy maxJobs=2）；证据 `test/artifacts/evidence/round9/maestro-nested-keys-p109-verify.json`。 |
-| P-114 | `place_pin` 的 `power_sens`/`ground_sens`/四属性组合报 ok 但零对象（静默 no-op） | 设计侧 `09af55c`（不静默不猜 + 对象存在性校验）。测试侧独立复跑：`schematic_e2e_tests.py` **11/11 绿**，PIN-OPT 按新口径值级断言 —— power/ground sens 引用已存在 terminal 时建出 PSENS（connectivity 读回）、引用不存在 terminal 结构化失败（`power_sens/ground_sens terminal not found`）、`off_sheet=true` 无可用 master 时结构化拒绝（不再 `nth`/不再静默 no-op）；证据 `test/artifacts/evidence/round9/schematic-p114-verify.json`。 |
-| P-086·D | 投递超时把实例永久置忙（dirty 后不恢复：直连 `SKILL channel busy`，只能重启 CIW） | **已修** `97baf13`：delivered-timeout 后由 probe 收齐迟到帧自动恢复。测试侧回归钉 `test/live/transport/delivered_timeout_recovery_tb.py` **5/5 绿**（独立 disposable destb2/64601）：投递超时快速失败 → 不重启 CIW → 下一条请求在有界时间内成功（自动 probe idle 清 dirty）→ 再等一拍仍可用；证据 `test/artifacts/evidence/round9/delivered-timeout-recovery.json`。 |
-| C06 | CIW `print` 输出不 flush / 不落同一请求 `CDSlog`（行缓冲未提交） | **已修** `c8bbe8c`（行终止符提交 CIW 输出）。测试侧复跑：`skill_log_semantics_e2e_tests` **12/12 全绿**（A/B/C/D/E + 攻击扩展 F/G/H/I/J/K：多次 print、循环 print、600B 无换行长行、off 夹层不串场、load 内 print 全部落同一请求）—— 证据 `evidence/round9/c06-attack-r9e.json`；另在 disposable CIW 上由 `disposable_ciw_c06_p086_tb` 复验 `c06_ok=true`。注：需先把新版资源部署到目标实例（vblog 上曾是 9-18 的旧资源，复跑前已更新）。 |
-| P-086 | 多用户/长 SKILL 后 `Empty response` 窗口，dirty 状态不可观测 | **已修** `1ef92ee`（dirty skill gate）+ `c8bbe8c`（真机闭环）。测试侧复跑：`test/live/transport/disposable_ciw_c06_p086_tb.py` → `p086_ok=true`，证据 `evidence/round9/disposable-c06-p086-r9-verify.json`：`dirty_after_timeout=true`（超时后置脏）、脏期间请求快速失败（不再静默挂死）、重启 CIW 后 `recovered_after_restart={ok:true, dirty:false}`。 |
-| P-106 | `calibre.lvs(runset=…, blocking=true)` 误杀成功作业 | **已修** `2610668`（判活改为 `job.pid` + `ps -p`，并补 official-batch 完成标记）。测试侧复跑：`calibre_e2e_tests` **8/8 全绿**，其中 `SET-01 只给 .lvs set（官方批处理）` PASS —— 证据 `evidence/round9/calibre-r9d.txt`。 |
-| P-107 | 仿真失败被报成“下载失败”（`status=error` + 下载错误文本） | **已修** `5e8c29b`（失败优先于下载）。测试侧复跑：`spectre_e2e_tests` **6/6 绿**，RUN-04 断言 `status="failure"` + `errors` 回带仿真器原文（`ERROR (SFE-23)…`）+ run.error 不再出现 `recursive download` —— 证据 `evidence/round9/spectre-r9g.txt`。 |
-| P-108 | `spectre.run(mode="x")` 用 `+x` 被工具拒绝（SPECTRE-129） | **已修** `f3b154f`（删除 `x`，只保留 `spectre/aps/cx/ax/mx/lx/vx`；代码/spec/TB 同步）。测试侧复跑：`spectre_modes_e2e_tests` **9/9 绿**，含 `MODE-x-removed`（请求层拒绝且列出合法取值）+ 7 个合法 mode 真机跑通（含此前只有离线覆盖的 cx/ax/mx/lx/vx）—— 证据 `evidence/round9/spectre-modes-r9c.json`。 |
-| P-110 | `load_corners` 无合法 CSV 样例，正例无法构造 | **已修** `44b0a0a`（新增夹具 `test/shared/fixtures/maestro_corner65.csv`，默认不再传 `?sections`）。测试侧复跑：`maestro_nested_keys_e2e_tests` **10/10 绿**，含 `NKM-07a load_corners CSV 正例`（corner 名值级读回）+ 负例 —— 证据 `evidence/round9/maestro-nested-keys-r9b.json`。 |
-| P-111 | `set_parameter` 正例缺夹具（测试侧误判） | **测试侧更正**：正例夹具本来就存在 —— `maestro_e2e_tests.WRITE-04` 的 `maestro_tb/rc_probe/schematic/R0/r`。本轮独立复验：`set_parameter(name=该路径, value="1K", scope=corner)` → `read_config.corners[...].parameters[该路径] == "1K"`（值级）→ PASS。设计侧调查见 `doc/report/P-111-P-114-上层调查报告.md` §1。 |
-| P-112 | spec 30 条候选待改判 | **spec 侧已回填**（`877c33b` 同步已修条款；`323ef32` 逐条决策表；`f211b9b` 8 条组级入口）：决策表 `test/reports/round9/P-112-条款决策表.md` 的“本次已回填”段已覆盖 C1/C2/C4、P-113、P-107、P-106、P-029/P-051、P-081、P-074、P-108、P-110、P-111；**仅剩 P-109（maestro 读回口径）**（已单独挂卡）。覆盖矩阵由测试侧在下一轮全量时按新 spec 重跑。 |
-| P-115 | `verilog.write` 未 `ensure_view` 时静默创建半成品 view + 非法 `view_type` 不校验 | **已修** `41c3cd5`。测试侧复跑：`verilog_e2e_tests` **4/4 绿**：缺 `ensure_view` → 结构化失败且提示`call ensure_view first`；非法 `view_type` → 拒绝并要求 `text.v` —— 证据 `evidence/round9/verilog-r9h.txt`。**残留（转设计）**：修复前遗留的“半成品目录”（只有 `verilog.v`、无 `master.tag`）仍会被当存在路径写入并返回 ok；TB 已加前置清理规避。 |
-| C10 | `place_wire` 的 `x_spacing`/`y_spacing` 无可观察效果（惰性参数） | **按“补语义 + 补 spec + 换判据”收口**：`74fddbe` spec 明确“显式 0 仍可能走底层默认吸附网格”；`4a90d31` 把判据改为**非网格点 route 几何对照**。测试侧复跑：`nested_keys_e2e_tests` **6/6 绿**（NK-04a/04b 两键各一条几何对照）—— 证据 `evidence/round9/nested-keys-r9b.json`。 |
-| P-113 | `place_pin` 的可选属性参数在本版 Virtuoso 全部不可用（`sig_type` 11 实参 / `off_sheet` 布尔当 term 名） | **已修** 设计提交 `0e14c8b`（按真实签名拼装）；测试侧真机复跑：`sig_type="signal"` 写入成功且 `read(focus=connectivity).nets["NBA<3:0>"]` 读回 **`numBits="4"` / `sigType="signal"`**（值级），非法 `sig_type="bus"` 被枚举契约结构化拒绝 —— 证据 `test/artifacts/evidence/round9/schematic-r9l.txt`（11/11 PASS）。**残留已另立 P-114**：`power_sens`/`ground_sens`/四属性组合仍是静默 no-op，`off_sheet` 单用仍 `nth` 报错。 |
-| P-105 | `symbol/layout.screenshot` 的 `view_type` 坏值不被校验 | 已修 `0b9fec3`（截图先开窗再捕获 + `view_type` 同口径校验）；测试侧真机复跑两档 **各 6/6 绿**：layout 档（schemtest/lay_e2e）`SC-06 view_type 正向 + 坏值负向` PASS（`verify-fix-r9/shot-layout-p105.txt`）；symbol 档（schemtest/symprobe_shot，vblog 健康 CIW）**6/6**（`verify-fix-r9/shot-symbol-p105b.txt`）。注：vb-vbuser2 实例的 CIW 当时又卡死（P-086 家族），改在 vblog 上取证后已按 SOP 重启 vbuser2 恢复常驻。 |
-| P-070 | 蒙特卡洛能力缺失：只能读回 MC 结果，不能驱动 MC 仿真 | 设计侧已实现并重写验收 TB：`test/live/packages/maestro_mc_e2e_tests.py` 真机 **9/9 PASS**（环境检查 / 17 项 run option 空基线 / 批量写回 / 非法值拒绝不污染 / 独立 run setup / 8 点 process MC 启动并等到 history / read_results Yield 统计 / 无统计 section 负控 SPECTRE-16008-16012 / 收尾关 GUI）。证据 `test/artifacts/evidence/verify-fix-r9/maestro-mc-p070-5.json`。环境前提：vblog `run/cds.lib` 已含 tsmcN65+SERDES_TB_LIB，运行中的 CIW 需 `ddUpdateLibList()`（或重启）后才可见。 |
-| P-092 | `calibre.drc/lvs/pex` 的 `power`/`ground` 死参数（声明并校验但从不读取） | 按方案②从模型删除：实测 `calibre.drc(..., power="VDD")` → `invalid request: RunRequest.__init__() got an unexpected keyword argument 'power'`（字段已不存在）；离线契约全绿。 |
-| P-093 | `calibre.drc(hier=False)` 拼非法 `-turbo` → flat 模式被 Calibre usage 拒绝 | 真机 `calibre_flat_turbo_probe` **PASS**（flat DRC 不带 `-turbo` 且完成 DRC.rep）；离线 `test_calibre_argv_contracts.py` 全绿。证据 `test/artifacts/evidence/p093-p094-quickfail-green.json`。 |
-| P-094 | calibre 工具秒退不报失败（`status` 只有 `unknown`，`blocking` 干等到 timeout） | 同探针 **PASS**：坏 deck 秒退 → `status=failed`；`_calibre_util.job_state` 有 `process_gone_without_report` 兜底；离线 `test_calibre_job_state.py` 全绿。 |
-| P-098 | `blocking=true` 超时后对外 `status` 不是 `timeout` | 真机 `calibre_timeout_probe` **PASS**：`status=timeout` + `progress.status=timeout` + 超过 deadline 不杀后台作业（证据 `test/artifacts/evidence/p098-timeout-green.json`）。注：探针的墙钟守卫按口径改为 <60s——它测的是整条 op 总耗时（含 ≈15–20s 的 deck/launcher 启动），原 20s 容差过紧；核心三条断言未放宽。 |
-| C4 | `CommandResult` NamedTuple 被序列化成位置数组，命令/文件/GUI/Spectre 结果丢字段名 | 已改 pydantic 模型（`977a985`）+ 消费方迁移（`e8a0d5b`）；实测 `basic.command.run` 返回 `{"returncode":0,"stdout":"…","stderr":"","kind":"command"}`（字段名完整）；离线契约全绿。 |
-| C3 | C1 落地后测试侧消费方未适配：仍按旧 `data` 壳解析响应 | **已完成**：74 个消费方文件改为直读新契约（顶层 `value`/`result`/`steps`），另修 6 处嵌套调用式解析（adc_sar / multiuser_serdes_rx / s11_full_flow / gds_publish_path_edges / maestro_bugfix_batch / calibre_package_http / maestro_p096）+ spectre 业务字段 `value["data"]` 修正。验证：离线全量 **0 红**（`verify-fix-r9/offline-after-c3-3.txt`）；真机包 E2E 冒烟 infra/cellview/schematic **21/21**（`package-e2e-c3-smoke2`）；半真机复验：`spectre_ac_pipeline` clean、`maestro_screenshot` 绿、`log_matrix_real` 绿；残留红只有 P-086 窗口导致的 `maestro_save_false_disk` 清理步，以及 P-093/094/098 预期红。 |
-| C1 | `basic.skill.execute` 响应 JSON 冗余（同一结果两处序列化、空字段全展开） | **已闭环**：实现落地（`2f88853` 等：本体直返、两字段错误壳、`steps` 按 `step_details` 出现、`CDSlog` JSON 出口、删 `metadata`、`execution_time` 三位小数）；离线契约 TB **4/4 绿**；消费方适配由 C3 完成并全层复跑（离线 0 红 / 真机冒烟 21/21 / 半真机复验）。 |
-| C2 | 所有 Skill 调用缺少 `log_level` / `log_max_bytes` 请求字段 | 真机 HTTP 透传复验通过：新增 TB `test/live/packages/skill_log_options_e2e_tests.py` **6/6 绿**（缺省吃注册表默认 ⇒ CDSlog 含标记；`log_level=off` ⇒ 该请求 CDSlog 为空；`all` ⇒ 含标记；`warn`/`log_max_bytes` 被接受；多步领域操作带 off 仍 ok）。离线 `test_skill_log_options.py` 7/7。实现：56 个 Request 字段 + `skill_log_kwargs` 透传。 |
-| P-095 | `maestro.run` 的 Overwrite History 目标悬空 → ASSEMBLER-3018 模态卡 CIW | 设计已修；探针 `test/semi/probes/maestro_p095_overwrite_wedge_probe.py` **GREEN**：挂悬空目标后 run 8.9s 内结构化返回、CIW `1+2` 存活、Overwrite 标志复位 `nil`（探针先按 C1 契约适配了解包）。 |
-| P-102 | `calibre.pex` 第三阶段 argv 非法（`-xrc -fmt spice`） | **口径变更（非修复）**：spec `12-calibre.md` 定稿「PEX 本版不提供」——`calibre.pex` 立即返回 `pex_unsupported`、不发起远程动作；TB 改为钉住该语义：`calibre_export_pex_e2e_tests.py` **6/6 绿**。 |
-| P-103 | `calibre.pex` 报 `completed` 但 stage3 失败（完成判定提前收工） | **口径变更（非修复）**：随 P-102 一起——本版不提供 PEX 启动，假绿路径不再存在；`calibre_export_pex_e2e_tests.py` **6/6 绿**（PEX-01 结构化拒绝 + 不建 run_dir）。 |
-| P-097 | `verilog.import` 覆盖写后 `_read_views` 瞬时 cell not found | 已修 `453b453`（`_read_views` 先刷库表 + 有界重试）；新增专门回归 TB `verilog_import_params_e2e_tests.py::IMP-11 覆盖式连导 3 次 views 恒非空` —— 套件 **13/13 绿**（`test/artifacts/evidence/verify-fix-r9/gate-verilog-rerun2.txt`） |
-| P-091 | 截图远端暂存口径三包不一致（schematic 保留 / symbol·layout 清理） | spec 三包统一（2-schematic.md:27 / 3-symbol.md:45 / 4-layout.md:184「远端暂存、下载后清理，留存位置 = 客户端 artifact/screenshots/」）+ 实现三包均 `rm -f` 远端暂存（schematic.py:882 / symbol.py:982 / layout.py:1483）+ 真机 TB：schematic 档 5/5 绿（SC-01 断言远端无残留）、layout 档 SC-01 绿 |
-| P-080 | `view_type` 在 read 路径不校验（空串/整数/bogus 静默接受） | 已修 `dda3775`：离线 `test_view_type_param_contract.py` **9/9 绿**；真机 `veriloga_e2e_tests.py` `READ-02 file_path/view_type params` 绿（read 与 write 同口径） |
-| P-081 | Windows 客户端把远端 POSIX 路径改写成 `\` 形式 | 已修 `dda3775`：离线 `test_remote_posix_path_contract.py` **2/2 绿**；真机 veriloga `READ-02` 绿（远端路径原样回显、sha256 一致） |
-| P-082 | region 四元组与两点口径冲突（read/depth/screenshot 未跟上 P-074 定版） | 已修 `6bd29e7`：离线 schematic/layout/depth 契约全绿（113 项，含两条两点 region 用例）；真机 `layout_e2e_tests.py` `READ-02 region_mode/depth/view_type` 绿；`layout_depth_probe` 绿 |
-| P-083 | `spectre.export.precision` 语义未定义（有效数字 vs 小数位） | 已定稿 `313868d`：spec `7-spectre.md:288` 写明 `precision` = **有效数字**（`%.Ng`）；真机 `spectre_params_e2e_tests.py` **EXPORT-P1 5/5 绿**（TB 断言已同步） |
-| P-090 | 上传 stage 在安装前消失（安装非幂等 → sha256 mismatch 假失败） | 半真机 `test/semi/transport/install_stage_idempotent_tb.py` 绿：first/second 两次安装都 rc=0（stage 不在但目标 digest 一致 → 幂等成功）；重试只允许「未投递」错误。修复 `d269ecd` |
-| P-078 | `place_wire` 样式参数拼接重复：width 静默建 path / color|line_style 硬报错 | 真机 `schematic_wire_style_probe` **5/5 绿**；离线 `test_wire_style_arguments_exact` 转绿（`test/artifacts/evidence/verify-fix-r9/semi-probes.txt`）。修复 `6bd29e7`+`a4dbf2d` |
-| P-079 | local 模式显式 daemon_port≠local_port 被静默归一化 | 修复 `bf5f71a`；红钉 XPASS = 已修，测试侧已删 `xfail` 标记；离线 `test_norm_gap_round8.py` 全绿 |
-| P-084 | `maestro.export.include_results` 死参数（声明但从不读取） | 设计按方案②删除该字段（`ExportRequest` 不再接受该 kwarg，实测报 unexpected keyword）；探针改为负向断言「传已删字段必须被拒」 |
-| P-085 | `layout.read(depth>0)` + region 不可用（deep 分支没跟上两点定版） | 真机 `layout_depth_probe` 绿；离线 `test_layout_depth_contract.py` 绿。修复 `6bd29e7`+`a4dbf2d` |
-| P-087 | `maestro.write(save=False)` 的改动被后续无关 save 静默带走 | 真机 `maestro_save_false_disk_probe` 绿（第 3 步泄漏消失）。修复 `05aee48` |
-| P-088 | `maestro.write(delete_var, scope=all)` 确定性失败（handle 0） | 真机 `maestro_delete_var_all_probe` 绿（三处同名变量全部删除）。修复 `05aee48` |
-| P-089 | `maestro.open_waveform_gui.result` 死参数（忽略传入值） | 真机 `maestro_open_waveform_result_probe` 绿（字段按方案②删除/负向）。修复 `05aee48` |
-| P-096 | 陈旧 OA 写锁 → `axlOpenInRead0` 模态挂死 CIW | 真机 `maestro_p096_write_lock_probe` **4/4 绿**：死属主锁结构化失败、活锁不误拦、自家锁放行、实例未被挂死（`1+2`=3）。修复 `37a601b` |
-| P-099 | `verilog.import` 返回值 `views` 恒空（与真机视图不一致） | 真机门禁 `verilog_import_params_e2e_tests.py` **12/12 绿**（IMP-08 校验返回值覆盖真机视图）。修复 `82e7b6c`；TB 旧口径已按新 spec 更新 |
-| P-100 | `verilog.import` 的 `cell` 参数不被落地（改名无效果/事后报错） | 设计口径（spec 8-verilog.md:84）：`cell` 必须是源码模块名，不匹配则**写前**结构化拒绝 `cell_not_in_source`；门禁 IMP-10 绿（拒绝 + 无残留 + 正例成功）。修复 `82e7b6c` |
-| P-101 | `import(overwrite=False)` 命中已存在 cell：静默 no-op、无跳过标记 | 门禁 IMP-07 绿：mtime 不变 **且** 断言返回里有 `skipped/existing/warnings` 标记。修复 `313868d` |
-| P-104 | 读路径 `maeOpenSetup` 默认 `mode="a"` 凭空建 view（读不存在 view 返回空配置） | 真机门禁 `maestro_view_param_e2e_tests.py` **9/9 绿**：读族对缺失 view 结构化失败、库内不再新增 view。修复 `313868d` |
-| P-043 | py2.7 daemon 缺 coding cookie | 真 py2.7 探针 5/5（`py27-daemon-probe-green.json`） |
-| P-044 | layout 写锁误判 + 句柄不关 | layout 套件 10/10；陈旧锁不再挡写；两用户同视图 GREEN |
-| P-045 | 「并发压测打挂 CIW」 | **撤回**（归因错误，真因 P-046） |
-| P-047 | `verilog.import` 依赖 cwd 的 `cds.lib` | 包 E2E verilog rc=0（`run-all-http-results.json`） |
-| P-050 | daemon 模块在伪 stdin 下不可导入 | Linux 3.9/3.14 完整三层、0 collection error |
-| P-051 | `layout.gds` 远端发布不建目录 | A/B 复验 + 4 条路径边界攻击；S11 gds PASS |
-| P-058 | 4 条 Windows-only 用例缺 Linux 守卫 | 加 `skipUnless`；Linux/Windows 双平台复跑绿 |
-| P-063 | 注册类离线用例受机器端口区间影响 | 打桩端口分配 + P-064 修复后：端口压力下整目录 **11 红基线**（`p063-d4-fullunit-pressure.xml`） |
-| P-064 | 并发 pytest 会话互删临时目录 | 改每会话私有 temp 根；2 路并发各 11 红（`conc-new-{A,B}.xml`） |
-| P-065 | `subprocess.Popen` 全局打桩跨用例串扰 | 按本地端口过滤；`test_ssh_edges.py` 74/74 绿。**遗留观察**：具体哪条用例留线程未定案（下轮用 `threading.enumerate()` 定位） |
-| P-057 | 深嵌套 JSON 行为随解释器变化 | **口径问题（非产品 bug）**：判定为解释器差异下的**测试断言口径**；测试侧 R5 已改（long-int 钉死 `invalid JSON body`、deep 只钉安全不变量、200000 层必须 400）。产品侧「显式深度上限」保留为建议，不立案、不阻塞 |
-| P-068 | 共享 PDK 库里第二个真实 OS 用户画不了版图 | **环境问题（非 bridge bug）**：B 会话绑的是 `cdsDefTechLib`（54 层）而 A 是 `tsmcN65`（216 层）；在 B 会话 `techBindTechFile(ddGetObj("adc_sar") "tsmcN65")` 后，**我独立复跑 S16 接力 TB = 12/12 通过**（`round6-fixcheck/s16-handoff-reverify2.json`）；并把「两用户工艺绑定必须一致」做成 TB 前置自检 + 写进环境文档 |
-| P-052 | `set_instance_params` 污染共享库 cell CDF | **真机探针 verdict=clean**（`round6-verify/round4-shared-cdf-pollution.json`）：before/after 默认值不变（1K/400n/280n）、新实例继承原默认、peer 会话干净。修复提交 `f5f1813` |
-| P-053 | Spectre AC 结果链路两处断 | **真机探针 verdict=clean**（`round6-verify/round4-spectre-ac-pipeline.json`）：默认分析名 `ac1` → `analyses=["ac"]`、`has_ac_data=true`；spec 形状（缺省 x）可用 |
-| P-054 | 层次化 `symbol.generate` 残留子单元视图 | **真机探针 verdict=clean**（`round6-verify/round4-symbol-hierarchy-handle.json`）：leaf 生成后 CLOSED、二次生成 ok、无残留。注：该修复同时把契约改成「目标只读打开不再拒绝」，`symbol_e2e_tests.py` 的旧断言随之更新（见 `round6-修复验证报告.md` §3） |
-| P-055 | 业务面 404 而非 405 + Allow | **离线 3 条转绿**（`round6-verify/offline-mine.xml`），两条护栏（`PUT /api/operation`→405、未定义路径→404）保持绿 |
-| P-056 | POSIX 强杀进程组失效 | **Linux 3.9.25 / 3.14.6 转绿**（`round6-verify/py39.log` / `py314.log`）；修复提交 `b45864a` |
-| P-059 | `read_results` 解不了 Calibre 2025 `DRC.rep` | **真机 `read_results` 转绿**（`round6-verify/calibre-drc.json`）：`rules_checked=1737`、`total_results=36`、**27 条真实规则计数**、`first_offenders=[]` |
-| P-061 | calibre 阻塞轮询不快失败 | **真机转绿**：S11 的 LVS 以 `status=failed, failure_kind=input` **秒级**返回（`round6-verify/s11-with-calibre/s11-lvs.json`），不再轮询到超时 |
-| P-062 | LVS 结论截成半个词 + counts 恒空 | **部分修复后关闭**：`counts` 已解出（ports 1/4、nets 5/4、inst 2/1）、结论不再半个词（`round6-verify/calibre-lvs.json`）；**残留的枚举不一致拆到 P-071 继续跟** |
-| P-066 | `skill_value()` 抛内部 `AttributeError` | **离线转绿**：改为显式 `TypeError`（`round6-verify/offline-mine.xml`） |
-| P-067 | 未加引号 `Parameters:` 静默丢参数 | **离线转绿**：整行拼回解析，两个参数都在（同上） |
-| P-071 | LVS 结论归一化两条路径不一致（P-062 残留） | **已修复**（提交 `cee02df`）：日志路径与报告路径统一为同一枚举；契约 TB `test/offline/unit/test_calibre_verdict_consistency.py` **3/3 转绿**。另：同一天提交的 `af8e1e0` 让 `first_offenders` 恢复（真机 **20 条**违规明细，`round6-verify/calibre-drc-final2.json`） |
-| P-048 | 「业务面不热重载 registry」 | **重判为口径/用法问题（非产品缺陷）**：spec《多用户与注册》§1 与《控制面与业务面》§1.1 明确要求**运行期不自动读文件**、由 `POST /api/process/reload`（管理权限）**显式触发**重导 —— 「热重载要手动发命令」本来就是设计语义。代码/测试对账：process 端点只在控制面；本轮我补了端到端语义 TB `test_supervisor_process.py::test_http_reload_picks_up_registry_file` （4/4 绿：不 reload → 新 token 无效；reload 后立即可用）。**真实差异**：我们的常驻业务面用 `-m server.api_server` **standalone** 启动（spec 标准形态是控制面 spawn 业务面），没有父进程控制通道 → 改注册表后只能重启；属测试台用法口径，已写进环境文档 |
-| P-060 | calibre 包缺常驻真机入口（覆盖缺口） | **已闭环（测试侧，2026-09-24）**：① 常驻注册表补上 `role.command.calibre.bin`（vblog/vbs11/calprobe/vbuser1/vbuser2），S11 的 `drc` 阶段因此转 PASS；② 新增常驻套件 `test/live/packages/calibre_e2e_tests.py`（ENV-01 check_env / DRC-01 run+read_results / DRC-02 坏 deck 结构化失败 / LVS-01 结构契约+枚举一致），并接入 `run_all_http.py` → **11 套包 `all_passed=true`**（`round6b-verify/run-all-http-final.log`）。LVS 那条在 `not_compared` 时只打 WARN 指向 P-069，不假装跑通；P-069 修好后用 `VB_CALIBRE_REQUIRE_LVS_VERDICT=1` 打开强断言 |
-| P-072 | `init_work_dir` 一次性化 + 删除测试钩子 → 518 条离线用例无法运行 | **已按方案 ② 适配完成**（产品坚持一进程一 work root）：`test/conftest.py` 加 session fixture 绑定唯一一根 +用例级 `registry.json` 重置；28 个用例文件里 38 处 `init_work_dir(...)` 改为 `work_root()`、47 处冗余绑定删除；路径敏感用例改**子进程**（`test_workdir_contract.py`）；跨用例产物残留与 Popen 计数按本用例过滤。**离线三层 1725 项 / 0 红 / 7 skip**（`round6b-verify/offline-sharedroot4.xml`）；官方姿势文档：[test/docs/写TB规范.md](../../docs/写TB规范.md) §3 |
-| P-049 | 缺样本 trace 的 NaN 被放行到对外出参（spec :307 与 :308 冲突） | **已修复并验证**（提交 `d892608` + `a2f9aac`）：spec `7-spectre.md:307-309` 改写为「内部用缺失哨兵（实现取 `None`），**对外一律 `null`/省略**，唯一出口 `psf_external()`，NaN/±Inf 在那里收敛」；代码 `_spectre_util.py:70-71` 加了非有限→None 的收敛。**测试侧复跑：`test/offline/unit/test_output_json_safety.py` 3/3 绿**（2 条原红线转绿 + 业务面负控制）。spec 矩阵 X5 随之关闭 |
-| P-013 | 客户端文件泄露（`err_dir` 兜底 / 隧道 stderr 日志成功路径不回收） | **已修**：`err_dir` 兜底改 `temp_dir()`（work root）并在 close 时 `rmtree`；隧道 stderr 日志新增 `_discard_tunnel_stderr()`，成功/失败路径都清理（`transport/middle.py:191-205,450,687`；`common/ssh.py:477-483,633,659,678`） |
-| P-019 | 孤立代理项（`"\ud800"`）请求 → HTTP 面断连而非 4xx | **已修**：HTTP 面序列化改用 `jsonutil.dumps_strict`（`ensure_ascii=True` 兜底）（`server/api_server.py:30,76,79`、`register/server.py:42,78,81`）；`lone_surrogate_probe` 复跑转绿 |
-| P-020 | `spectre.measure` 零幅度 AC 点输出 `-Infinity`（非法 JSON） | **已修**：改抛 `ValueError("magnitude must be positive for dB scale")` → `_metric_error` 结构化失败（commit `d49c892`；`_spectre_util.py:674-681`；`test_spectre_metrics.py` 全绿） |
-| P-025 | Windows 多进程共享 work-dir 时 `log/commands.log` 轮转失败（WinError 32） | **已修**：命令日志按进程分片 `log/commands.<pid>.log` 后再轮转，跨进程不再争用句柄（`common/ssh.py:52-80`；`log_rotation_lock_probe` → PASS (process-local rotation)） |
-| P-034 | `calibre.pex` 第三阶段 argv 错误且失败被静默（`-xrc -fmt -spice`） | **已修**：argv 改 `-xrc -fmt <fmt>`；`read_results` 对日志 `stage\d_failed` 返回结构化失败（`calibre.py:700`、`:429-490`） |
-| P-037 | paramiko 后端把 `ssh -G` 的 `true/false` 当非法值（StrictHostKeyChecking yes 连不上） | **已修**：`true→yes` / `false→no` 归一化，报错回显原始值（`common/paramiko_backend.py:738-751`） |
-| P-039 | py2.7 daemon 对 `_read_frame` ValueError 回 NACK（与 py3 分歧） | **撤回**：伪红 —— 真 py2.7 建成后复判分歧不存在（`py27_handler_probe` → `silent drop (correct)`，`round2-py27-handler-real.json`）；原 bug 报告应同步撤回 |
-| P-041 | `verilog._read_views` 守卫长度与取值下标不匹配（`>=3` 却读 `[3]`） | **已修**：守卫改 `len(file_entry) >= 4`；离线用例改名 `test_short_view_entry_is_skipped` 并断言 `views == []`（`verilog.py:273`；`test_verilog_contracts.py` 全绿） |
-| P-042 | `layout.gds` 遇版图锁时误报 "layout view not found" | **已修**：导出先走 `_view_state_expr` 三态（missing/mismatch/locked），锁冲突单独报 "is locked by another session"（`layout.py:1008-1030`） |
-| P-046 | S10 e2e 引导源未固定 → `RBStop()+load()` 会覆盖别人的 CIW（测试侧缺陷） | **已修（测试侧）**：默认不再自动挑实例 —— `test_e2e_live.py` 用 `VB_E2E_BOOTSTRAP_TOKEN/PORT` 固定引导，未固定且未显式 `VB_E2E_ALLOW_AUTO_DISCOVER=1` 时直接拒绝（`test/live/e2e/test_e2e_live.py:56-63`） |
-| P-069 | Calibre LVS 全链跑不通：auCdl 对含 PDK 器件的 cell 导出 CDL 失败 → 无源网表 | **测试侧复验通过（第七轮）**：`round7/design-iterate/iterate-lvs.json` —— `calibre.export_cdl(CMP_LIB/inv2, 680 B)` → `layout.gds` → `calibre.lvs(deck+cdl)` → `read_results`：**`status=correct`**、ports 4/4、nets 4/4、inst 1/1、`differences=[]`；S11 全链也拿到确定结论（`cdl` 693 B、lvs rc=0）。等上层销案；注意 `_calibre.lvs_`（tvf）不是合法 runset，用它当失败证据属用错文件 |
-| P-026 | maestro 会话匹配用子串（view=maestro 误命中库名 maestro_tb） | **已修（`b36bade`）**：GUI 会话按标题 token 精确匹配 —— `_window_target_fields()` 解析 Editing:/Reading: 后的 `lib cell view` 并逐字段比较（`maestro.py:251-260,494`），不再用 `in` 子串。验证：round7 11 套包 `all_passed=true`（含用 `maestro_tb` 库的 maestro 套件，`round7/live-run-all-http.log`） |
-| P-027 | `virtuoso.netlist.import` 假成功（对不存在的库也返回 ok=true） | **已修（`b36bade`）**：参考桩不再伪造成功；该操作已不在运营面（`netlist_import.py` 从生产源码移除、ops 列表无 netlist）。验证：`test/shared/runners/ops_matrix.py` 无 netlist 条目；infra 包 E2E 通过 |
-| P-029 | `layout.gds` 导出忽略 `file_is_local=False`（产物下到客户端假路径树） | **已修（`b36bade`）**：gds export 支持 `file_is_local=false` 远端落盘且不拍平路径（`layout.py:1043,1175,1192,1244`）。验证（2026-09-28 复跑）：`test_layout_publish_contracts.py` 4/4、`test_layout_contracts.py` 67/67 绿 |
-| P-030 | `set_term_nets` 默认 `stub_length=0.5` 对 65nm 过大 → 端子接错网且静默 | **已修（`b36bade` + `bd75d3d`）**：默认 stub 由引脚几何推导 `(rbHw + 0.05)`，不再固定 0.5；显式值的 SKILL 括号 bug（`(0.5)` 被当函数调用）同批修掉（`schematic.py:540-556`）。验证：`test_schematic_contracts.py` 37/37 绿 |
-| P-031 | schematic `check_and_save`/`write` 忽略 `schCheck` 失败（check-failed 仍 ok） | **已修（`b36bade` + `bd75d3d`）**：保存前校验 output 含 saved 标记（`schematic.py:785,862`），并在保存路径补 `dbSetConnCurrent`（避免 si -batch OSSHNL-108/109）。验证：`test_schematic_contracts.py` 37/37 绿（无 xfail 残留） |
-| P-032 | `verilog._imported_cells` 去重顺序错误（未清洗 token 参与比较） | **已修（`b36bade`）**：先清洗 `[.,;:]` 尾字符再去重（`verilog.py:659-667`）。验证：`test_verilog_contracts.py` 28/28 绿 |
-| P-074 | pin 坐标口径三处不一致（read `xy` / write `x`,`y` / spec `xy`） | **已修（`48fc800`）**：实现统一为 `pos: [x, y]`，`xy`/拆开的 `x`/`y` 一律拒绝并点名违规字段（`schematic.py:480-487`）；spec《2-schematic》已改「单点一律 pos、弃用 xy」。验证：`schematic_pin_ops_probe` 以 `pos` 形状跑通写路径（`round7/pin-ops.json`，2026-09-28 复跑） |
-| C0 | 测试规范缺失（六步/状态还原）＋ 原子级覆盖系统性缺口 | **已闭环（2026-09-28）**：① 规范落地 `test/docs/写TB规范.md`（六步＋判据强度＋状态还原＋原子级覆盖义务）；② 机器核账 `audit_atom_coverage.py` → **gap=0 / weak=0 / 待分诊 0**（`atom-coverage-2026-09-28.json`）；③ B3 修弱判据：serdes calibre 补 `read_results`（DRC 1737 规则/28 结果；LVS 显式记录 not_compared 局限）、ADC/多用户 SerDes 补 `symbol.read` 端口比对、S11 gds 补 `stat+sha256`（PASS）；④ B4 抽查报告 `test/reports/TB规范抽查-2026-09-28.md`（5 份，发现 design_iterate 缺 §1 env_check → 已修） |
-| P-038 | py3.9 裸装缺 `eval-type-backport` 声明 | **已修（`2ab6acf3`）**：`pyproject.toml:14` 运行时依赖含 `eval-type-backport>=0.2; python_version < '3.10'`（wheel METADATA 同）；CI `uv run --python 3.9 --extra dev` 会装运行时依赖 → 3.9 作业不再缺 backport。测试侧复核：依赖行存在；wsl-gent py3.9（pydantic 2.13.5 + backport）import OK |
-| P-073 | pin 原子操作与「pin 有效名」不一致（rename 静默无效 / set 改坏 pin 名） | **已修（`3e45442`）**：pin 原子改按「有效名(terminal)」而非 pin 实例名操作。`schematic_pin_ops_probe` 复跑 **clean**（rename 生效、set 只改方向保名、delete OK）。注：验证前必须重启 8127 —— 常驻进程只在启动时导入代码，老进程会回旧行为（Runbook §10） |
-| P-075 | `layout.gds` 导出后残留模态框 → 同会话 SKILL 挂死（P1） | **已修**：`layout.gds` 导出收尾自动关 XStream 窗口（`layout.py::_dismiss_xstream_windows`，completion box→Enter / XStream Out→Esc）。`gds_then_skill_probe` 复跑 **clean**（GDS 后 SKILL **0.3s** 返回，此前 30s 超时）；ADC 全链回到 **24/24**（`round8/adc-sar.json`） |
-| P-077 | 注册探测拒绝裸 python 名（`test -x python3`） | **已修（`3886cb4`）**：显式 python/bin 接受 PATH 命令名（`command -v` 解析 + 真实文件/可执行校验），与运行时 `/usr/bin/env <value>` 一致；新增离线用例 3/3。端到端回归：P3 跨主机注册（裸 `python3`）**28/28**、P4 真 CIW **12/12** |
-| P-076 | `spectre.run` 间歇永不返回（in_flight 不释放，需重启业务面） | **已修（`f769750` + `3f2fbcc`；看门狗方案 `cd818e7` 已 revert）**：中层递归 tar 下载的完成判定只依赖 channel+tar、pump 线程可协作取消（修前：数据已在 `.vbtmp-*` 却未安装，pump 线程永久残留）。复验（2026-09-28 晚，8127 重启后）：① `p076_fix_verify_probe.py` direct **3/3**（raw 安装到位 + spectre.out 在 + 无 .vbtmp 残留 + thread_delta=0）；② HTTP 面 `repro_p076_rounds.py` **6/6**（每轮 2 任务 success，~7s）；③ 验收③：`design_iterate_tb --stage all` **连跑 3 次 ok=True failures=[]**（65/64/63s）；④ 影响面回归：11 套包 `run_all_http.py` **all_passed=true**（含 spectre/maestro/calibre） |
-
-详见 [已关闭-近期.md](已关闭-近期.md)。
+完整列表与关闭依据见 [已关闭-近期.md](已关闭-近期.md)（唯一出口，本 README 不重复）。
 
 ## 3. 非缺陷跟踪项（16 项，不建卡）
 
-文档 / 环境 / 审计 / 覆盖度类条目：**不是产品缺陷**，只在台账与这里索引（避免与缺陷卡片混淆）。
+文档 / 环境 / 审计 / 覆盖度类条目：**不是产品缺陷**，只在 §3 索引（避免与缺陷卡片混淆）。
 所有**缺陷**（含早期轮次已上报的 `bug-2026…`）都在上面 §1 的卡片里，或已移入 §2 已关闭记录。
 
 | ID | 事项 | 当前状态 |
@@ -151,13 +50,13 @@
 | P-021 | 历史实例启动位置不规范（`$HOME`/工程目录污染；规范已落地，现场清理与 legacy 重写待办） | 环境账，非缺陷 |
 | P-023 | wsl-gent 起 20 个真 Virtuoso 超出内存（真机上限 10–12；口径已写环境文档） | 待用户确认替代口径 |
 | P-028 | 运行中的 vblog CIW 没有 PDK（已按 S1 专用实例口径处置） | 环境账，已给口径 |
-| P-033 | `test/artifacts` 231 个文件被跟踪（含 token/二进制；白名单保留需用户确认） | 仓库卫生，待确认 |
+| P-033 | `test/artifacts` 入库口径已定：env / tmp 退索引（179 个运行状态文件，2026-10-08），当前跟踪 70 个（69 evidence + README）；剩 3 个 evidence 文件含明文 token，待脱敏 | 仓库卫生，主要问题已处置 |
 | P-036 | lab fake 与 bridge 隧道兼容性（已复测可达，症状未复现） | 观察（降级，不再阻塞） |
 | P-040 | 仓库内 `.ps1` 一律 UTF-8 with BOM（约定，已写入首轮报告 §6.1） | 约定，非缺陷 |
 
 ## 4. 关联文件
 
-- 台账（唯一事实源）：[问题登记.md](../问题登记.md)
+- 历史台账（2026-10-08 停更，仅供考古）：[问题登记.md](../问题登记.md)
 - 最新一轮送修：[上层](../round7-缺陷清单-上层.md)、[其他](../round7-缺陷清单-其他.md)
 - Spec 覆盖矩阵（哪些要求被测到）：[round7-spec覆盖矩阵.md](../round7-spec覆盖矩阵.md)
 - 覆盖率与缺口：[coverage-pack/](../coverage-pack/)、[覆盖度缺口.md](../覆盖度缺口.md)

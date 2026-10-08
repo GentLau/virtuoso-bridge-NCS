@@ -13,7 +13,7 @@
 - `check_tb_headers.py`：**TB 注释头核账**（规范 §0）——扫描 `test/{semi,live,offline/core}` 的 TB/探针，校验 3 栏（作者 / 最后改动到分钟 / 依赖），`--emit` 生成补全草案（作者名留空由本人填），`--fail` 预留门禁。
 - `bringup_user.sh` / `start_lab_fakes.sh` / `make_run_env_complete.py`：真机实例与 lab fake 的起法（详见 [`../../docs/环境与场景.md`](../../docs/环境与场景.md) §2 与 [`../../reports/internal/环境Runbook-内部.md`](../../reports/internal/环境Runbook-内部.md)）。
 - `make_multihop_env.py` / `start_hop_fake.sh`：**多跳（jump/SOCKS5）专项环境**（S15）——生成 `test/artifacts/env/multihop/registry.json`、在 w1-gent 起 65203/`vb-hopfake`；配套 TB `test/live/flows/multihop_jump_tb.py`。
-- `start_disposable_ciw.sh` / `stop_disposable_ciw.sh` / `ciw_load_setup.py`：**可丢弃 CIW（注册专项 P4）**——在 wsl-gent 起一个 headless 真 Virtuoso + 注入用最小 daemon（bootstrap `vb-<name>`）；TB 用 `ciw_load_setup.py` 执行 `RBStop() + load(<注册第 4 步生成的 setup>)`，把 CIW 换成注册生成的真实 daemon（`--verify-port/--verify-token` 轮询 `1+2` 确认后才返回 0）。用法见 [`../../docs/环境与场景.md`](../../docs/环境与场景.md) §7。
+- `start_disposable_ciw.sh` / `stop_disposable_ciw.sh` / `ciw_load_setup.py`：**可丢弃 CIW（注册专项 P4）**——在 wsl-gent 起一个 headless 真 Virtuoso + 注入用最小 daemon（bootstrap `vb-<name>`）；TB 用 `ciw_load_setup.py` 执行 `RBStop() + load(<注册第 4 步生成的 setup>)`，把 CIW 换成注册生成的真实 daemon（`--verify-port/--verify-token` 轮询 `1+2` 确认后才返回 0）。用法见 [`../../docs/环境与场景.md`](../../docs/环境与场景.md) §9。
 - `w4_hostkey_cycle.sh`：**w4-gent host-key 轮换（注册专项 P5）**——`status/use-a/use-b/restore` 四个动作，每次输出 `SET=` + `FINGERPRINT=SHA256:…`；首次调用会备份原始 key，`restore` 恢复。部署到 w4 的 `/usr/local/sbin/`（需 sudo），接口见 [`../../docs/环境与场景.md`](../../docs/环境与场景.md) §7。
 - `hold_ports.py`：占住一段本机端口，用来复现/回归"机器级端口被占"造成的假红（P-063）。
 - `verify_spec_matrix_evidence.py`：拿最新 JUnit 核对 spec 覆盖矩阵每一行的证据文件**这轮到底跑没跑**（产出矩阵 §14）。
@@ -26,3 +26,8 @@
 上述脚本都从**仓库根目录**运行（`parents[3]` / `$PSScriptRoot\..\..\..`），
 命令见 [`../../README.md`](../../README.md) 与三级 README。
 运行产物一律落 `test/artifacts/{env,evidence,tmp}/`，脚本自身不写仓库根。
+
+> 本页是**部分索引**：未逐条收录的脚本以文件头 / `--help` 为准。
+> 分析类脚本 `build_op_param_matrix.py` / `extract_spec_clauses.py` / `merge_round8_spec_matrix.py` /
+> `build_output_field_matrix.py` 默认会**改写 `test/reports/round8|9` 里已跟踪的报告**——
+> 运行前先确认意图或显式传 `--out`，避免把脏改动带进提交。

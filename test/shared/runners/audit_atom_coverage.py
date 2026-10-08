@@ -41,14 +41,21 @@ TUPLE_RE = re.compile(r"^(_[A-Z_]+)\s*=\s*\(([^)]*)\)", re.M)
 
 #: 人工复核过的"写了不读回"误报（每条都要写清理由，别默默加进来）
 KNOWN_FALSE_POSITIVES = {
+    # 2026-09-30 round10 人工分诊的 4 条（此前 needs-triage）：
+    ("test/live/flows/project_flow_tb.py", "calibre.lvs"):
+        "该文件只在 docstring 里引用 `calibre.lvs(source=…)`（流程内不展开 LVS），无实际调用点",
+    ("test/live/packages/nested_keys_e2e_tests.py", "schematic.write"):
+        "`place_wire` 写入后紧跟 `_skill(...)` 读 DB 几何（bbox/points）并做非网格点对照 —— 有读回",
+    ("test/live/packages/skill_log_semantics_e2e_tests.py", "basic.file.upload"):
+        "上传 `.il` 夹具后立刻 `basic.command.run test -f <remote>` 断言远端可见 —— 有读回",
+    ("test/live/transport/disposable_ciw_c06_p086_tb.py", "basic.file.upload"):
+        "该 TB 自带 fake middleware，`basic.file.upload` 是桩分支（不产生远端写入）—— 不属于漏读回",
     ("test/live/packages/layout_e2e_tests.py", "layout.gds"):
         "同文件大量 `virtuoso.layout.read` + `_check`；GDS 用「导出成功 + 后续 read」判定",
     ("test/live/flows/s11_inprocess_lvs_tb.py", "basic.file.upload"):
         "上传件被下游 LVS 消费，判据是 `lvs.rep` 里 grep CORRECT/INCONCLUSIVE",
     ("test/live/stress/layout_multiuser_lock_tb.py", "layout.write"):
         "并发锁语义 TB，判据就是各次 write 的成败与结构化拒绝",
-    ("test/live/flows/layout_suite_p044_workaround_tb.py", "layout.gds"):
-        "GDS-01 是 export+import round-trip 用例，判据在 round-trip 结果",
     ("test/semi/probes/layout_lock_ownership_probe.py", "layout.write"):
         "判据是 append-open 结果 + write 错误串是否含 locked（R7-TB-14 改造后）",
     ("test/semi/probes/layout_p044_second_write_probe.py", "layout.write"):
@@ -65,8 +72,6 @@ KNOWN_FALSE_POSITIVES = {
         "同上",
     ("test/live/packages/calibre_e2e_tests.py", "basic.file.upload"):
         "上传的 runset 立刻被 `calibre.lvs` 消费，随后 `_check(mode/run_dir)` 断言（下游判据）",
-    ("test/live/flows/layout_suite_p044_workaround_tb.py", "layout.write"):
-        "并发锁套件：判据是各 case 的 verdict（含 write 成败/结构化拒绝）",
     ("test/semi/probes/symbol_regen_handle_probe.py", "schematic.write"):
         "探针自己造前置用的 write；判据在后续 3 次 `symbol.generate` 的句柄态"
         "（每次必须 ok 且 `dbFindOpenCellViewByName` 为 CLOSED）",

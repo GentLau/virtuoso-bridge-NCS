@@ -23,7 +23,8 @@ WORK
 
 # TB 运行产物（Maestro/Spectre 导出、临时运行目录）
 # 目录约定：env/ 环境 · evidence/ 产物 · tmp/ 零时产物（可整目录删）
-# 说明：已跟踪的证据文件不受 ignore 影响；需要新提交证据时用 git add -f。
+# 口径：env/ 运行状态与 tmp/ 临时产物一律不入库；只有 evidence/ 的关键证据才用 git add -f。
+# 说明：已跟踪的文件不受 ignore 影响，退索引用 `git rm -r --cached <path>`（文件保留在磁盘）。
 # 注意：用 `test/artifacts/*` 而非 `test/artifacts/`，否则无法用 ! 规则保留目录内的 README。
 test/artifacts/*
 !test/artifacts/README.md

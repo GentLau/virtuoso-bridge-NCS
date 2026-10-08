@@ -1,0 +1,21 @@
+{
+ "matrix": "test/reports/round8/op-param-matrix.json",
+ "ops_total": 78,
+ "single_live_site": [
+  "virtuoso.gui.list_windows",
+  "virtuoso.skillref.info"
+ ],
+ "no_negative_hint": [
+  "basic.command.run",
+  "basic.skill.execute",
+  "calibre.lvs",
+  "calibre.read_results",
+  "virtuoso.gui.list_windows",
+  "virtuoso.layout.gds",
+  "virtuoso.layout.read",
+  "virtuoso.layout.write",
+  "virtuoso.schematic.read",
+  "virtuoso.schematic.write"
+ ],
+ "note": "清单仅供人工分诊：single=该 op 在 live/semi 只出现 1 次；no_negative_hint=所在 TB 无预期失败线索（可能用别的写法，需人工确认）。"
+}

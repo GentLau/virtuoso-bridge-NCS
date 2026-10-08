@@ -24,10 +24,15 @@ python test/offline/core/api_server_tb.py          --out test/artifacts/evidence
 python test/offline/core/semantics_tb.py           --out test/artifacts/evidence/semantics-green.json
 python test/offline/core/fault_injection_tb.py     --out test/artifacts/evidence/fault-injection-green.json
 python test/offline/core/daemon_log_protocol_tb.py --out test/artifacts/evidence/log-protocol.json
+python test/offline/core/p076_tar_completion_tb.py --out test/artifacts/evidence/p076-tar-completion-green.json
+python test/offline/core/thread_lifecycle_tb.py    --out test/artifacts/evidence/thread-lifecycle-green.json
 ```
+
+完整清单与每份 TB 的用途见 [`core/README.md`](core/README.md)。
 
 ## 纪律
 
 - 不得写仓库内文件（临时目录用 `tempfile.mkdtemp(prefix="vb-")`，由 `test/conftest.py` 清理）；
-- `unit/` 不得起服务、不占固定端口；需要固定端口时放 `integration/` 或 `scenario/` 并在 `finally` 释放；
+- `unit/` 不得起固定端口或访问外部服务；`127.0.0.1:0` 的密闭本地资源属例外
+  （见 [`../docs/写TB规范.md`](../docs/写TB规范.md) §7）；需要固定端口时放 `integration/` 或 `scenario/` 并在 `finally` 释放；
 - 结论必须能被本机复现，不需要任何远端前提。

@@ -9,4 +9,4 @@
 - `p076_tar_completion_tb.py`：P-076 确定性回归——channel/tar 已完成时，卡死的 pump 线程不得阻止 install。
 - `thread_lifecycle_tb.py`：自研线程生命周期回归——tunnel pump、持久 shell reader、本地 command session reader 关闭后不得残留。
 
-运行方式见 [`../README.md`](../README.md)。产物只写 `../artifacts/`。
+运行方式见 [`../README.md`](../README.md)。产物写 `test/artifacts/evidence/<run-id>/`（相对仓库根）。

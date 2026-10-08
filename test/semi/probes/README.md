@@ -13,4 +13,6 @@ GUI/Maestro/Symbol 包探针、`maestro_leak_probe.py` 会话泄漏探针和 SKI
   到期返回 `status=timeout`，不杀后台作业）。
 
 探针若需要远端 scratch，必须使用注册表 root 下的 `tmp/` 或显式 `--root`；
-输出证据放 `../artifacts/`。
+输出证据放 `test/artifacts/evidence/<run-id>/`（相对仓库根）。
+
+本目录文件较多，**清单以目录为准**；新增/删除探针时顺手更新本页，不必等全量整理。

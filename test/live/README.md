@@ -7,9 +7,9 @@
 
 | 子目录 | 放什么 | 对应"用户动作" |
 |---|---|---|
-| `registration/` | `registration_http_six_step_tb.py` | 注册页六步全流程（apply→validate→probe→deploy→verify→commit） |
-| `transport/` | `cov_remote_real.py` | 五接口全量（skill/command/file/gui/spectre） |
-| `packages/` | 10 套上层包 E2E（infra/cellview/schematic/symbol/layout/verilog/veriloga/skillref/spectre/maestro） | 业务包的真实操作序列 |
+| `registration/` | 六步注册 + 跨主机 / 真 CIW / py2.7 / host-key / 控制面（清单以目录为准） | 注册页六步全流程（apply→validate→probe→deploy→verify→commit）及变体 |
+| `transport/` | 五接口全量、CDS.log 主题、超时恢复、disposable CIW（清单以目录为准） | 传输层真实主题 |
+| `packages/` | 上层业务包 E2E（按包一份，清单以目录为准） | 业务包的真实操作序列 |
 | `e2e/` | 真机 pytest（原 `test/e2e`） | middle+bottom 真链路 |
 | `stress/` | 混合并发、饱和、多用户路由、100 用户规模 | 真实客户端压测 |
 | `flows/` | S2 role 分主机、S4 规模、S11 工程链（原理图→LVS→前后仿） | 跨包工程流程 |
@@ -21,7 +21,7 @@
 python test/live/registration/registration_http_six_step_tb.py --work-dir test/artifacts/env/reg-six-local `
     --user vbsixlocal --local-mode --token vb-six-local --out test/artifacts/env/reg-six-local/evidence.json
 python test/live/transport/cov_remote_real.py --work-dir test/artifacts/env/log-vblog --token vb-vblog
-python test/shared/runners/run_all_http.py                                   # 11 套包 E2E（含 calibre）
+python test/shared/runners/run_all_http.py                                   # packages 全部套件（便利封装；清单/顺序见脚本 SUITES）
 $env:VB_E2E='1'; python -m pytest test/live/e2e -q
 python test/live/stress/production_face_stress_tb.py --workers 6 --rounds 6   # 自起生产面压测
 # 对接既有真机面：  --base http://127.0.0.1:8127/api/operation --token vb-vblog

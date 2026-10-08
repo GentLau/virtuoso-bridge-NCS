@@ -2,8 +2,8 @@
 
 用法（仓库根目录）::
 
-    PYTHONPATH=src python test/shared/runners/resident_env_check.py
-    PYTHONPATH=src python test/shared/runners/resident_env_check.py --verbose
+    python test/shared/runners/resident_env_check.py
+    python test/shared/runners/resident_env_check.py --verbose
 
 口径：
 * **remote** 用户（daemon 有 host）→ 必须 `1+1` 成功；
@@ -20,7 +20,7 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-SRC = Path(__file__).resolve().parents[2] / "src"
+SRC = Path(__file__).resolve().parents[3] / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 

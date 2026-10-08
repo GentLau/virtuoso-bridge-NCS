@@ -1,9 +1,9 @@
-"""生成/刷新 `test/reports/bugs/` —— 未关闭缺陷的唯一跟踪视图。
+"""生成/刷新 `test/reports/bugs/` —— 缺陷跟踪唯一视图。
 
-为什么用脚本生成：缺陷的**权威事实**在 `test/reports/问题登记.md`（台账）与
-`第五轮-缺陷清单-*.md`（送修视图）。这个目录是给「还在等修复」的条目做**逐条卡片**
-（状态 / 责任人 / 下一步 / 验收判据 / 证据），必须和台账口径一致、且能一键刷新，
-否则很快会变成第三份互相矛盾的清单。
+为什么用脚本生成：本文件的 `OPEN` / `CLOSED_RECENT` 是缺陷的**当前事实源**，
+由本脚本一键生成 `test/reports/bugs/` 的卡片、README 索引与已关闭记录
+（未关闭 = README §1 + 逐条卡片；已关闭 = 已关闭-近期.md）。
+`test/reports/问题登记.md` 自 2026-10-08 起停更，仅作历史存档，不再作为权威口径。
 
 用法::
 
@@ -19,6 +19,7 @@
 from __future__ import annotations
 
 import argparse
+from datetime import date
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -26,6 +27,119 @@ BUGS_DIR = ROOT / "test" / "reports" / "bugs"
 
 #: 未关闭条目。状态只允许：待设计修 / 待测试侧 / 待归属 / 待决策 / 观察
 OPEN = [
+    {
+        "id": "P-121",
+        "layer": "spec↔真机一致性（上层 schematic 包）· `place_pin.sig_type` 读回",
+        "slug": "place-pin-power-sigtype-reads-supply",
+        "title": "`place_pin(sig_type=\"power\")` 写入成功，但 `read(connectivity).nets[...].sigType` 读回 `\"supply\"`（其余 9 个取值原样回读）——spec 未写明该 DB 归一化",
+        "level": "P3（文档缺口：按 spec 值域做「写值==读回」断言会误判；调用方需知道映射）",
+        "owner": "spec 侧（在 `2-schematic.md` 的 `sig_type` 值域处补一句：DB 会把 `power` 归一化为 `supply`，读回按 DB 词汇；或由实现/文档给出映射表）",
+        "status": "待决策",
+        "where": "spec `spec/design-concepts/上层/2-schematic.md`（`place_pin` 参数表 `sig_type`）；实现 `src/pyapi/packages/schematic.py:85-88`（10 值集合）与 `:727-728`（直接透传给 `schCreatePin`）",
+        "symptom": "真机（vblog，2026-09-30）：10 值一次性写入同一 schematic（各建一个 pin）后 `read(focus=connectivity)`："
+                   "analog/clock/ground/reset/scan/signal/tieHi/tieLo/tieOff **原样回读**，`power` → **`supply`**（Virtuoso DB 归一化）。",
+        "repro": "`PYTHONPATH=src python test/live/packages/schematic_e2e_tests.py`（`PIN-OPT` ④ 十值全枚举）；\n"
+                 "或直接 `place_pin(sig_type=\"power\")` 后读 `nets[<pin>].sigType`。",
+        "evidence": "`test/artifacts/evidence/round10/schematic-sigtype-sweep.json`（10 值写/读对照；TB 已按映射断言）",
+        "accept": "① spec 写明 `power→supply` 归一化（或实现侧给出映射/别名）；② TB 断言与 spec 一致（当前＝按映射断言，并记录写值）；③ 不得出现「值域里有 power、读回永远拿不到 power 却无人知晓」的隐性契约。",
+        "next": "等 spec owner 补一句；TB 已钉住映射（不阻塞）。",
+        "reported": "2026-09-30（round10 补 `sig_type` 10 值全枚举时发现）",
+        "updated": "2026-09-30 21:20（新立）",
+    },
+
+    {
+        "id": "P-120",
+        "layer": "注册流程（register/flow）· SSH 后端选择与 ssh-config 兼容性",
+        "slug": "register-probe-ignores-ssh-backend-accept-new",
+        "title": "注册 probe **忽略** apply 里的 `ssh_backend`（永远 paramiko）；而 paramiko 又拒绝 `StrictHostKeyChecking=accept-new` → 用户即使选了 openssh 后端，只要 ssh config 是 accept-new 就注册不了",
+        "level": "P3（一致性缺陷：apply 收 `ssh_backend` 但 probe 不用 → 用户按文档选 openssh 也无法绕过 paramiko 的限制；`accept-new` 的 env 要求本身已在 `test/docs/环境与场景.md:110` 写明）",
+        "owner": "设计侧（`register/flow.py::_new_runner` 透传 `ssh_backend`/`tool_override`；accept-new 的错误文案可加一句「改 ssh config 为 yes/ask 或换 openssh 后端」）",
+        "status": "待设计修",
+        "where": "`src/register/flow.py:458-476`（`_new_runner()` 构造 `SSHRunner(...)` 不传 `backend=` → `src/common/ssh.py:298` 默认 paramiko）；`src/register/models.py:156`（apply 收 `ssh_backend`）与 `flow.py:439-441`（只写进候选 entry，不影响 probe）；`src/common/paramiko_backend.py:810-822`（accept-new 结构化拒绝）",
+        "symptom": "真机（round10，w4-gent，2026-09-30）：客户端 `~/.ssh/config` 的 w4 条目为 `StrictHostKeyChecking accept-new`（OpenSSH 常用写法）时，"
+                   "`registration_hostkey_rotation_tb` 第 3 步 probe 报 `Paramiko backend requires recorded host keys; StrictHostKeyChecking='accept-new' is not supported for host 'w4-gent' (supported: yes/ask/true)` → 注册失败；"
+                   "在第 1 步 apply 里显式给 `ssh_backend=\"openssh\"`（apply 返回 200、候选 entry 也是 openssh）后，第 3 步 probe **仍然**报同一个 paramiko 错误 —— 证明 probe 没用候选的后端选择。",
+        "repro": "1) 把 w4（或任一 host）的客户端 ssh config 设为 `StrictHostKeyChecking accept-new`；\n"
+                 "2) `PYTHONPATH=src python test/live/registration/registration_hostkey_rotation_tb.py --work-dir test/artifacts/env/reg-hostkey-r10`；\n"
+                 "3) 观察第 3 步结构性失败；再在 apply body 里加 `ssh_backend:\"openssh\"` 复跑，错误不变。",
+        "evidence": "**2026-10-08 重新取证（A/B 对照，专用复现，不再依赖会被覆盖的\n"
+                    "轮换 TB 快照）**：\n"
+                    "* A：默认后端(paramiko) + w4 ssh config=`accept-new` → step1 apply 200、step2 validate 200、"
+                    "**step3 probe stage=failed**（原文 `Paramiko backend requires recorded host keys; "
+                    "StrictHostKeyChecking='accept-new' is not supported for host 'w4-gent' (supported: yes/ask/true)`）→ rc=2"
+                    " —— `test/artifacts/evidence/verify-p120/paramiko-accept-new.{json,log}`\n"
+                    "* B：**同一链路显式 `ssh_backend=\"openssh\"`** + accept-new → step1 apply 200（后端声明被接受）、"
+                    "**step3 probe 仍报同一个 paramiko 错误** → rc=2 —— `verify-p120/openssh-requested-accept-new.{json,log}`\n"
+                    "（复现用的客户端 ssh config 已在 `finally` 里还原成 `yes`，见卡尾命令）\n"
+                    "* 环境归位后同一套件（hostkey 轮换 TB）**17/17 绿**：`round10/registration/hostkey_rotation.json`；"
+                    "源码锚点见 where",
+        "accept": "① probe 使用**候选 entry 的** `ssh.backend`（含 `tool_override`）；② `accept-new` 二选一：paramiko 支持（映射 AutoAddPolicy）或在错误里明确指路"
+                  "“把该 host 的 ssh config 改成 `yes/ask`，或选 `ssh_backend=openssh`”；③ 回归：注册 TB 在 paramiko/openssh × yes/accept-new 四种组合下结论一致、无静默降级。",
+        "next": "等设计修（核心是 probe 透传 backend）。测试侧已把 w4 的客户端 ssh config 改回 `yes`（符合 `环境与场景.md:110`，且 host-key 轮换判据要求换 key 必须被拒），改后 TB **17/17 绿**。\n"
+                "**修好后用同一条命令做回归**：`registration_http_six_step_tb.py --host w4-gent --ssh-user dev "
+                "--key-dir C:/wsl/shared/keys --key lab_ed25519 --ssh-backend openssh` + ssh config=`accept-new` "
+                "→ step3 必须**通过**（probe 真用了 openssh）；同时 paramiko+accept-new 组合仍应结构化拒绝并指路。",
+        "reported": "2026-09-30（round10 注册全量：hostkey 轮换 TB 初跑红，逐层定位到 probe 无视 ssh_backend + paramiko 拒绝 accept-new）",
+        "updated": "2026-10-08 12:25（A/B 对照复现取证；TB 增 `--key-dir/--key/--ssh-backend` 供回归）",
+        "extra": "## 复现命令（2026-10-08 实测，捕获 A/B 两条证据）\n\n"
+                 "```powershell\n"
+                 "# ① 临时把 w4 的客户端 ssh config 改成 accept-new（先备份，finally 还原）\n"
+                 "# ② A：默认 paramiko\n"
+                 "PYTHONPATH=src python test/live/registration/registration_http_six_step_tb.py \\\n"
+                 "  --work-dir test/artifacts/env/p120-a --user vbw4p120a --host w4-gent --ssh-user dev \\\n"
+                 "  --root /home/dev/.virtuoso-bridge/vbw4p120a --daemon-port 65181 \\\n"
+                 "  --key-dir C:/wsl/shared/keys --key lab_ed25519 --stop-after-deploy \\\n"
+                 "  --out test/artifacts/evidence/verify-p120/paramiko-accept-new.json\n"
+                 "# ③ B：显式声明 openssh 后端（声明被 apply 接受，但 probe 仍走 paramiko → 同一个错误）\n"
+                 "PYTHONPATH=src python test/live/registration/registration_http_six_step_tb.py \\\n"
+                 "  --work-dir test/artifacts/env/p120-b --user vbw4p120b --host w4-gent --ssh-user dev \\\n"
+                 "  --root /home/dev/.virtuoso-bridge/vbw4p120b --daemon-port 65182 \\\n"
+                 "  --key-dir C:/wsl/shared/keys --key lab_ed25519 --ssh-backend openssh --stop-after-deploy \\\n"
+                 "  --out test/artifacts/evidence/verify-p120/openssh-requested-accept-new.json\n"
+                 "# ④ 还原客户端 ssh config（脚本在 finally 里做，并打印还原后的 w4 条目）\n"
+                 "```\n\n"
+                 "* 静态根因（两条独立证据）：`register/flow.py::_new_runner()` 构造 `SSHRunner(...)` **不传 `backend=`**"
+                 "（默认 paramiko）；`flow.py` 里 `ssh_backend` 只被 `_apply_policies()` 写进**候选 entry**，probe 从不读它。\n"
+                 "* 本轮为跑这条复现，给 `registration_http_six_step_tb.py` 增加了 `--key-dir/--key/--ssh-backend` 三个参数\n"
+                 "（默认值保持原行为 `~/.ssh` + `id_ed25519`、不传 `ssh_backend`），修好后可直接做四组合回归。",
+    },
+
+    {
+        "id": "P-119",
+        "layer": "中层/底层 · 日志通道（CDS.log 字节窗口）",
+        "slug": "cdslog-bridge-flush-blank-line",
+        "title": "每次经桥的请求都会在 CDS.log 多写一条空 `\\o ` 行（桥\"交互等价换行\"的副作用），不计入返回的 `CDSlog` delta",
+        "level": "P3（观察/口径：用户日志里出现桥产生的空行；半真机 probe 的\"文件窗口==delta\"契约因此失效）",
+        "owner": "spec 侧（**口径已定**：不改实现，改 spec —— 把「桥自身 flush 行不计入 delta、可被过滤」写进日志 spec §8）",
+        "status": "待设计修",
+        "where": "daemon 的交互等价换行（C06 修复 `c8bbe8c`）+ `test/semi/transport/log_matrix_real_tb.py::case_increment_bytes`（原判据：窗口必须与 delta 逐字节相同）",
+        "symptom": "真机（vblog，经 8127 与 direct 两种形态一致，2026-09-30）：\n"
+                   "请求 `progn(hiPrintToLogFile(\"VB-LOG-<tag>\") hiFlush() hiFlushLogFile() 1+1)` + `log_level=all` → "
+                   "返回 `CDSlog` = `\\o VB-LOG-<tag>\\n`（19B），而 CDS.log 生长 **23B** —— 窗口 = 返回行 + `\\o \\n`（**空行**）；"
+                   "每请求一次稳定出现（连续 4+ 次复现，`contiguous_slice=true`、`bridge_flush_line=true`）。",
+        "repro": "`PYTHONPATH=src python test/semi/transport/log_matrix_real_tb.py --work-dir test/artifacts/env/log-vblog --token vb-vblog`\n"
+                 "（或对照：`stat -c %s CDS.log` → 发一条带标记的 `hiPrintToLogFile` 请求 → 再 `stat` + `dd ... | cat -A` 看窗口）",
+        "evidence": "`test/artifacts/evidence/round10/log-matrix-real-r10.json`（`increment-bytes.bridge_flush_line=true`，窗口/返回字节数入证据）；"
+                    "实测窗口原文（`cat -A`）：`\\o VB-LOG-<tag>$` + `\\o $`",
+        "accept": "① **spec 回填**日志 spec §8：`log`/`CDSlog` 只含本次请求增量；桥自身为提交行缓冲而发送的换行产生的空 `\\o ` 行**不计入 delta**、可被消费者过滤，"
+                  "且不参与日志分级/长度预算统计（建议原文见卡尾「决策」）；"
+                  "② probe 判据与 spec 一致（只允许 `window == delta + \"\\\\o \\n\"` 这一种额外形态，其它多余字节仍判红）；"
+                  "③ 除文档外**不做**实现改动（不消除该行，避免动 C06 flush 修复路径）。",
+        "next": "**决策已定（2026-10-08，用户裁定）：改 spec 口径** → spec owner 按卡尾建议原文回填 §8 后，测试侧复核 probe 判据与 spec 一致并销卡。"
+                "探针当前已按该口径精确钉住（不阻塞半真机层）。",
+        "reported": "2026-09-30（round10 半真机全量：`log_matrix_real_tb` 初跑红，逐字节定位到桥自身 flush 空行）",
+        "updated": "2026-10-08 12:10（用户裁定：改 spec 口径（文档化该行、不改实现）；见卡尾决策）",
+        "extra": "## 决策（2026-10-08，用户裁定）\n\n"
+                 "**改 spec 口径，不改实现**：接受「这条空行是桥自身 flush 的副产物」，写进日志 spec；不消除它（避免动 C06 的 flush 修复路径）。\n\n"
+                 "1. 在 `spec/底层/6-日志返回设计标准.md` §8 增补一条（建议原文，spec owner 可直接采用）：\n\n"
+                 "   > `log`（JSON 出口名 `CDSlog`）只包含本次请求期间的 CDS.log 增量；其中**由桥自身为提交行缓冲而发送的换行**\n"
+                 "   > 所产生的空输出行（`\\o `）**不计入 delta**，消费者可按需过滤；该行不得参与日志分级与长度预算统计。\n\n"
+                 "2. 测试侧判据（保持现状，已实现）：半真机 probe **精确**允许 `窗口 == delta + \"\\o \\n\"` 这一种额外形态；\n"
+                 "   任何**其它**多出来的字节仍判红（保证真泄漏不会被放过）。\n"
+                 "3. 不再做实现改动：不消除该空行（C06 修复 `c8bbe8c` 的换行是行缓冲提交所必需）。\n"
+                 "4. 收口流程：spec 回填后由测试侧复核 probe 判据与 spec 一致 → 销卡；若日后要彻底消除该行，另立新卡评估 C06 回归风险。",
+    },
+
     {
         "id": "P-118",
         "layer": "上层（maestro 包）· `set_job_policy` 的 `job_type=netlisting` 分支",
@@ -48,9 +162,23 @@ OPEN = [
                     "`maestro-nested-keys-p118-verify2.json`",
         "accept": "① `job_type=netlisting` 要么真正把 policy 落盘并能值级读回，要么在“该 test 没有 netlisting policy”时**结构化失败**（点名原因/建议），"
                   "不得返回 ok；② spec `6-maestro.md:94` 的选择器语义与实现一致；③ TB NKM-09 转绿（或按裁决改成“结构化拒绝”断言）。",
-        "next": "等设计定位；测试侧红钉已就位（放最后，不挡 NKM 其它用例）。",
+        "next": "**2026-10-08 用户裁定：本卡仍未修好，保持未关闭。** 工作区已有一版**中间改动**"
+                "（`set_job_policy` 加 LSCS 前置 + 独立具名 policy `VB_<test>_<jobtype>` + 取不到 DPL 就结构化失败；"
+                "spec `6-maestro.md` 同步），测试侧复跑 `NKM-09` 转绿、`maestro_e2e_tests` 整链全绿 —— 但这不等于结案。"
+                "**最终修法 = spec 里的四原子模型**（`create_job_policy` / `attach_job_policy` / `detach_job_policy` / `delete_job_policy`，"
+                "netlisting 只在 LSCS、`maeClearTestJobPolicy` 整体回退、`axlDetachJobPolicy` 按类型去挂载）→ 设计落地后，"
+                "测试侧需**迁移** `maestro_nested_keys_e2e_tests` 的 NKM-05/NKM-09 与 `maestro_e2e_tests::WRITE-05` 到新原子并复验，才销卡。",
         "reported": "2026-09-30（测试/root：补 `read_config.job_policy.netlisting` 读回面覆盖时发现）",
-        "updated": "2026-09-30 23:55（新立）",
+        "updated": "2026-10-08 12:05（工作区中间版复跑绿：NKM-09 PASS + maestro_e2e 全绿；用户裁定仍未修好 → 保持未关闭，等四原子落地）",
+        "extra": "## 进展记录（2026-10-08）\n\n"
+                 "* **工作区中间改动**（未提交）：`src/pyapi/packages/maestro.py::set_job_policy` —— ① `job_type` 缺省 `simulation` 且做非空字符串校验；"
+                 "② `netlisting` 先 `maeSetJobControlMode(\"LSCS\")`，失败即整体失败；③ 带 `test_name` 时改用独立具名 policy（`VB_<test>_<jobtype>`）attach，"
+                 "不再复用/污染全局默认名；④ 取不到基础 DPL 或 `maeSetJobPolicy` 返回 nil → 结构化失败（删除原 `when(jp …)` 静默 no-op）。\n"
+                 "* **测试侧复跑**：`maestro_nested_keys_e2e_tests.py` **11/11 绿**（`NKM-09` 红钉转绿：`netlisting` 写 `maxjobs=1` 值级读回 `maxjobs=1`；"
+                 "对照 `simulation` 分支 `maxjobs=2`）—— 证据 `test/artifacts/evidence/verify-fix-p118/maestro-nkm.json`；"
+                 "`maestro_e2e_tests.py` 整链**全绿**（含 `WRITE-05`、`HISTORY-01`）—— 证据 `verify-fix-p118/maestro-e2e.log`。\n"
+                 "* **用户裁定（2026-10-08）**：**「别消除，还没修好」** —— 以 spec 的四原子模型（create/attach/detach/delete + LSCS/回退语义）为最终验收，"
+                 "本卡保持未关闭；红钉清单暂不挂回（中间版下 NKM-09 为 PASS），四原子落地后测试侧迁移 TB 并复验再销卡。",
     },
 
     {
@@ -59,19 +187,37 @@ OPEN = [
         "slug": "calibre-export-pdb-dir-missing",
         "title": "spec `12-calibre.md` §4.5 的 `export.items` 列了 `pdb_dir`，实现未提供（`unknown export item: pdb_dir`）；而 §4.4 又写明既有 PEX 产物可由 `export` 读取",
         "level": "P3（文档与实现不一致：按 spec 调用必失败；既有 PEX 产物的导出路径不可达）",
-        "owner": "spec 侧（二选一：删/改 §4.5 的 `pdb_dir`；或由实现补上 pdb 目录导出）",
-        "status": "待决策",
+        "owner": "设计侧（已裁定：补实现，但本版只做**预留接口**；spec 侧同步一句预留说明）",
+        "status": "待设计修",
         "where": "spec `spec/design-concepts/上层/12-calibre.md:231`（items 枚举）与 `:223`（“既有 PEX 产物仍可由 read_results / export 读取”）；实现 `src/pyapi/packages/calibre.py:56-61`（`_EXPORT_ITEMS` 只有 summary/results_db/netlist/log）与 `:248`（其它 item 一律 ValueError）",
         "symptom": "真机（8127，token vb-vblog）：`calibre.export(run_dir=…, items=[\"pdb_dir\"])` → 400 "
                    "`invalid request for operation: unknown export item: pdb_dir`；对照 `items=[\"all_small\"]` → 200 "
                    "且展开为 summary/results_db/log（合法枚举可用，说明只有 pdb_dir 缺）。",
         "repro": "对任一已有 run_dir 调 `calibre.export(items=['pdb_dir'])`；或 `calibre_e2e_tests.py --only EXPORT` 看 EXPORT-04。",
         "evidence": "`test/artifacts/evidence/round9/calibre-c07-r11c.txt`（套件 12/12，含 EXPORT-03/04）；枚举差异见源码锚点",
-        "accept": "① spec 与实现一致（删/改 pdb_dir，或实现补上）；② TB EXPORT-04 按裁决更新（现状=结构化拒绝并点名 item）；"
-                  "③ 若实现补上：必须值级断言 pdb 目录落地（目录存在且文件非空），并同步 §5 的 PEX 产物口径。",
-        "next": "等 spec owner 拍板；TB 已按“现状 + 指向本卡”记录，不阻塞门禁。",
+        "accept": "① `calibre.export.items` **接受 `pdb_dir`**（请求层不再 400），与 spec §4.5 枚举一致；"
+                  "② 本版不实现真实 pdb 下载 → 预留语义必须**结构化、点名**（不得静默成功）；"
+                  "③ 预留不影响同请求其它 item：`items=[\"summary\",\"pdb_dir\"]` 仍要下到 summary（值级 sha256）且 `ok=true`；"
+                  "④ spec §4.5 补“`pdb_dir` 本版预留”一句，并同步 §4.4 的既有 PEX 产物口径；"
+                  "⑤ TB `EXPORT-04` 按上面的预留语义更新（PEX 恢复后再升级值级落地断言）。",
+        "next": "**决策已定（2026-10-08，用户裁定）：补实现但只做预留接口**，设计侧按卡尾「决策」落地；"
+                "TB 暂按“现状 + 指向本卡”记录（EXPECT 变红即代表实现已落地 → 测试侧按新语义改断言），不阻塞门禁。",
         "reported": "2026-09-30（测试/root：补 `calibre.export` 枚举覆盖时发现 spec 列了未实现的 item）",
-        "updated": "2026-09-30 23:30（新立）",
+        "updated": "2026-10-08 11:45（用户裁定：补实现但仅预留接口；决策见卡尾）",
+        "extra": "## 决策（2026-10-08，用户裁定）\n\n"
+                 "**补实现，但只做「预留接口」**：\n\n"
+                 "1. `calibre.export.items` 接受 `pdb_dir`（请求层不再报 `unknown export item`），与 spec §4.5 的枚举一致；\n"
+                 "2. **本版不实现真实 pdb 下载** —— 依据：PEX 本版不提供，`calibre.pex` 即返回\n"
+                 "   `{\"ok\":false,\"error\":\"calibre.pex is not supported in this version\",\"value\":{\"reason\":\"pex_unsupported\"}}`\n"
+                 "   （spec §4.4 / `calibre.py:45,446-449`），不建 run dir、不调远程；\n"
+                 "3. 预留语义必须**结构化且点名**（不得静默成功、不得当成“下到了 0 个文件”糊过去）；\n"
+                 "4. 预留**不得影响同一请求里的其它 item**：`items=[\"summary\",\"pdb_dir\"]` 必须照常下到 summary\n"
+                 "   （本地文件存在、bytes 一致、sha256 与远端一致），整体 `ok=true`；\n"
+                 "5. spec 同步：§4.5 补一句「`pdb_dir` 本版预留（无 PEX 产物可导）」；§4.4 的“既有 PEX 产物可由 export 读取”\n"
+                 "   改为“恢复 PEX 前只保证 `read_results(kind=\"pex\")`”。\n\n"
+                 "**测试侧收口计划**：`calibre_e2e_tests.py::EXPORT-04` 由“400 拒绝”改为断言上面的预留语义\n"
+                 "（请求接受 / 点名 reason / 混选不破坏 summary+sha256 / 零误删）；PEX 真正恢复时再升级为\n"
+                 "pdb 目录的值级落地断言（目录存在且文件非空）。",
     },
 
     {
@@ -604,12 +750,21 @@ OPEN = [
 #: 这里做过滤而不是删掉 OPEN 里的条目，是为了保留卡片正文作为归档（谁修的、判据是什么）。
 CLOSED_IDS = {
     "C06", "C10", "C11", "P-086", "P-106", "P-107", "P-108", "P-110", "P-111", "P-112", "P-115",
-    "P-109", "P-114", "C07", "P-116",
+    "P-109", "P-114", "C07", "P-116", "C09",
 }
 OPEN = [bug for bug in OPEN if bug["id"] not in CLOSED_IDS]
 
 #: 本轮明确闭环（保留记录，避免「消失了没人知道为什么」）
 CLOSED_RECENT = [
+    ("C09", "`maestro.write_history` rename 链撞只读/陈旧 Maestro session → `Cannot find a setup database entry for handle`",
+     "**设计侧二修 `f6befbb`（2026-09-30 19:26）**：根因是 `maeOpenSetup` 在 view 已被别的 session 以 edit 打开时返回 "
+     "**read-only** session（或弹 `ASSEMBLER-8127` 模态）；旧代码把无窗口后台 session 一律当可写 → rename 在只读 session 上以 stale SDB handle 报错。"
+     "修法：优先复用同 cellview 的 editable session；只有只读匹配时不调 `maeOpenSetup`，写路径点名结构化拒绝；`_ensure_session_editable` 对后台 session 也查 "
+     "`axlIsSessionReadOnly`。\n"
+     "**测试侧复跑（round10 门禁，vblog，修后）**：`maestro_e2e_tests.py` **整套 rc=0**、`HISTORY-01 rename/lock/unlock/delete` **PASS** —— "
+     "证据 `test/artifacts/evidence/round10/maestro_e2e_tests.py.log` + `round10/http-gate-results.json`；"
+     "对照（修前、同日 19:0x 两次）同套件在 HISTORY-01 报 handle 162851/52134 —— `round9/maestro-c09-verify2.txt`。"
+     "设计侧另有 vbs11 fresh CIW 链证据 `verify-fix-r10/c09-vbs11-fix-green.json` 与离线 104 例绿。"),
     ("P-116", "spec 3-symbol.md:200 称 `schEditPinOrder` 后 pin_order 与 term_order 一致（真机不符）",
      "**spec 侧定稿 `b4036d0`**：`pin_order`（schGetPinOrder）与 `port_order` 权威且一致；"
      "`term_order`（`cv~>termOrder`）是 **legacy raw**，可能为空/陈旧，不得当权威；实现不写它。"
@@ -938,7 +1093,9 @@ LEGACY_OPEN = [
     ("P-021", "历史实例启动位置不规范（`$HOME`/工程目录污染；规范已落地，现场清理与 legacy 重写待办）", "环境账，非缺陷"),
     ("P-023", "wsl-gent 起 20 个真 Virtuoso 超出内存（真机上限 10–12；口径已写环境文档）", "待用户确认替代口径"),
     ("P-028", "运行中的 vblog CIW 没有 PDK（已按 S1 专用实例口径处置）", "环境账，已给口径"),
-    ("P-033", "`test/artifacts` 231 个文件被跟踪（含 token/二进制；白名单保留需用户确认）", "仓库卫生，待确认"),
+    ("P-033", "`test/artifacts` 入库口径已定：env / tmp 退索引（179 个运行状态文件，2026-10-08），"
+              "当前跟踪 70 个（69 evidence + README）；剩 3 个 evidence 文件含明文 token，待脱敏",
+     "仓库卫生，主要问题已处置"),
     ("P-036", "lab fake 与 bridge 隧道兼容性（已复测可达，症状未复现）", "观察（降级，不再阻塞）"),
     ("P-040", "仓库内 `.ps1` 一律 UTF-8 with BOM（约定，已写入首轮报告 §6.1）", "约定，非缺陷"),
 ]
@@ -980,9 +1137,9 @@ CARD_BODY = """# {id} · {title}
 {extra}
 ---
 
-> 权威事实仍以 [问题登记.md](../问题登记.md)（台账）与 `第五轮-缺陷清单-*.md`（送修视图）为准；
-> 本卡片只是「未关闭项」的逐条跟踪视图。状态变化请改
-> `test/shared/runners/make_bug_cards.py` 后重新生成本目录。
+> 本卡片是当前跟踪视图；已关闭记录见 [已关闭-近期.md](已关闭-近期.md)。
+> 历史台账 [问题登记.md](../问题登记.md) 自 2026-10-08 起停更（仅存档）。
+> 状态变化请改 `test/shared/runners/make_bug_cards.py` 后重新生成本目录。
 > 卡片**可以手改**（测试侧维护：补现象、补判据、补证据直接写在卡里即可）。唯一要注意的是
 > `make_bug_cards.py` 重新生成同名卡会覆盖手改内容——手改后顺手同步到 `make_bug_cards.py`
 > 的对应条目（或先留一份），就不会丢（见 2026-09-28 教训：P-074 的「讨论决策」一度被刷新吃掉，已回填）。
@@ -1001,18 +1158,17 @@ def render_readme() -> str:
         rows.append(f"| **{bug['id']}** | {bug.get('layer', '—')} | {bug['level']} | {bug['owner']} | {bug['status']} | "
                     f"{bug['title'].replace('|', chr(92) + '|')} | "
                     f"[{bug['id']}-{_slug(bug)}.md]({bug['id']}-{_slug(bug)}.md) |")
-    closed = "\n".join(f"| {i} | {t} | {e} |" for i, t, e in CLOSED_RECENT)
     legacy = "\n".join(f"| {i} | {t} | {s} |" for i, t, s in LEGACY_OPEN)
-    return f"""# `test/reports/bugs/` —— 未关闭缺陷的唯一跟踪视图
+    return f"""# `test/reports/bugs/` —— 缺陷跟踪唯一视图
 
-> 维护者：测试工程师（我）｜最近刷新：2026-09-29
-> **这个目录回答一个问题：现在还有哪些 bug 没关、谁在等谁、修好的判据是什么。**
+> 维护者：测试工程师（我）｜最近刷新：{date.today().isoformat()}
+> **这个目录回答两个问题：现在还有哪些 bug 没关（§1 + 逐条卡片）；关掉的是什么理由（[已关闭-近期.md](已关闭-近期.md)）。**
 
 ## 0. 三条规矩（动这里之前先看）
 
-1. **权威事实在台账**：[问题登记.md](../问题登记.md)。本目录不重复分析，只做「未关闭项」的卡片与索引；
-   送修视图（逐条 file:line / 复现 / 验收）在 [round7-缺陷清单-上层.md](../round7-缺陷清单-上层.md) 与
-   [round7-缺陷清单-其他.md](../round7-缺陷清单-其他.md)。
+1. **当前事实源就是本目录**：未关闭项在 §1（逐条卡片），已关闭记录在
+   [已关闭-近期.md](已关闭-近期.md)。历史台账 [问题登记.md](../问题登记.md) 自 2026-10-08 起停更，
+   仅作存档；两份口径冲突时以本目录为准。
 2. **状态只能从这五个里选**：`待设计修` / `待测试侧` / `待归属` / `待决策` / `观察`。
    关闭时**不删卡片**：移到 [已关闭-近期.md](已关闭-近期.md) 并写一句「凭什么关的」（证据路径）。
 3. **刷新方式**：改 `test/shared/runners/make_bug_cards.py` 的 `OPEN` / `CLOSED_RECENT` 段，
@@ -1025,17 +1181,13 @@ def render_readme() -> str:
 > 优先级口径：**P1** = Linux 侧资源/安全或核心指标链路断（P-056、P-053）；
 > **P2** = 真实设计流会给出错的/空的结果，且多数**静默**；**P3/观察** = 非阻塞但建议顺手修。
 
-## 2. 本轮/近期已关闭（{len(CLOSED_RECENT)} 条，保留记录）
+## 2. 本轮/近期已关闭（{len(CLOSED_RECENT)} 条）
 
-| ID | 事项 | 关闭依据（证据） |
-|---|---|---|
-{closed}
-
-详见 [已关闭-近期.md](已关闭-近期.md)。
+完整列表与关闭依据见 [已关闭-近期.md](已关闭-近期.md)（唯一出口，本 README 不重复）。
 
 ## 3. 非缺陷跟踪项（{len(LEGACY_OPEN)} 项，不建卡）
 
-文档 / 环境 / 审计 / 覆盖度类条目：**不是产品缺陷**，只在台账与这里索引（避免与缺陷卡片混淆）。
+文档 / 环境 / 审计 / 覆盖度类条目：**不是产品缺陷**，只在 §3 索引（避免与缺陷卡片混淆）。
 所有**缺陷**（含早期轮次已上报的 `bug-2026…`）都在上面 §1 的卡片里，或已移入 §2 已关闭记录。
 
 | ID | 事项 | 当前状态 |
@@ -1044,7 +1196,7 @@ def render_readme() -> str:
 
 ## 4. 关联文件
 
-- 台账（唯一事实源）：[问题登记.md](../问题登记.md)
+- 历史台账（2026-10-08 停更，仅供考古）：[问题登记.md](../问题登记.md)
 - 最新一轮送修：[上层](../round7-缺陷清单-上层.md)、[其他](../round7-缺陷清单-其他.md)
 - Spec 覆盖矩阵（哪些要求被测到）：[round7-spec覆盖矩阵.md](../round7-spec覆盖矩阵.md)
 - 覆盖率与缺口：[coverage-pack/](../coverage-pack/)、[覆盖度缺口.md](../覆盖度缺口.md)
@@ -1057,6 +1209,7 @@ def render_readme() -> str:
 def render_closed() -> str:
     lines = ["# 已关闭（近期）", "",
              "> 关闭 = 有复跑证据，不是「设计说改好了」。每条都要能点开证据。", "",
+             "> 本文件是已关闭记录的唯一出口；`bugs/README.md` §2 只链接到这里。", "",
              "| ID | 事项 | 关闭依据（证据） |", "|---|---|---|"]
     lines += [f"| {i} | {t} | {e} |" for i, t, e in CLOSED_RECENT]
     lines += ["", "## 早期轮次已关闭 / 撤回（摘要）", "",
