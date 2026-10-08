@@ -10,7 +10,7 @@
     $env:PYTHONPATH='src'
     python test/shared/runners/run_semi_probes.py --group all
     python test/shared/runners/run_semi_probes.py --group calibre
-    python test/shared/runners/run_semi_probes.py --probe symbol_pkg_probe.py --dry
+    python test/shared/runners/run_semi_probes.py --probe calibre_env_probe.py --dry
 
 约定：探针自己负责把证据写进 `test/artifacts/evidence/**`；runner 只跑 + 记录 rc/stdout 尾巴/耗时，
 汇总成一份 JSON；**探针红就是红**，runner 不重试、不改口径。
@@ -114,13 +114,9 @@ PROBES: dict[str, dict] = {
         "spectre", [], "业务面 8127 + wsl-gent（2 任务 spectre.run × 3 轮，P-076 回归）"),
     # 位置参数：`<mode> <lib> <cell> [view] [overwrite]`；`--token` 换实例
     # （SRX65/DI65 这些库在 PDK 实例的 cds.lib 里，vblog 实例看不到）
-    "symbol_pkg_probe.py": entry(
-        "symbol", ["read", "SRX65", "ctle_core", "symbol", "--token", TOKEN_PDK],
-        "PDK 实例（SRX65/ctle_core 只在 calprobe 的 cds.lib 里）"),
     "symbol_regen_handle_probe.py": entry("symbol", [], "PDK 实例"),
     "symbol_generate_hierarchy_handle_probe.py": entry("symbol", [], "PDK 实例"),
     "symbol_screenshot_probe.py": entry("symbol", [], "X11 display + 真实窗口"),
-    "symbol_http_400_repro.py": entry("symbol", [], "业务面 8127"),
     "shared_cdf_pollution_probe.py": entry("schematic", [], "PDK 实例 + peer 用户"),
     "schematic_pin_ops_probe.py": entry("schematic", [], "PDK 实例"),
     "schematic_wire_style_probe.py": entry("schematic", [], "PDK 实例"),
@@ -133,10 +129,7 @@ PROBES: dict[str, dict] = {
         "maestro", [], "业务面 8127 + maestro_tb/rc_probe（P-088 红灯钉：delete_var scope=all）"),
     "maestro_open_waveform_result_probe.py": entry(
         "maestro", [], "业务面 8127 + rc_probe history（P-089 红灯钉：open_waveform_gui.result 被忽略）"),
-    "maestro_pkg_probe.py": entry("maestro", [], "真 Virtuoso"),
     "maestro_session_conflict_probe.py": entry("maestro", [], "只读诊断（真 Virtuoso）"),
-    "maestro_leak_probe.py": entry("maestro", [], "被 import 的库（无 __main__，单跑会红）"),
-    "maestro_e2e_probe.py": entry("maestro", [], "真 Virtuoso + SKILL（较慢）", None, 1500),
     "maestro_screenshot_probe.py": entry("maestro", [], "X11 display + 真实 ADE 窗口"),
     "calibre_env_probe.py": entry("calibre", ["--facts"], "calibre 环境（远程）"),
     "calibre_cdl_probe.py": entry("calibre", [], "PDK 实例 + auCdl"),
@@ -148,16 +141,6 @@ PROBES: dict[str, dict] = {
         "calibre", [], "业务面 8127（P-098 回归：blocking 超时返回 timeout）"),
     "spectre_ac_pipeline_probe.py": entry("spectre", [], "PDK 实例"),
     "skill_syntax_matrix_tb.py": entry("skill", [], "业务面 8127"),
-    # `--tree` 需要具体目录；主用法是 `--check`（远端树 → 本地解析）
-    "skill_tooling_probe.py": entry("skill", ["--check"], "业务面 8127 + 远端 finder 树"),
-    # 远端模式才是真链路（middle → SSH → wsl-gent 的 Cadence 文档树）
-    "skillref_probe.py": entry(
-        "skill", ["--source", "remote", "--doc-root", "/opt/eda/cadence/IC618/doc",
-                  "--doc-token", TOKEN_VBLOG], "wsl-gent Cadence 文档树"),
-    # 本机有一份 Cadence 文档拷贝（C:\Users\user\Desktop\doc，223 项）→ local 模式可跑
-    "docs_search_probe.py": entry(
-        "skill", ["--root", r"C:\Users\user\Desktop\doc", "--query", "schCreatePin"],
-        "本地 Cadence 文档拷贝"),
     "paramiko_ssh_config_true_probe.py": entry("transport", ["--connection"], "ssh_config 主机"),
     "lone_surrogate_probe.py": entry("transport", [], "本地 HTTP 边界"),
     "one_shot_burst_tb.py": entry(

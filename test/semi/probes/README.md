@@ -1,7 +1,8 @@
 # probes
 
-只读或一次性诊断探针，不作为准出证据。包括 Cadence 文档/技能工具链、Calibre 环境、
-GUI/Maestro/Symbol 包探针、`maestro_leak_probe.py` 会话泄漏探针和 SKILL 语法矩阵。
+只读或一次性诊断探针，不作为准出证据。包括 Calibre 环境、GUI/Maestro/Symbol 包探针和 SKILL 语法矩阵。
+
+> 2026-10-08：8 个已完成使命的 PoC 探针移入 `test/shared/archive/probes-2026-10-08/`（不参与回归）。
 
 新增：
 
