@@ -65,6 +65,18 @@ def _no_window_kwargs() -> dict:
     }
 
 
+def _ssh_config_fallback(host: str) -> dict | None:
+    """Pure-Python ``ssh -G`` subset when the OpenSSH CLI is unavailable."""
+    try:
+        from common.paramiko_backend import lookup_ssh_config
+    except ImportError:
+        return None
+    try:
+        return lookup_ssh_config(host)
+    except Exception:  # noqa: BLE001 - probe must return a verdict, not crash
+        return None
+
+
 def _ssh_config_hostname(host: str, ssh_cmd: str | None = None) -> str | None:
     """Resolve a host alias through the local ssh config (``ssh -G``)."""
     try:
@@ -74,7 +86,11 @@ def _ssh_config_hostname(host: str, ssh_cmd: str | None = None) -> str | None:
         **_no_window_kwargs()
         ).stdout
     except (OSError, subprocess.TimeoutExpired):
-        return None
+        lookup = _ssh_config_fallback(host)
+        if not lookup:
+            return None
+        hostname = lookup.get("hostname")
+        return str(hostname) if hostname else None
     for line in out.splitlines():
         if line.startswith("hostname "):
             return line.split(None, 1)[1].strip() or None
@@ -90,7 +106,13 @@ def ssh_port_is_22(host: str, ssh_cmd: str | None = None) -> bool:
             **_no_window_kwargs()
         ).stdout
     except (OSError, subprocess.TimeoutExpired):
-        return False
+        lookup = _ssh_config_fallback(host)
+        if lookup is None:
+            return False
+        try:
+            return int(lookup.get("port") or 22) == 22
+        except (TypeError, ValueError):
+            return False
     for line in out.splitlines():
         if line.startswith("port "):
             try:

@@ -550,6 +550,78 @@ def _is_channel_open_failure(exc: BaseException) -> bool:
     return False
 
 
+#: OpenSSH's default identity files, in the order ``ssh -G`` reports them.
+_DEFAULT_IDENTITY_FILES = (
+    "id_rsa", "id_ecdsa", "id_ecdsa_sk", "id_ed25519",
+    "id_ed25519_sk", "id_xmss", "id_dsa",
+)
+
+
+def _ssh_config_candidates(ssh_config_path: Path | None) -> tuple[Path, ...]:
+    if ssh_config_path is not None:
+        return (ssh_config_path,)
+    home = Path.home()
+    candidates = [home / ".ssh" / "config"]
+    if os.name == "nt":
+        program_data = os.environ.get("PROGRAMDATA")
+        if program_data:
+            candidates.append(Path(program_data) / "ssh" / "ssh_config")
+    else:
+        candidates.append(Path("/etc/ssh/ssh_config"))
+    return tuple(candidates)
+
+
+def lookup_ssh_config(
+    host: str,
+    *,
+    ssh_config_path: Path | None = None,
+    ssh_key_path: Path | None = None,
+    user: str | None = None,
+    port: int | None = None,
+) -> dict[str, Any]:
+    """Pure-Python subset of ``ssh -G`` for machines without an ssh CLI.
+
+    Returns the same shape :meth:`ParamikoSessionBackend._resolve_endpoint`
+    consumes: lower-case keys, ``identityfile`` as a tuple, explicit
+    ``ssh_key_path``/``user``/``port`` mirroring ``-i``/``-l``/``-p``.
+    ``Include`` and unknown directives are ignored — a documented subset that
+    only matters when the OpenSSH CLI is genuinely unavailable (P-131).
+    """
+    import paramiko
+
+    config = paramiko.SSHConfig()
+    for path in _ssh_config_candidates(ssh_config_path):
+        try:
+            with open(path, "r", encoding="utf-8", errors="replace") as handle:
+                config.parse(handle)
+        except OSError:
+            continue
+    raw = config.lookup(host)
+    resolved: dict[str, Any] = {}
+    for key, value in raw.items():
+        if key == "identityfile":
+            items = value if isinstance(value, (list, tuple)) else (value,)
+            resolved[key] = tuple(str(item) for item in items)
+        elif isinstance(value, (list, tuple)):
+            # ssh -G 的解析器（本模块 CLI 路径）对重复非 identity 键保留最后一条
+            if value:
+                resolved[key] = str(value[-1])
+        else:
+            resolved[key] = value
+    if user is not None:
+        resolved["user"] = user
+    if port is not None:
+        resolved["port"] = str(port)
+    keys = list(resolved.get("identityfile") or ())
+    if ssh_key_path is not None:
+        explicit = str(ssh_key_path.expanduser())
+        keys = [explicit, *[key for key in keys if key != explicit]]
+    if not keys:
+        keys = [f"~/.ssh/{name}" for name in _DEFAULT_IDENTITY_FILES]
+    resolved["identityfile"] = tuple(keys)
+    return resolved
+
+
 class ParamikoSessionBackend:
     """Share one authenticated target transport across concurrent SSH calls.
 
@@ -662,6 +734,28 @@ class ParamikoSessionBackend:
         cached = self._ssh_config_cache.get(cache_key)
         if cached is not None:
             return cached
+        try:
+            resolved = self._lookup_via_cli(host, user, port)
+        except FileNotFoundError:
+            # No OpenSSH CLI on this machine: paramiko is the CLI-free
+            # backend, so resolve the same config subset in pure Python.
+            resolved = lookup_ssh_config(
+                host,
+                ssh_config_path=self._ssh_config_path,
+                ssh_key_path=self._ssh_key_path,
+                user=user,
+                port=port,
+            )
+        self._ssh_config_cache[cache_key] = resolved
+        return resolved
+
+    def _lookup_via_cli(
+        self,
+        host: str,
+        user: str | None = None,
+        port: int | None = None,
+    ) -> dict[str, Any]:
+        """Canonical ``ssh -G`` resolution (requires the OpenSSH CLI)."""
 
         command = [self._ssh_cmd, "-G"]
         if self._proxy is not None:
@@ -711,7 +805,6 @@ class ParamikoSessionBackend:
                 resolved[normalized_key] = normalized_value
         for key, values in repeated.items():
             resolved[key] = tuple(values)
-        self._ssh_config_cache[cache_key] = resolved
         return resolved
 
     @staticmethod

@@ -183,8 +183,57 @@ class TestProbeHelpers(unittest.TestCase):
             self.assertTrue(probes.ssh_port_is_22("alias"))
         with mock.patch.object(probes.subprocess, "run", return_value=run_with("")):
             self.assertTrue(probes.ssh_port_is_22("alias"))
-        with mock.patch.object(probes.subprocess, "run", side_effect=OSError("no ssh")):
-            self.assertFalse(probes.ssh_port_is_22("alias"))
+        # P-131: 无 ssh CLI 时回退解析 ~/.ssh/config；无配置 → 默认 22 端口
+        with tempfile.TemporaryDirectory(prefix="vb-p131-home-") as home, \
+                mock.patch.object(
+                    probes.subprocess, "run", side_effect=OSError("no ssh")), \
+                mock.patch("register.probe.Path.home",
+                           return_value=Path(home)):
+            self.assertTrue(probes.ssh_port_is_22("alias"))
+
+    def test_ssh_port_rule_without_ssh_cli_reads_config_port(self) -> None:
+        """P-131 红钉：无 ssh CLI 时 port-22 校验必须走纯 Python config 回退。"""
+        from register import probe as probes
+
+        with tempfile.TemporaryDirectory(prefix="vb-p131-home-") as home:
+            ssh_dir = Path(home) / ".ssh"
+            ssh_dir.mkdir()
+            config = ssh_dir / "config"
+            config.write_text(
+                "Host h\n  HostName real.example.com\n  Port 2222\n",
+                encoding="utf-8",
+            )
+            with mock.patch.object(
+                    probes.subprocess, "run", side_effect=OSError("no ssh")), \
+                    mock.patch("register.probe.Path.home",
+                               return_value=Path(home)):
+                self.assertFalse(probes.ssh_port_is_22("h"))
+            config.write_text(
+                "Host h\n  HostName real.example.com\n  Port 22\n",
+                encoding="utf-8",
+            )
+            with mock.patch.object(
+                    probes.subprocess, "run", side_effect=OSError("no ssh")), \
+                    mock.patch("register.probe.Path.home",
+                               return_value=Path(home)):
+                self.assertTrue(probes.ssh_port_is_22("h"))
+
+    def test_ssh_config_hostname_without_ssh_cli(self) -> None:
+        """P-131 红钉：known_hosts 解析用的 hostname 别名回退。"""
+        from register import probe as probes
+
+        with tempfile.TemporaryDirectory(prefix="vb-p131-home-") as home:
+            ssh_dir = Path(home) / ".ssh"
+            ssh_dir.mkdir()
+            (ssh_dir / "config").write_text(
+                "Host h\n  HostName real.example.com\n", encoding="utf-8",
+            )
+            with mock.patch.object(
+                    probes.subprocess, "run", side_effect=OSError("no ssh")), \
+                    mock.patch("register.probe.Path.home",
+                               return_value=Path(home)):
+                self.assertEqual(
+                    probes._ssh_config_hostname("h"), "real.example.com")
 
     def test_detect_cadence_python3(self) -> None:
         runner = FakeRunner([CommandResult(

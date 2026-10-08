@@ -176,6 +176,71 @@ class TestConstructionValidation(unittest.TestCase):
                       "拒绝 accept-new 的错误必须告诉用户可以换 openssh 后端")
 
 
+class TestNoOpenSshCliFallback(unittest.TestCase):
+    """P-131 红钉：没有系统 ssh CLI 时，paramiko 后端必须仍能解析 config。"""
+
+    def _backend(self, cfg_text: str, **kwargs) -> ParamikoSessionBackend:
+        cfg = Path(tempfile.mkdtemp(prefix="vb-")) / "config"
+        cfg.write_text(cfg_text, encoding="utf-8")
+        missing = Path(tempfile.mkdtemp(prefix="vb-")) / "no-such-ssh"
+        backend = ParamikoSessionBackend(
+            host="h", user=None, jump_host=None, jump_user=None,
+            ssh_key_path=kwargs.get("ssh_key_path"),
+            ssh_config_path=cfg, ssh_cmd=str(missing),
+            connect_timeout=5, max_sessions=3,
+        )
+        self.addCleanup(backend.close)
+        return backend
+
+    def test_endpoint_resolves_without_ssh_cli(self):
+        backend = self._backend(
+            "Host h\n"
+            "  HostName real.example.com\n"
+            "  User bob\n"
+            "  Port 2222\n"
+            "  IdentityFile /tmp/p131-key\n"
+            "  ProxyJump jump.example.com\n"
+        )
+        endpoint = backend._endpoint("h", None)
+        self.assertEqual(endpoint.hostname, "real.example.com")
+        self.assertEqual(endpoint.username, "bob")
+        self.assertEqual(endpoint.port, 2222)
+        self.assertTrue(
+            any("p131-key" in str(key) for key in endpoint.key_filenames),
+            endpoint.key_filenames,
+        )
+
+    def test_explicit_key_is_used_without_ssh_cli(self):
+        key = Path(tempfile.mkdtemp(prefix="vb-")) / "id_ed25519"
+        key.write_text("dummy-private-key", encoding="utf-8")
+        backend = self._backend(
+            "Host h\n  HostName real.example.com\n",
+            ssh_key_path=key,
+        )
+        endpoint = backend._endpoint("h", None)
+        self.assertIn(str(key), endpoint.key_filenames)
+
+    def test_ssh_runner_constructs_without_ssh_cli(self):
+        from common.ssh import SSHRunner
+
+        cfg = Path(tempfile.mkdtemp(prefix="vb-")) / "config"
+        cfg.write_text(
+            "Host h\n  HostName real.example.com\n  User bob\n",
+            encoding="utf-8",
+        )
+        missing = Path(tempfile.mkdtemp(prefix="vb-")) / "no-such-ssh"
+        runner = SSHRunner(
+            "h", backend="paramiko", ssh_config_path=cfg,
+            tool_override={"ssh": str(missing)},
+        )
+        try:
+            self.assertIsNotNone(runner._paramiko_backend)
+            self.assertEqual(runner._paramiko_backend._target_endpoint.hostname,
+                             "real.example.com")
+        finally:
+            runner.close()
+
+
 class TestPureClassHelpers(unittest.TestCase):
     def test_transport_is_ready(self):
         self.assertFalse(pb.ParamikoSessionBackend._transport_is_ready(None))
