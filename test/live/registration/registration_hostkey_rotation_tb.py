@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
 # 作者: 测试/root
-# 最后改动: 2026-09-29 20:37
+# 最后改动: 2026-09-30 21:55
 # 依赖: registration_http_six_step_tb.FakeDaemon（远端协议兼容 fake daemon）
 # =======================================================================
 # 六步流程（test/docs/写TB规范.md §1–§6）：
@@ -101,6 +101,9 @@ def ssh_capture(env: Env, command: str, timeout: float = 60.0) -> subprocess.Com
             "ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10",
             "-o", "StrictHostKeyChecking=no",
             "-o", f"UserKnownHostsFile={env.control_kh}",
+            # 与 registration_tb_support.ssh 同口径：控制通道不复用 ssh master socket
+            # （陈旧 ControlPath 会让命令卡 20s → 假红）。
+            "-o", "ControlMaster=no", "-o", "ControlPath=none",
             env.host, command,
         ],
         capture_output=True, text=True, timeout=timeout, **no_window(),

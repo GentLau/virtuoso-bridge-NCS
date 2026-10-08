@@ -1153,5 +1153,204 @@ class TestSpectreAutoProbe(unittest.TestCase):
         self.assertIsNone(result.entry.roles.spectre.expected_fingerprint)
 
 
+_P120_ROLES = ("gui", "daemon", "command", "file", "spectre")
+
+
+class _P120ProbeHarness(unittest.TestCase):
+    """P-120 red-pin harness: probe_user with SSHRunner/probes mocked."""
+
+    def _run_probe(self, request):
+        from register import probe_user
+
+        with mock.patch("register.flow.SSHRunner") as runner, \
+             mock.patch("register.probe.host_key_fingerprint", return_value="fp"), \
+             mock.patch("register.probe.remote_hostname", return_value="host-a"), \
+             mock.patch("register.probe.remote_user", return_value="alice"), \
+             mock.patch("register.probe.remote_user_exists", return_value=True), \
+             mock.patch("register.probe.detect_remote_python", return_value=("python3", 3)), \
+             mock.patch("register.probe.allocate_remote_port", return_value=65081), \
+             mock.patch("register.probe.remote_path_writable", return_value=True), \
+             mock.patch("register.probe.allocate_local_port", return_value=65082):
+            runner.return_value.test_connection.return_value = True
+            runner.return_value.run_command.side_effect = _probe_run
+            probe_user(request, token="tok")
+        return runner
+
+    @staticmethod
+    def _request(**policy):
+        roles = {name: {"max_sessions": 3} for name in _P120_ROLES}
+        roles["daemon"].update({"daemon_port": 65081, "local_port": 65082})
+        return RegistrationRequest(
+            mode="remote", user="u", token="tok",
+            ssh={"default": {"host": "h", "user": "a",
+                             "key_dir": _KEY_DIR, "key": _KEY}},
+            roles=roles,
+            **policy,
+        )
+
+
+class TestP120ProbeRunnerWiring(_P120ProbeHarness):
+    """P-120 红钉：apply 收的策略/凭据必须真正交给 probe runner。
+
+    当前 `_new_runner()` 只传端点字段；以下用例在修复前**故意为红**，
+    修复 `register/flow.py::_new_runner` 后应全绿。
+    """
+
+    def test_runner_receives_backend(self):
+        runner = self._run_probe(self._request(ssh_backend="openssh"))
+        for call in runner.call_args_list:
+            self.assertEqual(call.kwargs.get("backend"), "openssh",
+                             "probe runner 未使用 apply 的 ssh.backend")
+
+    def test_runner_receives_control_master(self):
+        runner = self._run_probe(self._request(ssh_control_master="auto"))
+        for call in runner.call_args_list:
+            self.assertEqual(call.kwargs.get("control_master"), "auto",
+                             "probe runner 未使用 apply 的 ssh.control_master")
+
+    def test_runner_receives_tool_override(self):
+        override = {"ssh": "/opt/custom/ssh",
+                    "scp": "/opt/custom/scp",
+                    "tar": "/opt/custom/tar"}
+        runner = self._run_probe(self._request(ssh_tool_override=override))
+        for call in runner.call_args_list:
+            self.assertEqual(call.kwargs.get("tool_override"), override,
+                             "probe runner 未使用 apply 的 ssh.tool_override")
+
+    def test_runner_receives_apply_credential(self):
+        from common.ssh_credentials import credential_path
+
+        runner = self._run_probe(self._request())
+        expected = credential_path(_KEY_DIR, _KEY)
+        for call in runner.call_args_list:
+            self.assertEqual(call.kwargs.get("ssh_key_path"), expected,
+                             "probe runner 未使用 apply 指定的凭据")
+
+    def test_runner_receives_max_sessions(self):
+        runner = self._run_probe(self._request())
+        for call in runner.call_args_list:
+            self.assertEqual(call.kwargs.get("max_sessions"), 3,
+                             "probe runner 未使用 role.max_sessions")
+
+    def test_runner_receives_connect_timeout(self):
+        runner = self._run_probe(self._request(connect_timeout=1.5))
+        for call in runner.call_args_list:
+            self.assertEqual(call.kwargs.get("connect_timeout"), 1.5,
+                             "probe runner 未使用 runtime.connect_timeout")
+
+    def test_runner_receives_absolute_role_root_as_work_dir(self):
+        runner = self._run_probe(self._request(root={"default": "/srv/vb/u"}))
+        expected = {f"/srv/vb/u/{name}" for name in _P120_ROLES}
+        actual = {call.kwargs.get("work_dir") for call in runner.call_args_list}
+        self.assertEqual(actual, expected,
+                         "probe runner 未把绝对 role.root 作为 work_dir")
+
+    def test_runner_does_not_pass_literal_tilde_work_dir(self):
+        runner = self._run_probe(self._request())
+        for call in runner.call_args_list:
+            self.assertIsNone(call.kwargs.get("work_dir"),
+                              "~ root 不能在展开前作为 work_dir 传给远端")
+
+    def test_field_consumer_matrix(self):
+        """发散守护：所有必须被 runner 消费的策略字段逐个列出。"""
+        runner = self._run_probe(self._request(
+            ssh_backend="openssh",
+            ssh_control_master="auto",
+            ssh_tool_override={"ssh": "/opt/custom/ssh"},
+            connect_timeout=1.25,
+        ))
+        kwargs = runner.call_args.kwargs
+        for field, key in {
+            "ssh.backend": "backend",
+            "ssh.control_master": "control_master",
+            "ssh.tool_override": "tool_override",
+            "key_dir/key": "ssh_key_path",
+            "role.max_sessions": "max_sessions",
+            "runtime.connect_timeout": "connect_timeout",
+            "role.root": "work_dir",
+        }.items():
+            self.assertIn(key, kwargs, f"{field} 没有对应的 runner 参数")
+
+
+class TestP120EndpointSharing(_P120ProbeHarness):
+    """P-120 红钉：同 endpoint 多 role 必须共享 runner 且取 max_sessions 最小。"""
+
+    def test_same_endpoint_roles_share_one_runner_and_min_max_sessions(self):
+        roles = {name: {"max_sessions": value}
+                 for name, value in zip(_P120_ROLES, (2, 5, 3, 4, 6))}
+        roles["daemon"].update({"daemon_port": 65081, "local_port": 65082})
+        request = RegistrationRequest(
+            mode="remote", user="u", token="tok",
+            ssh={"default": {"host": "h", "user": "a",
+                             "key_dir": _KEY_DIR, "key": _KEY}},
+            roles=roles,
+        )
+        runner = self._run_probe(request)
+        self.assertEqual(runner.call_count, 1,
+                         "同 endpoint 的 5 个 role 应共享一条 SSH runner/连接")
+        self.assertEqual(runner.call_args.kwargs.get("max_sessions"), 2,
+                         "共享 runner 的 max_sessions 应取同 endpoint 的最小值")
+
+
+class TestP120OpenSshCliIndependence(unittest.TestCase):
+    """P-120 红钉：host-key/config 辅助探测不得静默依赖系统 OpenSSH CLI。"""
+
+    def test_ssh_config_probe_uses_tool_override_ssh(self):
+        from register import probe
+
+        with mock.patch("register.probe.subprocess.run") as run:
+            run.return_value.stdout = "port 22\n"
+            run.return_value.returncode = 0
+            try:
+                probe.ssh_port_is_22("h", ssh_cmd="/opt/custom/ssh")
+            except TypeError as exc:
+                self.fail(
+                    f"ssh_port_is_22 未接入 ssh.tool_override.ssh: {exc}"
+                )
+        run.assert_called_once()
+        self.assertEqual(run.call_args.args[0],
+                         ["/opt/custom/ssh", "-G", "h"])
+
+    def test_host_key_fingerprint_falls_back_to_paramiko_without_ssh_keygen(self):
+        from register import probe
+
+        pub_text = (Path(_KEY_DIR) / f"{_KEY}.pub").read_text(
+            encoding="utf-8").strip()
+        with tempfile.TemporaryDirectory(prefix="vb-p120-home-") as home:
+            ssh_dir = Path(home) / ".ssh"
+            ssh_dir.mkdir()
+            (ssh_dir / "known_hosts").write_text(
+                f"host-a {pub_text}\n", encoding="utf-8")
+            with mock.patch(
+                "register.probe.subprocess.run",
+                side_effect=FileNotFoundError("no OpenSSH CLI"),
+            ), mock.patch("register.probe.Path.home", return_value=Path(home)):
+                fp = probe.host_key_fingerprint("host-a")
+        self.assertIsNotNone(
+            fp, "known_hosts 有记录时，缺 ssh-keygen 也应能读出指纹")
+        self.assertTrue(str(fp).startswith("SHA256:"))
+
+    def test_scan_host_key_fingerprint_falls_back_to_paramiko_without_ssh_keyscan(self):
+        import base64
+        import hashlib
+        from register import probe
+
+        class FakeKey:
+            def asbytes(self):
+                return b"p120-key-blob"
+
+        fake_transport = mock.Mock()
+        fake_transport.get_remote_server_key.return_value = FakeKey()
+        with mock.patch(
+            "register.probe.subprocess.run",
+            side_effect=FileNotFoundError("no ssh-keyscan"),
+        ), mock.patch("paramiko.Transport", return_value=fake_transport):
+            fp = probe.scan_host_key_fingerprint("host-a")
+        expected = "SHA256:" + base64.b64encode(
+            hashlib.sha256(b"p120-key-blob").digest()
+        ).decode("ascii").rstrip("=")
+        self.assertEqual(fp, expected)
+
+
 if __name__ == "__main__":
     unittest.main()
