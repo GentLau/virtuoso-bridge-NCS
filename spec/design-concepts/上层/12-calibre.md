@@ -220,7 +220,8 @@ Calibre 自身不产源网表；官方 GUI 的 “Export from source viewer” �
 
 请求结构仍按 `RunRequest` 校验（需 `deck` 或 `runset`）；通过后不解析 deck/输入、不建 run dir、不调用 command role。
 现有三阶段/官方批处理实现保留在包内供后续恢复；
-恢复前不得把 `calibre.pex` 当作可用能力。既有 PEX 产物仍可由 `read_results(kind="pex")` / `export` 读取。
+恢复前不得把 `calibre.pex` 当作可用能力。既有 PEX 产物恢复前只保证
+`read_results(kind="pex")` 可读；`export` 的 `pdb_dir` 项本版仅预留（见 §4.5）。
 
 ### 4.5 `calibre.status` / `calibre.read_results` / `calibre.export`
 
@@ -229,6 +230,11 @@ Calibre 自身不产源网表；官方 GUI 的 “Export from source viewer” �
 | `status` | `job_id` 或 `run_dir`；`timeout` |
 | `read_results` | `job_id`/`run_dir`；`kind`（可自动探测）；`limit`（默认 20）；`log_lines`（默认 40） |
 | `export` | `job_id`/`run_dir`；`items`（`summary`/`results_db`/`netlist`/`pdb_dir`/`log`/`all_small`）；`local_dir`（默认 `artifact_dir()/calibre/`） |
+
+`export` 的 `pdb_dir` 本版**预留**（无 PEX 产物可导）：请求层接受该项，不产生任何下载；
+返回值 `value.reserved` 里结构化点名 `{item, status:"reserved", reason}`（不得静默成功、
+不得当成"下到了 0 个文件"）。预留不影响同一请求的其它 item：`items=["summary","pdb_dir"]`
+仍照常下载 summary 且整体 `ok=true`（P-117）。PEX 恢复后再升级为 pdb 目录的值级下载。
 
 ## 5. 不做与本版限制
 

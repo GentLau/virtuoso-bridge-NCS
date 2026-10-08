@@ -198,15 +198,25 @@ class Package(ResultPackage):
     def _remote_file(self, view_dir: str) -> str:
         return posixpath.join(view_dir, MAIN_FILE)
 
+    def _staged_path(self, remote: str) -> Path:
+        """Local staging path keyed by the full remote path (P-124).
+
+        Different cells share the same view-file basename (``verilog.v``);
+        keying the local name by the remote path keeps concurrent requests
+        from overwriting each other's staging file.
+        """
+        digest = hashlib.sha1(remote.encode("utf-8")).hexdigest()[:12]
+        return self._cache_dir() / f"{digest}-{Path(remote).name}"
+
     def _read_remote(self, remote: str, request: Any) -> str:
-        local = self._cache_dir() / Path(remote).name
+        local = self._staged_path(remote)
         result = self.middle.download_file(remote, local, timeout=request.timeout, token=request.token)
         if result.returncode != 0:
             raise RuntimeError(result.stderr or f"download failed: {remote}")
         return local.read_text(encoding="utf-8", errors="replace")
 
     def _write_remote(self, remote: str, content: str, request: Any) -> None:
-        local = self._cache_dir() / Path(remote).name
+        local = self._staged_path(remote)
         with open(local, "w", encoding="utf-8", newline="\n") as fh:
             fh.write(content)
         result = self.middle.upload_file(local, remote, timeout=request.timeout, token=request.token)
@@ -578,9 +588,12 @@ class Package(ResultPackage):
             # ihdl 没有 dest-cell 参数（实测 `dest_cell_name` → VERILOGIN-8），
             # 它一律按源码模块名落地；因此 `cell` 必须等于源码里的模块名，否则
             # 会在**已写库之后**才报 "cell not found"（P-100）。这里写前先校验。
+            module_pattern = (
+                f"^[[:space:]]*module[[:space:]]+{re.escape(request.cell)}"
+                "[[:space:](;]"
+            )
             module_probe = self.middle.run_command(
-                "grep -cE "
-                f"'^[[:space:]]*module[[:space:]]+{re.escape(request.cell)}[[:space:](;]' "
+                f"grep -cE {shlex.quote(module_pattern)} "
                 f"{shlex.quote(remote_source)}",
                 timeout=60, token=request.token,
             )

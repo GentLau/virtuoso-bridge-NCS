@@ -58,6 +58,9 @@ _EXPORT_ITEMS: dict[str, tuple[str, ...]] = {
     "results_db": ("DRC_RES.db",),
     "netlist": ("svdb",),
     "log": ("drc.log", "lvs.log", "pex.stage1.log", "pex.stage2.log", "pex.stage3.log"),
+    # 预留条目（P-117）：请求层接受、语义在 export() 里结构化点名（reserved），
+    # 本版无 PEX 产物可导，不产生任何下载。
+    "pdb_dir": (),
 }
 
 
@@ -828,7 +831,22 @@ class Package(ResultPackage):
         if "all_small" in items:
             items = ["summary", "results_db", "log"]
         downloaded: list[dict[str, Any]] = []
+        reserved: list[dict[str, Any]] = []
         for item in items:
+            if item == "pdb_dir":
+                # 预留接口（P-117）：本版不提供 PEX，pdb 目录无产物可导。
+                # 语义必须结构化点名，不得静默成功、也不得当成"下到了 0 个文件"。
+                entry = {
+                    "item": "pdb_dir",
+                    "status": "reserved",
+                    "reason": "pdb_dir is reserved: PEX is not supported in "
+                              "this version, so there is no PDB directory "
+                              "to export",
+                }
+                reserved.append(entry)
+                steps.append({"name": "reserved:pdb_dir", "ok": True,
+                              "detail": entry})
+                continue
             for rel in _EXPORT_ITEMS.get(item, ()):
                 local = target / Path(rel).name
                 outcome = self.middle.download_file(
@@ -841,8 +859,12 @@ class Package(ResultPackage):
                 if ok:
                     downloaded.append({"item": item, "remote": rel, "local": str(local),
                                        "bytes": local.stat().st_size if local.is_file() else None})
-        value = {"run_dir": run_dir, "local_dir": str(target), "downloaded": downloaded}
-        return Result(bool(downloaded), steps, None if downloaded else "nothing downloaded", value)
+        value = {
+            "run_dir": run_dir, "local_dir": str(target),
+            "downloaded": downloaded, "reserved": reserved,
+        }
+        success = bool(downloaded) or bool(reserved)
+        return Result(success, steps, None if success else "nothing downloaded", value)
 
     # ------------------------------------------------------------- 内部工具 --
     def _calibre_bin(self, token: str, override: str | None,

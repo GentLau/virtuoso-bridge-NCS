@@ -171,15 +171,25 @@ class Package(ResultPackage):
     def _remote_file(self, view_dir: str) -> str:
         return posixpath.join(view_dir, MAIN_FILE)
 
+    def _staged_path(self, remote: str) -> Path:
+        """Local staging path keyed by the full remote path (P-124).
+
+        Different cells share the same view-file basename (``veriloga.va``);
+        keying the local name by the remote path keeps concurrent requests
+        from overwriting each other's staging file.
+        """
+        digest = hashlib.sha1(remote.encode("utf-8")).hexdigest()[:12]
+        return self._cache_dir() / f"{digest}-{Path(remote).name}"
+
     def _read_remote(self, remote: str, request: Any) -> str:
-        local = self._cache_dir() / Path(remote).name
+        local = self._staged_path(remote)
         result = self.middle.download_file(remote, local, timeout=request.timeout, token=request.token)
         if result.returncode != 0:
             raise RuntimeError(result.stderr or f"download failed: {remote}")
         return local.read_text(encoding="utf-8", errors="replace")
 
     def _write_remote(self, remote: str, content: str, request: Any) -> None:
-        local = self._cache_dir() / Path(remote).name
+        local = self._staged_path(remote)
         with open(local, "w", encoding="utf-8", newline="\n") as fh:
             fh.write(content)
         result = self.middle.upload_file(local, remote, timeout=request.timeout, token=request.token)
@@ -378,17 +388,32 @@ class Package(ResultPackage):
             view_dir = self._view_dir(request)
             self._check_lock(view_dir, request)
             remote = self._remote_file(view_dir)
+            view_ready = self._view_exists(request)
             applied = 0
             for _index, command in planned:
                 name = command["op"]
                 try:
                     if name == "ensure_view":
                         self._ensure_view(view_dir, request)
+                        view_ready = True
                     elif name == "delete_view":
                         self._delete_view(request)
+                        view_ready = False
                     elif name == "set_source":
+                        if not view_ready:
+                            raise RuntimeError(
+                                f"view {request.library}/{request.cell}/"
+                                f"{request.view} not found; "
+                                "call ensure_view first (set create_if_missing=true)"
+                            )
                         self._set_source(remote, command, request)
                     else:
+                        if not view_ready:
+                            raise RuntimeError(
+                                f"view {request.library}/{request.cell}/"
+                                f"{request.view} not found; "
+                                "call ensure_view first (set create_if_missing=true)"
+                            )
                         self._patch_source(remote, command, request)
                 except Exception as exc:  # noqa: BLE001
                     steps.append(_step(name, False, f"{type(exc).__name__}: {exc}"))
@@ -433,6 +458,17 @@ class Package(ResultPackage):
         )
         if basic.parse_sexpr(raw.strip()) is not True:
             raise RuntimeError(f"ddDeleteObj returned: {raw.strip()!r}")
+
+    def _view_exists(self, request: Any) -> bool:
+        raw = self._q(
+            "let((view) "
+            f"view = ddGetObj({basic.q(request.library)} "
+            f"{basic.q(request.cell)} {basic.q(request.view)}) "
+            "if(view t nil))",
+            request.token,
+            request.timeout,
+        )
+        return raw.strip().strip('"') in ("t", "1")
 
     def _set_source(self, remote: str, command: dict[str, Any], request: Any) -> None:
         text = command.get("text")

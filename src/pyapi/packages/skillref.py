@@ -21,7 +21,9 @@ import hashlib
 import math
 import shlex
 import shutil
+import threading
 import time
+import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -444,11 +446,22 @@ class Package(ResultPackage):
 
     # ------------------------------------------------------------ 取数：本地 --
     def _stage_reset(self, source: _Source) -> None:
+        """Open a fresh per-request staging slot for this worker (P-124).
+
+        Concurrent requests must not delete each other's staged finder
+        files (the old code rmtree'd a doc_root-shared directory on every
+        request).  Each worker thread keeps its own slot; opening a new
+        request replaces -- and only removes -- that thread's previous
+        slot, never another request's files.
+        """
         if source.source != "remote":
             return
-        stage = _stage_dir(source.doc_root)
-        if stage.exists():
-            shutil.rmtree(stage, ignore_errors=True)
+        previous = getattr(_STAGE_SLOTS, "stage", None)
+        if isinstance(previous, Path):
+            shutil.rmtree(previous, ignore_errors=True)
+        stage = _stage_base(source.doc_root) / f"req-{uuid.uuid4().hex[:12]}"
+        stage.mkdir(parents=True, exist_ok=True)
+        _STAGE_SLOTS.stage = stage
 
     def _ensure_finder(
         self, source: _Source, steps: list[dict[str, Any]], result: Any
@@ -707,9 +720,24 @@ class Package(ResultPackage):
 
 
 # ------------------------------------------------------------------ 工具函数 --
-def _stage_dir(doc_root: str) -> Path:
+_STAGE_SLOTS = threading.local()
+
+
+def _stage_base(doc_root: str) -> Path:
     digest = hashlib.sha1(doc_root.encode("utf-8")).hexdigest()[:12]
     return temp_dir() / "skillref" / digest
+
+
+def _stage_dir(doc_root: str) -> Path:
+    """Current request's staging dir for ``doc_root`` (P-124).
+
+    Returns the worker's per-request slot when one is open (set by
+    ``_stage_reset``), falling back to the shared base directory otherwise.
+    """
+    stage = getattr(_STAGE_SLOTS, "stage", None)
+    if isinstance(stage, Path):
+        return stage
+    return _stage_base(doc_root)
 
 
 def _posix_join(*parts: str) -> str:

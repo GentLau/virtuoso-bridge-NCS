@@ -335,13 +335,16 @@ class Package(ResultPackage):
         _require_text(request.window_id, "window_id")
         if request.key not in ("enter", "escape"):
             raise ValueError("key must be 'enter' or 'escape'")
+        if not re.fullmatch(r"0x[0-9a-fA-F]+", str(request.window_id or "")):
+            raise ValueError("window_id must be a 0x X11 window id")
         _require_timeout(request.timeout)
         display, error = self._gui_display(request.token)
         if error:
             return SendKeyResult(False, [_step("query", False, error)], error, None)
+        window_id = request.window_id
         cmd = (
             f"export DISPLAY={shlex.quote(display)}; "
-            + f'python3 - "{request.window_id}" "{request.key}" <<\'PY\'\n'
+            + f"python3 - {shlex.quote(window_id)} {shlex.quote(request.key)} <<'PY'\n"
             + _SEND_KEY_SCRIPT
             + "\nPY"
         )
@@ -349,7 +352,10 @@ class Package(ResultPackage):
         steps = [_step("query", True, display), _step("send", sent.returncode == 0, sent)]
         if sent.returncode != 0:
             return SendKeyResult(False, steps, sent.stderr or "key injection failed", None)
-        verify_cmd = f"export DISPLAY={shlex.quote(display)}; xwininfo -id {request.window_id}"
+        verify_cmd = (
+            f"export DISPLAY={shlex.quote(display)}; "
+            f"xwininfo -id {shlex.quote(window_id)}"
+        )
         verified = self.middle.run_gui_command(
             verify_cmd, timeout=request.timeout, token=request.token,
         )
@@ -439,6 +445,16 @@ class Package(ResultPackage):
         steps.append(_step("download", downloaded.returncode == 0, downloaded))
         if downloaded.returncode != 0:
             return ScreenshotResult(False, steps, downloaded.stderr or "download failed")
+        # 远端只做暂存（P-091 口径）：下载成功后清理；清理失败不改变业务结果。
+        # 下载失败时保留远端文件（不删），允许重试。
+        try:
+            self.middle.run_command(
+                f"rm -f {shlex.quote(remote_abs)}",
+                timeout=10, token=request.token,
+            )
+            steps.append(_step("cleanup", True, remote_abs))
+        except Exception:  # noqa: BLE001 - best effort
+            steps.append(_step("cleanup", False, remote_abs))
         return ScreenshotResult(True, steps, None, str(local_path))
 
 

@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 import re
+import shlex
 from typing import Any
 
 import posixpath
@@ -941,7 +942,8 @@ class Package(ResultPackage):
         name = f"{request.cell}_{int(_time.time() * 1000)}.png"
         remote_abs = posixpath.join(daemon_root.rstrip("/"), "screenshots", name)
         mkdir = self.middle.run_command(
-            f"mkdir -p $(dirname '{remote_abs}')", timeout=request.timeout, token=request.token,
+            f"mkdir -p {shlex.quote(posixpath.dirname(remote_abs))}",
+            timeout=request.timeout, token=request.token,
         )
         steps.append(_step("mkdir", mkdir.returncode == 0, mkdir))
         if mkdir.returncode != 0:
@@ -1002,7 +1004,7 @@ class Package(ResultPackage):
             # 三包统一「下载后清理」）。清理失败不改变业务结果。
             try:
                 self.middle.run_command(
-                    f"rm -f '{remote_abs}'",
+                    f"rm -f {shlex.quote(remote_abs)}",
                     timeout=10, token=request.token,
                 )
             except Exception:  # noqa: BLE001 - best effort

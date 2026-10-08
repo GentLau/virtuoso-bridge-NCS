@@ -2461,7 +2461,8 @@ class Package(ResultPackage):
         selects the first matching point/test/analysis combination.
         """
         cmd = (
-            f"find {history_dir} -type f -name logFile 2>/dev/null | sort"
+            f"find {shlex.quote(history_dir)} -type f -name logFile "
+            "2>/dev/null | sort"
         )
         result = self.middle.run_command(cmd, timeout=timeout, token=token)
         if result.returncode != 0:
