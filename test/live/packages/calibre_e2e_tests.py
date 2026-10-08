@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
 # 作者: 测试/root
-# 最后改动: 2026-09-30 22:10
+# 最后改动: 2026-09-30 21:45
 # 依赖: 常驻 vblog（业务面 8127, token vb-vblog）+ wsl-gent 上的 Calibre/PDK 环境
 # =======================================================================
 # 六步流程（test/docs/写TB规范.md §1）：
@@ -466,6 +466,10 @@ def _case_export_all_small(transport) -> None:
     _check(items <= {"summary", "results_db", "log"},
            f"all_small 只应展开为 summary/results_db/log，实测 {sorted(items)}")
     _check("all_small" not in items, f"展开后不得留 all_small 字面量: {sorted(items)}")
+    # 防空转：LVS run dir 里 summary（lvs.rep）与 log（lvs.log）都必须真下到；
+    # 只下一个 summary 就"通过"不算覆盖（results_db 是 DRC 产物，LVS 目录可以没有）。
+    _check({"summary", "log"} <= items,
+           f"all_small 应至少展开出 summary+log，实测 {sorted(items)}")
     for entry in downloaded:
         local = Path(str(entry.get("local")))
         _check(local.exists(), f"all_small 条目未落地: {entry}")
@@ -475,7 +479,13 @@ def _case_export_pdb_dir(transport) -> None:
     """EXPORT-04（P-117 记录）：spec §4.5 的 `items` 列了 `pdb_dir`，实现未提供。
 
     现状：请求层结构化拒绝 `unknown export item: pdb_dir`。
-    spec 侧二选一（删条目 / 实现补上）后，本用例按裁决更新为值级下载断言。
+    **决策已定（2026-10-08，见卡片尾部）**：补实现，但只做「预留接口」——
+    请求层接受 `pdb_dir`、预留语义结构化点名、且不影响同请求其它 item
+    （`items=["summary","pdb_dir"]` 仍要下到 summary 且 sha256 一致）；PEX 真正恢复后再升级为
+    pdb 目录的值级落地断言。
+
+    → 本用例目前断言的是"实现未落地前的现状"。**哪天它变红（不再 400），就是设计已落地预留接口**，
+    按卡片尾部的决策把这里改成预留语义断言即可。
     """
     run_dir = _exported.get("run_dir")
     _check(run_dir, "EXPORT-04 依赖 LVS-02 的 run_dir，但 LVS-02 未产出")

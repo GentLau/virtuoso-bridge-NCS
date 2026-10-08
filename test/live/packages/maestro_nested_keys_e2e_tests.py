@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
 # 作者: 测试/root
-# 最后改动: 2026-09-30 17:55
+# 最后改动: 2026-10-08 15:10
 # 依赖: test/live/packages/maestro_mc_e2e_tests.py（建 setup 的调用姿势一致）
 # =======================================================================
 # 六步流程（test/docs/写TB规范.md §1）：
@@ -8,8 +8,9 @@
 # ②③ 构建：在 maestro_tb 下建**专属** setup cell `nkm_<stamp>`（set_test + add_output），
 #    不碰共享 tb_ctle 的 setup；
 # ④ 只做被测动作：每个键一条命令（enabled / enable_tests / disable_tests / model_file /
-#    model_section / sections / job_type / type_name / type_value / test_name / spec_name）；
-# ⑤ 读回比对：P-109 补齐后 12 个键**全部值级断言**（corner 名/变量/参数/启用状态/models、
+#    model_section / sections / type_name / type_value / spec_name，以及 P-118 起
+#    job policy 三操作 create/attach/delete 的 name/job_type/test 键）；
+# ⑤ 读回比对：P-109 补齐后**全部值级断言**（corner 名/变量/参数/启用状态/models、
 #    test job_policy、outputs[].spec），不再有 readback:none；
 # ⑥ 收尾：只写本 TB 的 cell；证据 JSON 落盘。
 """maestro 嵌套键真机补测（round9 缺口：`nested-key-coverage.md` §2 的 12 个 maestro 键）。
@@ -232,23 +233,37 @@ def run_suite(transport: HttpTransport) -> tuple[list[tuple[str, str]], dict[str
             f"拒绝原因不是名称契约：{message!r}"
 
     def case_job_policy_job_type() -> None:
-        """`job_type` / `test_name`：有效 job policy 属性值级读回。"""
+        """job policy 三操作真机往返（P-118）：create（具名）→ attach → 值级读回。
+
+        覆盖键：create 的 `name`/`policy`、attach 的 `test`/`name`。
+        收尾：去挂载（attach 不带 name）+ 删除具名资源，不留状态。
+        """
+        policy_name = f"NKM_SIM_POLICY_{STAMP}"
         _write(transport, [
-            {"op": "set_job_policy", "test_name": TEST, "job_type": "simulation",
+            {"op": "create_job_policy", "name": policy_name,
              "policy": {"maxjobs": 2}},
+        ])
+        _write(transport, [
+            {"op": "attach_job_policy", "test": TEST, "name": policy_name},
         ])
         cfg = _read_config(transport)
         policy = ((cfg.get("tests") or {}).get(TEST) or {}).get("job_policy") or {}
         evidence["cases"]["job_policy_job_type"] = {
             "job_control_mode": cfg.get("job_control_mode"),
             "job_policy": policy,
-            "readback": "test/jobType 是选择器；读回的是所选 test/job type 下的有效 policy DPL",
+            "readback": "create(name)+attach(test,name) 后读回该 test 的有效 policy DPL",
         }
         assert TEST in (cfg.get("tests") or {}), "job policy 写入后 test 丢失（破坏状态）"
         sim_policy = (policy.get("simulation") or {})
         assert sim_policy, f"simulation job policy 未读回：{policy}"
         assert int(sim_policy.get("maxjobs") or 0) == 2, \
-            f"job_type/test_name 选择的 policy 未反映 maxJobs=2：{sim_policy}"
+            f"具名 policy 未反映 maxjobs=2：{sim_policy}"
+        assert sim_policy.get("name") == policy_name, \
+            f"读回的不是挂载的具名资源：{sim_policy.get('name')!r}"
+        _write(transport, [
+            {"op": "attach_job_policy", "test": TEST},
+            {"op": "delete_job_policy", "name": policy_name},
+        ])
 
     def case_spec_name() -> None:
         """`spec_name`（delete_spec）→ outputs[].spec 值级读回（先添加再删除）。"""
@@ -299,6 +314,46 @@ def run_suite(transport: HttpTransport) -> tuple[list[tuple[str, str]], dict[str
         }
         assert response.get("ok") is not True, "load_corners 对不存在的本地文件竟返回成功"
 
+    def case_netlisting_job_policy_p118() -> None:
+        """NKM-09（P-118）：netlisting 具名 policy 的 create/attach 必须真落盘读回。
+
+        P-118 根因：旧 `set_job_policy(job_type="netlisting")` 在 test 无
+        netlisting policy 时整段静默 no-op（`read_config.job_policy.netlisting`
+        恒 null）。新模型下 create/attach 对 netlisting 先自动切 LSCS，取不到
+        基础 DPL 或 set 返回 nil 都是结构化失败；本用例做完整往返：
+
+          create(name, netlisting, {maxjobs:1}) → attach(test, name, netlisting)
+          → read_config.tests.<test>.job_policy.netlisting.maxjobs == 1
+          → 去挂载 + delete（不残留资源）。
+        """
+        policy_name = f"NKM_NET_POLICY_{STAMP}"
+        _write(transport, [
+            {"op": "create_job_policy", "name": policy_name,
+             "job_type": "netlisting", "policy": {"maxjobs": 1}},
+        ])
+        _write(transport, [
+            {"op": "attach_job_policy", "test": TEST,
+             "name": policy_name, "job_type": "netlisting"},
+        ])
+        cfg = _read_config(transport)
+        policy = (((cfg.get("tests") or {}).get(TEST) or {})
+                  .get("job_policy") or {})
+        net = policy.get("netlisting")
+        evidence["cases"]["netlisting_p118"] = {
+            "job_control_mode": cfg.get("job_control_mode"),
+            "netlisting": net,
+        }
+        assert net, (
+            "P-118 红钉：netlisting 具名 policy 挂载后仍未读回"
+            f"（静默 no-op；policy={policy!r}）")
+        assert int((net or {}).get("maxjobs") or 0) == 1, \
+            f"P-118 红钉：netlisting policy 未按值落盘：{net}"
+        _write(transport, [
+            {"op": "attach_job_policy", "test": TEST,
+             "job_type": "netlisting"},
+            {"op": "delete_job_policy", "name": policy_name},
+        ])
+
     run("NKM-ENV 环境检查（1+2 + 三库可见）", case_env)
     run("NKM-01 建专属 setup（set_test + add_output + 全局变量落盘）", case_build)
     run("NKM-02 enabled / enable_tests / disable_tests（值级读回）",
@@ -310,6 +365,9 @@ def run_suite(transport: HttpTransport) -> tuple[list[tuple[str, str]], dict[str
     run("NKM-07a load_corners CSV 正例（corner 名值级读回）", case_load_corners_positive)
     run("NKM-07b load_corners 负例（本地文件缺失必须失败）", case_load_corners_negative)
     run("NKM-08 set_parameter 名称契约（非五段路径必须结构化拒绝）", case_set_parameter_name_contract)
+    # 红钉放最后：P-118 今天必红，不挡上面的覆盖率。
+    run("NKM-09 netlisting 具名 policy create/attach 真机往返（P-118）",
+        case_netlisting_job_policy_p118)
     return results, evidence
 
 

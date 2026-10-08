@@ -353,6 +353,48 @@ def _skill_value_expr(value: Any) -> str:
     return skill_value(value)
 
 
+_JOB_POLICY_TYPES = ("simulation", "netlisting")
+_JOB_POLICY_NAME_RE = re.compile(r"^[A-Za-z0-9_. -]+$")
+
+
+def _job_policy_type(value: Any) -> str:
+    """Validate the ``job_type`` selector (default ``simulation``)."""
+    job_type = "simulation" if value is None else value
+    if not isinstance(job_type, str) or job_type.strip() not in _JOB_POLICY_TYPES:
+        raise ValueError(
+            "command.job_type must be 'simulation' or 'netlisting'"
+        )
+    return job_type.strip()
+
+
+def _job_policy_name(value: Any, field: str) -> str:
+    """Validate a *plain* ADE job policy name (no quotes/newlines)."""
+    text = _require_text(value, field).strip()
+    if not _JOB_POLICY_NAME_RE.match(text):
+        raise ValueError(f"{field} must be a plain policy name")
+    return text
+
+
+def _job_policy_lscs_prelude(job_type: str, sess: str) -> str:
+    """Netlisting policies only exist under the LSCS job control mode."""
+    if job_type != "netlisting":
+        return ""
+    return (
+        f'unless(maeSetJobControlMode("LSCS"{sess}) '
+        'error("netlisting job policy requires LSCS")) '
+    )
+
+
+def _job_policy_assignments(policy: dict[str, Any]) -> str:
+    """Serialize ``policy`` mapping into ``jp->prop = value`` assignments."""
+    assignments = []
+    for key, value in policy.items():
+        if not re.match(r"^[A-Za-z_][A-Za-z0-9_]*$", str(key)):
+            raise ValueError(f"invalid job policy property: {key!r}")
+        assignments.append(f"jp->{key} = {_skill_value_expr(value)}")
+    return " ".join(assignments)
+
+
 def _skill_name_list(value: Any, name: str) -> str:
     """Return a quoted SKILL list for ``?typeValue``-style name lists."""
     if value is None:
@@ -1413,42 +1455,159 @@ class Package(ResultPackage):
             mode = _require_text(command.get("mode"), "command.mode")
             return [f"maeSetJobControlMode({q(mode)}{sess})"]
 
-        if op == "set_job_policy":
+        if op == "create_job_policy":
             policy = command.get("policy")
             if policy is None:
                 raise ValueError("command.policy is required")
-            test_name = command.get("test") or command.get("test_name")
-            job_type = command.get("job_type")
-            lookup_kw = ""
-            set_kw = ""
-            if test_name:
-                lookup_kw += f" ?testName {q(test_name)}"
-                set_kw += f" ?testName {q(test_name)}"
-            if job_type:
-                lookup_kw += f" ?jobType {q(job_type)}"
-                set_kw += f" ?jobType {q(job_type)}"
-            lookup_kw += sess
-            set_kw += sess
-            if isinstance(policy, dict):
-                assignments = []
-                for key, value in policy.items():
-                    if not re.match(r"^[A-Za-z_][A-Za-z0-9_]*$", str(key)):
-                        raise ValueError(f"invalid job policy property: {key!r}")
-                    assignments.append(f"jp->{key} = {_skill_value_expr(value)}")
+            job_type = _job_policy_type(command.get("job_type"))
+            name = command.get("name")
+            prelude = _job_policy_lscs_prelude(job_type, sess)
+            job_kw = f" ?jobType {q(job_type)}{sess}"
+            if name is None:
+                # name 省略 = 改全局默认：读当前默认 DPL → 改属性 → set 回去。
+                if isinstance(policy, dict):
+                    assigns = _job_policy_assignments(policy)
+                    body = (
+                        f"jp = maeGetJobPolicy(?jobType {q(job_type)}{sess}) "
+                        'unless(jp error("no job policy available for the '
+                        'requested job type")) '
+                        + assigns + " "
+                    )
+                elif isinstance(policy, str):
+                    text = policy.strip()
+                    if not text.startswith(("(", "'")):
+                        raise ValueError(
+                            "command.policy string must be a raw job-policy "
+                            "expression"
+                        )
+                    body = f"jp = {text} "
+                else:
+                    raise ValueError(
+                        "command.policy must be a mapping or raw expression"
+                    )
                 return [
-                    "let((jp) "
-                    f"jp = maeGetJobPolicy({lookup_kw}) "
-                    f"when(jp {' '.join(assignments)}) "
-                    f"maeSetJobPolicy(jp{set_kw}))"
+                    "let((jp) " + prelude + body
+                    + f"unless(maeSetJobPolicy(jp{job_kw}) "
+                    + 'error("maeSetJobPolicy failed")))'
                 ]
-            if isinstance(policy, str):
+            # name 显式 = 建/覆盖具名资源（同名覆盖）。maeSetJobPolicy 会把该
+            # jobType 的默认临时指向新 DPL（真机验证），因此非默认名在 set 后
+            # 必须把原默认引用恢复；name 本身由 name 参数决定，policy.name 忽略。
+            name = _job_policy_name(name, "command.name")
+            if isinstance(policy, dict):
+                assigns = _job_policy_assignments(
+                    {k: v for k, v in policy.items() if str(k) != "name"}
+                )
+                body = (
+                    f"jp = maeGetJobPolicyByName({q(name)}{sess}) "
+                    f"unless(jp jp = maeGetJobPolicy(?jobType {q(job_type)}{sess})) "
+                    f"jp->name = {q(name)} "
+                    + assigns + " "
+                )
+            elif isinstance(policy, str):
                 text = policy.strip()
                 if not text.startswith(("(", "'")):
                     raise ValueError(
-                        "command.policy string must be a raw job-policy expression"
+                        "command.policy string must be a raw job-policy "
+                        "expression"
                     )
-                return [f"maeSetJobPolicy({text}{set_kw})"]
-            raise ValueError("command.policy must be a mapping or raw expression")
+                body = f"jp = {text} jp->name = {q(name)} "
+            else:
+                raise ValueError(
+                    "command.policy must be a mapping or raw expression"
+                )
+            return [
+                "let((jp base) " + prelude
+                + f"base = maeGetJobPolicy(?jobType {q(job_type)}{sess}) "
+                + 'unless(base error("no job policy available for the '
+                + 'requested job type")) '
+                + body
+                + f"unless(maeSetJobPolicy(jp{job_kw}) "
+                + 'error("maeSetJobPolicy failed")) '
+                + f"unless(equal({q(name)} base->name) "
+                + f"  unless(maeSetJobPolicy(base{job_kw}) "
+                + '  error("failed to restore the default job policy")))'
+                + ")"
+            ]
+
+        if op == "delete_job_policy":
+            name = _job_policy_name(command.get("name"), "command.name")
+            if name in ("Maestro Default", "Netlisting Default"):
+                raise ValueError(f"cannot delete the default job policy: {name!r}")
+            # 真机口径：axlDeleteJobPolicy 在"库内已删、.jp 文件清理失败"时也
+            # 返回 nil（ASSEMBLER-1908 警告，文件残留不阻塞删除），因此以
+            # maeGetJobPolicyByName 的复查结果为准，而不是它的返回值。
+            return [
+                f"let((jp) axlDeleteJobPolicy({q(name)}) "
+                f"jp = maeGetJobPolicyByName({q(name)}) "
+                'when(jp error("delete_job_policy failed: policy still exists")))'
+            ]
+
+        if op == "attach_job_policy":
+            test = _require_text(
+                command.get("test") or command.get("test_name"),
+                "command.test",
+            )
+            job_type = _job_policy_type(command.get("job_type"))
+            name = command.get("name")
+            prelude = _job_policy_lscs_prelude(job_type, sess)
+            job_kw = f" ?jobType {q(job_type)}{sess}"
+            if job_type == "netlisting":
+                # 真机口径（P-118）：LSCS 下 netlisting policy 是 setup 级单例
+                # ——maeHasTestJobPolicy 恒 nil、maeClearTestJobPolicy 无效、
+                # 带 ?testName 的 set 实际改的就是 setup 默认；没有 test 级挂载。
+                # 因此语义为：给 name = 把 setup 的 netlisting 设为该具名资源；
+                # 不给 name = 恢复内置默认 "Netlisting Default"。
+                if name is None:
+                    return [
+                        "let((jp ok) " + prelude
+                        + 'jp = maeGetJobPolicyByName("Netlisting Default") '
+                        + 'unless(jp error("Netlisting Default not found")) '
+                        + f"maeSetJobPolicy(jp{job_kw}) "
+                        + 'ok = equal("Netlisting Default" '
+                        + f"maeGetJobPolicy(?jobType {q(job_type)}{sess})->name) "
+                        + 'unless(ok error("attach_job_policy failed: '
+                        + 'netlisting default not restored")))'
+                    ]
+                name = _job_policy_name(name, "command.name")
+                return [
+                    "let((jp ok) " + prelude
+                    + f"jp = maeGetJobPolicyByName({q(name)}{sess}) "
+                    + f'unless(jp error("named job policy not found: {name}")) '
+                    + f"maeSetJobPolicy(jp{job_kw}) "
+                    + f"ok = equal({q(name)} "
+                    + f"maeGetJobPolicy(?jobType {q(job_type)}{sess})->name) "
+                    + 'unless(ok error("attach_job_policy failed")))'
+                ]
+            if name is None:
+                # name 省略 = 整体去挂载，回退全局（maeClearTestJobPolicy）。
+                # 真机口径：返回值不可靠（LSCS 下清空亦见 nil），以复查
+                # maeHasTestJobPolicy 为准；本来就未挂载时视为成功（幂等）。
+                return [
+                    "let((ok) " + prelude
+                    + f"maeClearTestJobPolicy({q(test)}{sess}) "
+                    + f"ok = !maeHasTestJobPolicy({q(test)}{sess}) "
+                    + 'unless(ok error("attach_job_policy failed: test job '
+                    + 'policy still attached")))'
+                ]
+            name = _job_policy_name(name, "command.name")
+            # 给名字 = 挂载具名 policy；名字等于该 jobType 当前默认名时按
+            # spec 视为去挂载（整体回退全局）。两个分支都以
+            # maeHasTestJobPolicy 的复查结果为成功判据（返回值不可靠）。
+            return [
+                "let((jp base ok) " + prelude
+                + f"base = maeGetJobPolicy(?jobType {q(job_type)}{sess}) "
+                + 'unless(base error("no job policy available for the '
+                + 'requested job type")) '
+                + f"if(equal({q(name)} base->name) "
+                + f"  (progn maeClearTestJobPolicy({q(test)}{sess}) "
+                + f"         ok = !maeHasTestJobPolicy({q(test)}{sess})) "
+                + f"  (progn jp = maeGetJobPolicyByName({q(name)}{sess}) "
+                + f'         unless(jp error("named job policy not found: {name}")) '
+                + f"         maeSetJobPolicy(jp ?testName {q(test)}{job_kw}) "
+                + f"         ok = maeHasTestJobPolicy({q(test)}{sess}))) "
+                + 'unless(ok error("attach_job_policy failed")))'
+            ]
 
         if op == "set_simulator_mode":
             mode = _require_text(command.get("mode"), "command.mode")
@@ -3499,12 +3658,133 @@ class Package(ResultPackage):
                 })
         return dismissed
 
+    def _marker_channel_visible(
+        self,
+        marker: str,
+        token: str,
+        timeout: int | float | None,
+    ) -> bool:
+        """True when a file written by the GUI role is readable via command.
+
+        The completion marker is written by a SKILL callback (GUI host) and
+        read through the command interface; on role-split topologies without
+        a shared filesystem the probe fails and the caller falls back to
+        ``axlGetRunStatus`` polling (P-118).
+        """
+        probe = marker + ".probe"
+        try:
+            self._q(
+                f'system(sprintf(nil "echo vb-probe > {probe}"))',
+                token,
+                timeout,
+            )
+            result = self.middle.run_command(
+                f"cat {probe} 2>/dev/null", timeout=timeout, token=token,
+            )
+            return result.returncode == 0 and "vb-probe" in result.stdout
+        except Exception:  # noqa: BLE001 - probe is best-effort
+            return False
+        finally:
+            try:
+                self.middle.run_command(
+                    f"rm -f {probe}", timeout=timeout, token=token,
+                )
+            except Exception:  # noqa: BLE001
+                pass
+            try:
+                self._q(
+                    f'system(sprintf(nil "rm -f {probe}"))',
+                    token,
+                    timeout,
+                )
+            except Exception:  # noqa: BLE001
+                pass
+
+    def _wait_for_marker(
+        self,
+        marker: str,
+        token: str,
+        deadline: float,
+        poll_interval: float,
+    ) -> bool:
+        """Poll ``marker`` via the command role (no SKILL channel use)."""
+        while True:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                return False
+            try:
+                result = self.middle.run_command(
+                    f"cat {marker} 2>/dev/null",
+                    timeout=min(10.0, remaining),
+                    token=token,
+                )
+                if result.returncode == 0 and result.stdout.strip():
+                    return True
+            except Exception:  # noqa: BLE001 - transient command failures
+                pass
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                return False
+            time.sleep(min(poll_interval, remaining))
+
+    def _converge_run_status(
+        self,
+        session: str,
+        history: str,
+        token: str,
+        timeout: int | float | None,
+        deadline: float,
+        poll_interval: float,
+    ) -> dict[str, Any]:
+        """Read the terminal status after the completion marker fired.
+
+        The marker proves the run finished; ``axlGetRunStatus`` may need a
+        moment to publish the final counters, so re-read a few times within
+        a bounded window.  A run that stays incomplete is reported as
+        failed by the caller.
+        """
+        converge_deadline = min(
+            deadline, time.monotonic() + poll_interval * 5,
+        )
+        last: dict[str, Any] = {}
+        while True:
+            try:
+                last = self._run_status(session, history, token, timeout)
+            except Exception as exc:  # noqa: BLE001
+                last = {"status": "unknown", "error": str(exc)}
+            if last.get("status") == "done" or time.monotonic() >= converge_deadline:
+                return last
+            time.sleep(poll_interval)
+
+    def _cleanup_marker(
+        self,
+        marker: str,
+        token: str,
+        timeout: int | float | None,
+    ) -> None:
+        """Best-effort marker removal on both sides of the channel."""
+        try:
+            self.middle.run_command(
+                f"rm -f {marker}", timeout=timeout, token=token,
+            )
+        except Exception:  # noqa: BLE001
+            pass
+        try:
+            self._q(
+                f'system(sprintf(nil "rm -f {marker}"))',
+                token,
+                timeout,
+            )
+        except Exception:  # noqa: BLE001
+            pass
+
     def _start_simulation_with_watchdog(
         self,
         session: str,
         token: str,
         timeout: int | float | None,
         run_mode: str | None = None,
+        callback: str | None = None,
     ) -> tuple[VirtuosoResult | None, list[dict[str, Any]], str | None, int]:
         """Start ``maeRunSimulation``; only touch X11 if it is actually blocked.
 
@@ -3512,7 +3792,9 @@ class Package(ResultPackage):
         watchdog therefore waits a short grace period first, and only performs
         bounded window checks if the call is still pending.  If no known
         ``Update and Run`` dialog is found, it backs off completely instead of
-        polling X11 for the whole simulation.
+        polling X11 for the whole simulation.  ``callback`` (used by
+        ``blocking=true``) registers the completion marker callback atomically
+        with the run start (P-118).
         """
         box: dict[str, Any] = {}
 
@@ -3521,8 +3803,12 @@ class Package(ResultPackage):
                 mode_kw = (
                     f" ?runMode {q(run_mode)}" if run_mode else ""
                 )
+                callback_kw = (
+                    f" ?callback {q(callback)}" if callback else ""
+                )
                 box["result"] = self.middle.execute_skill(
-                    f"maeRunSimulation({_session_kw(session)}{mode_kw})",
+                    f"maeRunSimulation({_session_kw(session)}{mode_kw}"
+                    f"{callback_kw})",
                     timeout=timeout or 180,
                     token=token,
                     **skill_log_kwargs(
@@ -3607,15 +3893,13 @@ class Package(ResultPackage):
         token: str,
         timeout: int | float | None,
     ) -> dict[str, Any] | None:
-        """Best-effort checks before a Monte Carlo run.
+        """Best-effort state readback before a Monte Carlo run.
 
-        The run itself is unchanged (live evidence: set the mode first, then
-        call the bare ``maeRunSimulation``).  These checks only turn the two
-        documented, deterministic failure modes into a structured error
-        before the GUI is tied up:
-
-        * no plotted output -> ``ADEXL-1617`` / no MC measurements;
-        * sweeps enabled without ``mcreferencepoint=1`` -> ``ADEXL-1742``.
+        P-118: these checks no longer block the run.  A missing plotted
+        output (ADEXL-1617) or sweeps without ``mcreferencepoint=1``
+        (ADEXL-1742) is reported by ADE at run time; the readback below is
+        kept as step detail and the sweeps conflict is surfaced as a step
+        warning (spec §7.3.2).
 
         Statistics-model presence is still enforced by Spectre
         (``SPECTRE-16012``) because there is no reliable per-session
@@ -3623,7 +3907,7 @@ class Package(ResultPackage):
         """
         try:
             mode = unquote(self._q(
-                f"maeGetCurrentRunMode{_session_kw(session)}",
+                f"maeGetCurrentRunMode({_session_kw(session)})",
                 token,
                 timeout,
             ))
@@ -3642,8 +3926,8 @@ class Package(ResultPackage):
         plotted_expr = (
             "let((found) "
             "found = nil "
-            f"foreach(t maeGetSetup({_session_kw(session)}) "
-            f"  foreach(o maeGetTestOutputs(t ?session {q(session)}) "
+            f"foreach(tn maeGetSetup({_session_kw(session)}) "
+            f"  foreach(o maeGetTestOutputs(tn ?session {q(session)}) "
             "    when(o~>plot found = t))) "
             "found)"
         )
@@ -3703,33 +3987,23 @@ class Package(ResultPackage):
             )
             if mc_info is not None:
                 steps.append(_step("mc_preflight", True, mc_info))
-                if mc_info.get("applicable"):
-                    if mc_info.get("plotted_outputs") is False:
-                        return Result(
-                            False, steps,
-                            "Monte Carlo requires at least one plotted output "
-                            "(ADEXL-1617)",
-                            {
-                                "reason": "mc_no_plot_outputs",
-                                "monte_carlo": mc_info,
-                            },
-                        )
-                    reference = str(
-                        mc_info.get("reference_point") or ""
-                    ).strip().lower()
-                    if (
-                        mc_info.get("sweeps_enabled") is True
-                        and reference not in ("1", "t", "true", "yes")
-                    ):
-                        return Result(
-                            False, steps,
-                            "Monte Carlo with sweeps requires "
-                            "mcreferencepoint=1 (ADEXL-1742)",
-                            {
-                                "reason": "mc_sweeps_conflict",
-                                "monte_carlo": mc_info,
-                            },
-                        )
+                # P-118：不前置拦截——缺 plot / sweeps 冲突直接投送给 ADE，
+                # 由运行时给出 ADEXL-1617 / ADEXL-1742；sweeps 冲突只在 steps
+                # 记 warning（spec §7.3.2）。
+                reference = str(
+                    mc_info.get("reference_point") or ""
+                ).strip().lower()
+                if (
+                    mc_info.get("applicable")
+                    and mc_info.get("sweeps_enabled") is True
+                    and reference not in ("1", "t", "true", "yes")
+                ):
+                    steps.append(_step("mc_preflight_warning", True, {
+                        "warning": "Monte Carlo with sweeps enabled and no "
+                                   "reference point; ADE will report "
+                                   "ADEXL-1742 at run time",
+                        "monte_carlo": mc_info,
+                    }))
             run_mode = (
                 mc_info.get("run_mode")
                 if isinstance(mc_info, dict)
@@ -3798,10 +4072,46 @@ class Package(ResultPackage):
             # 覆盖失效、目标 history 永远不 done）。地雷由「下一次 run 开跑前清理」
             # 兜住（见上面的 overwrite_clear 分支），这也是 P-095 验收口径允许的
             # 第二选：每次 run 前校验目标、残留即清。
+            # P-118 blocking 判据：启动前定义一次性回调（与 maeRunSimulation
+            # 原子注册，无竞态）并探测 marker 在 GUI→command 之间是否可见；
+            # 不可见（如 role-split 无共享文件系统）回退 axlGetRunStatus 轮询。
+            # 启动与等待共用同一条 deadline。
+            deadline = time.monotonic() + (request.timeout or 3600)
+            marker: str | None = None
+            callback: str | None = None
+            marker_visible = False
+            if request.blocking:
+                nonce = uuid.uuid4().hex[:8]
+                marker = f"/tmp/vb_sim_done_{nonce}"
+                callback = f"_vb_sim_done_{nonce}"
+                marker_visible = self._marker_channel_visible(
+                    marker, request.token, request.timeout,
+                )
+                steps.append(_step(
+                    "marker_channel", True, {"visible": marker_visible},
+                ))
+                if marker_visible:
+                    try:
+                        self._q(
+                            f"procedure({callback}(session runID) "
+                            'system(sprintf(nil "echo done > '
+                            + marker + '")) t)',
+                            request.token,
+                            request.timeout,
+                        )
+                        steps.append(_step("callback", True, callback))
+                    except Exception as exc:  # noqa: BLE001
+                        marker_visible = False
+                        steps.append(_step("callback", False, str(exc)))
+                if not marker_visible:
+                    # 回调未定义时绝不能把名字传给 maeRunSimulation
+                    # （未定义函数会让启动失败），等待回退 axlGetRunStatus。
+                    callback = None
             started, dismissed, start_error, window_checks = (
                 self._start_simulation_with_watchdog(
                     session, request.token, request.timeout,
                     run_mode=run_mode,
+                    callback=callback,
                 )
             )
             if dismissed or window_checks:
@@ -3833,6 +4143,7 @@ class Package(ResultPackage):
                         self._start_simulation_with_watchdog(
                             session, request.token, request.timeout,
                             run_mode=run_mode,
+                            callback=callback,
                         )
                     )
                     if retry_dismissed or retry_checks:
@@ -3869,38 +4180,71 @@ class Package(ResultPackage):
                     "session": session,
                 })
 
-            deadline = time.monotonic() + (request.timeout or 3600)
-            last: dict[str, Any] = {}
-            last_status: str | None = None
-            while time.monotonic() < deadline:
-                try:
-                    last = self._run_status(
+            try:
+                if marker and marker_visible:
+                    # marker 轮询走 command role，等待期间不占用 SKILL 通道。
+                    if not self._wait_for_marker(
+                        marker, request.token, deadline, request.poll_interval,
+                    ):
+                        steps.append(_step("marker", False, marker))
+                        return Result(
+                            False, steps,
+                            "simulation did not finish before timeout",
+                            {
+                                "history": history,
+                                "status": "timeout",
+                                "session": session,
+                            },
+                        )
+                    steps.append(_step("marker", True, marker))
+                    last = self._converge_run_status(
                         session, history, request.token, request.timeout,
+                        deadline, request.poll_interval,
                     )
-                except Exception as exc:  # noqa: BLE001
-                    last = {"status": "unknown", "error": str(exc)}
-                if last.get("status") != last_status:
-                    steps.append(_step("poll", True, last))
-                    last_status = str(last.get("status"))
-                if last.get("status") in ("done", "failed"):
+                    status = "done" if last.get("status") == "done" else "failed"
+                    steps.append(_step("run_status", status == "done", last))
                     return Result(
-                        last.get("status") != "failed",
-                        steps,
-                        None if last.get("status") != "failed" else "simulation failed",
+                        status == "done", steps,
+                        None if status == "done"
+                        else "simulation finished without completing all points",
                         {
                             "history": history,
-                            "status": last.get("status"),
+                            "status": status,
                             "session": session,
                             "progress": last,
                         },
                     )
-                time.sleep(request.poll_interval)
-            return Result(False, steps, "simulation did not finish before timeout", {
-                "history": history,
-                "status": "timeout",
-                "session": session,
-                "progress": last,
-            })
+                # 回退：marker 不可见（跨主机无共享文件系统）时用
+                # axlGetRunStatus 轮询读完成度。
+                last: dict[str, Any] = {}
+                last_status: str | None = None
+                while time.monotonic() < deadline:
+                    try:
+                        last = self._run_status(
+                            session, history, request.token, request.timeout,
+                        )
+                    except Exception as exc:  # noqa: BLE001
+                        last = {"status": "unknown", "error": str(exc)}
+                    if last.get("status") != last_status:
+                        steps.append(_step("poll", True, last))
+                        last_status = str(last.get("status"))
+                    if last.get("status") == "done":
+                        return Result(True, steps, None, {
+                            "history": history,
+                            "status": "done",
+                            "session": session,
+                            "progress": last,
+                        })
+                    time.sleep(request.poll_interval)
+                return Result(False, steps, "simulation did not finish before timeout", {
+                    "history": history,
+                    "status": "timeout",
+                    "session": session,
+                    "progress": last,
+                })
+            finally:
+                if marker:
+                    self._cleanup_marker(marker, request.token, 10)
         except Exception as exc:  # noqa: BLE001
             return Result(False, steps, f"{type(exc).__name__}: {exc}")
 

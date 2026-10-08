@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
 # 作者: 测试/root
-# 最后改动: 2026-09-30 11:20
+# 最后改动: 2026-09-30 21:45
 # 依赖: 无
 # =======================================================================
 """``virtuoso.schematic.*`` 真机原子级验收 TB（含 P-074 `pos` 口径）。
@@ -369,6 +369,25 @@ def _case_pin_optional_props(transport, ev: Evidence) -> None:
                                       "sig_type": "bus"}])
     ev.check_true(case, "非法 sig_type 结构化拒绝（含取值域）",
                   "must be one of" in error, error[:200])
+
+    # ④ 枚举一个不落（表 B）：`sig_type` 10 个取值逐个真机执行 + 值级读回。
+    #    （round10 补：此前只覆盖 signal/ground/power + 负例，枚举审计报 6 个取值未覆盖。）
+    _baseline(transport, case, ev)
+    sig_values = ("analog", "clock", "ground", "power", "reset", "scan",
+                  "signal", "tieHi", "tieLo", "tieOff")
+    _write(transport, [
+        {"op": "place_pin", "name": f"ST_{value.upper()}", "direction": "input",
+         "pos": [30.0 + index * 2.0, 0.0], "sig_type": value}
+        for index, value in enumerate(sig_values)
+    ])
+    sweep_nets = _read(transport, focus="connectivity").get("nets") or {}
+    for value in sig_values:
+        pin_name = f"ST_{value.upper()}"
+        # 真机实测（2026-09-30）：10 个取值里 9 个读回==写值；`power` 被 Virtuoso DB
+        # 归一化为 `supply`（见 P-121：spec 未写明该归一化）。
+        expected = {"power": "supply"}.get(value, value)
+        ev.check(case, f"sig_type={value} 值级读回（DB 归一化后）", expected,
+                 (sweep_nets.get(pin_name) or {}).get("sigType"))
 
 
 

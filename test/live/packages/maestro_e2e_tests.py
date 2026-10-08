@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
 # 作者: 测试/root
-# 最后改动: 2026-09-29 11:40
+# 最后改动: 2026-09-30 21:45
 # 依赖: 无
 # =======================================================================
 # 六步流程（test/docs/写TB规范.md §1）：
@@ -209,6 +209,12 @@ def _case_read_config_rc(transport) -> None:
     detail = options_steps[-1].get("detail") or {}
     _check({"env", "sim"} <= set(detail),
            f"options 步明细缺 env/sim: {sorted(detail)}")
+    # 防空转：明细的 test 键集合必须与公开 tests 完全一致（都为空 dict 的
+    # "相等" 不算覆盖 —— 那样即使实现什么都不返回也会绿）。
+    for key in ("env", "sim"):
+        _check(set(detail[key]) == set(value["tests"]),
+               f"{key} 明细的 test 键集合与公开 tests 不一致: "
+               f"{sorted(detail[key])} vs {sorted(value['tests'])}")
     for test_name, test in value["tests"].items():
         _check(detail["sim"].get(test_name) == test.get("sim_options"),
                f"sim 明细与 tests.{test_name}.sim_options 不一致: "
@@ -499,7 +505,10 @@ def _case_write_parameter_scopes(transport) -> None:
 
 
 def _case_write_job_policy_sim_mode(transport) -> None:
-    """No-op validation of maeSetJobPolicy and asiSetHighPerformanceOptionVal."""
+    """No-op validation of the global default job policy and asiSetHighPerformanceOptionVal.
+
+    P-118：`create_job_policy` 不带 name = 改全局默认（此处设回原值，无副作用）。
+    """
     base = {"library": "maestro_tb", "cell": "rc_probe"}
     session = _skill(
         transport,
@@ -526,7 +535,7 @@ def _case_write_job_policy_sim_mode(transport) -> None:
         _value(
             transport, "virtuoso.maestro.write", **base,
             commands=[
-                {"op": "set_job_policy",
+                {"op": "create_job_policy",
                  "policy": {"configuretimeout": configure_timeout}},
                 {"op": "set_simulator_mode", "mode": target_mode,
                  "option": "uniMode"},

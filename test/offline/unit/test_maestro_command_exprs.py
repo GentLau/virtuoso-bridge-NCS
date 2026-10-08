@@ -88,8 +88,10 @@ COMMANDS: dict[str, dict] = {
         },
     },
     "set_job_control_mode": {"mode": "local"},
-    # policy 字符串必须是"原始 SKILL 表达式"（以 ( 或 ' 开头），否则被拒（源码 :1140-1145）
-    "set_job_policy": {"policy": "(t)", "test": "t1"},
+    # policy 字符串必须是"原始 SKILL 表达式"（以 ( 或 ' 开头），否则被拒（job policy 分支）
+    "create_job_policy": {"policy": "'(nil distributionmethod \"Local\")"},
+    "delete_job_policy": {"name": "P1"},
+    "attach_job_policy": {"test": "t1"},
     "set_simulator_mode": {"mode": "spectre"},
     "add_output": {"name": "o1", "test": "t1"},
     # 必须带一个 spec bound（gt/lt/min/max/tol/range 之一）或 info/weight/corner（源码 :1205-1209）

@@ -483,6 +483,61 @@ class TestRunFlow(unittest.TestCase):
         self.assertEqual(result.value["history"], "h1")
         self.assertEqual(result.value["status"], "started")
 
+    def test_blocking_run_uses_marker_and_converges(self):
+        """P-118：blocking 用回调 marker（command 轮询）+ 一次状态归因。"""
+        middle = FakeMiddle()
+        middle.skill_script = [
+            ("maeGetSessions", "nil"),
+            ("hiGetWindowList", self._editing_window()),
+            ("hiGetWindowList", self._editing_window()),
+            ("maeRunSimulation", '"h1"'),
+            ("axlGetRunStatus", "(1 1)"),
+        ]
+        # 顺序：cat probe（可见）→ rm probe → cat marker（命中）→ rm marker
+        middle.command_script = [
+            CommandResult(returncode=0, stdout="vb-probe\n", stderr=""),
+            CommandResult(returncode=0, stdout="", stderr=""),
+            CommandResult(returncode=0, stdout="done\n", stderr=""),
+        ]
+        result = M.Package(middle).run(M.RunRequest(
+            **base_fields(), blocking=True, poll_interval=0.01, timeout=30,
+        ))
+        self.assertTrue(result.ok, result.error)
+        self.assertEqual(result.value["status"], "done")
+        self.assertEqual(result.value["history"], "h1")
+        run_calls = [
+            code for kind, code in middle.calls
+            if kind == "skill" and "maeRunSimulation" in code
+        ]
+        self.assertTrue(run_calls and "?callback" in run_calls[0], run_calls)
+        status_calls = [
+            code for kind, code in middle.calls
+            if kind == "skill" and "axlGetRunStatus" in code
+        ]
+        self.assertEqual(len(status_calls), 1, status_calls)
+
+    def test_blocking_run_falls_back_when_marker_invisible(self):
+        """P-118：marker 不可见（role-split）回退 axlGetRunStatus 轮询。"""
+        middle = FakeMiddle()
+        middle.skill_script = [
+            ("maeGetSessions", "nil"),
+            ("hiGetWindowList", self._editing_window()),
+            ("hiGetWindowList", self._editing_window()),
+            ("maeRunSimulation", '"h2"'),
+            ("axlGetRunStatus", "(1 1)"),
+        ]
+        # 默认 command 返回空 stdout → probe 读不到 vb-probe → 不可见
+        result = M.Package(middle).run(M.RunRequest(
+            **base_fields(), blocking=True, poll_interval=0.01, timeout=30,
+        ))
+        self.assertTrue(result.ok, result.error)
+        self.assertEqual(result.value["status"], "done")
+        run_calls = [
+            code for kind, code in middle.calls
+            if kind == "skill" and "maeRunSimulation" in code
+        ]
+        self.assertTrue(run_calls and "?callback" not in run_calls[0], run_calls)
+
     def test_run_start_failure_diagnoses_and_retries(self):
         middle = FakeMiddle()
         middle.skill_script = [
@@ -500,7 +555,8 @@ class TestRunFlow(unittest.TestCase):
         self.assertFalse(result.ok)
         self.assertIn("maeRunSimulation", result.error)
 
-    def test_mc_preflight_blocks_no_plot_outputs(self):
+    def test_mc_preflight_does_not_block_no_plot_outputs(self):
+        # P-118：缺 plot 不再前置拦截，直接投送、由 ADE 在运行时报 ADEXL-1617
         middle = FakeMiddle()
         middle.skill_script = [
             ("maeGetSessions", "nil"),
@@ -508,14 +564,25 @@ class TestRunFlow(unittest.TestCase):
             ("hiGetWindowList", self._editing_window()),
             ("maeGetCurrentRunMode", '"Monte Carlo Sampling"'),
             ("maeGetTestOutputs", "nil"),
+            ("maeSetJobControlMode", "t"),
+            ("maeRunSimulation", '"MonteCarlo.0"'),
         ]
         result = M.Package(middle).run(M.RunRequest(
             **base_fields(), blocking=False, poll_interval=0.01,
         ))
-        self.assertFalse(result.ok)
-        self.assertEqual(result.value["reason"], "mc_no_plot_outputs")
+        self.assertTrue(result.ok, result.error)
+        self.assertEqual(result.value["history"], "MonteCarlo.0")
+        # 语法回归（真机曾踩）：maeGetCurrentRunMode 必须带括号，否则真机
+        # 语法错误被 preflight 的 try/except 吞掉、mc_info 恒为 None。
+        mode_calls = [
+            code for kind, code in middle.calls
+            if kind == "skill" and "maeGetCurrentRunMode" in code
+        ]
+        self.assertTrue(mode_calls, "preflight 未查询 run mode")
+        self.assertIn("maeGetCurrentRunMode(", mode_calls[0], mode_calls[0])
 
-    def test_mc_preflight_blocks_sweeps_without_reference_point(self):
+    def test_mc_preflight_warns_sweeps_without_reference_point(self):
+        # P-118：sweeps 冲突不再拦截，只在 steps 记 warning（ADE 运行时报 ADEXL-1742）
         middle = FakeMiddle()
         middle.skill_script = [
             ("maeGetSessions", "nil"),
@@ -524,12 +591,16 @@ class TestRunFlow(unittest.TestCase):
             ("maeGetCurrentRunMode", '"Monte Carlo Sampling"'),
             ("maeGetTestOutputs", "t"),
             ("axlGetAllSweepsEnabled", '(t "0")'),
+            ("maeSetJobControlMode", "t"),
+            ("maeRunSimulation", '"MonteCarlo.1"'),
         ]
         result = M.Package(middle).run(M.RunRequest(
             **base_fields(), blocking=False, poll_interval=0.01,
         ))
-        self.assertFalse(result.ok)
-        self.assertEqual(result.value["reason"], "mc_sweeps_conflict")
+        self.assertTrue(result.ok, result.error)
+        warnings = [s for s in result.steps if s["name"] == "mc_preflight_warning"]
+        self.assertEqual(len(warnings), 1, result.steps)
+        self.assertIn("ADEXL-1742", warnings[0]["detail"]["warning"])
 
     def test_mc_preflight_passes_when_clean(self):
         middle = FakeMiddle()

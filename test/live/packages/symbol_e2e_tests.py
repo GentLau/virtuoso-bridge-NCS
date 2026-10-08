@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
 # 作者: 测试/root
-# 最后改动: 2026-09-30 11:20
+# 最后改动: 2026-09-30 21:45
 # 依赖: 无
 # =======================================================================
 
@@ -155,9 +155,9 @@ def _case_read_focus(transport) -> None:
     )
     _check("terms" in value and "labels" not in value, f"focus result: {value.keys()}")
     _check("pin_order" in value, "focus orders missing pin_order")
-    # spec 3-symbol.md:35/138/200：pin_order 权威（schGetPinOrder），port_order/term_order
-    # 是 raw 读回。实测 `schEditPinOrder` 只同步 pin_order/port_order；`cv~>termOrder`
-    # （legacy 属性）不同步（P-116 红钉，见 test/reports/bugs/P-116-*.md）。
+    # spec 3-symbol.md:35/:138/:200（P-116 定稿版）：`pin_order`（schGetPinOrder）与
+    # `port_order` 权威且一致；`term_order` 是 `cv~>termOrder` **legacy raw**，
+    # 可能为空/陈旧，**不得**当权威顺序用（实现也不写它）。
     orders = {key: value.get(key) for key in ("pin_order", "port_order", "term_order")}
     _check(orders["pin_order"] == ["IN", "OUT", "BI"],
            f"symfinal pin_order: {orders['pin_order']}")
@@ -451,14 +451,11 @@ def _case_screenshot(transport) -> None:
 
 
 def _case_orders_term_pin116(transport) -> None:
-    """ORDERS-TERM（P-116 红钉）：spec `3-symbol.md:200` 称 `schEditPinOrder` 生效后
-    `pin_order` 与 `port_order`/`term_order` 一致。真机实测（2026-09-30，vblog）：
+    """ORDERS-TERM（P-116 定稿口径）：`term_order` 是 legacy raw，**不要求**等于 `pin_order`。
 
-    * `symfinal`（旧流程建的 fixture）：pin/port=`[IN,OUT,BI]`，term=`[OUT,IN,BI]`（陈旧不一致）；
-    * `sym_e2e`（本包写路径 set_pin_order 之后）：pin/port=`[OUT,IN]`，term=`[]`（根本没写）。
-
-    即 `cv~>termOrder` 是 legacy raw 属性，`schEditPinOrder` 并不同步它 —— 需要 spec/实现二选一
-    （改 spec 文字：term_order 只保证"存在"、可能为空/陈旧；或实现里同步写 termOrder）。
+    spec `3-symbol.md:35/:200`（`b4036d0` 定稿）：`pin_order`（schGetPinOrder）与 `port_order`
+    是权威且必须一致；`term_order` 只保证"**存在且为 list**"，允许为空/陈旧，实现不写
+    `cv~>termOrder`。本用例把三键的**真实值**入证据，并断言定稿后的判据。
     """
     value = _value(
         transport, "virtuoso.symbol.read",
@@ -466,10 +463,13 @@ def _case_orders_term_pin116(transport) -> None:
         focus=["orders"],
     )
     orders = {key: value.get(key) for key in ("pin_order", "port_order", "term_order")}
+    # 防空转：pin/port 必须命中 fixture 的真实顺序（都为空/都为 [] 的"相等"不算覆盖）。
+    _check(orders["pin_order"] == ["IN", "OUT", "BI"],
+           f"pin_order 应命中 symfinal 的真实顺序: {orders['pin_order']}")
     _check(orders["pin_order"] == orders["port_order"],
-           f"前置：pin/port 必须一致: {orders}")
-    _check(orders["term_order"] == orders["pin_order"],
-           f"P-116 红钉：`cv~>termOrder` 未被 schEditPinOrder 同步（spec 3-symbol.md:200 说一致）: {orders}")
+           f"pin_order 与 port_order 必须一致（权威口径）: {orders}")
+    _check(isinstance(orders["term_order"], list),
+           f"term_order 必须是 list（legacy raw，允许与 pin_order 不同）: {orders['term_order']!r}")
 
 
 def run_suite(transport) -> list[tuple[str, str]]:
@@ -504,8 +504,8 @@ def run_suite(transport) -> list[tuple[str, str]]:
         lambda: _case_generate(transport))
     run("SHOT-01 symbol screenshot",
         lambda: _case_screenshot(transport))
-    # 红钉放最后：P-116 今天必红（spec 3-symbol.md:200 与真机不一致），但不许挡住上面的覆盖率。
-    run("ORDERS-TERM term_order 与 pin_order 一致（P-116 红钉）",
+    # P-116 已按 spec 定稿（term_order = legacy raw）：用例降级为"存在且为 list"，允许与 pin_order 不同。
+    run("ORDERS-TERM orders 三键定稿口径（pin==port；term 为 legacy raw）",
         lambda: _case_orders_term_pin116(transport))
     return results
 

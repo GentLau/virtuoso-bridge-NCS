@@ -1,6 +1,6 @@
 # === TB 注释头（规范见 test/docs/写TB规范.md §0）=========================
 # 作者: 测试/root
-# 最后改动: 2026-09-29 20:40
+# 最后改动: 2026-10-08 15:10
 # 依赖: 无
 # =======================================================================
 """round9 补点：嵌套命令键的 L0 契约（`commands[].*` / `tasks[].*`）。
@@ -14,7 +14,8 @@
 * schematic：`place_wire` 的 `x_spacing`/`y_spacing`；
 * maestro：`set_corner` 的 `enabled`/`enable_tests`/`disable_tests`、`set_var` 的 `type_name`/`type_value`、
   `load_corners` 的 `sections`、`setup_corner` 的 `model_file`/`model_section`、
-  `set_job_policy` 的 `job_type`/`test_name`。
+  job policy 三操作的 `name`/`job_type`/`test` 键（`create_job_policy`/`delete_job_policy`/
+  `attach_job_policy`，P-118 起取代 `set_job_policy`）。
 
 **判据（期望 / 实际 / 判定）**：喂入该键后，生成的 SKILL 文本必须出现与"键已生效"唯一对应的片段
 （例如 `?enabled nil`、`~>labelType = "drawing"`、`schCreateWire(… 0.25 0.5 …)`）；
@@ -230,12 +231,89 @@ class TestMaestroNestedKeys(unittest.TestCase):
         self.assertIn('axlSetModelFile(model "/pdk/models.scs")', skill)
         self.assertIn('axlSetModelSection(model "TT")', skill)
 
-    def test_set_job_policy_job_type_and_test_name(self):
-        skill = self._exprs({"op": "set_job_policy", "policy": {"maxJobs": 4},
-                             "test_name": "t1", "job_type": "MonteCarlo"})[0]
-        self.assertIn('?jobType "MonteCarlo"', skill)
-        self.assertIn('?testName "t1"', skill)
-        self.assertIn("jp->maxJobs = 4", skill)
+    # ---- P-118：job policy 三操作（create / delete / attach） --------------------
+    def test_create_job_policy_without_name_updates_global_default(self):
+        # name 省略 = 改全局默认：不加 jp->name，直接把改过的 DPL set 回去
+        skill = self._exprs({"op": "create_job_policy",
+                             "policy": {"configuretimeout": "300"}})[0]
+        self.assertIn('?jobType "simulation"', skill)
+        self.assertIn("maeSetJobPolicy(jp ?jobType", skill)
+        self.assertNotIn("jp->name =", skill)
+        self.assertNotIn("maeGetJobPolicyByName", skill)
+
+    def test_create_job_policy_named_resource_restores_default(self):
+        # name 显式 = 建/覆盖具名资源；set 会临时改变默认引用，必须恢复
+        skill = self._exprs({"op": "create_job_policy", "name": "my policy",
+                             "policy": {"maxjobs": 3}})[0]
+        self.assertIn('maeGetJobPolicyByName("my policy"', skill)
+        self.assertIn('jp->name = "my policy"', skill)
+        self.assertIn("jp->maxjobs = 3", skill)
+        self.assertIn('unless(equal("my policy" base->name)', skill)
+        self.assertIn('error("failed to restore the default job policy")', skill)
+
+    def test_create_job_policy_netlisting_prepends_lscs(self):
+        skill = self._exprs({"op": "create_job_policy", "name": "NetP",
+                             "job_type": "netlisting",
+                             "policy": {"maxjobs": 1}})[0]
+        self.assertIn('maeSetJobControlMode("LSCS"', skill)
+        self.assertIn('?jobType "netlisting"', skill)
+
+    def test_create_job_policy_rejects_bad_name_and_job_type(self):
+        with self.assertRaises(ValueError):
+            self._exprs({"op": "create_job_policy", "name": 'bad"name',
+                         "policy": {"maxjobs": 1}})
+        with self.assertRaises(ValueError):
+            self._exprs({"op": "create_job_policy", "job_type": "MonteCarlo",
+                         "policy": {"maxjobs": 1}})
+
+    def test_delete_job_policy_and_default_guard(self):
+        skill = self._exprs({"op": "delete_job_policy", "name": "P1"})[0]
+        self.assertIn('axlDeleteJobPolicy("P1")', skill)
+        # 真机口径：返回值不可靠（.jp 清理失败也返回 nil），以复查为准
+        self.assertIn('maeGetJobPolicyByName("P1")', skill)
+        self.assertIn("policy still exists", skill)
+        for default in ("Maestro Default", "Netlisting Default"):
+            with self.assertRaises(ValueError):
+                self._exprs({"op": "delete_job_policy", "name": default})
+
+    def test_attach_job_policy_mounts_named_policy(self):
+        skill = self._exprs({"op": "attach_job_policy", "test": "ac",
+                             "name": "P1"})[0]
+        self.assertIn('maeGetJobPolicyByName("P1"', skill)
+        self.assertIn('maeSetJobPolicy(jp ?testName "ac"', skill)
+        self.assertIn('?jobType "simulation"', skill)
+        self.assertIn('maeHasTestJobPolicy("ac"', skill)
+
+    def test_attach_job_policy_default_name_detaches(self):
+        # name 等于该 jobType 当前默认名（动态比较 base->name）→ 整体去挂载
+        skill = self._exprs({"op": "attach_job_policy", "test": "ac",
+                             "name": "P1"})[0]
+        self.assertIn('maeClearTestJobPolicy("ac"', skill)
+        self.assertIn('equal("P1" base->name)', skill)
+        self.assertIn('maeHasTestJobPolicy("ac"', skill)
+
+    def test_attach_job_policy_without_name_detaches(self):
+        skill = self._exprs({"op": "attach_job_policy", "test": "ac"})[0]
+        self.assertIn('maeClearTestJobPolicy("ac"', skill)
+        self.assertIn('maeHasTestJobPolicy("ac"', skill)
+        self.assertNotIn("maeSetJobPolicy", skill)
+
+    def test_attach_job_policy_netlisting_is_setup_scoped(self):
+        # 真机口径：netlisting 无 test 级挂载，attach = 设置 setup 级单例
+        skill = self._exprs({"op": "attach_job_policy", "test": "ac",
+                             "name": "NetP",
+                             "job_type": "netlisting"})[0]
+        self.assertIn('maeSetJobControlMode("LSCS"', skill)
+        self.assertIn('maeGetJobPolicyByName("NetP"', skill)
+        self.assertIn('maeSetJobPolicy(jp ?jobType "netlisting"', skill)
+        self.assertIn('equal("NetP" maeGetJobPolicy(?jobType "netlisting"', skill)
+
+    def test_attach_job_policy_netlisting_without_name_restores_default(self):
+        skill = self._exprs({"op": "attach_job_policy", "test": "ac",
+                             "job_type": "netlisting"})[0]
+        self.assertIn('maeGetJobPolicyByName("Netlisting Default")', skill)
+        self.assertIn('maeSetJobPolicy(jp ?jobType "netlisting"', skill)
+        self.assertIn('equal("Netlisting Default"', skill)
 
     def test_spec_name_key_on_delete_output_and_delete_spec(self):
         # delete_output：delete_spec=True 时按 spec_name 删同名 spec；缺省回落到 "<test>.<name>"
