@@ -191,17 +191,29 @@ def _watchdog_cb(gen):
             pass
 
 
+def _ciw_gone():
+    """CIW-side stdin closed (EOF): the daemon can no longer serve; exit."""
+    try:
+        sys.stderr.write("[RB-exit] CIW stdin closed (EOF); daemon exiting\n")
+        sys.stderr.flush()
+    except Exception:  # noqa: BLE001 - best-effort diagnostics
+        pass
+    raise SystemExit(0)
+
+
 def _read_frame() -> bytes:
     """Read one STX/NAK ... RS frame from Virtuoso (daemon stdin)."""
     out = bytearray()
     while True:
         try:
             ch = sys.stdin.buffer.read(1)
-            if not ch:
+            if ch is None:  # non-blocking: no data yet
                 if _timeout_flag:
                     return b"\x15SKILL execution timed out\x1e"
                 time.sleep(0.001)
                 continue
+            if not ch:      # b"" → real EOF (CIW side gone)
+                _ciw_gone()
             if ch[0] in (STX[0], NAK[0]):
                 out.extend(ch)
                 break
@@ -217,11 +229,13 @@ def _read_frame() -> bytes:
     while True:
         try:
             ch = sys.stdin.buffer.read(1)
-            if not ch:
+            if ch is None:  # non-blocking: no data yet
                 if _timeout_flag:
                     return b"\x15SKILL execution timed out\x1e"
                 time.sleep(0.001)
                 continue
+            if not ch:      # b"" → real EOF (CIW side gone)
+                _ciw_gone()
             if ch[0] == RS[0]:
                 break
             out.extend(ch)
@@ -258,8 +272,10 @@ def _drain_stale_frames() -> bool:
             if exc.errno in (errno.EAGAIN, errno.EWOULDBLOCK):
                 break
             raise
-        if not chunk:
+        if chunk is None:   # no data available now (non-blocking)
             break
+        if not chunk:       # b"" → real EOF
+            _ciw_gone()
         _stale_bytes += chunk
     if _stale_bytes.count(RS) >= _stale_frames:
         _stale_frames = 0
@@ -474,10 +490,13 @@ def handle_connection(conn):
             watchdog_gen = _watchdog_gen
         while True:
             try:
-                if not sys.stdin.buffer.read(1):
-                    break
+                data = sys.stdin.buffer.read(1)
             except IOError:
                 break
+            if data is None:    # no data available now (non-blocking)
+                break
+            if not data:        # b"" → real EOF (CIW side gone)
+                _ciw_gone()
 
         log_directive = "RBDLogOn=t " if log_on else "RBDLogOn=nil "
         if "\n" in skill_code:

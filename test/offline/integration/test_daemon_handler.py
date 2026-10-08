@@ -37,7 +37,8 @@ class FakePipeBuffer:
     def read(self, n=1):
         with self.lock:
             if not self.pending:
-                return b""
+                # 真机 cdsServIpc 非阻塞读：无数据 = None（不是 EOF）
+                return None
             out = bytes(self.pending[:n])
             del self.pending[:n]
             return out
@@ -256,7 +257,8 @@ class Py2Pipe:
     def read(self, n=1):
         with self.lock:
             if not self.pending:
-                return ""
+                # Python 2 非阻塞 file.read：无数据 = None（不是 EOF）
+                return None
             out, self.pending = self.pending[:n], self.pending[n:]
             return out
 

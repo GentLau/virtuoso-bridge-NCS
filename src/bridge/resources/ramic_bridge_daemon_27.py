@@ -199,15 +199,27 @@ def _watchdog_cb(gen):
             pass
 
 
+def _ciw_gone():
+    """CIW-side stdin closed (EOF): the daemon can no longer serve; exit."""
+    try:
+        sys.stderr.write("[RB-exit] CIW stdin closed (EOF); daemon exiting\n")
+        sys.stderr.flush()
+    except Exception:
+        pass
+    raise SystemExit(0)
+
+
 def _read_byte():
     while True:
         try:
             ch = sys.stdin.read(1)
-            if not ch:
+            if ch is None:  # non-blocking: no data yet
                 if _timeout_flag:
                     return None
                 time.sleep(0.001)
                 continue
+            if not ch:      # "" → real EOF (CIW side gone)
+                _ciw_gone()
             return ord(ch)
         except IOError as e:
             if getattr(e, "errno", None) in (errno.EAGAIN, errno.EWOULDBLOCK):
@@ -254,8 +266,10 @@ def _drain_stale_frames():
     while True:
         try:
             ch = sys.stdin.read(1)
-            if not ch:
+            if ch is None:  # no data available now (non-blocking)
                 break
+            if not ch:      # "" → real EOF
+                _ciw_gone()
             _stale_bytes += ch
         except IOError as exc:
             if getattr(exc, "errno", None) in (errno.EAGAIN, errno.EWOULDBLOCK):
@@ -468,10 +482,13 @@ def handle_connection(conn):
             watchdog_gen = _watchdog_gen
         while True:
             try:
-                if not sys.stdin.read(1):
-                    break
+                data = sys.stdin.read(1)
             except IOError:
                 break
+            if data is None:    # no data available now (non-blocking)
+                break
+            if not data:        # "" → real EOF (CIW side gone)
+                _ciw_gone()
 
         log_directive = "RBDLogOn=t " if log_on else "RBDLogOn=nil "
         if "\n" in skill_code:

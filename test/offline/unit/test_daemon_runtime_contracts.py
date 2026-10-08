@@ -69,6 +69,24 @@ def _as_stream(name: str, data: bytes):
     return data.decode("utf-8") if name == "py27" else data
 
 
+class _Eof:
+    """Explicit EOF marker for ScriptedStdin (distinct from 'no data')."""
+
+    __slots__ = ()
+
+
+EOF = _Eof()
+
+
+class _NoData:
+    """Explicit 'no data yet' marker (real non-blocking read returns ``None``)."""
+
+    __slots__ = ()
+
+
+NO_DATA = _NoData()
+
+
 class ScriptedStdin:
     """Feeds scripted reads to whichever stream shape the variant uses.
 
@@ -86,6 +104,11 @@ class ScriptedStdin:
     def read(self, size: int = -1):
         while self.script:
             item = self.script[0]
+            if item is EOF:
+                return b""  # explicit EOF: keep returning it
+            if item is NO_DATA:
+                self.script.pop(0)
+                return None  # non-blocking read: no data available
             if isinstance(item, BaseException):
                 self.script.pop(0)
                 raise item
@@ -101,7 +124,9 @@ class ScriptedStdin:
             else:
                 self.script.pop(0)
             return chunk
-        return b""
+        # Script exhausted = temporarily no data (real non-blocking pipe
+        # raises EAGAIN); EOF must be scripted explicitly via EOF.
+        raise IOError(errno.EAGAIN, "no data available")
 
     def fileno(self) -> int:
         return 0
@@ -332,12 +357,27 @@ class TestReadFrame(unittest.TestCase):
                 self.assertEqual(self._read(name, [b"\x02pay", b"load\x1e"]), b"\x02payload")
                 self.assertEqual(self._read(name, [b"\x15boom\x1e"]), b"\x15boom")
 
-    def test_returns_timeout_frame_on_eof(self):
+    def test_exits_on_eof(self):
+        """P-132: stdin EOF = CIW 侧消失 → daemon 自保退出（即使 timeout_flag 置位）。"""
         for name in VARIANTS:
             mod = MODULES[name]
             mod._timeout_flag = True
             with self.subTest(variant=name):
-                self.assertEqual(self._read(name, []), b"\x15SKILL execution timed out\x1e")
+                with self.assertRaises(SystemExit):
+                    self._read(name, [EOF])
+            mod._timeout_flag = False
+
+    def test_no_data_returns_timeout_frame_not_exit(self):
+        """真机 cdsServIpc 语义：非阻塞无数据 = None（不能当 EOF 退出）。"""
+        for name in VARIANTS:
+            mod = MODULES[name]
+            mod._timeout_flag = True
+            with self.subTest(variant=name):
+                self.assertEqual(
+                    self._read(name, [NO_DATA]),
+                    b"\x15SKILL execution timed out\x1e",
+                )
+            mod._timeout_flag = False
 
     def test_returns_timeout_frame_on_slow_consumer(self):
         for name in VARIANTS:

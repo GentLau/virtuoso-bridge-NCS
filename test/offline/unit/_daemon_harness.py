@@ -14,6 +14,7 @@ not import from the TB tree, so the doubles live here as well.
 """
 from __future__ import annotations
 
+import errno
 import importlib.util
 import json
 import sys
@@ -45,15 +46,22 @@ class BytesBuffer:
     is written.
     """
 
-    def __init__(self, data: bytes = b"", gate=None) -> None:
+    def __init__(self, data: bytes = b"", gate=None, eof: bool = False) -> None:
         self.data = bytearray(data)
         self.pos = 0
         self.written = bytearray()
         self.gate = gate
+        self.eof = eof
 
     def read(self, size: int = -1) -> bytes:
+        # 真实非阻塞管道：暂时没数据 → EAGAIN；只有 b"" 才是 EOF。
+        # 两者必须区分，否则 daemon 的 EOF 自保无法被正确建模。
         if self.gate is not None and not self.gate():
-            return b""
+            raise OSError(errno.EAGAIN, "no data yet")
+        if self.pos >= len(self.data):
+            if self.eof:
+                return b""
+            raise OSError(errno.EAGAIN, "no data available")
         if size < 0:
             size = len(self.data) - self.pos
         chunk = bytes(self.data[self.pos:self.pos + size])
@@ -82,8 +90,8 @@ class FakeStream:
     the whole log/protocol matrix.
     """
 
-    def __init__(self, data: bytes = b"", gate=None) -> None:
-        self.buffer = BytesBuffer(data, gate=gate)
+    def __init__(self, data: bytes = b"", gate=None, eof: bool = False) -> None:
+        self.buffer = BytesBuffer(data, gate=gate, eof=eof)
 
     def read(self, size: int = -1) -> str:
         return self.buffer.read(size).decode("utf-8", "replace")
