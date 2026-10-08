@@ -10,7 +10,7 @@
 用法::
 
     PYTHONPATH=src python test/shared/runners/case_profile_audit.py \
-        [--matrix test/reports/round9/op-param-matrix.json] \
+        [--matrix test/reports/round8/op-param-matrix.json] \
         [--out test/reports/round10/case-profile-audit-r10.json]
 
 输出 JSON + 人读 md；**不自动判定通过**，只出清单供人工分诊（与 round9 口径一致）。
@@ -35,7 +35,7 @@ NEGATIVE_HINTS = (
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--matrix", default="test/reports/round9/op-param-matrix.json")
+    parser.add_argument("--matrix", default="test/reports/round8/op-param-matrix.json")
     parser.add_argument("--out", default="test/reports/round10/case-profile-audit-r10.json")
     args = parser.parse_args(argv)
 
