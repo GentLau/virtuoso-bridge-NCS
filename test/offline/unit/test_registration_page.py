@@ -40,6 +40,16 @@ class TestRegistrationPageContract(unittest.TestCase):
         self.assertIn('id="role_gui_display"', self.html)
         self.assertIn('name="role_gui_display"', self.html)
 
+    def test_control_master_options_are_auto_disable_only(self):
+        """A（2026-10-08）：force≡auto 已删除，页面不得再提供该选项。"""
+        self.assertIn('id="ssh_control_master"', self.html)
+        self.assertFalse(
+            'value="force"' in self.html,
+            "页面仍提供已删除的 control_master=force 选项",
+        )
+        self.assertIn('value="auto"', self.html)
+        self.assertIn('value="disable"', self.html)
+
     def test_details_blocks_are_balanced(self):
         self.assertEqual(
             self.html.count("<details"), self.html.count("</details>"),

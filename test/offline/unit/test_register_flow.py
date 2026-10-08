@@ -119,6 +119,20 @@ class TestCredentialValidation(unittest.TestCase):
         )
 
 
+class TestControlMasterPolicy(unittest.TestCase):
+    """A（2026-10-08）：control_master 只保留 auto/disable，force 删除。"""
+
+    def test_force_is_rejected_by_registry_and_apply_models(self):
+        from pydantic import ValidationError
+        from common.registry import Ssh
+
+        with self.assertRaises(ValidationError):
+            Ssh(control_master="force")
+        with self.assertRaises(ValidationError):
+            RegistrationRequest(
+                mode="remote", user="u", ssh_control_master="force")
+
+
 class TestValidateLocal(unittest.TestCase):
     def setUp(self):
         self.wd = work_root()

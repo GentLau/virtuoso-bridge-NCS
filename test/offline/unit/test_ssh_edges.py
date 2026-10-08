@@ -627,7 +627,7 @@ class TestPersistentShellLifecycle(unittest.TestCase):
 
 class TestControlMasterHelpers(unittest.TestCase):
     def test_stop_control_master_swallows_errors(self):
-        runner = _runner(control_master="force")
+        runner = _runner(control_master="auto")
         for error in (OSError("no ssh"), subprocess.TimeoutExpired("ssh", 5)):
             with self.subTest(error=type(error).__name__):
                 with mock.patch.object(subprocess, "run", side_effect=error):
@@ -640,7 +640,7 @@ class TestControlMasterHelpers(unittest.TestCase):
         run.assert_not_called()
 
     def test_mux_probe_detects_timeout_and_ignores_missing_socket(self):
-        runner = _runner(control_master="force")
+        runner = _runner(control_master="auto")
         with mock.patch.object(
             subprocess, "run",
             side_effect=subprocess.TimeoutExpired("ssh", 3),
@@ -654,7 +654,7 @@ class TestControlMasterHelpers(unittest.TestCase):
         self.assertFalse(runner._mux_master_wedged())
 
     def test_recover_from_wedged_mux_disables_cm_and_unlinks_socket(self):
-        runner = _runner(control_master="force")
+        runner = _runner(control_master="auto")
         with mock.patch.object(
             ssh_mod.os, "unlink", side_effect=OSError("already gone")
         ) as unlink:

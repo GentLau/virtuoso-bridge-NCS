@@ -117,6 +117,11 @@ class TestSSHRunnerConstruction(unittest.TestCase):
         with self.assertRaises(ValueError):
             SSHRunner("server-a", max_sessions=0)
 
+    def test_removed_control_master_force_raises(self):
+        """A（2026-10-08）：force≡auto 已从配置口径删除，runner 必须拒绝。"""
+        with self.assertRaises(ValueError):
+            SSHRunner("server-a", control_master="force")
+
     def test_paramiko_backend_constructs(self):
         r = SSHRunner("server-a", user="u", backend="paramiko", connect_timeout=5)
         try:
@@ -140,12 +145,12 @@ class TestSSHOptionConstruction(unittest.TestCase):
         self.assertIn("GSSAPIAuthentication=no", opts)
         self.assertNotIn("ControlMaster=auto", opts)
 
-    def test_common_options_force_cm_and_jump_and_files(self):
+    def test_common_options_cm_and_jump_and_files(self):
         cfg = Path(tempfile.mkdtemp(prefix="vb-")) / "config"
         key = Path(tempfile.mkdtemp(prefix="vb-")) / "id_ed25519"
         r = SSHRunner(
             "server", user="u", backend="openssh", jump_host="jump", jump_user="ju",
-            ssh_config_path=cfg, ssh_key_path=key, control_master="force",
+            ssh_config_path=cfg, ssh_key_path=key, control_master="auto",
         )
         opts = r._common_ssh_options()
         self.assertIn("ControlMaster=auto", opts)
@@ -887,7 +892,7 @@ class TestCloseTearsDownControlMaster(unittest.TestCase):
         from common.paths import init_work_dir
 
     def test_openssh_close_stops_master(self):
-        r = SSHRunner("server", user="u", backend="openssh", control_master="force")
+        r = SSHRunner("server", user="u", backend="openssh", control_master="auto")
         with mock.patch.object(ssh_mod.subprocess, "run") as run:
             r.close()
         self.assertTrue(run.called)

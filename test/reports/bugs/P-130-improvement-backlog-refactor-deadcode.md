@@ -47,7 +47,7 @@
 7. **`server/dispatch.py` traceback 日志 → 不加**：spec §3.3 的 `(TypeError, ValueError)→400` 行为正确，未观察到排障盲区；属可选增强、非缺陷，保持现状。
 8. **`flow._token_ok` / `flow.py:1475` 冗余 except / `paths.py:102` 注释 → 非问题或已不存在**：`_token_ok` 是仅用一次的命名 helper（风格非 bug）；1475 冗余 except 与 paths 注释在当前代码已不存在。划掉。
 
-**待用户/spec 决策（唯一残留）**：`ssh.control_master="force"` 与 `"auto"` 当前完全等价（同一条件表达式），spec 只列取值未定义 force 语义 → 需裁决：① 删掉 `force`（spec + `registry.py`/`register/models.py` 枚举 + `ssh.py` 分支）；② 或 spec 定义 force 的强制语义。未裁决前不动。
+**决策与落地（2026-10-08，用户裁定 A）**：删掉 `ssh.control_master="force"`，只保留 `auto/disable`。代码与前端已完成：`registry.py`/`register/models.py` 枚举、`ssh.py` 分支（未知值显式报错）、`registration_page.html` 下拉项；TB：runner/两模型/页面三条新断言，旧 `force` 用法改 `auto`。**spec 侧需求（待 spec owner 落地）**：`add-中层配置文档.md:35` 的 `auto/force/disable` 需改为 `auto/disable`。
 
 非我层或有意为之（不列为本层残留）：截图流水线×4（上层包，P-125 在跟）、py2/py3 daemon 双份（有意为之）。
 ---

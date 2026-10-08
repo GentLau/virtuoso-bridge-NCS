@@ -153,7 +153,7 @@ class RegistrationRequest(BaseModel):
 
     # runtime / transport / log policies (optional; defaults live in UserEntry)
     ssh_backend: Literal["openssh", "paramiko"] | None = None
-    ssh_control_master: Literal["auto", "force", "disable"] | None = None
+    ssh_control_master: Literal["auto", "disable"] | None = None
     ssh_tool_override: dict[str, str] | None = None
     thread_pool_size: StrictInt | None = Field(default=None, ge=1)
     channel_budget: StrictInt | None = Field(default=None, ge=1)

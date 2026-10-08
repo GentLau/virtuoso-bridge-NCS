@@ -326,10 +326,12 @@ class SSHRunner:
         # All ssh/scp calls to the same host reuse one TCP connection.
         if control_master == "disable":
             self._use_control_master = False
-        elif control_master == "force":
+        elif control_master == "auto":
             self._use_control_master = self._backend == "openssh"
-        else:  # auto
-            self._use_control_master = self._backend == "openssh"
+        else:
+            raise ValueError(
+                "control_master must be 'auto' or 'disable'"
+            )
 
         self._control_path = _short_control_path(
             host,
