@@ -49,7 +49,12 @@
 
 **决策与落地（2026-10-08，用户裁定 A）**：删掉 `ssh.control_master="force"`，只保留 `auto/disable`。代码与前端已完成：`registry.py`/`register/models.py` 枚举、`ssh.py` 分支（未知值显式报错）、`registration_page.html` 下拉项；TB：runner/两模型/页面三条新断言，旧 `force` 用法改 `auto`。**spec 侧需求（待 spec owner 落地）**：`add-中层配置文档.md:35` 的 `auto/force/disable` 需改为 `auto/disable`。
 
-非我层或有意为之（不列为本层残留）：截图流水线×4（上层包，P-125 在跟）、py2/py3 daemon 双份（有意为之）。
+非我层或有意为之（不列为本层残留）：py2/py3 daemon 双份（有意为之）。
+
+## 上层结论（2026-10-08）：截图流水线×4 → 收敛 + gui 豁免
+
+已落地（commit `360dba1`）：新增 `src/pyapi/packages/_screenshot.py`，`ensure_window_skill` / `close_window_skill` / `screenshot_skill` 三份共享 SKILL 模板；schematic / symbol / layout 的既有差异（viewType 取值、not-found 文案、window_id 解析、zoom 坐标语法）参数化保留，三包改薄包装（函数名/签名不变），生成文本与收敛前逐字比对 **15/15 一致**。流程骨架保留：命名规则、返回形状（schematic 顶层 `local_path` vs value dict）、capture 校验步（symbol 查 `saved`、layout 加文件大小 verify）均为已验收的对外差异。`gui.py::screenshot` 是 X11 `XGetImage` 直抓（不经过 SKILL），机制不同——明确豁免，不在模板收敛范围。验证：三包契约测试全绿；8133（vbuser1b）真机三包 screenshot 全绿（4542B / 5367B / 3758B）。
+
 ---
 
 > 本卡片是当前跟踪视图；已关闭记录见 [已关闭-近期.md](已关闭-近期.md)。

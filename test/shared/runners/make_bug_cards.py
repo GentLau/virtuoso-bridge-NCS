@@ -28,6 +28,23 @@ BUGS_DIR = ROOT / "test" / "reports" / "bugs"
 #: 未关闭条目。状态只允许：待设计修 / 待测试侧 / 待归属 / 待决策 / 观察
 OPEN = [
     {
+        "id": "P-132",
+        "layer": "底层（`bridge/resources/ramic_bridge_daemon_3.py`）· daemon 自保 · CIW 侧消失时不退出",
+        "slug": "daemon-survives-stdin-eof",
+        "title": "daemon 把 stdin EOF 当「暂无数据」死循环：CIW 侧消失时不自行退出；正常路径靠 Cadence cdsServIpc 兜底，兜底失效/被绕过时永久占端口",
+        "level": "P3（稳健性缺口；无已知现网影响，触发条件＝daemon 不经 cdsServIpc 清理路径或该机制失效）",
+        "owner": "设计侧（daemon 加「CIW 已死」自保：stdin EOF→优雅退出，或低频检查 `virtuoso_pid` 存活；二者至少其一）",
+        "status": "待设计修",
+        "where": "`src/bridge/resources/ramic_bridge_daemon_3.py::_read_frame()`（`if not ch: time.sleep(0.001); continue`——EOF 被当无数据）；`virtuoso_pid` 只用于 `_watchdog_cb` 的请求超时 SIGINT（:180-192），无父死自保。",
+        "symptom": "daemon 的 stdin 是 CIW 侧管道：CIW 消失 → stdin EOF → daemon 不退出、端口不释放。正常路径下 Cadence IPC 机制（cdsServIpc）会连带清理（实测 SIGTERM ~1.2s / SIGKILL ~0.2s，见 internal/CIW-daemon停止语义-调查-2026-10-08.md），故现网未暴露；IPC 兜底失效/被绕过时，daemon 永久占端口，同端口新 CIW 起 daemon 会 bind failure 退出。",
+        "repro": "离线红钉 `test/offline/unit/test_p132_daemon_stdin_eof.py`：`stdin=DEVNULL` 直接启动 daemon（绕过 cdsServIpc），连接并发一次请求后断言进程 ≤10s 退出——现状 FAIL（常驻），修复后转绿。",
+        "evidence": "静态：`_read_frame` EOF 分支死循环；`virtuoso_pid` 无第二种用途。实测：`test/artifacts/evidence/ciw-daemon-lifecycle/`（TERM 1234ms / KILL9 207ms / RBStop 干净 / wrapper ≤5s 消失）——证明正常路径由 cdsServIpc 兜底，daemon 自身无自保。",
+        "accept": "① 离线红钉转绿（EOF 后 ≤10s 进程退出、端口释放）；② 正常路径行为不变（`resident_env_check` 全绿、RBStop/RBStart 语义不变）；③ 修复方式回写调查文档口径节。",
+        "next": "设计侧实现 EOF/父进程自保；测试侧保持红钉直至转绿并删钉（strict xfail 的 XPASS 会转红提醒）。",
+        "reported": "2026-10-08（CIW-daemon 停止语义调查）",
+        "updated": "2026-10-08（测试侧建卡）",
+    },
+    {
         "id": "P-131",
         "layer": "中层（`common/paramiko_backend.py`）+ 注册 probe · 无 OpenSSH CLI 机器的 SSH config 解析",
         "slug": "paramiko-backend-requires-openssh-cli-g",
@@ -93,8 +110,17 @@ OPEN = [
                  "`registration_page.html` 下拉项；TB：runner/两模型/页面三条新断言，旧 `force` 用法改 `auto`。"
                  "**spec 侧需求（待 spec owner 落地）**：`add-中层配置文档.md:35` 的 `auto/force/disable` "
                  "需改为 `auto/disable`。\n\n"
-                 "非我层或有意为之（不列为本层残留）：截图流水线×4（上层包，P-125 在跟）、"
-                 "py2/py3 daemon 双份（有意为之）。",
+                 "非我层或有意为之（不列为本层残留）：py2/py3 daemon 双份（有意为之）。\n\n"
+                 "## 上层结论（2026-10-08）：截图流水线×4 → 收敛 + gui 豁免\n\n"
+                 "已落地（commit `360dba1`）：新增 `src/pyapi/packages/_screenshot.py`，"
+                 "`ensure_window_skill` / `close_window_skill` / `screenshot_skill` 三份共享 SKILL 模板；"
+                 "schematic / symbol / layout 的既有差异（viewType 取值、not-found 文案、window_id 解析、"
+                 "zoom 坐标语法）参数化保留，三包改薄包装（函数名/签名不变），生成文本与收敛前逐字比对 "
+                 "**15/15 一致**。流程骨架保留：命名规则、返回形状（schematic 顶层 `local_path` vs "
+                 "value dict）、capture 校验步（symbol 查 `saved`、layout 加文件大小 verify）均为已验收的"
+                 "对外差异。`gui.py::screenshot` 是 X11 `XGetImage` 直抓（不经过 SKILL），机制不同——"
+                 "明确豁免，不在模板收敛范围。验证：三包契约测试全绿；8133（vbuser1b）真机三包 screenshot "
+                 "全绿（4542B / 5367B / 3758B）。",
     },
 
     {
