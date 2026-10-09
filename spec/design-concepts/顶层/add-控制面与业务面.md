@@ -1,9 +1,9 @@
 # 顶层补充：控制面与业务面
 
-> 版本：Draft v44
+> 版本：Draft v45
 > 日期：2026-10-09
 > 状态：Normative（顶层 HTTP 端点清单、端口划分与权限口径的唯一 owner）
-> Supersedes：Draft v43（帮助端点族接入）
+> Supersedes：Draft v44（token 载体按端口收窄；`/help` 行索引帮助 owner）
 > 定位：本文是[顶层](1-顶层.md)的端点补充——[顶层](1-顶层.md)定义顶层职责、调度与响应壳；本文定义顶层开哪些端口、哪些方法、支持哪些请求、每个端点需要什么权限。注册语义见[多用户与注册 §3/§5](../其他/1-多用户与注册.md)。
 
 ## 1. 双面双端口
@@ -24,7 +24,7 @@
 | 个人 token | 目标 user 自己的 token（注册表条目） | 请求携带；结构校验在顶层；业务端口的合法性与路由由中层判定，控制端口 `/api/bug` 例外见 §3 |
 | 管理权限 | 管理员身份 | 本版 = 内置单管理员 token：服务端只存其 **SHA-256 哈希**（不存原文），比较用 `hmac.compare_digest`；私钥签名方案标为**后续版本** |
 
-- 会话 token（六步注册）随请求传入：POST/DELETE 放请求体、GET 放 `token` 查询参数；个人 token 与管理员 token 走 `Authorization: Bearer <token>`（服务端按管理员哈希或 registry token 区分身份），`/api/bug` 的个人 token 仍放请求体；加强凭据 `enhanced_token` 随请求体传入：`apply` = 管理员 token 或任一已登记持有者 token，`update` = 仅管理员 token（见 §3）；
+- 会话 token（六步注册）随请求传入：POST/DELETE 放请求体、GET 放 `token` 查询参数；控制端口管理端点（`/api/user/*`、`/api/config`、`/api/process/*`）的个人 token 与管理员 token 走 `Authorization: Bearer <token>`（服务端按管理员哈希或 registry token 区分身份）；业务端口 `/api/operation` 的 `token` 为请求体字段；`/api/bug` 的个人 token 仍放请求体；加强凭据 `enhanced_token` 随请求体传入：`apply` = 管理员 token 或任一已登记持有者 token，`update` = 仅管理员 token（见 §3）；
 - 管理权限：`Authorization` 携带内置管理员 token，服务端只比对 SHA-256 哈希；校验失败 401；审计日志只记身份，凭据不进日志；
 - 权限不足 → 4xx，不改变状态。
 
@@ -36,7 +36,7 @@
 |---|---|---|---|
 | GET | `/` | 注册页（HTML），人类操作入口 | 无权限 |
 | GET | `/health` | 存活探针（运维用） | 无权限 |
-| GET | `/help` | 端点清单（自路由表派生）与帮助族入口 | 无权限 |
+| GET | `/help` | 端点清单（自路由表派生，壳与形态见[帮助体系](add-帮助体系.md)） | 无权限 |
 | POST | `/api/bug` | 提交 bug 报告（格式不做要求） | 个人 token |
 
 **六步注册**（语义唯一 owner 见[多用户与注册 §3](../其他/1-多用户与注册.md)）
@@ -103,7 +103,7 @@
 |---|---|---|---|
 | POST | `/api/operation` | 业务调度：`{operation, token, 业务字段}` → 查注册表 → 构造 Request → 调用对应方法 → 响应壳 | 个人 token |
 | GET | `/health` | 存活探针（运维用） | 无权限 |
-| GET | `/help` | quickstart（`text/plain`） | 无权限 |
+| GET | `/help` | quickstart（壳与形态见[帮助体系](add-帮助体系.md)） | 无权限 |
 | GET | `/help/operations` | 操作清单 / 详情（`?name` / `?group` / `?common`，见[帮助体系](add-帮助体系.md)） | 无权限 |
 
 - 业务端口只做 operation 调度，不开注册/管理/配置端点；`query` 是上层↔中层接口，不是 HTTP 端点；

@@ -1,9 +1,9 @@
 # 顶层补充：帮助体系（`/help` 端点族）
 
-> 版本：Draft v3
+> 版本：Draft v4
 > 日期：2026-10-09
 > 状态：Normative（帮助端点族唯一口径）
-> Supersedes：Draft v2（`/help` 根也带壳，quickstart 文本放 `data`）
+> Supersedes：Draft v3（双面 `/help` 形态收口；OPERATIONS 来源与兼容句修正）
 > 定位：本文是[顶层](1-顶层.md)的补充，定义 `/help` 端点族的形态、契约与数据来源；端点清单主表见[控制面与业务面](add-控制面与业务面.md)，本文只讲帮助子族细则。帮助不解释任何业务操作语义。
 
 ## 1. 原则
@@ -17,7 +17,8 @@
 
 ### 2.1 `GET /help` —— quickstart（人）
 
-- 返回统一壳 `{ok, data, error}`，`data` 为 quickstart 固定文本（手写维护）；无鉴权。
+- 业务面 `/help`：统一壳 `{ok, data, error}`，`data` 为 quickstart 固定文本（手写维护）；无鉴权；
+- 控制面 `/help`：统一壳，`data` 为自路由表派生的端点清单。
 
 ### 2.2 `GET /help/operations` —— 清单 / 详情（人+机）
 
@@ -35,7 +36,7 @@
 
 | 输出 | 来源 |
 |---|---|
-| `name` / `method` / Request | 各包 `OPERATIONS` 四元组 |
+| `name` / `method` / Request | 顶层显式注册表三元组（见[顶层 §2.1](1-顶层.md)） |
 | 操作清单 | 注册表（包加载失败则该包操作不出现） |
 | `request_schema` | `Request.model_json_schema()` |
 | `doc.file` / `section_title` | 操作名前缀 → 包文件；标题行含完整操作名的小节 |
@@ -47,7 +48,7 @@
 - 帮助端点统一 `{ok, data, error}` 壳；`/help` 的 `data` 是 quickstart 文本；
 - 状态码：`200` 正常、`404` 未知操作、`405` 方法不支持（含 `Allow`）；
 - 可选 `ETag`：按资源计算（操作详情 = schema + 该节 content 的哈希；`common` 单独一个）；
-- 兼容：既有 `/help` 的 `operations` 数组保留，新增字段为增量。
+- 兼容：业务面 `/help` 现状返回的 `operations` 清单字段保留，新增字段为增量。
 
 ## 5. 手册数据源的结构约定（文档格式）
 
