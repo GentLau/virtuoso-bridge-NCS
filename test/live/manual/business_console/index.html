@@ -674,14 +674,19 @@
       setConnection('wait', '正在检查业务面…');
       try {
         const health = await fetchJSON('/health', {}, 10000);
-        const help = await fetchJSON('/help', {}, 10000);
+        await fetchJSON('/help', {}, 10000);
+        const catalog = await fetchJSON('/help/operations', {}, 10000);
         let upstream = '';
         try {
           const config = await fetchJSON('/__console__/config', {}, 5000);
           upstream = (config.payload && config.payload.data && config.payload.data.business_base) || '';
         } catch (error) {}
         const hdata = (health.payload && health.payload.data) || {};
-        const ops = help.payload && help.payload.data && help.payload.data.operations;
+        const groups = (catalog.payload && catalog.payload.data && catalog.payload.data.groups) || {};
+        const ops = [];
+        Object.keys(groups).forEach(function(key) {
+          (groups[key] || []).forEach(function(item) { ops.push(item.name); });
+        });
         if (Array.isArray(ops) && ops.length) {
           state.operations = ops.slice().sort();
           state.helpLoaded = true;

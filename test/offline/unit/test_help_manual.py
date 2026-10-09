@@ -155,14 +155,11 @@ class TestBusinessHelpEndpoints(unittest.TestCase):
         conn.close()
         return resp.status, json.loads(raw)
 
-    def test_help_root_quickstart_and_compat_operations(self):
+    def test_help_root_returns_quickstart_text(self):
         status, body = self._request("GET", "/help")
         self.assertEqual(status, 200, body)
         self.assertTrue(body["ok"])
-        data = body["data"]
-        self.assertEqual(data["quickstart"], _QUICKSTART_MD.strip())
-        self.assertIn(self.OP, data["operations"])       # compatibility list
-        self.assertIn("POST /api/operation", data["endpoints"])
+        self.assertEqual(body["data"], _QUICKSTART_MD.strip())
 
     def test_operations_list_and_group_filter(self):
         status, body = self._request("GET", "/help/operations")
@@ -233,8 +230,7 @@ class TestBusinessHelpEndpoints(unittest.TestCase):
             resp = conn.getresponse()
             help_body = json.loads(resp.read())
             conn.close()
-            self.assertEqual(help_body["data"]["quickstart"],
-                             api_server._FALLBACK_QUICKSTART)
+            self.assertEqual(help_body["data"], api_server._FALLBACK_QUICKSTART)
         finally:
             server.shutdown()
             server.server_close()

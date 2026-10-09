@@ -210,10 +210,15 @@ def main() -> int:
         if response.status != 200 or health["data"]["face"] != "business":
             raise ProbeFailure(f"business /health failed: {health}")
         with urllib.request.urlopen(base + "/help", timeout=30) as response:
+            help_body = json.loads(response.read().decode("utf-8"))
+        if (response.status != 200 or help_body.get("ok") is not True
+                or not isinstance(help_body.get("data"), str)
+                or not help_body["data"].strip()):
+            raise ProbeFailure(f"business /help failed: {help_body}")
+        with urllib.request.urlopen(base + "/help/operations", timeout=30) as response:
             listing = json.loads(response.read().decode("utf-8"))
-        if "POST /api/operation" not in listing["data"]["endpoints"]:
-            raise ProbeFailure(f"business /help lacks the operation endpoint: {listing}")
-        ops = set(listing["data"]["operations"])
+        groups = (listing.get("data") or {}).get("groups") or {}
+        ops = {entry["name"] for entries in groups.values() for entry in entries}
         required = {
             "basic.skill.execute", "basic.command.run", "basic.file.upload",
             "basic.file.download", "basic.gui.run", "basic.spectre.run",

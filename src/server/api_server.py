@@ -174,24 +174,10 @@ class ApiHandler(BaseHTTPRequestHandler):
             })
             return
         if path == "/help":
-            # quickstart + 兼容保留的 operations 清单（帮助体系 §2.1/§4）
-            quickstart = server.manual.quickstart()
+            # quickstart 文本（机器可读清单走 /help/operations）
             self._send(200, {
                 "ok": True,
-                "data": {
-                    "quickstart": quickstart or _FALLBACK_QUICKSTART,
-                    "face": "business",
-                    "endpoints": ["POST /api/operation", "GET /health", "GET /help"],
-                    "operations": dispatch_module.operations(),
-                    "package_load_errors": dispatch_module.PACKAGE_LOAD_ERRORS,
-                    "max_inflight": server.max_inflight,
-                    "usage": {
-                        "method": "POST",
-                        "path": "/api/operation",
-                        "body": {"operation": "<业务操作名>", "token": "<个人 token>",
-                                 "…": "业务字段"},
-                    },
-                },
+                "data": server.manual.quickstart() or _FALLBACK_QUICKSTART,
                 "error": None,
             })
             return
