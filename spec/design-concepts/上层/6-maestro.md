@@ -1,9 +1,9 @@
 # 上层业务包：maestro
 
-> 版本：Draft v6
+> 版本：v6
 > 日期：2026-09-20（2026-09-29 增补蒙卡）
-> 状态：Draft（操作与原子已成形；read_config 改为 tests/corners 嵌套结构；Monte Carlo 口径见 §7.3，待评审项见 §10）
-> Supersedes：Draft v5（read_config 返回按 test/corner 收拢；MC 配置/运行/结果已增补）
+> 状态：定稿（read_config 为 tests/corners 嵌套结构；Monte Carlo 口径见 §7.3）
+> Supersedes：v5（read_config 返回按 test/corner 收拢；MC 配置/运行/结果已增补）
 > 定位：业务包/业务操作一般契约见[1-上层.md](1-上层.md)；五业务接口见[四层整体架构与接口 §4](../总览/1-四层整体架构与接口.md)。
 
 ## 1. 总述
@@ -84,7 +84,7 @@ maestro 包覆盖 ADE Assembler / Explorer 的**配置、结果、导出、历�
 | 数据 | 返回位置 | 底层 |
 |---|---|---|
 | 全局变量 / 参数 | `variables` / `parameters` | `maeGetVar` / `maeGetParameter` |
-| test 列表与 test 级配置 | `tests.<name>.{variables,analyses,outputs,env_options,sim_options}` | `axlGetTests` / `maeGetTestOutputs` / `maeGetEnvOption` / `maeGetSimOption` |
+| test 列表与 test 级配置 | `tests.<name>.{variables,analyses,outputs,env_options,sim_options}` | `axlGetTests` / `maeGetEnabledAnalysis` + `maeGetAnalysis` / `maeGetTestOutputs` / `maeGetEnvOption` / `maeGetSimOption` |
 | corner 列表与 corner 级配置 | `corners.<name>.{variables,parameters,enabled,enabled_tests,disabled_tests,models}` | `axlGetCorners` / `axlGetVars` / `axlGetParameters` / `axlGetEnabled` / `axlGetCornerDisabledTests` / `axlGetModels`+`axlGetModel*` |
 | test 的 job policy | `tests.<name>.job_policy.{simulation,netlisting}` | `maeGetJobPolicy(?testName … ?jobType …)` DPL |
 | run options | `run_options.<mode>.<option>` | `axlGetRunOption` + `axlGetRunOptionValue`（17 项清单由包内固定，`axlGetRunOptions` 用于核对） |
@@ -385,19 +385,3 @@ MC 不是新操作，复用 `set_run_mode` / `set_run_option` / `run` / `read_hi
 | MC run option 读写 | `axlGetRunOption` / `axlGetRunOptionValue` / `axlPutRunOption` / `axlSetRunOptionValue` | write、read_config |
 | MC Yield CSV 中间导出 | `maeExportOutputView ?view "Yield"` | read_results |
 | 仿真完成回调 | `maeRunSimulation(?callback)` + marker 文件 + command role 轮询（跨主机回退 `axlGetRunStatus`） | run(blocking=true) |
-
-## 10. 待定与待验证
-
-待定：
-
-- （无）本版争议已收敛；下列待真机验证项闭环后 spec 定稿。
-待真机验证（写 spec 定稿前必须闭环）：
-
-1. `axlRemoveElement` 删整条 history 后的磁盘落盘效应（`maestro.sdb` 与 `results/maestro/*`、新代 `history/*.zip` 是否同步）；
-2. `maeDeleteExplorerHistory` 的持久化语义；
-3. `axlSetHistoryName` 改名后各存储位置、引用关系、覆盖目标回退的一致性；
-4. 各种锁状态下的删除/改名报错形态；
-5. 后台会话中执行删除/改名是否可用；
-6. `maeDeleteSimulationData` 的三档保留选项与磁盘实际保留范围是否一致；
-7. 快照的过滤资产（`snapshot_filter.yaml`）随包分发方式；
-8. corner CSV 上传与各导出产物的 role / 路径归属。
