@@ -138,10 +138,11 @@ def main(argv: list[str] | None = None) -> int:
         assert last and last[0] == 200 and last[1].get("status") == "ok", \
             f"/health 异常（3 次重试后）: {last}"
         status, body = http.call("GET", "/help")
-        endpoints = body.get("endpoints") or []
-        # `/help` 列出的是「方法 + 路径」（例如 `POST /api/bug`）
-        assert any(str(item).endswith("/api/bug") for item in endpoints), \
-            f"/help 未列出 bug 通道: {endpoints[:6]}"
+        assert status == 200 and body.get("ok") is True, \
+            f"/help 异常: {status} {body}"
+        guide = body.get("data")
+        assert isinstance(guide, str) and guide.strip(), \
+            f"/help 应返回注册流程指导文本: {body}"
         assert admin_token, f"缺少 admin token（{args.admin_token_file}）"
         assert user_token, f"注册表里 {args.user} 没有 token"
 
@@ -189,18 +190,14 @@ def main(argv: list[str] | None = None) -> int:
             f"GET / Content-Type 应为 text/html: {http.last_headers.get('Content-Type')!r}"
 
         status, help_body = http.call("GET", "/help")
-        endpoints = [str(item) for item in (help_body.get("endpoints") or [])]
-        expected = (
-            "GET /", "GET /health", "GET /help", "POST /api/bug",
-            "GET /api/process/status", "POST /api/process/reload",
-            "POST /api/process/restart", "POST /api/register",
-            "GET /api/register/<user>", "GET /api/users", "GET /api/user/<user>",
-            "POST /api/user/<user>/update", "DELETE /api/user/<user>",
-            "GET /api/config", "PUT /api/config",
-        )
-        missing = [item for item in expected if item not in endpoints]
-        assert not missing, f"/help 自描述缺失: {missing}"
-        evidence["cases"]["page_and_help"] = {"html_bytes": len(html), "endpoints": len(endpoints)}
+        assert status == 200 and help_body.get("ok") is True, \
+            f"/help 异常: {status} {help_body}"
+        guide = help_body.get("data")
+        assert isinstance(guide, str) and "注册" in guide, \
+            f"/help 应返回注册流程指导文本: {help_body}"
+        evidence["cases"]["page_and_help"] = {
+            "html_bytes": len(html), "guide_chars": len(guide),
+        }
 
     def case_register_read_and_methods() -> None:
         """`GET /api/register/<user>` 的只读语义 + 方法不允许（405 + Allow）。"""

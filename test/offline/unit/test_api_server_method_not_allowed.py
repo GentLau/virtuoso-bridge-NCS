@@ -84,6 +84,9 @@ class TestBusinessFaceMethodNotAllowed(unittest.TestCase):
     def test_post_on_help_is_405(self):
         self._assert_405("POST", "/help", "GET")
 
+    def test_post_on_help_operations_is_405(self):
+        self._assert_405("POST", "/help/operations", "GET")
+
     def test_unknown_method_on_defined_path_is_405(self):
         self._assert_405("FOO", "/api/operation", "POST")
 

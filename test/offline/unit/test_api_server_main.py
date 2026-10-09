@@ -351,6 +351,10 @@ class TestHttpSurface(unittest.TestCase):
     def test_help_and_unknown_paths(self):
         resp, data = self._request("GET", "/help")
         self.assertEqual(resp.status, 200, data)
+        body = json.loads(data)
+        self.assertTrue(body["ok"])
+        self.assertIn("quickstart", body["data"])
+        self.assertIn("operations", body["data"])
         self.assertIn("POST /api/operation", data.decode("utf-8"))
 
         resp, data = self._request("GET", "/no-such-path")

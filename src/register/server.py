@@ -31,6 +31,7 @@ from urllib.parse import parse_qs, unquote, urlparse
 
 from pydantic import ValidationError
 
+from server.manual import Manual
 from register import RegistrationFlow, RegistrationRequest
 from register.flow import (
     RegistrationProbeError,
@@ -54,6 +55,12 @@ from common.paths import (  # noqa: E402 - 进程级路径基座（common 层）
 )
 
 _PAGE = files("register").joinpath("registration_page.html").read_text(encoding="utf-8")
+
+#: Control /help fallback when the manual is not shipped with the service.
+_FALLBACK_REGISTRATION = (
+    "注册流程：打开本页 → apply → validate → probe → deploy → "
+    "在 CIW 执行打印出的 load(...) → verify → commit。"
+)
 
 #: POST /api/bug 报告条目中随附日志的有界上限
 _BUG_LOG_TAIL_BYTES = 200_000
@@ -300,16 +307,8 @@ class RegistrationHandler(BaseHTTPRequestHandler):
             self._send_json(200, {"status": "ok"})
             return
         if path == "/help":
-            self._send_json(200, {"endpoints": [
-                "GET /", "GET /health", "GET /help",
-                "POST /api/bug",
-                "GET /api/process/status",
-                "POST /api/process/reload", "POST /api/process/restart",
-                "POST /api/register", "GET /api/register/<user>",
-                "GET /api/users", "GET /api/user/<user>",
-                "POST /api/user/<user>/update", "DELETE /api/user/<user>",
-                "GET /api/config", "PUT /api/config",
-            ]})
+            text = self.server.manual.registration() or _FALLBACK_REGISTRATION
+            self._send_json(200, {"ok": True, "data": text, "error": None})
             return
         if path == "/api/config":
             if not self._require_admin():
@@ -1045,9 +1044,11 @@ class RegistrationServer(ThreadingHTTPServer):
         server_address,
         registry: Registry,
         process_manager=None,
+        manual_root=None,
     ) -> None:
         super().__init__(server_address, RegistrationHandler)
         self.registry = registry
+        self.manual = Manual(manual_root)
         #: 业务进程管理（None = 未托管；v27 §1.1）
         self.process_manager = process_manager
         self.reservations = ReservationTable()
@@ -1108,6 +1109,9 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8124)
     parser.add_argument("--work-dir", default=None, help="local working directory holding registry.json")
+    parser.add_argument("--manual-root", default=None,
+                        help="read-only manual root for /help "
+                             "(default: skills/virtuoso-bridge/manual)")
     args = parser.parse_args(argv)
 
     init_work_dir(args.work_dir)
@@ -1117,7 +1121,9 @@ def main(argv: list[str] | None = None) -> None:
 
     configure_command_log(command_log_file())
     registry = load_registry(registry_path())
-    server = RegistrationServer((args.host, args.port), registry)
+    server = RegistrationServer(
+        (args.host, args.port), registry, manual_root=args.manual_root
+    )
     print(f"registration page: http://{args.host}:{args.port}  (registry: {registry.path})")
     try:
         server.serve_forever()

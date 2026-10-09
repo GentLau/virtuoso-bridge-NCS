@@ -79,6 +79,7 @@ class BusinessProcess:
         port: int,
         work_dir: str | Path,
         python: str | None = None,
+        manual_root: str | Path | None = None,
     ) -> None:
         self.host = host
         self.port = int(port)
@@ -90,6 +91,11 @@ class BusinessProcess:
             "--work-dir", self.work_dir,
             "--supervised",
         ]
+        if manual_root:
+            self.args.extend([
+                "--manual-root",
+                str(Path(manual_root).expanduser().resolve()),
+            ])
         self.state = "crashed"  # starting / ready / crashed / stopped
         self.pid: int | None = None
         self.bound_port: int | None = None
@@ -409,7 +415,8 @@ class SameProcessManager:
 
 
 def _build_business(
-    host: str, port: int, work_dir: str | None, *, single_process: bool
+    host: str, port: int, work_dir: str | None, *, single_process: bool,
+    manual_root=None,
 ):
     from transport.middle import BusinessServer
     from server.api_server import (
@@ -421,7 +428,10 @@ def _build_business(
     config_base.reload_config(config_path())
     middle = BusinessServer()
     pool_size = pool_size_from_snapshot(config_base.snapshot())
-    server = build_server(host, port, middle, max_inflight=pool_size)
+    server = build_server(
+        host, port, middle,
+        max_inflight=pool_size, manual_root=manual_root,
+    )
     return middle, server
 
 
@@ -437,6 +447,9 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--business-host", default="127.0.0.1")
     parser.add_argument("--business-port", type=int, default=8127)
     parser.add_argument("--work-dir", default=None)
+    parser.add_argument("--manual-root", default=None,
+                        help="read-only manual root for /help "
+                             "(default: skills/virtuoso-bridge/manual)")
     parser.add_argument(
         "--single-process", action="store_true",
         help="run both faces in this process (restart returns 501)",
@@ -457,7 +470,7 @@ def main(argv: list[str] | None = None) -> None:
     if args.single_process:
         middle, business_server = _build_business(
             args.business_host, args.business_port, args.work_dir,
-            single_process=True,
+            single_process=True, manual_root=args.manual_root,
         )
         thread = threading.Thread(
             target=business_server.serve_forever, daemon=True
@@ -470,6 +483,7 @@ def main(argv: list[str] | None = None) -> None:
             host=args.business_host,
             port=args.business_port,
             work_dir=str(work_root()),
+            manual_root=args.manual_root,
         )
         try:
             manager.start()
@@ -478,7 +492,8 @@ def main(argv: list[str] | None = None) -> None:
                   file=sys.stderr)
 
     control = RegistrationServer(
-        (args.control_host, args.control_port), registry, manager
+        (args.control_host, args.control_port), registry, manager,
+        manual_root=args.manual_root,
     )
     print(
         f"virtuoso-bridge supervisor: control=http://{args.control_host}:"

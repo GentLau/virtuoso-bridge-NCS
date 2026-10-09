@@ -173,7 +173,10 @@ class TestRouteEdges(_EdgeBase):
         self.assertEqual(json.loads(raw), {"status": "ok"})
         status, raw, _resp = srv.request("GET", "/help")
         self.assertEqual(status, 200)
-        self.assertIn("POST /api/register", raw)
+        body = json.loads(raw)
+        self.assertTrue(body["ok"])
+        self.assertIsInstance(body["data"], str)
+        self.assertTrue(body["data"].strip())
 
     def test_admin_routes_refuse_anonymous_readers(self):
         srv = self.start()

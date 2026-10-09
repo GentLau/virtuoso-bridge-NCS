@@ -688,14 +688,16 @@ class TestBuildBusiness(unittest.TestCase):
         init.assert_called_once_with("workdir")
         reload_cfg.assert_called_once_with("cfg.json")
         pool.assert_called_once()
-        build.assert_called_once_with("127.0.0.1", 8127, middle, max_inflight=7)
+        build.assert_called_once_with(
+            "127.0.0.1", 8127, middle, max_inflight=7, manual_root=None)
 
 
 class _FakeControlServer:
-    def __init__(self, address, registry, manager):
+    def __init__(self, address, registry, manager, manual_root=None):
         self.address = address
         self.registry = registry
         self.manager = manager
+        self.manual_root = manual_root
         self.closed = False
         self.serve_calls = 0
 
@@ -729,8 +731,9 @@ class TestMain(unittest.TestCase):
         manager.shutdown = mock.Mock()
         captured = {}
 
-        def fake_control(address, registry, mgr):
-            captured["control"] = _FakeControlServer(address, registry, mgr)
+        def fake_control(address, registry, mgr, manual_root=None):
+            captured["control"] = _FakeControlServer(
+                address, registry, mgr, manual_root)
             return captured["control"]
 
         with mock.patch.object(sup, "init_work_dir"), \

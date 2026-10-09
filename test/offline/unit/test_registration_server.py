@@ -491,19 +491,14 @@ class TestRegistrationServer(unittest.TestCase):
         status, raw = self.srv.request("POST", "/nope", {})
         self.assertEqual(status, 404)
 
-    def test_help_lists_all_routes(self):
+    def test_help_returns_registration_guide(self):
         status, raw = self.srv.request("GET", "/help")
         self.assertEqual(status, 200)
-        endpoints = json.loads(raw)["endpoints"]
-        for expected in (
-            "POST /api/bug",
-            "POST /api/register",
-            "GET /api/user/<user>",
-            "POST /api/user/<user>/update",
-            "DELETE /api/user/<user>",
-            "PUT /api/config",
-        ):
-            self.assertIn(expected, endpoints)
+        body = json.loads(raw)
+        self.assertTrue(body["ok"])
+        self.assertIsInstance(body["data"], str)
+        self.assertTrue(body["data"].strip())
+        self.assertIn("注册", body["data"])
 
     # -- POST /api/bug（控制面 v22 §3） --------------------------------------
     def _bug_report_files(self):

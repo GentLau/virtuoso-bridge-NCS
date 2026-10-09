@@ -22,9 +22,11 @@ import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
+from urllib.parse import parse_qs, urlsplit
 
 from server import dispatch as dispatch_module
 from server.dispatch import dispatch
+from server.manual import Manual
 from common import config as config_base
 from common.paths import config_path, init_work_dir, work_root
 from common.jsonutil import dumps_strict, loads_strict
@@ -58,6 +60,39 @@ _MAX_REQUEST_BYTES = 16 * 1024 * 1024
 
 #: Supervised mode event channel (父进程通过 stdout 读 VB-EVENT 行).
 EVENT_PREFIX = "VB-EVENT "
+
+#: Business /help fallback when the manual is not shipped with the service.
+_FALLBACK_QUICKSTART = (
+    "POST /api/operation with {operation, token, ...}; "
+    "GET /help/operations lists every registered operation."
+)
+
+
+def _package_name(spec) -> str:
+    """Manual package name, derived from the registered package module."""
+    module = getattr(spec.package, "__module__", "")
+    return module.rsplit(".", 1)[-1] or "unknown"
+
+
+def _request_schema(request_model: Any) -> dict:
+    """JSON schema for a Request model (pydantic model or plain dataclass)."""
+    model_json_schema = getattr(request_model, "model_json_schema", None)
+    if callable(model_json_schema):
+        try:
+            return model_json_schema()
+        except Exception:  # noqa: BLE001 - help must not break business
+            pass
+    try:
+        from pydantic import TypeAdapter
+
+        return TypeAdapter(request_model).json_schema()
+    except Exception:  # noqa: BLE001 - degrade to an empty object shape
+        return {
+            "type": "object",
+            "properties": {},
+            "required": [],
+            "title": getattr(request_model, "__name__", "Request"),
+        }
 
 
 class ApiHandler(BaseHTTPRequestHandler):
@@ -139,10 +174,12 @@ class ApiHandler(BaseHTTPRequestHandler):
             })
             return
         if path == "/help":
-            # 端点清单与用法说明（顶层补充 §4）
+            # quickstart + 兼容保留的 operations 清单（帮助体系 §2.1/§4）
+            quickstart = server.manual.quickstart()
             self._send(200, {
                 "ok": True,
                 "data": {
+                    "quickstart": quickstart or _FALLBACK_QUICKSTART,
                     "face": "business",
                     "endpoints": ["POST /api/operation", "GET /health", "GET /help"],
                     "operations": dispatch_module.operations(),
@@ -158,12 +195,84 @@ class ApiHandler(BaseHTTPRequestHandler):
                 "error": None,
             })
             return
+        if path == "/help/operations":
+            query = parse_qs(urlsplit(self.path).query, keep_blank_values=True)
+            name = (query.get("name") or [""])[0].strip()
+            if name:
+                status, body = self._help_operation_detail(name, query)
+            else:
+                status, body = 200, {
+                    "ok": True,
+                    "data": self._help_operation_list(query),
+                    "error": None,
+                }
+            self._send(status, body)
+            return
         allowed = self._PATH_ALLOWED.get(path)
         if allowed is not None:
             # 已定义路径 + 非支持方法 → 405 + Allow（顶层 §3）
             self._method_not_allowed(allow=allowed)
             return
         self._send(404, {"ok": False, "error": "not found"})
+
+    def _help_operation_list(self, query: dict) -> dict:
+        """``{count, groups}``: groups = package, entries ``{name, summary?}``."""
+        group_filter = (query.get("group") or [""])[0].strip()
+        groups: dict[str, list[dict]] = {}
+        for operation in dispatch_module.operations():
+            spec = dispatch_module.PACKAGES.get(operation)
+            if spec is None:
+                continue
+            package = _package_name(spec)
+            if group_filter and package != group_filter:
+                continue
+            entry = {"name": operation}
+            summary = self.server.manual.summary(
+                self.server.manual.operation_section(package, operation)
+            )
+            if summary:
+                entry["summary"] = summary
+            groups.setdefault(package, []).append(entry)
+        return {
+            "count": sum(len(items) for items in groups.values()),
+            "groups": groups,
+        }
+
+    def _help_operation_detail(self, name: str, query: dict) -> tuple[int, dict]:
+        spec = dispatch_module.PACKAGES.get(name)
+        if spec is None:
+            return 404, {"ok": False, "error": f"unknown operation: {name}"}
+        package = _package_name(spec)
+        schema = _request_schema(spec.request_model)
+        section = self.server.manual.operation_section(package, name)
+        data: dict[str, Any] = {
+            "name": name,
+            "package": package,
+            "method": spec.method,
+            "required_fields": list(schema.get("required") or []),
+            "request_schema": schema,
+            "doc": {
+                "file": f"packages/{package}.md",
+                "section_title": section.title if section is not None else None,
+            },
+            "content_format": "markdown",
+        }
+        common = self.server.manual.common()
+        if common is not None:
+            data["common_ref"] = {
+                "file": "common.md",
+                "section_title": common.title,
+            }
+            include_common = (query.get("common") or ["1"])[0]
+            if include_common not in ("0", "false", "no"):
+                data["common"] = common.body
+        if section is not None:
+            data["content"] = section.body
+        else:
+            data["content_unavailable"] = self.server.manual.unavailable_reason(
+                f"packages/{package}.md"
+            )
+        return 200, {"ok": True, "data": data, "error": None}
 
     def do_POST(self) -> None:  # noqa: N802
         path = self.path.split("?")[0]
@@ -251,10 +360,17 @@ class ApiHandler(BaseHTTPRequestHandler):
     def do_HEAD(self) -> None:  # noqa: N802
         self._method_not_allowed(body=False)
 
-    _DEFINED_PATHS = frozenset({"/api/operation", "/health", "/help"})
+    _DEFINED_PATHS = frozenset({
+        "/api/operation", "/health", "/help", "/help/operations",
+    })
 
     #: 已定义路径 → 该路径真正支持的方法（405 的 Allow 用）
-    _PATH_ALLOWED = {"/api/operation": "POST", "/health": "GET", "/help": "GET"}
+    _PATH_ALLOWED = {
+        "/api/operation": "POST",
+        "/health": "GET",
+        "/help": "GET",
+        "/help/operations": "GET",
+    }
 
     def _unknown_method(self) -> None:
         if self.path.split("?", 1)[0] in self._DEFINED_PATHS:
@@ -278,12 +394,20 @@ class ApiServer(ThreadingHTTPServer):
     daemon_threads = True
     request_queue_size = 1024
 
-    def __init__(self, address, middle, *, max_inflight: int = DEFAULT_MAX_INFLIGHT) -> None:
+    def __init__(
+        self,
+        address,
+        middle,
+        *,
+        max_inflight: int = DEFAULT_MAX_INFLIGHT,
+        manual_root=None,
+    ) -> None:
         super().__init__(address, ApiHandler)
         if max_inflight < 1:
             raise ValueError("max_inflight must be >= 1")
         self.middle = middle
         self.max_inflight = max_inflight
+        self.manual = Manual(manual_root)
         self.draining = False
         self._slots_lock = threading.Lock()
         self._slots_idle = threading.Condition(self._slots_lock)
@@ -371,8 +495,12 @@ def register_packages() -> dict[str, str]:
 
 
 def build_server(host: str, port: int, middle, *,
-                 max_inflight: int = DEFAULT_MAX_INFLIGHT) -> ApiServer:
-    return ApiServer((host, port), middle, max_inflight=max_inflight)
+                 max_inflight: int = DEFAULT_MAX_INFLIGHT,
+                 manual_root=None) -> ApiServer:
+    return ApiServer(
+        (host, port), middle,
+        max_inflight=max_inflight, manual_root=manual_root,
+    )
 
 
 # -- supervised mode (顶层补充 v27 §1.1/§3) -----------------------------------
@@ -458,6 +586,9 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--work-dir", default=None,
                         help="directory holding registry.json + config.json "
                              "(assembly only)")
+    parser.add_argument("--manual-root", default=None,
+                        help="read-only manual root for /help "
+                             "(default: skills/virtuoso-bridge/manual)")
     parser.add_argument("--supervised", action="store_true",
                         help="run as the business child of a supervisor: "
                              "control commands on stdin, VB-EVENT lines on stdout")
@@ -476,7 +607,10 @@ def main(argv: list[str] | None = None) -> None:
     middle = BusinessServer()
     # global config snapshot: imported once at startup, never read per request
     pool_size = pool_size_from_snapshot(config_base.snapshot())
-    server = build_server(args.host, args.port, middle, max_inflight=pool_size)
+    server = build_server(
+        args.host, args.port, middle,
+        max_inflight=pool_size, manual_root=args.manual_root,
+    )
     banner = (
         f"virtuoso-bridge API (business): http://{args.host}:{args.port}  "
         f"({len(dispatch_module.operations())} operations, "
