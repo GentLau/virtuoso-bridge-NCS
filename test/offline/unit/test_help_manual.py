@@ -219,13 +219,24 @@ class TestBusinessHelpEndpoints(unittest.TestCase):
         self.assertEqual(data["method"], "run")
         self.assertEqual(data["required_fields"], ["token"])
         self.assertEqual(data["request_schema"]["type"], "object")
-        self.assertEqual(data["doc"]["file"], "packages/helptest.md")
-        self.assertEqual(data["doc"]["section_title"], "1. `tb.help.run` — 测试运行")
+        self.assertEqual(data["request_schema"]["required"], ["token"])
+        self.assertEqual(
+            data["request_schema"]["properties"]["token"]["type"], "string")
+        self.assertEqual(data["doc"], {
+            "file": "packages/helptest.md",
+            "section_title": "1. `tb.help.run` — 测试运行",
+        })
         self.assertEqual(data["content_format"], "markdown")
         self.assertEqual(data["common_ref"],
                          {"file": "common.md", "section_title": "公共约定"})
-        self.assertIn("运行正文。", data["content"])
-        self.assertIn("公共正文。", data["common"])
+        self.assertEqual(
+            data["content"], "运行正文。\n\n### 1.1 参数\n\n参数正文。")
+        self.assertEqual(
+            data["common"], "公共正文。\n\n### 响应壳\n\n壳正文。")
+        self.assertEqual(set(data), {
+            "name", "package", "method", "required_fields", "request_schema",
+            "doc", "content_format", "common_ref", "common", "content",
+        })
 
     def test_common_flag_and_unknown_operation(self):
         status, body = self._request(
@@ -275,6 +286,14 @@ class TestBusinessHelpEndpoints(unittest.TestCase):
         dispatch_module.register_operation(
             operation, _HelpPackage, "run", _HelpRequest, replace=True)
         try:
+            status, listing = self._request(
+                "GET", "/help/operations?group=helptest")
+            self.assertEqual(status, 200, listing)
+            entry = next(
+                item for item in listing["data"]["groups"]["helptest"]
+                if item["name"] == operation)
+            self.assertEqual(entry, {"name": operation})
+
             status, body = self._request(
                 "GET", f"/help/operations?name={operation}")
             self.assertEqual(status, 200, body)

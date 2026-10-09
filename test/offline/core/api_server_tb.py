@@ -38,6 +38,7 @@ import tempfile
 import threading
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 import uuid
 from pathlib import Path
@@ -56,6 +57,7 @@ from server.api_server import (  # noqa: E402
     pool_size_from_snapshot,
     register_packages,
 )
+from server.manual import Manual, default_manual_root  # noqa: E402
 from transport.middle import BusinessServer  # noqa: E402
 from common.registry import UserEntry, load_registry  # noqa: E402
 from common import config as config_base  # noqa: E402
@@ -210,22 +212,123 @@ def main() -> int:
         if response.status != 200 or health["data"]["face"] != "business":
             raise ProbeFailure(f"business /health failed: {health}")
         with urllib.request.urlopen(base + "/help", timeout=30) as response:
-            help_body = json.loads(response.read().decode("utf-8"))
-        if (response.status != 200 or help_body.get("ok") is not True
+            help_raw = response.read().decode("utf-8")
+            help_body = json.loads(help_raw)
+        if (response.status != 200
+                or set(help_body) != {"ok", "data", "error"}
+                or help_body.get("ok") is not True
+                or help_body.get("error") is not None
                 or not isinstance(help_body.get("data"), str)
                 or not help_body["data"].strip()):
             raise ProbeFailure(f"business /help failed: {help_body}")
+        if str(ROOT) in help_raw:
+            raise ProbeFailure("/help leaked an absolute repository path")
+        expected_quickstart = Manual(default_manual_root()).quickstart()
+        if help_body["data"] != expected_quickstart:
+            raise ProbeFailure("/help did not return the shipped quickstart text")
         with urllib.request.urlopen(base + "/help/operations", timeout=30) as response:
-            listing = json.loads(response.read().decode("utf-8"))
-        groups = (listing.get("data") or {}).get("groups") or {}
-        ops = {entry["name"] for entries in groups.values() for entry in entries}
+            listing_raw = response.read().decode("utf-8")
+            listing = json.loads(listing_raw)
+        if (response.status != 200
+                or set(listing) != {"ok", "data", "error"}
+                or listing.get("ok") is not True
+                or listing.get("error") is not None):
+            raise ProbeFailure(f"business /help/operations failed: {listing}")
+        if str(ROOT) in listing_raw:
+            raise ProbeFailure("/help/operations leaked an absolute repository path")
+        listing_data = listing.get("data")
+        if not isinstance(listing_data, dict) or set(listing_data) != {"count", "groups"}:
+            raise ProbeFailure(f"help listing shape drifted: {listing_data}")
+        groups = listing_data["groups"] or {}
+        help_entries: list[tuple[str, dict]] = []
+        for package, entries in groups.items():
+            if not isinstance(entries, list):
+                raise ProbeFailure(f"help group {package!r} is not a list: {entries!r}")
+            for entry in entries:
+                if not isinstance(entry, dict) or set(entry) - {"name", "summary"}:
+                    raise ProbeFailure(f"help entry shape drifted: {entry!r}")
+                if not isinstance(entry.get("name"), str) or not entry["name"]:
+                    raise ProbeFailure(f"help entry lacks name: {entry!r}")
+                help_entries.append((package, entry))
+        if listing_data["count"] != len(help_entries):
+            raise ProbeFailure(
+                f"help count mismatch: {listing_data['count']} != {len(help_entries)}")
+        ops = {entry["name"] for _package, entry in help_entries}
+        if len(ops) != len(help_entries):
+            raise ProbeFailure("help listing contains duplicate operation names")
         required = {
             "basic.skill.execute", "basic.command.run", "basic.file.upload",
             "basic.file.download", "basic.gui.run", "basic.spectre.run",
         }
         if not required <= ops:
             raise ProbeFailure(f"operations listing incomplete: {sorted(required - ops)}")
+
+        # 每个已注册操作都必须能通过详情端点取到完整机械字段；真实业务
+        # 包还必须命中手工手册小节（test-only 操作允许 content_unavailable）。
+        common_text: str | None = None
+        for package, entry in help_entries:
+            operation = entry["name"]
+            query = urllib.parse.quote(operation, safe="")
+            with urllib.request.urlopen(
+                base + "/help/operations?name=" + query, timeout=30
+            ) as response:
+                detail_raw = response.read().decode("utf-8")
+                detail = json.loads(detail_raw)
+            if (response.status != 200
+                    or set(detail) != {"ok", "data", "error"}
+                    or detail.get("ok") is not True
+                    or detail.get("error") is not None):
+                raise ProbeFailure(f"help detail failed for {operation}: {detail}")
+            if str(ROOT) in detail_raw:
+                raise ProbeFailure(f"help detail leaked an absolute repository path: {operation}")
+            data = detail["data"]
+            required_keys = {
+                "name", "package", "method", "required_fields",
+                "request_schema", "doc", "content_format",
+                "common_ref", "common",
+            }
+            if not required_keys <= set(data):
+                raise ProbeFailure(
+                    f"help detail fields missing for {operation}: "
+                    f"{sorted(required_keys - set(data))}")
+            if data["name"] != operation or data["package"] != package:
+                raise ProbeFailure(
+                    f"help detail identity mismatch: {data['name']!r} "
+                    f"{data['package']!r} != {operation!r} {package!r}")
+            if not isinstance(data["method"], str) or not data["method"]:
+                raise ProbeFailure(f"help detail method invalid for {operation}")
+            if not isinstance(data["request_schema"], dict):
+                raise ProbeFailure(f"help detail schema invalid for {operation}")
+            if data["required_fields"] != list(
+                    data["request_schema"].get("required") or []):
+                raise ProbeFailure(f"required_fields drift for {operation}")
+            if data["doc"].get("file") != f"packages/{package}.md":
+                raise ProbeFailure(f"manual doc path drift for {operation}: {data['doc']}")
+            if data["content_format"] != "markdown":
+                raise ProbeFailure(f"content_format drift for {operation}")
+            if data["common_ref"] != {"file": "common.md", "section_title": "公共约定"}:
+                raise ProbeFailure(f"common_ref drift for {operation}: {data['common_ref']}")
+            if common_text is None:
+                common_text = data["common"]
+            elif data["common"] != common_text:
+                raise ProbeFailure(f"common text drifted between help details: {operation}")
+            spec = dispatch_module.PACKAGES.get(operation)
+            module_name = getattr(getattr(spec, "package", None), "__module__", "")
+            if module_name.startswith("pyapi.packages."):
+                if not entry.get("summary"):
+                    raise ProbeFailure(f"real operation lacks manual summary: {operation}")
+                if not isinstance(data.get("content"), str) or not data["content"].strip():
+                    raise ProbeFailure(f"real operation lacks manual content: {operation}")
+                if data["doc"].get("section_title") is None:
+                    raise ProbeFailure(f"real operation lacks manual section: {operation}")
+                if "content_unavailable" in data:
+                    raise ProbeFailure(
+                        f"real operation content_unavailable: {operation}")
+            elif "content" not in data and "content_unavailable" not in data:
+                raise ProbeFailure(f"help detail has no content state: {operation}")
         results["operations"] = sorted(ops)
+        results["help_contract"] = (
+            f"{len(help_entries)} entries / {len(groups)} groups, details complete")
 
         # -- structural failures (4xx) ----------------------------------------
         status, body = _post(base, None, raw=b"{not json")
