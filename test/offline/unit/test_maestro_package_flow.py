@@ -555,6 +555,95 @@ class TestRunFlow(unittest.TestCase):
         self.assertFalse(result.ok)
         self.assertIn("maeRunSimulation", result.error)
 
+    def _overwrite_history_middle(self):
+        middle = FakeMiddle()
+        middle.skill_script = [
+            ("maeGetSessions", "nil"),
+            ("hiGetWindowList", self._editing_window()),
+            ("hiGetWindowList", self._editing_window()),
+            ("maeSetJobControlMode", "t"),
+        ]
+        return middle
+
+    def test_overwrite_target_locked_is_rejected_with_state(self):
+        # P-133：被锁目标不得送进 ADE（否则连环弹 3016/2406 挂死 CIW）
+        middle = self._overwrite_history_middle()
+        pkg = M.Package(middle)
+        pkg._history_names = lambda *a, **k: ["h1"]
+        pkg._history_lock_flag = lambda *a, **k: 2
+        pkg._run_status = lambda *a, **k: {"status": "done"}
+        result = pkg.run(M.RunRequest(
+            **base_fields(), history="h1", blocking=False, poll_interval=0.01,
+        ))
+        self.assertFalse(result.ok)
+        self.assertEqual(result.value["reason"], "overwrite_target_locked")
+        self.assertEqual(result.value["lock_flag"], 2)
+        states = [s for s in result.steps if s["name"] == "overwrite_target_state"]
+        self.assertEqual(len(states), 1, result.steps)
+
+    def test_overwrite_target_running_is_rejected_with_state(self):
+        # P-133：在跑目标同样拒绝（结构性错误取代 ADE 模态）
+        middle = self._overwrite_history_middle()
+        pkg = M.Package(middle)
+        pkg._history_names = lambda *a, **k: ["h1"]
+        pkg._history_lock_flag = lambda *a, **k: 0
+        pkg._run_status = lambda *a, **k: {"status": "running"}
+        result = pkg.run(M.RunRequest(
+            **base_fields(), history="h1", blocking=False, poll_interval=0.01,
+        ))
+        self.assertFalse(result.ok)
+        self.assertEqual(result.value["reason"], "overwrite_target_running")
+
+    def test_overwrite_target_clean_still_starts(self):
+        # 负控制：锁标志 0 + 非 running 的正常覆写路径不受预校验影响
+        middle = self._overwrite_history_middle()
+        middle.skill_script.append(("maeRunSimulation", '"h9"'))
+        pkg = M.Package(middle)
+        pkg._history_names = lambda *a, **k: ["h1"]
+        pkg._history_lock_flag = lambda *a, **k: 0
+        pkg._run_status = lambda *a, **k: {"status": "done"}
+        result = pkg.run(M.RunRequest(
+            **base_fields(), history="h1", blocking=False, poll_interval=0.01,
+        ))
+        self.assertTrue(result.ok, result.error)
+        self.assertEqual(result.value["history"], "h9")
+
+    def test_failed_run_dismisses_late_dialogs_in_tail_watch(self):
+        # P-133：框可能在 maeRunSimulation 返回后才滞留——失败路径的尾窗
+        # 清场必须尝试关框并记进 dialog_watchdog 证据。
+        middle = FakeMiddle()
+        middle.skill_script = [
+            ("maeGetSessions", "nil"),
+            ("hiGetWindowList", self._editing_window()),
+            ("hiGetWindowList", self._editing_window()),
+            ("maeSetJobControlMode", "t"),
+            ("maeRunSimulation", '"nil"'),
+            ("hiGetCurrentForm", "nil"),
+            ("maeRunSimulation", '"nil"'),
+        ]
+        pkg = M.Package(middle)
+        calls = []
+
+        def fake_dismiss(token, timeout):
+            calls.append(token)
+            # calls[0] 是 run 开头的 dialog preflight；让步进"尾窗"的第一次
+            # 调用（calls[1]）看到框，验证失败路径的尾窗清场。
+            if len(calls) == 2:
+                return [{"window_id": "0x2406",
+                         "title": "ADE Assembler Message 2406",
+                         "ok": True}]
+            return []
+
+        pkg._dismiss_update_dialogs = fake_dismiss
+        result = pkg.run(M.RunRequest(
+            **base_fields(), blocking=False, poll_interval=0.01,
+        ))
+        self.assertFalse(result.ok)
+        self.assertGreaterEqual(len(calls), 2, calls)
+        watchdogs = [s for s in result.steps if s["name"] == "dialog_watchdog"]
+        self.assertTrue(watchdogs, result.steps)
+        self.assertTrue(watchdogs[0]["detail"]["dismissed"], watchdogs[0])
+
     def test_mc_preflight_does_not_block_no_plot_outputs(self):
         # P-118：缺 plot 不再前置拦截，直接投送、由 ADE 在运行时报 ADEXL-1617
         middle = FakeMiddle()

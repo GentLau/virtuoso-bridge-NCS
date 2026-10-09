@@ -141,7 +141,11 @@ _WIN_LINE = re.compile(
     r'^\s*(0x[0-9a-fA-F]+)\s+(?:"([^"]*)"|\(has no name\)):\s*\(([^)]*)\)\s+'
     r'(\d+)x(\d+)\+(-?\d+)\+(-?\d+)\s+\+(-?\d+)\+(-?\d+)'
 )
-_DIALOG_WORDS = re.compile(r"(?i)error|warning|question|confirm|notice|dialog")
+_DIALOG_WORDS = re.compile(
+    # P-138：ADE Message 系列（2406/3016/1610…）是真实模态，但标题不含既有
+    # 关键词；用窄模式补入，避免把普通 "message" 窗口误判为可按键的对话框。
+    r"(?i)error|warning|question|confirm|notice|dialog|ade assembler message \d+"
+)
 
 
 def parse_xwininfo_tree(

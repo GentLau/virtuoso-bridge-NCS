@@ -3842,7 +3842,40 @@ class Package(ResultPackage):
                 break
             time.sleep(0.5)
         thread.join(timeout=1.0)
-        if thread.is_alive():
+        timed_out = thread.is_alive()
+        # P-133：2406/3016 之类的框常在 maeRunSimulation **返回之后**才弹出
+        # （或与返回交错）；调用一旦结束、上面的巡逻就停止，框便无人处置、
+        # 最终把 CIW 占死。这里把巡逻寿命延伸到"调用结束后的有界尾窗"：
+        # 仅在疑似失败/超时时启用（正常成功路径零开销），最长 3 秒，逐次结果
+        # 记进 dismissed 证据。更晚才出现的框由下一次 run 的 preflight 或
+        # gui.auto_dismiss（P-138）兜底。
+        result = None if timed_out else box.get("result")
+        output = (
+            (getattr(result, "output", "") or "").strip()
+            if result is not None else ""
+        )
+        started_ok = bool(
+            result is not None
+            and getattr(result, "ok", False)
+            and unquote(output).strip() not in ("", "nil")
+        )
+        if timed_out or not started_ok:
+            post_deadline = time.monotonic() + 3.0
+            empty_streak = 0
+            while time.monotonic() < post_deadline:
+                found = self._dismiss_update_dialogs(token, 10)
+                window_checks += 1
+                if found:
+                    dismissed.extend(found)
+                    empty_streak = 0
+                else:
+                    # 2406/3016 属同步型模态：调用返回时点附近即存在。
+                    # 连续两次查无框即认为已清空，提前退出。
+                    empty_streak += 1
+                    if empty_streak >= 2:
+                        break
+                time.sleep(0.5)
+        if timed_out:
             return (
                 None,
                 dismissed,
@@ -4040,6 +4073,44 @@ class Package(ResultPackage):
                         f"overwrite target not found: {request.history}",
                         {"reason": "overwrite_target_missing",
                          "history": request.history},
+                    )
+                # P-133：目标被锁/在跑时不得作为 Overwrite 目标——ADE 会连环弹
+                # ASSEMBLER-3016/2406 模态框并把 CIW 占死。状态取不到时保守
+                # 放行，但把读到的状态记进 steps 供排障。
+                lock_flag = None
+                try:
+                    lock_flag = self._history_lock_flag(
+                        session, request.history,
+                        request.token, request.timeout,
+                    )
+                except Exception:  # noqa: BLE001 - 状态查询失败不阻断
+                    lock_flag = None
+                run_state: dict[str, Any] = {}
+                try:
+                    run_state = self._run_status(
+                        session, request.history,
+                        request.token, request.timeout,
+                    )
+                except Exception:  # noqa: BLE001
+                    run_state = {}
+                state_detail = {
+                    "history": request.history,
+                    "lock_flag": lock_flag,
+                    "run_status": run_state.get("status"),
+                }
+                steps.append(_step("overwrite_target_state", True, state_detail))
+                if lock_flag not in (0, None):
+                    return Result(
+                        False, steps,
+                        f"overwrite target is locked: {request.history} "
+                        f"(lock_flag={lock_flag})",
+                        {"reason": "overwrite_target_locked", **state_detail},
+                    )
+                if run_state.get("status") == "running":
+                    return Result(
+                        False, steps,
+                        f"overwrite target is running: {request.history}",
+                        {"reason": "overwrite_target_running", **state_detail},
                     )
                 overwrite = self._set_overwrite_history(
                     session, True, request.history,
