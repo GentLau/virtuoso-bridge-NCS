@@ -1,9 +1,9 @@
 # 顶层补充：帮助体系（`/help` 端点族）
 
-> 版本：Draft v1
+> 版本：Draft v2
 > 日期：2026-10-09
 > 状态：Normative（帮助端点族唯一口径）
-> Supersedes：无
+> Supersedes：Draft v1（未知操作 404 只报未知，不做近邻候选）
 > 定位：本文是[顶层](1-顶层.md)的补充，定义 `/help` 端点族的形态、契约与数据来源；端点清单主表见[控制面与业务面](add-控制面与业务面.md)，本文只讲帮助子族细则。帮助不解释任何业务操作语义。
 
 ## 1. 原则
@@ -29,7 +29,7 @@
 - 可选参数：`group`（清单收窄到某包）、`common=0`（详情省略公共约定段）；
 - `required_fields` 由 `request_schema.required` 派生；`request_schema` = `Request.model_json_schema()`；
 - `content` 与 `common` 是手册小节/公共段的 **markdown 原文**，端点不加工、不改写；
-- 未知操作 → `404` 附最近似候选；手册不可用 → 降级：仍返回 schema 与 `doc` 定位，`content` 省略并附 `content_unavailable` 原因，不报错。
+- 未知操作 → `404`；手册不可用 → 降级：仍返回 schema 与 `doc` 定位，`content` 省略并附 `content_unavailable` 原因，不报错。
 
 ## 3. 数据来源
 
