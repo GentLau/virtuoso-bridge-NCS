@@ -1,9 +1,9 @@
 # 顶层补充：帮助体系（`/help` 端点族）
 
-> 版本：Draft v5
+> 版本：Draft v6
 > 日期：2026-10-09
 > 状态：Normative（帮助端点族唯一口径）
-> Supersedes：Draft v4（§4 `/help` data 口径按端口限定）
+> Supersedes：Draft v5（控制面 `/help` 改为注册流程指导文本）
 > 定位：本文是[顶层](1-顶层.md)的补充，定义 `/help` 端点族的形态、契约与数据来源；端点清单主表见[控制面与业务面](add-控制面与业务面.md)，本文只讲帮助子族细则。帮助不解释任何业务操作语义。
 
 ## 1. 原则
@@ -15,10 +15,10 @@
 
 ## 2. 端点
 
-### 2.1 `GET /help` —— quickstart（业务面）/ 端点清单（控制面）
+### 2.1 `GET /help` —— quickstart（业务面）/ 注册流程（控制面）
 
 - 业务面 `/help`：统一壳 `{ok, data, error}`，`data` 为 quickstart 固定文本（手写维护）；无鉴权；
-- 控制面 `/help`：统一壳，`data` 为自路由表派生的端点清单。
+- 控制面 `/help`：统一壳，`data` 为注册流程指导文本（手写维护，同 quickstart 性质）。
 
 ### 2.2 `GET /help/operations` —— 清单 / 详情（人+机）
 
@@ -41,11 +41,10 @@
 | `request_schema` | `Request.model_json_schema()` |
 | `doc.file` / `section_title` | 操作名前缀 → 包文件；标题行含完整操作名的小节 |
 | `summary` / `content` / `common` | 手册小节 / 公共约定段的 markdown 原文 |
-| 控制面 `/help` 的 endpoints | 路由表派生，不手写 |
 
 ## 4. 响应契约
 
-- 帮助端点统一 `{ok, data, error}` 壳；业务面 `/help` 的 `data` 是 quickstart 文本，控制面 `/help` 的 `data` 是端点清单；
+- 帮助端点统一 `{ok, data, error}` 壳；业务面 `/help` 的 `data` 是 quickstart 文本，控制面 `/help` 的 `data` 是注册流程指导文本；
 - 状态码：`200` 正常、`404` 未知操作、`405` 方法不支持（含 `Allow`）；
 - 可选 `ETag`：按资源计算（操作详情 = schema + 该节 content 的哈希；`common` 单独一个）；
 - 兼容：业务面 `/help` 现状返回的 `operations` 清单字段保留（位于 `data` 内），新增字段为增量。
