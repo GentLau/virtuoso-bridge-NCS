@@ -34,7 +34,7 @@
 边界：
 
 - 文本视图的建立/覆盖/删除由本包负责（`dbOpenCellViewByType` 建不了它，cellview 包的 `view.create` 对它恒失败）；
-- symbol 生成不在本包（归 symbol 包能力，见 §2；`ahdlSymbolGen` 禁用）；
+- symbol 生成不在本包、本版不提供；需要 symbol 时走 symbol 包从 schematic 生成（`ahdlSymbolGen` 禁用）；
 - 编译/仿真归 spectre 包（IC6.1.8 无 `ahdlCompile*`）；
 - 结构 connectivity 读回用 `schematic.read`。
 
@@ -109,7 +109,7 @@ Spectre 用 `ahdl_include` 可直接编译该 cell（`Installed compiled interfa
 |---|---|
 | view CRUD（OA 视图） | cellview |
 | 文本视图（`text.veriloga`）的建立与覆盖 | **本包例外**（cellview 建不了） |
-| symbol 生成 | symbol（`ahdlToPinList` 的 ports + `schPinListToSymbol`，待 spike；`ahdlSymbolGen` 禁用） |
+| symbol 生成 | 本版不提供（需要时走 symbol 包从 schematic 生成） |
 | 编译 / 仿真 / `ahdlSimDB` 缓存 | spectre 包 |
 | 结构 Verilog | verilog 包 |
 | GDS 导入/导出 | layout（`layout.gds`） |
@@ -148,8 +148,4 @@ Spectre 用 `ahdl_include` 可直接编译该 cell（`Installed compiled interfa
 | 4 | `write` 允许创建文本视图（`ensure_view`）——view CRUD 归属的显式例外 |
 | 5 | 端口方向以 `.va` 的 module 声明为准（默认 `inputOutput`），调用方不重复传方向 |
 | 6 | 不独立暴露 `reparse`/`ahdlUpdateViewInfo`，合并进 `check_and_save` |
-| 7 | symbol 生成不在本包；需要时走 symbol 包（待 spike），`ahdlSymbolGen` 禁用 |
-
-## 6. 待验证（实现前需 spike）
-
-1. `schPinListToSymbol` 用 `ahdlToPinList` 的 ports 生成 symbol 的可行性（端口顺序/方向）。
+| 7 | symbol 生成不在本包、本版不提供；需要 symbol 时走 symbol 包从 schematic 生成；`ahdlSymbolGen` 禁用 |
