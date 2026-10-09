@@ -14,7 +14,7 @@
 |---|---|---|
 | 连不上 / 超时 | 业务服务没起，或端口不是你以为的那个 | `GET /health` 试一下；端口是启动参数，问用户要 |
 | HTTP 400 `invalid request for operation: ...` | 字段名写错、类型错、多给了不认识的字段 | 对照 `operations.md` 的必备列；报错里会点名 |
-| HTTP 404 `unknown operation: xxx` | 名字不存在或拼错 | `GET /help` 拿准确名字 |
+| HTTP 404 `unknown operation: xxx` | 名字不存在或拼错（404 只报未知，不给近邻候选） | `GET /help/operations` 拿准确名字 |
 | HTTP 429 `thread pool exceeded ... please retry` | 服务在途请求太多 | 等 1~2 秒重试；批量任务降并发 |
 | `token is required` / `invalid token` | 没带 token、抄错、或这个用户没注册 | 找用户核对；注册页能看已注册用户 |
 

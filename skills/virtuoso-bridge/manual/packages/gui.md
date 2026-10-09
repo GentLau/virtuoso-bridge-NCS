@@ -6,7 +6,7 @@
 
 **功能**：列出当前 Virtuoso 相关窗口，拿到 `window_id` 供后续发按键使用。
 
-**输入参数**：除公共参数（`token`/`timeout`/`step_details`）外无。
+**输入参数**：无。
 
 **返回**（`data.windows`）
 

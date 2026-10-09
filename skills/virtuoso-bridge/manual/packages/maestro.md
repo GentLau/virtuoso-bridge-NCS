@@ -86,7 +86,9 @@ Maestro（ADE）是 Virtuoso 的仿真环境：一个 `maestro` 视图里放若�
 | `set_run_mode` | `run_mode` | str | ✅ | — | 运行模式 |
 | `set_job_control_mode` | `mode` | str | ✅ | — | 任务控制模式 |
 | `set_simulator_mode` | `mode`；可选 `option` | str | ✅ | `uniMode` | 高性能仿真模式 |
-| `set_job_policy` | `policy`（dict 或 SKILL 表达式） | — | ✅ | — | 任务策略；可选 `test`/`test_name`、`job_type` |
+| `create_job_policy` | `name`, `policy`；可选 `job_type` | — | name+policy | — | 新建任务策略 |
+| `attach_job_policy` | `test`, `name`（策略名）；可选 `test_name`/`job_type` | — | test+name | — | 把策略挂到某个测试 |
+| `delete_job_policy` | `name` | str | ✅ | — | 删除策略 |
 | `add_output` | `name`, `test` | str | ✅ | — | 加输出；可选 `output_type`、`signal_name`、`expr`、`plot`、`save` |
 | `delete_output` | `name`, `test`；可选 `delete_spec` | str/bool | ✅ | — | 删输出 |
 | `set_spec` | `name`, `test` + 一个界（`gt`/`lt`/`min`/`max`/`tol`/`range`） | — | ✅ | — | 加规格；可选 `info`、`weight`、`corner` |
@@ -265,12 +267,37 @@ Maestro（ADE）是 Virtuoso 的仿真环境：一个 `maestro` 视图里放若�
 
 ## 8. GUI 相关
 
-| 操作 | 功能 | 输入参数 | 返回 |
-|---|---|---|---|
-| `virtuoso.maestro.open_gui` | 打开 ADE 窗口 | `library`, `cell`；可选 `view`, `history` | `value.session` / `window` / `title` / `mode` |
-| `virtuoso.maestro.close_gui` | 关闭窗口 | `library`, `cell`；可选 `view` | `value.session` / `window` / `closed` |
-| `virtuoso.maestro.open_waveform_gui` | 打开波形窗口 | `library`, `cell`, `history`, `signals`；可选 `test`, `analysis`, `view` | `value.session` / `session_created` / `window` / `signals` |
-| `virtuoso.maestro.close_waveform_gui` | 关闭波形窗口 | 可选 `session`, `window` | `value.session` / `window` / `closed` |
+### 8.1 `virtuoso.maestro.open_gui` — 打开 ADE 窗口
+
+**功能**：打开 Maestro/ADE 图形窗口。
+**输入参数**：`library`, `cell`；可选 `view`、`history`。
+**返回**：`value.session` / `value.window` / `value.title` / `value.mode`。
+
+```json
+// 输入
+{"operation":"virtuoso.maestro.open_gui","token":"TOKEN","library":"maestro_tb","cell":"rc_probe","view":"maestro"}
+// 输出（data.value 内容）
+{"ok":true,"error":null,"value":{"session":"VB_..._4","window":"0x2a0000c","title":"ADE Assembler","mode":"gui"}}
+```
+
+### 8.2 `virtuoso.maestro.close_gui` — 关闭 ADE 窗口
+
+**功能**：关闭 Maestro/ADE 窗口。
+**输入参数**：`library`, `cell`；可选 `view`。
+**返回**：`value.session` / `value.window` / `value.closed`。
+
+```json
+// 输入
+{"operation":"virtuoso.maestro.close_gui","token":"TOKEN","library":"maestro_tb","cell":"rc_probe","view":"maestro"}
+// 输出（data.value 内容）
+{"ok":true,"error":null,"value":{"session":"VB_..._4","window":"0x2a0000c","closed":true}}
+```
+
+### 8.3 `virtuoso.maestro.open_waveform_gui` — 打开波形窗口
+
+**功能**：把指定信号在波形窗口里画出来。
+**输入参数**：`library`, `cell`, `history`, `signals`；可选 `test`、`analysis`、`view`。
+**返回**：`value.session` / `value.session_created` / `value.window` / `value.signals`。
 
 ```json
 // 输入
@@ -279,8 +306,23 @@ Maestro（ADE）是 Virtuoso 的仿真环境：一个 `maestro` 视图里放若�
 {"ok":true,"error":null,"value":{"session":"VB_..._3","session_created":true,"window":"0x2a0000b","signals":["VOUT"]}}
 ```
 
+### 8.4 `virtuoso.maestro.close_waveform_gui` — 关闭波形窗口
+
+**功能**：关闭波形窗口。
+**输入参数**：可选 `session`、`window`（都不给则关当前会话的波形窗口）。
+**返回**：`value.session` / `value.window` / `value.closed`。
+
+```json
+// 输入
+{"operation":"virtuoso.maestro.close_waveform_gui","token":"TOKEN","session":"VB_..._3"}
+// 输出（data.value 内容）
+{"ok":true,"error":null,"value":{"session":"VB_..._3","window":"0x2a0000b","closed":true}}
+```
+
 ## 9. 注意事项
 
 - `run` 默认非阻塞；**用 `read_history` 轮询**，不要用 `read_results` 当轮询。
 - corner/测试相关的原子在对象不存在时会直接报错（如 `corner not found: xxx`）。
 - 后台操作与 GUI 会话操作同一个 `maestro` 视图容易冲突：批量任务前先关掉 ADE 窗口。
+- 同一个 maestro 视图已以**只读**方式被别的会话打开时，写操作会被结构化拒绝（不会改坏现场）：
+  先关掉那个会话，或改用另一条 history。

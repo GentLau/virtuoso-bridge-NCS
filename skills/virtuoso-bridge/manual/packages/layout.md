@@ -116,7 +116,8 @@
 | `ref_lib_file` / `ref_lib_file_is_local` | str/bool | — | 无 / `true` | 参考库列表 |
 | `tech_lib` / `top_cell` | str | — | 无 | 导入时的工艺库与顶层 cell |
 | `log_path` / `poll_interval` / `cleanup_policy` | str/number/str | — | 无/无/`success` | 日志、轮询间隔、清理策略 |
-| `timeout` | number | — | `30` | **导入导出都可能慢，建议给大** |
+
+> GDS 导入/导出较慢，建议显式给更大的 `timeout`。
 
 **返回**
 

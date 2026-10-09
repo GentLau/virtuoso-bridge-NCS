@@ -128,6 +128,7 @@ class InfoResult(ResultBase):
     raw_html: str | None = None
     doc_root: str | None = None
     source: str | None = None
+    elapsed_ms: int = 0
 
 
 # ------------------------------------------------------------------ 校验器 --
@@ -274,17 +275,18 @@ class Package(ResultPackage):
     # ---------------------------------------------------------------- info --
     def info(self, request: InfoRequest) -> InfoResult:
         steps: list[dict[str, Any]] = []
+        started = time.monotonic()
         name = request.name.strip()
         result = InfoResult(ok=False)
 
         if not self._authorize(request.token, steps, result):
-            return result
+            return self._finish(result, steps, started)
 
         source = self._resolve_source(
             request.source, request.doc_root, steps, result, require_token_for="remote"
         )
         if source is None:
-            return result
+            return self._finish(result, steps, started)
         result.source = source.source
         result.doc_root = source.doc_root
 
@@ -292,13 +294,13 @@ class Package(ResultPackage):
         try:
             tgf_path = self._ensure_tgf(source, steps, result)
             if tgf_path is None:
-                return result
+                return self._finish(result, steps, started)
             index = docs.parse_tgf_index(tgf_path)
             steps.append({"name": "parse-tgf", "ok": bool(index),
                           "detail": {"topics": len(index)}})
             if not index:
                 result.error = f"{tgf_path} 未解析到任何主题条目"
-                return result
+                return self._finish(result, steps, started)
 
             entry = docs.lookup_topic(index, name)
             if entry is None:
@@ -306,14 +308,14 @@ class Package(ResultPackage):
                 result.found = False
                 steps.append({"name": "lookup", "ok": True,
                               "detail": {"found": False, "name": name}})
-                return result
+                return self._finish(result, steps, started)
             result.func_name = entry.func_name
             result.file_path = entry.file_path
             result.topic = entry.topic
 
             html_path = self._ensure_html(source, tgf_path, entry.file_path, steps, result)
             if html_path is None:
-                return result
+                return self._finish(result, steps, started)
             content = docs.read_text(html_path)
             single_func_file = sum(
                 1 for item in index.values() if item.file_path == entry.file_path
@@ -330,7 +332,7 @@ class Package(ResultPackage):
                 result.found = False
                 steps.append({"name": "lookup", "ok": True,
                               "detail": {"found": False, "reason": "topic 未在目标 HTML 中定位"}})
-                return result
+                return self._finish(result, steps, started)
 
             result.plain_text = docs.html_to_markdown(section)
             if request.include_raw:
@@ -342,7 +344,7 @@ class Package(ResultPackage):
         except Exception as exc:  # noqa: BLE001 - 单次请求隔离
             result.error = f"{type(exc).__name__}: {exc}"
             steps.append({"name": "info", "ok": False, "detail": result.error})
-        return result
+        return self._finish(result, steps, started)
 
     # ------------------------------------------------------- 步骤：鉴权等 ---
     def _authorize(self, token: str, steps: list[dict[str, Any]], result: Any) -> bool:

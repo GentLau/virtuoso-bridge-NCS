@@ -12,7 +12,6 @@
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
 | `skill_code` | str | ✅ | — | SKILL 文本；多行建议用 `let(...)` / `progn(...)` 包起来 |
-| `log_level` / `log_max_bytes` | str/int | — | 注册表默认 | 本次调用的 CDS.log 采集级别与长度上限 |
 
 **返回**（`data.result`）
 

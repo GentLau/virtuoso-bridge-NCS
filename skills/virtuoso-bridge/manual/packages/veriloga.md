@@ -105,3 +105,5 @@ Verilog-A 视图就是"库里的一个文本视图"，操作方式与 Verilog �
 
 - 改完源码要重新 `check_and_save`，仿真器才会用新代码。
 - `ensure_view` 只在视图不存在时创建，不会覆盖已有内容。
+- **symbol 生成本版不提供**（`ahdlSymbolGen` 会弹模态窗阻塞 CIW，已禁用）。需要 symbol 时先用
+  `virtuoso.symbol.generate` 从 schematic 生成，再在 symbol 里补 Verilog-A 相关标注。

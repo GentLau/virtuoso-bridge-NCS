@@ -77,7 +77,7 @@
 | `set_wire_properties` | `points` | `width`, `color`, `line_style` |
 | `place_label` | `x`, `y`, `text` | `justify`, `orient`, `font`, `height`, `alias` |
 | `delete_label` / `rename_label` / `set_label_properties` | `x`, `y`（`rename_label` 还要 `new_text`） | `justify`, `orient`, `font`, `height` |
-| `place_pin` | `name`, `x`, `y` | `direction`（默认 `inputOutput`；`input`/`output`/`switch`/`jumper`）、`orient` |
+| `place_pin` | `name` + (`pos` 或 `x`+`y`) | `direction`（默认 `inputOutput`；`input`/`output`/`switch`/`jumper`）、`orient`、`power_sens`/`ground_sens`（须是已有端子名）、`sig_type`（`power` 读回会归一化成 `supply`）；`off_sheet=true` 不支持 |
 | `delete_pin` / `rename_pin` / `set_pin_properties` | `x`, `y`（`rename_pin` 还要 `new_name`） | — |
 | `place_note` | `x`, `y`, `text` | `justify`, `orient`, `font`, `height`, `type` |
 | `delete_note` / `rename_note` / `set_note_properties` | `x`, `y`（`rename_note` 还要 `new_text`） | `justify`, `orient`, `font`, `height` |
@@ -194,7 +194,9 @@
 | `load_corners` | `filepath`（或 `remote_path`） | `sections`（默认 `corners`）、`operation`（默认 `overwrite`） |
 | `set_run_mode` | `run_mode` | — |
 | `set_job_control_mode` | `mode` | — |
-| `set_job_policy` | `policy`（对象或 SKILL 表达式字符串） | `test`, `job_type` |
+| `create_job_policy` | `name`, `policy` | `job_type` |
+| `attach_job_policy` | `test`, `name`（策略名） | `test_name`, `job_type` |
+| `delete_job_policy` | `name` | — |
 | `set_simulator_mode` | `mode` | `option`（默认 `uniMode`） |
 | `add_output` | `name`, `test` | `output_type`, `signal_name`, `expr`, `plot`, `save` |
 | `set_spec` | `name`, `test` + 一个界：`gt`/`lt`/`min`/`max`/`tol`/`range` | `info`, `weight`, `corner` |
@@ -238,7 +240,7 @@
 |---|---|---|---|
 | `calibre.check_env` | — | `calibre_bin`, `deck` | 查环境/许可 |
 | `calibre.drc` | `deck` | `gds`, `top`（deck 有占位符时才必需）, `params`/`runset`, `job_id`, `run_dir`, `turbo`（默认 4）、`hier`, `blocking`（默认 `false`）, `poll_interval` | 跑 DRC；默认后台，先用返回的 `job_id` |
-| `calibre.lvs` | `deck` | 同上 + `cdl`（deck 引用 `lvs_top.cdl` 时必需）, `lvs_run_dir` | 跑 LVS；`cdl` 先用 Virtuoso 侧能力产出 |
+| `calibre.lvs` | `deck` | 同上 + `cdl` 或 `source`（`{"kind":"cdl","path":...}` / `{"kind":"schematic","library","cell","view"}`）、`emit_cdl`、`cds_lib`、`lvs_run_dir` | 跑 LVS；`source`/`emit_cdl`/`cds_lib` 是 lvs 专属，`source` 与 `cdl` 互斥 |
 | `calibre.pex` | `deck` 或 `runset` | — | **本版不提供**；合法请求返回 `ok=false` + `value.reason=pex_unsupported`，不建 run dir |
 | `calibre.status` | `job_id` 或 `run_dir` | `kind`（默认 `drc`） | 查进度 |
 | `calibre.read_results` | `job_id` 或 `run_dir` | `kind`, `limit`, `log_lines` | 读结构化结论 |
@@ -269,6 +271,9 @@
 | `virtuoso.veriloga.read` | `library`+`cell` 或 `file_path` | `view`（默认 `veriloga`）、`focus` | 读 Verilog-A |
 | `virtuoso.veriloga.write` | `library`, `cell`, `commands` | `view` | 原子同 verilog；典型：`ensure_view` + `set_source` |
 | `virtuoso.veriloga.check_and_save` | `library`, `cell` | `view` | 检查并保存 |
+
+> Verilog-A 的 **symbol 生成本版不提供**（`ahdlSymbolGen` 会弹模态窗卡住 CIW）；需要 symbol 时用
+> `virtuoso.symbol.generate` 从 schematic 生成。
 
 `set_source` 支持 `expected_sha256`（给内容上锁，内容对不上就拒绝写）；
 `patch_source` 的 `edits[]` 用 `old_text`/`new_text` 或 `start_line`/`end_line`/`new_text`。

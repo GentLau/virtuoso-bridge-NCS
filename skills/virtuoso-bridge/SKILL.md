@@ -27,8 +27,9 @@ curl -s http://127.0.0.1:8127/api/operation \
   -d '{"operation":"basic.skill.execute","token":"<token>","skill_code":"1+2"}'
 ```
 
-不知道有哪些 operation：`curl -s http://127.0.0.1:8127/help` 会列出这个进程的全部可用操作名。
-带字段的完整清单（按任务分组）在 `references/operations.md`。**不要猜名字。**
+不知道有哪些 operation：`curl -s http://127.0.0.1:8127/help/operations` 会列出这个进程的全部可用操作
+（按包分组）；`/help/operations?name=<操作名>` 还能拿到该操作的参数 schema 与手册原文。
+`GET /help` 本身返回的是给人看的上手文本。带字段的速查在 `references/operations.md`。**不要猜名字。**
 
 > 给人看的配套说明书在 `manual/`：`01-快速开始.md`（最短路径用起来）、`02-参考手册.md`（接口与运维）、
 > `03-业务包说明书/`（每个操作的每个参数）。
@@ -76,7 +77,7 @@ curl -s http://127.0.0.1:8127/api/operation \
 | 症状 | 多半是 | 怎么办 |
 |---|---|---|
 | `invalid token` | token 抄错，或这个用户没注册 | 找用户核对 token |
-| `unknown operation: xxx` | 操作名不对 | `GET /help` 查 |
+| `unknown operation: xxx` | 操作名不对 | `GET /help/operations` 查（只报未知，不给近邻候选） |
 | 写视图失败 / 报 `locked` | 视图在 Virtuoso 里被别的会话打开，或残留锁文件 | 让用户关掉该视图；详见 `references/troubleshooting.md` |
 | 路径类报错 | 给的是本机路径，或远端目录不存在 | 本机文件先 `basic.file.upload`；远端用 Linux 绝对路径 |
 | 超时 | 任务没在预算内跑完 | **超时不等于没执行**：先 `read`/`status` 看现状，再决定要不要重发 |
@@ -111,6 +112,6 @@ curl -s http://127.0.0.1:8127/api/operation \
 
 ## 5. 三条铁律
 
-1. **不要猜**：operation 名用 `GET /help` 查，字段用 `references/operations.md` 查。
+1. **不要猜**：operation 名用 `GET /help/operations` 查，字段用 `references/operations.md` 查。
 2. **写操作先确认目标存在**（库/cell/view），写完再读一次验证。
 3. **超时不等于没发生**：写操作超时后先查现状，再决定是否重发。

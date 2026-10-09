@@ -86,7 +86,8 @@
 | `power_net` / `ground_net` | str | — | `VDD` / `VSS` | 电源/地网络名 |
 | `import_lib_cells` | int | — | `0` | 是否连库单元一起导入 |
 | `overwrite` | bool | — | `false` | 已存在时是否覆盖 |
-| `timeout` | number | — | `30` | **导入慢，建议 300 起步** |
+
+> 结构导入较慢，建议显式给更大的 `timeout`（300 秒起步）。
 
 **返回**
 

@@ -50,7 +50,6 @@
 | 字段 | 类型 | 说明 |
 |---|---|---|
 | `value` | null | 成功时不返回业务数据；失败时 `error` 会写 `(applied: n/m)` |
-| `steps` | list | 失败或 `step_details=true` 时出现，每条命令一步 |
 
 ### 2.1 原子命令
 
@@ -74,8 +73,12 @@
 | `set_label_properties` | `x`, `y` + 至少一个样式字段 | — | ✅（x,y） | — | 改标签样式 |
 | `place_pin` | `name` + (`pos` 或 `x`+`y`) | str/list | ✅ | — | 放引脚（`pos:[x,y]` 与 `x`/`y` 二选一） |
 | | `direction` / `orient` | str | — | `inputOutput` / `R0` | `input`/`output`/`inputOutput`/`switch`/`jumper` |
-| | `power_sens` / `ground_sens` / `sig_type` | str | — | 无 | 引脚高级属性（按位置透传，可只给其中后面的项） |
+| | `power_sens` / `ground_sens` | str | — | 无 | 目标 cellview 里**已存在**的端子名；按位置拼装，只给后面的项时前面自动补 `nil` |
+| | `sig_type` | str | — | 无 | 取值须在 `analog`/`clock`/`ground`/`power`/`reset`/`scan`/`signal`/`tieHi`/`tieLo`/`tieOff` 之内；非法值在写前被结构化拒绝 |
 | | `off_sheet` | bool | — | — | **本环境不支持**，传 `true` 会被明确拒绝 |
+
+> `sig_type` 按 Virtuoso DB 词汇读回：`power` 会被归一化成 `supply`（其余原样）；
+> `read` 出来的 `sigType` 以 DB 词汇为准（可能是 `supply`），但 `supply` **不是**合法入参。
 | `delete_pin` | `x`, `y` | number | ✅ | — | 按位置删 |
 | `rename_pin` | `x`, `y`, `new_name` | number/str | ✅ | — | 按位置改名 |
 | `set_pin_properties` | `x`, `y`, `direction` | number/str | ✅ | — | 改引脚类型 |

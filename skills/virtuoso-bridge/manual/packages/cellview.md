@@ -62,7 +62,7 @@
 | `path` | str | ✅ | — | 库目录：目标机器绝对路径，如 `/home/user/vblog/mylib` |
 | `technology_library` | str | — | 无 | 绑定的工艺库，如 `cdsDefTechLib` |
 
-**返回**：`value` = 执行结果（成功即可；要看每步细节传 `step_details=true`）。
+**返回**：`value` = 执行结果。
 
 ```json
 // 输入
@@ -311,16 +311,83 @@
 
 分类是库内给 cell 分组的标签，不影响视图数据。
 
-| 操作 | 功能 | 输入参数 | 输入 → 输出示例 |
-|---|---|---|---|
-| `virtuoso.cellview.cat.list` | 列出分类 | `library` | `{"library":"mylib"}` → `{"ok":true,"error":null,"value":["analog","digital"]}` |
-| `virtuoso.cellview.cat.create` | 新建分类 | `library`, `category` | `{"library":"mylib","category":"digital"}` → `{"ok":true,"error":null,"value":null}` |
-| `virtuoso.cellview.cat.delete` | 删分类 | `library`, `category` | `{"library":"mylib","category":"digital"}` → `{"ok":true,"error":null,"value":null}` |
-| `virtuoso.cellview.cat.rename` | 分类改名 | `library`, `category`, `new_name` | `{"library":"mylib","category":"digital","new_name":"dig"}` → `{"ok":true,"error":null,"value":null}` |
-| `virtuoso.cellview.cat.add_cell` | 把 cell 放进分类 | `library`, `category`, `cell` | `{"library":"mylib","category":"dig","cell":"inv"}` → `{"ok":true,"error":null,"value":null}` |
-| `virtuoso.cellview.cat.remove_cell` | 把 cell 移出分类 | `library`, `category`, `cell` | `{"library":"mylib","category":"dig","cell":"inv"}` → `{"ok":true,"error":null,"value":null}` |
+### 4.1 `virtuoso.cellview.cat.list` — 列出分类
 
-> 表里的示例只写业务字段；实际请求还要带 `"operation"`（见左列）和 `"token"`。
+**功能**：列出该库的所有分类。
+**输入参数**：`library`。
+**返回**：`value` = 分类名列表。
+
+```json
+// 输入
+{"operation":"virtuoso.cellview.cat.list","token":"TOKEN","library":"mylib"}
+// 输出（data 内容）
+{"ok":true,"error":null,"value":["analog","digital"]}
+```
+
+### 4.2 `virtuoso.cellview.cat.create` — 新建分类
+
+**功能**：在库内新建一个分类。
+**输入参数**：`library`, `category`。
+**返回**：`value` = 执行结果。
+
+```json
+// 输入
+{"operation":"virtuoso.cellview.cat.create","token":"TOKEN","library":"mylib","category":"digital"}
+// 输出（data 内容）
+{"ok":true,"error":null,"value":null}
+```
+
+### 4.3 `virtuoso.cellview.cat.delete` — 删分类
+
+**功能**：删除分类（cell 本身不受影响）。
+**输入参数**：`library`, `category`。
+**返回**：`value` = 执行结果。
+
+```json
+// 输入
+{"operation":"virtuoso.cellview.cat.delete","token":"TOKEN","library":"mylib","category":"digital"}
+// 输出（data 内容）
+{"ok":true,"error":null,"value":null}
+```
+
+### 4.4 `virtuoso.cellview.cat.rename` — 分类改名
+
+**功能**：改分类名。
+**输入参数**：`library`, `category`, `new_name`。
+**返回**：`value` = 执行结果。
+
+```json
+// 输入
+{"operation":"virtuoso.cellview.cat.rename","token":"TOKEN","library":"mylib","category":"digital","new_name":"dig"}
+// 输出（data 内容）
+{"ok":true,"error":null,"value":null}
+```
+
+### 4.5 `virtuoso.cellview.cat.add_cell` — 把 cell 放进分类
+
+**功能**：把一个已有 cell 归入分类。
+**输入参数**：`library`, `category`, `cell`。
+**返回**：`value` = 执行结果。
+
+```json
+// 输入
+{"operation":"virtuoso.cellview.cat.add_cell","token":"TOKEN","library":"mylib","category":"dig","cell":"inv"}
+// 输出（data 内容）
+{"ok":true,"error":null,"value":null}
+```
+
+### 4.6 `virtuoso.cellview.cat.remove_cell` — 把 cell 移出分类
+
+**功能**：把 cell 从分类里移除（cell 本身不删）。
+**输入参数**：`library`, `category`, `cell`。
+**返回**：`value` = 执行结果。
+
+```json
+// 输入
+{"operation":"virtuoso.cellview.cat.remove_cell","token":"TOKEN","library":"mylib","category":"dig","cell":"inv"}
+// 输出（data 内容）
+{"ok":true,"error":null,"value":null}
+```
 
 ## 5. 注意事项
 

@@ -46,6 +46,9 @@
 | `gds` | str | 见上 | 无 | 版图 GDS 路径（目标机器上） |
 | `top` | str | 见上 | 无 | 顶层 cell 名 |
 | `cdl` | str | LVS 常用 | 无 | 源网表（deck 引用它时必须给） |
+| `source` | dict | — | 无 | **只对 `calibre.lvs` 有效**：源侧网表来源，见下 |
+| `emit_cdl` | bool | — | `false` | **只对 `calibre.lvs` 有效**：`source.kind=schematic` 时从原理图现产 CDL |
+| `cds_lib` | str | — | 从 CIW 推断 | **只对 `calibre.lvs` 有效**：现产 CDL 用的 `cds.lib` 路径 |
 | `lvs_run_dir` | str | — | 无 | 复用已有 LVS 结果时给 |
 | `job_id` | str | — | 自动 | 任务名，后续查询的主键（建议自己起名） |
 | `run_dir` | str | — | 自动 | 运行目录 |
@@ -66,6 +69,15 @@
 | `value.job_id` | str | 任务名（后续 `status`/`read_results`/`export` 用它） |
 | `value.run_dir` | str | 运行目录 |
 | `value.status` | str | 提交后的状态（后台跑时为运行中） |
+| `value.source` | dict | LVS 源侧信息（用的哪种 source） |
+| `value.emit_cdl` | bool | 本次是否现产了 CDL |
+
+`source` 的两种形态（`calibre.lvs` 专属，与 `cdl` 互斥、不能和 `runset` 同用）：
+
+| 形态 | 写法 | 说明 |
+|---|---|---|
+| 用已有 CDL | `{"kind":"cdl","path":"/home/user/work/inv.cdl"}` | 先校验该文件在目标机器上存在 |
+| 从原理图现产 | `{"kind":"schematic","library":"mylib","cell":"inv","view":"schematic"}` | `view` 可省（默认 `schematic`）；此时可用 `emit_cdl` / `cds_lib` |
 
 **示例**
 
@@ -82,6 +94,18 @@
  "deck":"/pdks/calibre/lvs.deck","params":{"TOP":"inv"}}
 // 输出（data.value 内容）
 {"ok":true,"error":null,"value":{"job_id":"lvs_inv","run_dir":"/home/user/.virtuoso-bridge/<user>/calibre/lvs_inv","status":"running"}}
+```
+
+不想先手工准备 CDL 时，直接让 LVS 从原理图现产：
+
+```json
+// 输入
+{"operation":"calibre.lvs","token":"TOKEN","job_id":"lvs_inv",
+ "gds":"/home/user/work/inv.gds","top":"inv","deck":"/pdks/calibre/lvs.deck",
+ "source":{"kind":"schematic","library":"mylib","cell":"inv","view":"schematic"},"emit_cdl":true}
+// 输出（data.value 内容）
+{"ok":true,"error":null,"value":{"job_id":"lvs_inv","run_dir":"/home/user/.virtuoso-bridge/<user>/calibre/lvs_inv",
+ "status":"running","source":{"kind":"schematic","library":"mylib","cell":"inv","view":"schematic"},"emit_cdl":true}}
 ```
 
 ## 3. `calibre.status` — 查进度
@@ -173,7 +197,7 @@
  "downloaded":[{"item":"summary","remote":"DRC.rep","local":"C:/work/drc/DRC.rep","bytes":1024,"ok":true}]}}
 ```
 
-## 6. `calibre.pex`
+## 6. `calibre.pex` — 本版不提供
 
 **本版不提供**：调用会立即返回 `pex_unsupported`，不要用于交付或签核。
 
