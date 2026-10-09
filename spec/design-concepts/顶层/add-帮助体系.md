@@ -1,9 +1,9 @@
 # 顶层补充：帮助体系（`/help` 端点族）
 
-> 版本：Draft v2
+> 版本：Draft v3
 > 日期：2026-10-09
 > 状态：Normative（帮助端点族唯一口径）
-> Supersedes：Draft v1（未知操作 404 只报未知，不做近邻候选）
+> Supersedes：Draft v2（`/help` 根也带壳，quickstart 文本放 `data`）
 > 定位：本文是[顶层](1-顶层.md)的补充，定义 `/help` 端点族的形态、契约与数据来源；端点清单主表见[控制面与业务面](add-控制面与业务面.md)，本文只讲帮助子族细则。帮助不解释任何业务操作语义。
 
 ## 1. 原则
@@ -17,7 +17,7 @@
 
 ### 2.1 `GET /help` —— quickstart（人）
 
-- 返回 `text/plain` 固定文本（手写维护）；无鉴权。
+- 返回统一壳 `{ok, data, error}`，`data` 为 quickstart 固定文本（手写维护）；无鉴权。
 
 ### 2.2 `GET /help/operations` —— 清单 / 详情（人+机）
 
@@ -44,7 +44,7 @@
 
 ## 4. 响应契约
 
-- `/help` 根为 `text/plain`、无壳；JSON 端点统一 `{ok, data, error}` 壳；
+- 帮助端点统一 `{ok, data, error}` 壳；`/help` 的 `data` 是 quickstart 文本；
 - 状态码：`200` 正常、`404` 未知操作、`405` 方法不支持（含 `Allow`）；
 - 可选 `ETag`：按资源计算（操作详情 = schema + 该节 content 的哈希；`common` 单独一个）；
 - 兼容：既有 `/help` 的 `operations` 数组保留，新增字段为增量。
