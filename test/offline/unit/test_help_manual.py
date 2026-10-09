@@ -1,4 +1,4 @@
-"""Help endpoint family (spec: 顶层补充·帮助体系 v6).
+"""Help endpoint family (spec: 顶层补充·帮助体系 v7).
 
 Offline: manual parser + business ``/help`` / ``/help/operations`` against a
 temporary read-only manual root; no real middle is needed.
@@ -96,6 +96,19 @@ class TestManualParser(unittest.TestCase):
         self.assertIn("注册正文。", registration)
         self.assertIn("### 4.1 六步注册", registration)
 
+    def test_registration_prefers_dedicated_file_and_ignores_blank(self):
+        registration_file = self.root / "registration.md"
+        registration_file.write_text(
+            "# 独立注册流程\n\n独立注册正文。\n", encoding="utf-8")
+        self.assertEqual(
+            Manual(self.root).registration(),
+            "# 独立注册流程\n\n独立注册正文。",
+        )
+
+        registration_file.write_text("\n", encoding="utf-8")
+        self.assertTrue(
+            Manual(self.root).registration().startswith("## 4. 注册与用户"))
+
     def test_missing_manual_degrades(self):
         empty = Manual(Path(self.tmp.name) / "missing")
         self.assertIsNone(empty.quickstart())
@@ -148,18 +161,38 @@ class TestBusinessHelpEndpoints(unittest.TestCase):
         self.tmp.cleanup()
 
     def _request(self, method, path):
+        status, raw = self._request_raw(method, path)
+        return status, json.loads(raw)
+
+    def _request_raw(self, method, path):
         conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=10)
         conn.request(method, path)
         resp = conn.getresponse()
         raw = resp.read()
         conn.close()
-        return resp.status, json.loads(raw)
+        return resp.status, raw
 
     def test_help_root_returns_quickstart_text(self):
         status, body = self._request("GET", "/help")
         self.assertEqual(status, 200, body)
         self.assertTrue(body["ok"])
         self.assertEqual(body["data"], _QUICKSTART_MD.strip())
+
+    def test_success_shell_is_exact_and_does_not_leak_manual_root(self):
+        for path in (
+            "/help",
+            "/help/operations",
+            f"/help/operations?name={self.OP}",
+        ):
+            with self.subTest(path=path):
+                status, raw = self._request_raw("GET", path)
+                text = raw.decode("utf-8")
+                body = json.loads(text)
+                self.assertEqual(status, 200, body)
+                self.assertEqual(set(body), {"ok", "data", "error"})
+                self.assertTrue(body["ok"])
+                self.assertIsNone(body["error"])
+                self.assertNotIn(str(self.root), text)
 
     def test_operations_list_and_group_filter(self):
         status, body = self._request("GET", "/help/operations")
@@ -168,7 +201,8 @@ class TestBusinessHelpEndpoints(unittest.TestCase):
         entries = data["groups"]["helptest"]
         entry = next(item for item in entries if item["name"] == self.OP)
         self.assertEqual(entry["summary"], "测试运行")
-        self.assertGreaterEqual(data["count"], 1)
+        self.assertEqual(
+            data["count"], sum(len(items) for items in data["groups"].values()))
 
         status, filtered = self._request("GET", "/help/operations?group=helptest")
         self.assertEqual(status, 200)
@@ -235,6 +269,23 @@ class TestBusinessHelpEndpoints(unittest.TestCase):
             server.shutdown()
             server.server_close()
             thread.join(timeout=3)
+
+    def test_missing_operation_section_degrades_with_section_reason(self):
+        operation = "tb.help.no_manual_section"
+        dispatch_module.register_operation(
+            operation, _HelpPackage, "run", _HelpRequest, replace=True)
+        try:
+            status, body = self._request(
+                "GET", f"/help/operations?name={operation}")
+            self.assertEqual(status, 200, body)
+            data = body["data"]
+            self.assertNotIn("content", data)
+            self.assertEqual(
+                data["content_unavailable"], "manual section not found")
+            self.assertIsNone(data["doc"]["section_title"])
+            self.assertEqual(data["request_schema"]["type"], "object")
+        finally:
+            dispatch_module.PACKAGES.pop(operation, None)
 
 
 if __name__ == "__main__":
