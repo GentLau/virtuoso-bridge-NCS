@@ -1,9 +1,9 @@
 # virtuoso-bridge-NCS Spec
 
-> 版本：Release `SPEC-2026-10-09-r38`（送审修订版）
+> 版本：Release `SPEC-2026-10-09-r39`（送审修订版）
 > 日期：2026-10-09
-> 状态：Normative 基线（取代 r37）
-> Supersedes：`SPEC-2026-10-09-r37`（控制面 `/help` 改为注册流程指导文本）
+> 状态：Normative 基线（取代 r38）
+> Supersedes：`SPEC-2026-10-09-r38`（`/help` data 为文本字符串，删除 operations 兼容句）
 
 ## 0. 版本治理（替代“文件修改时间优先”）
 
@@ -101,9 +101,9 @@ CDS.log metadata frame 完整字节格式
 
 ## Release（本基线）
 
-- **Release ID**：`SPEC-2026-10-09-r38`
+- **Release ID**：`SPEC-2026-10-09-r39`
 - **Normative 文件集**（11 份）：四层整体架构与接口、本版范围与明确不支持、中层配置文档、路由设计、多用户与注册、并发设计、日志返回设计标准、顶层：HTTP 入口与业务调度、顶层补充：控制面与业务面、顶层补充：帮助体系、上层：业务包与插件化；
-- **Normative 内容哈希**：`cee3c5d889daf7ba0a03560df7e4a72cacc373930897ccd21c0ceda5e54de307`
+- **Normative 内容哈希**：`2fe0bdf23f29dcdcf991941f9800a8958df497969df710ff0a7bf75f59f410ca`
   - 算法：路径为**相对 `spec/` 目录**并按路径排序；逐文件 SHA-256（**按 Git 提交内容计算，即 LF 行尾**；Windows 工作区受 `core.autocrlf` 影响的行尾差异不计入）；每行 `<相对路径> <hex>` 以 LF 拼接（**行间分隔、末行无尾 LF**），再取一次 SHA-256；
 - **基线 commit**：本 Release 段所在提交即基线（见 `git log -1 -- spec/`）；任何 Normative 文档变更必须同时更新本段哈希。
 
@@ -118,7 +118,7 @@ CDS.log metadata frame 完整字节格式
 | 多用户与注册 | Draft v44 | Normative | Draft v43（「顶层补充 §1.1」链接修正为 §3） |
 | 并发设计 | Draft v20 | Normative | Draft v19（重试决策单元术语统一为业务操作） |
 | 顶层 | Draft v23 | Normative | Draft v22（删除响应壳遗留的 JSON 代码围栏） |
-| 帮助体系 | Draft v6 | Normative | Draft v5（控制面 `/help` 改为注册流程指导文本） |
+| 帮助体系 | Draft v7 | Normative | Draft v6（`/help` 的 `data` 为文本字符串，删除 operations 兼容句） |
 | 控制面与业务面 | Draft v46 | Normative | Draft v45（控制面 `/help` 改为注册流程说明） |
 | 上层 | Draft v20 | Normative | Draft v19（`steps` 出现条件：开启 `step_details` 或操作失败） |
 | 日志返回设计标准 | Draft v18 | Normative | Draft v17（P-119：桥 flush 空行不计入 delta） |
